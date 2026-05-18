@@ -736,7 +736,7 @@ public class ResteasyServerCommonProcessor {
             if (classInfo != null) {
                 includeFields = classInfo.annotationsMap().containsKey(CONTEXT);
             }
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).fields(includeFields).build());
         }
 
         // special case: our config providers

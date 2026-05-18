@@ -341,7 +341,6 @@ triage:
     - id: m1
       labels: [env/m1]
       titleBody: "\\bm1\\b"
-      notify: [gastaldi]
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
@@ -745,7 +744,7 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro]
+      notify: [barreiro, gastaldi]
       directories:
         - extensions/agroal/
     - id: continuous-testing

@@ -138,6 +138,8 @@ public class TaskBean {
 <3> Create a new `Task` with the current start time.
 <4> Persist the task in database using xref:hibernate-orm-panache.adoc[Panache].
 
+TIP: The `@Scheduled#description()` value, if set, is stored in the `DESCRIPTION` column of the `QRTZ_JOB_DETAILS` table.
+
 === Scheduling Jobs Programmatically
 
 An injected `io.quarkus.scheduler.Scheduler` can be used to <<scheduler-reference.adoc#programmatic_scheduling,schedule a job programmatically>>.

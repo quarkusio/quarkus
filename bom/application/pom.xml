@@ -45,7 +45,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.17.0</smallrye-common.version>
+        <smallrye-common.version>2.18.1</smallrye-common.version>
         <smallrye-config.version>3.17.2</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-open-api.version>4.3.1</smallrye-open-api.version>
@@ -96,8 +96,8 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.4.Final</narayana.version>
-        <narayana-lra.version>1.1.0.Final</narayana-lra.version>
-        <agroal.version>3.1</agroal.version>
+        <narayana-lra.version>1.2.0.Final</narayana-lra.version>
+        <agroal.version>3.1.2</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>9.3.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -107,7 +107,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.9.0.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.9.1.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.27</vertx.version>
@@ -147,7 +147,7 @@
         <aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
         <aws-xray.version>2.18.3</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
-        <azure-functions-java-library.version>3.2.4</azure-functions-java-library.version>
+        <azure-functions-java-library.version>3.3.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.3.21</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>

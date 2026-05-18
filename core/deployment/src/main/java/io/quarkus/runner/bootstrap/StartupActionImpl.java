@@ -1,6 +1,6 @@
 package io.quarkus.runner.bootstrap;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.CLASS_SUFFIX;
 import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.APPLICATION_PROPERTIES;
 import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.writeTempApplicationProperties;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.STARTUP_OVERRIDE;
@@ -481,7 +481,7 @@ public class StartupActionImpl implements StartupAction {
         String debugSourcesDir = BootstrapDebug.debugSourcesDir();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
+                data.put(i.internalName().concat(CLASS_SUFFIX), i.getClassData());
                 if (debugClassesDir != null) {
                     try {
                         File debugPath = new File(debugClassesDir);

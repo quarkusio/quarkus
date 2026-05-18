@@ -241,16 +241,16 @@ public class AugmentActionImpl implements AugmentAction {
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
-                        File sourceFile = new File(debugPath, i.getName() + ".zig");
+                        File sourceFile = new File(debugPath, i.internalName() + ".zig");
                         sourceFile.getParentFile().mkdirs();
                         Files.writeString(sourceFile.toPath(), i.getSource(),
                                 StandardOpenOption.CREATE);
                         log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
                     } else {
-                        log.infof("Source not available: %s", i.getName());
+                        log.infof("Source not available: %s", i.internalName());
                     }
                 } catch (Exception t) {
-                    log.errorf(t, "Failed to write debug source file: %s", i.getName());
+                    log.errorf(t, "Failed to write debug source file: %s", i.internalName());
                 }
             }
         }

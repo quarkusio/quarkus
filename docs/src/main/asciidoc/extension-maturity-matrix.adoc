@@ -106,7 +106,7 @@ Extensions can xref:extension-codestart.adoc[provide their own codestart templat
 
 Extensions can provide AI coding agents with extension-specific patterns, testing guidelines, and common pitfalls by shipping a `quarkus-skill.md` file.
 This is a simple markdown file placed in the deployment module at `META-INF/quarkus-skill.md` — no build configuration is needed.
-See xref:dev-mcp.adoc#extension-skills[the Dev MCP guide] for what to include and how skill files are composed with extension metadata.
+See xref:agent-mcp.adoc#extension-skills[the Agent MCP guide] for what to include and how skill files are composed with extension metadata.
 
 == Supersonic subatomic performance
 

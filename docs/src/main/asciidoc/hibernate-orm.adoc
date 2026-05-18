@@ -207,10 +207,11 @@ leading to a startup failure when the actual version is lower.
 This is a safeguard: for versions of the database older than what is configured,
 Hibernate ORM may generate SQL that is invalid which would lead to runtime exceptions.
 
-// TODO disable the check by default when offline startup is opted in
-//   See https://github.com/quarkusio/quarkus/issues/13522
 If the database cannot be reached, a warning will be logged but startup will proceed.
-You can optionally disable the version check if you know the database won't be reachable on startup
+If you know the database won't be reachable on startup, consider configuring <<offline,offline startup>>,
+which will automatically disable the check and warning.
+
+As a last resort, you can disable the version check completely
 using <<quarkus-hibernate-orm_quarkus-hibernate-orm-database-version-check-enabled,`quarkus.hibernate-orm.database.version-check.enabled=false`>>.
 ====
 

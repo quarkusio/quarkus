@@ -65,6 +65,9 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
                 <extensions>true</extensions>
+                <configuration>
+                    <jvmArgs>-XX:MaxMetaspaceSize=256m</jvmArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>

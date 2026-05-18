@@ -78,12 +78,6 @@ public interface Capability {
 
     String JWT = QUARKUS_PREFIX + ".jwt";
 
-    /**
-     * @deprecated Tika has been moved to the Quarkiverse
-     */
-    @Deprecated
-    String TIKA = QUARKUS_PREFIX + ".tika";
-
     String MONGODB_CLIENT = QUARKUS_PREFIX + ".mongodb-client";
     String MONGODB_PANACHE = QUARKUS_PREFIX + ".mongodb.panache";
     String MONGODB_PANACHE_KOTLIN = MONGODB_PANACHE + ".kotlin";

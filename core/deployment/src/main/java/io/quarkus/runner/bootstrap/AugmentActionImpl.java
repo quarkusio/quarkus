@@ -90,16 +90,6 @@ public class AugmentActionImpl implements AugmentAction {
         this(curatedApplication, Collections.emptyList(), Collections.emptyList());
     }
 
-    /**
-     * Leaving this here for backwards compatibility, even though this is only internal.
-     *
-     * @Deprecated use one of the other constructors
-     */
-    @Deprecated
-    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
-        this(curatedApplication, chainCustomizers, Collections.emptyList());
-    }
-
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,
             List<ClassLoaderEventListener> classLoadListeners) {
         this(curatedApplication, chainCustomizers, Collections.emptyList(), classLoadListeners);

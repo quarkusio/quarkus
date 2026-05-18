@@ -346,54 +346,43 @@ public class OidcUtilsTest {
     }
 
     @Test
-    public void testFindClaimValueFlat() {
+    public void testFindStringClaimValueFlat() {
         JsonObject json = new JsonObject().put("name", "johndoe");
-        String[] path = OidcUtils.splitClaimPath("name");
-        Object value = OidcUtils.findClaimValue("name", json, path, 0);
-        assertEquals("johndoe", value);
+        assertEquals("johndoe", OidcUtils.findStringClaimValue("name", json));
     }
 
     @Test
-    public void testFindClaimValueNested() {
+    public void testFindStringClaimValueNested() {
         JsonObject json = new JsonObject()
                 .put("metadata", new JsonObject().put("name", "johndoe"));
-        String[] path = OidcUtils.splitClaimPath("metadata/name");
-        Object value = OidcUtils.findClaimValue("metadata/name", json, path, 0);
-        assertEquals("johndoe", value);
+        assertEquals("johndoe", OidcUtils.findStringClaimValue("metadata/name", json));
     }
 
     @Test
-    public void testFindClaimValueDeeplyNested() {
+    public void testFindStringClaimValueDeeplyNested() {
         JsonObject json = new JsonObject()
                 .put("a", new JsonObject()
                         .put("b", new JsonObject()
                                 .put("c", "deep")));
-        String[] path = OidcUtils.splitClaimPath("a/b/c");
-        Object value = OidcUtils.findClaimValue("a/b/c", json, path, 0);
-        assertEquals("deep", value);
+        assertEquals("deep", OidcUtils.findStringClaimValue("a/b/c", json));
     }
 
     @Test
-    public void testFindClaimValueMissingPath() {
+    public void testFindStringClaimValueMissingPath() {
         JsonObject json = new JsonObject().put("metadata", new JsonObject().put("name", "johndoe"));
-        String[] path = OidcUtils.splitClaimPath("metadata/missing");
-        Object value = OidcUtils.findClaimValue("metadata/missing", json, path, 0);
-        assertNull(value);
+        assertNull(OidcUtils.findStringClaimValue("metadata/missing", json));
     }
 
     @Test
-    public void testSplitClaimPathFlat() {
-        String[] path = OidcUtils.splitClaimPath("name");
-        assertEquals(1, path.length);
-        assertEquals("name", path[0]);
-    }
-
-    @Test
-    public void testSplitClaimPathNested() {
-        String[] path = OidcUtils.splitClaimPath("metadata/name");
-        assertEquals(2, path.length);
-        assertEquals("metadata", path[0]);
-        assertEquals("name", path[1]);
+    public void testFindStringClaimValueNonString() {
+        JsonObject json = new JsonObject()
+                .put("metadata", new JsonObject().put("count", 42));
+        try {
+            OidcUtils.findStringClaimValue("metadata/count", json);
+            fail("Expected OIDCException for non-string claim value");
+        } catch (OIDCException ex) {
+            // expected
+        }
     }
 
     @Test

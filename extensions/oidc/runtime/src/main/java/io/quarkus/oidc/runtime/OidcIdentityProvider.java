@@ -464,11 +464,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
                 final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
                 if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null) {
-                    Object value = OidcUtils.findClaimValue(principalClaim,
-                            new JsonObject(userInfo.getJsonObject().toString()),
-                            OidcUtils.splitClaimPath(principalClaim), 0);
+                    String value = userInfo.getString(principalClaim);
+                    if (value == null) {
+                        value = OidcUtils.findStringClaimValue(principalClaim,
+                                new JsonObject(userInfo.getJsonObject().toString()));
+                    }
                     if (value != null) {
-                        tokenJson.put(principalClaim, value.toString());
+                        tokenJson.put(principalClaim, value);
                     }
                 }
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
@@ -504,10 +506,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         resolvedContext.oidcConfig().token().verifyAccessTokenWithUserInfo().orElse(false)) {
                     if (resolvedContext.oidcConfig().token().principalClaim().isPresent() && userInfo != null) {
                         String principalClaimPath = resolvedContext.oidcConfig().token().principalClaim().get();
-                        Object value = OidcUtils.findClaimValue(principalClaimPath,
-                                new JsonObject(userInfo.getJsonObject().toString()),
-                                OidcUtils.splitClaimPath(principalClaimPath), 0);
-                        userName = value != null ? value.toString() : "";
+                        String value = userInfo.getString(principalClaimPath);
+                        if (value == null) {
+                            value = OidcUtils.findStringClaimValue(principalClaimPath,
+                                    new JsonObject(userInfo.getJsonObject().toString()));
+                        }
+                        userName = value != null ? value : "";
                     } else {
                         userName = "";
                     }

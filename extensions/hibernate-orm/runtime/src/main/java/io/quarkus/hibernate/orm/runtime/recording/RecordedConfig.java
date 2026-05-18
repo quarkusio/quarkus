@@ -17,6 +17,7 @@ public class RecordedConfig {
     private final Optional<String> dbKind;
     private final Optional<String> supportedDBkind;
     private final Optional<String> dbVersion;
+    private final boolean dbVersionUserSpecified;
     private final Optional<String> explicitDialect;
     private final Set<String> entityClassNames;
     private final MultiTenancyStrategy multiTenancyStrategy;
@@ -26,7 +27,8 @@ public class RecordedConfig {
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
             Optional<String> supportedDBkind,
-            Optional<String> dbVersion, Optional<String> explicitDialect, Set<String> entityClassNames,
+            Optional<String> dbVersion, boolean dbVersionUserSpecified, Optional<String> explicitDialect,
+            Set<String> entityClassNames,
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             Map<String, String> quarkusConfigUnsupportedProperties) {
@@ -39,6 +41,7 @@ public class RecordedConfig {
         this.dbKind = dbKind;
         this.supportedDBkind = supportedDBkind;
         this.dbVersion = dbVersion;
+        this.dbVersionUserSpecified = dbVersionUserSpecified;
         this.explicitDialect = explicitDialect;
         this.entityClassNames = entityClassNames;
         this.multiTenancyStrategy = multiTenancyStrategy;
@@ -60,6 +63,10 @@ public class RecordedConfig {
 
     public Optional<String> getDbVersion() {
         return dbVersion;
+    }
+
+    public boolean isDbVersionUserSpecified() {
+        return dbVersionUserSpecified;
     }
 
     public Optional<String> getExplicitDialect() {

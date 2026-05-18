@@ -163,6 +163,9 @@
                             <!-- These tests seem to leak metaspace memory
                                  so we run them in a separate, short-lived JVM -->
                             <excludedGroups>devmode</excludedGroups>
+                            <systemPropertyVariables>
+                                <h2.version>${h2.version}</h2.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                     <execution>

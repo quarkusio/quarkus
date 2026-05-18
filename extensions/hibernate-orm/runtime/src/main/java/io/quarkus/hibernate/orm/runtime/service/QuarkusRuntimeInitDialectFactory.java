@@ -31,18 +31,21 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
+    private final boolean dbVersionUserSpecified;
     private final boolean versionCheckEnabled;
 
     private boolean triedToRetrieveDbVersion = false;
     private Optional<DatabaseVersion> actualDbVersion = Optional.empty();
 
     public QuarkusRuntimeInitDialectFactory(String persistenceUnitName, boolean isFromPersistenceXml, Dialect dialect,
-            Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion, boolean versionCheckEnabled) {
+            Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion, boolean dbVersionUserSpecified,
+            boolean versionCheckEnabled) {
         this.persistenceUnitName = persistenceUnitName;
         this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = datasourceName;
         this.buildTimeDbVersion = buildTimeDbVersion;
+        this.dbVersionUserSpecified = dbVersionUserSpecified;
         this.versionCheckEnabled = versionCheckEnabled;
     }
 
@@ -67,12 +70,26 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
             return;
         }
         if (actualDbVersion.isPresent() && buildTimeDbVersion.isAfter(actualDbVersion.get())) {
-            StringBuilder errorMessage = new StringBuilder(String.format(Locale.ROOT,
+            StringBuilder errorMessage = new StringBuilder();
+
+            errorMessage.append(String.format(Locale.ROOT,
                     "Persistence unit '%1$s' was configured to run with a database version"
-                            + " of at least '%2$s', but the actual version is '%3$s'."
+                            + " of at least '%2$s'%3$s, but the actual version is '%4$s'."
                             + " Consider upgrading your database.",
                     persistenceUnitName,
-                    DialectVersions.toString(buildTimeDbVersion), DialectVersions.toString(actualDbVersion.get())));
+                    DialectVersions.toString(buildTimeDbVersion),
+                    // dbVersionUserSpecified is unreliable when using persistence.xml, whose configuration is opaque to us
+                    isFromPersistenceXml || dbVersionUserSpecified ? "" : " (Quarkus default)",
+                    DialectVersions.toString(actualDbVersion.get())));
+
+            // Add minimum version from dialect if available
+            DatabaseVersion dialectMinVersion = dialect.getVersion();
+            if (dialectMinVersion != null && dialectMinVersion.getMajor() != DatabaseVersion.NO_VERSION) {
+                errorMessage.append(String.format(Locale.ROOT,
+                        " The minimum version supported by the %s dialect is %s.",
+                        dialect.getClass().getSimpleName(),
+                        DialectVersions.toString(dialectMinVersion)));
+            }
             // It shouldn't be possible to reach this code if datasourceName is not present,
             // but just let's be safe...
             if (datasourceName.isPresent()) {

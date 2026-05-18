@@ -6,7 +6,9 @@ import java.util.function.Function;
 
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
@@ -87,13 +89,24 @@ class ReactiveMySQLClientProcessor {
 
     @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             MySQLServiceBindingConverter.class.getName()));
         }
+
+        // Only producing a default db-kind for MySQL -- if we also produced one for MariaDB,
+        // Quarkus would no longer be able to pick a default.
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MYSQL));
+
+        // Producing default db-versions for both MySQL and MariaDB,
+        // so that explicit db-kind selection leads to the right default version.
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MYSQL,
+                DatabaseVersionLoader.loadDefaultVersion("mysql")));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MARIADB,
+                DatabaseVersionLoader.loadDefaultVersion("mariadb")));
     }
 
     private static boolean isReactiveMySQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,

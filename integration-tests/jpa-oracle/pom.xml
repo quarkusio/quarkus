@@ -170,12 +170,18 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.version>${oracle.version}</oracle.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.version>${oracle.version}</oracle.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -208,6 +214,7 @@
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>test,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -217,6 +224,7 @@
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>prod,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

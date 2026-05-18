@@ -43,7 +43,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.modular.spi.items.AddedDependencyBuildItem;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.modular.spi.items.ApplicationModuleInfoBuildItem;
 import io.quarkus.modular.spi.items.BootModulePathBuildItem;
 import io.quarkus.modular.spi.model.AppModuleModel;
@@ -88,18 +88,18 @@ public final class ModularitySteps {
     }
 
     @BuildStep
-    public List<AddedDependencyBuildItem> standardAddedDependencies(
+    public List<AddDependencyBuildItem> standardAddedDependencies(
             CurateOutcomeBuildItem curateOutcome) {
         // TODO: migrate these to their relevant extensions
         return List.of(
-                new AddedDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
+                new AddDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
                         Modifier.set(Modifier.SERVICES)),
                 // todo: this one must be READ and LINKED because an ArC synthetic bean requires it
-                new AddedDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
+                new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
                         Modifier.set(Modifier.SERVICES, Modifier.READ, Modifier.LINKED)),
-                new AddedDependencyBuildItem("jakarta.ws.rs", "io.quarkus.resteasy.reactive.common",
+                new AddDependencyBuildItem("jakarta.ws.rs", "io.quarkus.resteasy.reactive.common",
                         Modifier.set(Modifier.SERVICES, Modifier.OPTIONAL)),
-                new AddedDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j", Modifier.set(Modifier.SERVICES)));
+                new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j", Modifier.set(Modifier.SERVICES)));
     }
 
     @BuildStep
@@ -112,7 +112,7 @@ public final class ModularitySteps {
             List<ModuleOpenBuildItem> opens,
             // TODO: List<ModuleExportBuildItem> exports,
             List<ModuleEnableNativeAccessBuildItem> nativeAccesses,
-            List<AddedDependencyBuildItem> extraDeps,
+            List<AddDependencyBuildItem> extraDeps,
             List<BootModulePathBuildItem> bootPathItems) {
 
         /* @formatter:off
@@ -167,10 +167,10 @@ public final class ModularitySteps {
         // The mapping here is: from module -> to module -> with modifier(s)
         Map<String, Map<String, Modifiers<Modifier>>> extraDepsMap = extraDeps.stream()
                 .collect(Collectors.groupingBy(
-                        AddedDependencyBuildItem::module,
+                        AddDependencyBuildItem::module,
                         Collectors.groupingBy(
-                                AddedDependencyBuildItem::targetModule,
-                                Collectors.mapping(AddedDependencyBuildItem::modifiers,
+                                AddDependencyBuildItem::targetModule,
+                                Collectors.mapping(AddDependencyBuildItem::modifiers,
                                         Collectors.reducing(Modifier.set(), Modifiers::withAll)))));
 
         // Collect all add-opens and merge them into a flat map.
@@ -200,7 +200,7 @@ public final class ModularitySteps {
             // todo: change GeneratedClassBuildItem to use Resource instead of byte[]
             generatedByPackageAndPath.computeIfAbsent(pn, ModularitySteps::newMap)
                     .put(name, new MemoryResource(name, gcbi.getClassData()));
-            // TODO: We need a better way to detect ArC dependencies using AddedDependencyBuildItem
+            // TODO: We need a better way to detect ArC dependencies using AddDependencyBuildItem
             if (bn.endsWith("_Synthetic_Bean") || bn.endsWith("_Subclass")) {
                 arcRuntimeGeneratedPackages.add(pn);
             }
@@ -316,12 +316,12 @@ public final class ModularitySteps {
         final String appModuleName = appArtifact.getModuleName();
 
         // ArC must depend on the application module (for service loading)
-        // todo: ArC should use AddedDependencyBuildItem for this.
+        // todo: ArC should use AddDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.quarkus.arc", k -> new HashMap<>())
                 .put(appModuleName, Modifier.set(Modifier.SERVICES));
 
         // Vert.x core needs to link against `io.quarkus.vertx`.
-        // todo: The Vert.x extension should use AddedDependencyBuildItem for this.
+        // todo: The Vert.x extension should use AddDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.vertx.core", k -> new HashMap<>())
                 .put("io.quarkus.vertx", Modifier.set(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
 
@@ -713,7 +713,7 @@ public final class ModularitySteps {
         List<AutoDependencyGroup> autoDeps = List.of();
 
         // This temporary measure patches modules which have dependency issues
-        // and/or which need to utilize `AddedDependencyBuildItem` but do not yet.
+        // and/or which need to utilize `AddDependencyBuildItem` but do not yet.
         // todo: this will be removed; do not add to it if you can fix the extension instead.
         switch (moduleName) {
             case "io.quarkus.vertx" -> {

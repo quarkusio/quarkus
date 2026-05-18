@@ -8,7 +8,7 @@ import io.smallrye.modules.desc.Modifiers;
 /**
  * A build item which adds an extra dependency between modules.
  */
-public final class AddedDependencyBuildItem extends MultiBuildItem {
+public final class AddDependencyBuildItem extends MultiBuildItem {
     private final String module;
     private final String targetModule;
     private final Modifiers<Dependency.Modifier> modifiers;
@@ -20,7 +20,7 @@ public final class AddedDependencyBuildItem extends MultiBuildItem {
      * @param targetModule the dependency module name (must not be {@code null})
      * @param modifiers the dependency modifiers (must not be {@code null})
      */
-    public AddedDependencyBuildItem(final String module, final String targetModule,
+    public AddDependencyBuildItem(final String module, final String targetModule,
             final Modifiers<Dependency.Modifier> modifiers) {
         this.module = Assert.checkNotNullParam("module", module);
         this.targetModule = Assert.checkNotNullParam("targetModule", targetModule);

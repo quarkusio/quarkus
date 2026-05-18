@@ -39,9 +39,9 @@ The modularity extension computes the transitive closure of all declared boot mo
 If a boot module depends on other modules (via `LINKED` dependencies), those modules are also included in the boot set automatically.
 Automatic modules are excluded from the boot set because they cannot be linked by `jlink`.
 
-== `AddedDependencyBuildItem`
+== `AddDependencyBuildItem`
 
-`AddedDependencyBuildItem` is a `MultiBuildItem` produced by extensions.
+`AddDependencyBuildItem` is a `MultiBuildItem` produced by extensions.
 It adds a dependency between two modules at build time.
 
 An extension should produce this item when it needs to wire a module dependency that is not expressed in the Maven POM or in the module's `module-info.class` descriptor.
@@ -52,8 +52,8 @@ The constructor takes three parameters: the source module name (`String`), the t
 [source,java]
 ----
 @BuildStep
-AddedDependencyBuildItem extraDependency() {
-    return new AddedDependencyBuildItem(
+AddDependencyBuildItem extraDependency() {
+    return new AddDependencyBuildItem(
         "com.example.source.module",
         "com.example.target.module",
         Dependency.Modifier.set(Dependency.Modifier.LINKED, Dependency.Modifier.READ));
@@ -73,7 +73,7 @@ Extension authors generally do not need to consume this item unless they are imp
 == Dependency modifiers
 
 The `Dependency.Modifier` enum (from `io.smallrye.modules.desc`) defines the following values.
-These are used with `AddedDependencyBuildItem` to control how the dependency is wired.
+These are used with `AddDependencyBuildItem` to control how the dependency is wired.
 
 `LINKED`::
 The dependency is linked for class loading.

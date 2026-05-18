@@ -1,21 +1,14 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.fabric8.kubernetes.api.builder.VisitableBuilder;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.HostAlias;
-import io.fabric8.kubernetes.api.model.HostAliasBuilder;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
-import io.fabric8.kubernetes.api.model.LocalObjectReference;
-import io.fabric8.kubernetes.api.model.PodSecurityContextBuilder;
 import io.fabric8.kubernetes.api.model.PodSpecFluent;
-import io.fabric8.kubernetes.api.model.SysctlBuilder;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpecFluent;
 
 /**
@@ -87,105 +80,14 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
         return replicas;
     }
 
-    protected <PS extends PodSpecFluent<?>> PS podSpecDefaults(PS podSpec) {
-        // termination grace period seconds
-        if (podSpec.getTerminationGracePeriodSeconds() == null) {
-            podSpec.withTerminationGracePeriodSeconds(10L);
-        }
-
-        // add or edit container with deployment name
-        final var name = name();
-        final var container = createOrEditNamedContainer(podSpec, name);
-
-        // configure limits and requests
-        ContainerConverter.setLimitsAndRequests(config().resources(), container);
-
-        // configure application container with security options if present
-        final var securityContext = config().securityContext();
-        final var maybeReadOnly = securityContext.readOnlyRootFilesystem();
-        final var maybeEscalation = securityContext.allowPrivilegeEscalation();
-        if (maybeEscalation.isPresent() || maybeReadOnly.isPresent()) {
-            final var containerSecContext = container.editOrNewSecurityContext();
-            maybeReadOnly.ifPresent(containerSecContext::withReadOnlyRootFilesystem);
-            maybeEscalation.ifPresent(containerSecContext::withAllowPrivilegeEscalation);
-            containerSecContext.endSecurityContext();
-        }
-
-        container.endContainer();
-
-        configureMainApplicationPod(podSpec);
-
-        podSpec.addAllToVolumes(configureVolumes());
-
+    protected <PS extends PodSpecFluent<?>> PS configurePodSpec(PS podSpec) {
+        final var podSpecLike = PodSpecLike.fromPodSpec(podSpec);
+        podSpecLike.configure(name(), config(), containerCustomizer());
         return podSpec;
     }
 
-    protected <PS extends PodSpecFluent<?>> void configureMainApplicationPod(PS podSpec) {
-        final var config = config();
-        config.imagePullSecrets().ifPresent(l -> addImagePullSecrets(podSpec, l));
-
-        config.hostAliases().entrySet().stream()
-                .map(HostAliasConverter::toKubeHostAlias)
-                .forEach(e -> addHostAlias(podSpec, e));
-
-        config.nodeSelector().ifPresent(n -> addNodeSelector(podSpec, n.key(), n.value()));
-
-        //        todo: deal with init and sidecar containers
-        //        podSpec.addAllToInitContainers(
-        //                config.initContainers().entrySet().stream().map(ContainerConverter::toKubeContainer).toList());
-        //
-        //        podSpec.addAllToContainers(config.sidecars().entrySet().stream().map(ContainerConverter::toKubeContainer).toList());
-
-        if (config.securityContext().isAnyPropertySet()) {
-            applySecuritySettings(podSpec, config.securityContext());
-        }
-    }
-
-    private static void addImagePullSecrets(PodSpecFluent<?> podSpec, List<String> imagePullSecrets) {
-        final var secrets = imagePullSecrets.stream()
-                .filter(secret -> KubernetesCommonHelper.isNotNullOrEmpty(secret) &&
-                        !podSpec.hasMatchingImagePullSecret(r -> secret.equals(r.getName())))
-                .map(LocalObjectReference::new)
-                .toList();
-        podSpec.addAllToImagePullSecrets(secrets);
-    }
-
-    private static void addHostAlias(PodSpecFluent<?> podSpec, HostAlias alias) {
-        Predicate<HostAliasBuilder> matchingHostAlias = host -> host.getIp().equals(alias.getIp());
-        if (podSpec.hasMatchingHostAlias(matchingHostAlias)) {
-            // if we already have a host alias with that ip, add the aliases
-            podSpec.editMatchingHostAlias(matchingHostAlias)
-                    .addAllToHostnames(alias.getHostnames())
-                    .endHostAlias();
-        } else {
-            // otherwise, add a new one
-            podSpec.addNewHostAlias().withIp(alias.getIp()).withHostnames(alias.getHostnames()).endHostAlias();
-        }
-    }
-
-    private static void addNodeSelector(PodSpecFluent<?> podSpec, String selectorKey, String selectorValue) {
-        podSpec.removeFromNodeSelector(selectorKey);
-        podSpec.addToNodeSelector(selectorKey, selectorValue);
-    }
-
-    private static void applySecuritySettings(PodSpecFluent<?> podSpec, SecurityContextConfig securityContext) {
-        podSpec.withSecurityContext(securityContext.toPodSecurityContext());
-
-        PodSecurityContextBuilder securityContextBuilder = new PodSecurityContextBuilder();
-
-        securityContext.runAsUser().ifPresent(securityContextBuilder::withRunAsUser);
-        securityContext.runAsGroup().ifPresent(securityContextBuilder::withRunAsGroup);
-        securityContext.runAsNonRoot().ifPresent(securityContextBuilder::withRunAsNonRoot);
-        securityContext.supplementalGroups().ifPresent(securityContextBuilder::addAllToSupplementalGroups);
-        securityContext.fsGroup().ifPresent(securityContextBuilder::withFsGroup);
-        securityContext.sysctls().entrySet().stream()
-                .map(entry -> new SysctlBuilder().withName(entry.getKey()).withValue(entry.getValue()).build())
-                .forEach(securityContextBuilder::addToSysctls);
-        securityContext.fsGroupChangePolicy().map(Enum::name).ifPresent(securityContextBuilder::withFsGroupChangePolicy);
-        securityContext.buildSeLinuxOptions().ifPresent(securityContextBuilder::withSeLinuxOptions);
-        securityContext.buildWindowsOptions().ifPresent(securityContextBuilder::withWindowsOptions);
-
-        podSpec.withSecurityContext(securityContextBuilder.build());
+    protected Function<ContainerFluent<?>, Void> containerCustomizer() {
+        return null;
     }
 
     protected void initFromConfig(JobSpecFluent<?> spec, JobConfig config) {
@@ -196,26 +98,5 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
         config.backoffLimit().ifPresent(spec::withBackoffLimit);
         config.activeDeadlineSeconds().ifPresent(spec::withActiveDeadlineSeconds);
         config.ttlSecondsAfterFinished().ifPresent(spec::withTtlSecondsAfterFinished);
-    }
-
-    protected Collection<Volume> configureVolumes() {
-        final var config = config();
-
-        List<Volume> volumes = new ArrayList<>();
-        config.secretVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-
-        config.configMapVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-
-        config.emptyDirVolumes().ifPresent(v -> v.forEach(
-                e -> volumes.add(new VolumeBuilder().withName(e).withNewEmptyDir().endEmptyDir().build())));
-
-        config.pvcVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-
-        config.awsElasticBlockStoreVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-
-        config.azureFileVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-
-        config.azureDiskVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        return volumes;
     }
 }

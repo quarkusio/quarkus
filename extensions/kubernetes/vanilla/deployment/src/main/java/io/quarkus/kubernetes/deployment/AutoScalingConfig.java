@@ -30,4 +30,9 @@ public interface AutoScalingConfig {
      * This value specifies a percentage of the target to actually be targeted by the autoscaler.
      */
     Optional<Integer> targetUtilizationPercentage();
+
+    default boolean needsScalingAnnotations() {
+        return autoScalerClass().isPresent() || metric().isPresent() ||
+                target().isPresent() || targetUtilizationPercentage().isPresent();
+    }
 }

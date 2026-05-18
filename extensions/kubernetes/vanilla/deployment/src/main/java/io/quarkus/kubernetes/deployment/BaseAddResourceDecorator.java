@@ -5,19 +5,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 import org.jspecify.annotations.Nullable;
 
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.builder.BaseFluent;
 import io.fabric8.kubernetes.api.builder.VisitableBuilder;
-import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.LabelSelectorFluent;
 import io.fabric8.kubernetes.api.model.ObjectMetaFluent;
-import io.fabric8.kubernetes.api.model.PodSpecFluent;
 
 /**
  * Base class for decorators handling the generation of Kubernetes resources. This takes care of identifying, if any, matching
@@ -219,28 +216,5 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
             selector.withMatchLabels(new HashMap<>());
         }
         return selector;
-    }
-
-    /**
-     * Allows subclasses to add additional configuration to the main application container. Note that if you override this
-     * method, you need to call this implementation first (via {@code super}) and you shouldn't call
-     * {@link PodSpecFluent.ContainersNested#endContainer()} before returning the modified container, as it is further modified
-     * at the call site.
-     *
-     * @param podSpec the spec where to look for the main application container
-     * @param name the expected name of the container
-     * @return a {@link PodSpecFluent.ContainersNested} allowing modification of the main application container
-     * @param <PS> the type of the {@link PodSpecFluent}
-     */
-    protected <PS extends PodSpecFluent<?>> PodSpecFluent<?>.ContainersNested<?> createOrEditNamedContainer(PS podSpec,
-            String name) {
-        final var withName = (Predicate<ContainerBuilder>) cb -> cb.getName().equals(name);
-        final PodSpecFluent<?>.ContainersNested<?> container;
-        if (!podSpec.hasMatchingContainer(withName)) {
-            container = podSpec.addNewContainer().withName(name);
-        } else {
-            container = podSpec.editMatchingContainer(withName);
-        }
-        return container;
     }
 }

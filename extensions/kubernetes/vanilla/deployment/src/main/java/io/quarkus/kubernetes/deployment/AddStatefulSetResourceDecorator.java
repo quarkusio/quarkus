@@ -32,8 +32,8 @@ public class AddStatefulSetResourceDecorator
         // replicas
         spec.withReplicas(replicas(spec.getReplicas(), replicasAwareOrNull()));
 
-        // ensure defaults on template spec
-        podSpecDefaults(spec.editOrNewTemplate().editOrNewSpec())
+        // configure main application pod and container
+        configurePodSpec(spec.editOrNewTemplate().editOrNewSpec())
                 .endSpec().endTemplate();
 
         spec.endSpec();

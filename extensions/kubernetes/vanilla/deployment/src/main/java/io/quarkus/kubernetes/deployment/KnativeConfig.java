@@ -74,11 +74,15 @@ public interface KnativeConfig extends PlatformConfiguration {
     @WithDefault("CreateOrUpdate")
     DeployStrategy deployStrategy();
 
-    default boolean needAutoScalerConfigMap() {
+    default boolean needsAutoScalerConfigMap() {
         final var globalAutoScaling = globalAutoScaling();
         return globalAutoScaling.autoScalerClass().isPresent()
                 || globalAutoScaling.targetUtilizationPercentage().isPresent()
                 || globalAutoScaling.requestsPerSecond().isPresent()
                 || !scaleToZeroEnabled();
+    }
+
+    default boolean needsScalingAnnotations() {
+        return minScale().isPresent() || maxScale().isPresent() || revisionAutoScaling().needsScalingAnnotations();
     }
 }

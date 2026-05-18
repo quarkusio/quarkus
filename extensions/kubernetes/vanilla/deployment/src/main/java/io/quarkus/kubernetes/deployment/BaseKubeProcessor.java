@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,8 +61,8 @@ import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.PodSpecFluent;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.quarkus.builder.Version;
@@ -980,20 +981,20 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 }
 
                 @Override
-                protected <PS extends PodSpecFluent<?>> PodSpecFluent<?>.ContainersNested<?> createOrEditNamedContainer(
-                        PS podSpec, String name) {
-                    final var container = super.createOrEditNamedContainer(podSpec, name);
-                    container.withImage(item.getImage())
-                            .withCommand(item.getCommand())
-                            .withArgs(item.getArguments());
-                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                        container.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                        container.addNewEnv()
-                                .withName(e.getKey())
-                                .withValue(e.getValue())
-                                .endEnv();
-                    }
-                    return container;
+                protected Function<ContainerFluent<?>, Void> containerCustomizer() {
+                    return container -> {
+                        container.withImage(item.getImage())
+                                .withCommand(item.getCommand())
+                                .withArgs(item.getArguments());
+                        for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                            container.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                            container.addNewEnv()
+                                    .withName(e.getKey())
+                                    .withValue(e.getValue())
+                                    .endEnv();
+                        }
+                        return null;
+                    };
                 }
             };
 

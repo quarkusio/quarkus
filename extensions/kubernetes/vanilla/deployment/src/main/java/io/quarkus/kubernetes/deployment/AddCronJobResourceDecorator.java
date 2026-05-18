@@ -29,8 +29,8 @@ public class AddCronJobResourceDecorator
                     .endSelector();
         }
 
-        // ensure defaults on template spec
-        podSpecDefaults(jobTemplateSpec.editOrNewTemplate().editOrNewSpec())
+        // configure job pod and container from template
+        configurePodSpec(jobTemplateSpec.editOrNewTemplate().editOrNewSpec())
                 .endSpec().endTemplate();
 
         spec.withSuspend(config.suspend());

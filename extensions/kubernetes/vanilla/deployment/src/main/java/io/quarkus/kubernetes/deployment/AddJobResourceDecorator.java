@@ -22,8 +22,8 @@ public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<
         initSelectorMatchLabels(spec.editOrNewSelector())
                 .endSelector();
 
-        // ensure defaults on template spec
-        podSpecDefaults(spec.editOrNewTemplate().editOrNewSpec())
+        // configure job pod and container from template
+        configurePodSpec(spec.editOrNewTemplate().editOrNewSpec())
                 .endSpec().endTemplate();
 
         // initialize from config

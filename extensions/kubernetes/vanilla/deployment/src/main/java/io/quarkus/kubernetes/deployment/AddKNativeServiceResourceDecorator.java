@@ -37,7 +37,7 @@ public class AddKNativeServiceResourceDecorator
         final var globalAutoScaling = config.globalAutoScaling();
 
         // create autoscaler ConfigMap if needed
-        if (config.needAutoScalerConfigMap()) {
+        if (config.needsAutoScalerConfigMap()) {
             new AutoScalerConfigMap(config).addOrEditExisting(items, list);
         }
 
@@ -124,31 +124,36 @@ public class AddKNativeServiceResourceDecorator
 
         final var revisionTemplate = spec.editOrNewTemplate();
 
-        final var templateMetadata = revisionTemplate.editOrNewMetadata();
-        config.minScale().ifPresent(min -> templateMetadata.addToAnnotations(MIN_SCALE, String.valueOf(min)));
-        config.maxScale().ifPresent(max -> templateMetadata.addToAnnotations(MAX_SCALE, String.valueOf(max)));
         final var revisionAutoScaling = config.revisionAutoScaling();
-        revisionAutoScaling.autoScalerClass()
-                .ifPresent(a -> templateMetadata.addToAnnotations(AUTOSCALING_CLASS,
-                        a.name().toLowerCase() + AUTOSCALING_CLASS_SUFFIX));
-        revisionAutoScaling.metric()
-                .ifPresent(m -> templateMetadata.addToAnnotations(AUTOSCALING_METRIC, m.name().toLowerCase()));
-        revisionAutoScaling.targetUtilizationPercentage()
-                .ifPresent(t -> templateMetadata.addToAnnotations(UTILIZATION_PERCENTAGE, String.valueOf(t)));
-        revisionAutoScaling.target()
-                .ifPresent(t -> templateMetadata.addToAnnotations(AUTOSCALING_TARGET, String.valueOf(t)));
+        // add template metadata annotations if needed
+        if (config.needsScalingAnnotations() || config.revisionName().isPresent()) {
+            final var templateMetadata = revisionTemplate.editOrNewMetadata();
+            config.minScale().ifPresent(min -> templateMetadata.addToAnnotations(MIN_SCALE, String.valueOf(min)));
+            config.maxScale().ifPresent(max -> templateMetadata.addToAnnotations(MAX_SCALE, String.valueOf(max)));
+            revisionAutoScaling.autoScalerClass()
+                    .ifPresent(a -> templateMetadata.addToAnnotations(AUTOSCALING_CLASS,
+                            a.name().toLowerCase() + AUTOSCALING_CLASS_SUFFIX));
+            revisionAutoScaling.metric()
+                    .ifPresent(m -> templateMetadata.addToAnnotations(AUTOSCALING_METRIC, m.name().toLowerCase()));
+            revisionAutoScaling.targetUtilizationPercentage()
+                    .ifPresent(t -> templateMetadata.addToAnnotations(UTILIZATION_PERCENTAGE, String.valueOf(t)));
+            revisionAutoScaling.target()
+                    .ifPresent(t -> templateMetadata.addToAnnotations(AUTOSCALING_TARGET, String.valueOf(t)));
 
-        //Traffic Splitting
-        config.revisionName().ifPresent(templateMetadata::withName);
+            //Traffic Splitting
+            config.revisionName().ifPresent(templateMetadata::withName);
 
-        templateMetadata.endMetadata();
+            templateMetadata.endMetadata();
+        }
 
         final var revisionSpec = revisionTemplate.editOrNewSpec();
         revisionAutoScaling.containerConcurrency()
                 .map(Integer::longValue)
                 .ifPresent(revisionSpec::withContainerConcurrency);
 
-        revisionSpec.addAllToVolumes(configureVolumes());
+        final var podSpecLike = PodSpecLike.fromRevisionSpec(revisionSpec);
+        podSpecLike.configure(name(), config);
+
         revisionSpec.endSpec();
 
         revisionTemplate.endTemplate();

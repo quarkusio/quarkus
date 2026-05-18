@@ -245,6 +245,9 @@
                             <name>io.quarkus.opentelemetry.logs</name>
                         </providesIf>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:quarkus-observability-devservices-lgtm:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

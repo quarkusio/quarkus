@@ -207,6 +207,7 @@
         <module>flyway-mysql</module>
         <module>flyway-mssql</module>
         <module>flyway-db2</module>
+        <module>flyway-mongodb</module>
         <module>liquibase</module>
 
         <!-- GraphQL -->

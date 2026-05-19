@@ -158,7 +158,7 @@ Which means IntelliJ IDEA consumes 281,8 MB of resident memory.
 == How do we measure startup time
 
 Some frameworks use aggressive lazy initialization techniques.
-It is important to measure the startup time to first request (TTFR) to most accurately reflect how long a framework needs to start.
+It is important to measure the time to first request (TTFR) to most accurately reflect how long a framework needs to start.
 Otherwise, you will miss the time the framework _actually_ takes to initialize.
 
 Here is how we measure startup time in our tests.

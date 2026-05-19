@@ -81,14 +81,20 @@ public class AmazonLambdaRecorder {
      * @throws IOException
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
-        if (streamHandlerClass != null) {
-            RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
-            handler.handleRequest(inputStream, outputStream, context);
-        } else {
-            Object request = objectReader.readValue(inputStream);
-            RequestHandler handler = beanContainer.beanInstance(handlerClass);
-            Object response = handler.handleRequest(request, context);
-            objectWriter.writeValue(outputStream, response);
+        String requestId = context != null ? context.getAwsRequestId() : null;
+        try {
+            if (streamHandlerClass != null) {
+                RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
+                handler.handleRequest(inputStream, outputStream, context);
+            } else {
+                Object request = objectReader.readValue(inputStream);
+                RequestHandler handler = beanContainer.beanInstance(handlerClass);
+                Object response = handler.handleRequest(request, context);
+                objectWriter.writeValue(outputStream, response);
+            }
+        } finally {
+            // TODO pls add otel flush done
+            LambdaInternalExtension.invocationFinished(requestId);
         }
     }
 
@@ -143,6 +149,8 @@ public class AmazonLambdaRecorder {
 
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context, LaunchMode launchMode) {
+        LambdaInternalExtension.startIfEnabled();
+        context.addShutdownTask(LambdaInternalExtension::stop);
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
                 AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader, launchMode) {
 

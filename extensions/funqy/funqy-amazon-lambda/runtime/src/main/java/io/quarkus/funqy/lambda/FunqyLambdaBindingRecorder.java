@@ -16,6 +16,7 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
 import io.quarkus.amazon.lambda.runtime.JacksonInputReader;
 import io.quarkus.amazon.lambda.runtime.JacksonOutputWriter;
 import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
+import io.quarkus.amazon.lambda.runtime.LambdaInternalExtension;
 import io.quarkus.amazon.lambda.runtime.LambdaOutputWriter;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -137,15 +138,21 @@ public class FunqyLambdaBindingRecorder {
      *         Is thrown in case the (de)serialization fails
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
-        Object input = null;
-        if (invoker.hasInput()) {
-            input = reader.readValue(inputStream);
-        }
-        FunqyServerResponse response = dispatch(input, context);
+        String requestId = context != null ? context.getAwsRequestId() : null;
+        try {
+            Object input = null;
+            if (invoker.hasInput()) {
+                input = reader.readValue(inputStream);
+            }
+            FunqyServerResponse response = dispatch(input, context);
 
-        Object value = response.getOutput().await().indefinitely();
-        if (value != null) {
-            writer.writeValue(outputStream, value);
+            Object value = response.getOutput().await().indefinitely();
+            if (value != null) {
+                writer.writeValue(outputStream, value);
+            }
+        } finally {
+            // TODO pls add otel flush done
+            LambdaInternalExtension.invocationFinished(requestId);
         }
     }
 

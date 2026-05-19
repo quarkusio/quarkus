@@ -1,4 +1,4 @@
-package io.quarkus.it.infinispan.cache.jpa;
+package io.quarkus.it.hibernate.orm.cache;
 
 import java.util.Arrays;
 import java.util.List;

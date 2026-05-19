@@ -1,4 +1,4 @@
-package io.quarkus.it.infinispan.cache.jpa;
+package io.quarkus.it.hibernate.orm.cache;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -37,9 +37,9 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
  * The application can work in either standard JVM or in native mode, while we run H2 as a separate JVM process.
  */
-@Path("/infinispan-cache-jpa")
+@Path("/hibernate-orm-cache")
 @ApplicationScoped
-public class InfinispanCacheJPAFunctionalityTestEndpoint {
+public class HibernateOrmCacheTestEndpoint {
 
     @Inject
     EntityManagerFactory emf;

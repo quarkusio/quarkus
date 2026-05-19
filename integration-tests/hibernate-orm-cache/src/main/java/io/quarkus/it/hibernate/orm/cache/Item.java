@@ -1,4 +1,4 @@
-package io.quarkus.it.infinispan.cache.jpa;
+package io.quarkus.it.hibernate.orm.cache;
 
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Entity;

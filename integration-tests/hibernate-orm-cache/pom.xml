@@ -9,9 +9,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-infinispan-cache-jpa</artifactId>
-    <name>Quarkus - Integration Tests - JPA - Infinispan Cache</name>
-    <description>Module that contains JPA related tests with Infinispan second level cache</description>
+    <artifactId>quarkus-integration-test-hibernate-orm-cache</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate ORM - Second-level Cache</name>
+    <description>Module that contains Hibernate ORM related tests with the built-in Caffeine-based second level cache</description>
     <dependencies>
         <!-- Enables the JPA capabilities -->
         <dependency>

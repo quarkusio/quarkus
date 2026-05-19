@@ -129,7 +129,7 @@
         {
             "category": "Spring",
             "timeout": 60,
-            "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest",
+            "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest, spring-tx",
             "os-name": "ubuntu-latest"
         },
         {

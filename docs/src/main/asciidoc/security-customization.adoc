@@ -630,6 +630,14 @@ quarkus.security.security-providers=SunPKCS11
 quarkus.security.security-provider-config.SunPKCS11=pkcs11.cfg
 ----
 
+You can also register multiple SunPKCS11 configurations:
+
+[source,properties]
+----
+quarkus.security.security-providers=SunPKCS11
+quarkus.security.security-provider-config.SunPKCS11=pkcs11-slot0.cfg,pkcs11-slot1.cfg
+----
+
 [NOTE]
 ====
 Note that while accessing the `SunPKCS11` bridge provider is supported in native image, configuring `SunPKCS11` is currently not supported in native image at the Quarkus level.

@@ -126,6 +126,7 @@
         <module>spring-cloud-config-client</module>
         <module>spring-cache</module>
         <module>spring-scheduled</module>
+        <module>spring-tx</module>
         <module>spring-data-rest</module>
 
         <!-- Security -->
@@ -250,7 +251,7 @@
                         </goals>
                         <configuration>
                             <rules combine.children="append">
-                                <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
+                                <bansRuntimeDependency/>
                             </rules>
                         </configuration>
                     </execution>

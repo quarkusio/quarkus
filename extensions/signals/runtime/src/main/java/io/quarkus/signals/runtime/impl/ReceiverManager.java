@@ -128,6 +128,16 @@ public class ReceiverManager implements Receivers, Signals {
     }
 
     @Override
+    public List<ReceiverInfo> resolveReceivers(Class<?> signalType, Annotation... qualifiers) {
+        return cast(resolveReceivers(signalType, Set.of(qualifiers)));
+    }
+
+    @Override
+    public List<ReceiverInfo> resolveReceivers(TypeLiteral<?> signalType, Annotation... qualifiers) {
+        return cast(resolveReceivers(signalType.getType(), Set.of(qualifiers)));
+    }
+
+    @Override
     public <SIGNAL> ReceiverDefinition<SIGNAL, Void> newReceiver(Class<SIGNAL> signalType) {
         return new ReceiverDefinitionImpl<>(signalType, beanContainer, this::register);
     }
@@ -243,6 +253,11 @@ public class ReceiverManager implements Receivers, Signals {
         }
 
         @Override
+        public ReceiverKind kind() {
+            return delegate.kind();
+        }
+
+        @Override
         public Uni<RESPONSE> notify(SignalContext<SIGNAL> context) {
             return cast(new InterceptorChain(interceptors, delegate, context).proceed());
         }
@@ -252,10 +267,6 @@ public class ReceiverManager implements Receivers, Signals {
             return delegate.toString();
         }
 
-        @SuppressWarnings("unchecked")
-        private static <T> T cast(Object obj) {
-            return (T) obj;
-        }
     }
 
     private static class InterceptorChain implements ReceiverInterceptor.InterceptionContext {
@@ -292,9 +303,10 @@ public class ReceiverManager implements Receivers, Signals {
             return (Uni<Object>) receiver.notify(cast(signalContext));
         }
 
-        @SuppressWarnings("unchecked")
-        private static <T> T cast(Object obj) {
-            return (T) obj;
-        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T cast(Object obj) {
+        return (T) obj;
     }
 }

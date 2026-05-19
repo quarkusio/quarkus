@@ -2,14 +2,13 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.spi.metrics.PoolMetrics;
 
 /**
@@ -21,14 +20,16 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     private final int maxPoolSize;
 
     private final Timer usage;
-    private final AtomicReference<Double> ratio = new AtomicReference<>();
-    private final LongAdder current = new LongAdder();
-    private final LongAdder queue = new LongAdder();
+    private final AtomicReference<Double> ratio;
+    private final LongAdder current;
+    private final LongAdder idle;
+    private final LongAdder queue;
     private final Counter completed;
     private final Counter rejected;
     private final Timer queueDelay;
 
-    VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize) {
+    VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize,
+            Gauges<LongAdder> longAdderGauges, Gauges<AtomicReference<Double>> doubleGauges) {
         this.poolType = poolType;
         this.maxPoolSize = maxPoolSize;
 
@@ -44,45 +45,30 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 .tags(tags)
                 .register(registry);
 
-        Gauge.builder(name("queue.size"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return queue.doubleValue();
-            }
-        })
+        queue = longAdderGauges.builder(name("queue.size"), LongAdder::doubleValue)
                 .description("Number of pending elements in the waiting queue")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
-        Gauge.builder(name("active"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return current.doubleValue();
-            }
-        })
+        current = longAdderGauges.builder(name("active"), LongAdder::doubleValue)
                 .description("The number of resources from the pool currently used")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
         if (maxPoolSize > 0) {
-            Gauge.builder(name("idle"), new Supplier<Number>() {
-                @Override
-                public Number get() {
-                    return maxPoolSize - current.doubleValue();
-                }
-            })
-                    .description("The number of resources from the pool currently used")
+            idle = longAdderGauges.builder(name("idle"), LongAdder::doubleValue)
+                    .description("The number of resources from the pool currently idle")
                     .tags(tags)
-                    .strongReference(true)
                     .register(registry);
+            idle.add(maxPoolSize);
 
-            Gauge.builder(name("ratio"), ratio::get)
+            ratio = doubleGauges.builder(name("ratio"), AtomicReference::get)
                     .description("Pool usage ratio")
                     .tags(tags)
-                    .strongReference(true)
                     .register(registry);
+        } else {
+            idle = null;
+            ratio = null;
         }
 
         completed = Counter.builder(name("completed"))
@@ -94,7 +80,6 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 .description("Number of times submissions to the pool have been rejected")
                 .tags(tags)
                 .register(registry);
-
     }
 
     private String name(String suffix) {
@@ -119,6 +104,9 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
         queue.decrement();
         submitted.end();
         current.increment();
+        if (idle != null) {
+            idle.decrement();
+        }
         computeRatio(current.longValue());
         return new EventTiming(usage);
     }
@@ -126,6 +114,9 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     @Override
     public void end(EventTiming timer, boolean succeeded) {
         current.decrement();
+        if (idle != null) {
+            idle.increment();
+        }
         computeRatio(current.longValue());
         timer.end();
 
@@ -137,7 +128,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     }
 
     private void computeRatio(long inUse) {
-        if (maxPoolSize > 0) {
+        if (ratio != null && maxPoolSize > 0) {
             ratio.set((double) inUse / maxPoolSize);
         }
     }

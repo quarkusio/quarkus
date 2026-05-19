@@ -90,6 +90,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonO
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.deployment.ContextResolversBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ResponseTypeUnwrapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
@@ -398,17 +399,23 @@ public class ResteasyReactiveJacksonProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public void handleEndpointParams(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem jaxRsIndex, CombinedIndexBuildItem index,
+            List<ResponseTypeUnwrapperBuildItem> responseTypeUnwrappers,
             ResteasyReactiveServerJacksonRecorder recorder,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
 
         IndexView indexView = jaxRsIndex.getIndexView();
+        Set<DotName> additionalUnwrapTypes = new HashSet<>();
+        for (ResponseTypeUnwrapperBuildItem item : responseTypeUnwrappers) {
+            additionalUnwrapTypes.add(item.getWrapperType());
+        }
 
         Map<String, ClassInfo> serializedClasses = new HashMap<>();
         Map<String, ClassInfo> deserializedClasses = new HashMap<>();
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView,
+                    additionalUnwrapTypes);
             if (effectiveReturnClassInfo != null && !effectiveReturnClassInfo.isEnum()) {
                 serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
             }
@@ -416,7 +423,7 @@ public class ResteasyReactiveJacksonProcessor {
             if (methodInfo.hasAnnotation(POST.class) || methodInfo.hasAnnotation(PUT.class)
                     || methodInfo.hasAnnotation(PATCH.class)) {
                 for (Type paramType : methodInfo.parameterTypes()) {
-                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView);
+                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView, additionalUnwrapTypes);
                     if (effectiveParamClassInfo != null) {
                         deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
                     }
@@ -532,21 +539,26 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView) {
+        return getEffectiveClassInfo(type, indexView, Set.of());
+    }
+
+    private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView, Set<DotName> additionalUnwrapTypes) {
         if (type.kind() == Type.Kind.VOID) {
             return null;
         }
-        Type effectiveReturnType = getEffectiveType(type);
+        Type effectiveReturnType = getEffectiveType(type, additionalUnwrapTypes);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
-    private static Type getEffectiveType(Type type) {
+    private static Type getEffectiveType(Type type, Set<DotName> additionalUnwrapTypes) {
         Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI) ||
+                additionalUnwrapTypes.contains(effectiveReturnType.name())) {
             if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
             }

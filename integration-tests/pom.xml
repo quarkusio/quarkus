@@ -61,7 +61,7 @@
                                 <externalRules>
                                     <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                 </externalRules>
-                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                                <requiresMinimalDeploymentDependency/>
                             </rules>
                         </configuration>
                     </execution>
@@ -248,6 +248,7 @@
                 <module>spring-boot-properties</module>
                 <module>spring-cloud-config-client</module>
                 <module>spring-data-rest</module>
+                <module>spring-tx</module>
                 <module>infinispan-cache-jpa</module>
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>

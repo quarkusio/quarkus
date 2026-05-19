@@ -11,7 +11,7 @@ import org.jboss.jandex.Type.Kind;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
+import io.quarkus.signals.Receivers.ExecutionModel;
 
 final class ReceiverMethodBuildItem extends MultiBuildItem implements Comparable<ReceiverMethodBuildItem> {
 

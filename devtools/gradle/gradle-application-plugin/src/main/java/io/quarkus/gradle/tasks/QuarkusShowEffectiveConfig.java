@@ -21,6 +21,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.smallrye.config.SmallRyeConfig;
@@ -28,6 +29,7 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * Just show the effective configuration and settings.
  */
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
 
     private final Property<Boolean> saveConfigProperties;

@@ -45,10 +45,10 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.17.0</smallrye-common.version>
+        <smallrye-common.version>2.18.1</smallrye-common.version>
         <smallrye-config.version>3.17.2</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.3.0</smallrye-open-api.version>
+        <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
         <smallrye-graphql.version>2.18.1</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
@@ -78,8 +78,8 @@
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
-        <asm.version>9.9.1</asm.version>
+        <jaxb-runtime.version>4.0.8</jaxb-runtime.version>
+        <asm.version>9.10</asm.version>
         <commons-io.version>2.22.0</commons-io.version>
         <jboss-metadata-web.version>17.1.0</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
@@ -88,26 +88,26 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
-        <jackson-bom.version>2.21.2</jackson-bom.version>
+        <jackson-bom.version>2.21.3</jackson-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
-        <commons-codec.version>1.21.0</commons-codec.version>
+        <commons-codec.version>1.22.0</commons-codec.version>
         <classmate.version>1.7.1</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version -->
-        <narayana.version>7.3.3.Final</narayana.version>
-        <narayana-lra.version>1.1.0.Final</narayana-lra.version>
-        <agroal.version>3.1</agroal.version>
+        <narayana.version>7.3.4.Final</narayana.version>
+        <narayana-lra.version>1.2.0.Final</narayana-lra.version>
+        <agroal.version>3.1.2</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.3.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.3.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
-        <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
-        <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
+        <wildfly.openssl-java.version>2.3.0.Final</wildfly.openssl-java.version>
+        <wildfly.openssl-linux.version>2.3.0.Final</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>3.0.4.Final</jboss-logging-annotations.version>
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.8.4.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.9.1.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.27</vertx.version>
@@ -119,9 +119,9 @@
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.7</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
         <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
-        <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.0.0.0</oracle-jdbc.version>
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
@@ -147,11 +147,11 @@
         <aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
         <aws-xray.version>2.18.3</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
-        <azure-functions-java-library.version>3.2.4</azure-functions-java-library.version>
+        <azure-functions-java-library.version>3.3.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.3.21</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
-        <kotlin-serialization.version>1.10.0</kotlin-serialization.version>
+        <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
@@ -180,7 +180,7 @@
         <keycloak-client.version>26.0.9</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.54.0</checker-qual.version>
-        <error-prone-annotations.version>2.48.0</error-prone-annotations.version>
+        <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
         <jib-core.version>0.28.1</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>
         <scram-client.version>3.2</scram-client.version>
@@ -188,9 +188,9 @@
         <google-cloud-functions.version>2.0.1</google-cloud-functions.version>
         <commons-compress.version>1.28.0</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.15.0</commons-text.version>
-        <gson.version>2.13.2</gson.version>
+        <gson.version>2.14.0</gson.version>
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
-        <log4j2-api.version>2.25.4</log4j2-api.version>
+        <log4j2-api.version>2.26.0</log4j2-api.version>
         <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
         <testcontainers.version>2.0.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
@@ -203,7 +203,7 @@
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>10.8</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>10.9</strimzi-oauth.nimbus.version>
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
@@ -640,6 +640,22 @@
                 <artifactId>quarkus-arc-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-signals-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <!-- Quarkus libraries -->
             <dependency>
@@ -2715,6 +2731,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-cache-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-tx</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-tx-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6742,7 +6768,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-platform:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
                                         <dependency>
@@ -6762,7 +6788,7 @@
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>
-                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-spatial:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
                                         <dependency>

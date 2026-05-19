@@ -34,17 +34,9 @@ We appreciate you following these industry accepted guidelines, which gives time
 
 The community will fix security bugs for the latest major.minor version published at <https://quarkus.io/get-started/>.
 
-| Version      | Supported          |
-| ------------ | ------------------ |
-| Latest 3.x   | :white_check_mark: |
-| 3.27 LTS     | :white_check_mark: |
-| 3.20 LTS     | :white_check_mark: |
-| 3.15 LTS     | :white_check_mark: |
-| 3.8 LTS      | :white_check_mark: |
-| Older 3.x    | :x:                |
-| < 3          | :x:                |
+You can find the list of supported versions on the [Security page of our website](https://quarkus.io/security/).
 
-We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the versions documented above.
+We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the versions documented on the website.
 
 ## Handling security issues
 

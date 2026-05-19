@@ -637,6 +637,23 @@ quarkus.http.proxy.trusted-proxies=127.0.0.1 <1>
 ----
 <1> Configure trusted proxy with the IP address `127.0.0.1`. Request headers from any other address are going to be ignored.
 
+Alternatively, in mTLS environments where proxy IP addresses are not stable (e.g., Kubernetes), you can trust a proxy by its TLS client certificate Subject DN.
+The proxy is trusted when its certificate's Subject DN contains all components specified in any configured value.
+For example, `CN=my-proxy,O=MyOrg` matches a certificate with Subject DN `CN=my-proxy,O=MyOrg,C=US`.
+When no configured DN matches, forwarded headers are ignored and the original connection values are used:
+
+[source,properties]
+----
+quarkus.http.proxy.trusted-proxy-dns[0]=CN=my-proxy <1> <2> <3>
+quarkus.http.proxy.trusted-proxy-dns[1]=CN=envoy-client,O=MyOrg <4>
+----
+<1> DNs must be in RFC 2253 format.
+<2> This option cannot be combined with `quarkus.http.proxy.trusted-proxies`.
+<3> TLS client authentication must be enabled via `quarkus.http.ssl.client-auth` set to `request` or `required`.
+<4> Use indexed format to avoid multi-component DNs being split on commas.
+
+NOTE: Configure enough DN components to uniquely identify your proxy. Using only `CN=my-proxy` will match any certificate with that CN, regardless of issuing organization.
+
 Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client.
 
 Supported forwarding address headers are:

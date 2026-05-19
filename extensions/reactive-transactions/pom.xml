@@ -15,16 +15,4 @@
         <module>deployment</module>
         <module>runtime</module>
     </modules>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>

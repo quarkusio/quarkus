@@ -14,6 +14,7 @@ import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.gradle.tooling.dependency.ArtifactExtensionDependency;
@@ -22,6 +23,7 @@ import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public class ValidateExtensionTask extends DefaultTask {
 
     private Configuration runtimeModuleClasspath;

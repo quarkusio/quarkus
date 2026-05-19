@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -184,7 +185,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             //bootstrapBuilder.setProjectRoot(PathTestHelper.getTestClassesLocation(testJavaClass));
 
             CuratedApplication curatedApplication = bootstrapBuilder.build().bootstrap();
-            AugmentAction augmentAction = new AugmentActionImpl(curatedApplication, customizers);
+            AugmentAction augmentAction = new AugmentActionImpl(curatedApplication, customizers, Collections.emptyList());
             StartupAction app = augmentAction.createInitialRuntimeApplication();
             RunningQuarkusApplication runningQuarkusApplication = app.run();
             deployment.set(new QuarkusDeployment(runningQuarkusApplication));

@@ -7,10 +7,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
@@ -281,7 +283,8 @@ public class SmallRyeGraphQLProcessor {
     void buildFinalIndex(
             BuildProducer<SmallRyeGraphQLFinalIndexBuildItem> smallRyeGraphQLFinalIndexProducer,
             CombinedIndexBuildItem combinedIndex,
-            SmallRyeGraphQLModifiedClasesBuildItem graphQLIndexBuildItem) {
+            SmallRyeGraphQLModifiedClasesBuildItem graphQLIndexBuildItem,
+            List<SmallRyeGraphQLFinalIndexModifierBuildItem> indexModifiers) {
 
         Indexer indexer = new Indexer();
         Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
@@ -329,9 +332,22 @@ public class SmallRyeGraphQLProcessor {
             LOG.warn("Failure while creating index", ex);
         }
 
-        OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
+        IndexView finalIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
 
-        smallRyeGraphQLFinalIndexProducer.produce(new SmallRyeGraphQLFinalIndexBuildItem(overridableIndex));
+        // Apply index modifiers in priority order (lower priority values are applied first)
+        if (!indexModifiers.isEmpty()) {
+            List<SmallRyeGraphQLFinalIndexModifierBuildItem> sortedModifiers = indexModifiers.stream()
+                    .sorted(Comparator.comparingInt(SmallRyeGraphQLFinalIndexModifierBuildItem::priority))
+                    .toList();
+
+            for (SmallRyeGraphQLFinalIndexModifierBuildItem modifierItem : sortedModifiers) {
+                finalIndex = Objects.requireNonNull(
+                        modifierItem.modifier().modify(finalIndex),
+                        "Index modifier must not return null");
+            }
+        }
+
+        smallRyeGraphQLFinalIndexProducer.produce(new SmallRyeGraphQLFinalIndexBuildItem(finalIndex));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

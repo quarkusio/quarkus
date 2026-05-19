@@ -39,8 +39,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.OpenPathTree;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
 
 public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
@@ -133,26 +132,12 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setFlags(appArtifact.getFlags())
                     .build();
         }
-        final ApplicationManifestConfig.Builder manifestBuilder = ApplicationManifestConfig.builder()
-                .setMainComponent(ApplicationComponent.builder()
-                        .setPath(runnerJar)
-                        .setResolvedDependency(appArtifact)
-                        .build())
-                .setRunnerPath(runnerJar);
+        final CoreSbomContributionConfig manifestConfig = new CoreSbomContributionConfig()
+                .setMainArtifact(appArtifact)
+                .setMainPath(runnerJar);
         for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies()) {
-            final ApplicationComponent.Builder comp = ApplicationComponent.builder()
-                    .setResolvedDependency(dep);
-            if (!dep.getResolvedPaths().isEmpty()) {
-                comp.setPath(dep.getResolvedPaths().iterator().next());
-            }
-            String pedigree = treeShakeResult.computePedigree(dep.getKey());
-            if (pedigree != null) {
-                comp.setPedigree(pedigree);
-            }
-            manifestBuilder.addComponent(comp.build());
+            manifestConfig.addComponent(dep, null, treeShakeResult.computePedigree(dep.getKey()));
         }
-        final ApplicationManifestConfig manifestConfig = manifestBuilder.build();
-
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }

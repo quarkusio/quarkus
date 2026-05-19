@@ -32,8 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
-        <enforcer-api.version>3.0.0-M3</enforcer-api.version>
+        <enforcer-api.version>3.6.2</enforcer-api.version>
         <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
         <maven-core.version>3.9.15</maven-core.version>
         <aether.version>1.1.0</aether.version>
@@ -50,13 +49,12 @@
             <artifactId>enforcer-api</artifactId>
             <version>${enforcer-api.version}</version>
             <scope>provided</scope>
-            <!-- avoid dependencyConvergence issues -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.sisu</groupId>
-                    <artifactId>org.eclipse.sisu.plexus</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <version>1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -70,6 +68,18 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-artifact</artifactId>
+            <version>${maven-core.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>${maven-core.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.aether</groupId>
@@ -87,6 +97,20 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.eclipse.sisu</groupId>
+                <artifactId>sisu-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
+                        <id>index-project</id>
+                        <goals>
+                            <goal>main-index</goal>
+                            <goal>test-index</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
                 <version>${maven-invoker-plugin.version}</version>

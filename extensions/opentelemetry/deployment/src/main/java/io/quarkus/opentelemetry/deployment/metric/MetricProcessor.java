@@ -11,6 +11,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.opentelemetry.instrumentation.runtimetelemetry.internal.CpuMethods;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -105,7 +106,6 @@ public class MetricProcessor {
     @BuildStep
     void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitialized) {
         runtimeReinitialized.produce(
-                new RuntimeInitializedClassBuildItem(
-                        "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
+                new RuntimeInitializedClassBuildItem(CpuMethods.class.getName()));
     }
 }

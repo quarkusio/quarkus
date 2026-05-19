@@ -36,14 +36,15 @@ mandatory for contributions.
 @RegisterExtension
 static final QuarkusExtensionTest config = new QuarkusExtensionTest()
     .withApplicationRoot((jar) -> jar
-        .addClasses(MyResource.class, MyService.class)
-        .addAsResource("application.properties"));
+        .addClasses(MyResource.class, MyService.class));
 
 @Test
 void testFeature() {
     // test with RestAssured or similar
 }
 ```
+
+If the tests have to set Quarkus configuration, then using `QuarkusExtensionTest#overrideConfigKey` for build time configuration and `QuarkusExtensionTest#overrideRuntimeConfigKey` for runtime configuration is preferable. 
 
 ## Running Tests
 

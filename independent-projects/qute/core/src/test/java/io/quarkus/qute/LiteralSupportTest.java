@@ -1,7 +1,9 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +54,18 @@ public class LiteralSupportTest {
     public void testNonLiteral() {
         assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("'foo'.ping()"));
         assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("foo.bar"));
+    }
+
+    @Test
+    public void testIsStringLiteral() {
+        assertTrue(LiteralSupport.isStringLiteral("'foo'"));
+        assertTrue(LiteralSupport.isStringLiteral("\"foo\""));
+        assertTrue(LiteralSupport.isStringLiteral("'café'"));
+        assertTrue(LiteralSupport.isStringLiteral("'🎉'"));
+        assertFalse(LiteralSupport.isStringLiteral("bar"));
+        assertFalse(LiteralSupport.isStringLiteral("'bar' + 'baz'"));
+        assertFalse(LiteralSupport.isStringLiteral("'bar' 🎉 'baz'"));
+        assertFalse(LiteralSupport.isStringLiteral("\"bar\" + \"baz\""));
     }
 
 }

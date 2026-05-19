@@ -55,6 +55,30 @@ public class ExitCodeTestCase {
     }
 
     @Test
+    public void testWaitToExitWithThrowable() throws ExecutionException, InterruptedException {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Throwable> throwableFuture = new CompletableFuture<>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ApplicationLifecycleManager.run(Application.currentApplication(), WaitToExitApplication.class,
+                        new BiConsumer<Integer, Throwable>() {
+                            @Override
+                            public void accept(Integer integer, Throwable cause) {
+                                future.complete(integer);
+                                throwableFuture.complete(cause);
+                            }
+                        });
+            }
+        }).start();
+        Thread.sleep(500);
+        Assertions.assertFalse(future.isDone());
+        Quarkus.asyncExit(10, new RuntimeException("I've failed"));
+        Assertions.assertEquals(10, future.get());
+        Assertions.assertEquals("I've failed", throwableFuture.get().getMessage());
+    }
+
+    @Test
     public void testWaitToExitWithNoCode() throws ExecutionException, InterruptedException {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         new Thread(new Runnable() {

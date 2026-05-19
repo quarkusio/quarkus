@@ -44,7 +44,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <dependencyAlignmentRule implementation="io.quarkus.enforcer.DependencyAlignmentRule">
+                                <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-spatial:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
                                         <dependency>

@@ -1,7 +1,9 @@
 package io.quarkus.gradle.tasks;
 
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusTestConfig extends QuarkusTask {
 
     public QuarkusTestConfig() {

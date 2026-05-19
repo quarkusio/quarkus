@@ -265,6 +265,15 @@ export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
                         (${msg('delayed for', { id: 'quarkus-scheduler-delayed-for' })}
                         <code>${schedule.delayed}</code>)`;
         }
+        if (schedule.description) {
+            trigger = schedule.descriptionConfig
+                ? html`${trigger}
+                        — <em>${schedule.description}</em>
+                        ${msg('configured as', { id: 'quarkus-scheduler-configured-as' })}
+                        <em>${schedule.descriptionConfig}</em>`
+                : html`${trigger}
+                        — <em>${schedule.description}</em>`;
+        }
         return trigger;
     }
 
@@ -424,7 +433,9 @@ export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
                 (s.cron && s.cron.toLowerCase().includes(searchTerm)) ||
                 (s.cronConfig && s.cronConfig.toLowerCase().includes(searchTerm)) ||
                 (s.every && s.every.toLowerCase().includes(searchTerm)) ||
-                (s.everyConfig && s.everyConfig.toLowerCase().includes(searchTerm));
+                (s.everyConfig && s.everyConfig.toLowerCase().includes(searchTerm)) ||
+                (s.description && s.description.toLowerCase().includes(searchTerm)) ||
+                (s.descriptionConfig && s.descriptionConfig.toLowerCase().includes(searchTerm));
         }).length > 0;
     }
     

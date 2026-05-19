@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :topics: data,jpa,jta,transactions,narayana
 :extensions: io.quarkus:quarkus-narayana-jta
 
-The `quarkus-narayana-jta` extension provides a Transaction Manager that coordinates and expose transactions to your applications as described in the link: https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
+The `quarkus-narayana-jta` extension provides a Transaction Manager that coordinates and expose transactions to your applications as described in the link:https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
 
 When discussing Quarkus transactions, this guide refers to Jakarta Transactions transaction style and uses only the term _transaction_ to address them.
 

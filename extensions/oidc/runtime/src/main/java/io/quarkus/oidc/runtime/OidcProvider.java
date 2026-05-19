@@ -184,6 +184,14 @@ public class OidcProvider implements Closeable {
                 asymmetricKeyResolver, true, oidcConfig.token().issuedAtRequired());
     }
 
+    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification, boolean subjectRequired,
+            String nonce, boolean enforceExpReq)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification, subjectRequired, nonce,
+                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
+                asymmetricKeyResolver, enforceExpReq, oidcConfig.token().issuedAtRequired());
+    }
+
     public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
         final boolean enforceExpReq = !oidcConfig.token().age().isPresent();
         TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null, ASYMMETRIC_ALGORITHM_CONSTRAINTS,

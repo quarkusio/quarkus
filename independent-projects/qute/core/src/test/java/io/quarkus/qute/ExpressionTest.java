@@ -32,6 +32,28 @@ public class ExpressionTest {
                 .parse("{>bar}{bar}")
                 .data("bar", "foo")
                 .render());
+        // Literal base with chaining parts
+        assertEquals("foobar", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{='foo'.concat('bar')}")
+                .render());
+        assertEquals("3", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{='bar'.length}")
+                .render());
+        assertEquals("1", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{=1.intValue}")
+                .render());
         assertThrows(IllegalArgumentException.class, () -> new ParserConfig('#'));
         assertThrows(IllegalArgumentException.class, () -> new ParserConfig('@'));
         assertThrows(IllegalArgumentException.class, () -> new ParserConfig('/'));

@@ -515,6 +515,25 @@ public final class ValueResolvers {
         }
 
         @Override
+        public boolean appliesTo(EvalContext context) {
+            if (super.appliesTo(context)) {
+                return true;
+            }
+            Object base = context.getBase();
+            return base instanceof CharSequence && context.getParams().size() == 1
+                    && appliesToName(context.getName());
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            if (context.getBase() instanceof CharSequence) {
+                return context.evaluate(context.getParams().get(0))
+                        .thenApply(param -> context.getBase().toString() + (param != null ? param.toString() : ""));
+            }
+            return super.resolve(context);
+        }
+
+        @Override
         protected Object compute(Long op1, Long op2) {
             return op1 + op2;
         }

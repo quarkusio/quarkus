@@ -735,6 +735,17 @@ public class SchedulerProcessor {
             }
         }
 
+        AnnotationValue descriptionValue = schedule.value("description");
+        if (descriptionValue != null) {
+            String description = descriptionValue.asString().trim();
+            if (!description.isEmpty() && !SchedulerUtils.isConfigValue(description)
+                    && description.length() > Scheduled.DESCRIPTION_MAX_LENGTH) {
+                return new IllegalStateException(
+                        errorMessage("description() must not exceed " + Scheduled.DESCRIPTION_MAX_LENGTH
+                                + " characters, found " + description.length(), schedule, method));
+            }
+        }
+
         AnnotationValue executeWithValue = schedule.value("executeWith");
         if (executeWithValue != null) {
             String implementation = executeWithValue.asString();

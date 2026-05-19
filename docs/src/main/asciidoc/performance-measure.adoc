@@ -20,7 +20,8 @@ This guide covers:
 All of our tests are run on the same hardware for a given batch.
 It goes without saying, but it's better when you say it.
 
-NOTE: The https://github.com/quarkusio/spring-quarkus-perf-comparison[spring-quarkus-perf-comparison] repository contains the runnable scripts used for our official benchmarks. The sections below describe the methodology; the repository has the exact, up-to-date commands.
+NOTE: The https://github.com/quarkusio/spring-quarkus-perf-comparison[spring-quarkus-perf-comparison] repository contains the runnable scripts used for our reference benchmarks, used to produce most of the performance figures on this site.
+The sections below describe the methodology; the repository has the exact, up-to-date commands.
 
 == How do we measure memory usage
 
@@ -180,16 +181,24 @@ A background polling loop attempts TCP connections and sends HTTP GET requests u
 
 [source,shell]
 ----
-while true; do
-  if exec 3<>/dev/tcp/"$HOST"/"$PORT"; then
-    echo -e "GET $URL_PATH HTTP/1.0\r\nHost: $HOST\r\nConnection: close\r\n\r\n" >&3
-    read -r _ status_code _ <&3
-    exec 3>&-
-    if [[ "$status_code" == "200" ]]; then
-      break
+function _date() {
+    current=$(date +%s%N)
+    if [ $? -ne 0 ]; then
+      current=$(gdate +%s%N)
     fi
-  fi
+    echo "$current"
+}
+
+ts=$(_date)
+
+while [[ $(curl -s -o /dev/null -w ''%{http_code}'' ${TARGET_URL}) != 200 ]]
+do
+  # Spin here and do nothing rather waiting some arbitrary unlucky timing
+  :
 done
+
+TTFR=$((($(_date) - ts)/1000000))
+echo "${TTFR}"
 ----
 
 The TTFR is then computed as the difference between the response timestamp and the start timestamp, in nanoseconds.
@@ -197,7 +206,7 @@ The TTFR is then computed as the difference between the response timestamp and t
 === Why not just use the framework's reported startup time?
 
 A framework-reported startup time (e.g. "started in 0.002s") only measures internal initialization.
-It may not include time spent loading shared libraries, JVM bootstrap, or the time until the application can actually serve a request.
+It will not include time spent loading shared libraries, JVM bootstrap, and there may also be a further gap between the claimed ready-time and the time when the application can actually serve a request.
 Measuring TTFR end-to-end captures the full cost.
 
 == How do we measure throughput

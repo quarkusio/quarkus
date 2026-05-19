@@ -1,12 +1,8 @@
 package io.quarkus.it.hibernate.orm.cache;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
+
+import javax.cache.Cache;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,16 +21,18 @@ import jakarta.ws.rs.core.MediaType;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.cache.jcache.internal.JCacheRegionFactory;
 import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
+
+import com.github.benmanes.caffeine.jcache.configuration.CaffeineConfiguration;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
 
 /**
- * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
+ * Basic test running JPA with the H2 database and JCache (Caffeine) as second level cache provider.
  * The application can work in either standard JVM or in native mode, while we run H2 as a separate JVM process.
  */
 @Path("/hibernate-orm-cache")
@@ -58,30 +56,36 @@ public class HibernateOrmCacheTestEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/memory-object-count/{region}")
     public String memoryObjectCount(@PathParam("region") String region) {
-        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
-        Optional<Long> result = regionFactory.getMemoryObjectCount(region);
-        return result
+        CaffeineConfiguration<?, ?> config = getCacheConfig(region);
+        return toOptionalObject(config.getMaximumSize())
                 .map(Object::toString)
-                .orElseGet(
-                        () -> String.format("Region %s not found", region));
+                .orElse("unlimited");
     }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/expiration-max-idle/{region}")
     public String expirationMaxIdle(@PathParam("region") String region) {
-        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
-        Optional<Duration> result = regionFactory.getExpirationMaxIdle(region);
-        return result
-                .map(duration -> Long.toString(duration.getSeconds()))
-                .orElseGet(
-                        () -> String.format("Region %s not found", region));
+        CaffeineConfiguration<?, ?> config = getCacheConfig(region);
+        return toOptionalObject(config.getExpireAfterAccess())
+                .map(nanos -> Long.toString(java.time.Duration.ofNanos(nanos).getSeconds()))
+                .orElse("unlimited");
     }
 
-    private QuarkusInfinispanRegionFactory getRegionFactory() {
-        SessionFactory sessionFactory = emf.unwrap(SessionFactory.class);
-        CacheImplementor cache = (CacheImplementor) sessionFactory.getCache();
-        return (QuarkusInfinispanRegionFactory) cache.getRegionFactory();
+    private Cache<?, ?> getRegionCache(String region) {
+        var sessionFactory = emf.unwrap(SessionFactory.class);
+        var cache = (CacheImplementor) sessionFactory.getCache();
+        var regionFactory = (JCacheRegionFactory) cache.getRegionFactory();
+        var cacheManager = regionFactory.getCacheManager();
+        Cache<?, ?> regionCache = cacheManager.getCache(region);
+        if (regionCache == null) {
+            throw new IllegalStateException(String.format("Cache for region %s not found", region));
+        }
+        return regionCache;
+    }
+
+    private CaffeineConfiguration<?, ?> getCacheConfig(String region) {
+        return getRegionCache(region).getConfiguration(CaffeineConfiguration.class);
     }
 
     /**
@@ -615,7 +619,32 @@ public class HibernateOrmCacheTestEndpoint {
         final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
         return new Counts(
                 cacheStats.getPutCount(), cacheStats.getHitCount(), cacheStats.getMissCount(),
-                cacheStats.getElementCountInMemory());
+                // We can't use getElementCountInMemory with JCache regions, because they don't implement ExtendedStatisticsSupport
+                // So... let's break through encapsulation.
+                getCacheSize(getRegionCache(region).unwrap(com.github.benmanes.caffeine.cache.Cache.class)));
+    }
+
+    private long getCacheSize(com.github.benmanes.caffeine.cache.Cache<?, ?> cache) {
+        // Size calculated for stats, so try to get as accurate count as possible
+        // by performing any cleanup operations before returning the result
+        cache.cleanUp();
+        // Filter out lock entries - Hibernate READ_WRITE strategy uses SoftLockImpl objects
+        // as temporary lock markers.
+        return cache.asMap().values().stream()
+                .filter(value -> !isLockEntry(value))
+                .count();
+    }
+
+    private boolean isLockEntry(Object value) {
+        // Caffeine wraps (some?) values in Expirable
+        // Unwrap Expirable to get the actual cached object
+        Object unwrapped = value instanceof com.github.benmanes.caffeine.jcache.Expirable<?> expirable ? expirable.get()
+                : value;
+        if (unwrapped == null)
+            return false;
+
+        // Hibernate READ_WRITE strategy uses SoftLockImpl as lock markers
+        return unwrapped.getClass().getName().contains("SoftLockImpl");
     }
 
     private void assertCountEquals(Counts expected, Counts actual, String msg) {
@@ -626,6 +655,14 @@ public class HibernateOrmCacheTestEndpoint {
     private RuntimeException unequalCounts(Counts expected, String region, Counts actual) {
         return new RuntimeException(
                 "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual);
+    }
+
+    private static Optional<Long> toOptionalObject(OptionalLong optionalLong) {
+        if (optionalLong.isPresent()) {
+            return Optional.of(optionalLong.getAsLong());
+        } else {
+            return Optional.empty();
+        }
     }
 
     static final class Counts {

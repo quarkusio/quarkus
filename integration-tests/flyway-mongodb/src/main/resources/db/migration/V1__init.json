@@ -1,0 +1,6 @@
+{
+  "insert": "fruits",
+  "documents": [
+    { "name": "apple", "color": "red" }
+  ]
+}

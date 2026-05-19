@@ -104,7 +104,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
             } catch (Exception e) {
                 future.fail(e);
             }
-        }, asyncResult -> {
+        }, false, asyncResult -> {
             if (asyncResult.succeeded()) {
                 byte[] result = (byte[]) asyncResult.result();
                 handleAsyncResultSucceeded(context, result == null ? null : Buffer.buffer(result), path);

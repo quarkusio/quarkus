@@ -185,6 +185,7 @@ categories:
         title: Database Migration
         guides:
           - flyway.adoc
+          - flyway-mongodb.adoc
           - liquibase.adoc
           - liquibase-mongodb.adoc
 

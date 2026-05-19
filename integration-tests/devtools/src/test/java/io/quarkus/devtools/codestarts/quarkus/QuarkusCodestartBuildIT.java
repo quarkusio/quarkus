@@ -42,7 +42,8 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
             "picocli-codestart",
             "hibernate-orm-codestart",
             "hibernate-orm-rest-data-codestart",
-            "messaging-codestart");
+            "messaging-codestart",
+            "flyway-mongodb-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {

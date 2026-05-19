@@ -77,6 +77,7 @@ import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.platform.tools.ExtensionMetadataValidator;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -369,6 +370,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         addExtensionDependencies(extObject);
 
         completeCodestartArtifact(mapper, extObject);
+
+        try {
+            ExtensionMetadataValidator.validate(extObject);
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage(), e.getCause());
+        }
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);

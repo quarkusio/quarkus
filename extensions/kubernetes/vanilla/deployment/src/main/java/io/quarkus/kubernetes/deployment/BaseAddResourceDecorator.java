@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.jspecify.annotations.Nullable;
 
@@ -14,7 +15,6 @@ import io.fabric8.kubernetes.api.builder.VisitableBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.LabelSelectorFluent;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaFluent;
 
 /**
@@ -54,13 +54,30 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         this(name, kind, apiVersion, null);
     }
 
+    public BaseAddResourceDecorator(String name, Class<? extends HasMetadata> resourceClass, C config) {
+        this(name, HasMetadata.getKind(resourceClass), HasMetadata.getApiVersion(resourceClass), config);
+    }
+
     @Override
     public void visit(KubernetesListBuilder list) {
         // generate the resources so that we can do matching on them
         final var items = list.buildItems();
 
+        addOrEditExisting(items, list);
+    }
+
+    /**
+     * Adds the target item to the specified {@link KubernetesListBuilder} if needed, from an already built items list. This is
+     * useful to replicate the decorator behavior without actually using a decorator and without requiring a list rebuilding.
+     *
+     * @param items the built items list
+     * @param list the builder list that we want to modify
+     */
+    protected void addOrEditExisting(List<HasMetadata> items, KubernetesListBuilder list) {
+        // perform items-wide operations if needed
         prepare(items, list);
 
+        // remove existing target item if existing and "open" it for editing
         Optional<B> found = Optional.empty();
         for (HasMetadata hasMetadata : items) {
             if (match(hasMetadata)) {
@@ -71,15 +88,21 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
                 break;
             }
         }
+        // otherwise create a new builder
         final var builder = found.orElseGet(() -> builderWithName(name));
-        initBuilderWithDefaults(builder, config);
+        // and init it with defaults
+        initBuilderWithDefaults(builder);
 
         // add it to generated items list
-        list.addToItems(builder.build());
+        list.addToItems(builder);
     }
 
     protected boolean match(HasMetadata hasMetadata) {
         return match(hasMetadata, apiVersion, kind, name);
+    }
+
+    protected C config() {
+        return config;
     }
 
     /**
@@ -114,12 +137,11 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      * provided configuration
      *
      * @param builder the resource builder that is used to create the resource to add and that needs to be initialized
-     * @param config an optional configuration object to retrieve values from to init the builder with
      */
-    protected abstract void initBuilderWithDefaults(B builder, C config);
+    protected abstract void initBuilderWithDefaults(B builder);
 
     /**
-     * Returns the first deployment-like resource metadata with the given name if it exists in the specified list of items. Note
+     * Returns the first deployment-like resource with the given name if it exists in the specified list of items. Note
      * that we're using a method derived from dekorate but more optimized and avoiding rebuilding the list of items that we
      * already have available.
      *
@@ -127,7 +149,7 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      * @param name the name of the deployment-like resource to search for
      * @return the found deployment-like resource or {@link Optional#empty()}
      */
-    protected static Optional<ObjectMeta> deploymentMetadataNamed(List<HasMetadata> items, @Nullable String name) {
+    protected static Optional<HasMetadata> deploymentNamed(List<HasMetadata> items, @Nullable String name) {
         // adapted from ResourceProvidingDecorator.getDeploymentMetadata method
         // In 99% of the cases we select metadata by name.
         // There are some edge cases (e.g. RoleBindings) where a suffix is added (e.g. <name>:deployer).
@@ -140,11 +162,9 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         }
         final String trimmed = name;
 
-        return items
-                .stream()
-                .filter(h -> DEPLOYMENT_KINDS.contains(h.getKind()))
-                .map(HasMetadata::getMetadata)
-                .filter(metadata -> Objects.equals(trimmed, ANY) || metadata.getName().equals(trimmed))
+        return items.stream()
+                .filter(h -> DEPLOYMENT_KINDS.contains(h.getKind()) &&
+                        (Objects.equals(trimmed, ANY) || h.getMetadata().getName().equals(trimmed)))
                 .findFirst();
     }
 
@@ -163,7 +183,10 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
         if (namespace != null) {
             builder.withNamespace(namespace);
         }
-        builder.addToLabels(labels);
+        // order labels alphabetically
+        if (labels != null) {
+            builder.addToLabels(new TreeMap<>(labels));
+        }
         return builder;
     }
 
@@ -179,8 +202,8 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
     protected Map<String, String> mergeLabelsFromDeploymentWith(List<HasMetadata> items, Map<String, String> labels,
             @Nullable String deploymentName) {
         Map<String, String> merged = new HashMap<>(labels);
-        deploymentMetadataNamed(items, deploymentName)
-                .map(ObjectMeta::getLabels)
+        deploymentNamed(items, deploymentName)
+                .map(hasMetadata -> hasMetadata.getMetadata().getLabels())
                 .ifPresent(merged::putAll);
         return merged;
     }

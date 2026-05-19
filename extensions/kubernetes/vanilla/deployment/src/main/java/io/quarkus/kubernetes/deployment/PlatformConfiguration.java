@@ -2,12 +2,16 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.kubernetes.spi.DeployStrategy;
@@ -314,5 +318,24 @@ public interface PlatformConfiguration extends EnvVarHolder {
             return DeploymentResourceKind.Job;
         }
         return DeploymentResourceKind.Deployment;
+    }
+
+    default Collection<Volume> toKubeVolumes() {
+        List<Volume> volumes = new ArrayList<>();
+        secretVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+
+        configMapVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+
+        emptyDirVolumes().ifPresent(v -> v.forEach(
+                e -> volumes.add(new VolumeBuilder().withName(e).withNewEmptyDir().endEmptyDir().build())));
+
+        pvcVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+
+        awsElasticBlockStoreVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+
+        azureFileVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+
+        azureDiskVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        return volumes;
     }
 }

@@ -21,6 +21,7 @@ import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -63,7 +64,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
     protected DecoratorsContext decorators(
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig,
+            Capabilities capabilities, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesNamespaceBuildItem> namespaces,
@@ -86,7 +87,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var context = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+        final var context = commonDecorators(applicationInfo, outputTarget, capabilities, packageConfig, metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
                 ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);

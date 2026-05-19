@@ -8,36 +8,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import io.dekorate.knative.decorator.AddAwsElasticBlockStoreVolumeToRevisionDecorator;
-import io.dekorate.knative.decorator.AddAzureDiskVolumeToRevisionDecorator;
-import io.dekorate.knative.decorator.AddAzureFileVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddConfigMapVolumeToRevisionDecorator;
-import io.dekorate.knative.decorator.AddEmptyDirVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
-import io.dekorate.knative.decorator.AddPvcVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSecretVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSidecarToRevisionDecorator;
-import io.dekorate.knative.decorator.ApplyGlobalAutoscalingClassDecorator;
-import io.dekorate.knative.decorator.ApplyGlobalContainerConcurrencyDecorator;
-import io.dekorate.knative.decorator.ApplyGlobalRequestsPerSecondTargetDecorator;
-import io.dekorate.knative.decorator.ApplyGlobalTargetUtilizationDecorator;
-import io.dekorate.knative.decorator.ApplyLocalAutoscalingClassDecorator;
-import io.dekorate.knative.decorator.ApplyLocalAutoscalingMetricDecorator;
-import io.dekorate.knative.decorator.ApplyLocalAutoscalingTargetDecorator;
-import io.dekorate.knative.decorator.ApplyLocalContainerConcurrencyDecorator;
-import io.dekorate.knative.decorator.ApplyLocalTargetUtilizationPercentageDecorator;
-import io.dekorate.knative.decorator.ApplyMaxScaleDecorator;
-import io.dekorate.knative.decorator.ApplyMinScaleDecorator;
-import io.dekorate.knative.decorator.ApplyRevisionNameDecorator;
 import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
-import io.dekorate.knative.decorator.ApplyTrafficDecorator;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.config.SecretVolumeBuilder;
-import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
-import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -76,10 +56,6 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
 public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, KnativeConfig> {
-    private static final String LATEST_REVISION = "latest";
-    private static final String KNATIVE_CONFIG_AUTOSCALER = "config-autoscaler";
-    private static final String KNATIVE_CONFIG_DEFAULTS = "config-defaults";
-    private static final String KNATIVE_SERVING = "knative-serving";
     private static final String KNATIVE_DEV_VISIBILITY = "networking.knative.dev/visibility";
     private KnativeConfig config;
 
@@ -169,6 +145,7 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
+            Capabilities capabilities,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -189,7 +166,7 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var context = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+        final var context = commonDecorators(applicationInfo, outputTarget, capabilities, packageConfig, metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
                 ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);
@@ -209,67 +186,12 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
             }
         }
 
-        config.minScale().ifPresent(min -> context.add(new ApplyMinScaleDecorator(name, min)));
-        config.maxScale().ifPresent(max -> context.add(new ApplyMaxScaleDecorator(name, max)));
-        config.revisionAutoScaling().autoScalerClass()
-                .map(AutoScalerClassConverter::convert)
-                .ifPresent(a -> context.add(new ApplyLocalAutoscalingClassDecorator(name, a)));
-        config.revisionAutoScaling().metric().map(AutoScalingMetricConverter::convert)
-                .ifPresent(m -> context.add(new ApplyLocalAutoscalingMetricDecorator(name, m)));
-        config.revisionAutoScaling().containerConcurrency().ifPresent(
-                c -> context.add(new ApplyLocalContainerConcurrencyDecorator(name, c)));
-        config.revisionAutoScaling().targetUtilizationPercentage()
-                .ifPresent(t -> context.add(new ApplyLocalTargetUtilizationPercentageDecorator(name, t)));
-        config.revisionAutoScaling().target()
-                .ifPresent(t -> context.add(new ApplyLocalAutoscalingTargetDecorator(name, t)));
-        config.globalAutoScaling().autoScalerClass()
-                .map(AutoScalerClassConverter::convert)
-                .ifPresent(a -> {
-                    context.add(new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
-                    context.add(new ApplyGlobalAutoscalingClassDecorator(a));
-                });
-        config.globalAutoScaling().containerConcurrency().ifPresent(c -> {
-            context.add(new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING));
-            context.add(new ApplyGlobalContainerConcurrencyDecorator(c));
-        });
-
-        config.globalAutoScaling().requestsPerSecond()
-                .ifPresent(r -> {
-                    context.add(new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
-                    context.add(new ApplyGlobalRequestsPerSecondTargetDecorator(r));
-                });
-
-        config.globalAutoScaling().targetUtilizationPercentage()
-                .ifPresent(t -> {
-                    context.add(new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
-                    context.add(new ApplyGlobalTargetUtilizationDecorator(t));
-                });
-
-        if (!config.scaleToZeroEnabled()) {
-            context.add(new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
-            context.add(new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",
-                    String.valueOf(config.scaleToZeroEnabled())));
-        }
-
         context.add(new ApplyServiceTypeDecorator(name, config.serviceType().name()));
 
         //In Knative its expected that all http ports in probe are omitted (so we set them to null).
         context.add(new ApplyHttpGetActionPortDecorator(name, null));
 
-        //Traffic Splitting
-        config.revisionName().ifPresent(r -> context.add(new ApplyRevisionNameDecorator(name, r)));
-
-        config.traffic().forEach((k, traffic) -> {
-            //Revision name is K unless we have the edge name of a revision named 'latest' which is not really the latest (in which case use null).
-            boolean latestRevision = traffic.latestRevision().get();
-            String revisionName = !latestRevision && LATEST_REVISION.equals(k) ? null : k;
-            String tag = traffic.tag().orElse(null);
-            long percent = traffic.percent().orElse(100L);
-            context.add(new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag));
-        });
-
         //Add revision decorators
-        createVolumeDecorators(context);
         createAppConfigVolumeAndEnvDecorators(context);
         config.hostAliases().entrySet()
                 .forEach(e -> context.add(new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
@@ -291,29 +213,6 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         });
 
         return context.decorators();
-    }
-
-    private void createVolumeDecorators(DecoratorsContext context) {
-        config.secretVolumes().entrySet()
-                .forEach(e -> context.add(new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e))));
-
-        config.configMapVolumes().entrySet()
-                .forEach(e -> context.add(new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e))));
-
-        config.emptyDirVolumes().ifPresent(volumes -> volumes.forEach(
-                e -> context.add(new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e)))));
-
-        config.pvcVolumes().entrySet()
-                .forEach(e -> context.add(new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e))));
-
-        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> context.add(
-                new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e))));
-
-        config.azureFileVolumes().entrySet().forEach(e -> context.add(
-                new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e))));
-
-        config.azureDiskVolumes().entrySet().forEach(
-                e -> context.add(new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e))));
     }
 
     private void createAppConfigVolumeAndEnvDecorators(DecoratorsContext context) {

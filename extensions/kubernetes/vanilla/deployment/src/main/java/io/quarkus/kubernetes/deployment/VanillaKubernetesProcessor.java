@@ -157,7 +157,7 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var context = super.decorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+        final var context = super.decorators(applicationInfo, outputTarget, capabilities, packageConfig, metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels, envs, image, command,
                 ports, portName, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);
@@ -166,8 +166,6 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         }
         final var config = config();
         final var name = context.name();
-
-        deploymentKindDecorators(context, capabilities);
 
         config.containerName().ifPresent(containerName -> context.add(new ChangeContainerNameDecorator(containerName)));
 

@@ -23,7 +23,7 @@ public class AddServiceAccountResourceDecorator extends BaseAddRBACDecorator<Ser
     }
 
     @Override
-    protected void initBuilderWithDefaults(ServiceAccountBuilder builder, Void config) {
+    protected void initBuilderWithDefaults(ServiceAccountBuilder builder) {
         updateMetadata(builder.editOrNewMetadata(), namespace)
                 .endMetadata();
     }

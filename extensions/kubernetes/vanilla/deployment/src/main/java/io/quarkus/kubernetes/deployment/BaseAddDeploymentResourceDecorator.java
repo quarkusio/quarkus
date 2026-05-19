@@ -1,10 +1,11 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.fabric8.kubernetes.api.builder.VisitableBuilder;
-import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.PodSpecFluent;
@@ -21,7 +22,7 @@ import io.fabric8.kubernetes.api.model.batch.v1.JobSpecFluent;
  * @param <C> an optional configuration type that can be used to populate the resource's field, e.g. {@link JobConfig} or
  *        {@link Void} if such configuration is not needed
  */
-abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B extends VisitableBuilder<T, B>, C>
+abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B extends VisitableBuilder<T, B>, C extends PlatformConfiguration>
         extends BaseAddResourceDecorator<T, B, C> {
     private final Predicate<HasMetadata> toRemovePredicate;
 
@@ -61,6 +62,15 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
         }
     }
 
+    protected ReplicasAware replicasAwareOrNull() {
+        final var config = config();
+        if (config instanceof ReplicasAware replicasAware) {
+            return replicasAware;
+        } else {
+            return null;
+        }
+    }
+
     protected int replicas(Integer initialValue, ReplicasAware config) {
         int replicas = initialValue == null ? 1 : initialValue;
         if (config != null) {
@@ -70,22 +80,14 @@ abstract class BaseAddDeploymentResourceDecorator<T extends HasMetadata, B exten
         return replicas;
     }
 
-    protected <PS extends PodSpecFluent<?>> PS podSpecDefaults(PS podSpec) {
-        // termination grace period seconds
-        if (podSpec.getTerminationGracePeriodSeconds() == null) {
-            podSpec.withTerminationGracePeriodSeconds(10L);
-        }
-
-        // add container with deployment name
-        if (!hasNamedContainer(podSpec)) {
-            podSpec.addNewContainer().withName(name()).endContainer();
-        }
+    protected <PS extends PodSpecFluent<?>> PS configurePodSpec(PS podSpec) {
+        final var podSpecLike = PodSpecLike.fromPodSpec(podSpec);
+        podSpecLike.configure(name(), config(), containerCustomizer());
         return podSpec;
     }
 
-    private boolean hasNamedContainer(PodSpecFluent<?> spec) {
-        List<Container> containers = spec.buildContainers();
-        return containers != null && containers.stream().anyMatch(c -> name().equals(c.getName()));
+    protected Function<ContainerFluent<?>, Void> containerCustomizer() {
+        return null;
     }
 
     protected void initFromConfig(JobSpecFluent<?> spec, JobConfig config) {

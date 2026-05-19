@@ -6,8 +6,8 @@ import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
 import io.quarkus.runtime.util.StringUtil;
 
 public class AddStatefulSetResourceDecorator
-        extends BaseAddDeploymentResourceDecorator<StatefulSet, StatefulSetBuilder, ReplicasAware> {
-    public AddStatefulSetResourceDecorator(String name, ReplicasAware config, DeploymentResourceKind toRemove) {
+        extends BaseAddDeploymentResourceDecorator<StatefulSet, StatefulSetBuilder, PlatformConfiguration> {
+    public AddStatefulSetResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.StatefulSet, config, toRemove);
     }
 
@@ -17,7 +17,7 @@ public class AddStatefulSetResourceDecorator
     }
 
     @Override
-    protected void initBuilderWithDefaults(StatefulSetBuilder builder, ReplicasAware config) {
+    protected void initBuilderWithDefaults(StatefulSetBuilder builder) {
         final var spec = builder.editOrNewSpec();
 
         // service name
@@ -30,10 +30,10 @@ public class AddStatefulSetResourceDecorator
                 .endSelector();
 
         // replicas
-        spec.withReplicas(replicas(spec.getReplicas(), config));
+        spec.withReplicas(replicas(spec.getReplicas(), replicasAwareOrNull()));
 
-        // ensure defaults on template spec
-        podSpecDefaults(spec.editOrNewTemplate().editOrNewSpec())
+        // configure main application pod and container
+        configurePodSpec(spec.editOrNewTemplate().editOrNewSpec())
                 .endSpec().endTemplate();
 
         spec.endSpec();

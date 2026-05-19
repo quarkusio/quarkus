@@ -33,7 +33,7 @@ public class AddRoleBindingResourceDecorator extends BaseAddRBACDecorator<RoleBi
     }
 
     @Override
-    protected void initBuilderWithDefaults(RoleBindingBuilder builder, Void config) {
+    protected void initBuilderWithDefaults(RoleBindingBuilder builder) {
         updateMetadata(builder.editOrNewMetadata(), namespace).endMetadata();
 
         builder.withNewRoleRef()

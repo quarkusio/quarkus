@@ -1,7 +1,6 @@
 package io.quarkus.modular.deployment;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,6 +32,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
@@ -108,6 +108,7 @@ public final class ModularitySteps {
             MainClassBuildItem mainClassBuildItem,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServices,
             TransformedClassesBuildItem transformedClasses,
             List<ModuleOpenBuildItem> opens,
             // TODO: List<ModuleExportBuildItem> exports,
@@ -126,8 +127,6 @@ public final class ModularitySteps {
          * • (temporary) add ArC dependencies
          *   ◦ Note: this is temporary as we would want to move this to the ArC extension.
          *     However we presently do not have a strategy for this. See #52933.
-         * • (temporary) find all service providers hiding as generated resources
-         *   ◦ Note: this too is temporary. #53699 introduces a service provider build item to replace this.
          * • Create the module set from the set of artifacts
          *   ◦ This may entail traversing dependency sets for automatic modules
          *   ◦ The output of this stage is a `io.quarkus.modular.spi.model.ModuleInfo` for each module
@@ -221,46 +220,32 @@ public final class ModularitySteps {
             }
         }
 
-        // Gather up the set of generated resources for indexing (#44657) and service providers (#53699).
-        int misLen = "META-INF/services".length();
         // impl package -> service name -> impl name
         Map<String, Map<String, List<String>>> extraServicesByPackage = new HashMap<>();
+        for (GeneratedServiceProviderBuildItem item : generatedServices) {
+            String apiName = item.getServiceInterfaceName();
+            String impl = item.getImplementationClassName();
+            int lastDot = impl.lastIndexOf('.');
+            if (lastDot != -1) {
+                String pkgName = impl.substring(0, lastDot);
+                extraServicesByPackage.computeIfAbsent(pkgName, ModularitySteps::newMap)
+                        .computeIfAbsent(apiName, ModularitySteps::newList)
+                        .add(impl);
+            }
+        }
+        // Gather up the set of generated resources for indexing (#44657).
         for (GeneratedResourceBuildItem rsrc : generatedResources) {
             String name = rsrc.getName();
-            if (name.startsWith("META-INF/services/")) {
-                // todo: generate service build items instead - io.quarkus.arc.deployment.ArcProcessor.generateResources
-                if (name.lastIndexOf('/') == misLen) {
-                    String apiName = name.substring(misLen + 1);
-                    ArrayList<String> impls;
-                    try {
-                        impls = readServicesFile(new ByteArrayInputStream(rsrc.getData()), new ArrayList<>());
-                    } catch (IOException unexpected) {
-                        throw new IllegalStateException(unexpected);
-                    }
-                    for (String impl : impls) {
-                        int lastDot = impl.lastIndexOf('.');
-                        if (lastDot != -1) {
-                            String pkgName = impl.substring(0, lastDot);
-                            extraServicesByPackage
-                                    .computeIfAbsent(pkgName, ignored -> new HashMap<>())
-                                    .computeIfAbsent(apiName, ignored -> new ArrayList<>())
-                                    .add(impl);
-                        }
-                    }
-                }
-                // else ignore
+            String pn;
+            int idx = name.lastIndexOf('/');
+            if (idx == -1) {
+                pn = "";
             } else {
-                String pn;
-                int idx = name.lastIndexOf('/');
-                if (idx == -1) {
-                    pn = "";
-                } else {
-                    pn = name.substring(0, idx).replace('/', '.');
-                }
-                // todo: change GeneratedResourceBuildItem to use Resource instead of byte[]
-                generatedByPackageAndPath.computeIfAbsent(pn, ModularitySteps::newMap)
-                        .put(name, new MemoryResource(name, rsrc.getData()));
+                pn = name.substring(0, idx).replace('/', '.');
             }
+            // todo: change GeneratedResourceBuildItem to use Resource instead of byte[]
+            generatedByPackageAndPath.computeIfAbsent(pn, ModularitySteps::newMap)
+                    .put(name, new MemoryResource(name, rsrc.getData()));
         }
 
         // Scan transformed classes to make sure they don't overlap with a generated class and index it (#44657).
@@ -317,12 +302,12 @@ public final class ModularitySteps {
 
         // ArC must depend on the application module (for service loading)
         // todo: ArC should use AddDependencyBuildItem for this.
-        extraDepsMap.computeIfAbsent("io.quarkus.arc", k -> new HashMap<>())
+        extraDepsMap.computeIfAbsent("io.quarkus.arc", ModularitySteps::newMap)
                 .put(appModuleName, Modifier.set(Modifier.SERVICES));
 
         // Vert.x core needs to link against `io.quarkus.vertx`.
         // todo: The Vert.x extension should use AddDependencyBuildItem for this.
-        extraDepsMap.computeIfAbsent("io.vertx.core", k -> new HashMap<>())
+        extraDepsMap.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                 .put("io.quarkus.vertx", Modifier.set(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
 
         // Now go through the process to build a (Quarkus) module descriptor for each artifact.
@@ -1157,6 +1142,13 @@ public final class ModularitySteps {
      */
     private static <K, V> Map<K, V> newMap(Object ignored) {
         return new HashMap<>();
+    }
+
+    /**
+     * {@return a new list for use in Map.compute*() operations}
+     */
+    private static <E> List<E> newList(Object ignored) {
+        return new ArrayList<>();
     }
 
     /**

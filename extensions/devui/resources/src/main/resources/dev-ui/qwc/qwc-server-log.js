@@ -17,6 +17,7 @@ import '@vaadin/vertical-layout';
 import '@qomponent/qui-badge';
 import 'qui-ide-link';
 import { msg, updateWhenLocaleChanges, getLocale } from 'localization';
+import { notifier } from 'notifier';
 
 /**
  * This component represent the Server Log
@@ -94,7 +95,8 @@ export class QwcServerLog extends QwcAbstractLogElement {
         _selectedColumns: {state: true},
         _allLoggers: {state: true, type: Array},
         _filteredLoggers: {state: true, type: Array},
-        _loggerLevels: {state: false, type: Array}
+        _loggerLevels: {state: false, type: Array},
+        _rootLogger: {state: true, type: Object}
     };
 
     constructor() {
@@ -153,6 +155,15 @@ export class QwcServerLog extends QwcAbstractLogElement {
         this.jsonRpc.getLoggers().then(jsonRpcResponse => {
             this._allLoggers = jsonRpcResponse.result;
             this._filteredLoggers = this._allLoggers;
+        }).catch(err => {
+            console.error("Failed to load loggers:", err);
+            notifier.showErrorMessage(msg('Failed to load loggers', { id: 'serverlog-load-error' }));
+        });
+        this.jsonRpc.getRootLogger().then(jsonRpcResponse => {
+            this._rootLogger = jsonRpcResponse.result;
+        }).catch(err => {
+            console.error("Failed to load root logger:", err);
+            notifier.showErrorMessage(msg('Failed to load root logger', { id: 'serverlog-rootlogger-error' }));
         });
     }
 
@@ -485,6 +496,8 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             theme="spacing"
                             style="width: 600px; max-width: 100%; min-width: 300px; height: 100%; align-items: stretch;">
 
+                ${this._renderRootLogger()}
+
                 <vaadin-text-field
                         placeholder="${msg('Filter', { id: 'loglevelsdialog-filter' })}"
                         style="width: 100%;"
@@ -508,15 +521,31 @@ export class QwcServerLog extends QwcAbstractLogElement {
         }
     }
     
+    _renderRootLogger(){
+        if(this._rootLogger){
+            return html`
+                <div style="padding: 10px; background-color: var(--lumo-contrast-5pct); border-radius: var(--lumo-border-radius-m); margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <vaadin-icon icon="font-awesome-solid:layer-group" style="color: var(--lumo-primary-color);"></vaadin-icon>
+                            <span style="font-weight: 500;">${msg('Root Logger', { id: 'loglevelsdialog-root-logger' })}</span>
+                        </div>
+                        ${this._renderSelect("", this._rootLogger.effectiveLevel)}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     _filterLoggers(e) {
         const searchTerm = (e.detail.value || '').trim();
         if (searchTerm === '') {
           this._filteredLoggers = this._allLoggers;
           return;
         }
-    
-        this._filteredLoggers = this._allLoggers.filter((level) => {    
-            let i = this._matchLogger(level.name, searchTerm); 
+
+        this._filteredLoggers = this._allLoggers.filter((level) => {
+            let i = this._matchLogger(level.name, searchTerm);
             return i;
         });
     }
@@ -551,6 +580,32 @@ export class QwcServerLog extends QwcAbstractLogElement {
         this.jsonRpc.updateLogLevel({
             'loggerName': name,
             'levelValue': value
+        }).then(jsonRpcResponse => {
+            if (name === "") {
+                // Root logger changed - updateLogLevel already returns the updated root logger.
+                // Set it directly, then refresh all loggers since their effective levels may have changed.
+                this._rootLogger = jsonRpcResponse.result;
+                // Refresh all loggers without re-fetching root logger (we already have it)
+                this.jsonRpc.getLoggers().then(response => {
+                    this._allLoggers = response.result;
+                    // Re-apply active filter if any to preserve user's search state
+                    const filterField = this.shadowRoot?.querySelector('vaadin-text-field[placeholder*="Filter"]');
+                    const searchTerm = (filterField?.value || '').trim();
+                    if (searchTerm !== '') {
+                        this._filteredLoggers = this._allLoggers.filter(level =>
+                            this._matchLogger(level.name, searchTerm)
+                        );
+                    } else {
+                        this._filteredLoggers = this._allLoggers;
+                    }
+                }).catch(err => {
+                    console.error("Failed to refresh loggers after root logger update:", err);
+                    notifier.showErrorMessage(msg('Failed to refresh loggers', { id: 'serverlog-refresh-error' }));
+                });
+            }
+        }).catch(err => {
+            console.error("Failed to update log level for", name, ":", err);
+            notifier.showErrorMessage(msg('Failed to update log level', { id: 'serverlog-update-error' }));
         });
     }
 

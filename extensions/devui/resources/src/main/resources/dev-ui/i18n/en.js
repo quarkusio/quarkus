@@ -120,6 +120,11 @@ export const templates = {
     'loglevelsdialog-filter': 'Filter',
     'loglevelsdialog-name': 'Name',
     'loglevelsdialog-level': 'Level',
+    'loglevelsdialog-root-logger': 'Root Logger',
+    'serverlog-load-error': 'Failed to load loggers',
+    'serverlog-rootlogger-error': 'Failed to load root logger',
+    'serverlog-refresh-error': 'Failed to refresh loggers',
+    'serverlog-update-error': 'Failed to update log level',
 
     // Connection status
     'connection-disconnected_from': 'Disconnected from',

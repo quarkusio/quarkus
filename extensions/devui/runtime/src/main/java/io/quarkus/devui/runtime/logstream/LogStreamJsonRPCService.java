@@ -69,6 +69,18 @@ public class LogStreamJsonRPCService {
     }
 
     @NonBlocking
+    @JsonRpcDescription("Get the root logger in this Quarkus application")
+    @DevMCPEnableByDefault
+    public JsonObject getRootLogger() {
+        LogContext logContext = LogContext.getLogContext();
+        Logger logger = logContext.getLogger("");
+        return JsonObject.of(
+                "name", "",
+                "effectiveLevel", getEffectiveLogLevel(logger),
+                "configuredLevel", getConfiguredLogLevel(logger));
+    }
+
+    @NonBlocking
     @JsonRpcDescription("Get a specific logger in this Quarkus application")
     @DevMCPEnableByDefault
     public JsonObject getLogger(@JsonRpcDescription("The name of the logger") String loggerName) {
@@ -88,6 +100,11 @@ public class LogStreamJsonRPCService {
     @DevMCPEnableByDefault
     public JsonObject updateLogLevel(@JsonRpcDescription("The name of the logger") String loggerName,
             @JsonRpcDescription("The new level of the logger") String levelValue) {
+        // Normalize null to empty string for root logger
+        if (loggerName == null) {
+            loggerName = "";
+        }
+
         LogContext logContext = LogContext.getLogContext();
         Logger logger = logContext.getLogger(loggerName);
         java.util.logging.Level level;
@@ -95,14 +112,35 @@ public class LogStreamJsonRPCService {
             if (logger.getParent() != null) {
                 level = logger.getParent().getLevel();
             } else {
-                throw new IllegalArgumentException("The level of the root logger cannot be set to null");
+                String displayName = loggerName.isEmpty() ? "ROOT" : loggerName;
+                throw new IllegalArgumentException(
+                        "The level of the root logger cannot be set to null. " +
+                                "Received updateLogLevel request with loggerName='" + displayName +
+                                "' and levelValue=null. Use a valid level (TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF).");
             }
         } else {
-            level = Level.parse(levelValue);
+            try {
+                level = Level.parse(levelValue);
+            } catch (IllegalArgumentException e) {
+                String displayName = loggerName.isEmpty() ? "ROOT" : loggerName;
+                String validLevels = "TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF";
+                LOG.errorf("Invalid log level '%s' for logger '%s'. Valid levels: %s",
+                        levelValue, displayName, validLevels);
+                throw new IllegalArgumentException(
+                        "Invalid log level '" + levelValue + "' for logger '" + displayName +
+                                "'. Valid levels are: " + validLevels,
+                        e);
+            }
         }
         logger.setLevel(level);
-        LOG.info("Log level updated [" + loggerName + "] changed to [" + levelValue + "]");
 
+        String displayName = loggerName.isEmpty() ? "ROOT" : loggerName;
+        LOG.infof("Log level updated [%s] changed to [%s]", displayName, levelValue);
+
+        // Handle root logger case
+        if (loggerName.isEmpty()) {
+            return getRootLogger();
+        }
         return getLogger(loggerName);
     }
 
@@ -128,6 +166,11 @@ public class LogStreamJsonRPCService {
         if (logger.getLevel() != null) {
             return logger.getLevel().getName();
         }
-        return getEffectiveLogLevel(logger.getParent());
+        Logger parent = logger.getParent();
+        // Stop recursion if parent is null or same as current logger (circular reference)
+        if (parent == null || parent == logger) {
+            return null;
+        }
+        return getEffectiveLogLevel(parent);
     }
 }

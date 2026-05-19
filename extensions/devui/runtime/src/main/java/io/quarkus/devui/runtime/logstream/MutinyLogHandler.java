@@ -33,6 +33,18 @@ public class MutinyLogHandler extends ExtHandler {
             return;
         }
 
+        // Filter out framework-internal loggers to prevent feedback loops.
+        // These framework components (Netty WebSocket encoding, Vert.x event loop,
+        // and our own log broadcasting code) emit logs during the act of broadcasting,
+        // which would create infinite recursion. Filter all levels - the log stream
+        // should never broadcast its own transport-layer logs regardless of level.
+        String loggerName = record.getLoggerName();
+        if (loggerName != null && (loggerName.startsWith("io.netty.") ||
+                loggerName.startsWith("io.vertx.") ||
+                loggerName.startsWith("io.quarkus.devui.runtime.logstream."))) {
+            return;
+        }
+
         if (isLoggable(record)) {
             LogStreamBroadcaster broadcaster = getBroadcaster();
             if (broadcaster != null) {

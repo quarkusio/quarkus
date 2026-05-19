@@ -117,7 +117,7 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
                         VertxByteBufAllocator.DEFAULT.heapBuffer(amount, Integer.MAX_VALUE).writeBytes(bytes, 0,
                                 amount));
             }
-        });
+        }, true);
         fut.onComplete(new Handler<>() {
             @Override
             public void handle(AsyncResult<Buffer> ar) {

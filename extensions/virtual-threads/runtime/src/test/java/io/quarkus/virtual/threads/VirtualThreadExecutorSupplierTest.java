@@ -74,7 +74,7 @@ class VirtualThreadExecutorSupplierTest {
                 future.complete(Vertx.currentContext());
             });
             return null;
-        }).toCompletionStage().toCompletableFuture().get();
+        }, false).toCompletionStage().toCompletableFuture().get();
         assertThat(future.get()).isNotNull();
     }
 
@@ -87,7 +87,7 @@ class VirtualThreadExecutorSupplierTest {
                 .runSubscriptionOn(command -> vertx.executeBlocking(() -> {
                     command.run();
                     return null;
-                }))
+                }, false))
                 .emitOn(executorService)
                 .map(x -> {
                     assertThatItRunsOnVirtualThread();
@@ -107,7 +107,7 @@ class VirtualThreadExecutorSupplierTest {
             executorService.submit(() -> {
                 assertThatItRunsOnVirtualThread();
                 future.complete(Vertx.currentContext());
-            });
+            }, false);
             return null;
         }).toCompletionStage().toCompletableFuture().get();
         assertThat(future.get()).isNotNull();
@@ -126,7 +126,7 @@ class VirtualThreadExecutorSupplierTest {
                 assertThatItRunsOnVirtualThread();
                 return Vertx.currentContext();
             }));
-        }).toCompletionStage().toCompletableFuture().get();
+        }, false).toCompletionStage().toCompletableFuture().get();
         assertThat(futures).allSatisfy(contextFuture -> assertThat(contextFuture.get()).isNotNull());
     }
 

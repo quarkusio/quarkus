@@ -911,7 +911,7 @@ public class OidcCommonUtils {
                     }
                     return null;
                 }
-            }).flatMap(new Function<Void, Uni<? extends HttpResponse<Buffer>>>() {
+            }, false).flatMap(new Function<Void, Uni<? extends HttpResponse<Buffer>>>() {
                 @Override
                 public Uni<? extends HttpResponse<Buffer>> apply(Void unused) {
                     return request.send();

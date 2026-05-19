@@ -1932,7 +1932,7 @@ jobs:
             -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
             -Doracle.username=${TESTPILOT_USERNAME} \
             -Doracle.password=${TESTPILOT_PASSWORD} \
-            $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=false \
+            $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=false -Dquarkus.native.native-image-xmx=16g \
             -f integration-tests -pl "$TEST_MODULES"
       - name: Delete Oracle Test Pilot Database
         id: delete_database

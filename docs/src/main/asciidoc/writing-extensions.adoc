@@ -723,42 +723,17 @@ public void registerSeveralServices(
 
 /**
  * This build step aggregates all the produced service providers
- * and outputs them as resources.
+ * and registers them via GeneratedServiceProviderBuildItem.
  */
 @BuildStep
-public void produceServiceFiles(
+public void produceServiceProviders(
     List<ServiceWriterBuildItem> items,
-    BuildProducer<GeneratedResourceBuildItem> resourceProducer
-) throws IOException {
-    // Aggregate all the providers
-
-    Map<String, Set<String>> map = new HashMap<>();
+    BuildProducer<GeneratedServiceProviderBuildItem> serviceProviderProducer
+) {
     for (ServiceWriterBuildItem item : items) {
-        String serviceName = item.getName();
         for (String implName : item.getImplementations()) {
-            map.computeIfAbsent(
-                serviceName,
-                (k, v) -> new LinkedHashSet<>()
-            ).add(implName);
-        }
-    }
-
-    // Now produce the resource(s) for the SPI files
-    for (Map.Entry<String, Set<String>> entry : map.entrySet()) {
-        String serviceName = entry.getKey();
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            try (OutputStreamWriter w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-                for (String implName : entry.getValue()) {
-                    w.write(implName);
-                    w.write(System.lineSeparator());
-                }
-                w.flush();
-            }
-            resourceProducer.produce(
-                new GeneratedResourceBuildItem(
-                    "META-INF/services/" + serviceName,
-                    os.toByteArray()
-                )
+            serviceProviderProducer.produce(
+                new GeneratedServiceProviderBuildItem(item.getName(), implName)
             );
         }
     }
@@ -1615,35 +1590,23 @@ The proper way for an extension to perform this check is to use `io.quarkus.boot
 [[generating-resources]]
 === Generating Resources
 
-It is possible to generate resources using extensions, in some scenarios you need to generate a resource into `META-INF` directory, the resource can be a service for SPI or a simple HTML, CSS, Javascript files.
+It is possible to generate resources using extensions.
+For `META-INF/services/` entries (Java SPI service providers), use `GeneratedServiceProviderBuildItem`.
+For other resources (e.g., configuration files, HTML, CSS, JavaScript), use `GeneratedResourceBuildItem` or `GeneratedStaticResourceBuildItem`.
 
 [source,java]
 ----
-/**
- * This build step aggregates all the produced service providers
- * and outputs them as resources.
- */
 @BuildStep
-public void produceServiceFiles(
-    BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResourceProducer,
-    BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer
-) throws IOException {
+public void generateResources(
+    BuildProducer<GeneratedServiceProviderBuildItem> serviceProviderProducer, // <1>
+    BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResourceProducer // <2>
+) {
+    serviceProviderProducer.produce(
+        new GeneratedServiceProviderBuildItem(
+            "io.quarkus.services.GreetingService",
+            "com.example.HelloService"));
 
-    generatedResourceProducer.produce( // <1>
-        new GeneratedResourceBuildItem(
-            "META-INF/services/io.quarkus.services.GreetingService",
-            """
-            public class HelloService implements GreetingService {
-
-                @Override
-                public void do() {
-                    System.out.println("Hello!");
-                }
-            }
-            """.getBytes(StandardCharsets.UTF_8)));
-
-
-    generatedStaticResourceProducer.produce( // <2>
+    generatedStaticResourceProducer.produce(
         new GeneratedStaticResourceBuildItem(
             "/index.js",
             "console.log('Hello World!')".getBytes(StandardCharsets.UTF_8))
@@ -1651,26 +1614,35 @@ public void produceServiceFiles(
 }
 ----
 
-1. Producing a SPI service implementation as a resource in META-INF/services
+1. Registering a SPI service provider via `GeneratedServiceProviderBuildItem` — do NOT use `GeneratedResourceBuildItem` for `META-INF/services/` paths
 2. Producing a static resource (e.g., JavaScript file) served by Vertx
 
 ==== Key Points
 
+. **`GeneratedServiceProviderBuildItem`**
+* The correct way to register a Java SPI service provider (`META-INF/services/` entry) from a build step.
+* Packaging steps consume this item and write the appropriate `META-INF/services/<interface>` file.
+* Passing a `META-INF/services/` path to `GeneratedResourceBuildItem` will throw an `IllegalArgumentException`.
+
 . **`GeneratedResourceBuildItem`**
-* Generates resources that are persisted in production mode.
+* Generates arbitrary classpath resources (e.g., `META-INF/native-image/`, configuration files) that are persisted in production mode.
 * In development and other non-production modes, the resources are kept in memory and loaded using the `QuarkusClassLoader`.
+* Must NOT be used for `META-INF/services/` paths — use `GeneratedServiceProviderBuildItem` instead.
 
 . **`GeneratedStaticResourceBuildItem`**
 * Generates static resources (e.g., files like JavaScript, HTML, or CSS) served by Vertx.
 * In development mode, Quarkus serves these resources using a Vertx handler backed by a classloader-based filesystem.
 
-==== Differences Between `GeneratedResourceBuildItem` and `GeneratedStaticResourceBuildItem`
+==== Differences Between `GeneratedServiceProviderBuildItem`, `GeneratedResourceBuildItem`, and `GeneratedStaticResourceBuildItem`
 
-While both are used to generate resources, their purposes and behaviors differ:
+**`GeneratedServiceProviderBuildItem`:**
+
+* Used exclusively for Java SPI service provider registrations (`META-INF/services/`).
+* Decouples the declaration of a service provider from its packaging, allowing future support for JPMS module descriptors.
 
 **`GeneratedResourceBuildItem`:**
 
-* Used for resources required at runtime (e.g., SPI service definitions).
+* Used for arbitrary classpath resources required at runtime.
 * Persisted only in production mode; otherwise, stored in memory.
 
 **`GeneratedStaticResourceBuildItem`:**

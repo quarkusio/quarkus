@@ -81,6 +81,7 @@ public class NativeImageFeatureStep {
                         .produce(new GeneratedNativeImageClassBuildItem(item.binaryName(), item.getClassData())),
                 item -> {
                 },
+                null,
                 false));
 
         g.class_(GRAAL_FEATURE, cc -> {

@@ -11,6 +11,7 @@ import jakarta.interceptor.InvocationContext;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
+import io.vertx.core.internal.ContextInternal;
 
 @WithTransaction
 @Interceptor
@@ -23,7 +24,7 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
             Context vertxContext = SessionOperations.vertxContext();
-            if (vertxContext.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
+            if (((ContextInternal) vertxContext).getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
                 return Uni.createFrom().failure(
                         new UnsupportedOperationException(
                                 "Calling a method annotated with @WithTransaction from a method annotated with @Transactional is not supported. "
@@ -32,7 +33,7 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
             }
 
             // Annotate current method so that we can validate mixing of @WithTransaction and @Transactional
-            vertxContext.putLocal(WITH_TRANSACTION_METHOD_KEY, true);
+            ((ContextInternal) vertxContext).putLocal(WITH_TRANSACTION_METHOD_KEY, true);
 
             WithTransaction withTransaction = getAnnotation(context);
             String persistenceUnitName = withTransaction.value();
@@ -48,7 +49,7 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
     }
 
     private static boolean clearWithTransactionMethod(Context vertxContext) {
-        return vertxContext.removeLocal(WITH_TRANSACTION_METHOD_KEY);
+        return ((ContextInternal) vertxContext).removeLocal(WITH_TRANSACTION_METHOD_KEY);
     }
 
     private WithTransaction getAnnotation(InvocationContext context) {

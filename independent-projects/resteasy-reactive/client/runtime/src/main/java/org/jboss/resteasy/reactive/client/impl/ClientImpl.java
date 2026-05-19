@@ -711,7 +711,7 @@ public class ClientImpl implements Client {
         @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler,
                 Handler<AsyncResult<T>> asyncResultHandler) {
-            getDelegate().executeBlocking(blockingCodeHandler, asyncResultHandler);
+            getDelegate().executeBlocking(blockingCodeHandler, true, asyncResultHandler);
         }
 
         @Override
@@ -722,7 +722,7 @@ public class ClientImpl implements Client {
 
         @Override
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler) {
-            return getDelegate().executeBlocking(blockingCodeHandler);
+            return getDelegate().executeBlocking(blockingCodeHandler, true);
         }
 
         @Override

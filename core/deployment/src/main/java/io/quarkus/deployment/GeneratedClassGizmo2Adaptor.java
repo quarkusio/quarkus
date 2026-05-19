@@ -30,6 +30,13 @@ public class GeneratedClassGizmo2Adaptor implements ClassOutput {
         this.applicationClassPredicate = ignored -> applicationClass;
     }
 
+    @Deprecated
+    public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            final BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            boolean applicationClass) {
+        this(generatedClasses, generatedResources, null, applicationClass);
+    }
+
     public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -38,6 +45,13 @@ public class GeneratedClassGizmo2Adaptor implements ClassOutput {
         this.generatedResources = generatedResources;
         this.generatedServiceProviders = generatedServiceProviders;
         this.applicationClassPredicate = applicationClassPredicate;
+    }
+
+    @Deprecated
+    public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            final BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            Predicate<String> applicationClassPredicate) {
+        this(generatedClasses, generatedResources, null, applicationClassPredicate);
     }
 
     public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -53,6 +67,13 @@ public class GeneratedClassGizmo2Adaptor implements ClassOutput {
                 return isApplicationClass(generatedToBaseNameFunction.apply(s));
             }
         };
+    }
+
+    @Deprecated
+    public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            final BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            Function<String, String> generatedToBaseNameFunction) {
+        this(generatedClasses, generatedResources, null, generatedToBaseNameFunction);
     }
 
     @Override

@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
 
-import io.quarkus.fs.util.ZipUtils;
+import io.github.aloubyansky.rozip.ZipUtils;
 
 public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
@@ -178,7 +178,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     protected FileSystem openFs() throws IOException {
-        return ZipUtils.newFileSystem(archive);
+        return ZipUtils.newReadOnlyFileSystem(archive);
     }
 
     @Override

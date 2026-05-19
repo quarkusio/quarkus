@@ -57,10 +57,12 @@ public interface ManagementInterfaceBuildTimeConfig {
     boolean enableCompression();
 
     /**
-     * When enabled, vert.x will decompress the request's body if it's compressed.
+     * When enabled, Vert.x installs Netty's {@code HttpContentDecompressor} so request bodies may be
+     * decompressed before they reach application code, based on the {@code Content-Encoding} header.
      * <p>
-     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header
-     * in the request.
+     * Supported codings match Netty (see {@code quarkus.http.enable-decompression} on the primary HTTP server for the
+     * full description, including Snappy framing requirements, GraalVM native limits, and behavior when inbound
+     * decompression fails).
      */
     @WithDefault("false")
     boolean enableDecompression();

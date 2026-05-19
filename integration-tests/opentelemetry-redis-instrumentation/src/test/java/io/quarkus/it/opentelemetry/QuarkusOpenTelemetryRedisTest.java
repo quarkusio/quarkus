@@ -35,7 +35,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 @QuarkusTest
 @SuppressWarnings("unchecked")

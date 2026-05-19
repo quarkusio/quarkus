@@ -165,7 +165,7 @@ Here is how we measure startup time in our tests.
 
 === Approach
 
-We record a nanosecond timestamp immediately before launching the application, then poll the application's HTTP endpoint until it returns a 200 response. The difference is the Time to First Request (TTFR).
+We record a timestamp immediately before launching the application, then poll the application's HTTP endpoint until it returns a 200 response. The difference is the Time to First Request (TTFR).
 
 The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/scripts/time-to-1st-request.sh[`time-to-1st-request.sh`] script in the benchmark repository implements this precisely. It records the start time using nanosecond precision:
 

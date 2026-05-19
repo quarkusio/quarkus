@@ -128,7 +128,7 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
                                             amount)));
                 }
             }
-        });
+        }, true);
         fut.onComplete(new Handler<>() {
             @Override
             public void handle(AsyncResult<Buffer> ar) {

@@ -43,7 +43,7 @@ public final class BlockingHelper {
                 }
             });
         } else if (vc != null) {
-            vc.executeBlocking(contextualCallable).onComplete(result);
+            vc.executeBlocking(contextualCallable, false).onComplete(result);
         } else {
             // No Vert.x context (e.g. ForkJoinPool thread after CompletableFuture.supplyAsync) —
             // already off the event loop, safe to execute directly

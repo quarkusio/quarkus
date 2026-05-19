@@ -105,7 +105,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         } else {
             var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
                     actualTestMethodArgs, uniAsserter);
-            cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
+            cf = ((CompletableFuture<Object>) context.executeBlocking(handler, false).toCompletionStage());
         }
 
         try {

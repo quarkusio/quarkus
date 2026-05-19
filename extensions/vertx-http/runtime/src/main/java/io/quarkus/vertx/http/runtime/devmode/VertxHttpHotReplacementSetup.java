@@ -134,7 +134,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             routingContext.response().end();
                             return null;
                         }
-                    }).onFailure(routingContext::fail);
+                    }, false).onFailure(routingContext::fail);
                 }
             });
             routingContext.request().resume();

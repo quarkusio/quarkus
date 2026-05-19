@@ -1,0 +1,419 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="flyway-mongodb"]
+= Using Flyway for MongoDB schema migrations
+include::_attributes.adoc[]
+:categories: data
+:summary: Apply Flyway database migrations to MongoDB using the Quarkus Flyway MongoDB extension.
+:topics: data,flyway,mongodb,migration
+:extensions: io.quarkus:quarkus-flyway-mongodb,io.quarkus:quarkus-mongodb-client
+
+This extension applies https://flywaydb.org/[Flyway] migrations to MongoDB
+databases that are configured through the
+xref:mongodb.adoc[Quarkus MongoDB client extension]. It wraps Flyway's
+community-edition `flyway-database-nc-mongodb` connector, which uses the
+official MongoDB Java driver for schema-history operations and the
+https://www.mongodb.com/docs/mongodb-shell/[mongosh] shell to execute
+the JavaScript migration scripts.
+
+[[prerequisites]]
+== Prerequisites
+
+The `flyway-database-nc-mongodb` connector executes JavaScript (`.js`)
+migration scripts by spawning a `mongosh` subprocess, so when you use
+`.js` migrations `mongosh` must be installed and available on the `PATH`
+of the process that runs Flyway. This is true at both development time and
+at runtime (including JVM and native modes).
+
+Install `mongosh` by following the
+https://www.mongodb.com/docs/mongodb-shell/install/[official instructions]
+for your operating system.
+
+If `mongosh` is not available, Flyway will fail when applying a `.js`
+migration with an error from the NC connector indicating that the shell
+could not be started.
+
+`mongosh` is *not* required if you use JSON (`.json`) migrations, which are
+executed directly through the MongoDB driver API. Set
+`quarkus.flyway-mongodb.migration-suffixes=.json` to switch to that format
+(see <<migration-scripts>>).
+
+== Adding the extension
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-flyway-mongodb</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-flyway-mongodb")
+----
+
+`quarkus-mongodb-client` is pulled in transitively. Configure your MongoDB
+client as you normally would.
+
+== Configuration
+
+Migrations are scanned at build time from `db/migration` (configurable).
+For each MongoDB client configured under `quarkus.mongodb.*`, the extension
+produces a `Flyway` and `FlywayMongodbContainer` bean.
+
+[source,properties]
+----
+quarkus.mongodb.connection-string=mongodb://localhost:27017
+quarkus.mongodb.database=app
+
+quarkus.flyway-mongodb.database=app
+quarkus.flyway-mongodb.migrate-at-start=true
+----
+
+NOTE: With `quarkus.flyway-mongodb.migrate-at-start=true`, as in the example
+above, Quarkus will execute the Flyway migration as part of the
+xref:lifecycle.adoc[application startup].
+
+To target a named MongoDB client, repeat the per-client subkeys:
+
+[source,properties]
+----
+quarkus.mongodb.analytics.connection-string=mongodb://localhost:27017
+quarkus.mongodb.analytics.database=analytics
+
+quarkus.flyway-mongodb.analytics.database=analytics
+quarkus.flyway-mongodb.analytics.locations=analytics-migrations
+quarkus.flyway-mongodb.analytics.migrate-at-start=true
+----
+
+Inject the named instance with the `@FlywayMongodbClient` qualifier:
+
+[source,java]
+----
+import io.quarkus.flyway.mongodb.FlywayMongodbClient;
+import org.flywaydb.core.Flyway;
+import jakarta.inject.Inject;
+
+public class AnalyticsService {
+
+    @Inject
+    @FlywayMongodbClient("analytics")
+    Flyway flyway;
+}
+----
+
+NOTE: Without explicit `quarkus.flyway-mongodb.*` configuration, a `Flyway`
+bean is still produced for every configured MongoDB client using the default
+settings. Startup operations such as `migrate-at-start` remain disabled until
+opted in.
+
+[[migration-scripts]]
+== Migration scripts
+
+Migrations follow Flyway's naming convention, for example `V1__create_users.js`.
+By default only `*.js` files are scanned. JavaScript migrations are executed
+via `mongosh`; the `flyway-database-nc-mongodb` connector also accepts
+`*.json` migrations, which are executed through the MongoDB driver API.
+However, the connector does
+https://documentation.red-gate.com/fd/flyway-native-connectors-mongodb-271583122.html[not
+currently support mixing] `.js` and `.json` migrations in the same Flyway project — pick
+one format and configure `migration-suffixes` accordingly:
+
+[source,properties]
+----
+# use JSON-format migrations instead of JavaScript (build-time property)
+quarkus.flyway-mongodb.migration-suffixes=.json
+----
+
+[source,javascript]
+----
+db.createCollection("users");
+db.users.insertOne({ name: "alice" });
+----
+
+TIP: In dev mode Quarkus will automatically restart the application if any of
+the existing migration scripts get modified. If you want to take advantage of
+this while developing and testing new migration scripts, you will want to set
+`%dev.quarkus.flyway-mongodb.clean-at-start=true`, so that Flyway actually
+runs the modified migration.
+
+== Programmatic configuration customization
+
+Implement `FlywayMongodbConfigurationCustomizer` as a CDI bean to customize
+Flyway's `FluentConfiguration` before the `Flyway` instance is created:
+
+[source,java]
+----
+import io.quarkus.flyway.mongodb.FlywayMongodbConfigurationCustomizer;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+
+@ApplicationScoped
+public class MyFlywayCustomizer implements FlywayMongodbConfigurationCustomizer {
+
+    @Override
+    public void customize(FluentConfiguration configuration) {
+        configuration.encoding("UTF-8");
+    }
+}
+----
+
+To target a specific named client, add the `@FlywayMongodbClient` qualifier:
+
+[source,java]
+----
+@ApplicationScoped
+@FlywayMongodbClient("analytics")
+public class AnalyticsFlywayCustomizer implements FlywayMongodbConfigurationCustomizer {
+
+    @Override
+    public void customize(FluentConfiguration configuration) {
+        configuration.outOfOrder(true);
+    }
+}
+----
+
+== Using the Flyway object
+
+In case you are interested in using the `Flyway` object directly, you can
+inject it as follows:
+
+[source,java]
+----
+import io.quarkus.flyway.mongodb.FlywayMongodbClient;
+import org.flywaydb.core.Flyway;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
+@ApplicationScoped
+public class MigrationService {
+
+    @Inject
+    Flyway flyway; <1>
+
+    @Inject
+    @FlywayMongodbClient("inventory") <2>
+    Flyway flywayForInventory;
+
+    @Inject
+    @Named("flyway_mongodb_users") <3>
+    Flyway flywayForUsers;
+
+    public void checkMigration() {
+        // Use the Flyway instance manually
+        flyway.clean(); <4>
+        flyway.migrate();
+        // This will print the current schema version, e.g. 1.0.0
+        System.out.println(flyway.info().current().getVersion().toString());
+    }
+}
+----
+
+<1> Inject the `Flyway` object for the default MongoDB client.
+<2> Inject `Flyway` for a named MongoDB client using the `FlywayMongodbClient` qualifier.
+<3> Alternatively, inject by bean name. Named beans are registered as `flyway_mongodb_<client>`.
+<4> Use the `Flyway` instance directly. Calling `clean()` requires `clean-disabled=false`.
+
+== Startup operations
+
+The following per-client flags control startup behavior. Operations run
+in this order: `clean` → `validate` → `baseline` → `repair` → `migrate`.
+
+[cols="2,1,3"]
+|===
+| Property | Default | Description
+
+| `quarkus.flyway-mongodb._<client>_.active`
+| _unset_
+| Activate/deactivate Flyway for this client at runtime. When `false`, all
+  startup operations are skipped and the `Flyway` bean is inactive — any
+  injection point that resolves it throws `InactiveBeanException`. Defaults
+  to the active state of the underlying MongoDB client.
+
+| `quarkus.flyway-mongodb._<client>_.migrate-at-start`
+| `false`
+| Run `migrate()` at startup.
+
+| `quarkus.flyway-mongodb._<client>_.clean-at-start`
+| _unset_
+| Run `clean()` at startup. Requires `clean-disabled=false`.
+
+| `quarkus.flyway-mongodb._<client>_.validate-at-start`
+| `false`
+| Run `validate()` at startup.
+
+| `quarkus.flyway-mongodb._<client>_.repair-at-start`
+| `false`
+| Run `repair()` at startup.
+
+| `quarkus.flyway-mongodb._<client>_.baseline-at-start`
+| `false`
+| Run `baseline()` at startup. Does not also call migrate.
+
+| `quarkus.flyway-mongodb._<client>_.clean-disabled`
+| `false`
+| Flyway safety lock. When true, `flyway.clean()` throws.
+
+| `quarkus.flyway-mongodb._<client>_.validate-at-start.clean-on-validation-error`
+| `false`
+| If validation fails, automatically clean before migrate.
+
+| `quarkus.flyway-mongodb._<client>_.baseline-on-migrate`
+| `false`
+| Pass-through to Flyway's `baselineOnMigrate`.
+
+| `quarkus.flyway-mongodb._<client>_.baseline-version`
+| _unset_
+| Pass-through.
+
+| `quarkus.flyway-mongodb._<client>_.baseline-description`
+| _unset_
+| Pass-through.
+
+| `quarkus.flyway-mongodb._<client>_.collection`
+| `flyway_schema_history`
+| Schema history collection name.
+
+| `quarkus.flyway-mongodb._<client>_.placeholders`
+| empty
+| Placeholder substitutions for migration scripts.
+|===
+
+The following property is evaluated at *build time*:
+
+[cols="2,1,3"]
+|===
+| Property | Default | Description
+
+| `quarkus.flyway-mongodb._<client>_.migration-suffixes`
+| `.js`
+| File suffixes used when scanning for migration scripts.
+  Changes require an application rebuild.
+|===
+
+The tables above cover the most user-facing properties. Additional
+per-client knobs such as `connect-retries`, `connect-retries-interval`,
+`connection-string`, `database`, `migration-prefix`,
+`repeatable-migration-prefix`, `placeholder-prefix`, `placeholder-suffix`,
+`validate-on-migrate`, `validate-migration-naming`, `out-of-order`,
+`ignore-missing-migrations`, `ignore-future-migrations`, and
+`ignore-migration-patterns` are also supported. The full reference is
+generated below.
+
+== Repairing the Flyway schema history collection
+
+There are scenarios that may require _repairing_ the Flyway schema history
+collection — for example, when a migration script fails partway through and
+leaves the `flyway_schema_history` collection in an inconsistent state.
+
+In such situations the link:https://flywaydb.org/documentation/command/repair[Flyway repair command] comes in handy. In Quarkus this can either be executed automatically before the migration by setting `quarkus.flyway-mongodb.repair-at-start=true` or manually by injecting the `Flyway` object and calling `Flyway#repair()`.
+
+== Flyway MongoDB and reactive MongoDB clients
+
+Flyway MongoDB always drives migrations through the official MongoDB Java
+driver and the `mongosh` shell (see the <<prerequisites>>), regardless of how
+the application accesses MongoDB at runtime. The Quarkus MongoDB client can
+be consumed via either the blocking `MongoClient` API or the reactive
+`ReactiveMongoClient` API — both are wired from the same
+`quarkus.mongodb.*` configuration, and no additional setup is required to
+use Flyway MongoDB with a reactive application.
+
+== Flyway on Kubernetes
+
+Sometimes it's helpful not to execute Flyway initialization on each application
+startup. One such example is when deploying on Kubernetes, where it doesn't
+make sense to execute Flyway on every single replica. Instead it's desirable
+to execute it once and then start the actual application without Flyway. To
+support this use case, when generating manifests for Kubernetes the generated
+manifests contain a Kubernetes initialization `Job` for Flyway MongoDB.
+The `Job` runs the migrations once and the application `Pod` starts only
+after the `Job` completes successfully.
+
+=== Disabling
+
+The feature is enabled by default and can be globally disabled, using:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.enabled=false
+----
+
+or on OpenShift:
+
+[source,properties]
+----
+quarkus.openshift.init-task-defaults.enabled=false
+----
+
+=== Using a custom image that controls waiting for the Job
+
+To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-root-v1.7` you can use:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
+----
+
+or on OpenShift:
+
+[source,properties]
+----
+quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
+----
+
+**Note**: In this context globally means `for all extensions that support init task externalization`.
+
+== Dev UI
+
+When the application runs in dev mode, the extension contributes a card to the
+xref:dev-ui.adoc[Dev UI] that lists every configured MongoDB client managed by
+Flyway, along with:
+
+* the number of pending and applied migrations,
+* the current schema-history version,
+* the resolved migration locations,
+* whether `clean` is disabled.
+
+The card also exposes per-client *Migrate* and *Clean* actions, which invoke
+`flyway.migrate()` and `flyway.clean()` respectively against the running
+application. The *Clean* action is disabled when `clean-disabled` is `true`.
+
+== Limitations
+
+* Only script-based migrations are supported (no Java migrations).
+* Java `Callback` beans are not wired into the `Flyway` instance. Script-based
+  callbacks placed in the configured migration locations are, however, picked
+  up by Flyway and executed. The supported lifecycle event prefixes (used as
+  `<event>__<description>.js`) are:
++
+--
+** Migrate: `beforeMigrate`, `afterMigrate`, `afterMigrateError`,
+   `beforeEachMigrate`, `afterEachMigrate`, `afterEachMigrateError`
+** Clean: `beforeClean`, `afterClean`, `afterCleanError`
+** Baseline: `beforeBaseline`, `afterBaseline`, `afterBaselineError`
+** Validate: `beforeValidate`, `afterValidate`, `afterValidateError`
+** Repair: `beforeRepair`, `afterRepair`, `afterRepairError`
+** Info: `beforeInfo`, `afterInfo`, `afterInfoError`
+
+Statement-level callbacks (`beforeEachMigrateStatement`,
+`afterEachMigrateStatement`, ...) are a SQL-parser feature and do not apply,
+since each `.js` migration is executed as a single `mongosh` invocation.
+Undo callbacks are Flyway Teams-only and are not available. The
+`createSchema` callback is a JDBC-layer event and is never fired against
+MongoDB, which has no schema-creation step.
+--
+* The extension wraps the community-edition `flyway-database-nc-mongodb`
+  connector. Flyway's commercial `flyway-database-mongodb` (Teams) is not
+  used.
+
+[[quarkus-flyway-mongodb_configuration]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-flyway-mongodb.adoc[opts=optional, leveloffset=+1]

@@ -1,0 +1,6 @@
+{
+  "insert": "events",
+  "documents": [
+    { "type": "login", "count": 0 }
+  ]
+}

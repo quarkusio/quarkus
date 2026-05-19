@@ -1,7 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -24,6 +26,9 @@ import io.fabric8.kubernetes.api.model.Volume;
  * @param <CF> the {@link ContainerFluent} subtype so that we can identify and initialize the main application container
  */
 interface PodSpecLike<C extends PlatformConfiguration, CF extends ContainerFluent<?>> {
+
+    String SMALLRYE_CONFIG_LOCATIONS = "SMALLRYE_CONFIG_LOCATIONS";
+
     Long getTerminationGracePeriodSeconds();
 
     void withTerminationGracePeriodSeconds(Long terminationGracePeriodSeconds);
@@ -67,7 +72,7 @@ interface PodSpecLike<C extends PlatformConfiguration, CF extends ContainerFluen
         final var container = createOrEditNamedContainer(name);
 
         // configure limits and requests
-        ContainerConverter.setLimitsAndRequests(config.resources(), container);
+        config.resources().applyToContainer(container);
 
         // configure application container with security options if present
         final var securityContext = config.securityContext();
@@ -80,6 +85,35 @@ interface PodSpecLike<C extends PlatformConfiguration, CF extends ContainerFluen
             containerSecContext.endSecurityContext();
         }
 
+        // volume mounts
+        final Set<String> paths = new HashSet<>();
+        config.appSecret().ifPresent(s -> {
+            container.removeMatchingFromVolumeMounts(m -> m.getName().equals(s));
+            container.addNewVolumeMount()
+                    .withName(PlatformConfiguration.APP_SECRET)
+                    .withMountPath(PlatformConfiguration.APP_SECRET_MOUNT_PATH)
+                    .endVolumeMount();
+            paths.add(PlatformConfiguration.APP_SECRET_MOUNT_PATH);
+        });
+
+        config.appConfigMap().ifPresent(s -> {
+            container.removeMatchingFromVolumeMounts(m -> m.getName().equals(s));
+            container.addNewVolumeMount()
+                    .withName(PlatformConfiguration.APP_CONFIG_MAP)
+                    .withMountPath(PlatformConfiguration.APP_CONFIG_MAP_MOUNT_PATH)
+                    .endVolumeMount();
+            paths.add(PlatformConfiguration.APP_CONFIG_MAP_MOUNT_PATH);
+        });
+
+        if (!paths.isEmpty()) {
+            container.addNewEnv().withName(SMALLRYE_CONFIG_LOCATIONS).withValue(String.join(",", paths)).endEnv();
+        }
+
+        config.mounts().forEach((k, v) -> {
+            container.removeMatchingFromVolumeMounts(m -> m.getName().equals(k));
+            container.addToVolumeMounts(v.toVolumeMount(k));
+        });
+
         if (containerCustomizer != null) {
             containerCustomizer.apply(container);
         }
@@ -88,7 +122,7 @@ interface PodSpecLike<C extends PlatformConfiguration, CF extends ContainerFluen
 
         configureMainApplicationPod(config);
 
-        addAllToVolumes(config.toKubeVolumes());
+        addAllToVolumes(config.toVolumes());
     }
 
     default void configureMainApplicationPod(C config) {

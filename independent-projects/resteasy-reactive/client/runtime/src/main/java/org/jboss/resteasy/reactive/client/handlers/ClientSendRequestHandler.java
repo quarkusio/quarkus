@@ -66,6 +66,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.internal.buffer.BufferInternal;
+import io.vertx.core.internal.http.HttpClientInternal;
 import io.vertx.core.streams.Pipe;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
@@ -273,9 +274,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
              * The docs for `redirectHandler()` make no statement about whether the returned result is nullable.
              * We'll guard against null here and assume there's no redirect taking place.
              */
-            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
-                    // For Vert.x 5 we'll have to cast the `HttpClient` to `HttpClientInternal` in order to access
-                    // this method
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = ((HttpClientInternal) requestContext
+                    .getHttpClient())
                     .redirectHandler();
             if (redirectHandler == null) {
                 return Future.succeededFuture(null);

@@ -79,7 +79,7 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
 
                 sample.stop(timer
                         .withTags(Tags.of(
-                                Tag.of("address", HttpCommonTags.address(requestContext.getUri())),
+                                address(requestContext),
                                 HttpCommonTags.method(requestContext.getMethod()),
                                 HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
                                         httpMetricsConfig.isClientSuppress4xxErrors()),
@@ -88,6 +88,15 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
                                 clientName(requestContext))));
             }
         }
+    }
+
+    private Tag address(ClientRequestContext requestContext) {
+        String host = requestContext.getUri().getHost();
+        int port = requestContext.getUri().getPort();
+        if (host == null) {
+            return Tag.of("address", "none");
+        }
+        return Tag.of("address", port > 0 ? host + ":" + port : host);
     }
 
     private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {

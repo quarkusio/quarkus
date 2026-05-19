@@ -95,7 +95,6 @@ public class HttpCommonTags {
             }
         }
 
-        // Use first segment of request path
         return Tag.of("uri", pathInfo);
     }
 

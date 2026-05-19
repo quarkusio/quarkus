@@ -71,14 +71,13 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
                     httpMetricsConfig.getClientMatchPatterns(),
                     httpMetricsConfig.getClientIgnorePatterns(),
                     templatePath == null ? requestContext.getUri().getPath() : templatePath);
-
             if (requestPath != null) {
                 Timer.Sample sample = requestMetric.getSample();
                 int statusCode = responseContext.getStatus();
 
                 sample.stop(timer
                         .withTags(Tags.of(
-                                Tag.of("address", HttpCommonTags.address(requestContext.getUri())),
+                                address(requestContext),
                                 HttpCommonTags.method(requestContext.getMethod()),
                                 HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
                                         httpMetricsConfig.isClientSuppress4xxErrors()),
@@ -87,6 +86,15 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
                                 clientName(requestContext))));
             }
         }
+    }
+
+    private Tag address(ResteasyReactiveClientRequestContext requestContext) {
+        String host = requestContext.getUri().getHost();
+        int port = requestContext.getUri().getPort();
+        if (host == null) {
+            return Tag.of("address", "none");
+        }
+        return Tag.of("address", port > 0 ? host + ":" + port : host);
     }
 
     private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {

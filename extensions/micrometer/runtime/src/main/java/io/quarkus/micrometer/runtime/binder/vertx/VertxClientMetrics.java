@@ -14,7 +14,7 @@ public class VertxClientMetrics
 
     private final String type;
     private final Timer processing;
-    private final LongAdder current = new LongAdder();
+    private final LongAdder current;
     private final Counter resetCount;
     private final Counter completed;
 

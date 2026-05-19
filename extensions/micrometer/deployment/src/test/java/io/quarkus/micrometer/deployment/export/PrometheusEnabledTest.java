@@ -16,6 +16,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+import io.restassured.config.DecoderConfig;
 
 public class PrometheusEnabledTest {
     @RegisterExtension
@@ -69,7 +71,16 @@ public class PrometheusEnabledTest {
 
     @Test
     public void metricsEndpointCompressed() {
-        given().header("Accept-Encoding", "gzip")
+        // Register a metric so the scrape response is non-empty;
+        // Vert.x/Netty skips compression on empty bodies.
+        promRegistry.counter("test.compression.verify").increment();
+
+        // Use DecoderConfig instead of .header("Accept-Encoding", "gzip")
+        // because RestAssured silently ignores manually set Accept-Encoding headers.
+        // See CompressionTest and Testflow for details.
+        given().config(RestAssured.config
+                .decoderConfig(DecoderConfig.decoderConfig()
+                        .contentDecoders(DecoderConfig.ContentDecoder.GZIP)))
                 .get("/q/metrics")
                 .then()
                 .log().all()

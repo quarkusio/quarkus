@@ -20,6 +20,28 @@ Run the full pipeline in one command:
 just docs-preview
 ```
 
+## How It Works
+
+The script uses local marker files to keep the preview workflow fast:
+
+* `docs/.docs-preview-root-build-last-run` — last successful root build.
+  Used to decide whether Step 1 can be skipped.
+* `docs/.docs-preview-root-build-head` — Git HEAD at last root build.
+  Detects branch switches, checkouts, and pulls.
+* `docs/.docs-preview-docs-build-last-run` — last successful docs rebuild.
+  Used to decide whether Step 2 can be skipped.
+* `docs/.docs-preview-last-run` — last preview run.
+  Used to detect recently changed files and open the right preview URL.
+* `docs/.docs-preview-times` — cached execution times for progress estimates.
+
+All marker files are gitignored. Delete them to force a full rebuild.
+
+**Caveat:** The script detects changes to docs sources and `pom.xml` files,
+but does not detect uncommitted changes outside `docs/` (e.g., new config
+properties, extension metadata, or generated-doc producers). If you modify
+code that affects generated documentation, force a root build manually:
+`QUARKUS_DOCS_PREVIEW_FULL=1 just docs-preview`
+
 ## Step 0 — Environment Setup
 
 Source `detect-env.sh` to set `$CONTAINER_CMD`, `$VOL_FLAG`,
@@ -102,8 +124,8 @@ fi
 
 The `--config` flag chain loads `_only_latest_guides_config.yml` (excludes
 old version directories) and `_config_dev.yml` (uses staging search
-cluster). These files are created by `sync-web-site.sh` inside
-`target/web-site/`.
+cluster). These files come from the `quarkusio.github.io` repository,
+cloned into `target/web-site/` by `sync-web-site.sh`.
 
 **Primary** — build from the upstream `jekyll-container/` Dockerfile
 (available after sync). This matches what `quarkusio.github.io` uses in

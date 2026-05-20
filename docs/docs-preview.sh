@@ -3,17 +3,19 @@ SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd) || exit 1
 cd "$SCRIPTDIR" || exit 1
 
 # Verify required commands before anything else
-for cmd in awk curl rsync find stat mktemp grep sed sort head tail cut basename date seq tee mv; do
+for cmd in awk curl rsync find stat mktemp grep sed sort head tail cut basename date seq tee mv git; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "ERROR: required command not found: $cmd"
     exit 1
   fi
 done
 
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'quarkus-docs-build-*' -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
 LOGDIR=$(mktemp -d "${TMPDIR:-/tmp}/quarkus-docs-build-XXXXXX") || exit 1
 
 # Primary: build from the upstream jekyll-container/ Dockerfile (in the website checkout).
 # Fallback: use pre-built images if the Dockerfile is not available (first run before sync).
+CONTAINER_NAME="quarkus-docs-preview"
 JEKYLL_LOCAL_IMAGE="quarkus-docs-jekyll:local"
 JEKYLL_IMAGE_FALLBACK="docker.io/bretfisher/jekyll-serve@sha256:db11b70736935b1a777b2ff2ae10f9ad191ee9fca6560eade1d5ad98b74e5f66"
 JEKYLL_IMAGE_FALLBACK2="docker.io/jekyll/jekyll@sha256:bb45414c3fefa80a75c5001f30baf1dff48ae31dc961b8b51003b93b60675334"
@@ -21,6 +23,7 @@ JEKYLL_IMAGE_FALLBACK2="docker.io/jekyll/jekyll@sha256:bb45414c3fefa80a75c5001f3
 PREVIEW_REF="$SCRIPTDIR/docs/.docs-preview-last-run"
 ROOT_BUILD_REF="$SCRIPTDIR/docs/.docs-preview-root-build-last-run"
 ROOT_BUILD_HEAD_REF="$SCRIPTDIR/docs/.docs-preview-root-build-head"
+DOCS_BUILD_REF="$SCRIPTDIR/docs/.docs-preview-docs-build-last-run"
 TIMES_CACHE="$SCRIPTDIR/docs/.docs-preview-times"
 LOCK_DIR="$SCRIPTDIR/docs/.docs-preview.lock"
 
@@ -30,9 +33,15 @@ ACTIVE_PID=""
 
 # Prevent concurrent runs
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-  echo "Another docs preview run is already active."
-  echo "If this is stale, remove: $LOCK_DIR"
-  exit 1
+  LOCK_PID=$(cat "$LOCK_DIR/pid" 2>/dev/null)
+  if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
+    echo "Another docs preview run is already active (PID $LOCK_PID)."
+    echo "If this is stale, remove: $LOCK_DIR"
+    exit 1
+  fi
+  echo "Removing stale lock (PID ${LOCK_PID:-unknown} no longer running)."
+  rm -rf "$LOCK_DIR"
+  mkdir "$LOCK_DIR" || exit 1
 fi
 
 cleanup_on_exit() {
@@ -43,12 +52,15 @@ cleanup_on_interrupt() {
   echo "Interrupted."
   if [ -n "$ACTIVE_PID" ] && kill -0 "$ACTIVE_PID" 2>/dev/null; then
     kill "$ACTIVE_PID" 2>/dev/null || true
+    wait "$ACTIVE_PID" 2>/dev/null || true
   fi
   rm -rf "$LOCK_DIR"
   exit 130
 }
 trap cleanup_on_exit EXIT
 trap cleanup_on_interrupt INT TERM
+
+echo $$ > "$LOCK_DIR/pid"
 
 # --- Progress display helpers ---
 
@@ -160,7 +172,7 @@ root_build_needed() {
 # --- Container reuse ---
 
 container_running() {
-  [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' quarkus-docs-preview 2>/dev/null)" = "true" ]
+  [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" = "true" ]
 }
 
 preview_ready() {
@@ -221,9 +233,20 @@ port_in_use() {
 
 if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
   if port_in_use 4000 || port_in_use 35729; then
-    echo "Port 4000 or 35729 is already in use."
-    echo "If a previous preview is running: $CONTAINER_CMD rm -f quarkus-docs-preview"
-    exit 1
+    if container_running; then
+      echo "  Stale preview container detected. Removing..."
+      $CONTAINER_CMD rm -f "$CONTAINER_NAME" 2>/dev/null || true
+      sleep 1
+      if port_in_use 4000 || port_in_use 35729; then
+        echo "Port 4000 or 35729 is still in use after removing stale container."
+        echo "Free the port and try again."
+        exit 1
+      fi
+    else
+      echo "Port 4000 or 35729 is already in use by another process."
+      echo "Free the port and try again."
+      exit 1
+    fi
   fi
 fi
 
@@ -273,13 +296,34 @@ fi
 # --- Step 2: Docs Rebuild ---
 
 echo ""
-echo "=== Step 2: Docs rebuild (~${EST_DOCS}s estimated) ==="
-cd docs || exit 1
-STEP2_START=$(date +%s)
-run_with_progress "Docs rebuild" "$EST_DOCS" "$LOGDIR/step2.log" \
-  ../mvnw -ntp package -Dasciidoctor.fail-if=ERROR
-RC=$?
-STEP2_TIME=$(( $(date +%s) - STEP2_START ))
+docs_rebuild_needed() {
+  [ "$RUN_ROOT_BUILD" = "true" ] && return 0
+  [ ! -f "$DOCS_BUILD_REF" ] && return 0
+  [ ! -d "$SCRIPTDIR/docs/target/asciidoc/sources" ] && return 0
+  if [ "$SCRIPTDIR/docs/pom.xml" -nt "$DOCS_BUILD_REF" ]; then
+    return 0
+  fi
+  if find "$SCRIPTDIR/docs/src/main/asciidoc" \
+      -type f -newer "$DOCS_BUILD_REF" -print 2>/dev/null | grep -q .; then
+    return 0
+  fi
+  return 1
+}
+
+if docs_rebuild_needed; then
+  echo "=== Step 2: Docs rebuild (~${EST_DOCS}s estimated) ==="
+  cd docs || exit 1
+  STEP2_START=$(date +%s)
+  run_with_progress "Docs rebuild" "$EST_DOCS" "$LOGDIR/step2.log" \
+    ../mvnw -ntp package -Dasciidoctor.fail-if=ERROR
+  RC=$?
+  STEP2_TIME=$(( $(date +%s) - STEP2_START ))
+else
+  echo "=== Step 2: Docs rebuild (skipped — no source changes) ==="
+  cd docs || exit 1
+  RC=0
+  STEP2_TIME=0
+fi
 
 # If docs rebuild fails and we skipped root build, retry with root build
 if [ $RC -ne 0 ] && [ "$RUN_ROOT_BUILD" != "true" ]; then
@@ -289,7 +333,7 @@ if [ $RC -ne 0 ] && [ "$RUN_ROOT_BUILD" != "true" ]; then
   STEP1_START=$(date +%s)
   # shellcheck disable=SC2086
   run_with_progress "Root build (recovery)" "$EST_ROOT" "$LOGDIR/step1-recovery.log" \
-    $MVNCMD install -DquicklyDocs \
+    $MVNCMD clean install -DquicklyDocs \
     -Dno-test-modules -Dskip.gradle.build=true -Dmaven.javadoc.skip=true
   RC=$?
   if [ $RC -ne 0 ]; then
@@ -311,7 +355,10 @@ if [ $RC -ne 0 ]; then
   echo "  Docs rebuild failed. Check $LOGDIR/step2.log"
   exit 1
 fi
-save_step_time "docs" "$STEP2_TIME" || true
+if [ "$STEP2_TIME" -gt 0 ]; then
+  save_step_time "docs" "$STEP2_TIME" || true
+  touch "$DOCS_BUILD_REF" 2>/dev/null || true
+fi
 
 # --- Step 3: Sync ---
 
@@ -345,8 +392,7 @@ run_fast_sync() {
 
 run_full_sync() {
   local log="$1"
-  ./sync-web-site.sh 2>&1 | tee "$log"
-  [ "${PIPESTATUS[0]}" -eq 0 ]
+  ./sync-web-site.sh > "$log" 2>&1
 }
 
 SYNC_TYPE="full"
@@ -409,13 +455,13 @@ if [ "$PREVIEW_ALREADY_RUNNING" = "true" ]; then
 fi
 
 if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
-  $CONTAINER_CMD rm -f quarkus-docs-preview 2>/dev/null || true
+  $CONTAINER_CMD rm -f "$CONTAINER_NAME" 2>/dev/null || true
   cd target/web-site || exit 1
   STEP4_START=$(date +%s)
 
   start_jekyll() {
     local image="$1" mount="$2" run_log="$3"
-    if ! $CONTAINER_CMD run -d --name quarkus-docs-preview \
+    if ! $CONTAINER_CMD run -d --name "$CONTAINER_NAME" \
       -p 127.0.0.1:4000:4000 -p 127.0.0.1:35729:35729 \
       -v "$(pwd):${mount}${VOL_FLAG}" \
       -v quarkus-jekyll-bundles:/usr/local/bundle \
@@ -426,11 +472,15 @@ if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
       > "$run_log" 2>&1; then
       return 1
     fi
-    sleep 3
-    if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' quarkus-docs-preview 2>/dev/null)" != "true" ]; then
-      $CONTAINER_CMD logs quarkus-docs-preview >> "$run_log" 2>&1
-      return 1
-    fi
+    local _i
+    for _i in $(seq 1 10); do
+      if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" = "true" ]; then
+        return 0
+      fi
+      sleep 1
+    done
+    $CONTAINER_CMD logs "$CONTAINER_NAME" >> "$run_log" 2>&1
+    return 1
   }
 
   # Primary: build from the upstream jekyll-container/ Dockerfile
@@ -445,7 +495,7 @@ if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
         STARTED=true
       else
         echo "  Local image failed to start. Trying fallback..."
-        $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
       fi
     fi
   fi
@@ -455,13 +505,13 @@ if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
     PULL_OK=true
     if ! $CONTAINER_CMD image inspect "$JEKYLL_IMAGE_FALLBACK" > /dev/null 2>&1; then
       echo "  Pulling fallback Jekyll image (first time only)..."
-      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK" > /dev/null 2>&1 || PULL_OK=false
+      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK" > "$LOGDIR/step4-fallback-pull.log" 2>&1 || PULL_OK=false
     fi
     if [ "$PULL_OK" = "true" ]; then
       if start_jekyll "$JEKYLL_IMAGE_FALLBACK" "/site" "$LOGDIR/step4-fallback.log"; then
         STARTED=true
       else
-        $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
       fi
     fi
   fi
@@ -471,29 +521,29 @@ if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
     PULL_OK2=true
     if ! $CONTAINER_CMD image inspect "$JEKYLL_IMAGE_FALLBACK2" > /dev/null 2>&1; then
       echo "  Pulling second fallback image..."
-      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK2" > /dev/null 2>&1 || PULL_OK2=false
+      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK2" > "$LOGDIR/step4-fallback2-pull.log" 2>&1 || PULL_OK2=false
     fi
     if [ "$PULL_OK2" = "true" ]; then
       if start_jekyll "$JEKYLL_IMAGE_FALLBACK2" "/srv/jekyll" "$LOGDIR/step4-fallback2.log"; then
         STARTED=true
       else
-        $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
       fi
     fi
   fi
 
   if [ "$STARTED" != "true" ]; then
     echo "  All images failed. Check $LOGDIR/step4*.log"
-    $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+    $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
     exit 1
   fi
 
   echo "  Waiting for Jekyll to generate the site..."
   for i in $(seq 1 150); do
-    if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' quarkus-docs-preview 2>/dev/null)" != "true" ]; then
+    if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]; then
       echo "  Container exited during startup."
-      $CONTAINER_CMD logs quarkus-docs-preview 2>&1 | tail -50 | tee "$LOGDIR/step4-crash.log"
-      $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+      $CONTAINER_CMD logs "$CONTAINER_NAME" 2>&1 | tail -50 | tee "$LOGDIR/step4-crash.log"
+      $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
       exit 1
     fi
     if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000 2>/dev/null)" = "200" ]; then
@@ -504,8 +554,8 @@ if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
     fi
     if [ "$i" -eq 150 ]; then
       echo "  Timeout after 300s."
-      $CONTAINER_CMD logs quarkus-docs-preview 2>&1 | tail -50 | tee "$LOGDIR/step4-timeout.log"
-      $CONTAINER_CMD rm -f quarkus-docs-preview >/dev/null 2>&1 || true
+      $CONTAINER_CMD logs "$CONTAINER_NAME" 2>&1 | tail -50 | tee "$LOGDIR/step4-timeout.log"
+      $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
       exit 1
     fi
     local_elapsed=$(( $(date +%s) - STEP4_START ))
@@ -532,11 +582,9 @@ echo "==============================="
 echo ""
 
 file_mtime_path() {
-  if stat -c '%Y %n' "$1" >/dev/null 2>&1; then
-    stat -c '%Y %n' "$1"
-  else
-    stat -f '%m %N' "$1"
-  fi
+  local result
+  result=$(stat -c '%Y %n' "$1" 2>/dev/null) || result=$(stat -f '%m %N' "$1")
+  echo "$result"
 }
 
 newest_adoc_after() {
@@ -552,7 +600,7 @@ all_adoc_after() {
   local dir="$1" ref="$2"
   [ -d "$dir" ] || return 0
   [ -f "$ref" ] || return 0
-  find "$dir" -name '*.adoc' -newer "$ref" -print 2>/dev/null
+  find "$dir" -maxdepth 1 -name '*.adoc' -newer "$ref" -print 2>/dev/null
 }
 
 PREVIEW_URLS=()
@@ -608,6 +656,6 @@ else
 fi
 echo ""
 echo "Preview is ready."
-echo "Container: quarkus-docs-preview"
-echo "Stop:      $CONTAINER_CMD rm -f quarkus-docs-preview"
+echo "Container: $CONTAINER_NAME"
+echo "Stop:      $CONTAINER_CMD rm -f $CONTAINER_NAME"
 echo "Logs:      $LOGDIR"

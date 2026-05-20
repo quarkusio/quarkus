@@ -40,8 +40,10 @@ nb-configuration.xml
 .mvn/.gradle-enterprise/
 .goose
 .claude
+.junie
 .bob
 **/.claude
+**/.junie
 .quarkus
 
 CLAUDE.local.md
@@ -49,5 +51,6 @@ docs/superpowers
 docs/.docs-preview-last-run
 docs/.docs-preview-root-build-last-run
 docs/.docs-preview-root-build-head
+docs/.docs-preview-docs-build-last-run
 docs/.docs-preview-times
 docs/.docs-preview.lock/

@@ -128,7 +128,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>

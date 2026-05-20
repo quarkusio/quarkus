@@ -48,7 +48,7 @@
         <smallrye-common.version>2.17.0</smallrye-common.version>
         <smallrye-config.version>3.17.2</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.3.1</smallrye-open-api.version>
+        <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
         <smallrye-graphql.version>2.18.1</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
@@ -78,7 +78,7 @@
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
+        <jaxb-runtime.version>4.0.8</jaxb-runtime.version>
         <asm.version>9.9.1</asm.version>
         <commons-io.version>2.22.0</commons-io.version>
         <jboss-metadata-web.version>17.1.0</jboss-metadata-web.version>
@@ -88,7 +88,7 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
-        <jackson-bom.version>2.21.2</jackson-bom.version>
+        <jackson-bom.version>2.21.3</jackson-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.22.0</commons-codec.version>
@@ -97,7 +97,7 @@
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.4.Final</narayana.version>
         <narayana-lra.version>1.1.0.Final</narayana-lra.version>
-        <agroal.version>3.1</agroal.version>
+        <agroal.version>3.1.2</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>9.3.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -121,7 +121,7 @@
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
         <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
-        <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.0.0.0</oracle-jdbc.version>
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
@@ -130,7 +130,7 @@
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
         <infinispan.version>16.0.9</infinispan.version>
         <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
-        <caffeine.version>3.2.3</caffeine.version>
+        <caffeine.version>3.2.4</caffeine.version>
         <netty.version>4.1.133.Final</netty.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>

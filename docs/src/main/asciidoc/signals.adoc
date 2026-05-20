@@ -164,17 +164,17 @@ Receivers can access this metadata via the `SignalContext`.
 ----
 // Attach metadata to a single emission
 orderPlaced
-    .putMetadata("traceId", "abc-123")
-    .putMetadata("source", "web")
+    .withMetadata("traceId", "abc-123")
+    .withMetadata("source", "web")
     .publish(new OrderPlaced("123", BigDecimal.TEN));
 
 // Or replace all metadata at once
 orderPlaced
-    .setMetadata(Map.of("traceId", "abc-123", "source", "web"))
+    .withReplacedMetadata(Map.of("traceId", "abc-123", "source", "web"))
     .publish(new OrderPlaced("123", BigDecimal.TEN));
 ----
 
-NOTE: Both `putMetadata()` and `setMetadata()` return a new child `Signal` instance; the original instance is not modified.
+NOTE: Both `withMetadata()` and `withReplacedMetadata()` return a new child `Signal` instance; the original instance is not modified.
 
 === No Matching Receiver
 

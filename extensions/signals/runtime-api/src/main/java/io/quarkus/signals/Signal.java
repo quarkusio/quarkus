@@ -131,14 +131,13 @@ public interface Signal<T> {
      * Obtains a child {@code Signal} with the given metadata entry, replacing any previously added entry for the given key
      * entries.
      * <p>
-     * <p>
      * The metadata entries will be used for all emissions from the returned signal instance.
      *
      * @param key
      * @param value
      * @return the child {@code Signal}
      */
-    Signal<T> putMetadata(String key, Object value);
+    Signal<T> withMetadata(String key, Object value);
 
     /**
      * Obtains a child {@code Signal} with the given metadata, replacing any previously added metadata entries.
@@ -148,7 +147,7 @@ public interface Signal<T> {
      * @param metadata
      * @return the child {@code Signal}
      */
-    Signal<T> setMetadata(Map<String, Object> metadata);
+    Signal<T> withReplacedMetadata(Map<String, Object> metadata);
 
     /**
      * Sends a signal to <em>all</em> receivers matching the specified signal type and qualifiers (multicast, fire-and-forget).

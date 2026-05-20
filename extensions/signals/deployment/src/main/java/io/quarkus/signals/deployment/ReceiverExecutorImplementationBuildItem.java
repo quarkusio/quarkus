@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.signals.spi.Receiver.ExecutionModel;
+import io.quarkus.signals.Receivers.ExecutionModel;
 
 final class ReceiverExecutorImplementationBuildItem extends SimpleBuildItem {
 

@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -22,16 +23,18 @@ public class SecurityProviderRecorder {
 
     private static final Logger LOG = Logger.getLogger(SecurityProviderRecorder.class);
 
-    public void configureProvider(String providerName, String providerConfig) {
+    public void configureProvider(String providerName, List<String> providerConfigs) {
         Provider provider = Security.getProvider(providerName);
         if (provider == null) {
             throw new ConfigurationException(
                     String.format("Security provider '%s' is not available", providerName),
                     Set.of("quarkus.security.security-providers"));
         }
-        if (providerConfig != null) {
+        for (String providerConfig : providerConfigs) {
             try {
-                SecurityProviderUtils.addProvider(provider.configure(providerConfig));
+                Provider configured = provider.configure(providerConfig);
+                LOG.debugf("Registering security provider: %s (configured from %s)", configured.getName(), providerConfig);
+                SecurityProviderUtils.addProvider(configured);
             } catch (Exception e) {
                 throw new ConfigurationException(
                         String.format("Failed to configure security provider '%s'", providerName), e,

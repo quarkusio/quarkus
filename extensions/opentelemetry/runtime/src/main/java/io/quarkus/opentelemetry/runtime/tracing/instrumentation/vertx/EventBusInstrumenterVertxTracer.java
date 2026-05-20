@@ -5,6 +5,7 @@ import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.M
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesGetter;
@@ -12,11 +13,15 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.Messagin
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.OpenTelemetryVertxTracer.SpanOperation;
+import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
+import io.vertx.core.Context;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
 
 @SuppressWarnings("rawtypes")
 public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<Message, Message> {
+
     private final Instrumenter<Message, Message> consumerInstrumenter;
     private final Instrumenter<Message, Message> producerInstrumenter;
 
@@ -48,6 +53,66 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     @Override
     public Instrumenter<Message, Message> getReceiveResponseInstrumenter() {
         return producerInstrumenter;
+    }
+
+    /**
+     * Overrides the default {@code sendResponse()} to support deferred scope closing
+     * for blocking EventBus consumer handlers with fire-and-forget messages.
+     * <p>
+     * When a blocking handler sets {@link VertxEventBusConsumerRecorder#DEFER_SEND_RESPONSE_KEY}
+     * on the Vert.x context, this method stores the scope closing and span ending logic as a
+     * {@link Runnable} under {@link VertxEventBusConsumerRecorder#DEFERRED_TRACE_CLEANUP_KEY}
+     * instead of executing it immediately.
+     * This prevents the OTel context from being removed from Vert.x locals before
+     * the worker thread runs the handler.
+     *
+     * @see <a href="https://github.com/eclipse-vertx/vert.x/issues/6021">eclipse-vertx/vert.x#6021</a>
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public <R> void sendResponse(
+            final Context context,
+            final R response,
+            final SpanOperation spanOperation,
+            final Throwable failure,
+            final TagExtractor<R> tagExtractor) {
+
+        if (spanOperation == null) {
+            return;
+        }
+
+        Scope scope = spanOperation.getScope();
+        if (scope == null) {
+            return;
+        }
+
+        Object request = spanOperation.getRequest();
+        Instrumenter<Message, Message> instrumenter = getSendResponseInstrumenter();
+
+        if (failure != null && response == null) {
+            if (spanOperation.tryEndSpan()) {
+                instrumenter.end(spanOperation.getSpanContext(), (Message) request, (Message) response, failure);
+            }
+        } else {
+            Boolean defer = context.getLocal(VertxEventBusConsumerRecorder.DEFER_SEND_RESPONSE_KEY);
+            if (Boolean.TRUE.equals(defer)) {
+                context.removeLocal(VertxEventBusConsumerRecorder.DEFER_SEND_RESPONSE_KEY);
+                context.putLocal(VertxEventBusConsumerRecorder.DEFERRED_TRACE_CLEANUP_KEY, (Runnable) () -> {
+                    try (scope) {
+                        if (spanOperation.tryEndSpan()) {
+                            instrumenter.end(spanOperation.getSpanContext(), (Message) request, (Message) response,
+                                    failure);
+                        }
+                    }
+                });
+                return;
+            }
+            try (scope) {
+                if (spanOperation.tryEndSpan()) {
+                    instrumenter.end(spanOperation.getSpanContext(), (Message) request, (Message) response, failure);
+                }
+            }
+        }
     }
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,

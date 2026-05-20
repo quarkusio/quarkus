@@ -38,6 +38,8 @@ import io.quarkus.dev.spi.DevModeType;
 
 public class ConsoleStateManager {
 
+    private static final Logger log = Logger.getLogger(ConsoleStateManager.class);
+
     public static final ConsoleStateManager INSTANCE = new ConsoleStateManager();
 
     private final Map<Character, Holder> commands = new ConcurrentHashMap<>();
@@ -339,7 +341,11 @@ public class ConsoleStateManager {
         public void addCommandInternal(ConsoleCommand consoleCommand) {
             synchronized (commands) {
                 if (commands.containsKey(consoleCommand.getKey())) {
-                    throw new RuntimeException("Key " + consoleCommand.getKey() + " already registered");
+                    Holder existing = commands.get(consoleCommand.getKey());
+                    log.warnf(
+                            "Console key '%s' from context '%s' is already registered by context '%s', skipping duplicate registration",
+                            consoleCommand.getKey(), this.name, existing.context.name);
+                    return;
                 }
                 commands.put(consoleCommand.getKey(), new Holder(consoleCommand, this));
                 internal.add(consoleCommand);
@@ -348,7 +354,8 @@ public class ConsoleStateManager {
 
         public ConsoleCommand getCommandByKey(Character key) {
             synchronized (commands) {
-                return commands.get(key).consoleCommand;
+                Holder holder = commands.get(key);
+                return holder != null ? holder.consoleCommand : null;
             }
         }
 

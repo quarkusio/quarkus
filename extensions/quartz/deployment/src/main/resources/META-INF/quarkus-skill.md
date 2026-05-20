@@ -18,9 +18,9 @@ public class Jobs {
 
 - Methods must be on CDI beans, return `void` or `Uni<Void>`, and take no arguments (or `ScheduledExecution`).
 - The `identity` is used for pause/resume operations and must be unique.
-- Quartz cron uses **6 fields** (seconds minutes hours day-of-month month day-of-week), not the standard 5-field Unix cron.
+- Quartz cron uses **6 fields** by default (seconds minutes hours day-of-month month day-of-week). This is configurable via `quarkus.scheduler.cron-type` — see the [scheduler reference](https://quarkus.io/guides/scheduler-reference#quarkus-scheduler_quarkus-scheduler-cron-type).
 
-### Two Scheduler APIs
+### Scheduler APIs
 
 1. **`io.quarkus.scheduler.Scheduler`** — Quarkus abstraction for controlling scheduled jobs:
    ```java
@@ -30,23 +30,21 @@ public class Jobs {
    boolean running = scheduler.isRunning();
    ```
 
-2. **`org.quartz.Scheduler`** — Direct Quartz API for programmatic job creation:
+2. **`io.quarkus.quartz.QuartzScheduler`** — Quarkus-native way to access Quartz features, including programmatic job creation and direct access to the underlying Quartz `Scheduler`:
    ```java
-   @Inject org.quartz.Scheduler quartz;
+   @Inject QuartzScheduler quartzScheduler;
 
-   JobDetail job = JobBuilder.newJob(MyJob.class)
-       .withIdentity("dynamic-job", "my-group")
-       .usingJobData("param", "value")
-       .build();
-   Trigger trigger = TriggerBuilder.newTrigger()
-       .withIdentity("dynamic-trigger", "my-group")
-       .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-           .withIntervalInSeconds(5).repeatForever())
-       .build();
-   quartz.scheduleJob(job, trigger);
+   // Programmatic job via Quarkus API
+   quartzScheduler.newJob("dynamic-job")
+       .setInterval("10s")
+       .setTask(execution -> { /* ... */ })
+       .schedule();
+
+   // Or access the underlying org.quartz.Scheduler directly
+   org.quartz.Scheduler quartz = quartzScheduler.getScheduler();
    ```
 
-Use the Quarkus `Scheduler` for pause/resume and status. Use the Quartz `Scheduler` for creating/deleting jobs at runtime.
+Use the Quarkus `Scheduler` for pause/resume and status. Use `QuartzScheduler` for programmatic job management and Quartz-specific features.
 
 ### Programmatic Jobs (Quartz API)
 
@@ -71,7 +69,8 @@ public class MyJob implements Job {
 ### Concurrent Execution
 
 - By default, `@Scheduled` methods CAN run concurrently with themselves.
-- Use `@Scheduled(concurrentExecution = SKIP)` to prevent concurrent runs.
+- Use `@Nonconcurrent` on a `@Scheduled` method to prevent overlapping executions.
+- Alternatively, use `@Scheduled(concurrentExecution = SKIP)`.
 - For Quartz `Job` classes, use `@DisallowConcurrentExecution`.
 
 ### JDBC Job Store (Persistent Jobs)
@@ -81,7 +80,7 @@ quarkus.quartz.store-type=jdbc-cmt
 quarkus.quartz.clustered=true
 ```
 
-Requires a datasource. Quartz tables are created automatically if `quarkus.quartz.store-type=jdbc-cmt` is set. Jobs survive application restarts.
+Requires a datasource. Quartz tables must be created manually via SQL migration (Flyway or Liquibase) — see the [Quarkus Quartz guide](https://quarkus.io/guides/quartz#creating-quartz-tables) for the required table definitions. Jobs survive application restarts.
 
 ### Testing
 
@@ -93,10 +92,24 @@ Requires a datasource. Quartz tables are created automatically if `quarkus.quart
   ```
 - After pausing a job, wait and verify the counter doesn't change.
 
+### Misfire Handling
+
+Misfires occur when a job's trigger time passes without the job executing (e.g., the application was down). Configure misfire policies on `@Scheduled`:
+
+```java
+@Scheduled(cron = "0 0 8 * * ?", identity = "daily-report",
+    misfirePolicy = MisfirePolicy.FIRE_NOW)
+void dailyReport() { /* ... */ }
+```
+
+- `SMART_POLICY` (default) — Quartz picks a sensible policy based on the trigger type.
+- `FIRE_NOW` — execute immediately on recovery.
+- `IGNORE_MISFIRE_POLICY` — fire all missed triggers.
+- `DO_NOTHING` — skip misfired triggers and wait for the next scheduled time.
+
 ### Common Pitfalls
 
-- Quartz cron uses **6 fields** (with seconds) — `"0 */5 * * * ?"` not `"*/5 * * * *"`.
+- Quartz cron uses **6 fields** by default (with seconds) — `"0 */5 * * * ?"` not `"*/5 * * * *"`.
 - `@Scheduled` methods must be on CDI beans — plain classes are ignored.
 - Do NOT use `@Scheduled` on private methods.
 - The Quarkus `Scheduler` and Quartz `Scheduler` are different types — inject the right one for your use case.
-- "No scheduled business methods found" log message at startup is normal if code hasn't compiled yet in dev mode.

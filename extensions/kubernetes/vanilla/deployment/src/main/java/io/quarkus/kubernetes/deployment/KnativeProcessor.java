@@ -1,29 +1,18 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.*;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import io.dekorate.knative.decorator.AddConfigMapVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
-import io.dekorate.knative.decorator.AddSecretVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSidecarToRevisionDecorator;
 import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
-import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
-import io.dekorate.kubernetes.config.EnvBuilder;
-import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.Port;
-import io.dekorate.kubernetes.config.SecretVolumeBuilder;
-import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
-import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
-import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -192,7 +181,6 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         context.add(new ApplyHttpGetActionPortDecorator(name, null));
 
         //Add revision decorators
-        createAppConfigVolumeAndEnvDecorators(context);
         config.hostAliases().entrySet()
                 .forEach(e -> context.add(new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
         config.nodeSelector().ifPresent(n -> context.add(new AddNodeSelectorDecorator(name, n.key(), n.value())));
@@ -213,37 +201,5 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         });
 
         return context.decorators();
-    }
-
-    private void createAppConfigVolumeAndEnvDecorators(DecoratorsContext context) {
-        Set<String> paths = new HashSet<>();
-        config.appSecret().ifPresent(s -> {
-            context.add(new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
-                    .withSecretName(s)
-                    .withVolumeName("app-secret")
-                    .build()));
-            context.add(new AddMountDecorator(new MountBuilder()
-                    .withName("app-secret")
-                    .withPath("/mnt/app-secret")
-                    .build()));
-            paths.add("/mnt/app-secret");
-        });
-
-        config.appConfigMap().ifPresent(s -> {
-            context.add(new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
-                    .withConfigMapName(s)
-                    .withVolumeName("app-config-map")
-                    .build()));
-            context.add(new AddMountDecorator(
-                    new MountBuilder().withName("app-config-map").withPath("/mnt/app-config-map").build()));
-            paths.add("/mnt/app-config-map");
-        });
-
-        if (!paths.isEmpty()) {
-            context.add(new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, context.name(), new EnvBuilder()
-                    .withName("SMALLRYE_CONFIG_LOCATIONS")
-                    .withValue(String.join(",", paths))
-                    .build()));
-        }
     }
 }

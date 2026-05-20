@@ -1,6 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -201,7 +200,7 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      */
     protected Map<String, String> mergeLabelsFromDeploymentWith(List<HasMetadata> items, Map<String, String> labels,
             @Nullable String deploymentName) {
-        Map<String, String> merged = new HashMap<>(labels);
+        Map<String, String> merged = new TreeMap<>(labels);
         deploymentNamed(items, deploymentName)
                 .map(hasMetadata -> hasMetadata.getMetadata().getLabels())
                 .ifPresent(merged::putAll);
@@ -217,7 +216,7 @@ abstract class BaseAddResourceDecorator<T extends HasMetadata, B extends Visitab
      */
     protected <S extends LabelSelectorFluent<?>> S initSelectorMatchLabels(S selector) {
         if (!selector.hasMatchLabels()) {
-            selector.withMatchLabels(new HashMap<>());
+            selector.withMatchLabels(new TreeMap<>());
         }
         return selector;
     }

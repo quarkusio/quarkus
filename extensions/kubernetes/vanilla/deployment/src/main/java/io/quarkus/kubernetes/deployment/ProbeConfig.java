@@ -3,6 +3,8 @@ package io.quarkus.kubernetes.deployment;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.fabric8.kubernetes.api.model.Probe;
+import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.smallrye.config.WithDefault;
 
 public interface ProbeConfig {
@@ -86,5 +88,43 @@ public interface ProbeConfig {
     default boolean hasUserSuppliedAction() {
         return httpActionPath().isPresent() || tcpSocketAction().isPresent() || execAction().isPresent()
                 || grpcAction().isPresent();
+    }
+
+    default Probe toProbe(String name) {
+        final var b = new ProbeBuilder();
+        httpActionPath().ifPresent(path -> b.withNewHttpGet().withPath(path).endHttpGet());
+        execAction().ifPresent(cmd -> b.withNewExec().withCommand(cmd).endExec());
+        tcpSocketAction().ifPresent(socket -> {
+            var hostAndPort = HostAndPort.from(socket);
+            b.withNewTcpSocket().withHost(hostAndPort.host).withNewPort(hostAndPort.port).endTcpSocket();
+        });
+        if (grpcAction().isPresent()) {
+            b.withNewGrpc().withPort(Integer.parseInt(grpcAction().get())).endGrpc();
+        } else if (grpcActionEnabled()) {
+            b.withNewGrpc().withPort(ProbeConverter.getQuarkusGrpcPort()).withService(name).endGrpc();
+        }
+
+        b.withInitialDelaySeconds((int) initialDelay().getSeconds());
+        b.withPeriodSeconds((int) period().getSeconds());
+        b.withTimeoutSeconds((int) timeout().getSeconds());
+        b.withSuccessThreshold(successThreshold());
+        b.withFailureThreshold(failureThreshold());
+        return b.build();
+    }
+
+    record HostAndPort(String host, String port) {
+        static HostAndPort from(String hostAndPort) {
+            if (hostAndPort == null || hostAndPort.isEmpty()) {
+                return null;
+            }
+            int colon = hostAndPort.indexOf(':');
+            if (colon < 0) {
+                return null;
+            } else {
+                String host = hostAndPort.substring(0, colon);
+                String port = hostAndPort.substring(colon + 1);
+                return new HostAndPort(host, port);
+            }
+        }
     }
 }

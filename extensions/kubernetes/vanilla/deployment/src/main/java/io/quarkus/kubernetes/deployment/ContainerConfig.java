@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.config.Env;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvFromSource;
 import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -143,5 +145,29 @@ public interface ContainerConfig extends EnvVarHolder {
                     return envFromBuilder.build();
                 })
                 .toList();
+    }
+
+    default Container toContainer(String name) {
+        final var b = new ContainerBuilder()
+                .withName(name)
+                .withImagePullPolicy(imagePullPolicy().name());
+        image().ifPresent(b::withImage);
+        workingDir().ifPresent(b::withWorkingDir);
+        command().ifPresent(b::withCommand);
+        arguments().ifPresent(b::withArgs);
+        if (readinessProbe() != null && readinessProbe().hasUserSuppliedAction()) {
+            b.withReadinessProbe(readinessProbe().toProbe(name));
+        }
+        if (livenessProbe() != null && livenessProbe().hasUserSuppliedAction()) {
+            b.withLivenessProbe(livenessProbe().toProbe(name));
+        }
+        b.addAllToEnv(getEnvVars());
+        b.addAllToEnvFrom(getEnvFroms());
+        b.addAllToPorts(ports().entrySet().stream().map(e -> e.getValue().toContainerPort(e.getKey())).toList());
+        b.addAllToVolumeMounts(mounts().entrySet().stream().map(esm -> esm.getValue().toVolumeMount(esm.getKey())).toList());
+
+        resources().applyToContainer(b);
+
+        return b.build();
     }
 }

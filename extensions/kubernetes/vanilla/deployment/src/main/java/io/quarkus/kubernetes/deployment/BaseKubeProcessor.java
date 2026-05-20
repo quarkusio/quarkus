@@ -24,13 +24,9 @@ import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.JobCompletionMode;
 import io.dekorate.kubernetes.annotation.JobRestartPolicy;
 import io.dekorate.kubernetes.config.Annotation;
-import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
-import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.Port;
-import io.dekorate.kubernetes.config.SecretVolumeBuilder;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
-import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddDockerConfigJsonSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
@@ -40,7 +36,6 @@ import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMetadataToTemplateDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
-import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddSelectorToDeploymentSpecDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.AddStartupProbeDecorator;
@@ -312,8 +307,6 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         createLabelDecorators(context, config, labels);
         createAnnotationDecorators(context, project, config, metricsConfiguration, annotations, port);
         createContainerDecorators(context, namespace, config);
-        createMountAndVolumeDecorators(context, config);
-        createAppConfigVolumeAndEnvDecorators(context, config);
         createCommandDecorator(context, config, command);
         createArgsDecorator(context, config, command);
 
@@ -628,46 +621,6 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         });
 
         config.workingDir().ifPresent(w -> context.add(new ApplyWorkingDirDecorator(context.name, w)));
-    }
-
-    private void createAppConfigVolumeAndEnvDecorators(DecoratorsContext context, C config) {
-        Set<String> paths = new HashSet<>();
-
-        config.appSecret().ifPresent(s -> {
-            context.add(new AddSecretVolumeDecorator(new SecretVolumeBuilder()
-                    .withSecretName(s)
-                    .withVolumeName("app-secret")
-                    .build()));
-            context.add(new AddMountDecorator(new MountBuilder()
-                    .withName("app-secret")
-                    .withPath("/mnt/app-secret")
-                    .build()));
-            paths.add("/mnt/app-secret");
-        });
-
-        config.appConfigMap().ifPresent(s -> {
-            context.add(new AddConfigMapVolumeDecorator(new ConfigMapVolumeBuilder()
-                    .withConfigMapName(s)
-                    .withVolumeName("app-config-map")
-                    .build()));
-            context.add(new AddMountDecorator(new MountBuilder()
-                    .withName("app-config-map")
-                    .withPath("/mnt/app-config-map")
-                    .build()));
-            paths.add("/mnt/app-config-map");
-        });
-
-        if (!paths.isEmpty()) {
-            context.add(new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, context.name, new EnvBuilder()
-                    .withName("SMALLRYE_CONFIG_LOCATIONS")
-                    .withValue(String.join(",", paths))
-                    .build()));
-        }
-    }
-
-    private void createMountAndVolumeDecorators(DecoratorsContext context, C config) {
-        config.mounts().entrySet()
-                .forEach(e -> context.add(new AddMountDecorator(ANY, context.name, MountConverter.convert(e))));
     }
 
     private void createAnnotationDecorators(DecoratorsContext context, Optional<Project> project,

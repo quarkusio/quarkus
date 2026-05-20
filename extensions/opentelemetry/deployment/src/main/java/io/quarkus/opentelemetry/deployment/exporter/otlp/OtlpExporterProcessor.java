@@ -43,6 +43,7 @@ public class OtlpExporterProcessor {
 
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
+    private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName OKHTTP_INTERCEPTOR = DotName.createSimple("okhttp3.Interceptor");
 
     static class OtlpTracingExporterEnabled implements BooleanSupplier {
@@ -52,7 +53,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.traces().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.traces().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -64,7 +65,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.metrics().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -76,7 +77,7 @@ public class OtlpExporterProcessor {
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.logs().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.logs().exporter().contains(CDI_VALUE) &&
+                    (otelBuildConfig.logs().exporter().contains(CDI_VALUE) || otelBuildConfig.defaultExporterEnabled()) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -140,11 +141,18 @@ public class OtlpExporterProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
     void createSpanProcessor(OTelExporterRecorder recorder,
+            OTelBuildConfig otelBuildConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one
+
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(SPAN_EXPORTER).isEmpty();
+
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
@@ -165,19 +173,18 @@ public class OtlpExporterProcessor {
     @Consume(TlsRegistryBuildItem.class)
     void createMetricsExporterProcessor(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelBuildConfig otelBuildConfig,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty();
 
-        if (!beanDiscovery.beanStream().withBeanType(METRIC_EXPORTER).isEmpty()) {
-            // if there is a MetricExporter bean impl around, we don't want to create the default one
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
 
@@ -199,19 +206,18 @@ public class OtlpExporterProcessor {
     @Consume(TlsRegistryBuildItem.class)
     void createLogRecordExporterProcessor(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelBuildConfig otelBuildConfig,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
-            return;
-        }
+        // Check if any exporter already exists (External Synthetic or CDI Bean)
+        boolean externalExporterExists = !externalOtelExporterBuildItem.isEmpty() ||
+                !beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty();
 
-        if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()) {
-            // if there is a MetricExporter bean impl around, we don't want to create the default one
+        // return only if an exporter exists AND the coexistence flag is NOT enabled
+        if (externalExporterExists && !otelBuildConfig.defaultExporterEnabled()) {
             return;
         }
 

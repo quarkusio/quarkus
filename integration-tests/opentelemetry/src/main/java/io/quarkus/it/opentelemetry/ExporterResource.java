@@ -16,8 +16,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
@@ -33,6 +35,8 @@ public class ExporterResource {
     InMemoryMetricExporter inMemoryMetricExporter;
     @Inject
     InMemoryLogRecordExporter inMemoryLogRecordExporter;
+    @Inject
+    OpenTelemetry openTelemetry;
 
     @GET
     @Path("/reset")
@@ -83,6 +87,17 @@ public class ExporterResource {
         }
         return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
                 .filter(logRecordData -> logRecordData.getBody().asString().equals(message))
+                .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/active-span-exporters")
+    public List<String> getExporters() {
+        OpenTelemetrySdk sdk = (OpenTelemetrySdk) openTelemetry;
+        return sdk.getSdkTracerProvider()
+                .toString()
+                .lines()
+                .filter(line -> line.contains("SpanExporter"))
                 .collect(Collectors.toList());
     }
 

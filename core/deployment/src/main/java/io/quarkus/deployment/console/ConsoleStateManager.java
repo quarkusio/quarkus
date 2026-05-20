@@ -183,7 +183,7 @@ public class ConsoleStateManager {
             public void run() {
                 System.exit(0);
             }
-        }, "Quarkus exit thread").run();
+        }, "Quarkus exit thread").start();
     }
 
     private void toggleLogLevel() {

@@ -68,7 +68,7 @@ public class NativeImageReflectConfigStep {
                 // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
                 // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
                 addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider"));
+                        new ReflectiveMethodBuildItem("Class registered as provider", provider, "provider", new String[0]));
             }
         }
 
@@ -93,8 +93,7 @@ public class NativeImageReflectConfigStep {
             if (info.typeReachable != null) {
                 json.put("condition", Json.object().put("typeReached", info.typeReachable));
             }
-            // reachability-metadata-schema-v1.2.0 merges query and execution capabilities
-            if (info.constructors || info.queryConstructors) {
+            if (info.constructors) {
                 json.put("allDeclaredConstructors", true);
             } else if (!info.ctorSet.isEmpty()) {
                 extractToJsonArray(info.ctorSet, methodsArray);
@@ -102,17 +101,11 @@ public class NativeImageReflectConfigStep {
             if (info.publicConstructors) {
                 json.put("allPublicConstructors", true);
             }
-            // reachability-metadata-schema-v1.2.0 merges query and execution capabilities
-            if (info.methods || info.queryMethods) {
+            if (info.methods) {
                 json.put("allDeclaredMethods", true);
             } else {
                 if (!info.methodSet.isEmpty()) {
                     extractToJsonArray(info.methodSet, methodsArray);
-                }
-                if (!info.queriedMethodSet.isEmpty()) {
-                    // even if just queried we must write them as standard methods
-                    // in reachability-metadata-schema-v1.2.0
-                    extractToJsonArray(info.queriedMethodSet, methodsArray);
                 }
             }
             if (!methodsArray.isEmpty()) {
@@ -178,8 +171,6 @@ public class NativeImageReflectConfigStep {
                         k -> new ReflectionInfo());
         if ("<init>".equals(methodInfo.getName())) {
             existing.ctorSet.add(methodInfo);
-        } else if (methodInfo.isQueryOnly()) {
-            existing.queriedMethodSet.add(methodInfo);
         } else {
             existing.methodSet.add(methodInfo);
         }
@@ -201,10 +192,8 @@ public class NativeImageReflectConfigStep {
                 return new ReflectionInfo(classBuildItem, typeReachable);
             });
             existing.constructors |= classBuildItem.isConstructors();
-            existing.queryConstructors |= classBuildItem.isQueryConstructors();
             existing.publicConstructors |= classBuildItem.isPublicConstructors();
             existing.methods |= classBuildItem.isMethods();
-            existing.queryMethods |= classBuildItem.isQueryMethods();
             existing.fields |= classBuildItem.isFields();
             existing.classes |= classBuildItem.isClasses();
             existing.serialization |= classBuildItem.isSerialization();
@@ -233,13 +222,12 @@ public class NativeImageReflectConfigStep {
     }
 
     static final class ReflectionInfo {
-        boolean constructors, publicConstructors, queryConstructors;
-        boolean methods, queryMethods, fields, classes, serialization, unsafeAllocated;
+        boolean constructors, publicConstructors;
+        boolean methods, fields, classes, serialization, unsafeAllocated;
         Set<String> reasons = null;
         String typeReachable;
         final Set<String> fieldSet = new HashSet<>();
         final Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
-        final Set<ReflectiveMethodBuildItem> queriedMethodSet = new HashSet<>();
         final Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {
@@ -247,13 +235,11 @@ public class NativeImageReflectConfigStep {
 
         private ReflectionInfo(ReflectiveClassBuildItem classBuildItem, String typeReachable) {
             this.methods = classBuildItem.isMethods();
-            this.queryMethods = classBuildItem.isQueryMethods();
             this.fields = classBuildItem.isFields();
             this.classes = classBuildItem.isClasses();
             this.typeReachable = typeReachable;
             this.constructors = classBuildItem.isConstructors();
             this.publicConstructors = classBuildItem.isPublicConstructors();
-            this.queryConstructors = classBuildItem.isQueryConstructors();
             this.serialization = classBuildItem.isSerialization();
             this.unsafeAllocated = classBuildItem.isUnsafeAllocated();
             if (classBuildItem.getReason() != null) {

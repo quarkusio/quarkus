@@ -1,9 +1,10 @@
 
 ### Server Endpoints
 
-- Annotate a class with `@WebSocket(path = "/chat/{room}")` — it becomes a CDI bean (default `@Singleton`).
+- Annotate a class with `@WebSocket(path = "/my-endpoint/{param}")` — it becomes a CDI bean (default `@Singleton`).
 - Use callback annotations: `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, `@OnClose`, `@OnError`.
-- Inject `WebSocketConnection` to access `pathParam("room")`, `id()`, `broadcast()`, `getOpenConnections()`.
+- Callback method parameters: annotate with `@io.quarkus.websockets.next.PathParam` to receive path parameters, or accept `WebSocketConnection` or `HandshakeRequest` directly. See the [method parameters reference](https://quarkus.io/guides/websockets-next-reference#method-parameters).
+- Inject `WebSocketConnection` to access `pathParam("param")`, `id()`, `broadcast()`, `getOpenConnections()`.
 - Return a value from a callback to send it to the client; use `broadcast = true` on `@OnTextMessage` or `@OnOpen` to broadcast the return value to all connected clients instead.
 - Use `@WebSocket(endpointId = "my-id")` to assign a stable endpoint ID for use with `OpenConnections`.
 
@@ -73,30 +74,30 @@
 
 ### Testing
 
-- Use Vert.x `WebSocketClient` directly — this is what the extension's own tests use:
+- Use `BasicWebSocketConnector` or `WebSocketConnector` for test clients — they are the standard API and handle context propagation:
   ```java
-  @Inject Vertx vertx;
-  @TestHTTPResource("chat/myroom") URI chatUri;
+  @Inject BasicWebSocketConnector connector;
 
-  WebSocketClient client = vertx.createWebSocketClient();
-  CountDownLatch messageLatch = new CountDownLatch(1);
-  List<String> received = new CopyOnWriteArrayList<>();
+  @Test
+  void testEndpoint() throws Exception {
+      CountDownLatch messageLatch = new CountDownLatch(1);
+      List<String> received = new CopyOnWriteArrayList<>();
 
-  client.connect(chatUri.getPort(), chatUri.getHost(), chatUri.getPath())
-      .onComplete(r -> {
-          WebSocket ws = r.result();
-          ws.textMessageHandler(msg -> {
+      var connection = connector
+          .baseUri(uri)
+          .path("/my-endpoint/myParam")
+          .onTextMessage((c, msg) -> {
               received.add(msg);
               messageLatch.countDown();
-          });
-          ws.writeTextMessage("hello");
-      });
-  assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+          })
+          .connectAndAwait();
+      connection.sendTextAndAwait("hello");
+      assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+      connection.closeAndAwait();
+  }
   ```
 - Use `CountDownLatch` for synchronization — WebSocket messages are async.
-- `BasicWebSocketConnector` is for programmatic client connections in application code; for tests, prefer the raw Vert.x client above.
 - Messages are received as raw `String` on the client side — parse JSON manually with `new JsonObject(msg)`.
-- Close clients in a `finally` block: `client.close().toCompletionStage().toCompletableFuture().get()`.
 
 ### Common Pitfalls
 

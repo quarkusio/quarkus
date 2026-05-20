@@ -1,6 +1,7 @@
 package io.quarkus.it.panache.defaultpu;
 
-import static org.hamcrest.Matchers.containsString;
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -204,11 +205,14 @@ public class PanacheFunctionalityTest {
 
     @Test
     public void testMetrics() {
-        RestAssured.when()
+        assertMetrics(RestAssured.when()
                 .get("/q/metrics")
                 .then()
-                .body(containsString("hibernate_cache_update_timestamps_requests_total{entityManagerFactory=\""
-                        + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\",result=\"miss\"}"));
+                .statusCode(200)
+                .extract().asInputStream())
+                .hasMetricWithExactLabels("hibernate_cache_update_timestamps_requests_total",
+                        entry("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
+                        entry("result", "miss"));
     }
 
     @DisabledOnIntegrationTest

@@ -1,5 +1,6 @@
 package io.quarkus.it.kafka;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static org.hamcrest.Matchers.*;
 
 import java.time.Duration;
@@ -63,8 +64,9 @@ public class KafkaSnappyProducerTest {
     @Test
     public void metrics() throws Exception {
         // Look for kafka producer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/q/metrics").then()
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
-                .body(containsString("kafka_producer_"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("kafka_producer_");
     }
 }

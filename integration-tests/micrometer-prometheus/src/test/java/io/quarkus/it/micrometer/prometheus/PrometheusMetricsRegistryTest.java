@@ -1,9 +1,10 @@
 package io.quarkus.it.micrometer.prometheus;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
 
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -106,194 +107,328 @@ class PrometheusMetricsRegistryTest {
     @Test
     @Order(20)
     void testPrometheusScrapeEndpointTextPlain() {
-        RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_004)
+        assertMetrics(RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_004)
                 .when().get("/q/metrics")
                 .then().statusCode(200)
+                .extract().asInputStream())
 
                 // Prometheus body has ALL THE THINGS in no particular order
 
-                .body(containsString("registry=\"prometheus\""))
-                .body(containsString("env=\"test\""))
-                .body(containsString("http_server_requests"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("registry", "prometheus"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("env", "test"))
+                .hasMetric("http_server_requests_seconds_count")
 
-                .body(containsString("status=\"404\""))
-                .body(containsString("uri=\"NOT_FOUND\""))
-                .body(containsString("outcome=\"CLIENT_ERROR\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "404"), entry("uri", "NOT_FOUND"), entry("outcome", "CLIENT_ERROR"))
 
-                .body(containsString("status=\"500\""))
-                .body(containsString("uri=\"/message/fail\""))
-                .body(containsString("outcome=\"SERVER_ERROR\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "500"), entry("uri", "/message/fail"), entry("outcome", "SERVER_ERROR"))
 
-                .body(containsString("status=\"200\""))
-                .body(containsString("uri=\"/message\""))
-                .body(containsString("uri=\"/message/item/{id}\""))
-                .body(containsString("status=\"200\",uri=\"/message/item/{id}\""))
-                .body(containsString("uri=\"/secured/item/{id}\""))
-                .body(containsString("status=\"200\",uri=\"/secured/item/{id}\""))
-                .body(containsString("status=\"401\",uri=\"/secured/item/{id}\""))
-                .body(containsString("outcome=\"SUCCESS\""))
-                .body(containsString("dummy="))
-                .body(containsString("foo=\"bar\""))
-                .body(containsString("foo_response=\"value\""))
-                .body(containsString("uri=\"/message/match/{id}/{sub}\""))
-                .body(containsString("uri=\"/message/match/{other}\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "200"), entry("uri", "/message"), entry("outcome", "SUCCESS"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "200"), entry("uri", "/message/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "200"), entry("uri", "/secured/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "401"), entry("uri", "/secured/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("dummy", "value"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("foo", "bar"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("foo_response", "value"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/match/{id}/{sub}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/match/{other}"))
 
-                .body(containsString(
-                        "http_server_requests_seconds_count{dummy=\"val-anything\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                .hasMetricWithExactLabels("http_server_requests_seconds_count",
+                        entry("dummy", "val-anything"), entry("env", "test"), entry("env2", "test"),
+                        entry("foo", "UNSET"), entry("foo_response", "UNSET"), entry("method", "GET"),
+                        entry("outcome", "SUCCESS"), entry("registry", "prometheus"),
+                        entry("status", "200"), entry("uri", "/template/path/{value}"))
 
-                .body(containsString(
-                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/root/{rootParam}/sub/{subParam}\""))
+                .hasMetricWithExactLabels("http_server_requests_seconds_count",
+                        entry("dummy", "value"), entry("env", "test"), entry("env2", "test"),
+                        entry("foo", "UNSET"), entry("foo_response", "UNSET"), entry("method", "GET"),
+                        entry("outcome", "SUCCESS"), entry("registry", "prometheus"),
+                        entry("status", "200"), entry("uri", "/root/{rootParam}/sub/{subParam}"))
 
                 // Verify Hibernate Metrics
-                .body(containsString(
-                        "hibernate_sessions_open_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 2.0"))
-                .body(containsString(
-                        "hibernate_sessions_closed_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 2.0"))
-                .body(containsString(
-                        "hibernate_connections_obtained_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",}"))
-                .body(containsString(
-                        "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 3.0"))
-                .body(containsString(
-                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 1.0"))
+                .hasMetricWithExactLabelsAndValue("hibernate_sessions_open_total", 2.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_sessions_closed_total", 2.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("hibernate_connections_obtained_total",
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_entities_inserts_total", 3.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_flushes_total", 1.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
 
                 // Annotated counters
-                .body(not(containsString("metric_none")))
-                .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
-                .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",fail=\"true\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"prefix true\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"prefix false\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
-                .body(not(containsString("async_none")))
-                .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"true\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
-                .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"false\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                .doesNotHaveMetric("metric_none")
+                .hasMetricWithExactLabelsAndValue("metric_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("fail", "false"),
+                        entry("method", "countAllInvocations"), entry("registry", "prometheus"),
+                        entry("result", "success"))
+                .hasMetricWithExactLabelsAndValue("metric_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("fail", "true"), entry("method", "countAllInvocations"),
+                        entry("registry", "prometheus"), entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("fail", "prefix true"),
+                        entry("method", "emptyMetricName"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("fail", "prefix false"), entry("method", "emptyMetricName"),
+                        entry("registry", "prometheus"), entry("result", "success"))
+                .doesNotHaveMetric("async_none")
+                .hasMetricWithExactLabelsAndValue("async_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("do_fail_call", "true"), entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "countAllAsyncInvocations"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("async_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("do_fail_call", "false"), entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "none"), entry("extra", "tag"),
+                        entry("method", "countAllAsyncInvocations"), entry("registry", "prometheus"),
+                        entry("result", "success"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("fail", "42"),
+                        entry("method", "emptyAsyncMetricName"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("fail", "42"), entry("method", "emptyAsyncMetricName"),
+                        entry("registry", "prometheus"), entry("result", "success"))
 
                 // Annotated Timers
-                .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\",} 1.0"))
-                .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\",}"))
-                .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
-                .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
-                .body(containsString(
-                        "longCall_seconds_active_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\",}"))
-                .body(containsString(
-                        "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\",} 0.0"))
+                .hasMetricWithExactLabelsAndValue("call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "call"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("call_seconds_count",
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("method", "call"),
+                        entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "asyncCall"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("method", "asyncCall"),
+                        entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("longCall_seconds_active_count",
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("extra", "tag"),
+                        entry("method", "longCall"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_longCall_seconds_duration_sum", 0.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("extra", "tag"),
+                        entry("method", "longAsyncCall"), entry("registry", "prometheus"))
 
                 // Configured median, 95th percentile and histogram buckets
-                .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.5\",}"))
-                .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.95\",}"))
-                .body(containsString(
-                        "prime_number_test_seconds_bucket{env=\"test\",env2=\"test\",registry=\"prometheus\",le=\"0.001\",}"))
+                .hasMetricWithExactLabels("prime_number_test_seconds",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("quantile", "0.5"))
+                .hasMetricWithExactLabels("prime_number_test_seconds",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("quantile", "0.95"))
+                .hasMetricWithExactLabels("prime_number_test_seconds_bucket",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("le", "0.001"))
 
                 // this was defined by a tag to a non-matching registry, and should not be found
-                .body(not(containsString("class-should-not-match")))
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("tag", "class-should-not-match"))
 
                 // should not find this ignored uri
-                .body(not(containsString("uri=\"/fruit/create\"")));
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/fruit/create"));
     }
 
     @Test
     @Order(20)
     void testPrometheusScrapeEndpointOpenMetrics() {
-        RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
+        assertMetrics(RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
                 .when().get("/q/metrics")
                 .then().statusCode(200)
+                .extract().asInputStream())
 
                 // Prometheus body has ALL THE THINGS in no particular order
 
-                .body(containsString("registry=\"prometheus\""))
-                .body(containsString("env=\"test\""))
-                .body(containsString("http_server_requests"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("registry", "prometheus"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("env", "test"))
+                .hasMetric("http_server_requests_seconds_count")
 
-                .body(containsString("status=\"404\""))
-                .body(containsString("uri=\"NOT_FOUND\""))
-                .body(containsString("outcome=\"CLIENT_ERROR\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "404"), entry("uri", "NOT_FOUND"), entry("outcome", "CLIENT_ERROR"))
 
-                .body(containsString("status=\"500\""))
-                .body(containsString("uri=\"/message/fail\""))
-                .body(containsString("outcome=\"SERVER_ERROR\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "500"), entry("uri", "/message/fail"), entry("outcome", "SERVER_ERROR"))
 
-                .body(containsString("status=\"200\""))
-                .body(containsString("uri=\"/message\""))
-                .body(containsString("uri=\"/message/item/{id}\""))
-                .body(containsString("outcome=\"SUCCESS\""))
-                .body(containsString("uri=\"/message/match/{id}/{sub}\""))
-                .body(containsString("uri=\"/message/match/{other}\""))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("status", "200"), entry("uri", "/message"), entry("outcome", "SUCCESS"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/item/{id}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/match/{id}/{sub}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/message/match/{other}"))
 
-                .body(containsString(
-                        "http_server_requests_seconds_count{dummy=\"val-anything\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                .hasMetricWithExactLabels("http_server_requests_seconds_count",
+                        entry("dummy", "val-anything"), entry("env", "test"), entry("env2", "test"),
+                        entry("foo", "UNSET"), entry("foo_response", "UNSET"), entry("method", "GET"),
+                        entry("outcome", "SUCCESS"), entry("registry", "prometheus"),
+                        entry("status", "200"), entry("uri", "/template/path/{value}"))
 
                 // Verify Hibernate Metrics
-                .body(containsString(
-                        "hibernate_sessions_open_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 2.0"))
-                .body(containsString(
-                        "hibernate_sessions_closed_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 2.0"))
-                .body(containsString(
-                        "hibernate_connections_obtained_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"}"))
-                .body(containsString(
-                        "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 3.0"))
-                .body(containsString(
-                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 1.0"))
+                .hasMetricWithExactLabelsAndValue("hibernate_sessions_open_total", 2.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_sessions_closed_total", 2.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("hibernate_connections_obtained_total",
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_entities_inserts_total", 3.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("hibernate_flushes_total", 1.0,
+                        entry("entityManagerFactory", "<default>"), entry("env", "test"),
+                        entry("env2", "test"), entry("registry", "prometheus"))
 
                 // Annotated counters
-                .body(not(containsString("metric_none")))
-                .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\"} 1.0 # {span_id="))
-                .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",fail=\"true\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\"} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"prefix true\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\"} 1.0 # {span_id="))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"prefix false\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\"} 1.0"))
-                .body(not(containsString("async_none")))
-                .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"true\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"failure\"} 1.0"))
-                .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"false\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"success\"} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"failure\"} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"success\"} 1.0"))
+                .doesNotHaveMetric("metric_none")
+                .hasMetricWithExactLabelsAndValue("metric_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("fail", "false"),
+                        entry("method", "countAllInvocations"), entry("registry", "prometheus"),
+                        entry("result", "success"))
+                .hasMetricWithExactLabelsAndValue("metric_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("fail", "true"), entry("method", "countAllInvocations"),
+                        entry("registry", "prometheus"), entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("fail", "prefix true"),
+                        entry("method", "emptyMetricName"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("fail", "prefix false"), entry("method", "emptyMetricName"),
+                        entry("registry", "prometheus"), entry("result", "success"))
+                .doesNotHaveMetric("async_none")
+                .hasMetricWithExactLabelsAndValue("async_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("do_fail_call", "true"), entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "countAllAsyncInvocations"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("async_all_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("do_fail_call", "false"), entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "none"), entry("extra", "tag"),
+                        entry("method", "countAllAsyncInvocations"), entry("registry", "prometheus"),
+                        entry("result", "success"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("fail", "42"),
+                        entry("method", "emptyAsyncMetricName"), entry("registry", "prometheus"),
+                        entry("result", "failure"))
+                .hasMetricWithExactLabelsAndValue("method_counted_total", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("fail", "42"), entry("method", "emptyAsyncMetricName"),
+                        entry("registry", "prometheus"), entry("result", "success"))
 
                 // Annotated Timers
-                .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\"} 1.0"))
-                .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\"}"))
-                .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1.0"))
-                .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1.0"))
-                .body(containsString(
-                        "longCall_seconds_active_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\"}"))
-                .body(containsString(
-                        "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\"} 0.0"))
+                .hasMetricWithExactLabelsAndValue("call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "call"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("call_seconds_count",
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("method", "call"),
+                        entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("exception", "NullPointerException"), entry("extra", "tag"),
+                        entry("method", "asyncCall"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_call_seconds_count", 1.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("exception", "none"),
+                        entry("extra", "tag"), entry("method", "asyncCall"),
+                        entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("longCall_seconds_active_count",
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("extra", "tag"),
+                        entry("method", "longCall"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("async_longCall_seconds_duration_sum", 0.0,
+                        entry("class", "io.quarkus.it.micrometer.prometheus.AnnotatedResource"),
+                        entry("env", "test"), entry("env2", "test"), entry("extra", "tag"),
+                        entry("method", "longAsyncCall"), entry("registry", "prometheus"))
 
                 // Configured median, 95th percentile and histogram buckets
-                .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.5\"}"))
-                .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.95\"}"))
-                .body(containsString(
-                        "prime_number_test_seconds_bucket{env=\"test\",env2=\"test\",registry=\"prometheus\",le=\"0.001\"}"))
+                .hasMetricWithExactLabels("prime_number_test_seconds",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("quantile", "0.5"))
+                .hasMetricWithExactLabels("prime_number_test_seconds",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("quantile", "0.95"))
+                .hasMetricWithExactLabels("prime_number_test_seconds_bucket",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("le", "0.001"))
 
                 // this was defined by a tag to a non-matching registry, and should not be found
-                .body(not(containsString("class-should-not-match")))
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("tag", "class-should-not-match"))
 
                 // should not find this ignored uri
-                .body(not(containsString("uri=\"/fruit/create\"")));
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/fruit/create"));
     }
 }

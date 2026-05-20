@@ -167,15 +167,20 @@ public class WebDependencyLocatorProcessor {
         LibInfo mvnpmNameLibInfo = getLibInfo(curateOutcome, MVNPM_PREFIX, MVNPM_NAME);
 
         // Merge extension-declared web dependency JARs into mvnpm discovery
+        Map<String, String> directImportMappings = new HashMap<>();
         if (!webDependencyJars.isEmpty()) {
             if (mvnpmNameLibInfo == null) {
                 mvnpmNameLibInfo = new LibInfo(new HashMap<>(), new HashSet<>());
             }
             for (WebDependencyJarBuildItem webDep : webDependencyJars) {
-                try {
-                    mvnpmNameLibInfo.jars.add(webDep.getJarPath().toUri().toURL());
-                } catch (MalformedURLException ex) {
-                    throw new RuntimeException(ex);
+                if (!webDep.getImportMappings().isEmpty()) {
+                    directImportMappings.putAll(webDep.getImportMappings());
+                } else {
+                    try {
+                        mvnpmNameLibInfo.jars.add(webDep.getJarPath().toUri().toURL());
+                    } catch (MalformedURLException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         }
@@ -195,6 +200,9 @@ public class WebDependencyLocatorProcessor {
                 }
                 // Also create a importmap endpoint
                 Aggregator aggregator = new Aggregator(mvnpmNameLibInfo.jars);
+                if (!directImportMappings.isEmpty()) {
+                    aggregator.addMappings(directImportMappings);
+                }
                 Map<String, String> importMappings = config.importMappings();
                 if (!importMappings.containsKey(config.appRoot() + SLASH)) {
                     // Add default for app/

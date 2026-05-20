@@ -1260,7 +1260,10 @@ public class SmallRyeOpenApiProcessor {
                 .withOperationHandler(operationHandler)
                 .enableUnannotatedPathParameters(capabilities.isPresent(Capability.RESTEASY_REACTIVE))
                 .enableStandardFilter(false)
-                .withFilters(oasFilters);
+                .withFilters(oasFilters)
+                // Mark the model as intermediate so that private extensions remain
+                // available for filters running at startup.
+                .withIntermediateModel(true);
 
         getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.BUILD).forEach(builder::addFilterName);
 

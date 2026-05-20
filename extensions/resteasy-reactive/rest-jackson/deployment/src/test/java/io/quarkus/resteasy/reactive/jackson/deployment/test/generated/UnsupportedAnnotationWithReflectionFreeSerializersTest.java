@@ -21,18 +21,7 @@ public class UnsupportedAnnotationWithReflectionFreeSerializersTest extends Abst
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(UnsupportedAnnotationResource.class,
-                                    AnyGetterBean.class,
-                                    AutoDetectBean.class,
-                                    ManagedReferenceParent.class,
-                                    ManagedReferenceChild.class,
-                                    FormatShape.class,
-                                    FormatBean.class,
-                                    GetterSetterBean.class,
-                                    IgnoredType.class,
-                                    IgnoreTypeBean.class,
-                                    IncludeBean.class,
-                                    PropertyOrderBean.class,
-                                    RawValueBean.class)
+                                    AutoDetectBean.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
                                     "application.properties");

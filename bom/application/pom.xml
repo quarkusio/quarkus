@@ -48,8 +48,8 @@
         <smallrye-common.version>2.17.0</smallrye-common.version>
         <smallrye-config.version>3.17.2</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-open-api.version>4.3.0</smallrye-open-api.version>
-        <smallrye-graphql.version>2.18.0</smallrye-graphql.version>
+        <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
+        <smallrye-graphql.version>2.18.1</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
@@ -78,7 +78,7 @@
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
+        <jaxb-runtime.version>4.0.8</jaxb-runtime.version>
         <asm.version>9.9.1</asm.version>
         <commons-io.version>2.22.0</commons-io.version>
         <jboss-metadata-web.version>17.0.0</jboss-metadata-web.version>
@@ -95,7 +95,7 @@
         <classmate.version>1.7.1</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version -->
-        <narayana.version>7.3.3.Final</narayana.version>
+        <narayana.version>7.3.4.Final</narayana.version>
         <narayana-lra.version>1.1.0.Final</narayana-lra.version>
         <agroal.version>3.0.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>

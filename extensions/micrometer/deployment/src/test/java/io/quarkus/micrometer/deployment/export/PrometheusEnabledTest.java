@@ -8,6 +8,7 @@ import java.util.Set;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,6 +16,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+import io.restassured.config.DecoderConfig;
 
 public class PrometheusEnabledTest {
     @RegisterExtension
@@ -35,6 +38,7 @@ public class PrometheusEnabledTest {
     PrometheusMeterRegistry promRegistry;
 
     @Test
+    @Order(Integer.MIN_VALUE)
     public void testMeterRegistryPresent() {
         // Prometheus is enabled (only registry)
         Assertions.assertNotNull(registry, "A registry should be configured");
@@ -63,10 +67,23 @@ public class PrometheusEnabledTest {
                 .get("/q/metrics")
                 .then()
                 .statusCode(200);
+    }
 
-        given().header("Accept-Encoding", "gzip")
+    @Test
+    public void metricsEndpointCompressed() {
+        // Register a metric so the scrape response is non-empty;
+        // Vert.x/Netty skips compression on empty bodies.
+        promRegistry.counter("test.compression.verify").increment();
+
+        // Use DecoderConfig instead of .header("Accept-Encoding", "gzip")
+        // because RestAssured silently ignores manually set Accept-Encoding headers.
+        // See CompressionTest and Testflow for details.
+        given().config(RestAssured.config
+                .decoderConfig(DecoderConfig.decoderConfig()
+                        .contentDecoders(DecoderConfig.ContentDecoder.GZIP)))
                 .get("/q/metrics")
                 .then()
+                .log().all()
                 .statusCode(200)
                 .header("content-encoding", is("gzip"));
     }

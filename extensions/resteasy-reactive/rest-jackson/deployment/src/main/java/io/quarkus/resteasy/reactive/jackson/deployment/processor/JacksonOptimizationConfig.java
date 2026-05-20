@@ -17,7 +17,7 @@ public interface JacksonOptimizationConfig {
     /**
      * Enable build time generation of reflection-free Jackson serializers.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean enableReflectionFreeSerializers();
 
     class IsReflectionFreeSerializersEnabled implements BooleanSupplier {

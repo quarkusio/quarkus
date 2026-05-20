@@ -134,8 +134,6 @@ public class LookupConditionsProcessor {
         }
 
         generators.produce(new SuppressConditionGeneratorBuildItem(new Consumer<>() {
-            final AtomicInteger patternCounter = new AtomicInteger();
-
             @Override
             public void accept(BeanGenerator.SuppressConditionGeneration suppressConditionGeneration) {
                 BeanInfo bean = suppressConditionGeneration.bean();
@@ -158,15 +156,16 @@ public class LookupConditionsProcessor {
 
                 if (!ifPropertyList.isEmpty() || !unlessPropertyList.isEmpty()) {
                     ClassCreator cc = suppressConditionGeneration.beanClass();
+                    AtomicInteger patternCounter = new AtomicInteger();
 
                     // pre-create static Pattern fields for all REGEX annotations on this bean
                     List<StaticFieldVar> ifPatternFields = new ArrayList<>();
                     for (AnnotationInstance ann : ifPropertyList) {
-                        ifPatternFields.add(createPatternFieldIfRegex(cc, ann));
+                        ifPatternFields.add(createPatternFieldIfRegex(cc, ann, patternCounter));
                     }
                     List<StaticFieldVar> unlessPatternFields = new ArrayList<>();
                     for (AnnotationInstance ann : unlessPropertyList) {
-                        unlessPatternFields.add(createPatternFieldIfRegex(cc, ann));
+                        unlessPatternFields.add(createPatternFieldIfRegex(cc, ann, patternCounter));
                     }
 
                     BlockCreator bc = suppressConditionGeneration.method();
@@ -221,7 +220,8 @@ public class LookupConditionsProcessor {
                 }
             }
 
-            private StaticFieldVar createPatternFieldIfRegex(ClassCreator cc, AnnotationInstance ann) {
+            private StaticFieldVar createPatternFieldIfRegex(ClassCreator cc, AnnotationInstance ann,
+                    AtomicInteger patternCounter) {
                 if (getMatch(ann) == StringValueMatch.REGEX) {
                     String regex = ann.value(STRING_VALUE).asString();
                     String fieldName = "REGEX_PATTERN_" + patternCounter.getAndIncrement();

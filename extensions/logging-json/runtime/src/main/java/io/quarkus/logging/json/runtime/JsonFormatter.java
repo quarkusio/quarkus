@@ -325,6 +325,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
          * the short process name (e.g. {@code java}).
          */
         private final String processNameKey;
+        private int skippedDepth = 0;
 
         private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
                 final String stackTraceKeyToTrim, final String processNameKey) {
@@ -342,7 +343,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final int value) throws Exception {
-            if (!excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
                 delegate.add(key, value);
             }
             return this;
@@ -350,7 +351,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final long value) throws Exception {
-            if (!excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
                 delegate.add(key, value);
             }
             return this;
@@ -358,7 +359,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
-            if (!excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
                 delegate.add(key, value);
             }
             return this;
@@ -366,7 +367,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final String value) throws Exception {
-            if (!excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
                 String actual = value;
                 // Strip the leading ": " that jboss's StackTraceFormatter prepends to the rendered
                 // stack trace string. Only applied to the specific key configured for this purpose.
@@ -386,25 +387,41 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            delegate.startObject(key);
+            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
             return this;
         }
 
         @Override
         public Generator endObject() throws Exception {
-            delegate.endObject();
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
             return this;
         }
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            delegate.startArray(key);
+            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
             return this;
         }
 
         @Override
         public Generator endArray() throws Exception {
-            delegate.endArray();
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
             return this;
         }
 

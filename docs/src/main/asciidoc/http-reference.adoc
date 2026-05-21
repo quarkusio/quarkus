@@ -112,6 +112,26 @@ NOTE: If the client does not indicate its support for HTTP compression in a requ
 
 TIP: Brotli compression is not available by default. You can enable it by setting `quarkus.http.compressors=deflate,gzip,br`. In case of building native image, it adds around 1MB to your executable size.
 
+==== HTTP request body decompression (inbound)
+
+By default (`quarkus.http.enable-decompression=false`), the HTTP server delivers the request body exactly as sent on the wire and does not interpret `Content-Encoding` for inbound decompression.
+
+When you set `quarkus.http.enable-decompression=true`, Vert.x adds Netty's `HttpContentDecompressor`, which may decode the body before it reaches JAX-RS, Reactive Routes, or other application handlers, according to the `Content-Encoding` header.
+
+NOTE: Quarkus leaves inbound decompression to Vert.x / Netty. If decompression fails (invalid compressed data, malformed framing, unsupported coding for this stack, and similar), Vert.x may close the connection without a normal application-level HTTP response; behavior can differ between HTTP versions and inbound pipeline timing.
+
+Supported inbound codings follow Netty's implementation:
+
+* `gzip` / `x-gzip`
+* `deflate` / `x-deflate`
+* `br` when Brotli is available (same optional native stack as for response compression)
+* `snappy` using Netty's Snappy *framing* format (`SnappyFrameDecoder`) on the JVM only. Payloads must be valid framed Snappy (for example as emitted by Netty's `SnappyFrameEncoder`). Raw Snappy block compression without the framing envelope is not accepted. GraalVM native images do not wire Snappy inbound decoding (the body is not decoded).
+* On the JVM only: `zstd` when Netty's Zstd support is available at runtime (not decoded in GraalVM native images)
+
+If the coding is not recognized, Netty passes the request through without decoding; Quarkus does not automatically respond with `415 Unsupported Media Type` in that case.
+
+IMPORTANT: GraalVM native image builds use Netty substitutions for the inbound decompressor that only support `gzip`, `deflate`, and `br` (when Brotli loads). Inbound `snappy` and `zstd` are not decompressed in native executables even when `quarkus.http.enable-decompression=true`.
+
 [[static-resources-config]]
 === Other Configurations
 

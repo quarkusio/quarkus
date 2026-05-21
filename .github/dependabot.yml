@@ -193,6 +193,7 @@ updates:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
         patterns:
+          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
@@ -259,6 +260,7 @@ updates:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
         patterns:
+          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
@@ -289,6 +291,7 @@ updates:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
         patterns:
+          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
@@ -319,6 +322,7 @@ updates:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
         patterns:
+          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"

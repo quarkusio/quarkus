@@ -13,9 +13,11 @@ public class UniStreamObserver<I, O> implements ClientResponseObserver<I, O> {
     // If this is set, the Uni was terminated by item or failure, not by cancellation.
     private final AtomicBoolean terminated = new AtomicBoolean();
 
-    private AtomicReference<ClientCallStreamObserver<I>> requestStreamObserver = new AtomicReference<>();
+    private final AtomicReference<ClientCallStreamObserver<I>> requestStreamObserver = new AtomicReference<>();
+    private final Runnable onReady;
 
-    public UniStreamObserver(UniEmitter<? super O> emitter, Runnable onTermination) {
+    public UniStreamObserver(UniEmitter<? super O> emitter, Runnable onTermination, Runnable onReady) {
+        this.onReady = onReady;
         this.emitter = emitter.onTermination(() -> {
             // This is called when the reply Uni (the return value of the RPC method) is cancelled or the gRPC server completes the request.
             if (terminated.compareAndSet(false, true)) {
@@ -32,9 +34,16 @@ public class UniStreamObserver<I, O> implements ClientResponseObserver<I, O> {
         });
     }
 
+    public UniStreamObserver(UniEmitter<? super O> emitter, Runnable onTermination) {
+        this(emitter, onTermination, null);
+    }
+
     @Override
     public void beforeStart(ClientCallStreamObserver<I> requestStreamObserver) {
         this.requestStreamObserver.set(requestStreamObserver);
+        if (onReady != null) {
+            requestStreamObserver.setOnReadyHandler(onReady);
+        }
     }
 
     @Override

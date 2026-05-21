@@ -43,14 +43,12 @@ public class MixedStorkServicesConfigIsolationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"red-service\""));
 
-        RestAssured.get("http://localhost:8500/v1/agent/service/blue-service")
-                .then()
-                .statusCode(404);
+        ConsulTestUtils.assertServiceNotRegistered("blue-service");
 
     }
 

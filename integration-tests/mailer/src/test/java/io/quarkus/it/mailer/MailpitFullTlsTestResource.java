@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.MountableFile;
 
+import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 import io.smallrye.certs.CertificateGenerator;
@@ -19,7 +20,7 @@ import io.smallrye.certs.Format;
 
 public class MailpitFullTlsTestResource implements QuarkusTestResourceLifecycleManager {
 
-    public GenericContainer<?> server = new GenericContainer<>("axllent/mailpit")
+    public GenericContainer<?> server = new GenericContainer<>(DockerImageNames.getImage("mailpit.image"))
             .withExposedPorts(8025, 1025);
 
     static {

@@ -122,6 +122,8 @@
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
         <redis.image>docker.io/library/redis:7</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
+        <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
+        <fake-smtp-server.image>docker.io/reachfive/fake-smtp-server:latest</fake-smtp-server.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

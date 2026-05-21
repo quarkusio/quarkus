@@ -15,6 +15,7 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.it.rabbitmq.RabbitMQConnectorDynCredsTest.RabbitMQResource;
+import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
@@ -33,7 +34,7 @@ public class RabbitMQConnectorDynCredsTest {
             String username = "tester";
             String password = RandomStringUtils.insecure().next(10);
 
-            rabbit = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.12-management"))
+            rabbit = new RabbitMQContainer(DockerImageName.parse(DockerImageNames.getImage("rabbitmq.image")))
                     .withNetwork(Network.SHARED)
                     .withNetworkAliases("rabbitmq")
                     .withUser(username, password)

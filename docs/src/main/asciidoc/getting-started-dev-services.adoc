@@ -160,7 +160,7 @@ Change the method to the following:
 @GET
 @Transactional
 @Produces(MediaType.TEXT_PLAIN)
-public String hello(@QueryParam("name") String name) {
+public String hello(@RestQuery String name) {
    Greeting greeting = new Greeting();
    greeting.name = name;
    greeting.persist();

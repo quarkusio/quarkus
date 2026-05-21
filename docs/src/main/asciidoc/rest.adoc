@@ -79,6 +79,13 @@ public class Endpoint {
 }
 ----
 
+[TIP]
+.Differences with vanilla Jakarta REST
+====
+With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
+of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
+====
+
 === Terminology
 
 REST:: https://en.wikipedia.org/wiki/Representational_state_transfer[REpresentational State Transfer]

@@ -465,7 +465,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
                 if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null) {
                     String value = userInfo.getString(principalClaim);
-                    if (value == null) {
+                    if (value == null && principalClaim.contains("/")) {
                         value = OidcUtils.findStringClaimValue(principalClaim,
                                 new JsonObject(userInfo.getJsonObject().toString()));
                     }
@@ -507,7 +507,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     if (resolvedContext.oidcConfig().token().principalClaim().isPresent() && userInfo != null) {
                         String principalClaimPath = resolvedContext.oidcConfig().token().principalClaim().get();
                         String value = userInfo.getString(principalClaimPath);
-                        if (value == null) {
+                        if (value == null && principalClaimPath.contains("/")) {
                             value = OidcUtils.findStringClaimValue(principalClaimPath,
                                     new JsonObject(userInfo.getJsonObject().toString()));
                         }

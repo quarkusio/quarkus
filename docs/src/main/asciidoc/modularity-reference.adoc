@@ -1,0 +1,109 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="modularity-reference"]
+= Modularity SPI reference
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: architecture
+:extension-status: experimental
+:summary: Reference for the build items that Quarkus extensions use to participate in Quarkus modularity.
+:topics: modularity,jpms,modules,extensions,spi
+
+This document describes the build items that extension authors use to integrate with the xref:modularity.adoc[Quarkus modularity] system.
+Extensions can declare boot modules, add inter-module dependencies, and consume the completed module model.
+
+include::{includes}/extension-status.adoc[]
+
+== `BootModulePathBuildItem`
+
+`BootModulePathBuildItem` is a `MultiBuildItem` produced by extensions.
+It declares that a named module must be placed on the boot module path.
+
+An extension should produce this item when it provides a module that must be in the JDK's boot module layer.
+This is necessary when the module is required before the dynamic module loader (`smallrye-modules`) starts, or when the module must participate in the boot class loading chain.
+
+The constructor takes a single `String` parameter: the module name.
+
+[source,java]
+----
+@BuildStep
+BootModulePathBuildItem myBootModule() {
+    return new BootModulePathBuildItem("com.example.my.boot.module");
+}
+----
+
+The modularity extension computes the transitive closure of all declared boot modules.
+If a boot module depends on other modules (via `LINKED` dependencies), those modules are also included in the boot set automatically.
+Automatic modules are excluded from the boot set because they cannot be linked by `jlink`.
+
+== `AddDependencyBuildItem`
+
+`AddDependencyBuildItem` is a `MultiBuildItem` produced by extensions.
+It adds a dependency between two modules at build time.
+
+An extension should produce this item when it needs to wire a module dependency that is not expressed in the Maven POM or in the module's `module-info.class` descriptor.
+This is common when Quarkus extensions generate code that references types from another module, or when service loading relationships must be declared explicitly.
+
+The constructor takes three parameters: the source module name (`String`), the target module name (`String`), and a set of dependency modifiers (`Modifiers<Dependency.Modifier>`).
+
+[source,java]
+----
+@BuildStep
+AddDependencyBuildItem extraDependency() {
+    return new AddDependencyBuildItem(
+        "com.example.source.module",
+        "com.example.target.module",
+        Dependency.Modifier.set(Dependency.Modifier.LINKED, Dependency.Modifier.READ));
+}
+----
+
+When multiple items declare the same source/target pair, their modifier sets are merged.
+
+== `ApplicationModuleInfoBuildItem`
+
+`ApplicationModuleInfoBuildItem` is a `SimpleBuildItem` produced by the modularity extension.
+It contains the completed `AppModuleModel`, which includes the module descriptor for every module in the application, the set of boot modules, and the set of JDK modules in use.
+
+This item is consumed by downstream packaging extensions such as the xref:jlink.adoc[jlink extension].
+Extension authors generally do not need to consume this item unless they are implementing a custom packaging step.
+
+== Dependency modifiers
+
+The `Dependency.Modifier` enum (from `io.smallrye.modules.desc`) defines the following values.
+These are used with `AddDependencyBuildItem` to control how the dependency is wired.
+
+`LINKED`::
+The dependency is linked for class loading.
+Classes from the target module are visible to the source module's class loader.
+
+`READ`::
+The dependency is readable from the source module.
+Exported packages from the target module are accessible to the source module.
+
+`SERVICES`::
+Service implementations in the target module are available to the source module via `ServiceLoader`.
+
+`OPTIONAL`::
+The dependency is optional.
+If the target module is not present at link time, the dependency is silently ignored rather than causing a failure.
+
+`TRANSITIVE`::
+The dependency is transitive.
+Any module that depends on the source module also implicitly depends on the target module.
+
+`SYNTHETIC`::
+The dependency was added by a framework rather than declared in the original module descriptor. _Note:_ because modifier sets are merged when a dependency is declared in two places, this modifier would take precedence over a non-synthetic dependency, which is a minor detail but possibly undesirable. Thus, this modifier may change to be "non-synthetic" or something along those lines in the final version, so that an explicit dependency will never be marked as being synthetic.
+
+`MANDATED`::
+The dependency is mandated by specification (for example, the implicit dependency on `java.base`).
+
+== Related core build items
+
+The `quarkus-core-deployment` module provides two additional build items that affect the module graph.
+These are documented separately but are noted here for completeness.
+
+`ModuleOpenBuildItem` declares that one module should open specified packages to another module (equivalent to the `--add-opens` JVM flag).
+`ModuleEnableNativeAccessBuildItem` declares that a module requires native access (equivalent to the `--enable-native-access` JVM flag).

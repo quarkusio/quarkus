@@ -97,11 +97,7 @@ public class HibernateOrmCacheTestEndpoint {
 
         testReadOnly();
         testReadWrite();
-        // quarkus-local-cache did not correctly implement NONSTRICT_READ_WRITE semantics.
-        // It would cache on insert and never invalidate on update, leading to stale reads.
-        // JCache with Caffeine behaves differently: no caching on insert, cache invalidation on update.
-        // See: https://hibernate.zulipchat.com/#narrow/channel/132094-hibernate-orm-dev/topic/Simple.202LC.20implementation/near/596716726
-        // testNonStrictReadWrite();
+        testNonStrictReadWrite();
         testQuery();
 
         testCollection();
@@ -291,19 +287,19 @@ public class HibernateOrmCacheTestEndpoint {
     }
 
     private void testNonStrictReadWrite() {
-        //Store some well known Item instances we can then test on:
-        storeTestItems(new Counts(3, 0, 0, 3));
+        // NONSTRICT_READ_WRITE with JCache does not cache on insert
+        storeTestItems(new Counts(0, 0, 0, 0));
 
-        //Load all items and run some checks on the cache hits
+        // Loading items will populate the cache (puts on read)
         final String[] expected = { "Hibernate T-shirt", "Hibernate Sticker", "Hibernate Mug" };
-        verifyFindByIdItems(expected, new Counts(0, 3, 0, 3));
+        verifyFindByIdItems(expected, new Counts(3, 0, 3, 3));
 
-        //Modify item descriptions
+        // Modifying items will load from cache, then evict cache entries (numElements=0 after)
         final String[] newValues = { "Infinispan T-shirt", "Infinispan Sticker", "Infinispan Mug" };
-        updateItemDescriptions(newValues, new Counts(3, 3, 0, 3));
+        updateItemDescriptions(newValues, new Counts(0, 3, 0, 0));
 
-        //Verify descriptions after update
-        verifyFindByIdItems(newValues, new Counts(0, 3, 0, 3));
+        // Verify descriptions after update - cache was evicted, will reload from DB
+        verifyFindByIdItems(newValues, new Counts(3, 0, 3, 3));
     }
 
     private void updateItemDescriptions(String[] newValues, Counts expected) {

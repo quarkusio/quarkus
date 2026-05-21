@@ -272,7 +272,7 @@ public class RequestLeakDetectionTest {
                 context.executeBlocking(() -> {
                     runnable.run();
                     return null;
-                });
+                }, true);
             } else {
                 context.runOnContext(x -> runnable.run());
             }

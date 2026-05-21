@@ -22,6 +22,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.stork.SmallRyeStorkRecorder;
 import io.quarkus.stork.SmallRyeStorkRegistrationRecorder;
 import io.quarkus.stork.StorkConfigProvider;
@@ -39,6 +40,7 @@ import io.smallrye.stork.spi.internal.ServiceRegistrarLoader;
 public class SmallRyeStorkProcessor {
 
     private static final String KUBERNETES_SERVICE_DISCOVERY_PROVIDER = "io.smallrye.stork.servicediscovery.kubernetes.KubernetesServiceDiscoveryProvider";
+    private static final String CONSUL_SERVICE_DISCOVERY_PROVIDER = "io.smallrye.stork.servicediscovery.consul.ConsulServiceDiscoveryProvider";
     private static final String CONSUL_SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.serviceregistration.consul.ConsulServiceRegistrarProvider";
     private static final String EUREKA_SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.serviceregistration.eureka.EurekaServiceRegistrarProvider";
     private static final String STATIC_SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.serviceregistration.staticlist.StaticListServiceRegistrarProvider";
@@ -46,6 +48,7 @@ public class SmallRyeStorkProcessor {
     private static final String EUREKA_SERVICE_REGISTRAR_TYPE = "eureka";
     private static final String STATIC_SERVICE_REGISTRAR_TYPE = "static";
     private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkProcessor.class.getName());
+    public static final String JACKSON_CORE_JSON_FACTORY = "com.fasterxml.jackson.core.JsonFactory";
 
     @BuildStep
     void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> services) {
@@ -89,6 +92,27 @@ public class SmallRyeStorkProcessor {
                                 "\n - with Apache Maven, run: `./mvnw quarkus:add-extension -Dextensions=\"io.quarkus:quarkus-kubernetes-client\"`"
                                 +
                                 "\n - or just add the `io.quarkus:quarkus-kubernetes-client` dependency to the project");
+            }
+        }
+    }
+
+    /**
+     * This build step is the fix for <a href="https://github.com/quarkusio/quarkus/issues/54121">#54121</a>.
+     * The Vert.x Consul client requires Jackson for JSON serialization. When a Consul Stork provider
+     * (service discovery or service registration) is on the classpath without the {@code quarkus-jackson}
+     * extension, the application fails at runtime with a cryptic {@code NoClassDefFoundError}.
+     */
+    @BuildStep
+    @Produce(AlwaysBuildItem.class)
+    void checkThatJacksonExtensionIsUsedWhenConsulIsOnTheClasspath(Capabilities capabilities) {
+        if (isConsulPresentAtRuntime()) {
+            if (!capabilities.isPresent(Capability.JACKSON)) {
+                throw new ConfigurationException(
+                        "The application is using a Stork Consul provider but does not depend on the `quarkus-jackson` extension. "
+                                + "The Vert.x Consul client requires Jackson for JSON serialization. "
+                                + "Without it, the application will fail at runtime with a NoClassDefFoundError.\n"
+                                + "Add the `io.quarkus:quarkus-jackson` dependency to the project."
+                                + "\n Refer to https://quarkus.io/guides/maven-tooling#dealing-with-extensions for guidance");
             }
         }
     }
@@ -140,6 +164,11 @@ public class SmallRyeStorkProcessor {
         return QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)
                 || QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)
                 || QuarkusClassLoader.isClassPresentAtRuntime(STATIC_SERVICE_REGISTRAR_PROVIDER);
+    }
+
+    private static boolean isConsulPresentAtRuntime() {
+        return QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_DISCOVERY_PROVIDER)
+                || QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER);
     }
 
     private static String getDefaultHealthCheckPath(Capabilities capabilities, Config quarkusConfig) {

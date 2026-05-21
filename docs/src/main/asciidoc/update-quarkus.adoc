@@ -72,6 +72,13 @@ ifdef::devtools-wrapped[+]
 
 . Analyze the update command output for potential instructions and perform the suggested tasks if necessary.
 
+[NOTE]
+====
+For Maven projects, the update command warns if `compiler-plugin.version`, `surefire-plugin.version`, or `maven.compiler.release`
+are set in your `pom.xml` with values that differ from the target stream's defaults.
+These properties are not automatically updated — review the warnings and update them manually if needed.
+====
+
 . Use a diff tool to inspect all changes.
 
 . Review the {quarkus-migration-guide} for items that were not updated by the update command.

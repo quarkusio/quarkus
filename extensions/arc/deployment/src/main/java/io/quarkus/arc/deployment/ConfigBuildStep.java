@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigValue;
@@ -484,7 +485,7 @@ public class ConfigBuildStep {
         recorder.registerConfigProperties(
                 configProperties.stream()
                         .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
-                        .collect(toSet()));
+                        .collect(Collectors.toCollection(LinkedHashSet::new)));
 
         // Ensure that @ConfigProperties are registered before Startup events
         serviceStart.produce(new ServiceStartBuildItem("microprofile-config-properties"));

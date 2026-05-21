@@ -2,17 +2,14 @@ package io.quarkus.observability.deployment.devui;
 
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
@@ -23,45 +20,38 @@ import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class ObservabilityDevUIProcessor {
 
+    private static final String FEATURE = Feature.OBSERVABILITY.getName();
+
     @BuildStep(onlyIf = IsDevelopment.class)
     void createVersion(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer,
-            BuildProducer<FooterPageBuildItem> footerProducer,
-            DevServicesLauncherConfigResultBuildItem devServicesConfig) {
+            BuildProducer<FooterPageBuildItem> footerProducer) {
 
-        Map<String, String> runtimeConfig = devServicesConfig.getConfig();
+        final CardPageBuildItem card = new CardPageBuildItem();
 
-        // LGTM
-        String grafanaUrl = runtimeConfig.getOrDefault("grafana.endpoint", "");
-        if (StringUtils.isNotEmpty(grafanaUrl)) {
-            final CardPageBuildItem card = new CardPageBuildItem();
+        // Grafana
+        card.addPage(Page.externalPageBuilder("Grafana UI")
+                .dynamicUrlJsonRPCMethodName("devui-dev-services:devServicesConfig",
+                        Map.of("name", FEATURE, "configKey", "grafana.endpoint"))
+                .doNotEmbed()
+                .isHtmlContent()
+                .icon("font-awesome-solid:chart-line"));
 
-            // Grafana
-            grafanaUrl = StringUtils.prependIfMissing(grafanaUrl, "http://");
-            card.addPage(Page.externalPageBuilder("Grafana UI")
-                    .url(grafanaUrl, grafanaUrl)
-                    .doNotEmbed()
-                    .isHtmlContent()
-                    .icon("font-awesome-solid:chart-line"));
+        // Open Telemetry
+        card.addPage(Page.externalPageBuilder("OpenTelemetry Port")
+                .icon("font-awesome-solid:binoculars")
+                .doNotEmbed()
+                .dynamicUrlJsonRPCMethodName("devui-dev-services:devServicesConfig",
+                        Map.of("name", FEATURE, "configKey", "otel-collector.url")));
 
-            // Open Telemetry
-            final ExternalPageBuilder otelPage = Page.externalPageBuilder("OpenTelemetry Port")
-                    .icon("font-awesome-solid:binoculars")
-                    .doNotEmbed()
-                    .url("https://opentelemetry.io/")
-                    .staticLabel(StringUtils
-                            .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
-            card.addPage(otelPage);
+        card.setCustomCard("qwc-lgtm-card.js");
+        cardPageBuildItemBuildProducer.produce(card);
 
-            card.setCustomCard("qwc-lgtm-card.js");
-            cardPageBuildItemBuildProducer.produce(card);
+        // LGTM Container Log Console
+        WebComponentPageBuilder logPageBuilder = Page.webComponentPageBuilder()
+                .icon("font-awesome-solid:chart-line")
+                .title("LGTM")
+                .componentLink("qwc-lgtm-log.js");
 
-            // LGTM Container Log Console
-            WebComponentPageBuilder mailLogPageBuilder = Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:chart-line")
-                    .title("LGTM")
-                    .componentLink("qwc-lgtm-log.js");
-
-            footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
-        }
+        footerProducer.produce(new FooterPageBuildItem(logPageBuilder));
     }
 }

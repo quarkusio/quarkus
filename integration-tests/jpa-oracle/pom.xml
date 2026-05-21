@@ -13,6 +13,12 @@
     <name>Quarkus - Integration Tests - JPA - Oracle</name>
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
+    <properties>
+        <oracle.jdbc.url/><!-- Default is empty, meaning we'll use dev services -->
+        <oracle.username/>
+        <oracle.password/>
+    </properties>
+
     <dependencies>
         <!-- Enables the JPA capabilities -->
         <dependency>
@@ -169,6 +175,36 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>test-oracle-external</id>
+            <activation>
+                <property>
+                    <name>oracle.jdbc.url</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <quarkus.test.profile>test,external-db</quarkus.test.profile>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <quarkus.test.profile>prod,external-db</quarkus.test.profile>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

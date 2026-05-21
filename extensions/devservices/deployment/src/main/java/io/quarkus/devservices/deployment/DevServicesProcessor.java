@@ -194,7 +194,7 @@ public class DevServicesProcessor {
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         DevServicesRegistryBuildItem registryBuildItem = new DevServicesRegistryBuildItem(applicationId.getUUID(),
                 devServicesConfig, launchMode.getLaunchMode());
-        shutdownBuildItem.addCloseTask(registryBuildItem::closeAllRunningServices, true);
+        shutdownBuildItem.addCloseTask(registryBuildItem::closeOwnRunningServices, true);
         return registryBuildItem;
     }
 

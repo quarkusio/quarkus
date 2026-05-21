@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -107,14 +108,17 @@ class VertxProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
-            AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
+            AnnotationProxyBuildItem annotationProxy,
+            LaunchModeBuildItem launchMode,
+            ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
             RecorderContext recorderContext) {
         List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProviders,
-                true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource,
+                generatedServiceProviders, constantBootstraps, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             ConsumeEvent annotation = annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
                     .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())

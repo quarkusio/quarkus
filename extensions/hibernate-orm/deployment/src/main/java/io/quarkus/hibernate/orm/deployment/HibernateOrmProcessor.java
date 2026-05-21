@@ -115,6 +115,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -939,7 +940,8 @@ public final class HibernateOrmProcessor {
             List<ApplicationClassPredicateBuildItem> predicates,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
 
         IndexView index = combinedIndex.getIndex();
 
@@ -969,7 +971,7 @@ public final class HibernateOrmProcessor {
 
         Gizmo gizmo = Gizmo
                 .create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedServiceProviders,
-                        appClassPredicate))
+                        constantBootstraps, appClassPredicate))
                 .withDebugInfo(false)
                 .withParameters(false);
 

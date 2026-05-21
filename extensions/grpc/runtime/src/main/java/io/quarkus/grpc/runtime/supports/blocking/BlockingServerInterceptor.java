@@ -1,13 +1,14 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -220,7 +221,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         // exclusive to event loop context
         private volatile ServerCall.Listener<ReqT> delegate;
-        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ConcurrentLinkedQueue<>();
+        // Guarded by its own monitor. Events queued before setDelegate runs may arrive
+        // out of order versus how the underlying UnaryServerCallListener expects them
+        // (e.g. onHalfClose before onMessage when call.request(N) was deferred — see
+        // setDelegate). The deque is reordered once at delegate-injection time to
+        // preserve the request-before-half-close invariant before draining.
+        private final Deque<ReplayEvent<ReqT>> incomingEvents = new ArrayDeque<>();
         private volatile boolean isConsumingFromIncomingEvents;
 
         private ReplayListener(InjectableContext.ContextState requestContextState) {
@@ -235,20 +241,34 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * @param delegate the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
-            this.delegate = delegate;
-            if (!this.isConsumingFromIncomingEvents) {
-                Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
-                if (consumer != null) {
-                    executeBlockingWithRequestContext(consumer);
+            ReplayEvent<ReqT> first = null;
+            synchronized (incomingEvents) {
+                this.delegate = delegate;
+                if (!this.isConsumingFromIncomingEvents) {
+                    reorderForRequestBeforeHalfClose(incomingEvents);
+                    first = incomingEvents.poll();
+                    if (first != null) {
+                        this.isConsumingFromIncomingEvents = true;
+                    }
                 }
+            }
+            if (first != null) {
+                executeBlockingWithRequestContext(first.action);
             }
         }
 
-        private void scheduleOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
-            if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
-                executeBlockingWithRequestContext(consumer);
-            } else {
-                incomingEvents.add(consumer);
+        private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
+            Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
+            synchronized (incomingEvents) {
+                if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
+                    toRunDirectly = event.action;
+                    this.isConsumingFromIncomingEvents = true;
+                } else {
+                    incomingEvents.add(event);
+                }
+            }
+            if (toRunDirectly != null) {
+                executeBlockingWithRequestContext(toRunDirectly);
             }
         }
 
@@ -273,40 +293,47 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
+            // Usually already true: setDelegate / scheduleOrEnqueue set it under
+            // incomingEvents before dispatching. This write keeps the worker-chain path
+            // consistent when chaining from executeBlocking's onComplete handler.
             this.isConsumingFromIncomingEvents = true;
             vertx.executeBlocking(blockingHandler, false).onComplete(p -> {
-                Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
+                ReplayEvent<ReqT> next;
+                synchronized (incomingEvents) {
+                    next = incomingEvents.poll();
+                    if (next == null) {
+                        this.isConsumingFromIncomingEvents = false;
+                    }
+                }
                 if (next != null) {
-                    executeBlockingWithRequestContext(next);
-                } else {
-                    this.isConsumingFromIncomingEvents = false;
+                    executeBlockingWithRequestContext(next.action);
                 }
             });
         }
 
         @Override
         public void onMessage(ReqT message) {
-            scheduleOrEnqueue(t -> t.onMessage(message));
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.MESSAGE, t -> t.onMessage(message)));
         }
 
         @Override
         public void onHalfClose() {
-            scheduleOrEnqueue(ServerCall.Listener::onHalfClose);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.HALF_CLOSE, ServerCall.Listener::onHalfClose));
         }
 
         @Override
         public void onCancel() {
-            scheduleOrEnqueue(ServerCall.Listener::onCancel);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onCancel));
         }
 
         @Override
         public void onComplete() {
-            scheduleOrEnqueue(ServerCall.Listener::onComplete);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onComplete));
         }
 
         @Override
         public void onReady() {
-            scheduleOrEnqueue(ServerCall.Listener::onReady);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onReady));
         }
     }
 
@@ -324,7 +351,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         // exclusive to event loop context
         private ServerCall.Listener<ReqT> delegate;
-        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ConcurrentLinkedQueue<>();
+        // Guarded by its own monitor. See ReplayListener#incomingEvents for the
+        // rationale on why this is reordered before draining.
+        private final Deque<ReplayEvent<ReqT>> incomingEvents = new ArrayDeque<>();
         private volatile boolean isConsumingFromIncomingEvents = false;
 
         private VirtualReplayListener(InjectableContext.ContextState requestContextState) {
@@ -338,20 +367,34 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * @param delegate the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
-            this.delegate = delegate;
-            if (!this.isConsumingFromIncomingEvents) {
-                Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
-                if (consumer != null) {
-                    executeVirtualWithRequestContext(consumer);
+            ReplayEvent<ReqT> first = null;
+            synchronized (incomingEvents) {
+                this.delegate = delegate;
+                if (!this.isConsumingFromIncomingEvents) {
+                    reorderForRequestBeforeHalfClose(incomingEvents);
+                    first = incomingEvents.poll();
+                    if (first != null) {
+                        this.isConsumingFromIncomingEvents = true;
+                    }
                 }
+            }
+            if (first != null) {
+                executeVirtualWithRequestContext(first.action);
             }
         }
 
-        private void scheduleOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
-            if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
-                executeVirtualWithRequestContext(consumer);
-            } else {
-                incomingEvents.add(consumer);
+        private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
+            Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
+            synchronized (incomingEvents) {
+                if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
+                    toRunDirectly = event.action;
+                    this.isConsumingFromIncomingEvents = true;
+                } else {
+                    incomingEvents.add(event);
+                }
+            }
+            if (toRunDirectly != null) {
+                executeVirtualWithRequestContext(toRunDirectly);
             }
         }
 
@@ -363,16 +406,23 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
+            // Usually already true: setDelegate / scheduleOrEnqueue set it under incomingEvents
+            // before dispatching. Kept for the chain path that calls here after polling the next
+            // event. Cleared under incomingEvents when the queue is drained.
             this.isConsumingFromIncomingEvents = true;
             var finalBlockingHandler = blockingHandler;
             virtualThreadExecutor.execute(() -> {
                 try {
                     finalBlockingHandler.call();
-                    Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
+                    ReplayEvent<ReqT> next;
+                    synchronized (incomingEvents) {
+                        next = incomingEvents.poll();
+                        if (next == null) {
+                            this.isConsumingFromIncomingEvents = false;
+                        }
+                    }
                     if (next != null) {
-                        executeVirtualWithRequestContext(next);
-                    } else {
-                        this.isConsumingFromIncomingEvents = false;
+                        executeVirtualWithRequestContext(next.action);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -382,27 +432,108 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         @Override
         public void onMessage(ReqT message) {
-            scheduleOrEnqueue(t -> t.onMessage(message));
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.MESSAGE, t -> t.onMessage(message)));
         }
 
         @Override
         public void onHalfClose() {
-            scheduleOrEnqueue(ServerCall.Listener::onHalfClose);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.HALF_CLOSE, ServerCall.Listener::onHalfClose));
         }
 
         @Override
         public void onCancel() {
-            scheduleOrEnqueue(ServerCall.Listener::onCancel);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onCancel));
         }
 
         @Override
         public void onComplete() {
-            scheduleOrEnqueue(ServerCall.Listener::onComplete);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onComplete));
         }
 
         @Override
         public void onReady() {
-            scheduleOrEnqueue(ServerCall.Listener::onReady);
+            scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onReady));
+        }
+    }
+
+    /**
+     * Reorders the head of the queued events so that any {@code onMessage} event(s)
+     * arriving before an {@code onHalfClose} are delivered first. The grpc-stub
+     * {@code UnaryServerCallHandler} only calls {@code call.request(N)} from inside
+     * its {@code startCall}, which this interceptor defers onto a worker / virtual
+     * thread. {@code onHalfClose} does not require inbound flow-control budget
+     * (END_STREAM is a wire-level marker), so on a cold or backlogged executor the
+     * replay listener can observe {@code onHalfClose} before the deframer is allowed
+     * to deliver {@code onMessage}. Replaying the queue in arrival order would then
+     * cause the underlying unary listener to see a half-close with no request and
+     * close the call with {@code Status.INTERNAL: Half-closed without a request}.
+     * <p>
+     * This method preserves the relative order of all non-message events and the
+     * relative order of all message events; it only promotes any {@code MESSAGE}
+     * entries that appear after the first {@code HALF_CLOSE} to immediately before
+     * it. The caller must hold the queue's monitor.
+     */
+    private static <ReqT> void reorderForRequestBeforeHalfClose(Deque<ReplayEvent<ReqT>> queue) {
+        int size = queue.size();
+        if (size == 0) {
+            return;
+        }
+        // Snapshot once so we do not walk the deque multiple times.
+        List<ReplayEvent<ReqT>> snapshot = new ArrayList<>(queue);
+        int halfCloseIdx = -1;
+        for (int i = 0; i < snapshot.size(); i++) {
+            if (snapshot.get(i).kind == EventKind.HALF_CLOSE) {
+                halfCloseIdx = i;
+                break;
+            }
+        }
+        if (halfCloseIdx < 0) {
+            return;
+        }
+        boolean hasTrailingMessage = false;
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            if (snapshot.get(i).kind == EventKind.MESSAGE) {
+                hasTrailingMessage = true;
+                break;
+            }
+        }
+        if (!hasTrailingMessage) {
+            return;
+        }
+        Deque<ReplayEvent<ReqT>> result = new ArrayDeque<>(snapshot.size());
+        for (int i = 0; i < halfCloseIdx; i++) {
+            result.addLast(snapshot.get(i));
+        }
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            ReplayEvent<ReqT> e = snapshot.get(i);
+            if (e.kind == EventKind.MESSAGE) {
+                result.addLast(e);
+            }
+        }
+        result.addLast(snapshot.get(halfCloseIdx));
+        for (int i = halfCloseIdx + 1; i < snapshot.size(); i++) {
+            ReplayEvent<ReqT> e = snapshot.get(i);
+            if (e.kind != EventKind.MESSAGE) {
+                result.addLast(e);
+            }
+        }
+        queue.clear();
+        queue.addAll(result);
+    }
+
+    private enum EventKind {
+        MESSAGE,
+        HALF_CLOSE,
+        OTHER
+    }
+
+    private static final class ReplayEvent<ReqT> {
+        final EventKind kind;
+        final Consumer<ServerCall.Listener<ReqT>> action;
+
+        ReplayEvent(EventKind kind, Consumer<ServerCall.Listener<ReqT>> action) {
+            this.kind = kind;
+            this.action = action;
         }
     }
 

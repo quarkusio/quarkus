@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -14,14 +13,22 @@ import io.restassured.RestAssured;
 @QuarkusTest
 public class DialectTest {
 
+    private static String getExpectedVersion() {
+        String actualVersion = System.getProperty("mariadb.version");
+        assertThat(actualVersion)
+                .as("mariadb.version system property should be set by maven-surefire-plugin")
+                .isNotNull();
+        return actualVersion;
+    }
+
     /**
-     * This is important for backwards compatibility reasons:
-     * we want to keep using at least the same version as before by default.
+     * We want to use a dialect version matching the default DB version as defined in the POM (and forwarded to Hibernate
+     * through the datasource extension).
      */
     @Test
     public void version() {
         String version = RestAssured.when().get("/dialect/version").then().extract().body().asString();
-        assertThat(version).startsWith(DialectVersions.Defaults.MARIADB);
+        assertThat(version).startsWith(getExpectedVersion());
     }
 
 }

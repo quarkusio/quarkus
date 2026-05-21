@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,6 +35,7 @@ class ReactiveDataSourceProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
         if (dataSourcesBuildTimeConfig.driver().isPresent() || dataSourcesBuildTimeConfig.url().isPresent()) {
@@ -45,7 +47,7 @@ class ReactiveDataSourceProcessor {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
                 dataSourcesReactiveBuildTimeConfig, curateOutcomeBuildItem,
-                defaultDbKinds);
+                defaultDbKinds, defaultDbVersions);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
             log.warn("The Datasource Reactive dependency is present but no Reactive datasources have been defined.");
@@ -62,7 +64,8 @@ class ReactiveDataSourceProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
@@ -76,19 +79,21 @@ class ReactiveDataSourceProcessor {
                     ? entry.getValue().devservices().enabled().orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources())
                     : true;
 
-            Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
+            Optional<String> effectiveDbKindOptional = DefaultDataSourceDbKindBuildItem
                     .resolve(entry.getValue().dbKind(), defaultDbKinds,
                             enableImplicitResolution,
                             curateOutcomeBuildItem);
 
-            if (effectiveDbKind.isEmpty()) {
+            if (effectiveDbKindOptional.isEmpty()) {
                 continue;
             }
+            var effectiveDbKind = effectiveDbKindOptional.get();
 
             dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
                     entry.getValue(),
                     reactiveBuildTimeConfig,
-                    effectiveDbKind.get()));
+                    effectiveDbKind,
+                    DefaultDataSourceDbVersionBuildItem.resolveDefaultDbVersion(effectiveDbKind, defaultDbVersions)));
         }
 
         return dataSources;
@@ -108,7 +113,8 @@ class ReactiveDataSourceProcessor {
                     aggregatedBuildTimeConfigBuildItem.getName(),
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
                     aggregatedBuildTimeConfigBuildItem.isDefault(),
-                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion()));
+                    aggregatedBuildTimeConfigBuildItem.getDbVersion(),
+                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion().isPresent()));
         }
     }
 
@@ -122,7 +128,8 @@ class ReactiveDataSourceProcessor {
                     newDataSourceBuildItem.getName(),
                     newDataSourceBuildItem.getDbKind(),
                     newDataSourceBuildItem.isDefault(),
-                    newDataSourceBuildItem.getVersion()));
+                    newDataSourceBuildItem.getDbVersion(),
+                    newDataSourceBuildItem.isDbVersionUserSpecified()));
         }
     }
 }

@@ -50,6 +50,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -75,6 +81,9 @@
                     <excludes>
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
+                    <systemPropertyVariables combine.children="append">
+                        <mariadb.version>${mariadb.version}</mariadb.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

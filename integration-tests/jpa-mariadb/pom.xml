@@ -107,12 +107,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mariadb.version>${mariadb.version}</mariadb.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mariadb.version>${mariadb.version}</mariadb.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

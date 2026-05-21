@@ -45,6 +45,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -86,6 +87,7 @@ class AgroalProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions,
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -104,7 +106,7 @@ class AgroalProcessor {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
                 dataSourcesJdbcBuildTimeConfig, curateOutcomeBuildItem,
-                jdbcDriverBuildItems, defaultDbKinds);
+                jdbcDriverBuildItems, defaultDbKinds, defaultDbVersions);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
             log.warn("The Agroal dependency is present but no JDBC datasources have been defined.");
@@ -298,7 +300,8 @@ class AgroalProcessor {
 
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
-                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion(),
+                    aggregatedBuildTimeConfigBuildItem.getDbVersion(),
+                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion().isPresent(),
                     aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() != TransactionIntegration.DISABLED,
                     aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() == TransactionIntegration.XA,
                     aggregatedBuildTimeConfigBuildItem.isDefault()));
@@ -310,7 +313,8 @@ class AgroalProcessor {
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
-            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
+            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
@@ -324,20 +328,22 @@ class AgroalProcessor {
                     ? entry.getValue().devservices().enabled().orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources())
                     : true;
 
-            Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
+            Optional<String> effectiveDbKindOptional = DefaultDataSourceDbKindBuildItem
                     .resolve(entry.getValue().dbKind(), defaultDbKinds,
                             enableImplicitResolution,
                             curateOutcomeBuildItem);
 
-            if (!effectiveDbKind.isPresent()) {
+            if (!effectiveDbKindOptional.isPresent()) {
                 continue;
             }
+            String effectiveDbKind = effectiveDbKindOptional.get();
 
             dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
                     entry.getValue(),
                     jdbcBuildTimeConfig,
-                    effectiveDbKind.get(),
-                    resolveDriver(entry.getKey(), effectiveDbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
+                    effectiveDbKind,
+                    resolveDriver(entry.getKey(), effectiveDbKind, jdbcBuildTimeConfig, jdbcDriverBuildItems),
+                    DefaultDataSourceDbVersionBuildItem.resolveDefaultDbVersion(effectiveDbKind, defaultDbVersions)));
         }
 
         return dataSources;

@@ -21,6 +21,7 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
+    private final boolean dbVersionUserSpecified;
     private final boolean versionCheckEnabled;
 
     public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName,
@@ -34,6 +35,7 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
         // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
         // then the version from `DialectVersions.Defaults` will be used:
         this.buildTimeDbVersion = dialect.getVersion();
+        this.dbVersionUserSpecified = recordedConfig.isDbVersionUserSpecified();
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDatabase database = runtimePuConfig
                 .database();
 
@@ -54,6 +56,6 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     @Override
     public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
         return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, isFromPersistenceXml, dialect, datasourceName,
-                buildTimeDbVersion, versionCheckEnabled);
+                buildTimeDbVersion, dbVersionUserSpecified, versionCheckEnabled);
     }
 }

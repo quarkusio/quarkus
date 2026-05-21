@@ -132,6 +132,21 @@ class ObservabilityDevServiceProcessor {
             if (discovered != null) {
                 services.produce(discovered);
             } else {
+                Map<String, Function<ObservabilityStartable, String>> configProvider = new LinkedHashMap<>();
+                configProvider.put("grafana.endpoint", s -> s.getDevServiceConfig().get("grafana.endpoint"));
+                configProvider.put("tempo-mcp.endpoint", s -> s.getDevServiceConfig().get("tempo-mcp.endpoint"));
+                configProvider.put("otel-collector.url", s -> s.getDevServiceConfig().get("otel-collector.url"));
+                if (catalog.hasMicrometerOtlp()) {
+                    configProvider.put("quarkus.micrometer.export.otlp.url",
+                            s -> s.getDevServiceConfig().get("quarkus.micrometer.export.otlp.url"));
+                }
+                if (catalog.hasOpenTelemetry()) {
+                    configProvider.put("quarkus.otel.exporter.otlp.endpoint",
+                            s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.endpoint"));
+                    configProvider.put("quarkus.otel.exporter.otlp.protocol",
+                            s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.protocol"));
+                }
+
                 services.produce(
                         DevServicesResultBuildItem.owned()
                                 .feature(Feature.OBSERVABILITY)
@@ -139,7 +154,7 @@ class ObservabilityDevServiceProcessor {
                                 .serviceConfig(currentDevServicesConfiguration)
                                 .startable(() -> new ObservabilityStartable(dev, currentDevServicesConfiguration,
                                         configuration, devServicesConfig.timeout()))
-                                .configResolver(ObservabilityStartable::getDevServiceConfig)
+                                .configProvider(configProvider)
                                 .postStartHook(s -> log.infof("Dev Service %s started, config: %s",
                                         devId, s.getDevServiceConfig()))
                                 .build());

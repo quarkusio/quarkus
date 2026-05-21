@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -778,7 +779,11 @@ public class ValueResolverGenerator extends AbstractGenerator {
             BlockCreator resolve, LocalVar base, LocalVar name, LocalVar params, LocalVar paramsCount,
             ParamVar evalContext) {
 
-        LOGGER.debugf("Methods added %s", methods);
+        // Sort methods to ensure stable bytecode generation
+        final List<MethodInfo> sortedMethods = new ArrayList<>(methods);
+        sortedMethods.sort(Comparator.comparing(MethodInfo::toString));
+
+        LOGGER.debugf("Methods added %s", sortedMethods);
 
         ifMethodMatch(resolve, matchName, matchParamsCount, null, name, params, paramsCount,
                 bc -> {
@@ -802,7 +807,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                         lc.body(whenComplete -> {
                             whenComplete.ifElse(whenComplete.isNull(throwable),
                                     success -> {
-                                        for (MethodInfo method : methods) {
+                                        for (MethodInfo method : sortedMethods) {
                                             boolean isVarArgs = isVarArgs(method);
 
                                             success.block(nested -> {

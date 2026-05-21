@@ -3,6 +3,7 @@ package io.quarkus.virtual.vertx.web;
 import static io.restassured.RestAssured.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +19,12 @@ class RunOnVirtualThreadTest {
     @Test
     void testRouteOnVirtualThread() {
         String bodyStr = get("/hello").then().statusCode(200).extract().asString();
+        String secondBodyStr = get("/hello").then().statusCode(200).extract().asString();
+        // Quarkus specific - all VTs shares the same prefix
+        assertTrue(bodyStr.startsWith("quarkus-virtual-thread-"));
+        assertTrue(secondBodyStr.startsWith("quarkus-virtual-thread-"));
         // Each VT has a unique name in quarkus
-        assertNotEquals(bodyStr, get("/hello").then().statusCode(200).extract().asString());
+        assertNotEquals(bodyStr, secondBodyStr);
     }
 
     @Test

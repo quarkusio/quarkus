@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Application;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
@@ -34,7 +35,10 @@ public class ApplicationWithRunOnVirtualThreadTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(VirtualThreadApplication.class, ThreadNameResource.class);
+                            .addClasses(VirtualThreadApplication.class, ThreadNameResource.class)
+                            .addAsResource(new StringAsset(
+                                    "quarkus.virtual-threads.name-prefix=quarkus-virtual-thread-"),
+                                    "application.properties");
                 }
             });
 

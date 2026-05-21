@@ -156,11 +156,13 @@ public final class JLinkSteps {
 
         // JVM args
 
+        String addedModules = "ALL-MODULE-PATH,jdk.jdwp.agent," + String.join(",", moduleInfoItem.model().jdkModulesUsed());
+
         // access to module internals
         jvmArgs.add("--add-exports=java.base/jdk.internal.module=io.smallrye.modules");
         // add modules to JVM path
         // xxx replace with injected module dependencies on main module?
-        jvmArgs.add("--add-modules=ALL-MODULE-PATH,jdk.jdwp.agent,jdk.compiler");
+        jvmArgs.add("--add-modules=" + addedModules);
         // todo: patch for loom
         //jvmArgs.add("--patch-module");
         //jvmArgs.add("java.base=" + javaBasePatchPath);
@@ -212,7 +214,7 @@ public final class JLinkSteps {
 
         // todo: include the whole boot path until --bind-services works
         jlinkArgs.add("--add-modules");
-        jlinkArgs.add("ALL-MODULE-PATH,jdk.zipfs,jdk.jdwp.agent,jdk.compiler");
+        jlinkArgs.add(addedModules);
 
         // everything looks good; make the directory for the image output
         Files.createDirectories(imagePath.getParent());

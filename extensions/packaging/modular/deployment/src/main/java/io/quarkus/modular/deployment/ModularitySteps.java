@@ -275,6 +275,8 @@ public final class ModularitySteps {
 
         // now start creating the module set
 
+        Set<String> usedJdkModuleNames = new HashSet<>();
+
         // This is just an index of each artifact by groupId+artifactId.
         Map<ArtifactKey, ResolvedDependency> allDependenciesByKey = knownNamedModules.values().stream().map(
                 d -> Map.entry(keyOf(d), d)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -388,6 +390,11 @@ public final class ModularitySteps {
                                                     Collectors.toMap(Function.identity(), ignored -> PackageAccess.OPEN))))
                                     .toList());
                         }
+                        // tabulate any used JDK modules.
+                        mi.dependencies().stream()
+                                .map(DependencyInfo::moduleName)
+                                .filter(n -> n.startsWith("java.") || n.startsWith("jdk."))
+                                .forEach(usedJdkModuleNames::add);
                         return mi;
                     });
             // Add the module to the index.
@@ -472,6 +479,11 @@ public final class ModularitySteps {
                             .stream()
                             .map((e) -> new DependencyInfo(e.getKey(), e.getValue(), Map.of()))
                             .toList());
+                    // tabulate any used JDK modules.
+                    mi.dependencies().stream()
+                            .map(DependencyInfo::moduleName)
+                            .filter(n -> n.startsWith("java.") || n.startsWith("jdk."))
+                            .forEach(usedJdkModuleNames::add);
                     return mi;
                 });
 
@@ -494,6 +506,7 @@ public final class ModularitySteps {
         // Build and return the final modular model.
         AppModuleModel.Builder amb = AppModuleModel.builder();
         amb.appModuleInfo(appModule);
+        usedJdkModuleNames.forEach(amb::jdkModuleUsed);
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
         modulesByName.values().forEach(amb::moduleInfo);
         return new ApplicationModuleInfoBuildItem(amb.build());

@@ -51,6 +51,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
@@ -286,9 +287,13 @@ class HibernateSearchElasticsearchProcessor {
         ElasticsearchVersion version = defaultPUDefaultBackendConfig.version().get();
         String hostsPropertyKey = backendPropertyKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, null,
                 "hosts");
-        return new DevservicesElasticsearchBuildItem(hostsPropertyKey,
+        return new DevservicesElasticsearchBuildItem(clientName(null, defaultPUDefaultBackendConfig), hostsPropertyKey,
                 version.versionString(),
                 Distribution.valueOf(version.distribution().toString().toUpperCase()));
+    }
+
+    private String clientName(String backendName, HibernateSearchBackendElasticsearchBuildTimeConfig backendConfig) {
+        return "<default>";
     }
 
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)

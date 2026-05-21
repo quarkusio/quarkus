@@ -74,6 +74,11 @@ public class ContainerLocator {
     }
 
     public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode) {
+        return locateContainer(serviceName, shared, launchMode, ContainerLocator::anyContainerAddress);
+    }
+
+    public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode,
+            Predicate<ContainerAddress> filter) {
         if (shared && launchMode == LaunchMode.DEVELOPMENT) {
             return lookup(serviceName)
                     .flatMap(container -> getMappedPort(container, port).stream()
@@ -89,6 +94,7 @@ public class ContainerLocator {
                                                 containerAddress.getUrl());
                                         return containerAddress;
                                     }).stream()))
+                    .filter(filter)
                     .findFirst();
         } else {
             return Optional.empty();
@@ -132,5 +138,9 @@ public class ContainerLocator {
         } else {
             return Optional.empty();
         }
+    }
+
+    private static boolean anyContainerAddress(ContainerAddress ca) {
+        return true;
     }
 }

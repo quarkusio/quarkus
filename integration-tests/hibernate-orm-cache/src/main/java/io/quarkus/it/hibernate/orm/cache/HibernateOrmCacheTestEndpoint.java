@@ -93,7 +93,11 @@ public class HibernateOrmCacheTestEndpoint {
 
         testReadOnly();
         testReadWrite();
-        testNonStrictReadWrite();
+        // quarkus-local-cache did not correctly implement NONSTRICT_READ_WRITE semantics.
+        // It would cache on insert and never invalidate on update, leading to stale reads.
+        // JCache with Caffeine behaves differently: no caching on insert, cache invalidation on update.
+        // See: https://hibernate.zulipchat.com/#narrow/channel/132094-hibernate-orm-dev/topic/Simple.202LC.20implementation/near/596716726
+        // testNonStrictReadWrite();
         testQuery();
 
         testCollection();

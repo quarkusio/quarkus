@@ -11,6 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.BodyConfig;
 import io.quarkus.vertx.http.runtime.FilterConfig;
 import io.quarkus.vertx.http.runtime.HeaderConfig;
+import io.quarkus.vertx.http.runtime.HostValidationConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
@@ -71,6 +72,12 @@ public interface ManagementConfig {
      */
     @ConfigDocSection(generated = true)
     CORSConfig cors();
+
+    /**
+     * The HTTP Host header validation
+     */
+    @ConfigDocSection(generated = true)
+    HostValidationConfig hostValidation();
 
     /**
      * The SSL config

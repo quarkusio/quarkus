@@ -37,6 +37,11 @@
             <artifactId>quarkus-fs-util</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.aloubyansky.rozip</groupId>
+            <artifactId>rozip</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
         </dependency>

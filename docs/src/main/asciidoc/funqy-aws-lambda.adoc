@@ -17,8 +17,6 @@ The guide walks through quickstart code to show you how you can deploy Funqy fun
 Funqy functions can be deployed using the AWS Lambda Java Runtime, or you can build a native executable and use
 Lambda Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-time: 30 minutes

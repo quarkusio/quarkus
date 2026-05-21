@@ -13,8 +13,6 @@ include::_attributes.adoc[]
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-time: 30 minutes

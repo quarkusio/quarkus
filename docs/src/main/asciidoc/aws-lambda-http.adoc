@@ -27,8 +27,6 @@ Amazon has a https://docs.aws.amazon.com/apigateway/latest/developerguide/http-a
 
 Like most Quarkus extensions, the Quarkus AWS Lambda HTTP/REST extensions support Live Coding.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-time: 30 minutes

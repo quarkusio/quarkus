@@ -16,8 +16,6 @@ Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and ma
 
 One Google Cloud Functions deployment can represent any number of Jakarta REST, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-no-graalvm:

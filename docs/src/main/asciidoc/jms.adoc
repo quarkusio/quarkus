@@ -14,8 +14,6 @@ include::_attributes.adoc[]
 This guide demonstrates how your Quarkus application can use JMS messaging via the
 Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]

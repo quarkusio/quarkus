@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.resource.Resource;
-import io.smallrye.modules.desc.Modifiers;
 import io.smallrye.modules.desc.ModuleDescriptor;
 import io.smallrye.modules.desc.PackageInfo;
 
@@ -24,7 +23,7 @@ import io.smallrye.modules.desc.PackageInfo;
 public record ModuleInfo(
         String name,
         String version,
-        Modifiers<ModuleDescriptor.Modifier> modifiers,
+        ModuleDescriptor.Modifier.Set modifiers,
         ResolvedDependency resolvedArtifact,
         String mainClassName,
         Map<String, PackageInfo> packages,

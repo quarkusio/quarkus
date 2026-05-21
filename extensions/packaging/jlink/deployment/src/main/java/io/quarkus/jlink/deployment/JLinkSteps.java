@@ -115,7 +115,7 @@ public final class JLinkSteps {
                         .withMoreResources(dynModuleResources)
                         .withMoreDependencies(model.bootModules().stream().filter(n -> !n.equals(moduleName))
                                 .map(n -> new DependencyInfo(n,
-                                        Dependency.Modifier.set(Dependency.Modifier.LINKED, Dependency.Modifier.READ,
+                                        Dependency.Modifier.Set.of(Dependency.Modifier.LINKED, Dependency.Modifier.READ,
                                                 Dependency.Modifier.SERVICES),
                                         Map.of()))
                                 .toList())

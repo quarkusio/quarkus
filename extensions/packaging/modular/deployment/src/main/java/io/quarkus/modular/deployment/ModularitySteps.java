@@ -67,7 +67,6 @@ import io.smallrye.classfile.extras.reflect.AccessFlag;
 import io.smallrye.common.resource.MemoryResource;
 import io.smallrye.common.resource.Resource;
 import io.smallrye.modules.desc.Dependency.Modifier;
-import io.smallrye.modules.desc.Modifiers;
 import io.smallrye.modules.desc.ModuleDescriptor;
 import io.smallrye.modules.desc.PackageAccess;
 import io.smallrye.modules.desc.PackageInfo;
@@ -93,13 +92,13 @@ public final class ModularitySteps {
         // TODO: migrate these to their relevant extensions
         return List.of(
                 new AddDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
-                        Modifier.set(Modifier.SERVICES)),
+                        Modifier.Set.of(Modifier.SERVICES)),
                 // todo: this one must be READ and LINKED because an ArC synthetic bean requires it
                 new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
-                        Modifier.set(Modifier.SERVICES, Modifier.READ, Modifier.LINKED)),
+                        Modifier.Set.of(Modifier.SERVICES, Modifier.READ, Modifier.LINKED)),
                 new AddDependencyBuildItem("jakarta.ws.rs", "io.quarkus.resteasy.reactive.common",
-                        Modifier.set(Modifier.SERVICES, Modifier.OPTIONAL)),
-                new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j", Modifier.set(Modifier.SERVICES)));
+                        Modifier.Set.of(Modifier.SERVICES, Modifier.OPTIONAL)),
+                new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j", Modifier.Set.of(Modifier.SERVICES)));
     }
 
     @BuildStep
@@ -164,13 +163,13 @@ public final class ModularitySteps {
         // Collect all added dependencies and merge them into a flat map.
         // In particular, we collapse duplicates by combining modifier sets union-wise.
         // The mapping here is: from module -> to module -> with modifier(s)
-        Map<String, Map<String, Modifiers<Modifier>>> extraDepsMap = extraDeps.stream()
+        Map<String, Map<String, Modifier.Set>> extraDepsMap = extraDeps.stream()
                 .collect(Collectors.groupingBy(
                         AddDependencyBuildItem::module,
                         Collectors.groupingBy(
                                 AddDependencyBuildItem::targetModule,
                                 Collectors.mapping(AddDependencyBuildItem::modifiers,
-                                        Collectors.reducing(Modifier.set(), Modifiers::withAll)))));
+                                        Collectors.reducing(Modifier.Set.of(), Modifier.Set::withAll)))));
 
         // Collect all add-opens and merge them into a flat map.
         // We collapse duplicates by taking the union of the opened packages.
@@ -303,12 +302,12 @@ public final class ModularitySteps {
         // ArC must depend on the application module (for service loading)
         // todo: ArC should use AddDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.quarkus.arc", ModularitySteps::newMap)
-                .put(appModuleName, Modifier.set(Modifier.SERVICES));
+                .put(appModuleName, Modifier.Set.of(Modifier.SERVICES));
 
         // Vert.x core needs to link against `io.quarkus.vertx`.
         // todo: The Vert.x extension should use AddDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
-                .put("io.quarkus.vertx", Modifier.set(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
+                .put("io.quarkus.vertx", Modifier.Set.of(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
 
         // Now go through the process to build a (Quarkus) module descriptor for each artifact.
         for (ResolvedDependency dependency : knownNamedModules.values()) {
@@ -342,12 +341,13 @@ public final class ModularitySteps {
                             if (!arcAdded && arcGeneratedPackages.contains(pkg)) {
                                 if (!mi.name().equals("io.quarkus.arc")) {
                                     mi = mi.withMoreDependencies(List.of(new DependencyInfo(
-                                            "io.quarkus.arc", Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
+                                            "io.quarkus.arc",
+                                            Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
                                             Map.of())));
                                 }
                                 if (!mi.name().equals("jakarta.cdi")) {
                                     mi = mi.withMoreDependencies(List.of(new DependencyInfo("jakarta.cdi",
-                                            Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
+                                            Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
                                             Map.of())));
                                 }
                                 arcAdded = true;
@@ -356,7 +356,7 @@ public final class ModularitySteps {
                                     && !mi.name().equals("io.quarkus.arc.runtime")) {
                                 mi = mi.withMoreDependencies(List.of(new DependencyInfo(
                                         "io.quarkus.arc.runtime",
-                                        Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
+                                        Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
                                         Map.of())));
                                 arcRuntimeAdded = true;
                             }
@@ -383,7 +383,7 @@ public final class ModularitySteps {
                                     .stream()
                                     .map((e) -> new DependencyInfo(
                                             e.getKey(),
-                                            Modifier.set(Modifier.READ, Modifier.OPTIONAL),
+                                            Modifier.Set.of(Modifier.READ, Modifier.OPTIONAL),
                                             e.getValue().stream().collect(
                                                     Collectors.toMap(Function.identity(), ignored -> PackageAccess.OPEN))))
                                     .toList());
@@ -417,7 +417,8 @@ public final class ModularitySteps {
             if (moduleName != null) {
                 extraDepsMap.computeIfAbsent(appModuleName, ModularitySteps::newMap)
                         .compute(moduleName,
-                                (pn1, mods) -> mods == null ? Modifier.set(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC)
+                                (pn1, mods) -> mods == null
+                                        ? Modifier.Set.of(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC)
                                         : mods.withAll(Modifier.READ, Modifier.LINKED));
             }
         }
@@ -453,13 +454,14 @@ public final class ModularitySteps {
                         // TODO: use build items to do this more efficiently up front
                         if (!arcAdded && arcGeneratedPackages.contains(pkg)) {
                             mi = mi.withMoreDependencies(List.of(new DependencyInfo(
-                                    "io.quarkus.arc", Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
+                                    "io.quarkus.arc", Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
                                     Map.of())));
                             arcAdded = true;
                         }
                         if (!arcRuntimeAdded && arcRuntimeGeneratedPackages.contains(pkg)) {
                             mi = mi.withMoreDependencies(List.of(new DependencyInfo(
-                                    "io.quarkus.arc.runtime", Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
+                                    "io.quarkus.arc.runtime",
+                                    Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SYNTHETIC),
                                     Map.of())));
                             arcRuntimeAdded = true;
                         }
@@ -688,7 +690,7 @@ public final class ModularitySteps {
         String moduleVersion = dependency.getVersion();
         String mainClass = null;
 
-        Modifiers<ModuleDescriptor.Modifier> flags = ModuleDescriptor.Modifier.set();
+        ModuleDescriptor.Modifier.Set flags = ModuleDescriptor.Modifier.Set.of();
         final Map<String, PackageInfo> packages = new HashMap<>(initialPackages);
 
         Set<String> uses;
@@ -841,7 +843,7 @@ public final class ModularitySteps {
                             mri.requires().name().stringValue(),
                             mri.requiresFlags()))
                     .forEach(e -> {
-                        Modifiers<Modifier> modifiers = depModifiersOf(e.getValue());
+                        Modifier.Set modifiers = depModifiersOf(e.getValue());
                         String depName = e.getKey();
                         if (!bootLayerNames.contains(depName) && !knownNamedModules.containsKey(depName)) {
                             // it's actually totally missing...
@@ -895,10 +897,10 @@ public final class ModularitySteps {
             // automatic modules automatically use all services
             uses = Set.of();
             // automatic module implicit requirements; the rest come from Maven
-            requires.add(new DependencyInfo("java.base", Modifier.set(Modifier.LINKED,
+            requires.add(new DependencyInfo("java.base", Modifier.Set.of(Modifier.LINKED,
                     Modifier.READ, Modifier.SERVICES, Modifier.MANDATED), Map.of()));
             // todo: ideally we could avoid requiring `java.se` even for automatic modules thru dep analysis
-            requires.add(new DependencyInfo("java.se", Modifier.set(Modifier.LINKED,
+            requires.add(new DependencyInfo("java.se", Modifier.Set.of(Modifier.LINKED,
                     Modifier.READ, Modifier.SERVICES, Modifier.SYNTHETIC), Map.of()));
             // compute automatic dependencies
             // NOTE: this includes each artifact in the transitive graph; this is NOT THE SAME
@@ -1012,7 +1014,7 @@ public final class ModularitySteps {
                     }
                 }
                 String depName = resolved.getModuleName();
-                Modifiers<Modifier> mods = Modifier.set(Modifier.LINKED, Modifier.READ, Modifier.SERVICES);
+                Modifier.Set mods = Modifier.Set.of(Modifier.LINKED, Modifier.READ, Modifier.SERVICES);
                 if (optional || dependency.isOptional() ||
                         dependency.getScope().equals("provided") ||
                         depth > 1) {
@@ -1050,8 +1052,8 @@ public final class ModularitySteps {
      * @param flags the JPMS access flags set (must not be {@code null})
      * @return the Quarkus module modifiers (not {@code null})
      */
-    private static Modifiers<Modifier> depModifiersOf(final Set<AccessFlag> flags) {
-        Modifiers<Modifier> set = Modifier.set(Modifier.LINKED, Modifier.READ,
+    private static Modifier.Set depModifiersOf(final Set<AccessFlag> flags) {
+        Modifier.Set set = Modifier.Set.of(Modifier.LINKED, Modifier.READ,
                 Modifier.SERVICES);
         if (flags.contains(AccessFlag.STATIC_PHASE)) {
             set = set.with(Modifier.OPTIONAL);

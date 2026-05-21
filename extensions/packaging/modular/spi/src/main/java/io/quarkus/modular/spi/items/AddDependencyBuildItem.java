@@ -3,7 +3,6 @@ package io.quarkus.modular.spi.items;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.modules.desc.Dependency;
-import io.smallrye.modules.desc.Modifiers;
 
 /**
  * A build item which adds an extra dependency between modules.
@@ -11,7 +10,7 @@ import io.smallrye.modules.desc.Modifiers;
 public final class AddDependencyBuildItem extends MultiBuildItem {
     private final String module;
     private final String targetModule;
-    private final Modifiers<Dependency.Modifier> modifiers;
+    private final Dependency.Modifier.Set modifiers;
 
     /**
      * Construct a new instance.
@@ -21,7 +20,7 @@ public final class AddDependencyBuildItem extends MultiBuildItem {
      * @param modifiers the dependency modifiers (must not be {@code null})
      */
     public AddDependencyBuildItem(final String module, final String targetModule,
-            final Modifiers<Dependency.Modifier> modifiers) {
+            final Dependency.Modifier.Set modifiers) {
         this.module = Assert.checkNotNullParam("module", module);
         this.targetModule = Assert.checkNotNullParam("targetModule", targetModule);
         this.modifiers = Assert.checkNotNullParam("modifiers", modifiers);
@@ -44,7 +43,7 @@ public final class AddDependencyBuildItem extends MultiBuildItem {
     /**
      * {@return the dependency modifiers to apply (not {@code null})}
      */
-    public Modifiers<Dependency.Modifier> modifiers() {
+    public Dependency.Modifier.Set modifiers() {
         return modifiers;
     }
 }

@@ -57,6 +57,7 @@ public class QuarkusUpdateCommand {
                 runMavenUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, logFile, dryRun);
                 break;
             case GRADLE:
+            case GRADLE_KOTLIN_DSL:
                 runGradleUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, logFile, dryRun);
                 break;
             default:

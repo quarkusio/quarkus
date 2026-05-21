@@ -630,3 +630,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
 * xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
 * xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]

@@ -1,50 +1,26 @@
 package io.quarkus.devservice.runtime.config;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
-import io.quarkus.devservices.crossclassloader.runtime.RunningService;
-import io.quarkus.runtime.LaunchMode;
-
 public class DevServicesConfigSource implements ConfigSource {
 
-    private final LaunchMode launchMode;
+    private static volatile Map<String, String> config = Map.of();
 
-    public DevServicesConfigSource(LaunchMode launchMode) {
-        this.launchMode = launchMode;
+    public static void setConfig(Map<String, String> config) {
+        DevServicesConfigSource.config = config;
     }
 
     @Override
     public Set<String> getPropertyNames() {
-        Set<String> names = new HashSet<>();
-
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
-        if (allConfig != null) {
-            for (RunningService service : allConfig) {
-                Map<String, String> config = service.configs();
-                names.addAll(config.keySet());
-            }
-        }
-        return names;
+        return config.keySet();
     }
 
     @Override
     public String getValue(String propertyName) {
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
-        if (allConfig != null) {
-            for (RunningService service : allConfig) {
-                Map<String, String> config = service.configs();
-                String answer = config.get(propertyName);
-                if (answer != null) {
-                    return answer;
-                }
-            }
-        }
-        return null;
+        return config.get(propertyName);
     }
 
     @Override

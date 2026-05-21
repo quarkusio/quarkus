@@ -40,6 +40,7 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.SharedAugmentationClassLoaderManager;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.JVMUnsafeWarningsControl;
@@ -73,7 +74,11 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     // which suggests it would be a major rewrite to do so. If they are re-used, most things still work, but config when there are multiple profiles does not work; see, for example, integration-tests/smallrye-config
 
     // We re-use curated applications across application starts; be careful what classloader this class is loaded with
-    private static final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
+    private static final Map<String, CuratedApplication> CURATED_APPLICATIONS = new HashMap<>();
+
+    // Shared augmentation class loader manager: allows multiple profiles to share a single
+    // augmentation class loader, reducing Metaspace memory usage when running tests with many profiles
+    private static final SharedAugmentationClassLoaderManager SHARED_AUGMENTATION_CLASS_LOADER_MANAGER = new SharedAugmentationClassLoaderManager();
 
     // JUnit discovery is single threaded, so no need for concurrency on this map
     private final Map<String, QuarkusClassLoader> runtimeClassLoaders = new HashMap<>();
@@ -143,7 +148,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
         // Don't make a no-profile curated application if our caller had one already
         if (curatedApplication != null) {
-            curatedApplications.put(getProfileKey(null), curatedApplication);
+            CURATED_APPLICATIONS.put(getProfileKey(null), curatedApplication);
         }
 
         this.quarkusTestClasses = quarkusTestClasses;
@@ -544,14 +549,14 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private CuratedApplication getOrCreateCuratedApplication(String key, Class<?> requiredTestClass, List<Path> additionalPaths)
             throws Exception {
-        CuratedApplication curatedApplication = curatedApplications.get(key);
+        CuratedApplication curatedApplication = CURATED_APPLICATIONS.get(key);
 
         if (curatedApplication == null) {
             String displayName = DISPLAY_NAME_PREFIX + key;
             // TODO should we use clonedBuilder here, like TestSupport does?
             curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, additionalPaths, displayName,
-                    isAuxiliaryApplication);
-            curatedApplications.put(key, curatedApplication);
+                    isAuxiliaryApplication, SHARED_AUGMENTATION_CLASS_LOADER_MANAGER);
+            CURATED_APPLICATIONS.put(key, curatedApplication);
         }
 
         return curatedApplication;

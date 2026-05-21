@@ -339,10 +339,33 @@ public class StartupActionImpl implements StartupAction {
             if (deploymentClassLoader == null) {
                 throw new IllegalStateException("Dev services cannot be started without a deployment class loader.");
             }
-            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
-                    deploymentClassLoader);
+            DevServicesRegistryBuildItem.DevServicesStartResult startResult = devServicesRegistry.startAll(
+                    devServicesResults, devServicesCustomizers, additionalConfigBuildItems, deploymentClassLoader);
 
-            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
+            devServicesProperties.putAll(startResult.configs());
+            setDevServicesConfigSourceValues(startResult);
+        }
+    }
+
+    private void setDevServicesConfigSourceValues(DevServicesRegistryBuildItem.DevServicesStartResult startResult) {
+        try {
+            Class<?> configSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesConfigSource");
+            configSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.configs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services config", e);
+        }
+
+        try {
+            Class<?> overrideConfigSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigSource");
+            overrideConfigSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.overrideConfigs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services override config", e);
         }
     }
 
@@ -407,15 +430,11 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
-                        // This will read the state of the curated application at the time of closing;
-                        // If the caller of close knows that the 'next' application shares a curated application, it can set eligible for reuse to true
-                        if (!curatedApplication.isEligibleForReuse()) {
-                            if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
-                                    && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
-                                //for tests, we just always shut down the curated application, as it is only used once
-                                //dev mode might be about to restart, so we leave it
-                                curatedApplication.close();
-                            }
+                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
+                                && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
+                            //for tests, we just always shut down the curated application, as it is only used once
+                            //dev mode might be about to restart, so we leave it
+                            curatedApplication.close();
                         }
                     }
                 }

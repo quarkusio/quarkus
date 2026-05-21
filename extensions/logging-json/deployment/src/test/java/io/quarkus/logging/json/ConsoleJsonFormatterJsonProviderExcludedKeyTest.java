@@ -26,13 +26,13 @@ public class ConsoleJsonFormatterJsonProviderExcludedKeyTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ConsoleJsonFormatterDefaultConfigTest.class, SequenceWritingProvider.class,
-                            NestedObjectProvider.class)
+                            NestedObjectProvider.class, NestedArrayProvider.class, DeeplyNestedObjectProvider.class)
                     .addAsResource(new StringAsset("""
                             quarkus.log.level=INFO
                             quarkus.log.console.enabled=true
                             quarkus.log.console.level=WARNING
                             quarkus.log.console.json.enabled=true
-                            quarkus.log.console.json.excluded-keys=sequence,metadata
+                            quarkus.log.console.json.excluded-keys=sequence,metadata,tags,context
                             """), "application.properties"));
 
     @Test
@@ -67,6 +67,27 @@ public class ConsoleJsonFormatterJsonProviderExcludedKeyTest {
         }
     }
 
+    @Test
+    public void excludedKeyIsFilteredForArray() throws Exception {
+        String line = getJsonFormatter().format(new LogRecord(Level.INFO, "Test message"));
+
+        JsonNode node = new ObjectMapper().readTree(line);
+        assertThat(node.has("tags")).isFalse();
+        assertThat(node.has("customfield")).isTrue();
+    }
+
+    @Test
+    public void excludedKeyIsFilteredForDeeplyNestedContent() throws Exception {
+        String line = getJsonFormatter().format(new LogRecord(Level.INFO, "Test message"));
+
+        JsonNode node = new ObjectMapper().readTree(line);
+        assertThat(node.has("context")).isFalse();
+        // nested keys inside the excluded object must not leak to the top level
+        assertThat(node.has("inner")).isFalse();
+        assertThat(node.has("deepkey")).isFalse();
+        assertThat(node.has("customfield")).isTrue();
+    }
+
     @ApplicationScoped
     public static class NestedObjectProvider implements JsonProvider {
 
@@ -77,6 +98,35 @@ public class ConsoleJsonFormatterJsonProviderExcludedKeyTest {
                     .add("version", "1.0")
                     .add("source", "test")
                     .endObject();
+        }
+    }
+
+    @ApplicationScoped
+    public static class NestedArrayProvider implements JsonProvider {
+
+        @Override
+        public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+            // "tags" is in excluded-keys — the entire array should be filtered
+            generator.startArray("tags")
+                    .add("env", "production")
+                    .add("region", "us-east-1")
+                    .endArray();
+            generator.add("customfield", "present");
+        }
+    }
+
+    @ApplicationScoped
+    public static class DeeplyNestedObjectProvider implements JsonProvider {
+
+        @Override
+        public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+            // "context" is in excluded-keys — all nested content must be absorbed, not leaked
+            generator.startObject("context")
+                    .startObject("inner")
+                    .add("deepkey", "value")
+                    .endObject()
+                    .endObject();
+            generator.add("customfield", "present");
         }
     }
 }

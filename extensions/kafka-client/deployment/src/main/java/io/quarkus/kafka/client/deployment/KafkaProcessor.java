@@ -267,6 +267,8 @@ public class KafkaProcessor {
 
         // Register DefaultJwtValidator only when jose4j is present to avoid NoClassDefFoundError
         // with GraalVM 25's --future-defaults=complete-reflection-types flag
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName() + " DefaultJwtValidator class",
+                DefaultJwtValidator.class.getName(), "<init>", new String[0]));
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
                 DefaultJwtValidator.class.getName(),
                 "org.jose4j.keys.resolvers.VerificationKeyResolver"));

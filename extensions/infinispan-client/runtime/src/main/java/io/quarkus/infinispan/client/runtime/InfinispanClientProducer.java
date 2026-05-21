@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -422,7 +423,7 @@ public class InfinispanClientProducer {
             }
         }
 
-        Set<Bean<BaseMarshaller>> beans = (Set) beanManager.getBeans(BaseMarshaller.class);
+        Set<Bean<BaseMarshaller>> beans = (Set) beanManager.getBeans(BaseMarshaller.class, Any.Literal.INSTANCE);
         for (Bean<BaseMarshaller> bean : beans) {
             CreationalContext<BaseMarshaller> ctx = beanManager.createCreationalContext(bean);
             BaseMarshaller messageMarshaller = (BaseMarshaller) beanManager.getReference(bean, BaseMarshaller.class,

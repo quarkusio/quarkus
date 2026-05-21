@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
@@ -77,7 +78,22 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             // This instructs Keycloak to include the roles with the ID token too
             client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
         }
+        client.setProtocolMappers(List.of(audienceMapper(clientId)));
+
         return client;
+    }
+
+    private static ProtocolMapperRepresentation audienceMapper(String clientId) {
+        ProtocolMapperRepresentation r = new ProtocolMapperRepresentation();
+        r.setConfig(Map.of("included.client.audience", clientId,
+                "id.token.claim", "false",
+                "lightweight.claim", "false",
+                "access.token.claim", "true",
+                "introspection.token.claim", "true"));
+        r.setProtocol("openid-connect");
+        r.setName("audience");
+        r.setProtocolMapper("oidc-audience-mapper");
+        return r;
     }
 
     private static UserRepresentation createUser(String username, String... realmRoles) {

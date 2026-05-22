@@ -86,6 +86,10 @@
         <!-- START update-dependencies.sh -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
@@ -115,6 +119,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -158,6 +166,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-liquibase</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
         <dependency>
@@ -195,6 +207,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -289,6 +314,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-rest-data-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -368,6 +406,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-liquibase-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

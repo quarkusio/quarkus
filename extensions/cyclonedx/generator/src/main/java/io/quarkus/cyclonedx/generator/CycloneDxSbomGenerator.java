@@ -8,9 +8,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
 import org.cyclonedx.Format;
@@ -44,6 +53,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.PathTree;
 import io.quarkus.sbom.ComponentDependencies;
 import io.quarkus.sbom.ComponentDescriptor;
+import io.quarkus.sbom.LicenseInfo;
 import io.quarkus.sbom.Purl;
 import io.quarkus.sbom.SbomContribution;
 
@@ -282,11 +292,12 @@ public class CycloneDxSbomGenerator {
      * Collects the set of existing dependency refs from a Dependency node.
      */
     private static Set<String> collectExistingDependencyRefs(Dependency dep) {
-        if (dep.getDependencies() == null) {
+        List<Dependency> deps = dep.getDependencies();
+        if (deps == null) {
             return Set.of();
         }
-        Set<String> refs = new HashSet<>();
-        for (Dependency d : dep.getDependencies()) {
+        Set<String> refs = new HashSet<>(deps.size());
+        for (Dependency d : deps) {
             refs.add(d.getRef());
         }
         return refs;
@@ -399,6 +410,10 @@ public class CycloneDxSbomGenerator {
             c.setDescription(descriptor.getDescription());
         }
 
+        if (!descriptor.getLicenses().isEmpty()) {
+            c.setLicenses(resolveDescriptorLicenses(descriptor.getLicenses()));
+        }
+
         c.setProperties(props);
         return c;
     }
@@ -453,10 +468,9 @@ public class CycloneDxSbomGenerator {
             component.setDescription(model.getDescription());
         }
         var schemaVersion = getSchemaVersion();
-        if (component.getLicenseChoice() == null || component.getLicenseChoice().getLicenses() == null
-                || component.getLicenseChoice().getLicenses().isEmpty()) {
+        if (component.getLicenses() == null || component.getLicenses().getLicenses().isEmpty()) {
             if (model.getLicenses() != null) {
-                component.setLicenseChoice(resolveMavenLicenses(model.getLicenses(), schemaVersion, includeLicenseText));
+                component.setLicenses(resolveMavenLicenses(model.getLicenses(), schemaVersion, includeLicenseText));
             }
         }
         if (Version.VERSION_10 != schemaVersion) {
@@ -507,7 +521,7 @@ public class CycloneDxSbomGenerator {
             if (artifactLicense.getName() != null && !resolved) {
                 final License license = new License();
                 license.setName(artifactLicense.getName().trim());
-                if (StringUtils.isNotBlank(artifactLicense.getUrl())) {
+                if (isNotBlank(artifactLicense.getUrl())) {
                     try {
                         final URI uri = new URI(artifactLicense.getUrl().trim());
                         license.setUrl(uri.toString());
@@ -521,13 +535,49 @@ public class CycloneDxSbomGenerator {
         return licenseChoice;
     }
 
+    private LicenseChoice resolveDescriptorLicenses(List<LicenseInfo> licenses) {
+        final LicenseChoice licenseChoice = new LicenseChoice();
+        for (LicenseInfo info : licenses) {
+            addLicenseInfo(licenseChoice, info);
+        }
+        return licenseChoice;
+    }
+
+    private void addLicenseInfo(LicenseChoice licenseChoice, LicenseInfo info) {
+        final Version schemaVersion = getSchemaVersion();
+        final LicenseChoice resolvedByName = LicenseResolver.resolve(info.name(), includeLicenseText);
+        boolean resolved = resolveLicenseInfo(licenseChoice, resolvedByName, schemaVersion);
+        if (info.url() != null && !resolved) {
+            final LicenseChoice resolvedByUrl = LicenseResolver.resolve(info.url(), includeLicenseText);
+            resolved = resolveLicenseInfo(licenseChoice, resolvedByUrl, schemaVersion);
+        }
+        if (!resolved) {
+            final License license = new License();
+            license.setName(info.name().trim());
+            if (isNotBlank(info.url())) {
+                try {
+                    final URI uri = new URI(info.url().trim());
+                    license.setUrl(uri.toString());
+                } catch (URISyntaxException e) {
+                    // throw it away
+                }
+            }
+            licenseChoice.addLicense(license);
+        }
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
     private boolean resolveLicenseInfo(final LicenseChoice licenseChoice, final LicenseChoice licenseChoiceToResolve,
             final Version schemaVersion) {
         if (licenseChoiceToResolve != null) {
             if (licenseChoiceToResolve.getLicenses() != null && !licenseChoiceToResolve.getLicenses().isEmpty()) {
                 licenseChoice.addLicense(licenseChoiceToResolve.getLicenses().get(0));
                 return true;
-            } else if (licenseChoiceToResolve.getExpression() != null && Version.VERSION_10 != schemaVersion) {
+            }
+            if (licenseChoiceToResolve.getExpression() != null && Version.VERSION_10 != schemaVersion) {
                 licenseChoice.setExpression(licenseChoiceToResolve.getExpression());
                 return true;
             }

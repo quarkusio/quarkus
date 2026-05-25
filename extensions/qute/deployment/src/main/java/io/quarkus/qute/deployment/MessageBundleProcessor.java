@@ -1596,7 +1596,7 @@ public class MessageBundleProcessor {
         List<MessageFile> messageFiles = new ArrayList<>();
 
         addMessageFiles(applicationArchives.getRootArchive(), 10, messageFiles);
-        for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchives.getArchives()) {
             addMessageFiles(archive, 1, messageFiles);
         }
 

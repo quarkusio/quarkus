@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -93,7 +94,7 @@ public class JacocoProcessor {
         System.setProperty("jacoco-agent.jmx", "true");
 
         // Use offline instrumentation to modify the bytecode of classes that should be analyzed
-        Set<ApplicationArchive> appArchives = applicationArchivesBuildItem.getAllApplicationArchives();
+        List<ApplicationArchive> appArchives = applicationArchivesBuildItem.getAllArchives();
         ApplicationModel appModel = curateOutcomeBuildItem.getApplicationModel();
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
         Set<String> transformed = new HashSet<>();

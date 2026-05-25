@@ -54,7 +54,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -240,7 +239,7 @@ class RestClientReactiveProcessor {
         enrichers.produce(new JaxrsClientReactiveEnricherBuildItem(new MicroProfileRestClientEnricher()));
     }
 
-    private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, CompositeIndex index) {
+    private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, IndexView index) {
         for (MethodInfo method : startingInterface.methods()) {
             if (isRestMethod(method)) {
                 listOfKnownMethods.add(method);
@@ -548,10 +547,10 @@ class RestClientReactiveProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             RestClientsBuildTimeConfig clientsConfig,
             BuildProducer<RegisteredRestClientBuildItem> producer) {
-        CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+        IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> seen = new HashSet<>();
 
-        List<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
+        Collection<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
         for (AnnotationInstance instance : actualInstances) {
             AnnotationTarget annotationTarget = instance.target();
             ClassInfo classInfo = annotationTarget.asClass();
@@ -616,7 +615,7 @@ class RestClientReactiveProcessor {
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
 
-        CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+        IndexView index = combinedIndexBuildItem.getIndex();
 
         Set<DotName> requestedRestClientMocks = Collections.emptySet();
         if (launchMode.getLaunchMode() == LaunchMode.TEST) {

@@ -2282,7 +2282,7 @@ public class QuteProcessor {
 
         final boolean tryLocateSource = launchMode.getLaunchMode().isDev()
                 && DevModeType.LOCAL == launchMode.getDevModeType().orElse(null);
-        final Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
+        final List<ApplicationArchive> allApplicationArchives = applicationArchives.getAllArchives();
         final Set<ArtifactKey> appArtifactKeys = new HashSet<>(allApplicationArchives.size());
         for (var archive : allApplicationArchives) {
             appArtifactKeys.add(archive.getKey());
@@ -2295,7 +2295,7 @@ public class QuteProcessor {
                         config, excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource, null);
             }
         }
-        for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchives.getArchives()) {
             archive.accept(
                     tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
                             excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource, null));

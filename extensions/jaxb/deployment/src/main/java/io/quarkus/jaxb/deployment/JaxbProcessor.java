@@ -439,7 +439,7 @@ public class JaxbProcessor {
     private void iterateResources(ApplicationArchivesBuildItem applicationArchivesBuildItem, String path,
             BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<String> classesToBeBound) {
-        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllArchives()) {
             archive.accept(tree -> {
                 var arch = tree.getPath(path);
                 if (arch != null && Files.isDirectory(arch)) {

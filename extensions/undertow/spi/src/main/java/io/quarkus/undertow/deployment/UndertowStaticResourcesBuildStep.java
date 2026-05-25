@@ -60,7 +60,7 @@ public class UndertowStaticResourcesBuildStep {
         //this kinda sucks
         final Set<String> knownFiles = new HashSet<>();
         final Set<String> knownDirectories = new HashSet<>();
-        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
+        for (ApplicationArchive i : applicationArchivesBuildItem.getAllArchives()) {
             i.accept(tree -> {
                 Path resource = tree.getPath(META_INF_RESOURCES);
                 if (resource != null && Files.exists(resource)) {

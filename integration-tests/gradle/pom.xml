@@ -586,6 +586,7 @@
                                         </systemPropertyVariables>
                                         <includes>
                                             <include>BasicMultiModuleQuarkusBuildTest</include>
+                                            <include>MultiModuleConfigIsolationTest</include>
                                         </includes>
                                     </configuration>
                                 </execution>

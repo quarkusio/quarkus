@@ -16,7 +16,6 @@ import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -53,13 +52,11 @@ public class PrometheusHandler implements Handler<RoutingContext> {
         }
 
         if (enableCompression) {
-            routingContext.addEndHandler(new Handler<>() {
+            routingContext.addHeadersEndHandler(new Handler<>() {
 
                 @Override
-                public void handle(AsyncResult<Void> result) {
-                    if (result.succeeded()) {
-                        HttpCompressionHandler.compressIfNeeded(routingContext, compressMediaTypes);
-                    }
+                public void handle(Void result) {
+                    HttpCompressionHandler.compressIfNeeded(routingContext, compressMediaTypes);
                 }
             });
         }

@@ -1,5 +1,6 @@
 package io.quarkus.it.jpa.postgresql;
 
+import static io.quarkus.it.jpa.postgresql.DevServicesPostgresqFixedPortTest.findContainerOnPort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;

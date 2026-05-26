@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +135,7 @@ class FlywayProcessor {
 
         Collection<String> applicationMigrations = migrationState.values().stream()
                 .map(MigrationState::migrations)
-                .collect(HashSet::new, AbstractCollection::addAll, HashSet::addAll);
+                .collect(LinkedHashSet::new, AbstractCollection::addAll, LinkedHashSet::addAll);
         for (String applicationMigration : applicationMigrations) {
             Location applicationMigrationLocation = new Location(applicationMigration);
             String applicationMigrationPath = applicationMigrationLocation.getPath();
@@ -148,8 +148,13 @@ class FlywayProcessor {
         }
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
-        Set<Class<? extends JavaMigration>> javaMigrationClasses = new HashSet<>();
-        addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
+        Set<Class<? extends JavaMigration>> javaMigrationClasses = new LinkedHashSet<>();
+        // TODO: this can be reverted once Jandex outputs stably ordered collections
+        List<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION)
+                .stream()
+                .sorted(Comparator.comparing(ClassInfo::name))
+                .toList();
+        addJavaMigrations(allKnownImplementors, context,
                 reflectiveClassProducer, javaMigrationClasses);
         recorder.setApplicationMigrationClasses(javaMigrationClasses);
 
@@ -165,7 +170,7 @@ class FlywayProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private void addJavaMigrations(Collection<ClassInfo> candidates, RecorderContext context,
+    private void addJavaMigrations(List<ClassInfo> candidates, RecorderContext context,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             Set<Class<? extends JavaMigration>> javaMigrationClasses) {
         for (ClassInfo javaMigration : candidates) {
@@ -303,7 +308,7 @@ class FlywayProcessor {
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
-        Set<String> result = new HashSet<>(jdbcDataSourceBuildItems.size());
+        Set<String> result = new LinkedHashSet<>(jdbcDataSourceBuildItems.size());
         for (JdbcDataSourceBuildItem item : jdbcDataSourceBuildItems) {
             result.add(item.getName());
         }

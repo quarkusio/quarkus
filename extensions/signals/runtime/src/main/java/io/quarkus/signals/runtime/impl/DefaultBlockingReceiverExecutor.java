@@ -19,8 +19,15 @@ public class DefaultBlockingReceiverExecutor implements ReceiverExecutor {
 
     private static final Logger LOG = Logger.getLogger(DefaultBlockingReceiverExecutor.class);
 
-    @Inject
-    ExecutorService executorService;
+    private final ExecutorService executorService;
+
+    private final ConcurrencyLimiter blockingLimiter;
+
+    DefaultBlockingReceiverExecutor(ExecutorService executorService, SignalsRuntimeConfig config) {
+        this.executorService = executorService;
+        int limit = config.receivers().blockingConcurrencyLimit().orElse(-1);
+        this.blockingLimiter = limit > 0 ? new ConcurrencyLimiter(limit) : null;
+    }
 
     @Override
     public boolean supportsExecutionModel(ExecutionModel val) {
@@ -47,16 +54,37 @@ public class DefaultBlockingReceiverExecutor implements ReceiverExecutor {
 
     protected <RESULT> CompletableFuture<RESULT> execute(ExecutionModel executionModel, Callable<Uni<RESULT>> action) {
         CompletableFuture<RESULT> ret = new CompletableFuture<>();
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    action.call().subscribe().with(ret::complete, ret::completeExceptionally);
-                } catch (Throwable e) {
-                    ret.completeExceptionally(e);
+        ConcurrencyLimiter limiter = blockingLimiter;
+        if (limiter != null) {
+            limiter.run(new Runnable() {
+                @Override
+                public void run() {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                action.call().eventually(limiter::complete).subscribe().with(ret::complete,
+                                        ret::completeExceptionally);
+                            } catch (Throwable e) {
+                                limiter.complete();
+                                ret.completeExceptionally(e);
+                            }
+                        }
+                    });
                 }
-            }
-        });
+            }, ret::completeExceptionally);
+        } else {
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        action.call().subscribe().with(ret::complete, ret::completeExceptionally);
+                    } catch (Throwable e) {
+                        ret.completeExceptionally(e);
+                    }
+                }
+            });
+        }
         return ret;
     }
 

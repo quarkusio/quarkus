@@ -321,6 +321,17 @@ public final class OidcUtils {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
+    static String findStringClaimValue(String claimPath, JsonObject json) {
+        Object value = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String) {
+            return (String) value;
+        }
+        throw new OIDCException("Claim value at path '" + claimPath + "' is not a string");
+    }
+
     private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
         Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {

@@ -4,8 +4,9 @@ package io.quarkus.kubernetes.deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobBuilder;
 
-public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecorator<CronJob, CronJobBuilder, CronJobConfig> {
-    public AddCronJobResourceDecorator(String name, CronJobConfig config, DeploymentResourceKind toRemove) {
+public class AddCronJobResourceDecorator
+        extends BaseAddDeploymentResourceDecorator<CronJob, CronJobBuilder, PlatformConfiguration> {
+    public AddCronJobResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.CronJob, config, toRemove);
     }
 
@@ -15,7 +16,8 @@ public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecora
     }
 
     @Override
-    protected void initBuilderWithDefaults(CronJobBuilder builder, CronJobConfig config) {
+    protected void initBuilderWithDefaults(CronJobBuilder builder) {
+        final var config = config().cronJob();
         final var spec = builder.editOrNewSpec();
 
         var jobTemplateSpec = spec.editOrNewJobTemplate().editOrNewSpec();
@@ -27,8 +29,8 @@ public class AddCronJobResourceDecorator extends BaseAddDeploymentResourceDecora
                     .endSelector();
         }
 
-        // ensure defaults on template spec
-        podSpecDefaults(jobTemplateSpec.editOrNewTemplate().editOrNewSpec())
+        // configure job pod and container from template
+        configurePodSpec(jobTemplateSpec.editOrNewTemplate().editOrNewSpec())
                 .endSpec().endTemplate();
 
         spec.withSuspend(config.suspend());

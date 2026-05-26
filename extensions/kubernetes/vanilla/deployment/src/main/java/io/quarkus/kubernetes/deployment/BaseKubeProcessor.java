@@ -14,36 +14,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
+import io.dekorate.kubernetes.annotation.JobCompletionMode;
+import io.dekorate.kubernetes.annotation.JobRestartPolicy;
 import io.dekorate.kubernetes.config.Annotation;
-import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
-import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.Port;
-import io.dekorate.kubernetes.config.SecretVolumeBuilder;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
-import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
-import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
-import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
-import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddDockerConfigJsonSecretDecorator;
-import io.dekorate.kubernetes.decorator.AddEmptyDirVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
-import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMetadataToTemplateDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
-import io.dekorate.kubernetes.decorator.AddPvcVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
-import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddSelectorToDeploymentSpecDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.AddStartupProbeDecorator;
@@ -51,10 +43,6 @@ import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
-import io.dekorate.kubernetes.decorator.ApplyLimitsCpuDecorator;
-import io.dekorate.kubernetes.decorator.ApplyLimitsMemoryDecorator;
-import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
-import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
@@ -68,8 +56,9 @@ import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.PodSpecBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.quarkus.builder.Version;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -164,24 +153,17 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
 
         switch (deploymentKind) {
             case Deployment ->
-                context.add(new AddDeploymentResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
-            case Job -> context.add(new AddJobResourceDecorator(name, config().job(), defaultDeploymentKind));
+                context.add(new AddDeploymentResourceDecorator(name, config(), defaultDeploymentKind));
+            case Job -> context.add(new AddJobResourceDecorator(name, config(), defaultDeploymentKind));
             case CronJob ->
-                context.add(new AddCronJobResourceDecorator(name, config().cronJob(), defaultDeploymentKind));
+                context.add(new AddCronJobResourceDecorator(name, config(), defaultDeploymentKind));
             case StatefulSet ->
-                context.add(new AddStatefulSetResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
+                context.add(new AddStatefulSetResourceDecorator(name, config(), defaultDeploymentKind));
             //noinspection deprecation
             case DeploymentConfig ->
-                context.add(new AddDeploymentConfigResourceDecorator(name, replicasAwareOrNull(), defaultDeploymentKind));
-        }
-    }
-
-    private ReplicasAware replicasAwareOrNull() {
-        final var config = config();
-        if (config instanceof ReplicasAware replicasAware) {
-            return replicasAware;
-        } else {
-            return null;
+                context.add(new AddDeploymentConfigResourceDecorator(name, (OpenShiftConfig) config(), defaultDeploymentKind));
+            case KnativeService ->
+                context.add(new AddKNativeServiceResourceDecorator(name, (KnativeConfig) config(), defaultDeploymentKind));
         }
     }
 
@@ -324,12 +306,15 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings) {
         createLabelDecorators(context, config, labels);
         createAnnotationDecorators(context, project, config, metricsConfiguration, annotations, port);
-        createPodDecorators(context, config);
         createContainerDecorators(context, namespace, config);
-        createMountAndVolumeDecorators(context, config);
-        createAppConfigVolumeAndEnvDecorators(context, config);
         createCommandDecorator(context, config, command);
         createArgsDecorator(context, config, command);
+
+        config.initContainers().entrySet()
+                .forEach(e -> context.add(new AddInitContainerDecorator(context.name, ContainerConverter.convert(e))));
+
+        config.sidecars().entrySet()
+                .forEach(e -> context.add(new AddSidecarDecorator(context.name, ContainerConverter.convert(e))));
 
         // Handle Pull Secrets
         if (config.generateImagePullSecret()) {
@@ -638,98 +623,6 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         config.workingDir().ifPresent(w -> context.add(new ApplyWorkingDirDecorator(context.name, w)));
     }
 
-    /**
-     * Creates pod decorator build items.
-     *
-     * @param config The {@link PlatformConfiguration} instance
-     */
-    private void createPodDecorators(DecoratorsContext context, C config) {
-        final var name = context.name();
-        config.imagePullSecrets().ifPresent(l -> l.forEach(s -> context.add(new AddImagePullSecretDecorator(name, s))));
-
-        config.hostAliases().entrySet()
-                .forEach(e -> context.add(new AddHostAliasesDecorator(name, HostAliasConverter.convert(e))));
-
-        config.nodeSelector().ifPresent(n -> context.add(new AddNodeSelectorDecorator(name, n.key(), n.value())));
-
-        config.initContainers().entrySet()
-                .forEach(e -> context.add(new AddInitContainerDecorator(name, ContainerConverter.convert(e))));
-
-        config.sidecars().entrySet().forEach(e -> context.add(new AddSidecarDecorator(name, ContainerConverter.convert(e))));
-
-        config.resources().limits().cpu().ifPresent(c -> context.add(new ApplyLimitsCpuDecorator(name, c)));
-
-        config.resources().limits().memory().ifPresent(m -> context.add(new ApplyLimitsMemoryDecorator(name, m)));
-
-        config.resources().requests().cpu().ifPresent(c -> context.add(new ApplyRequestsCpuDecorator(name, c)));
-
-        config.resources().requests().memory().ifPresent(m -> context.add(new ApplyRequestsMemoryDecorator(name, m)));
-
-        if (config.securityContext().isAnyPropertySet()) {
-            context.add(new ApplySecuritySettingsDecorator(name, config.securityContext()));
-        }
-    }
-
-    private void createAppConfigVolumeAndEnvDecorators(DecoratorsContext context, C config) {
-        Set<String> paths = new HashSet<>();
-
-        config.appSecret().ifPresent(s -> {
-            context.add(new AddSecretVolumeDecorator(new SecretVolumeBuilder()
-                    .withSecretName(s)
-                    .withVolumeName("app-secret")
-                    .build()));
-            context.add(new AddMountDecorator(new MountBuilder()
-                    .withName("app-secret")
-                    .withPath("/mnt/app-secret")
-                    .build()));
-            paths.add("/mnt/app-secret");
-        });
-
-        config.appConfigMap().ifPresent(s -> {
-            context.add(new AddConfigMapVolumeDecorator(new ConfigMapVolumeBuilder()
-                    .withConfigMapName(s)
-                    .withVolumeName("app-config-map")
-                    .build()));
-            context.add(new AddMountDecorator(new MountBuilder()
-                    .withName("app-config-map")
-                    .withPath("/mnt/app-config-map")
-                    .build()));
-            paths.add("/mnt/app-config-map");
-        });
-
-        if (!paths.isEmpty()) {
-            context.add(new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, context.name, new EnvBuilder()
-                    .withName("SMALLRYE_CONFIG_LOCATIONS")
-                    .withValue(String.join(",", paths))
-                    .build()));
-        }
-    }
-
-    private void createMountAndVolumeDecorators(DecoratorsContext context, C config) {
-        config.mounts().entrySet()
-                .forEach(e -> context.add(new AddMountDecorator(ANY, context.name, MountConverter.convert(e))));
-
-        config.secretVolumes().entrySet()
-                .forEach(e -> context.add(new AddSecretVolumeDecorator(SecretVolumeConverter.convert(e))));
-
-        config.configMapVolumes().entrySet()
-                .forEach(e -> context.add(new AddConfigMapVolumeDecorator(ConfigMapVolumeConverter.convert(e))));
-
-        config.emptyDirVolumes().ifPresent(volumes -> volumes
-                .forEach(e -> context.add(new AddEmptyDirVolumeDecorator(EmptyDirVolumeConverter.convert(e)))));
-
-        config.pvcVolumes().entrySet().forEach(e -> context.add(new AddPvcVolumeDecorator(PvcVolumeConverter.convert(e))));
-
-        config.awsElasticBlockStoreVolumes().entrySet().forEach(
-                e -> context.add(new AddAwsElasticBlockStoreVolumeDecorator(AwsElasticBlockStoreVolumeConverter.convert(e))));
-
-        config.azureFileVolumes().entrySet()
-                .forEach(e -> context.add(new AddAzureFileVolumeDecorator(AzureFileVolumeConverter.convert(e))));
-
-        config.azureDiskVolumes().entrySet()
-                .forEach(e -> context.add(new AddAzureDiskVolumeDecorator(AzureDiskVolumeConverter.convert(e))));
-    }
-
     private void createAnnotationDecorators(DecoratorsContext context, Optional<Project> project,
             C config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
@@ -872,7 +765,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
     protected DecoratorsContext commonDecorators(
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig,
+            Capabilities capabilities, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesNamespaceBuildItem> namespaces,
@@ -899,6 +792,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         final var config = config();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         final var context = DecoratorsContext.newContext(deploymentTarget(), name);
+
+        deploymentKindDecorators(context, capabilities);
 
         final var namespace = Targetable.filteredByTarget(namespaces, clusterType(), true).findFirst();
 
@@ -994,63 +889,71 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 });
     }
 
+    private static final String DEFAULT_RESTART_POLICY = JobRestartPolicy.OnFailure.name();
+    private static final String DEFAULT_COMPLETION_MODE = JobCompletionMode.NonIndexed.name();
+
     private void createInitJobDecorators(DecoratorsContext context, List<KubernetesJobBuildItem> items) {
         List<AddEnvVarDecorator> envVarDecorators = context.decoratorsOfType(AddEnvVarDecorator.class);
 
-        List<NamedResourceDecorator<?>> volumeDecorators = context.decorators.stream()
-                .filter(context::isValidTarget)
-                .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
-                        || d.getDecorator() instanceof AddSecretVolumeDecorator
-                        || d.getDecorator() instanceof AddAzureDiskVolumeDecorator
-                        || d.getDecorator() instanceof AddAzureFileVolumeDecorator
-                        || d.getDecorator() instanceof AddAwsElasticBlockStoreVolumeDecorator)
-                .map(d -> (NamedResourceDecorator<?>) d.getDecorator())
-                .collect(Collectors.toList());
-
         List<AddMountDecorator> mountDecorators = context.decoratorsOfType(AddMountDecorator.class);
 
-        List<AddImagePullSecretDecorator> imagePullSecretDecorators = context
-                .decoratorsOfType(AddImagePullSecretDecorator.class);
-
+        final Optional<ApplyServiceAccountNameDecorator> serviceAccount;
         List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = context
                 .decoratorsOfType(ApplyServiceAccountNameDecorator.class);
+        final var size = serviceAccountDecorators.size();
+        if (size > 0) {
+            if (size > 1) {
+                throw new IllegalStateException("More than one ApplyServiceAccountNameDecorator found");
+            }
+            serviceAccount = Optional.of(serviceAccountDecorators.get(0));
+        } else {
+            serviceAccount = Optional.empty();
+        }
 
         Targetable.filteredByTarget(items, context.target).forEach(item -> {
 
-            for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
-                context.add(new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                    @Override
-                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                        delegate.andThenVisit(builder, meta);
-                    }
-                });
-            }
-
-            for (final ApplyServiceAccountNameDecorator delegate : serviceAccountDecorators) {
-                context.add(new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                    @Override
-                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                        delegate.andThenVisit(builder, meta);
-                    }
-                });
-            }
-
-            context.add(new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+            final var name = item.getName();
+            final var serviceAccountName = serviceAccount.map(sa -> sa.getServiceAccountNameOrDefault(name)).orElse(name);
+            // specialized Job resource creator, overriding defaults and adding extra configuration
+            // this is needed as we've removed decorators that were previously applied to the simple job resource created here
+            // with this specialized job creator, we inherit the behavior that directly sets values instead of using decorators but add specialized behavior as well
+            final var job = new AddJobResourceDecorator(name, config(), null) {
                 @Override
-                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
-                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                        builder.addNewEnv()
-                                .withName(e.getKey())
-                                .withValue(e.getValue())
-                                .endEnv();
-                    }
+                protected void initBuilderWithDefaults(JobBuilder builder) {
+                    super.initBuilderWithDefaults(builder);
+
+                    builder.editOrNewSpec()
+                            .withCompletionMode(DEFAULT_COMPLETION_MODE)
+                            .editOrNewTemplate()
+                            .editOrNewSpec()
+                            .withRestartPolicy(DEFAULT_RESTART_POLICY)
+                            .withServiceAccountName(serviceAccountName)
+                            .endSpec()
+                            .endTemplate()
+                            .endSpec();
                 }
-            });
+
+                @Override
+                protected Function<ContainerFluent<?>, Void> containerCustomizer() {
+                    return container -> {
+                        container.withImage(item.getImage())
+                                .withCommand(item.getCommand())
+                                .withArgs(item.getArguments());
+                        for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
+                            container.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                            container.addNewEnv()
+                                    .withName(e.getKey())
+                                    .withValue(e.getValue())
+                                    .endEnv();
+                        }
+                        return null;
+                    };
+                }
+            };
 
             if (item.isSharedEnvironment()) {
                 for (final AddEnvVarDecorator delegate : envVarDecorators) {
-                    context.add(new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                    context.add(new NamedResourceDecorator<ContainerBuilder>("Job", name) {
                         @Override
                         public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
                             delegate.andThenVisit(builder);
@@ -1071,17 +974,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             }
 
             if (item.isSharedFilesystem()) {
-                for (final NamedResourceDecorator<?> delegate : volumeDecorators) {
-                    context.add(new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                        @Override
-                        public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                            delegate.visit(builder);
-                        }
-                    });
-                }
-
                 for (final AddMountDecorator delegate : mountDecorators) {
-                    context.add(new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
+                    context.add(new NamedResourceDecorator<ContainerBuilder>("Job", name) {
                         @Override
                         public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
                             delegate.andThenVisit(builder);
@@ -1091,8 +985,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
 
             }
 
-            context.add(new CreateJobResourceFromImageDecorator(item.getName(), item.getImage(), item.getCommand(),
-                    item.getArguments()));
+            context.add(job);
         });
     }
 

@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.PathsCollection;
@@ -72,20 +71,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         }
 
         /**
-         * @deprecated Use {@link #addArchiveRoot(Path)} instead to add archive roots.
-         *             This method clears previous archive roots before setting the new one.
-         *
-         * @param archiveLocation the archive location to set
-         * @return this builder instance
-         */
-        @Deprecated
-        public Builder setArchiveLocation(Path archiveLocation) {
-            this.archiveRoots.clear();
-            this.archiveRoots.add(archiveLocation);
-            return this;
-        }
-
-        /**
          * Builds the {@link ArchiveRootBuildItem} using the configured properties.
          *
          * @param buildCloseables a {@link QuarkusBuildCloseablesBuildItem} to manage opened resources (e.g., zip file systems)
@@ -117,19 +102,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      * @param appClassesDir the path to the application classes directory
      */
     public ArchiveRootBuildItem(Path appClassesDir) {
-        this(appClassesDir, appClassesDir);
-    }
-
-    /**
-     * @deprecated Use {@link Builder} instead.
-     *             Constructs an {@link ArchiveRootBuildItem} with a given archive location and root directory.
-     *
-     * @param archiveLocation the archive location (e.g., JAR file path)
-     * @param archiveRoot the root directory of the archive
-     */
-    @Deprecated
-    public ArchiveRootBuildItem(Path archiveLocation, Path archiveRoot) {
-        this(archiveLocation, archiveRoot, Collections.emptySet());
+        this(appClassesDir, appClassesDir, Collections.emptySet());
     }
 
     private ArchiveRootBuildItem(Path archiveLocation, Path archiveRoot, Collection<Path> excludedFromIndexing) {
@@ -166,48 +139,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * If this archive is a jar file it will return the path to the jar file on the file system,
-     * otherwise it will return the directory that this corresponds to.
-     *
-     * @deprecated in favor of {@link #getResolvedPaths()}
-     */
-    @Deprecated
-    public Path getArchiveLocation() {
-        final Iterator<Path> i = paths.iterator();
-        Path last = i.next();
-        while (i.hasNext()) {
-            last = i.next();
-        }
-        return last;
-    }
-
-    /**
-     * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the
-     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}.
-     *
-     * @return The archive root.
-     * @deprecated in favor of {@link #getRootDirectories()}
-     */
-    @Deprecated
-    public Path getArchiveRoot() {
-        return archiveRoot;
-    }
-
-    /**
-     * Collection of paths representing the archive's root directories. If there is a JAR among the paths
-     * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
-     * {@link java.nio.file.ZipFileSystem}
-     * instead.
-     *
-     * @deprecated in favor of {@link #getRootDirectories()}
-     * @return Collection of paths representing the archive's root directories
-     */
-    @Deprecated
-    public PathsCollection getRootDirs() {
-        return PathsCollection.from(rootDirs);
-    }
-
-    /**
      * Collection of paths representing the archive's root directories. If there is a JAR among the paths
      * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
@@ -217,17 +148,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      */
     public PathCollection getRootDirectories() {
         return rootDirs;
-    }
-
-    /**
-     * Collection of paths that collectively constitute the application archive's content.
-     *
-     * @deprecated in favor of {@link #getResolvedPaths()}
-     * @return collection of paths that collectively constitute the application archive content
-     */
-    @Deprecated
-    public PathsCollection getPaths() {
-        return PathsCollection.from(paths);
     }
 
     /**

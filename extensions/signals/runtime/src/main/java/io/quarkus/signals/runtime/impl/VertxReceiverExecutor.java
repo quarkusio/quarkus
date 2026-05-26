@@ -26,8 +26,19 @@ public class VertxReceiverExecutor implements ReceiverExecutor {
 
     private static final Logger LOG = Logger.getLogger(VertxReceiverExecutor.class);
 
-    @Inject
-    Vertx vertx;
+    private final Vertx vertx;
+
+    private final ConcurrencyLimiter blockingLimiter;
+
+    private final ConcurrencyLimiter virtualThreadLimiter;
+
+    VertxReceiverExecutor(Vertx vertx, SignalsRuntimeConfig config) {
+        this.vertx = vertx;
+        int blockingLimit = config.receivers().blockingConcurrencyLimit().orElse(-1);
+        this.blockingLimiter = blockingLimit > 0 ? new ConcurrencyLimiter(blockingLimit) : null;
+        int vtLimit = config.receivers().virtualThreadConcurrencyLimit().orElse(-1);
+        this.virtualThreadLimiter = vtLimit > 0 ? new ConcurrencyLimiter(vtLimit) : null;
+    }
 
     @Override
     public boolean supportsExecutionModel(ExecutionModel val) {
@@ -59,28 +70,71 @@ public class VertxReceiverExecutor implements ReceiverExecutor {
     protected <RESULT> void execute(Context context, Promise<RESULT> result, ExecutionModel executionModel,
             Callable<Uni<RESULT>> action) {
         if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
-            VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        action.call().subscribe().with(result::complete, result::fail);
-                    } catch (Throwable e) {
-                        result.fail(e);
+            ConcurrencyLimiter limiter = virtualThreadLimiter;
+            if (limiter != null) {
+                limiter.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    action.call().eventually(limiter::complete)
+                                            .subscribe().with(result::complete, result::fail);
+                                } catch (Throwable e) {
+                                    limiter.complete();
+                                    result.fail(e);
+                                }
+                            }
+                        });
                     }
-                }
-            });
+                }, result::fail);
+            } else {
+                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            action.call().subscribe().with(result::complete, result::fail);
+                        } catch (Throwable e) {
+                            result.fail(e);
+                        }
+                    }
+                });
+            }
         } else if (executionModel == ExecutionModel.BLOCKING) {
-            context.executeBlocking(new Callable<Void>() {
-                @Override
-                public Void call() {
-                    try {
-                        action.call().subscribe().with(result::complete, result::fail);
-                    } catch (Throwable e) {
-                        result.fail(e);
+            ConcurrencyLimiter limiter = blockingLimiter;
+            if (limiter != null) {
+                limiter.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        context.executeBlocking(new Callable<Void>() {
+                            @Override
+                            public Void call() {
+                                try {
+                                    action.call().eventually(limiter::complete)
+                                            .subscribe().with(result::complete, result::fail);
+                                } catch (Throwable e) {
+                                    limiter.complete();
+                                    result.fail(e);
+                                }
+                                return null;
+                            }
+                        }, false);
                     }
-                    return null;
-                }
-            }, false);
+                }, result::fail);
+            } else {
+                context.executeBlocking(new Callable<Void>() {
+                    @Override
+                    public Void call() {
+                        try {
+                            action.call().subscribe().with(result::complete, result::fail);
+                        } catch (Throwable e) {
+                            result.fail(e);
+                        }
+                        return null;
+                    }
+                }, false);
+            }
         } else {
             try {
                 action.call().subscribe().with(result::complete, result::fail);

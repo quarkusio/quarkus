@@ -35,7 +35,7 @@
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
         <htmlunit.version>4.21.0</htmlunit.version>
-        <javaparser-core.version>3.28.0</javaparser-core.version>
+        <javaparser-core.version>3.28.1</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
@@ -100,7 +100,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.6.1</keycloak.server.version>
+        <keycloak.server.version>26.6.2</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
@@ -128,7 +128,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
@@ -615,7 +615,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.28</version>
+                            <version>5.0.6</version>
                         </dependency>
                     </dependencies>
                 </plugin>

@@ -6,7 +6,6 @@ import java.util.function.Function;
 
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
@@ -27,28 +26,6 @@ public interface ApplicationArchive {
     IndexView getIndex();
 
     /**
-     * If this archive is a jar file it will return the path to the jar file on the file system,
-     * otherwise it will return the directory that this corresponds to.
-     *
-     * @deprecated in favor of {@link #getResolvedPaths()}
-     */
-    @Deprecated
-    Path getArchiveLocation();
-
-    /**
-     * @deprecated in favor of {@link #getRootDirectories()}
-     *
-     *             Returns paths representing the archive root directories. Note that every path in this collection
-     *             is guaranteed to be a directory. If the actual application archive appears to be a JAR,
-     *             this collection will include a path to the root of the mounted {@link java.nio.file.FileSystem}
-     *             created from the JAR.
-     *
-     * @return The archive root directories.
-     */
-    @Deprecated
-    PathsCollection getRootDirs();
-
-    /**
      * Returns paths representing the archive root directories. Note that every path in this collection
      * is guaranteed to be a directory. If the actual application archive appears to be a JAR,
      * this collection will include a path to the root of the mounted {@link java.nio.file.FileSystem}
@@ -57,13 +34,6 @@ public interface ApplicationArchive {
      * @return The archive root directories.
      */
     PathCollection getRootDirectories();
-
-    /**
-     * @deprecated in favor of {@link #getResolvedPaths()}
-     * @return The paths representing the application root paths.
-     */
-    @Deprecated
-    PathsCollection getPaths();
 
     /**
      *

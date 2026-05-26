@@ -75,6 +75,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
@@ -542,8 +543,9 @@ public final class LoggingResourceProcessor {
     void setUpMinLevelLogging(LogBuildTimeConfig log,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final BuildProducer<GeneratedClassBuildItem> gcProducer,
-            final BuildProducer<GeneratedResourceBuildItem> grProducer) {
-        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, false);
+            final BuildProducer<GeneratedResourceBuildItem> grProducer,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
+        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, generatedServiceProviders, false);
         generateDefaultLoggerNode(output);
         if (allRootMinLevelOrHigher(log.minLevel().intValue(), log.categories(), categoryMinLevelDefaults.content)) {
             Level minLevel = log.minLevel();

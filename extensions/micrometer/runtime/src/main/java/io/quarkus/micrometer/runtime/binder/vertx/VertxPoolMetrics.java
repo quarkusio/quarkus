@@ -14,7 +14,7 @@ import io.vertx.core.spi.metrics.PoolMetrics;
 /**
  * Adaptation of the Vert.x Pool Metrics implementation for Quarkus Micrometer.
  */
-public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
+public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
 
     private final String poolType;
     private final int maxPoolSize;
@@ -25,6 +25,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
     private final LongAdder idle;
     private final LongAdder queue;
     private final Counter completed;
+    private final Counter rejected;
     private final Timer queueDelay;
 
     VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize,
@@ -74,6 +75,11 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
                 .description("Number of times resources from the pool have been acquired")
                 .tags(tags)
                 .register(registry);
+
+        rejected = Counter.builder(name("rejected"))
+                .description("Number of times submissions to the pool have been rejected")
+                .tags(tags)
+                .register(registry);
     }
 
     private String name(String suffix) {
@@ -81,19 +87,22 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
     }
 
     @Override
-    public EventTiming enqueue() {
+    public EventTiming submitted() {
         queue.increment();
         return new EventTiming(queueDelay);
     }
 
     @Override
-    public void dequeue(EventTiming submitted) {
+    public void rejected(EventTiming submitted) {
         queue.decrement();
+        rejected.increment();
         submitted.end();
     }
 
     @Override
-    public EventTiming begin() {
+    public EventTiming begin(EventTiming submitted) {
+        queue.decrement();
+        submitted.end();
         current.increment();
         if (idle != null) {
             idle.decrement();
@@ -103,13 +112,14 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
     }
 
     @Override
-    public void end(EventTiming timer) {
+    public void end(EventTiming timer, boolean succeeded) {
         current.decrement();
         if (idle != null) {
             idle.increment();
         }
         computeRatio(current.longValue());
         timer.end();
+
         completed.increment();
     }
 

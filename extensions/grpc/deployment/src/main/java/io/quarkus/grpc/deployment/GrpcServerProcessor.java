@@ -222,7 +222,11 @@ public class GrpcServerProcessor {
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
-        Collection<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
+        // TODO: this can be reverted once Jandex outputs stably ordered collections
+        List<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE)
+                .stream()
+                .sorted(Comparator.comparing(ClassInfo::name))
+                .toList();
 
         for (ClassInfo service : bindableServices) {
             if (service.interfaceNames().contains(GrpcDotNames.MUTINY_BEAN)) {
@@ -649,7 +653,7 @@ public class GrpcServerProcessor {
 
         Map<String, Set<Class<?>>> perClientInterceptors = new LinkedHashMap<>();
         for (Entry<String, Set<String>> entry : registeredInterceptors.entrySet()) {
-            Set<Class<?>> interceptorClasses = new HashSet<>();
+            Set<Class<?>> interceptorClasses = new LinkedHashSet<>();
             for (String interceptorClass : entry.getValue()) {
                 interceptorClasses.add(recorderContext.classProxy(interceptorClass));
             }
@@ -786,7 +790,7 @@ public class GrpcServerProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
 
             // Grpc service to blocking method
-            Map<String, List<String>> blocking = new HashMap<>();
+            Map<String, List<String>> blocking = new LinkedHashMap<>();
             for (BindableServiceBuildItem bindable : bindables) {
                 if (bindable.hasBlockingMethods()) {
                     blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);

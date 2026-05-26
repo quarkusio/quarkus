@@ -47,14 +47,19 @@ public final class RunningDevServicesRegistry {
         log.infof(e, "Failed to close dev service for %s in launch mode %s: %s", featureName, launchMode, containerId);
     }
 
-    public void closeAllRunningServices(String launchMode) {
+    public void closeOwnRunningServices(UUID uuid, String launchMode) {
+        Set<RunningService> services = servicesIndexedByLaunchMode.get(launchMode);
         Iterator<Map.Entry<ComparableDevServicesConfig, RunningService>> it = servicesIndexedByConfig.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<ComparableDevServicesConfig, RunningService> next = it.next();
             DevServiceOwner owner = next.getKey().owner();
-            if (owner.launchMode().equals(launchMode)) {
+            UUID serviceAppUuid = next.getKey().applicationInstanceId();
+            if (owner.launchMode().equals(launchMode) && Objects.equals(serviceAppUuid, uuid)) {
                 it.remove();
                 RunningService service = next.getValue();
+                if (services != null) {
+                    services.remove(service);
+                }
                 try {
                     logClosing(owner.featureName(), launchMode, service.containerId());
                     service.close();
@@ -64,7 +69,6 @@ public final class RunningDevServicesRegistry {
                 }
             }
         }
-        servicesIndexedByLaunchMode.remove(launchMode);
     }
 
     public void closeRemainingRunningServices(UUID uuid, String launchMode, Collection<DevServiceOwner> ownersToKeep) {
@@ -104,10 +108,32 @@ public final class RunningDevServicesRegistry {
                     launchModeServices.remove(service);
                 }
                 try {
-                    logClosing(owner.featureName(), owner.featureName(), service.containerId());
+                    logClosing(owner.featureName(), owner.launchMode(), service.containerId());
                     service.close();
                 } catch (Exception e) {
-                    // We don't want to fail the shutdown hook if a service fails to close
+                    logFailedToClose(e, owner.featureName(), owner.launchMode(), service.containerId());
+                }
+            }
+        }
+    }
+
+    public void closeOwnRunningServices(UUID uuid, DevServiceOwner owner) {
+        Set<RunningService> launchModeServices = servicesIndexedByLaunchMode.get(owner.launchMode());
+        var iterator = servicesIndexedByConfig.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<ComparableDevServicesConfig, RunningService> entry = iterator.next();
+            DevServiceOwner entryOwner = entry.getKey().owner();
+            UUID serviceAppUuid = entry.getKey().applicationInstanceId();
+            if (Objects.equals(entryOwner, owner) && Objects.equals(serviceAppUuid, uuid)) {
+                iterator.remove();
+                RunningService service = entry.getValue();
+                if (launchModeServices != null) {
+                    launchModeServices.remove(service);
+                }
+                try {
+                    logClosing(owner.featureName(), owner.launchMode(), service.containerId());
+                    service.close();
+                } catch (Exception e) {
                     logFailedToClose(e, owner.featureName(), owner.launchMode(), service.containerId());
                 }
             }

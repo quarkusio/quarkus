@@ -153,7 +153,7 @@ public interface SecurityContextConfig {
         Always;
     }
 
-    default PodSecurityContext buildSecurityContext() {
+    default PodSecurityContext toPodSecurityContext() {
         PodSecurityContextBuilder securityContextBuilder = new PodSecurityContextBuilder();
 
         runAsUser().ifPresent(securityContextBuilder::withRunAsUser);

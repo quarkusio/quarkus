@@ -105,6 +105,7 @@ public class MinikubeProcessor extends BaseVanillaKubernetesProcessor {
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
+            Capabilities capabilities,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -128,7 +129,7 @@ public class MinikubeProcessor extends BaseVanillaKubernetesProcessor {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        return super.decorators(applicationInfo, outputTarget, packageConfig,
+        return super.decorators(applicationInfo, outputTarget, capabilities, packageConfig,
                 metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
                 envs,
                 image, command, ports, portName,

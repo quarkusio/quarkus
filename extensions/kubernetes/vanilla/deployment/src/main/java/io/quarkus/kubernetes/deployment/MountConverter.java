@@ -14,8 +14,8 @@ public class MountConverter {
 
     private static MountBuilder convert(MountConfig mount) {
         MountBuilder b = new MountBuilder();
-        mount.path().ifPresent(v -> b.withPath(v));
-        mount.subPath().ifPresent(v -> b.withSubPath(v));
+        mount.path().ifPresent(b::withPath);
+        mount.subPath().ifPresent(b::withSubPath);
         b.withReadOnly(mount.readOnly());
         return b;
     }

@@ -15,6 +15,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.sbom.ComponentDependencies;
 import io.quarkus.sbom.ComponentDescriptor;
 import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.LicenseInfo;
 import io.quarkus.sbom.Purl;
 import io.quarkus.sbom.SbomContribution;
 
@@ -92,6 +93,78 @@ class CycloneDxSbomGeneratorTest {
         assertThat(result).hasSize(1);
         // Should not crash — no main component to link to
         assertThat(result.get(0)).contains("react");
+    }
+
+    @Test
+    void descriptorLicenseResolvedInSbom() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .addLicense(new LicenseInfo("MIT"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        List<String> result = CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        Bom bom = parseBom(result.get(0));
+        org.cyclonedx.model.Component component = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("react"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(component.getLicenses().getLicenses())
+                .isNotEmpty()
+                .anyMatch(l -> "MIT".equals(l.getId()) || "MIT".equals(l.getName()));
+    }
+
+    @Test
+    void descriptorLicenseWithUrlResolvedInSbom() {
+        ComponentDescriptor pkg = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "my-pkg", "1.0.0"))
+                .addLicense(new LicenseInfo("CustomLicense", "https://example.com/license"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(pkg));
+
+        List<String> result = CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        Bom bom = parseBom(result.get(0));
+        org.cyclonedx.model.Component component = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("my-pkg"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(component.getLicenses().getLicenses())
+                .isNotEmpty()
+                .anyMatch(l -> "CustomLicense".equals(l.getName())
+                        && "https://example.com/license".equals(l.getUrl()));
+    }
+
+    @Test
+    void descriptorMultipleLicensesResolvedInSbom() {
+        ComponentDescriptor pkg = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "dual-licensed", "2.0.0"))
+                .addLicense(new LicenseInfo("MIT"))
+                .addLicense(new LicenseInfo("Apache-2.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(pkg));
+
+        List<String> result = CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        Bom bom = parseBom(result.get(0));
+        org.cyclonedx.model.Component component = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("dual-licensed"))
+                .findFirst()
+                .orElseThrow();
+        List<String> licenseIds = component.getLicenses().getLicenses().stream()
+                .map(l -> l.getId() != null ? l.getId() : l.getName())
+                .toList();
+        assertThat(licenseIds).contains("MIT", "Apache-2.0");
     }
 
     private static Bom parseBom(String json) {

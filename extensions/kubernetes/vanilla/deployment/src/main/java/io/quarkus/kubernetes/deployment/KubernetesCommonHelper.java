@@ -22,7 +22,6 @@ import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Git;
-import io.dekorate.utils.Strings;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -119,12 +118,16 @@ public class KubernetesCommonHelper {
                                     configuredPort.getContainerPort() != null && configuredPort.getContainerPort() != 0
                                             ? configuredPort.getContainerPort()
                                             : buildItemPort.getContainerPort())
-                            .withPath(Strings.isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
+                            .withPath(isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
                                     : buildItemPort.getPath())
                             .build();
             activePorts.put(name, combinedPort);
         });
         return activePorts;
+    }
+
+    public static boolean isNotNullOrEmpty(String string) {
+        return string != null && !string.isEmpty();
     }
 
     private static Map<String, Integer> verifyPorts(List<KubernetesPortBuildItem> kubernetesPortBuildItems) {

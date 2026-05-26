@@ -1,6 +1,8 @@
 package io.quarkus.sbom;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -15,6 +17,7 @@ import java.util.Objects;
  * <li>Integrity hash: SRI-format hash from lock files for verification</li>
  * <li>Scope: runtime or development dependency classification</li>
  * <li>Description: human-readable component description</li>
+ * <li>Licenses: one or more {@link LicenseInfo} entries describing applicable licenses</li>
  * </ul>
  * <p>
  * Dependencies are not stored on the component itself. Use {@link ComponentDependencies}
@@ -52,6 +55,9 @@ public class ComponentDescriptor {
          */
         public Builder(ComponentDescriptor component) {
             super(component);
+            if (!this.licenses.isEmpty()) {
+                this.licenses = new ArrayList<>(this.licenses);
+            }
         }
 
         /**
@@ -178,6 +184,34 @@ public class ComponentDescriptor {
         }
 
         /**
+         * Sets the licenses for this component, replacing any previously set licenses.
+         *
+         * @param licenses the list of license information entries
+         * @return this builder
+         */
+        public Builder setLicenses(List<LicenseInfo> licenses) {
+            this.licenses = licenses == null || licenses.isEmpty()
+                    ? List.of()
+                    : new ArrayList<>(licenses);
+            return this;
+        }
+
+        /**
+         * Adds a license to this component.
+         *
+         * @param license the license information to add
+         * @return this builder
+         */
+        public Builder addLicense(LicenseInfo license) {
+            Objects.requireNonNull(license, "license is required");
+            if (this.licenses.isEmpty()) {
+                this.licenses = new ArrayList<>(2);
+            }
+            this.licenses.add(license);
+            return this;
+        }
+
+        /**
          * Builds an immutable ComponentDescriptor from this builder.
          *
          * @return a new immutable ComponentDescriptor instance
@@ -204,6 +238,7 @@ public class ComponentDescriptor {
     protected String distributionPath;
     protected String pedigree;
     protected boolean topLevel;
+    protected List<LicenseInfo> licenses = List.of();
 
     private ComponentDescriptor() {
     }
@@ -218,6 +253,7 @@ public class ComponentDescriptor {
         this.distributionPath = builder.distributionPath;
         this.pedigree = builder.pedigree;
         this.topLevel = builder.topLevel;
+        this.licenses = List.copyOf(builder.licenses);
     }
 
     /**
@@ -350,6 +386,15 @@ public class ComponentDescriptor {
      */
     public boolean isTopLevel() {
         return topLevel;
+    }
+
+    /**
+     * Gets the licenses associated with this component.
+     *
+     * @return an unmodifiable list of license information entries, empty if none
+     */
+    public List<LicenseInfo> getLicenses() {
+        return licenses;
     }
 
     protected ComponentDescriptor ensureImmutable() {

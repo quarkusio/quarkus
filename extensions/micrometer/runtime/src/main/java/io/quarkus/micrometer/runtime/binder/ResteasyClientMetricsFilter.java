@@ -103,6 +103,15 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
         return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
     }
 
+    private Tag address(ClientRequestContext requestContext) {
+        String host = requestContext.getUri().getHost();
+        int port = requestContext.getUri().getPort();
+        if (host == null) {
+            return Tag.of("address", "none");
+        }
+        return Tag.of("address", port > 0 ? host + ":" + port : host);
+    }
+
     private Tag clientName(ClientRequestContext requestContext) {
         String host = requestContext.getUri().getHost();
         if (host == null) {

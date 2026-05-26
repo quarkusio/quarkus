@@ -33,7 +33,7 @@ dependencies {
     implementation(enforcedPlatform("{it.groupId}:{it.artifactId}:{it.version}"))
     {/if}
 {/each}
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
     annotationProcessor(enforcedPlatform("$\{quarkusPlatformGroupId}:$\{quarkusPlatformArtifactId}:$\{quarkusPlatformVersion}"))
 {/if}
 {#for dep in dependencies}
@@ -41,6 +41,9 @@ dependencies {
 {/for}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
     annotationProcessor("org.hibernate.orm:hibernate-processor")
+{/if}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
+    annotationProcessor("org.infinispan.protostream:protostream-processor")
 {/if}
     testImplementation("io.quarkus:quarkus-junit")
 {#for dep in test-dependencies}

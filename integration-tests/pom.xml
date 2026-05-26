@@ -420,6 +420,7 @@
                 <module>grpc-plain-text-mutiny</module>
                 <module>grpc-mutual-auth</module>
                 <module>grpc-streaming</module>
+                <module>grpc-streaming-native</module>
                 <module>grpc-interceptors</module>
                 <module>grpc-proto-v2</module>
                 <module>grpc-health</module>

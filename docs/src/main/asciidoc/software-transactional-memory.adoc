@@ -85,8 +85,6 @@ understand what these may be. Please refer to the https://narayana.io/docs/proje
 and the https://narayana.io//docs/project/index.html#d0e16133[STM annotations guide] for more details on
 all the annotations Narayana STM provides.
 
-include::{includes}/extension-status.adoc[]
-
 == Setting it up
 
 To use the extension include it as a dependency in your build file:

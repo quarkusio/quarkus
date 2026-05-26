@@ -14,8 +14,6 @@ include::_attributes.adoc[]
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 :prerequisites-no-graalvm:

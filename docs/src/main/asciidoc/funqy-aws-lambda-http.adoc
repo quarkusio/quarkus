@@ -15,8 +15,6 @@ If you want to allow HTTP clients to invoke on your Funqy functions on AWS Lambd
 Funqy functions through HTTP deployed as one AWS Lambda.  This approach does add overhead over the
 regular Funqy AWS Lambda integration and also requires you to use AWS API Gateway.
 
-include::{includes}/extension-status.adoc[]
-
 Follow the xref:aws-lambda-http.adoc[AWS Lambda Http Guide].  It walks through using a variety of HTTP
 frameworks on AWS Lambda, including Funqy.
 

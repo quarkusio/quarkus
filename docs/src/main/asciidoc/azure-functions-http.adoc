@@ -17,8 +17,6 @@ In other words, this extension is a bridge from the Azure Functions HttpTrigger 
 of HTTP APIs.
 One azure function deployment can represent any number of Jakarta REST, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
-include::{includes}/extension-status.adoc[]
-
 NOTE: Only text based media types are supported at the moment as Azure Functions HTTP Trigger for Java does not support a binary format
 
 == Prerequisites

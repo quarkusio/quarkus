@@ -4,7 +4,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;

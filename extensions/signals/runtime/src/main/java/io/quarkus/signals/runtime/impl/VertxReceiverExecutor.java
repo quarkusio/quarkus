@@ -2,7 +2,6 @@ package io.quarkus.signals.runtime.impl;
 
 import java.util.concurrent.Callable;
 
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;

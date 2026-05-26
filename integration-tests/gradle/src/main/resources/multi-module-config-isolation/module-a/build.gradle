@@ -26,3 +26,11 @@ compileJava {
     options.encoding = 'UTF-8'
     options.compilerArgs << '-parameters'
 }
+
+// Override `quarkus.package.output-name` here, not in application.yaml. `EffectiveConfig.propagateSources`
+// only includes Gradle-side sources, so YAML values never reach the worker as system properties and
+// the leak would not reproduce. Module B does not set this property: on a reused worker it must fall
+// back to its own project base name and never inherit `module-a-only-output`.
+quarkus {
+    quarkusBuildProperties.put("quarkus.package.output-name", "module-a-only-output")
+}

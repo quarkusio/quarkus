@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.enterprise.inject.spi.BeanContainer;
@@ -18,12 +19,11 @@ import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
 import io.smallrye.mutiny.Uni;
 
-class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefinition<SIGNAL, RESPONSE> {
+class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefinition<SIGNAL> {
 
     private final Function<CallbackReceiver<SIGNAL, RESPONSE>, Receivers.Registration> registerFun;
     private final BeanContainer beanContainer;
     private final Type signalType;
-    private Type responseType = void.class;
     private Set<Annotation> qualifiers = Set.of();
     private ExecutionModel executionModel = ExecutionModel.BLOCKING;
 
@@ -31,12 +31,11 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
             Function<CallbackReceiver<SIGNAL, RESPONSE>, Receivers.Registration> registerFun) {
         this.signalType = signalType;
         this.beanContainer = beanContainer;
-        this.responseType = null;
         this.registerFun = registerFun;
     }
 
     @Override
-    public Receivers.ReceiverDefinition<SIGNAL, RESPONSE> setQualifiers(Annotation... qualifiers) {
+    public Receivers.ReceiverDefinition<SIGNAL> setQualifiers(Annotation... qualifiers) {
         for (Annotation qualifier : qualifiers) {
             if (!beanContainer.isQualifier(qualifier.annotationType())) {
                 throw new IllegalArgumentException("Not a qualifier: " + qualifier.annotationType().getName());
@@ -47,29 +46,49 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
     }
 
     @Override
-    public Receivers.ReceiverDefinition<SIGNAL, RESPONSE> setExecutionModel(ExecutionModel executionModel) {
+    public Receivers.ReceiverDefinition<SIGNAL> setExecutionModel(ExecutionModel executionModel) {
         this.executionModel = Objects.requireNonNull(executionModel);
         return this;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <R> Receivers.ReceiverDefinition<SIGNAL, R> setResponseType(Class<R> responseType) {
-        this.responseType = Objects.requireNonNull(responseType);
-        return (Receivers.ReceiverDefinition<SIGNAL, R>) this;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <R> Receivers.ReceiverDefinition<SIGNAL, R> setResponseType(TypeLiteral<R> responseType) {
-        this.responseType = Objects.requireNonNull(responseType.getType());
-        return (Receivers.ReceiverDefinition<SIGNAL, R>) this;
-    }
-
-    @Override
-    public Registration notify(Function<SignalContext<SIGNAL>, Uni<RESPONSE>> callback) {
+    public Registration notify(Consumer<SignalContext<SIGNAL>> callback) {
         Objects.requireNonNull(callback);
-        return registerFun.apply(new CallbackReceiver<>(signalType, qualifiers, responseType, executionModel, callback));
+        @SuppressWarnings("unchecked")
+        CallbackReceiver<SIGNAL, RESPONSE> receiver = (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(
+                signalType, qualifiers, void.class, executionModel,
+                new Function<SignalContext<SIGNAL>, Uni<Void>>() {
+                    @Override
+                    public Uni<Void> apply(SignalContext<SIGNAL> ctx) {
+                        try {
+                            callback.accept(ctx);
+                            return Uni.createFrom().voidItem();
+                        } catch (Exception e) {
+                            return Uni.createFrom().failure(e);
+                        }
+                    }
+                });
+        return registerFun.apply(receiver);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <R> Registration notify(Class<R> responseType, Function<SignalContext<SIGNAL>, Uni<R>> callback) {
+        Objects.requireNonNull(responseType);
+        Objects.requireNonNull(callback);
+        return registerFun.apply(
+                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, qualifiers,
+                        responseType, executionModel, callback));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <R> Registration notify(TypeLiteral<R> responseType, Function<SignalContext<SIGNAL>, Uni<R>> callback) {
+        Objects.requireNonNull(responseType);
+        Objects.requireNonNull(callback);
+        return registerFun.apply(
+                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, qualifiers,
+                        responseType.getType(), executionModel, callback));
     }
 
     static class CallbackReceiver<SIGNAL, RESPONSE> implements Receiver<SIGNAL, RESPONSE> {

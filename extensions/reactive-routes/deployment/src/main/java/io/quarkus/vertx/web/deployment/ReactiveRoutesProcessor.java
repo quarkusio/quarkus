@@ -74,6 +74,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -277,6 +278,7 @@ class ReactiveRoutesProcessor {
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
@@ -305,7 +307,8 @@ class ReactiveRoutesProcessor {
                 return GeneratedClassGizmo2Adaptor.isApplicationClass(className);
             }
         };
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, appClassPredicate))
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProviders,
+                appClassPredicate))
                 .withDebugInfo(false)
                 .withParameters(false);
         IndexView index = beanArchive.getIndex();

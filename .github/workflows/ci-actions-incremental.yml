@@ -118,9 +118,6 @@ env:
   JVM_TEST_NORMAL_TESTS_SELECTOR: "-pl !docs -Dno-test-modules"
   #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
   PTS_MAVEN_ARGS: ""
-  DB_USER: hibernate_orm_test
-  DB_PASSWORD: hibernate_orm_test
-  DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
@@ -322,8 +319,9 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-config.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-config.outputs.impacted_modules }}
+      gib_impacted_gav: ${{ steps.get-gib-config.outputs.impacted_modules_gav }}
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
@@ -376,6 +374,10 @@ jobs:
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/
+      - name: Verify oracle-test-pilot-jvm-tests.json
+        run: ./.github/verify-tests-json.sh oracle-test-pilot-jvm-tests.json integration-tests/
+      - name: Verify oracle-test-pilot-native-tests.json
+        run: ./.github/verify-tests-json.sh oracle-test-pilot-native-tests.json integration-tests/
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
         with:
@@ -400,6 +402,7 @@ jobs:
           PUSH_BRANCH: ${{ github.event_name == 'push' && github.ref_name }}
           GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
         run: |
+          GIB_IMPACTED_GAV='_all_'
           if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
             GIB_ARGS=''
             GIB_IMPACTED='_all_'
@@ -432,6 +435,14 @@ jobs:
               GIB_ARGS=''
             fi
 
+            # Generate GAV-formatted impacted modules for quickstarts testing
+            if [[ "$GIB_IMPACTED" != '_all_' ]]; then
+              ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted-gav.log -Dgib.logImpactedFormat=gav validate
+              if [ -s gib-impacted-gav.log ]; then
+                GIB_IMPACTED_GAV=$(cat gib-impacted-gav.log)
+              fi
+            fi
+
             echo "GIB_ARGS: $GIB_ARGS"
           fi
 
@@ -441,6 +452,9 @@ jobs:
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+          echo 'impacted_modules_gav<<EOF' >> $GITHUB_OUTPUT
+          echo "${GIB_IMPACTED_GAV}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Print disk usage after build
         run: .github/ci-disk-usage.sh
@@ -485,6 +499,8 @@ jobs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
+      otp_jvm_matrix: ${{ steps.calc-otp-jvm-matrix.outputs.matrix }}
+      otp_native_matrix: ${{ steps.calc-otp-native-matrix.outputs.matrix }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
@@ -492,7 +508,7 @@ jobs:
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
@@ -512,6 +528,20 @@ jobs:
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
           json=$(.github/filter-integration-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "${json}"
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
+      - name: Calculate matrix from oracle-test-pilot-jvm-tests.json
+        id: calc-otp-jvm-matrix
+        run: |
+          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-jvm "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "${json}"
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
+      - name: Calculate matrix from oracle-test-pilot-native-tests.json
+        id: calc-otp-native-matrix
+        run: |
+          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags
@@ -556,7 +586,7 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
 
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.java-version}},distribution-${{matrix.java.java-distribution}},${{matrix.java.tag}}" >> "$GITHUB_ENV"
@@ -744,7 +774,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -858,7 +888,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -963,7 +993,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1072,7 +1102,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1143,7 +1173,7 @@ jobs:
           retention-days: 7
 
   quickstarts-tests:
-    name: Quickstarts Compilation - JDK ${{matrix.java.name}}
+    name: Quickstarts - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
@@ -1164,11 +1194,11 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
@@ -1194,7 +1224,7 @@ jobs:
         uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
         with:
           capture-strategy: ON_DEMAND
-          job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
+          job-name: "Quickstarts - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -1218,13 +1248,30 @@ jobs:
         id: get-quarkus-version
         run: |
           echo "quarkus-version=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
-      - name: Compile Quickstarts
+      - name: Clone Quickstarts
+        env:
+          QUICKSTARTS_BRANCH: ${{ steps.get-quickstarts-branch.outputs.result }}
+          QUICKSTARTS_REPO: https://github.com/quarkusio/quarkus-quickstarts.git
+        run: |
+          echo "Cloning repository: ${QUICKSTARTS_REPO} (branch: ${QUICKSTARTS_BRANCH})"
+          git clone --depth=1 -b "${QUICKSTARTS_BRANCH}" "${QUICKSTARTS_REPO}"
+      - name: Test Impacted Quickstarts
+        working-directory: quarkus-quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
+          GIB_IMPACTED_GAV: ${{ needs.build-jdk17.outputs.gib_impacted_gav }}
         run: |
-          git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
+          echo "=== GIB_IMPACTED_GAV ==="
+          echo "$GIB_IMPACTED_GAV"
+          echo "========================"
           QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
-          export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          if [ "$GIB_IMPACTED_GAV" == '_all_' ]; then
+            export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          else
+            echo "$GIB_IMPACTED_GAV" > gib-dependencies.log
+            export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS \
+              -Dincremental -Dgib.loadImpactedDependenciesFrom=gib-dependencies.log
+          fi
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -1236,7 +1283,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-Quickstarts Compilation - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Quickstarts - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -1263,7 +1310,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1355,7 +1402,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1432,7 +1479,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     timeout-minutes: 150
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
@@ -1530,7 +1577,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1558,7 +1605,7 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@60c26726de13f8b90771df4bc1641a52a3159994 # v1.5.2
+        uses: graalvm/setup-graalvm@bef4b0e916c7dd079bf60fb95d49139f67e32c5f # v1.5.3
         if: startsWith(matrix.os-name, 'windows')
         with:
           version: 'mandrel-latest'
@@ -1661,7 +1708,7 @@ jobs:
       - native-tests
     runs-on: ubuntu-latest
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: build-stats-*
@@ -1714,13 +1761,241 @@ jobs:
             fi
           done
 
+  oracle-test-pilot-jvm-tests:
+    name: Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}
+    runs-on: [ self-hosted, Linux, X64, OracleTestPilot ]
+    # Shared environment: make extra sure not to leak a GitHub token with any permission.
+    permissions:
+      contents: read
+    needs: [configure, build-jdk17, calculate-test-jobs]
+    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
+    env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+    timeout-minutes: ${{matrix.timeout}}
+    strategy:
+      max-parallel: ${{ fromJson(needs.configure.outputs.config).maxParallel || 5 }}
+      fail-fast: false
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.otp_jvm_matrix) }}
+    steps:
+      - name: Gradle Enterprise environment
+        run: |
+          category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
+          echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-jdk-${{matrix.java-version}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
+      - name: Set up JDK 17
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - name: Create Oracle Test Pilot Database
+        id: create_database
+        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        with:
+          oci-service: ${{ matrix.oci-service }}
+          action: create
+          user: quarkus_test
+      - name: Build
+        env:
+          # Begin OTP setup
+          TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
+          TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
+          TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
+          RUNID: ${{ github.run_number }}
+          API_HOST: ""
+          TESTPILOT_CLIENT_ID: ""
+          TESTPILOT_TOKEN: ""
+          # Needed for TFO (TCP fast open)
+          #LD_PRELOAD: /home/ubuntu/libtfojdbc1.so
+          #LD_LIBRARY_PATH: /home/ubuntu
+          # End OTP setup
+          TEST_MODULES: ${{matrix.test-modules}}
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
+            && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
+            $JVM_TEST_MAVEN_ARGS \
+            -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Doracle.username=${TESTPILOT_USERNAME} \
+            -Doracle.password=${TESTPILOT_PASSWORD} \
+            -f integration-tests -pl "$TEST_MODULES" \
+            clean install
+      - name: Delete Oracle Test Pilot Database
+        id: delete_database
+        if: always() && steps.create_database.outcome == 'success'
+        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        with:
+          oci-service: ${{ matrix.oci-service }}
+          action: delete
+          user: quarkus_test
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'integration-tests/**/target/*-reports/TEST-*.xml' \
+              'integration-tests/**/target/build-report.json' \
+              'integration-tests/**/target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
+          path: |
+            build-reports.zip
+          retention-days: 7
+
+  oracle-test-pilot-native-tests:
+    name: "Oracle Test Pilot ${{matrix.category}} - Native"
+    runs-on: [ self-hosted, Linux, X64, OracleTestPilot ]
+    # Shared environment: make extra sure not to leak a GitHub token with any permission.
+    permissions:
+      contents: read
+    needs: [configure, build-jdk17, calculate-test-jobs]
+    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
+    env:
+      COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+    timeout-minutes: ${{matrix.timeout}}
+    strategy:
+      max-parallel: ${{ fromJson(needs.configure.outputs.config).maxParallel || 5 }}
+      fail-fast: false
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.otp_native_matrix) }}
+    steps:
+      - name: Gradle Enterprise environment
+        run: |
+          category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
+          echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-native" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - Native" >> "$GITHUB_ENV"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
+      - name: Setup GraalVM
+        id: setup-graalvm
+        uses: graalvm/setup-graalvm@60c26726de13f8b90771df4bc1641a52a3159994 # v1.5.2
+        with:
+          version: 'mandrel-latest'
+          java-version: '25'
+          distribution: 'mandrel'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # We do this so we can get better analytics for the downloaded version of the build images
+      - name: Update Docker Client User Agent
+        run: |
+          if [ -f ~/.docker/config.json ]; then
+            cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+          fi
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "Oracle Test Pilot ${{matrix.category}} - Native"
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - name: Create Oracle Test Pilot Database
+        id: create_database
+        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        with:
+          oci-service: ${{ matrix.oci-service }}
+          action: create
+          # This needs to be unique to the job, in particular it must be different to the TestPilot JVM job
+          user: quarkus_test_native
+      - name: Build
+        env:
+          # Begin OTP setup
+          TESTPILOT_USERNAME: quarkus_test_native_${{ github.run_number }}
+          TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
+          TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
+          RUNID: ${{ github.run_number }}
+          API_HOST: ""
+          TESTPILOT_CLIENT_ID: ""
+          TESTPILOT_TOKEN: ""
+          # Needed for TFO (TCP fast open)
+          #LD_PRELOAD: /home/ubuntu/libtfojdbc1.so
+          #LD_LIBRARY_PATH: /home/ubuntu
+          # End OTP setup
+          TEST_MODULES: ${{matrix.test-modules}}
+          CONTAINER_BUILD: false # Docker is not available on Oracle Test Pilot
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
+            && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
+            -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Doracle.username=${TESTPILOT_USERNAME} \
+            -Doracle.password=${TESTPILOT_PASSWORD} \
+            $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=false -Dquarkus.native.native-image-xmx=16g \
+            -f integration-tests -pl "$TEST_MODULES"
+      - name: Delete Oracle Test Pilot Database
+        id: delete_database
+        if: always() && steps.create_database.outcome == 'success'
+        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        with:
+          oci-service: ${{ matrix.oci-service }}
+          action: delete
+          user: quarkus_test_native
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'integration-tests/**/target/*-reports/TEST-*.xml' \
+              'integration-tests/**/target/build-report.json' \
+              'integration-tests/**/target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Oracle Test Pilot ${{matrix.category}} - Native"
+          path: |
+            build-reports.zip
+          retention-days: 7
+
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests]
+    needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
-      - uses: runs-on/action@15385172809cc0346c6821b00c3c3dd2598785b4 # v2.1.0
+      - uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: build-reports-artifacts

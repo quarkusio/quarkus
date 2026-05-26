@@ -24,7 +24,7 @@ class AddClusterRoleResourceDecorator extends BaseAddRBACDecorator<ClusterRole, 
     }
 
     @Override
-    protected void initBuilderWithDefaults(ClusterRoleBuilder builder, Void config) {
+    protected void initBuilderWithDefaults(ClusterRoleBuilder builder) {
         updateMetadata(builder.editOrNewMetadata(), null).endMetadata().addAllToRules(rules);
     }
 }

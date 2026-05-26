@@ -477,7 +477,7 @@ public class ResteasyReactiveScanningProcessor {
             }
             MethodInfo methodInfo = instance.target().asMethod();
             if (methodInfo.isBridge()) { // we don't want to generate duplicates for bridge methods added by javac to handle generics
-                return;
+                continue;
             }
             if (classLevelExceptionMappers.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that exist inside a Resource Class are handled differently
                 continue;

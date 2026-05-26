@@ -509,3 +509,7 @@ public class TimestampEnricher implements SignalMetadataEnricher {
 <1> The `correlation-id` enricher runs _before_ the `timestamp` enricher.
 
 Cycles in the ordering are detected at build time and result in a deployment error.
+
+=== Configuration Reference
+
+include::{generated-dir}/config/quarkus-signals.adoc[leveloffset=+1, opts=optional]

@@ -1,9 +1,9 @@
 package io.quarkus.it.jpa.postgresql;
 
+import static io.quarkus.it.jpa.postgresql.DevServicesPostgresqFixedPortTest.findContainerOnPort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -12,9 +12,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
-
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.ContainerPort;
 
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -89,20 +86,4 @@ class DevServicesPostgresqlContainerReuseTest extends MojoTestBase {
                 .isEqualTo(firstContainerId);
     }
 
-    private static String findContainerOnPort(int publicPort) {
-        return DockerClientFactory.lazyClient().listContainersCmd().exec().stream()
-                .filter(container -> hasPublicPort(container, publicPort))
-                .map(Container::getId)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private static boolean hasPublicPort(Container container, int publicPort) {
-        if (container.getPorts() == null) {
-            return false;
-        }
-        return Arrays.stream(container.getPorts())
-                .map(ContainerPort::getPublicPort)
-                .anyMatch(p -> p != null && p == publicPort);
-    }
 }

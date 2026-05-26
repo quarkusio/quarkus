@@ -16,6 +16,7 @@
     <modules>
         <module>simple-extension</module>
         <module>dependent-extension</module>
+        <module>old-model-extension</module>
         <module>tests</module>
     </modules>
 </project>

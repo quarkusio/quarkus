@@ -50,7 +50,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarFormat;
 import io.quarkus.deployment.steps.LocaleProcessor;
@@ -211,7 +210,6 @@ public class NativeImageBuildStep {
             List<NativeImageEnableModule> enableModules,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
@@ -252,7 +250,7 @@ public class NativeImageBuildStep {
 
         NativeImageBuildRunner buildRunner = nativeImageRunner.getBuildRunner();
 
-        buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+        buildRunner.setup(processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
         checkGraalVMVersion(graalVMVersion);
 
@@ -298,7 +296,7 @@ public class NativeImageBuildStep {
                         nativeImageName,
                         resultingExecutableName, outputDir,
                         graalVMVersion, nativeConfig.debug().enabled(),
-                        processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+                        processInheritIODisabledBuildItem.isPresent());
             } catch (Throwable t) {
                 throw imageGenerationFailed(t, isContainerBuild);
             }

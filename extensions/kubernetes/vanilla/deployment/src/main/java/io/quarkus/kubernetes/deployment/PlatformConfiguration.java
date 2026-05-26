@@ -2,12 +2,16 @@ package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.kubernetes.spi.DeployStrategy;
@@ -17,6 +21,12 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 public interface PlatformConfiguration extends EnvVarHolder {
+
+    String APP_SECRET = "app-secret";
+    String APP_SECRET_MOUNT_PATH = "/mnt/app-secret";
+    String APP_CONFIG_MAP = "app-config-map";
+    String APP_CONFIG_MAP_MOUNT_PATH = "/mnt/app-config-map";
+
     /**
      * The kind of the deployment resource to use.
      * Supported values are 'StatefulSet', 'Job', 'CronJob' and 'Deployment' defaulting to the latter.
@@ -314,5 +324,25 @@ public interface PlatformConfiguration extends EnvVarHolder {
             return DeploymentResourceKind.Job;
         }
         return DeploymentResourceKind.Deployment;
+    }
+
+    default Collection<Volume> toVolumes() {
+        List<Volume> volumes = new ArrayList<>();
+        appSecret().ifPresent(s -> volumes.add(new VolumeBuilder()
+                .withName(APP_SECRET).withNewSecret().withSecretName(s).endSecret()
+                .build()));
+        appConfigMap().ifPresent(c -> volumes.add(new VolumeBuilder()
+                .withName(APP_CONFIG_MAP).withNewConfigMap().withName(c).endConfigMap()
+                .build()));
+
+        secretVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        configMapVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        emptyDirVolumes().ifPresent(v -> v.forEach(
+                e -> volumes.add(new VolumeBuilder().withName(e).withNewEmptyDir().endEmptyDir().build())));
+        pvcVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        awsElasticBlockStoreVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        azureFileVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        azureDiskVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        return volumes;
     }
 }

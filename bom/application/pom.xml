@@ -79,7 +79,7 @@
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.8</jaxb-runtime.version>
-        <asm.version>9.10</asm.version>
+        <asm.version>9.10.1</asm.version>
         <commons-io.version>2.22.0</commons-io.version>
         <jboss-metadata-web.version>17.1.0</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
@@ -120,17 +120,17 @@
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
-        <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
+        <mysql-jdbc.version>9.7.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.0.0.0</oracle-jdbc.version>
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.9</infinispan.version>
-        <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
-        <caffeine.version>3.2.3</caffeine.version>
+        <junit.jupiter.version>6.1.0</junit.jupiter.version>
+        <infinispan.version>16.0.12</infinispan.version>
+        <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
+        <caffeine.version>3.2.4</caffeine.version>
         <netty.version>4.1.133.Final</netty.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
@@ -150,7 +150,7 @@
         <azure-functions-java-library.version>3.3.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.3.21</kotlin.version>
-        <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
+        <kotlin.coroutine.version>1.11.0</kotlin.coroutine.version>
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
@@ -167,7 +167,7 @@
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
-        <javaparser.version>3.28.0</javaparser.version>
+        <javaparser.version>3.28.1</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.24.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP3</quarkus-spring-api.version>
@@ -179,7 +179,7 @@
         <quarkus-security.version>2.3.2</quarkus-security.version>
         <keycloak-client.version>26.0.9</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.54.0</checker-qual.version>
+        <checker-qual.version>4.1.0</checker-qual.version>
         <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
         <jib-core.version>0.28.1</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>

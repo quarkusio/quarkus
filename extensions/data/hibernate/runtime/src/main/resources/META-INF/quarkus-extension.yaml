@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Hibernate with Panache Next"
+name: "Quarkus Data Hibernate"
 metadata:
   keywords:
   - "hibernate-orm-panache"
@@ -10,7 +10,7 @@ metadata:
   - "hibernate-reactive"
   - "jakarta-data"
   - "jpa"
-  guide: "https://quarkus.io/guides/hibernate-panache-next"
+  guide: "https://quarkus.io/guides/quarkus-data-hibernate"
   categories:
   - "data"
   status: "experimental"

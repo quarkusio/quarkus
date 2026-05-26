@@ -82,6 +82,28 @@ By capturing the logs, they become visible amongst other log statements:
 quarkus.datasource.devservices.show-logs=true
 ----
 
+== Automatic Image Selection
+
+The container image used by Dev Services is determined by the database extension you include in your project.
+For example, including `quarkus-jdbc-postgresql` will use a PostgreSQL image, while `quarkus-jdbc-mysql` will use a MySQL image.
+
+For certain databases, Quarkus can further refine the image selection based on specific database features required by your application.
+For example, with PostgreSQL:
+
+* If you use Hibernate Spatial, Quarkus will automatically use a PostGIS-enabled image instead of the standard PostgreSQL image
+* If you use Hibernate ORM vector types, Quarkus will automatically use a pgvector-enabled image
+
+This automatic feature-based selection is transparent and requires no configuration.
+Extensions that require specific database capabilities will declare their requirements,
+and Dev Services will select the most appropriate image automatically.
+
+Explicitly setting the image name always takes precedence over automatic selection:
+
+[source,properties]
+----
+quarkus.datasource.devservices.image-name=<custom-image>
+----
+
 [[reuse]]
 == Reusing Dev Services
 

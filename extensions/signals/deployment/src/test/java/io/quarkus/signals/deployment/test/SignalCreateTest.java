@@ -62,8 +62,7 @@ public class SignalCreateTest extends AbstractSignalTest {
     @Test
     public void testCreateWithClassRequest() {
         var reg = receivers.newReceiver(Ping.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     return Uni.createFrom().item("reply_" + ctx.signal().id());
                 });
         try {
@@ -126,8 +125,7 @@ public class SignalCreateTest extends AbstractSignalTest {
     @Test
     public void testCreateWithTypeLiteralRequest() {
         var reg = receivers.newReceiver(Ping.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     return Uni.createFrom().item("reply_" + ctx.signal().id());
                 });
         try {

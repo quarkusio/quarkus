@@ -54,8 +54,7 @@ public class ResolveReceiversTest extends AbstractSignalTest {
         Function<SignalContext<Event>, Uni<String>> callback = ctx -> Uni.createFrom().item("ok");
         Receivers.Registration reg = receivers.newReceiver(Event.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .setResponseType(String.class)
-                .notify(callback);
+                .notify(String.class, callback);
         try {
             List<ReceiverInfo> infos = receivers.resolveReceivers(Event.class);
             // [onEvent, reg]

@@ -138,12 +138,12 @@ public class ReceiverManager implements Receivers, Signals {
     }
 
     @Override
-    public <SIGNAL> ReceiverDefinition<SIGNAL, Void> newReceiver(Class<SIGNAL> signalType) {
+    public <SIGNAL> ReceiverDefinition<SIGNAL> newReceiver(Class<SIGNAL> signalType) {
         return new ReceiverDefinitionImpl<>(signalType, beanContainer, this::register);
     }
 
     @Override
-    public <SIGNAL> ReceiverDefinition<SIGNAL, Void> newReceiver(TypeLiteral<SIGNAL> signalType) {
+    public <SIGNAL> ReceiverDefinition<SIGNAL> newReceiver(TypeLiteral<SIGNAL> signalType) {
         return new ReceiverDefinitionImpl<>(signalType.getType(), beanContainer, this::register);
     }
 

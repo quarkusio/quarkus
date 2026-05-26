@@ -18,7 +18,6 @@ import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.Receivers.Registration;
 import io.quarkus.signals.Signal;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.smallrye.mutiny.Uni;
 
 public class BlockingConcurrencyLimitTest extends AbstractSignalTest {
 
@@ -61,7 +60,6 @@ public class BlockingConcurrencyLimitTest extends AbstractSignalTest {
                             activeTasks.decrementAndGet();
                             allDone.countDown();
                         }
-                        return Uni.createFrom().voidItem();
                     }));
         }
 

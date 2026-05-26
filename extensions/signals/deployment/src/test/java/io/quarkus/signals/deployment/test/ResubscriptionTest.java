@@ -92,8 +92,7 @@ public class ResubscriptionTest extends AbstractSignalTest {
         AtomicInteger count = new AtomicInteger();
 
         var reg = receivers.newReceiver(Ping.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     return Uni.createFrom().item("reply_" + count.incrementAndGet());
                 });
         try {
@@ -160,8 +159,7 @@ public class ResubscriptionTest extends AbstractSignalTest {
         AtomicInteger count = new AtomicInteger();
 
         var reg = receivers.newReceiver(Ping.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     count.incrementAndGet();
                     return Uni.createFrom().item("reply");
                 });
@@ -230,8 +228,7 @@ public class ResubscriptionTest extends AbstractSignalTest {
 
         // Register a receiver after the Uni was created
         var reg = receivers.newReceiver(Ping.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     return Uni.createFrom().item("reply_" + ctx.signal().id());
                 });
         try {

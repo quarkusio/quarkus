@@ -57,6 +57,7 @@ public class RestClientUriParameterTest {
         assertEquals("bar", result);
 
         Timer clientTimer = registry.find("http.client.requests").timer();
+        System.out.println(clientTimer);
         assertNotNull(clientTimer);
         assertEquals("/example/{id}", clientTimer.getId().getTag("uri"));
     }

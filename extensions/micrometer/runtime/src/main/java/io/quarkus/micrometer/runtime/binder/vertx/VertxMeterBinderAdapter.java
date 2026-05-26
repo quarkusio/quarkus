@@ -16,11 +16,11 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
+import io.vertx.core.VertxException;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.impl.NoStackTraceException;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -60,7 +60,6 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         return true;
     }
 
-    @Override
     public VertxMetricsFactory getFactory() {
         return this;
     }
@@ -78,10 +77,10 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     @Override
     public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(HttpServerOptions options, SocketAddress localAddress) {
         if (httpBinderConfiguration == null) {
-            throw new NoStackTraceException("HttpBinderConfiguration was not found");
+            throw new VertxException("HttpBinderConfiguration was not found");
         }
         if (openTelemetryContextUnwrapper == null) {
-            throw new NoStackTraceException("OpenTelemetryContextUnwrapper was not found");
+            throw new VertxException("OpenTelemetryContextUnwrapper was not found");
         }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
@@ -92,7 +91,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public HttpClientMetrics<?, ?, ?, ?> createHttpClientMetrics(HttpClientOptions options) {
+    public HttpClientMetrics<?, ?, ?> createHttpClientMetrics(HttpClientOptions options) {
         if (httpBinderConfiguration == null) {
             return null;
         }
@@ -101,15 +100,18 @@ public class VertxMeterBinderAdapter extends MetricsOptions
                 return null; // Not monitored, no name
             }
 
+            String prefix = extractPrefix(options.getMetricsName());
+            boolean isRestClient = "rest-client".equals(prefix);
             // If the name is set, check if it follows the type/client-name syntax
             String clientName = extractClientName(options.getMetricsName());
             if (clientName != null) {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
                         Tags.of(Tag.of("clientName", clientName)),
-                        httpBinderConfiguration, longAdderGauges);
+                        httpBinderConfiguration, isRestClient, longAdderGauges);
             } else {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
-                        Tags.of(Tag.of("clientName", "<default>")), httpBinderConfiguration, longAdderGauges);
+                        Tags.of(Tag.of("clientName", "<default>")), httpBinderConfiguration, isRestClient,
+                        longAdderGauges);
             }
         }
         return null;
@@ -141,7 +143,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public ClientMetrics<?, ?, ?, ?> createClientMetrics(SocketAddress remoteAddress, String type, String namespace) {
+    public ClientMetrics<?, ?, ?> createClientMetrics(SocketAddress remoteAddress, String type, String namespace) {
         // If the name is set, check if it follows the type/client-name syntax
         String prefix = extractPrefix(namespace);
         String clientName = extractClientName(namespace);
@@ -158,7 +160,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public PoolMetrics<?> createPoolMetrics(String poolType, String poolName, int maxPoolSize) {
+    public PoolMetrics<?, ?> createPoolMetrics(String poolType, String poolName, int maxPoolSize) {
         return new VertxPoolMetrics(Metrics.globalRegistry, poolType, poolName, maxPoolSize,
                 longAdderGauges, doubleGauges);
     }

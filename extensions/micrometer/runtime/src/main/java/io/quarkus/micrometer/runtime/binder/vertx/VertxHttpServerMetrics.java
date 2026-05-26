@@ -21,11 +21,12 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.micrometer.runtime.meters.Gauges;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -151,7 +152,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         log.debugf("requestRouted %s %s", route, requestMetric);
         requestMetric.appendCurrentRoutePath(route);
         if (route != null) {
-            requestMetric.request().context().putLocal("VertxRoute", route);
+            var c = requestMetric.request().context();
+            VertxContext.localContextData(c).put("VertxRoute", route);
         }
     }
 
@@ -280,7 +282,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
         @Override
         public <T> T requestContextLocalData(Object key) {
-            return ((HttpServerRequestInternal) request).context().getLocal(key);
+            var c = ((HttpServerRequestInternal) request).context();
+            return (T) VertxContext.localContextData(c).get(key);
         }
     }
 }

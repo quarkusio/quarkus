@@ -88,15 +88,6 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
         }
     }
 
-    private Tag address(ResteasyReactiveClientRequestContext requestContext) {
-        String host = requestContext.getUri().getHost();
-        int port = requestContext.getUri().getPort();
-        if (host == null) {
-            return Tag.of("address", "none");
-        }
-        return Tag.of("address", port > 0 ? host + ":" + port : host);
-    }
-
     private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {
         return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
     }

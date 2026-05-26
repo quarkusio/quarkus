@@ -302,6 +302,22 @@ public class CommonPanacheQueryImpl<Entity> {
         }
     }
 
+    private void checkRange() {
+        if (range == null) {
+            throw new UnsupportedOperationException("Cannot call a range related method, " +
+                    "call range(int, int) to initiate range first");
+        }
+        if (page != null) {
+            throw new UnsupportedOperationException("Cannot call a range related method in a paged query, " +
+                    "call range(int, int) to initiate range first");
+        }
+    }
+
+    public Range range() {
+        checkRange();
+        return range;
+    }
+
     public void range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
         // reset the page to its default to be able to switch from page to range

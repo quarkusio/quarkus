@@ -1,20 +1,19 @@
-package io.quarkus.hibernate.reactive.config;
+package io.quarkus.hibernate.reactive.panache.test.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 
-import jakarta.inject.Inject;
-
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.reactive.panache.test.MyEntity;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class NoDatasourceTest {
+public class ReactiveSqlClientMissingEntitiesTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -24,14 +23,11 @@ public class NoDatasourceTest {
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client"),
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client-deployment")));
 
-    @Inject
-    InjectableInstance<Mutiny.SessionFactory> sessionFactory;
-
     @Test
     public void test() {
         // Unlike Hibernate ORM, Hibernate Reactive will silently disable itself if the default datasource is missing, even if there are entities.
         // We may want to revisit that someday, but it's not easy to do without deeper interaction between the Hibernate ORM and Reactive extensions.
-        assertThat(sessionFactory.isUnsatisfied()).isTrue();
+        assertThat(Arc.container().select(Mutiny.SessionFactory.class).isUnsatisfied()).isTrue();
     }
 
 }

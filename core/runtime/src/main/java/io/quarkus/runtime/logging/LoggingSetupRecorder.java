@@ -181,7 +181,7 @@ public class LoggingSetupRecorder {
         LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements, shutdownNotifier);
         final java.util.logging.Logger julRootLogger = LogManager.getLogManager().getLogger("");
         for (Handler handler : julRootLogger.getHandlers()) {
-            // Remove non-JBoss LogManager handlers installed by build tools
+            // Drop any non-JBoss-LogManager handler from the JUL root logger.
             if (handler instanceof ExtHandler) {
                 handler.setFilter(cleanupFiler);
             } else {

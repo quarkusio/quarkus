@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
+import static io.quarkus.arc.processor.Reproducibility.BEAN_COMPARATOR;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -272,7 +274,8 @@ public class SmallRyeFaultToleranceProcessor {
         Map<String, Set<String>> existingGuards = new HashMap<>();
         Set<String> expectedGuards = new HashSet<>();
 
-        for (BeanInfo info : validationPhase.getContext().beans()) {
+        // TODO: add a comment / link to the beanstream issue
+        for (BeanInfo info : validationPhase.getContext().beans().stream().sorted(BEAN_COMPARATOR).toList()) {
             if (info.hasType(DotNames.GUARD) || info.hasType(DotNames.TYPED_GUARD)) {
                 info.getQualifier(DotNames.IDENTIFIER).ifPresent(idAnn -> {
                     String id = idAnn.value().asString();

@@ -613,7 +613,7 @@ public final class LoggingResourceProcessor {
                                         categoryMinLevelDefaults,
                                         rootMinLevel)
                                 .intValue();
-                        b0.if_(b0.objEquals(name, Const.of(category)), BlockCreator::returnTrue);
+                        b0.if_(b0.exprEquals(name, Const.of(category)), BlockCreator::returnTrue);
                         b0.if_(b0.invokeVirtual(
                                 MethodDesc.of(String.class, "startsWith", boolean.class, String.class),
                                 name, Const.of(category + ".")),

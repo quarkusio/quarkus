@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -67,6 +68,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.ReproducibilityCheckBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
@@ -130,6 +132,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     private QuarkusClassLoader quarkusUnitTestClassLoader;
     private ClassLoader originalClassLoader;
     private List<Dependency> forcedDependencies = Collections.emptyList();
+    private Set<ArtifactKey> excludedDependencies = Collections.emptySet();
 
     private boolean useSecureConnection;
 
@@ -319,6 +322,15 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
      */
     public S setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
+        return (S) this;
+    }
+
+    /**
+     * Provides a convenient way to exclude dependencies from the application.
+     * Dependencies listed here will be removed from the test classpath.
+     */
+    public S setExcludedDependencies(Set<ArtifactKey> excludedDependencies) {
+        this.excludedDependencies = excludedDependencies;
         return (S) this;
     }
 
@@ -954,13 +966,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 .setProjectRoot(projectDir)
                 .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
                 .setFlatClassPath(flatClassPath)
-                .setForcedDependencies(forcedDependencies);
+                .setForcedDependencies(forcedDependencies)
+                .setExcludedDependencies(excludedDependencies);
         for (JavaArchive dependency : additionalDependencies) {
             builder.addAdditionalApplicationArchive(
                     new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
         }
-        if (!forcedDependencies.isEmpty()) {
-            //if we have forced dependencies we can't use the cache
+        if (!forcedDependencies.isEmpty() || !excludedDependencies.isEmpty()) {
+            //if we have forced/excluded dependencies we can't use the cache
             //as it can screw everything up
             builder.setDisableClasspathCache(true);
         }

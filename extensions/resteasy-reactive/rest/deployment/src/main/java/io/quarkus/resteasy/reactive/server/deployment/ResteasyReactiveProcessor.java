@@ -184,6 +184,7 @@ import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerLoggingFilter;
 import io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -206,6 +207,8 @@ import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
 import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
@@ -1802,6 +1805,22 @@ public class ResteasyReactiveProcessor {
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);
+    }
+
+    @BuildStep
+    public void registerServerLoggingFilter(
+            BuildProducer<ContainerRequestFilterBuildItem> requestFilters,
+            BuildProducer<ContainerResponseFilterBuildItem> responseFilters) {
+        String filterClass = ResteasyReactiveServerLoggingFilter.class.getName();
+        requestFilters.produce(new ContainerRequestFilterBuildItem.Builder(filterClass)
+                .setPriority(Priorities.USER + 100)
+                .setRegisterAsBean(true)
+                .build());
+        // Response filters run in reverse order
+        responseFilters.produce(new ContainerResponseFilterBuildItem.Builder(filterClass)
+                .setPriority(Priorities.USER - 100)
+                .setRegisterAsBean(true)
+                .build());
     }
 
     @BuildStep

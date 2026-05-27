@@ -18,6 +18,9 @@ import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
 import org.hibernate.SharedSessionContract;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
+import org.hibernate.query.Order;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.spi.SqmQuery;
 
@@ -74,11 +77,15 @@ public class CommonPanacheQueryImpl<Entity> {
     protected String customCountQueryForSpring;
     private String orderBy;
     private SharedSessionContract session;
+    private Class<?> entityClass;
 
-    private Page page;
     private Long count;
 
+    // We can only have one of page|range|keyedPage set at the same time, they're mutually exclusive
+    private Page page;
     private Range range;
+    private KeyedPage<?> keyedPage;
+    private KeyedResultList<?> lastKeyedResult;
 
     private LockModeType lockModeType;
     private Map<String, Object> hints;
@@ -86,9 +93,11 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Map<String, Object>> filters;
     private Class<?> projectionType;
 
-    public CommonPanacheQueryImpl(SharedSessionContract session, String query, String originalQuery, String orderBy,
+    public CommonPanacheQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery,
+            String orderBy,
             Object paramsArrayOrMap) {
         this.session = session;
+        this.entityClass = entityClass;
         this.query = query;
         this.originalQuery = originalQuery;
         this.orderBy = orderBy;
@@ -99,6 +108,7 @@ public class CommonPanacheQueryImpl<Entity> {
             String customCountQueryForSpring,
             Class<?> projectionType) {
         this.session = previousQuery.session;
+        this.entityClass = previousQuery.entityClass;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
         this.orderBy = previousQuery.orderBy;
@@ -106,6 +116,8 @@ public class CommonPanacheQueryImpl<Entity> {
         this.page = previousQuery.page;
         this.count = previousQuery.count;
         this.range = previousQuery.range;
+        this.keyedPage = previousQuery.keyedPage;
+        this.lastKeyedResult = previousQuery.lastKeyedResult;
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
@@ -241,40 +253,95 @@ public class CommonPanacheQueryImpl<Entity> {
 
     public void page(Page page) {
         this.page = page;
-        this.range = null; // reset the range to be able to switch from range to page
+        this.range = null;
+        this.keyedPage = null;
+        this.lastKeyedResult = null;
     }
 
     public void page(int pageIndex, int pageSize) {
         page(Page.of(pageIndex, pageSize));
     }
 
+    @SuppressWarnings("unchecked")
+    public void cursored(int pageIndex, int pageSize, List<Order<?>> orders) {
+        this.keyedPage = org.hibernate.query.Page.page(pageSize, pageIndex).keyedBy((List) orders);
+        this.lastKeyedResult = null;
+        this.page = null;
+        this.range = null;
+    }
+
     public void nextPage() {
         checkPagination();
-        page(page.next());
+        if (keyedPage != null) {
+            if (lastKeyedResult == null) {
+                throw new UnsupportedOperationException(
+                        "Cannot call nextPage() before fetching results with list()");
+            }
+            keyedPage = lastKeyedResult.getNextPage();
+            lastKeyedResult = null;
+        } else {
+            page(page.next());
+        }
     }
 
     public void previousPage() {
         checkPagination();
-        page(page.previous());
+        if (keyedPage != null) {
+            if (lastKeyedResult == null) {
+                throw new UnsupportedOperationException(
+                        "Cannot call previousPage() before fetching results with list()");
+            }
+            KeyedPage<?> prev = lastKeyedResult.getPreviousPage();
+            if (prev != null) {
+                keyedPage = prev;
+            }
+            lastKeyedResult = null;
+        } else {
+            page(page.previous());
+        }
     }
 
+    @SuppressWarnings("unchecked")
     public void firstPage() {
         checkPagination();
-        page(page.first());
+        if (keyedPage != null) {
+            keyedPage = keyedPage.getPage().first().keyedBy((List) keyedPage.getKeyDefinition());
+            lastKeyedResult = null;
+        } else {
+            page(page.first());
+        }
     }
 
     public void lastPage() {
         checkPagination();
+        if (keyedPage != null) {
+            throw new UnsupportedOperationException(
+                    "Cannot navigate to last page in cursor-based pagination");
+        }
         page(page.index(pageCount() - 1));
     }
 
     public boolean hasNextPage() {
         checkPagination();
+        if (keyedPage != null) {
+            if (lastKeyedResult == null) {
+                throw new UnsupportedOperationException(
+                        "Cannot call hasNextPage() before fetching results with list()");
+            }
+            return !lastKeyedResult.isLastPage();
+        }
         return page.index < (pageCount() - 1);
     }
 
     public boolean hasPreviousPage() {
         checkPagination();
+        if (keyedPage != null) {
+            if (lastKeyedResult == null) {
+                throw new UnsupportedOperationException(
+                        "Cannot call hasPreviousPage() before fetching results with list()");
+            }
+            return !lastKeyedResult.isFirstPage();
+        }
         return page.index > 0;
     }
 
@@ -283,7 +350,8 @@ public class CommonPanacheQueryImpl<Entity> {
         long count = count();
         if (count == 0)
             return 1; // a single page of zero results
-        return (int) Math.ceil((double) count / (double) page.size);
+        int pageSize = keyedPage != null ? keyedPage.getPage().getSize() : page.size;
+        return (int) Math.ceil((double) count / (double) pageSize);
     }
 
     public Page page() {
@@ -292,7 +360,7 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     private void checkPagination() {
-        if (page == null) {
+        if (page == null && keyedPage == null) {
             throw new UnsupportedOperationException("Cannot call a page related method, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
         }
@@ -320,8 +388,9 @@ public class CommonPanacheQueryImpl<Entity> {
 
     public void range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
-        // reset the page to its default to be able to switch from page to range
         this.page = null;
+        this.keyedPage = null;
+        this.lastKeyedResult = null;
     }
 
     public void withLock(LockModeType lockModeType) {
@@ -360,14 +429,28 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
+        if (keyedPage != null) {
+            SelectionQuery hibernateQuery = createBaseQuery();
+            try (NonThrowingCloseable c = applyFilters()) {
+                lastKeyedResult = hibernateQuery.getKeyedResultList((KeyedPage) keyedPage);
+                return (List<T>) lastKeyedResult.getResultList();
+            }
+        }
         SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
             return hibernateQuery.getResultList();
         }
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Entity> Stream<T> stream() {
+        if (keyedPage != null) {
+            SelectionQuery hibernateQuery = createBaseQuery();
+            try (NonThrowingCloseable c = applyFilters()) {
+                lastKeyedResult = hibernateQuery.getKeyedResultList((KeyedPage) keyedPage);
+                // there's no support for getKeyedResultStream() yet in ORM
+                return (Stream<T>) lastKeyedResult.getResultList().stream();
+            }
+        }
         SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
             return hibernateQuery.getResultStream();

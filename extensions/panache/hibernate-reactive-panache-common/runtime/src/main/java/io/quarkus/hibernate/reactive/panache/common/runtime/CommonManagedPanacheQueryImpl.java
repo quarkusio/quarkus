@@ -7,9 +7,10 @@ import io.smallrye.mutiny.Uni;
 
 public class CommonManagedPanacheQueryImpl<Entity> extends CommonAbstractPanacheQueryImpl<Entity, Mutiny.Session> {
 
-    public CommonManagedPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+    public CommonManagedPanacheQueryImpl(Uni<Mutiny.Session> em, Class<?> entityClass, String query, String originalQuery,
+            String orderBy,
             Object paramsArrayOrMap) {
-        super(em, query, originalQuery, orderBy, paramsArrayOrMap);
+        super(em, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     protected CommonManagedPanacheQueryImpl(CommonManagedPanacheQueryImpl<?> previousQuery, String newQueryString,

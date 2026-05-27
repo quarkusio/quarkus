@@ -2,6 +2,8 @@ package io.quarkus.hibernate.panache.deployment.test;
 
 import java.util.List;
 
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,7 @@ public class PagingTest {
     void cursorPage() {
         PanacheBlockingQuery<MyEntity> query = MyEntity_.managedBlocking().findAll();
 
-        List<MyEntity> list = query.paging().cursored(0, 10).list();
+        List<MyEntity> list = query.paging().cursored(0, 10, Order.by(Sort.asc("foo"))).list();
         while (query.paging().hasNext()) {
             list = query.paging().next().list();
         }

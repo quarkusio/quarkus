@@ -59,10 +59,13 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     private Class<?> projectionType;
 
     protected Uni<SessionType> em;
+    private Class<?> entityClass;
 
-    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, String query, String originalQuery, String orderBy,
+    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, Class<?> entityClass, String query, String originalQuery,
+            String orderBy,
             Object paramsArrayOrMap) {
         this.em = em;
+        this.entityClass = entityClass;
         this.query = query;
         this.originalQuery = originalQuery;
         this.orderBy = orderBy;
@@ -74,6 +77,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
             String customCountQueryForSpring,
             Class<?> projectionType) {
         this.em = previousQuery.em;
+        this.entityClass = previousQuery.entityClass;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
         this.orderBy = previousQuery.orderBy;

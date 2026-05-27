@@ -14,10 +14,11 @@ public class JpaStatelessOperations extends AbstractStatelessJpaOperations<Panac
     public static final JpaStatelessOperations INSTANCE = new JpaStatelessOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(StatelessSession session, String query, String originalQuery,
+    protected PanacheQueryImpl<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
+            String originalQuery,
             String orderBy,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     @Override

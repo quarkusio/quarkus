@@ -18,8 +18,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonManagedPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy, Object paramsArrayOrMap) {
-        this.delegate = new CommonManagedPanacheQueryImpl<Entity>(em, query, originalQuery, orderBy, paramsArrayOrMap);
+    PanacheQueryImpl(Uni<Mutiny.Session> em, Class<?> entityClass, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
+        this.delegate = new CommonManagedPanacheQueryImpl<Entity>(em, entityClass, query, originalQuery, orderBy,
+                paramsArrayOrMap);
     }
 
     protected PanacheQueryImpl(CommonManagedPanacheQueryImpl<Entity> delegate) {

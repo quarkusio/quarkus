@@ -35,7 +35,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
     static final long TIMEOUT_MS = 5000;
     protected static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
-    protected abstract PanacheQueryType createPanacheQuery(Uni<SessionType> session, String query, String originalQuery,
+    protected abstract PanacheQueryType createPanacheQuery(Uni<SessionType> session, Class<?> entityClass, String query,
+            String originalQuery,
             String orderBy,
             Object paramsArrayOrMap);
 
@@ -100,10 +101,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(session, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
         }
         String hqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
@@ -120,10 +121,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(session, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
         }
         String hqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
@@ -161,13 +162,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
     public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         Uni<SessionType> session = getSession(entityClass);
-        return createPanacheQuery(session, query, null, null, null);
+        return createPanacheQuery(session, entityClass, query, null, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         Uni<SessionType> session = getSession(entityClass);
-        return createPanacheQuery(session, query, null, PanacheJpaUtil.toOrderBy(sort), null);
+        return createPanacheQuery(session, entityClass, query, null, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
     public Uni<List<?>> listAll(Class<?> entityClass) {

@@ -65,7 +65,12 @@ public class AmazonLambdaRecorder {
             objectReader = new JacksonInputReader(objectMapper.readerFor(requestHandlerDefinition.inputType()));
         }
 
-        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(requestHandlerDefinition.outputType()));
+        Class<?> outputTypeForWriter = requestHandlerDefinition.outputType();
+        if (Record.class.equals(requestHandlerDefinition.outputType())) {
+            // Jackson won't properly serialize if the type is `Record`
+            outputTypeForWriter = Object.class;
+        }
+        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(outputTypeForWriter));
     }
 
     public void setBeanContainer(BeanContainer container) {

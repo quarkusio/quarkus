@@ -45,7 +45,7 @@ class ForwardedServerRequestWrapperTest {
 
         ForwardingProxyOptions options = ForwardingProxyOptions.builder().build();
 
-        TrustedProxyCheck trustedProxyCheck = TrustedProxyCheck.allowAll();
+        TrustedProxyCheck trustedProxyCheck = TrustedProxyCheck.ALLOW_ALL;
         wrapper = new ForwardedServerRequestWrapper(mockRequest, options, trustedProxyCheck);
     }
 

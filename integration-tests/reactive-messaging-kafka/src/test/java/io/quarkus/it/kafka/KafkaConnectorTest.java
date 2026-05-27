@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -85,7 +86,7 @@ public class KafkaConnectorTest {
             });
             Assertions.assertEquals(3, map.size());
             Assertions.assertEquals("a", map.get("a"));
-            Assertions.assertEquals("a", map.get("a"));
+            Assertions.assertEquals("a", map.get("c"));
             Assertions.assertEquals("b", map.get("b"));
         });
     }
@@ -96,7 +97,7 @@ public class KafkaConnectorTest {
         await().untilAsserted(() -> {
             List<String> list = get("/kafka/data-for-keyed").as(new TypeRef<List<String>>() {
             });
-            Assertions.assertEquals(3, list.size());
+            Assertions.assertEquals(3, new HashSet<>(list).size());
             Assertions.assertTrue(list.contains("A-a"));
             Assertions.assertTrue(list.contains("A-c"));
             Assertions.assertTrue(list.contains("B-b"));

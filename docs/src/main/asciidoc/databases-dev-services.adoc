@@ -84,8 +84,8 @@ quarkus.datasource.devservices.show-logs=true
 
 == Automatic Image Selection
 
-The container image used by Dev Services is determined by the database extension you include in your project.
-For example, including `quarkus-jdbc-postgresql` will use a PostgreSQL image, while `quarkus-jdbc-mysql` will use a MySQL image.
+The container image used by Dev Services is determined by the database kind of your xref:datasource.adoc#datasources[datasource],
+which is implicit if you include only one kind of JDBC or Reactive SQL client extension in your project.
 
 For certain databases, Quarkus can further refine the image selection based on specific database features required by your application.
 For example, with PostgreSQL:

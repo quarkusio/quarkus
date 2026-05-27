@@ -12,6 +12,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceFeatureRequirementBuildItem;
+import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -21,6 +23,8 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
+import io.quarkus.hibernate.orm.deployment.spatial.HibernateSpatialAvailable;
+import io.quarkus.hibernate.orm.deployment.vector.HibernateVectorAvailable;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -80,4 +84,15 @@ public class HibernateOrmDevServicesProcessor {
         }
     }
 
+    @BuildStep(onlyIf = HibernateSpatialAvailable.class)
+    DataSourceFeatureRequirementBuildItem requireSpatialFeature() {
+        return new DataSourceFeatureRequirementBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                DatabaseFeature.SPATIAL);
+    }
+
+    @BuildStep(onlyIf = HibernateVectorAvailable.class)
+    DataSourceFeatureRequirementBuildItem requireVectorFeature() {
+        return new DataSourceFeatureRequirementBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                DatabaseFeature.VECTOR);
+    }
 }

@@ -181,7 +181,6 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ConnectionPool")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ControlledClusterFailover")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.HttpClient")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.util.WithSNISslEngineFactory")
                 .addRuntimeInitializedClass("com.yahoo.sketches.quantiles.DoublesSketch")
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.UnpooledByteBufAllocator$InstrumentedUnpooledHeapByteBuf")

@@ -1830,8 +1830,8 @@ jobs:
           TESTPILOT_CLIENT_ID: ""
           TESTPILOT_TOKEN: ""
           # Needed for TFO (TCP fast open)
-          LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0/libtfojdbc1.so
-          LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0
+          LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.2.0.0/libtfojdbc1.so
+          LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.2.0.0
           # End OTP setup
           TEST_MODULES: ${{matrix.test-modules}}
           CAPTURE_BUILD_SCAN: true
@@ -1950,8 +1950,8 @@ jobs:
           TESTPILOT_TOKEN: ""
           # Needed for TFO (TCP fast open)
           # TODO: enable after fixing https://github.com/quarkusio/quarkus/issues/54479
-          #LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0/libtfojdbc1.so
-          #LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0
+          #LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.2.0.0/libtfojdbc1.so
+          #LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.2.0.0
           #  -Dquarkus.native.additional-build-args='-ELD_PRELOAD,-ELD_LIBRARY_PATH' \
           # End OTP setup
           TEST_MODULES: ${{matrix.test-modules}}

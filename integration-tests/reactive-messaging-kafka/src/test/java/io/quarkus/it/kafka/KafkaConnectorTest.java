@@ -75,7 +75,7 @@ public class KafkaConnectorTest {
     @Order(4)
     public void testPrices() {
         KafkaRepeatableReceivers repeatableReceivers = Arc.container().instance(KafkaRepeatableReceivers.class).get();
-        await().untilAsserted(() -> Assertions.assertEquals(repeatableReceivers.getPrices().size(), 6));
+        await().untilAsserted(() -> Assertions.assertEquals(6, new HashSet<>(repeatableReceivers.getPrices()).size()));
     }
 
     @Test

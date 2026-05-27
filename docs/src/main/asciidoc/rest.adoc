@@ -2759,6 +2759,40 @@ Now, whenever a REST method is invoked, the request will be logged into the cons
 A `ContainerResponseFilter` will also be called for <<exception-mapping, handled>> exceptions.
 ====
 
+=== Request/response logging
+
+Instead of writing your own filter as shown above, you can enable Quarkus REST's built-in request/response
+logger:
+
+[source,properties]
+----
+quarkus.rest.logging.scope=request-response
+----
+
+This logs the method, URI, status, and headers of every request and response. Sensitive header values
+(`Authorization` and `Cookie` by default, configurable via `quarkus.rest.logging.masked-headers`) are always
+replaced with `<hidden>`.
+
+Bodies are not logged by default, to avoid accidentally logging sensitive data. Set
+`quarkus.rest.logging.include-body=true` to include them. `quarkus.rest.logging.body-limit` (default `100`)
+then caps how many characters of a text body (JSON, XML, plain text, form fields, or an individual text part
+of a multipart body) show up in the log, on both the request and response side, to keep logs readable.
+
+Logging an incoming multipart request body (e.g. a file upload) means reading it, and such an upload can be
+far bigger than the JVM can comfortably hold in memory. So before logging one, Quarkus REST checks its
+`Content-Length` against a threshold derived from `body-limit` (clamped between a small internal floor and
+ceiling, in bytes, so neither a very small nor a very large `body-limit` pushes it out of a safe range): if
+`Content-Length` is known and within that bound, the body is read and logged (subject to the usual
+`body-limit` truncation per part); otherwise — including chunked transfers with no `Content-Length` — it is
+left untouched and only a short note (its size, if known) is logged instead. This buffering concern is
+specific to incoming multipart requests: response bodies are never read from a stream to be logged — by the
+time the response filter runs, the entity is already the Java object the resource method returned (a
+`String`, a `byte[]`, a `File` reference, a `MultipartFormDataOutput`), so logging it is just describing an
+object already in memory, not deciding whether to buffer one.
+
+See the <<rest-configuration-reference,Quarkus REST Configuration Reference>> for the full list of
+`quarkus.rest.logging.*` properties.
+
 === Readers and Writers: mapping entities and HTTP bodies
 
 [[readers-writers]]

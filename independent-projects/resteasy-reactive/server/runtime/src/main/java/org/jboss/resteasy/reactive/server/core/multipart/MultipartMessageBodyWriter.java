@@ -69,12 +69,12 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         if (o instanceof MultipartFormDataOutput) {
             formData = (MultipartFormDataOutput) o;
         } else {
-            formData = toFormData(o);
+            formData = MultipartMessageBodyWriter.toFormData(o);
         }
         write(formData, boundary, outputStream, requestContext);
     }
 
-    private MultipartFormDataOutput toFormData(Object o) {
+    public static MultipartFormDataOutput toFormData(Object o) {
         String transformer = getGeneratedMapperClassNameFor(o.getClass().getName());
         BeanFactory.BeanInstance instance = new ReflectionBeanFactoryCreator().apply(transformer).createInstance();
         return ((MultipartOutputInjectionTarget) instance.getInstance()).mapFrom(o);

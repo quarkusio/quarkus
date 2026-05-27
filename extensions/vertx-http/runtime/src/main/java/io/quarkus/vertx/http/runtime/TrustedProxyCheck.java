@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import java.net.InetAddress;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
 
 import org.jboss.logging.Logger;
@@ -45,6 +47,48 @@ public interface TrustedProxyCheck {
                 return false;
             }
         };
+    }
+
+    static TrustedProxyCheck createTruststoreCheck(HttpServerRequest event, X509TrustManager trustManager, String alias) {
+        final SSLSession sslSession = event.sslSession();
+        if (sslSession == null) {
+            LOGGER.debug("No SSL session, proxy truststore check cannot be performed");
+            return denyAll();
+        }
+
+        final Certificate[] peerCerts;
+        try {
+            peerCerts = sslSession.getPeerCertificates();
+        } catch (SSLPeerUnverifiedException e) {
+            LOGGER.debug("Peer certificate not available, proxy truststore check cannot be performed");
+            return denyAll();
+        }
+
+        if (peerCerts == null || peerCerts.length == 0) {
+            LOGGER.debug("No peer certificates, proxy truststore check cannot be performed");
+            return denyAll();
+        }
+
+        X509Certificate[] chain = new X509Certificate[peerCerts.length];
+        for (int i = 0; i < peerCerts.length; i++) {
+            if (!(peerCerts[i] instanceof X509Certificate x509Certificate)) {
+                LOGGER.debugf("Unexpected peer certificate type %s, proxy truststore check cannot be performed",
+                        peerCerts[i].getClass().getName());
+                return denyAll();
+            }
+            chain[i] = x509Certificate;
+        }
+
+        String authType = chain[0].getPublicKey().getAlgorithm();
+        try {
+            trustManager.checkClientTrusted(chain, authType);
+            LOGGER.debugf("Client certificate chain matches trusted proxy alias '%s'", alias);
+            return allowAll();
+        } catch (CertificateException e) {
+            LOGGER.tracef(e, "Client certificate chain did not match trusted proxy alias '%s'", alias);
+        }
+
+        return denyAll();
     }
 
     /**

@@ -1814,7 +1814,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1830,8 +1830,8 @@ jobs:
           TESTPILOT_CLIENT_ID: ""
           TESTPILOT_TOKEN: ""
           # Needed for TFO (TCP fast open)
-          #LD_PRELOAD: /home/ubuntu/libtfojdbc1.so
-          #LD_LIBRARY_PATH: /home/ubuntu
+          LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0/libtfojdbc1.so
+          LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0
           # End OTP setup
           TEST_MODULES: ${{matrix.test-modules}}
           CAPTURE_BUILD_SCAN: true
@@ -1848,7 +1848,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete
@@ -1932,7 +1932,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1949,8 +1949,10 @@ jobs:
           TESTPILOT_CLIENT_ID: ""
           TESTPILOT_TOKEN: ""
           # Needed for TFO (TCP fast open)
-          #LD_PRELOAD: /home/ubuntu/libtfojdbc1.so
-          #LD_LIBRARY_PATH: /home/ubuntu
+          # TODO: enable after fixing https://github.com/quarkusio/quarkus/issues/54479
+          #LD_PRELOAD: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0/libtfojdbc1.so
+          #LD_LIBRARY_PATH: /home/ubuntu/ojdbc_tfo/ojdbc17/23.26.0.0.0
+          #  -Dquarkus.native.additional-build-args='-ELD_PRELOAD,-ELD_LIBRARY_PATH' \
           # End OTP setup
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: false # Docker is not available on Oracle Test Pilot
@@ -1967,7 +1969,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@f620f11f9f26dacfe80ba1823342e3e92604c55f # v1.0.23
+        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete

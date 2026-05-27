@@ -8,6 +8,13 @@
             "java-version": 17
         },
         {
+            "category": "19c-atps",
+            "oci-service": "autonomous-transaction-processing-serverless-19c",
+            "timeout": 20,
+            "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
+            "java-version": 17
+        },
+        {
             "category": "21c",
             "oci-service": "base-database-service-21c",
             "timeout": 20,
@@ -17,6 +24,13 @@
         {
             "category": "26ai",
             "oci-service": "base-database-service-26ai",
+            "timeout": 20,
+            "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
+            "java-version": 17
+        },
+        {
+            "category": "26ai-atps",
+            "oci-service": "autonomous-transaction-processing-serverless-26ai",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
             "java-version": 17

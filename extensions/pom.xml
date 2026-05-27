@@ -25,6 +25,7 @@
         <module>jaxp</module>
         <module>smallrye-stork</module>
         <module>signals</module>
+        <module>packaging</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>

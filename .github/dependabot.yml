@@ -63,6 +63,7 @@ updates:
       - dependency-name: io.smallrye.beanbag:*
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
+      - dependency-name: io.smallrye.modules:*
       - dependency-name: io.smallrye.reactive:*
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava

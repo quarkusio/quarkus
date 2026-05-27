@@ -53,7 +53,6 @@ public class ObservabilityDevUIProcessor {
                                 .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
                 card.addPage(otelPage);
 
-                card.setCustomCard("qwc-lgtm-card.js");
                 cardPageBuildItemBuildProducer.produce(card);
 
                 // LGTM Container Log Console

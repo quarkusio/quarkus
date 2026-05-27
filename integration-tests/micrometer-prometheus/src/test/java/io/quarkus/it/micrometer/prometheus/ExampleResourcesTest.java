@@ -1,7 +1,8 @@
 package io.quarkus.it.micrometer.prometheus;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.assertj.core.api.Assertions.entry;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,15 +17,15 @@ public class ExampleResourcesTest {
         when().get("/example/gauge/1").then().statusCode(200);
         when().get("/example/gauge/2").then().statusCode(200);
         when().get("/example/gauge/4").then().statusCode(200);
-        when().get("/q/metrics").then().statusCode(200)
-                .body(containsString(
-                        "example_list_size{env=\"test\",env2=\"test\",registry=\"prometheus\"} 2.0"));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200).extract().asInputStream())
+                .hasMetricWithExactLabelsAndValue("example_list_size", 2.0,
+                        entry("env", "test"), entry("env2", "test"), entry("registry", "prometheus"));
         when().get("/example/gauge/6").then().statusCode(200);
         when().get("/example/gauge/5").then().statusCode(200);
         when().get("/example/gauge/7").then().statusCode(200);
-        when().get("/q/metrics").then().statusCode(200)
-                .body(containsString(
-                        "example_list_size{env=\"test\",env2=\"test\",registry=\"prometheus\"} 1.0"));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200).extract().asInputStream())
+                .hasMetricWithExactLabelsAndValue("example_list_size", 1.0,
+                        entry("env", "test"), entry("env2", "test"), entry("registry", "prometheus"));
     }
 
     @Test
@@ -36,32 +37,41 @@ public class ExampleResourcesTest {
         when().get("/example/prime/3").then().statusCode(200);
         when().get("/example/prime/15").then().statusCode(200);
 
-        when().get("/q/metrics").then().statusCode(200)
-                .body(containsString(
-                        "example_prime_number_total{env=\"test\",env2=\"test\",registry=\"prometheus\",type=\"prime\"}"))
-                .body(containsString(
-                        "example_prime_number_total{env=\"test\",env2=\"test\",registry=\"prometheus\",type=\"not-prime\"}"))
-                .body(containsString(
-                        "example_prime_number_total{env=\"test\",env2=\"test\",registry=\"prometheus\",type=\"one\"}"))
-                .body(containsString(
-                        "example_prime_number_total{env=\"test\",env2=\"test\",registry=\"prometheus\",type=\"even\"}"))
-                .body(containsString(
-                        "example_prime_number_total{env=\"test\",env2=\"test\",registry=\"prometheus\",type=\"not-natural\"}"));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200).extract().asInputStream())
+                .hasMetricWithExactLabels("example_prime_number_total",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("type", "prime"))
+                .hasMetricWithExactLabels("example_prime_number_total",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("type", "not-prime"))
+                .hasMetricWithExactLabels("example_prime_number_total",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("type", "one"))
+                .hasMetricWithExactLabels("example_prime_number_total",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("type", "even"))
+                .hasMetricWithExactLabels("example_prime_number_total",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("registry", "prometheus"), entry("type", "not-natural"));
     }
 
     @Test
     void testTimerExample() {
         when().get("/example/prime/257").then().statusCode(200);
-        when().get("/q/metrics").then().statusCode(200)
-                .body(containsString(
-                        "example_prime_number_test_seconds_sum{env=\"test\",env2=\"test\",prime=\"true\",registry=\"prometheus\"}"))
-                .body(containsString(
-                        "example_prime_number_test_seconds_max{env=\"test\",env2=\"test\",prime=\"true\",registry=\"prometheus\"}"))
-                .body(containsString(
-                        "example_prime_number_test_seconds_count{env=\"test\",env2=\"test\",prime=\"true\",registry=\"prometheus\"} 1.0"));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200).extract().asInputStream())
+                .hasMetricWithExactLabels("example_prime_number_test_seconds_sum",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("prime", "true"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabels("example_prime_number_test_seconds_max",
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("prime", "true"), entry("registry", "prometheus"))
+                .hasMetricWithExactLabelsAndValue("example_prime_number_test_seconds_count", 1.0,
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("prime", "true"), entry("registry", "prometheus"));
         when().get("/example/prime/7919").then().statusCode(200);
-        when().get("/q/metrics").then().statusCode(200)
-                .body(containsString(
-                        "example_prime_number_test_seconds_count{env=\"test\",env2=\"test\",prime=\"true\",registry=\"prometheus\"} 2.0"));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200).extract().asInputStream())
+                .hasMetricWithExactLabelsAndValue("example_prime_number_test_seconds_count", 2.0,
+                        entry("env", "test"), entry("env2", "test"),
+                        entry("prime", "true"), entry("registry", "prometheus"));
     }
 }

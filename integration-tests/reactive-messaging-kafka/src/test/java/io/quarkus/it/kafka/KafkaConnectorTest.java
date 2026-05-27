@@ -1,10 +1,10 @@
 package io.quarkus.it.kafka;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,16 +118,18 @@ public class KafkaConnectorTest {
     @Test
     @Order(8)
     void testPrometheusScrapeEndpointOpenMetrics() {
-        given().header("Accept", "text/plain; version=0.0.4; charset=utf-8")
+        assertMetrics(given().header("Accept", "text/plain; version=0.0.4; charset=utf-8")
                 .when().get("/q/metrics")
                 .then().statusCode(200)
-                .body(containsString("quarkus_messaging_message_duration_seconds_max"))
-                .body(containsString("quarkus_messaging_message_duration_seconds_sum"))
-                .body(containsString("quarkus_messaging_message_duration_seconds_count"))
-                .body(containsString("quarkus_messaging_message_count_total"))
-                .body(containsString("quarkus_messaging_message_acks_total"))
-                .body(containsString("kafka_app_info_start_time_ms"))
-                .body(not(containsString("kafka_version=\"unknown\"")));
+                .extract().asInputStream())
+                .hasMetric("quarkus_messaging_message_duration_seconds_max")
+                .hasMetric("quarkus_messaging_message_duration_seconds_sum")
+                .hasMetric("quarkus_messaging_message_duration_seconds_count")
+                .hasMetric("quarkus_messaging_message_count_total")
+                .hasMetric("quarkus_messaging_message_acks_total")
+                .hasMetric("kafka_app_info_start_time_ms")
+                .doesNotHaveMetricWithLabels("kafka_app_info_start_time_ms",
+                        entry("kafka_version", "unknown"));
     }
 
 }

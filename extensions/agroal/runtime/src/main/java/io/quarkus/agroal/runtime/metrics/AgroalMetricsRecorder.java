@@ -83,7 +83,7 @@ public class AgroalMetricsRecorder {
                         .tag("datasource", tagValue)
                         .buildCounter(metrics::flushCount);
                 metricsFactory.builder("agroal.invalid.count")
-                        .description("Number of connections removed from the pool for being idle.")
+                        .description("Number of connections removed from the pool for being invalid.")
                         .tag("datasource", tagValue)
                         .buildCounter(metrics::invalidCount);
                 metricsFactory.builder("agroal.reap.count")

@@ -7,11 +7,12 @@ import org.hibernate.reactive.mutiny.Mutiny
 class KotlinJpaOperations : AbstractManagedJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
         session: Uni<Mutiny.Session>,
+        entityClass: Class<*>,
         query: String,
         originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?,
-    ) = PanacheQueryImpl<Any>(session, query, originalQuery, orderBy, paramsArrayOrMap)
+    ) = PanacheQueryImpl<Any>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>): Uni<MutableList<*>> =
         query.list() as Uni<MutableList<*>>

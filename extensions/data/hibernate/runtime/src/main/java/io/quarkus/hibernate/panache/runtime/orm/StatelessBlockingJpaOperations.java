@@ -11,9 +11,10 @@ import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperations<PanacheBlockingQuery<?>> {
 
     @Override
-    protected PanacheBlockingQuery<?> createPanacheQuery(StatelessSession session, String query, String originalQuery,
+    protected PanacheBlockingQuery<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
+            String originalQuery,
             String orderBy, Object paramsArrayOrMap) {
-        return new PanacheBlockingQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheBlockingQueryImpl<>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     @Override

@@ -11,10 +11,11 @@ import io.smallrye.mutiny.Uni;
 public class StatelessReactiveJpaOperations extends AbstractStatelessJpaOperations<PanacheReactiveQuery<?>> {
 
     @Override
-    protected PanacheReactiveQuery<?> createPanacheQuery(Uni<Mutiny.StatelessSession> session, String query,
+    protected PanacheReactiveQuery<?> createPanacheQuery(Uni<Mutiny.StatelessSession> session, Class<?> entityClass,
+            String query,
             String originalQuery,
             String orderBy, Object paramsArrayOrMap) {
-        return new PanacheStatelessReactiveQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheStatelessReactiveQueryImpl<>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     @Override

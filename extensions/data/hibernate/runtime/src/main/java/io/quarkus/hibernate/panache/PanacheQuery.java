@@ -139,13 +139,16 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
         Query page(long pageIndex, int pageSize);
 
         /**
-         * Sets the current page using cursor-based pagination.
+         * Sets the current page using cursor-based pagination (keyset pagination).
+         * The provided {@link jakarta.data.Order} specifies the sort criteria used to define
+         * the keyset columns.
          *
          * @param pageIndex the 0-based page index
          * @param pageSize the number of results per page
+         * @param order the sort criteria for keyset pagination
          * @return this query, modified
          */
-        Query cursor(long pageIndex, int pageSize);
+        Query cursor(long pageIndex, int pageSize, jakarta.data.Order<?> order);
 
         /**
          * Moves to the next page.

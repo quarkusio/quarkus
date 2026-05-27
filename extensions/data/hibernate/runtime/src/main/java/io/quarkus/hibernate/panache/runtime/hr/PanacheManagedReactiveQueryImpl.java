@@ -86,7 +86,7 @@ public class PanacheManagedReactiveQueryImpl<Entity> implements PanacheReactiveQ
         }
 
         @Override
-        public PanacheReactiveQuery<Entity> cursor(long pageIndex, int pageSize) {
+        public PanacheReactiveQuery<Entity> cursor(long pageIndex, int pageSize, jakarta.data.Order<?> order) {
             throw new UnsupportedOperationException("Cursor-based pagination is not supported by Hibernate Reactive");
         }
 
@@ -129,9 +129,11 @@ public class PanacheManagedReactiveQueryImpl<Entity> implements PanacheReactiveQ
         }
     };
 
-    PanacheManagedReactiveQueryImpl(Uni<Mutiny.Session> session, String query, String originalQuery, String orderBy,
+    PanacheManagedReactiveQueryImpl(Uni<Mutiny.Session> session, Class<?> entityClass, String query, String originalQuery,
+            String orderBy,
             Object paramsArrayOrMap) {
-        delegate = new CommonManagedPanacheQueryImpl<Entity>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        delegate = new CommonManagedPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, orderBy,
+                paramsArrayOrMap);
     }
 
     PanacheManagedReactiveQueryImpl(CommonManagedPanacheQueryImpl<Entity> delegate) {

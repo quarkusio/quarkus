@@ -9,9 +9,10 @@ public class CommonStatelessPanacheQueryImpl<Entity> extends CommonAbstractPanac
 
     protected Uni<Mutiny.StatelessSession> em;
 
-    public CommonStatelessPanacheQueryImpl(Uni<Mutiny.StatelessSession> em, String query, String originalQuery, String orderBy,
+    public CommonStatelessPanacheQueryImpl(Uni<Mutiny.StatelessSession> em, Class<?> entityClass, String query,
+            String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
-        super(em, query, originalQuery, orderBy, paramsArrayOrMap);
+        super(em, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     protected CommonStatelessPanacheQueryImpl(CommonStatelessPanacheQueryImpl<?> previousQuery, String newQueryString,

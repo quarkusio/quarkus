@@ -23,7 +23,6 @@ import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_W
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST_SCOPED;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
@@ -668,8 +667,7 @@ class RestClientReactiveProcessor {
                     .orElse(BuiltinScope.APPLICATION).getInfo();
 
             Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
-            boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
-                    || requestedRestClientMocks.contains(jaxrsInterface.name());
+            boolean lazyDelegate = requestedRestClientMocks.contains(jaxrsInterface.name());
 
             final String configKeyValue = configKey.orElse(null);
             final String baseUriValue = baseUri.orElse("");

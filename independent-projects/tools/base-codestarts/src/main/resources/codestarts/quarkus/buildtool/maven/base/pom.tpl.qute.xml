@@ -163,17 +163,25 @@
                 <configuration>
                     <parameters>true</parameters>
                 </configuration>
-                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
+                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate') || input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
                 <executions>
                     <execution>
                         <id>default-compile</id>
                         <configuration>
                             <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                             <annotationProcessorPaths>
+                                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
                                 <annotationProcessorPath>
                                     <groupId>org.hibernate.orm</groupId>
                                     <artifactId>hibernate-processor</artifactId>
                                 </annotationProcessorPath>
+                                {/if}
+                                {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
+                                <annotationProcessorPath>
+                                    <groupId>org.infinispan.protostream</groupId>
+                                    <artifactId>protostream-processor</artifactId>
+                                </annotationProcessorPath>
+                                {/if}
                             </annotationProcessorPaths>
                         </configuration>
                     </execution>

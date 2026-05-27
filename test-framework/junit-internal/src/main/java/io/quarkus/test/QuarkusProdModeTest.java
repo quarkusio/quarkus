@@ -31,6 +31,8 @@ import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
@@ -132,6 +134,7 @@ public class QuarkusProdModeTest
     private String[] commandLineParameters = new String[0];
 
     private boolean clearRestAssuredURL;
+    private boolean randomPort;
 
     public QuarkusProdModeTest() {
         // If there is an application.properties resource available then load the properties
@@ -249,6 +252,15 @@ public class QuarkusProdModeTest
      */
     public QuarkusProdModeTest setRuntimeProperties(Map<String, String> runtimeProperties) {
         this.runtimeProperties = runtimeProperties;
+        return this;
+    }
+
+    /**
+     * If set, the application will use a random HTTP port (quarkus.http.port=0).
+     * The actual port is detected from the process output and configured in RestAssured.
+     */
+    public QuarkusProdModeTest withRandomPort() {
+        this.randomPort = true;
         return this;
     }
 
@@ -578,6 +590,9 @@ public class QuarkusProdModeTest
             runtimeProperties = new HashMap<>(runtimeProperties);
         }
         runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
+        if (randomPort) {
+            runtimeProperties.put(QUARKUS_HTTP_PORT_PROPERTY, "0");
+        }
         if (logFileName != null) {
             logfilePath = builtResultArtifactParent.resolve(logFileName);
             runtimeProperties.put("quarkus.log.file.path", logfilePath.toAbsolutePath().toString());
@@ -647,18 +662,30 @@ public class QuarkusProdModeTest
         }
     }
 
-    private void setupRestAssured() {
-        Integer httpPort = Optional.ofNullable(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY))
-                .map(Integer::parseInt)
-                .orElse(DEFAULT_HTTP_PORT_INT);
+    private static final Pattern LISTENING_REGEX = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
 
-        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
-        // which is done in `RestAssuredStateManager.setURL`.
-        if (httpPort == 0) {
-            httpPort = null;
+    private void setupRestAssured() {
+        Integer httpPort = null;
+        boolean isSsl = false;
+
+        if (randomPort && startupConsoleOutput != null) {
+            Matcher matcher = LISTENING_REGEX.matcher(startupConsoleOutput);
+            if (matcher.find()) {
+                httpPort = Integer.parseInt(matcher.group(2));
+                isSsl = "https".equals(matcher.group(1));
+            }
         }
 
-        RestAssuredStateManager.setURL(false, httpPort);
+        if (httpPort == null) {
+            httpPort = Optional.ofNullable(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY))
+                    .map(Integer::parseInt)
+                    .orElse(DEFAULT_HTTP_PORT_INT);
+            if (httpPort == 0) {
+                httpPort = null;
+            }
+        }
+
+        RestAssuredStateManager.setURL(isSsl, httpPort);
     }
 
     private void ensureApplicationStartupOrFailure() throws IOException {

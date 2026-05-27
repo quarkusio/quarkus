@@ -73,6 +73,7 @@ import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -145,6 +146,7 @@ public class QuarkusDevModeTest
     private String[] commandLineArgs = new String[0];
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
+    private boolean randomPort = false;
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -312,7 +314,11 @@ public class QuarkusDevModeTest
 
             // Capture the listening port if available and register it in ValueRegistry
             Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
-            listeningAddress.ifPresent(address -> address.register(valueRegistry, newConfig));
+            listeningAddress.ifPresent(address -> {
+                address.register(valueRegistry, newConfig);
+                // Configure RestAssured with the detected port
+                RestAssuredStateManager.setURL(address.isSsl(), address.port());
+            });
 
             // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);
@@ -393,6 +399,7 @@ public class QuarkusDevModeTest
         ConfigInjector.clear(context);
         ValueRegistryInjector.clear(context);
         inMemoryLogHandler.clearRecords();
+        RestAssuredStateManager.clearState();
     }
 
     private DevModeMain newDevModeMain(ExtensionContext extensionContext, Path deploymentDir, Path testSourceDir,
@@ -415,6 +422,9 @@ public class QuarkusDevModeTest
             // Merge TestResource configuration
             Properties properties = new Properties();
             properties.putAll(config);
+            if (randomPort) {
+                properties.put("quarkus.http.port", "0");
+            }
             ExportUtil.mergeCustomApplicationProperties(archive, properties);
 
             exportAndGenerateSourceTree(archive, classes, testSourceDir, deploymentSourcePath, deploymentResourcePath);
@@ -876,6 +886,11 @@ public class QuarkusDevModeTest
 
     public boolean isAllowFailedStart() {
         return allowFailedStart;
+    }
+
+    public QuarkusDevModeTest withRandomPort() {
+        this.randomPort = true;
+        return this;
     }
 
     public QuarkusDevModeTest setAllowFailedStart(boolean allowFailedStart) {

@@ -16,7 +16,7 @@ public class PanacheHibernateRecorder {
         }
     }
 
-    public void setRepositoryClassesToEntityClasses(Map<Class<?>, Class<?>> repositoryClassesToEntityClasses) {
+    public void setRepositoryClassesToEntityClasses(Map<String, String> repositoryClassesToEntityClasses) {
         AbstractJpaOperations.setRepositoryClassesToEntityClasses(repositoryClassesToEntityClasses);
     }
 }

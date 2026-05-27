@@ -344,15 +344,13 @@ The builder supports the following options:
 Registration reg = receivers.newReceiver(OrderPlaced.class)
         .setQualifiers(new Urgent.Literal())                        // <1>
         .setExecutionModel(ExecutionModel.VIRTUAL_THREAD)           // <2>
-        .setResponseType(String.class)                              // <3>
-        .notify(ctx -> {                                            // <4>
+        .notify(String.class, ctx -> {                              // <3>
             return Uni.createFrom().item("processed-" + ctx.signal().orderId());
         });
 ----
 <1> Set qualifiers for type-safe resolution.
 <2> Set the execution model (`BLOCKING`, `NON_BLOCKING`, or `VIRTUAL_THREAD`).
-<3> Set the response type for request-reply patterns.
-<4> The callback receives a `SignalContext` and returns a `Uni`.
+<3> The response type and callback; the callback receives a `SignalContext` and returns a `Uni`.
 
 For simple fire-and-forget receivers, a `Consumer`-based callback can be used:
 

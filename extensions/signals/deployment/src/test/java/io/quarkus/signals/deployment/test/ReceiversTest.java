@@ -90,8 +90,7 @@ public class ReceiversTest extends AbstractSignalTest {
     @Test
     public void testRegisterWithResponse() {
         Receivers.Registration reg = receivers.newReceiver(Order.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     return Uni.createFrom().item("processed_" + ctx.signal().id());
                 });
         try {
@@ -159,8 +158,7 @@ public class ReceiversTest extends AbstractSignalTest {
         AtomicBoolean requestContextActive = new AtomicBoolean();
 
         var reg = receivers.newReceiver(Order.class)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     requestContextActive.set(Arc.container().requestContext().isActive());
                     // Verify that a @RequestScoped bean can be used
                     requestBean.ping();
@@ -203,8 +201,7 @@ public class ReceiversTest extends AbstractSignalTest {
 
         var reg = receivers.newReceiver(Order.class)
                 .setExecutionModel(ExecutionModel.BLOCKING)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     blockingAllowed.set(BlockingOperationControl.isBlockingAllowed());
                     return Uni.createFrom().item("done");
                 });
@@ -225,8 +222,7 @@ public class ReceiversTest extends AbstractSignalTest {
 
         var reg = receivers.newReceiver(Order.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .setResponseType(String.class)
-                .notify(ctx -> {
+                .notify(String.class, ctx -> {
                     blockingAllowed.set(BlockingOperationControl.isBlockingAllowed());
                     return Uni.createFrom().item("done");
                 });

@@ -141,9 +141,8 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @Test
     public void testRequestFailureWorkerThread() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
 
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {
@@ -163,9 +162,8 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @Test
     public void testRequestFailureEventLoop() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
 
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {
@@ -185,9 +183,8 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @Test
     public void testBlockingRequestFailure() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
 
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {
@@ -205,9 +202,8 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @Test
     public void testBlockingRequestCheckedExceptionWrapped() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
 
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {
@@ -299,7 +295,7 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     public void testPublishUniFailure() {
         var reg = receivers.newReceiver(Cmd.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
+                .notify(Void.class, new Function<SignalContext<Cmd>, Uni<Void>>() {
                     @Override
                     public Uni<Void> apply(SignalContext<Cmd> ctx) {
                         return Uni.createFrom().failure(new IllegalStateException("publish-uni-boom"));
@@ -320,7 +316,7 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     public void testSendUniFailure() {
         var reg = receivers.newReceiver(Cmd.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<Void>>() {
+                .notify(Void.class, new Function<SignalContext<Cmd>, Uni<Void>>() {
                     @Override
                     public Uni<Void> apply(SignalContext<Cmd> ctx) {
                         return Uni.createFrom().failure(new IllegalStateException("send-uni-boom"));
@@ -339,9 +335,8 @@ public class ReceiverFailureTest extends AbstractSignalTest {
     @Test
     public void testRequestUniFailure() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.NON_BLOCKING)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {
                         return Uni.createFrom().failure(new IllegalStateException("request-uni-boom"));

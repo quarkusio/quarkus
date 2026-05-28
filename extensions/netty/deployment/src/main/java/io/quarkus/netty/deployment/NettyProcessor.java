@@ -193,6 +193,7 @@ class NettyProcessor {
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
+                .addRuntimeInitializedClass("io.netty.util.internal.CleanerJava24Linker")
                 // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 // Runtime initialize to respect run-time provided values of the following properties:
@@ -226,7 +227,8 @@ class NettyProcessor {
                     // when initializing CRLF_BUF and ZERO_CRLF_CRLF_BUF
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpContentCompressor");
             // Zstd is an optional dependency, runtime initialize to avoid IllegalStateException when zstd is not
             // available. This will result in a runtime ClassNotFoundException if the user tries to use zstd.
             if (!QuarkusClassLoader.isClassPresentAtRuntime("com.github.luben.zstd.Zstd")) {

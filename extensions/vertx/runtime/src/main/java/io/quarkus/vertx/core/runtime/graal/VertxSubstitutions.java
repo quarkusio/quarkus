@@ -17,15 +17,14 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import io.vertx.core.spi.transport.Transport;
 
-@TargetClass(className = "io.vertx.core.impl.VertxBuilder")
-final class Target_io_vertx_core_impl_VertxBuilder {
-    @Substitute
-    public static Transport nativeTransport() {
-        return io.vertx.core.transport.Transport.NIO.implementation();
-    }
-}
+//@TargetClass(className = "io.vertx.core.impl.VertxBuilder")
+//final class Target_io_vertx_core_impl_VertxBuilder {
+//    @Substitute
+//    public static Transport nativeTransport() {
+//        return io.vertx.core.transport.Transport.NIO.implementation();
+//    }
+//}
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {

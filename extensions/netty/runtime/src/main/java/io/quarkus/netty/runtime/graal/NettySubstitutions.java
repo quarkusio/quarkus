@@ -26,6 +26,7 @@ import java.util.function.BooleanSupplier;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
@@ -56,6 +57,7 @@ import io.netty.handler.ssl.CipherSuiteFilter;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator;
 import io.netty.handler.ssl.JdkApplicationProtocolNegotiator;
+import io.netty.handler.ssl.OpenSslCredential;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
@@ -135,11 +137,31 @@ final class Target_io_netty_handler_ssl_OpenSsl {
 
     @Alias
     @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static boolean USE_KEYMANAGER_FACTORY = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
     private static boolean SUPPORTS_OCSP = false;
 
     @Alias
     @RecomputeFieldValue(kind = Kind.FromAlias)
-    static Set<String> SUPPORTED_PROTOCOLS_SET = Collections.emptySet();
+    private static boolean TLSV13_SUPPORTED = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static boolean IS_BORINGSSL = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static boolean IS_AWSLC = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static Set<String> CLIENT_DEFAULT_PROTOCOLS = Collections.emptySet();
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static Set<String> SERVER_DEFAULT_PROTOCOLS = Collections.emptySet();
 
     @Substitute
     public static boolean isAvailable() {
@@ -186,6 +208,7 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
             KeyManagerFactory keyManagerFactory, Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
             ApplicationProtocolConfig apn, String[] protocols, long sessionCacheSize, long sessionTimeout,
             SecureRandom secureRandom, String keyStoreType, String endpointIdentificationAlgorithm,
+            List<SNIServerName> serverNames,
             Target_io_netty_handler_ssl_ResumptionController resumptionController) throws SSLException {
     }
 }
@@ -242,7 +265,8 @@ final class Target_io_netty_handler_ssl_SslContext {
             Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn,
             long sessionCacheSize, long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls,
             boolean enableOcsp, SecureRandom secureRandom, String keyStoreType,
-            Map.Entry<SslContextOption<?>, Object>... ctxOptions) throws SSLException {
+            Map.Entry<SslContextOption<?>, Object>[] ctxOptions,
+            List<OpenSslCredential> credentials) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
@@ -261,7 +285,9 @@ final class Target_io_netty_handler_ssl_SslContext {
             Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
             long sessionCacheSize, long sessionTimeout, boolean enableOcsp,
             SecureRandom secureRandom, String keyStoreType, String endpointIdentificationAlgorithm,
-            Map.Entry<SslContextOption<?>, Object>... options) throws SSLException {
+            List<SNIServerName> serverNames,
+            Map.Entry<SslContextOption<?>, Object>[] options,
+            List<OpenSslCredential> credentials) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
@@ -269,7 +295,7 @@ final class Target_io_netty_handler_ssl_SslContext {
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(sslContextProvider,
                 trustCert, trustManagerFactory, keyCertChain, key, keyPassword,
                 keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize,
-                sessionTimeout, secureRandom, keyStoreType, endpointIdentificationAlgorithm,
+                sessionTimeout, secureRandom, keyStoreType, endpointIdentificationAlgorithm, serverNames,
                 resumptionController);
     }
 

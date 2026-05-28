@@ -1,6 +1,5 @@
 package io.quarkus.virtual.disabled;
 
-import io.smallrye.common.vertx.ContextLocals;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;

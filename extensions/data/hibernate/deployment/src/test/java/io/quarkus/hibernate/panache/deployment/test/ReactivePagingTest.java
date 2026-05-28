@@ -335,7 +335,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> noPaging() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(_MyReactiveEntity.foo.asc());
 
         return query.list().map(all -> {
             assertThat(all).hasSize(25);

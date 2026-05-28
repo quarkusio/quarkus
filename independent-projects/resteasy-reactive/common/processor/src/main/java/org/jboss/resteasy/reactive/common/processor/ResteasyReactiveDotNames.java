@@ -213,6 +213,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
     public static final DotName REST_MULTI = DotName.createSimple(RestMulti.class.getName());
+    public static final DotName REST_MULTI_RESPONSE = DotName
+            .createSimple("org.jboss.resteasy.reactive.client.RestMultiResponse");
     public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     public static final DotName COMPLETABLE_FUTURE = DotName.createSimple(CompletableFuture.class.getName());
     public static final DotName PUBLISHER = DotName.createSimple(Publisher.class.getName());

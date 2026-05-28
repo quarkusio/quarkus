@@ -73,7 +73,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(rootPath)) {
             return;
         }
-        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
+        PathTreeVisit.walk(getContainerPath(), rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
                 visitor);
 
     }
@@ -84,7 +84,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(rootPath)) {
             return;
         }
-        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, Map.of(), visitor);
+        PathTreeVisit.walk(getContainerPath(), rootPath, rootPath, pathFilter, Map.of(), visitor);
 
     }
 
@@ -98,8 +98,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(walkDir)) {
             return;
         }
-        final Path root = getRootPath();
-        PathTreeVisit.walk(root, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
+        PathTreeVisit.walk(getContainerPath(), getRootPath(), walkDir, pathFilter, getMultiReleaseMapping(), visitor);
     }
 
     private void ensureResourcePath(String path) {
@@ -125,8 +124,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
         if (!Files.exists(path)) {
             return func.apply(null);
         }
-        final Path root = getRootPath();
-        return PathTreeVisit.process(root, root, path, pathFilter, func);
+        return PathTreeVisit.process(getContainerPath(), getRootPath(), path, pathFilter, func);
     }
 
     @Override
@@ -141,8 +139,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
             consumer.accept(null);
             return;
         }
-        final Path root = getRootPath();
-        PathTreeVisit.consume(root, root, path, pathFilter, consumer);
+        PathTreeVisit.consume(getContainerPath(), getRootPath(), path, pathFilter, consumer);
     }
 
     @Override

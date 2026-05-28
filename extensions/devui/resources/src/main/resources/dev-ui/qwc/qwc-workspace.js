@@ -62,6 +62,8 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         .actionSplitScreen {
             display: flex;
             flex-direction: column;
+            height: 100%;
+            overflow: auto;
         }
     
         .actionButtonBar {
@@ -111,8 +113,15 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            overflow: auto;
+            max-height: 100%;
         }
-    
+
+        .mainPart {
+            height: 100%;
+            overflow: auto;
+        }
+
         vaadin-progress-bar {
             width: 20%;
         }

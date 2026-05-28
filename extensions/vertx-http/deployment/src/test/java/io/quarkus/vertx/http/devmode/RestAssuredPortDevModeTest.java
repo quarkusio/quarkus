@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.devmode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,13 +18,16 @@ public class RestAssuredPortDevModeTest {
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyRoute.class))
-            .withRandomPort();
+            .forceRandomizedHttpPort();
 
     @Test
     void restAssuredUsesConfiguredPort() {
         RestAssured.given().get("/hello").then()
                 .statusCode(200)
                 .body(Matchers.equalTo("hello"));
+        // should be random
+        Assertions.assertThat(test.configuredHttpPort()).isNotEqualTo(8080);
+        Assertions.assertThat(test.configuredHttpPort()).isNotEqualTo(8081);
     }
 
     @ApplicationScoped

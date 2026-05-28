@@ -44,7 +44,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -115,6 +114,8 @@ public class QuarkusDevModeTest
     public static final OpenOption[] OPEN_OPTIONS = { StandardOpenOption.SYNC, StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE };
     private Handler[] originalRootLoggerHandlers;
+    private static final String QUARKUS_HTTP_PORT_PROPERTY = "quarkus.http.port";
+    private static final String RANDOM_PORT = "0";
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -147,6 +148,7 @@ public class QuarkusDevModeTest
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
     private boolean randomPort = false;
+    private Integer configuredHttpPort;
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -317,6 +319,7 @@ public class QuarkusDevModeTest
             listeningAddress.ifPresent(address -> {
                 address.register(valueRegistry, newConfig);
                 // Configure RestAssured with the detected port
+                this.configuredHttpPort = address.port();
                 RestAssuredStateManager.setURL(address.isSsl(), address.port());
             });
 
@@ -423,10 +426,10 @@ public class QuarkusDevModeTest
             Properties properties = new Properties();
             properties.putAll(config);
             if (randomPort) {
-                properties.put("quarkus.http.port", "0");
+                // Random port takes precedence over application.properties and config
+                properties.put(QUARKUS_HTTP_PORT_PROPERTY, RANDOM_PORT);
             }
             ExportUtil.mergeCustomApplicationProperties(archive, properties);
-
             exportAndGenerateSourceTree(archive, classes, testSourceDir, deploymentSourcePath, deploymentResourcePath);
 
             // TODO: again a hack, assumes the sources dir is one dir above java sources path
@@ -445,6 +448,10 @@ public class QuarkusDevModeTest
             context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
             context.getBuildSystemProperties().putAll(buildSystemProperties);
             context.getBuildSystemProperties().putAll(config);
+            if (randomPort) {
+                // Random port takes precedence over build system properties and config
+                context.getBuildSystemProperties().put(QUARKUS_HTTP_PORT_PROPERTY, RANDOM_PORT);
+            }
             context.setCacheDir(cache.toFile());
 
             final DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
@@ -888,9 +895,33 @@ public class QuarkusDevModeTest
         return allowFailedStart;
     }
 
-    public QuarkusDevModeTest withRandomPort() {
+    /**
+     * If set, the application will use a random HTTP port (quarkus.http.port=0).
+     * The actual port is detected from the console output and configured in RestAssured.
+     * <p>
+     * This setting takes precedence over <code>quarkus.http.port</code> configured in
+     * application.properties or through build system properties.
+     */
+    public QuarkusDevModeTest forceRandomizedHttpPort() {
         this.randomPort = true;
         return this;
+    }
+
+    /**
+     * Returns the actual HTTP port the application is listening on in dev mode.
+     * <p>
+     * This is particularly useful when {@link #forceRandomizedHttpPort()} is used, as it returns
+     * the randomly assigned port number that was detected from the application startup output.
+     * <p>
+     * When a fixed port is configured (via application.properties or build system properties),
+     * this method returns that configured port.
+     * <p>
+     * Returns {@code null} if the port could not be determined or if the application hasn't started yet.
+     *
+     * @return the port number the application is listening on, or {@code null} if not available
+     */
+    public Integer configuredHttpPort() {
+        return this.configuredHttpPort;
     }
 
     public QuarkusDevModeTest setAllowFailedStart(boolean allowFailedStart) {

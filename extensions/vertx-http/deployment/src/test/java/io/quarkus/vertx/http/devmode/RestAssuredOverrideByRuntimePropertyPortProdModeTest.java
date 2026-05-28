@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.devmode;
 
+import java.util.Map;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
@@ -12,12 +14,13 @@ import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
-public class RestAssuredPortProdModeTest {
+public class RestAssuredOverrideByRuntimePropertyPortProdModeTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest prodMode = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyRoute.class))
+            .setRuntimeProperties(Map.of("quarkus.http.port", "9292"))
             .setRun(true)
             .forceRandomizedHttpPort();
 
@@ -26,9 +29,8 @@ public class RestAssuredPortProdModeTest {
         RestAssured.given().get("/hello").then()
                 .statusCode(200)
                 .body(Matchers.equalTo("hello"));
-        // should be random
-        Assertions.assertThat(prodMode.configuredHttpPort()).isNotEqualTo(8080);
-        Assertions.assertThat(prodMode.configuredHttpPort()).isNotEqualTo(8081);
+        // forceRandomizedHttpPort() take precedence
+        Assertions.assertThat(prodMode.configuredHttpPort()).isNotEqualTo(9292);
     }
 
     @ApplicationScoped

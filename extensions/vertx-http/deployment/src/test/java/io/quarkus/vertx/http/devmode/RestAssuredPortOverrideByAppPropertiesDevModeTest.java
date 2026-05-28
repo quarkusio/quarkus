@@ -5,30 +5,32 @@ import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusProdModeTest;
+import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
-public class RestAssuredPortProdModeTest {
+public class RestAssuredPortOverrideByAppPropertiesDevModeTest {
 
     @RegisterExtension
-    static final QuarkusProdModeTest prodMode = new QuarkusProdModeTest()
+    static final QuarkusDevModeTest devMode = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoute.class))
-            .setRun(true)
+                    .addClasses(MyRoute.class)
+                    .addAsResource(new StringAsset("""
+                            quarkus.http.port=42929
+                            """), "application.properties"))
             .forceRandomizedHttpPort();
 
     @Test
-    void restAssuredUsesRandomPort() {
+    void restAssuredUsesConfiguredPort() {
         RestAssured.given().get("/hello").then()
                 .statusCode(200)
                 .body(Matchers.equalTo("hello"));
-        // should be random
-        Assertions.assertThat(prodMode.configuredHttpPort()).isNotEqualTo(8080);
-        Assertions.assertThat(prodMode.configuredHttpPort()).isNotEqualTo(8081);
+        //        forceRandomizedHttpPort() take precedence
+        Assertions.assertThat(devMode.configuredHttpPort()).isNotEqualTo(42929);
     }
 
     @ApplicationScoped

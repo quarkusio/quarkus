@@ -135,6 +135,7 @@ public class QuarkusProdModeTest
 
     private boolean clearRestAssuredURL;
     private boolean randomPort;
+    private Integer configuredHttpPort;
 
     public QuarkusProdModeTest() {
         // If there is an application.properties resource available then load the properties
@@ -258,10 +259,30 @@ public class QuarkusProdModeTest
     /**
      * If set, the application will use a random HTTP port (quarkus.http.port=0).
      * The actual port is detected from the process output and configured in RestAssured.
+     * <p>
+     * This setting takes precedence over <code>quarkus.http.port</code> configured through
+     * {@link #setRuntimeProperties(Map)} or in application.properties.
      */
-    public QuarkusProdModeTest withRandomPort() {
+    public QuarkusProdModeTest forceRandomizedHttpPort() {
         this.randomPort = true;
         return this;
+    }
+
+    /**
+     * Returns the actual HTTP port the application is listening on.
+     * <p>
+     * This is particularly useful when {@link #forceRandomizedHttpPort()} is used, as it returns
+     * the randomly assigned port number that was detected from the application startup output.
+     * <p>
+     * When a fixed port is configured (via application.properties or {@link #setRuntimeProperties(Map)}),
+     * this method returns that configured port.
+     * <p>
+     * Returns {@code null} if the port could not be determined or if the application hasn't started yet.
+     *
+     * @return the port number the application is listening on, or {@code null} if not available
+     */
+    public Integer configuredHttpPort() {
+        return this.configuredHttpPort;
     }
 
     public QuarkusProdModeTest setLogRecordPredicate(Predicate<LogRecord> predicate) {
@@ -589,9 +610,9 @@ public class QuarkusProdModeTest
             // copy the use supplied properties since it might be an immutable map
             runtimeProperties = new HashMap<>(runtimeProperties);
         }
-        runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
-        if (randomPort) {
-            runtimeProperties.put(QUARKUS_HTTP_PORT_PROPERTY, "0");
+
+        if (!randomPort) {
+            runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
         }
         if (logFileName != null) {
             logfilePath = builtResultArtifactParent.resolve(logFileName);
@@ -602,6 +623,11 @@ public class QuarkusProdModeTest
         // ensure that the properties obtained from QuarkusTestResourceLifecycleManager
         // are propagated to runtime
         runtimeProperties.putAll(testResourceProperties);
+
+        if (randomPort) {
+            // Random port takes precedence over all other sources
+            runtimeProperties.put(QUARKUS_HTTP_PORT_PROPERTY, "0");
+        }
 
         List<String> systemProperties = runtimeProperties.entrySet().stream()
                 .map(e -> "-D" + e.getKey() + "=" + e.getValue()).collect(Collectors.toList());
@@ -684,7 +710,7 @@ public class QuarkusProdModeTest
                 httpPort = null;
             }
         }
-
+        this.configuredHttpPort = httpPort;
         RestAssuredStateManager.setURL(isSsl, httpPort);
     }
 

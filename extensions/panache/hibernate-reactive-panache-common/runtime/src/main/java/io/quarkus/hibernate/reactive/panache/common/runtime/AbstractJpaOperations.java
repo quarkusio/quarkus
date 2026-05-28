@@ -37,7 +37,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
 
     protected abstract PanacheQueryType createPanacheQuery(Uni<SessionType> session, Class<?> entityClass, String query,
             String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap);
 
     protected abstract Uni<List<?>> list(PanacheQueryType query);
@@ -101,10 +101,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, sort, params);
         }
         String hqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, sort, params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
@@ -121,10 +121,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(session, entityClass, panacheQuery, panacheQuery, sort, params);
         }
         String hqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, entityClass, hqlQuery, panacheQuery, sort, params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
@@ -168,7 +168,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         Uni<SessionType> session = getSession(entityClass);
-        return createPanacheQuery(session, entityClass, query, null, PanacheJpaUtil.toOrderBy(sort), null);
+        return createPanacheQuery(session, entityClass, query, null, sort, null);
     }
 
     public Uni<List<?>> listAll(Class<?> entityClass) {

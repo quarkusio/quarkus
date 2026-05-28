@@ -20,7 +20,6 @@ import org.hibernate.Filter;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
-import org.hibernate.query.Order;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.spi.SqmQuery;
 
@@ -29,6 +28,7 @@ import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
@@ -75,7 +75,7 @@ public class CommonPanacheQueryImpl<Entity> {
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
-    private String orderBy;
+    private Sort sort;
     private SharedSessionContract session;
     private Class<?> entityClass;
 
@@ -94,13 +94,13 @@ public class CommonPanacheQueryImpl<Entity> {
     private Class<?> projectionType;
 
     public CommonPanacheQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap) {
         this.session = session;
         this.entityClass = entityClass;
         this.query = query;
         this.originalQuery = originalQuery;
-        this.orderBy = orderBy;
+        this.sort = sort;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
@@ -111,7 +111,7 @@ public class CommonPanacheQueryImpl<Entity> {
         this.entityClass = previousQuery.entityClass;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
-        this.orderBy = previousQuery.orderBy;
+        this.sort = previousQuery.sort;
         this.paramsArrayOrMap = previousQuery.paramsArrayOrMap;
         this.page = previousQuery.page;
         this.count = previousQuery.count;
@@ -263,8 +263,13 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     @SuppressWarnings("unchecked")
-    public void cursored(int pageIndex, int pageSize, List<Order<?>> orders) {
-        this.keyedPage = org.hibernate.query.Page.page(pageSize, pageIndex).keyedBy((List) orders);
+    public void cursor(int pageIndex, int pageSize) {
+        if (sort == null || sort.getColumns().isEmpty()) {
+            throw new UnsupportedOperationException(
+                    "Cannot use cursor-based pagination without sort criteria: use find(entityClass, query, sort) or findAll(entityClass, sort)");
+        }
+        List orders = PanacheJpaUtil.toHibernateOrders(entityClass, sort);
+        this.keyedPage = org.hibernate.query.Page.page(pageSize, pageIndex).keyedBy(orders);
         this.lastKeyedResult = null;
         this.page = null;
         this.range = null;
@@ -529,6 +534,7 @@ public class CommonPanacheQueryImpl<Entity> {
             hibernateQuery = session.createNamedSelectionQuery(namedQuery, projectionType);
         } else {
             try {
+                String orderBy = PanacheJpaUtil.toOrderBy(sort);
                 hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
             } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);

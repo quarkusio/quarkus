@@ -13,6 +13,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.CommonStatelessPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class PanacheStatelessReactiveQueryImpl<Entity> implements PanacheReactiveQuery<Entity> {
@@ -86,7 +87,7 @@ public class PanacheStatelessReactiveQueryImpl<Entity> implements PanacheReactiv
         }
 
         @Override
-        public PanacheReactiveQuery<Entity> cursor(long pageIndex, int pageSize, jakarta.data.Order<?> order) {
+        public PanacheReactiveQuery<Entity> cursor(long pageIndex, int pageSize) {
             throw new UnsupportedOperationException("Cursor-based pagination is not supported by Hibernate Reactive");
         }
 
@@ -130,9 +131,9 @@ public class PanacheStatelessReactiveQueryImpl<Entity> implements PanacheReactiv
     };
 
     PanacheStatelessReactiveQueryImpl(Uni<Mutiny.StatelessSession> session, Class<?> entityClass, String query,
-            String originalQuery, String orderBy,
+            String originalQuery, Sort sort,
             Object paramsArrayOrMap) {
-        delegate = new CommonStatelessPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, orderBy,
+        delegate = new CommonStatelessPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, sort,
                 paramsArrayOrMap);
     }
 

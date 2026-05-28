@@ -5,6 +5,7 @@ import java.util.List;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractManagedJpaOperations;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl<?>> {
@@ -14,9 +15,9 @@ public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl
     @Override
     protected PanacheQueryImpl<?> createPanacheQuery(Uni<Mutiny.Session> session, Class<?> entityClass, String query,
             String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

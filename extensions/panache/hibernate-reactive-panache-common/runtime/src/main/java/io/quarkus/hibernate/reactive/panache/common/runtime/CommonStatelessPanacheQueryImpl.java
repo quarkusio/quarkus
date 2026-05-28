@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.panache.common.runtime;
 import org.hibernate.Filter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class CommonStatelessPanacheQueryImpl<Entity> extends CommonAbstractPanacheQueryImpl<Entity, Mutiny.StatelessSession> {
@@ -10,9 +11,9 @@ public class CommonStatelessPanacheQueryImpl<Entity> extends CommonAbstractPanac
     protected Uni<Mutiny.StatelessSession> em;
 
     public CommonStatelessPanacheQueryImpl(Uni<Mutiny.StatelessSession> em, Class<?> entityClass, String query,
-            String originalQuery, String orderBy,
+            String originalQuery, Sort sort,
             Object paramsArrayOrMap) {
-        super(em, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
+        super(em, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     protected CommonStatelessPanacheQueryImpl(CommonStatelessPanacheQueryImpl<?> previousQuery, String newQueryString,

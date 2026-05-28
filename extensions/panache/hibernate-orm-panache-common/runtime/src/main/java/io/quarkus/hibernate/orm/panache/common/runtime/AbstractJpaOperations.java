@@ -89,7 +89,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
 
     protected abstract PanacheQueryType createPanacheQuery(SessionType session, Class<?> entityClass, String query,
             String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap);
 
     public abstract List<?> list(PanacheQueryType query);
@@ -194,8 +194,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
         }
 
         String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, entityClass, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort),
-                params);
+        return createPanacheQuery(session, entityClass, translatedHqlQuery, panacheQuery, sort, params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
@@ -216,8 +215,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
         }
 
         String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(session, entityClass, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort),
-                params);
+        return createPanacheQuery(session, entityClass, translatedHqlQuery, panacheQuery, sort, params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Parameters params) {
@@ -285,7 +283,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         SessionType session = getSession(entityClass);
-        return createPanacheQuery(session, entityClass, query, null, PanacheJpaUtil.toOrderBy(sort), null);
+        return createPanacheQuery(session, entityClass, query, null, sort, null);
     }
 
     public List<?> listAll(Class<?> entityClass) {

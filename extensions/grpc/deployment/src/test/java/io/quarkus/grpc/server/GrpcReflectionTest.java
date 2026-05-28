@@ -35,7 +35,6 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 
 /**
  * Check the behavior of the reflection service.
@@ -54,18 +53,15 @@ public class GrpcReflectionTest {
     @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
-    private UnicastProcessor<ServerReflectionRequest> processor;
     private ResettableSubscriber<ServerReflectionResponse> subscriber;
 
     @BeforeEach
     public void setUp() {
-        processor = UnicastProcessor.create();
         subscriber = new ResettableSubscriber<>();
     }
 
     @AfterEach
     public void cleanUp() {
-        processor.onComplete();
         subscriber.cancel();
     }
 
@@ -115,10 +111,9 @@ public class GrpcReflectionTest {
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
         subscriber.reset();
-        Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(processor);
+        Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(Multi.createFrom().item(request));
         multi.subscribe().withSubscriber(subscriber);
         subscriber.awaitForSubscription();
-        processor.onNext(request);
         return subscriber.awaitAndGetLast();
     }
 

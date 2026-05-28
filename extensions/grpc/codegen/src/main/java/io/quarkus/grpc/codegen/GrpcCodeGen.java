@@ -428,24 +428,11 @@ public class GrpcCodeGen implements CodeGenProvider {
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);
-                                    //                                    String relativePathStr = relativePath.toString().replace('\\', '/');
-                                    //                                    if (relativePathStr.startsWith("src/main/proto/")) {
-                                    //                                        protoDirectories.add(
-                                    //                                                protoUnzipDir.resolve("src").resolve("main").resolve("proto").toString());
-                                    //                                    } else if (relativePathStr.startsWith("src/test/proto/")) {
-                                    //                                        protoDirectories.add(
-                                    //                                                protoUnzipDir.resolve("src").resolve("test").resolve("proto").toString());
-                                    //                                    } else {
                                     protoDirectories.add(protoUnzipDir.toString());
-                                    //                                    }
                                 } catch (IOException e) {
                                     throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
                                 }
                                 Path outPath = protoUnzipDir.resolve(relativePathStr);
-                                //                                Path outPath = protoUnzipDir;
-                                //                                for (Path part : relativePath) {
-                                //                                    outPath = outPath.resolve(part.toString());
-                                //                                }
                                 try {
                                     Files.createDirectories(outPath.getParent());
                                     if (isDependency) {

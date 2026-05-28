@@ -164,6 +164,21 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .builder("org.apache.pulsar.client.util.SecretsSerializer")
                 .constructors().build());
 
+        // Pulsar 4.2.x's DnsResolverGroupImpl / ConnectionPool use Netty's
+        // ReflectiveChannelFactory against the platform SocketChannel returned by
+        // EventLoopUtil. quarkus-netty registers only the NIO variants; register
+        // Epoll/KQueue/IOUring here so native image can find their no-arg
+        // constructors at runtime. Revisit when bumping pulsar-client — if Pulsar
+        // moves to non-reflective ChannelFactory factories, these can be removed.
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("io.netty.channel.epoll.EpollSocketChannel",
+                        "io.netty.channel.epoll.EpollDatagramChannel",
+                        "io.netty.channel.kqueue.KQueueSocketChannel",
+                        "io.netty.channel.kqueue.KQueueDatagramChannel",
+                        "io.netty.incubator.channel.uring.IOUringSocketChannel",
+                        "io.netty.incubator.channel.uring.IOUringDatagramChannel")
+                .constructors().build());
+
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
                 .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
         for (ClassInfo authPluginClass : authPluginClasses) {

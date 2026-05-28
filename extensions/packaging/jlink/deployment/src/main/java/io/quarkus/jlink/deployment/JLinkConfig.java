@@ -16,46 +16,46 @@ import io.smallrye.config.WithDefault;
 // @WithDynamicDefaults(JLinkConfigDefaults.class)
 public interface JLinkConfig {
     /**
-     * {@return {@code true} to enable {@code jlink} execution, or {@code false} otherwise}
+     * Whether {@code jlink} image generation is enabled.
      */
     @WithDefault("true")
     boolean enabled();
 
     /**
-     * {@return the minimum heap size to configure for the image}
-     * If not given, then no default value will be set in the resultant {@code jlink} image.
+     * The minimum heap size to configure for the image.
+     * If not given, no minimum heap size is specified.
      */
     Optional<MemorySize> minHeapSize();
 
     /**
-     * {@return the maximum heap size to configure for the image}
-     * If not given, then no default value will be set in the resultant {@code jlink} image.
+     * The maximum heap size to configure for the image.
+     * If not given, no maximum heap size is specified.
      */
     Optional<MemorySize> maxHeapSize();
 
     /**
-     * {@return the image output path}
+     * The image output path.
      * If relative, it will be resolved in terms of the packaging output path.
      */
     @WithDefault("image")
     Path imagePath();
 
     /**
-     * {@return the launcher name}
+     * The name of the launcher script generated in the image's {@code bin/} directory.
      */
     //TODO TEMPORARY DEFAULT
     @WithDefault("my-app")
     String launcherName();
 
     /**
-     * {@return the output directory}
+     * The base output directory for the {@code jlink} build.
      */
     // TODO: this should be based on some build system configuration
     @WithDefault("target/jlink-output")
     Path outputDirectory();
 
     /**
-     * {@return the path of the staging directory for {@code jlink} output}
+     * The path of the staging directory used during the {@code jlink} build process, relative to the output directory.
      */
     @WithDefault("staging")
     Path stagingDirectory();

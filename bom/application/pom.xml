@@ -6700,6 +6700,16 @@
                 <artifactId>junit5-virtual-threads</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache-next</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-panache-next-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- End of Relocations, please put new extensions above this list -->
 
         </dependencies>

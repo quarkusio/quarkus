@@ -60,40 +60,7 @@ See the xref:modularity.adoc[modularity guide] for an explanation of boot module
 
 == Configuration reference
 
-`quarkus.jlink.enabled`::
-Whether jlink image generation is enabled.
-Type: `boolean`.
-Default: `true`.
-
-`quarkus.jlink.min-heap-size`::
-The minimum heap size to configure in the image's JVM options.
-If not set, no minimum heap size is specified.
-Type: `MemorySize` (optional).
-
-`quarkus.jlink.max-heap-size`::
-The maximum heap size to configure in the image's JVM options.
-If not set, no maximum heap size is specified.
-Type: `MemorySize` (optional).
-
-`quarkus.jlink.image-path`::
-The path of the image directory within the output directory.
-Type: `Path`.
-Default: `image`.
-
-`quarkus.jlink.launcher-name`::
-The name of the launcher script generated in the image's `bin/` directory.
-Type: `String`.
-Default: derived from `quarkus.package.output-name`.
-
-`quarkus.jlink.output-directory`::
-The base output directory for the jlink build.
-Type: `Path`.
-Default: derived from `quarkus.package.output-directory`.
-
-`quarkus.jlink.staging-directory`::
-The path of the staging directory used during the jlink build process, relative to the output directory.
-Type: `Path`.
-Default: `staging`.
+include::{generated-dir}/config/quarkus-jlink.adoc[opts=optional, leveloffset=+1]
 
 == CDS support
 

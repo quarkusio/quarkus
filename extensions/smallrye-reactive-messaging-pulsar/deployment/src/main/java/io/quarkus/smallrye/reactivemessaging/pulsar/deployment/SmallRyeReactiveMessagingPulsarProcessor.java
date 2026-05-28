@@ -131,8 +131,9 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
     }
 
     @BuildStep
-    IndexDependencyBuildItem indexPulsar() {
-        return new IndexDependencyBuildItem("org.apache.pulsar", "pulsar-client-original");
+    void indexPulsar(BuildProducer<IndexDependencyBuildItem> indexDependency) {
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.pulsar", "pulsar-client-original"));
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.pulsar", "pulsar-common"));
     }
 
     @BuildStep
@@ -180,9 +181,15 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .constructors().build());
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
-                .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
+                .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION);
         for (ClassInfo authPluginClass : authPluginClasses) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
+                    .constructors().build());
+        }
+        Collection<ClassInfo> sslFactoryClasses = combinedIndex.getIndex()
+                .getAllKnownImplementations(DotNames.PULSAR_SSL_FACTORY);
+        for (ClassInfo sslFactoryClass : sslFactoryClasses) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(sslFactoryClass.name().toString())
                     .constructors().build());
         }
 

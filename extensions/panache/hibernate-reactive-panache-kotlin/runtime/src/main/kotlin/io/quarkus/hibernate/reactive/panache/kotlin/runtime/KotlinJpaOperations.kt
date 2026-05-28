@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.kotlin.runtime
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractManagedJpaOperations
+import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.Uni
 import org.hibernate.reactive.mutiny.Mutiny
 
@@ -10,9 +11,9 @@ class KotlinJpaOperations : AbstractManagedJpaOperations<PanacheQueryImpl<*>>() 
         entityClass: Class<*>,
         query: String,
         originalQuery: String?,
-        orderBy: String?,
+        sort: Sort?,
         paramsArrayOrMap: Any?,
-    ) = PanacheQueryImpl<Any>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap)
+    ) = PanacheQueryImpl<Any>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>): Uni<MutableList<*>> =
         query.list() as Uni<MutableList<*>>

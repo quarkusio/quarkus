@@ -15,6 +15,7 @@ import org.hibernate.SharedSessionContract;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 
 public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<Entity> {
 
@@ -87,17 +88,8 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
         }
 
         @Override
-        public PanacheBlockingQuery<Entity> cursor(long pageIndex, int pageSize, jakarta.data.Order<?> order) {
-            List<org.hibernate.query.Order<?>> hibernateOrders = new java.util.ArrayList<>();
-            for (jakarta.data.Sort<?> sort : order.sorts()) {
-                org.hibernate.query.SortDirection direction = sort.isAscending()
-                        ? org.hibernate.query.SortDirection.ASCENDING
-                        : org.hibernate.query.SortDirection.DESCENDING;
-                org.hibernate.query.Order<?> hibernateOrder = org.hibernate.query.Order
-                        .by((Class) delegate.entityClass(), sort.property(), direction, sort.ignoreCase());
-                hibernateOrders.add(hibernateOrder);
-            }
-            delegate.cursored((int) pageIndex, pageSize, hibernateOrders);
+        public PanacheBlockingQuery<Entity> cursor(long pageIndex, int pageSize) {
+            delegate.cursor((int) pageIndex, pageSize);
             return PanacheBlockingQueryImpl.this;
         }
 
@@ -142,9 +134,9 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
     };
 
     PanacheBlockingQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap) {
-        delegate = new CommonPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, orderBy, paramsArrayOrMap);
+        delegate = new CommonPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     PanacheBlockingQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {

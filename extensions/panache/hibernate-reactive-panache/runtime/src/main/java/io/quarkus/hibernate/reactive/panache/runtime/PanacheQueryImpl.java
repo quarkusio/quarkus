@@ -12,15 +12,16 @@ import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.CommonManagedPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonManagedPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(Uni<Mutiny.Session> em, Class<?> entityClass, String query, String originalQuery, String orderBy,
+    PanacheQueryImpl(Uni<Mutiny.Session> em, Class<?> entityClass, String query, String originalQuery, Sort sort,
             Object paramsArrayOrMap) {
-        this.delegate = new CommonManagedPanacheQueryImpl<Entity>(em, entityClass, query, originalQuery, orderBy,
+        this.delegate = new CommonManagedPanacheQueryImpl<Entity>(em, entityClass, query, originalQuery, sort,
                 paramsArrayOrMap);
     }
 

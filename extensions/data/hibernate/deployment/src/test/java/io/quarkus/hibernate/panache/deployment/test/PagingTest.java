@@ -33,9 +33,9 @@ public class PagingTest {
 
     @Transactional
     void cursorPage() {
-        PanacheBlockingQuery<MyEntity> query = MyEntity_.managedBlocking().findAll();
+        PanacheBlockingQuery<MyEntity> query = MyEntity_.managedBlocking().findAll(Order.by(Sort.asc("foo")));
 
-        List<MyEntity> list = query.paging().cursored(0, 10, Order.by(Sort.asc("foo"))).list();
+        List<MyEntity> list = query.paging().cursored(0, 10).list();
         while (query.paging().hasNext()) {
             list = query.paging().next().list();
         }

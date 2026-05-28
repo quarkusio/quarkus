@@ -23,6 +23,7 @@ import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Multi;
@@ -45,7 +46,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
-    private String orderBy;
+    private Sort sort;
 
     private Page page;
     private Uni<Long> count;
@@ -62,13 +63,13 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     private Class<?> entityClass;
 
     public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, Class<?> entityClass, String query, String originalQuery,
-            String orderBy,
+            Sort sort,
             Object paramsArrayOrMap) {
         this.em = em;
         this.entityClass = entityClass;
         this.query = query;
         this.originalQuery = originalQuery;
-        this.orderBy = orderBy;
+        this.sort = sort;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
@@ -80,7 +81,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
         this.entityClass = previousQuery.entityClass;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
-        this.orderBy = previousQuery.orderBy;
+        this.sort = previousQuery.sort;
         this.paramsArrayOrMap = previousQuery.paramsArrayOrMap;
         this.page = previousQuery.page;
         this.count = previousQuery.count;
@@ -437,6 +438,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
                     : em.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
+                String orderBy = PanacheJpaUtil.toOrderBy(sort);
                 hibernateQuery = em.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
             } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);

@@ -330,7 +330,7 @@ public class PagingTest {
 
     @Transactional
     void noPaging() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        PanacheBlockingQuery<MyEntity> query = repo.findAll(_MyEntity.foo.asc());
 
         List<MyEntity> all = query.list();
         assertThat(all).hasSize(25);

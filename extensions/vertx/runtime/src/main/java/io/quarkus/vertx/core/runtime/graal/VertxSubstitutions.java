@@ -1,5 +1,6 @@
 package io.quarkus.vertx.core.runtime.graal;
 
+import java.lang.ref.Cleaner;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -9,6 +10,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -18,13 +20,27 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 
-//@TargetClass(className = "io.vertx.core.impl.VertxBuilder")
-//final class Target_io_vertx_core_impl_VertxBuilder {
-//    @Substitute
-//    public static Transport nativeTransport() {
-//        return io.vertx.core.transport.Transport.NIO.implementation();
-//    }
-//}
+@TargetClass(className = "io.vertx.core.impl.VertxImpl")
+final class Target_io_vertx_core_impl_VertxImpl {
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    private static Cleaner cleaner;
+
+    @Substitute
+    public Cleaner cleaner() {
+        Cleaner c = cleaner;
+        if (c == null) {
+            synchronized (Target_io_vertx_core_impl_VertxImpl.class) {
+                c = cleaner;
+                if (c == null) {
+                    c = Cleaner.create();
+                    cleaner = c;
+                }
+            }
+        }
+        return c;
+    }
+}
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {

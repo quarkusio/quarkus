@@ -18,8 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
+import jakarta.transaction.Transactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
@@ -201,14 +201,14 @@ public class PanacheFunctionalityTest {
                 }).flatMap(v -> Panache.withTransaction(() -> Person.deleteAll())));
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Person> createBug7102() {
         Person personPanache = new Person();
         personPanache.name = "pero";
         return personPanache.persistAndFlush().map(v -> personPanache);
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Void> updateBug7102(Long id) {
         return Person.<Person> findById(id)
                 .map(person -> {
@@ -251,7 +251,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> reactiveTransactional(), 1l);
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Long> reactiveTransactional() {
         return Panache.currentTransaction()
                 .invoke(tx -> assertNotNull(tx))
@@ -269,7 +269,7 @@ public class PanacheFunctionalityTest {
         asserter.assertTrue(() -> reactiveTransactional2());
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Boolean> reactiveTransactional2() {
         return Panache.currentTransaction()
                 .invoke(tx -> assertNotNull(tx))
@@ -342,5 +342,10 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug40962() {
         RestAssured.when().get("/test/40962").then().body(is("OK"));
+    }
+
+    @Test
+    public void testWithTransactionSmoke() {
+        RestAssured.when().get("/test/with-transaction-smoke").then().body(is("OK"));
     }
 }

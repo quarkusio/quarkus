@@ -14,6 +14,7 @@ import io.quarkus.panache.common.exception.PanacheQueryException
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
+import jakarta.transaction.Transactional
 import jakarta.persistence.NoResultException
 import jakarta.persistence.NonUniqueResultException
 import jakarta.ws.rs.GET
@@ -83,7 +84,7 @@ class TestEndpoint {
 
     @GET
     @Path("8254")
-    @WithTransaction
+    @Transactional
     fun testBug8254(): Uni<String> {
         val owner = CatOwner("8254")
         return owner
@@ -127,7 +128,7 @@ class TestEndpoint {
 
     @GET
     @Path("9025")
-    @WithTransaction
+    @Transactional
     fun testBug9025(): Uni<String> {
         val apple = Fruit("apple", "red")
         val orange = Fruit("orange", "orange")
@@ -140,7 +141,7 @@ class TestEndpoint {
 
     @GET
     @Path("9036")
-    @WithTransaction
+    @Transactional
     fun testBug9036(): Uni<String> {
         return Person.deleteAll()
             .flatMap { Person().persist<Person>() }
@@ -203,7 +204,7 @@ class TestEndpoint {
 
     @GET
     @Path("composite")
-    @WithTransaction
+    @Transactional
     fun testCompositeKey(): Uni<String> {
         val obj = ObjectWithCompositeId()
         obj.part1 = "part1"
@@ -249,7 +250,7 @@ class TestEndpoint {
 
     @GET
     @Path("model")
-    @WithTransaction
+    @Transactional
     fun testModel(): Uni<String> {
         return Person.findAll()
             .list()
@@ -549,7 +550,7 @@ class TestEndpoint {
 
     @GET
     @Path("model1")
-    @WithTransaction
+    @Transactional
     @Suppress("CAST_NEVER_SUCCEEDS")
     fun testModel1(): Uni<String> {
         return Person.count()
@@ -574,7 +575,7 @@ class TestEndpoint {
 
     @GET
     @Path("model2")
-    @WithTransaction
+    @Transactional
     fun testModel2(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -590,7 +591,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection1")
-    @WithTransaction
+    @Transactional
     fun testProjection(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -635,7 +636,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection2")
-    @WithTransaction
+    @Transactional
     fun testProjection2(): Uni<String> {
         val ownerName = "Julie"
         val catName = "Bubulle"
@@ -718,7 +719,7 @@ class TestEndpoint {
 
     @GET
     @Path("model3")
-    @WithTransaction
+    @Transactional
     fun testModel3(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -740,7 +741,7 @@ class TestEndpoint {
 
     @GET
     @Path("model-dao")
-    @WithTransaction
+    @Transactional
     fun testModelDao(): Uni<String> {
         return personDao
             .findAll()
@@ -1204,7 +1205,7 @@ class TestEndpoint {
 
     @GET
     @Path("testSortByNullPrecedence")
-    @WithTransaction
+    @Transactional
     fun testSortByNullPrecedence(): Uni<String> {
         return Person.deleteAll()
             .flatMap {
@@ -1739,6 +1740,23 @@ class TestEndpoint {
                 assertEquals(2, count)
                 assertThrows(PanacheQueryException::class.java) { personDao.update(" ") }
             }
+    }
+
+    @GET
+    @Path("with-transaction-smoke")
+    @WithTransaction
+    fun testWithTransactionSmoke(): Uni<String> {
+        val person = Person()
+        person.name = "smoke-test"
+        person.uniqueName = "smoke-unique"
+        return person.persist<Person>()
+            .flatMap { Person.count("name", "smoke-test") }
+            .map { count ->
+                assertEquals(1L, count)
+                null
+            }
+            .flatMap { Person.delete("name", "smoke-test") }
+            .map { "OK" }
     }
 
     enum class PersistTest {

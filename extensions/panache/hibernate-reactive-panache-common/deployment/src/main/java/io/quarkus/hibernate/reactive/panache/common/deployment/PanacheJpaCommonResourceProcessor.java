@@ -128,7 +128,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     DotName.createSimple("jakarta.ws.rs.PATCH"), DotName.createSimple("jakarta.ws.rs.POST"),
                     DotName.createSimple("jakarta.ws.rs.PUT"));
             List<DotName> bindings = List.of(DotNames.REACTIVE_TRANSACTIONAL, DotNames.WITH_SESSION,
-                    DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION);
+                    DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION,
+                    DotNames.TRANSACTIONAL);
 
             // Collect all Panache entities and repositories
             Set<DotName> entities = new HashSet<>();

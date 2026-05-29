@@ -34,7 +34,7 @@
 
         <enforcer-api.version>3.6.2</enforcer-api.version>
         <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
-        <maven-core.version>3.9.15</maven-core.version>
+        <maven-core.version>3.9.16</maven-core.version>
         <aether.version>1.1.0</aether.version>
 
         <!--

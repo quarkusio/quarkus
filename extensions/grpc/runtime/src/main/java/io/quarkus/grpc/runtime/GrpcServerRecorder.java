@@ -159,9 +159,15 @@ public class GrpcServerRecorder {
                     globalInterceptors, service.definition,
                     launchMode == LaunchMode.DEVELOPMENT);
 
-            LOGGER.debugf("Registered gRPC service '%s'", service.definition.definition.getServiceDescriptor().getName());
-            GrpcIoServiceBridge bridge = GrpcIoServiceBridge.bridge(serviceDefinition);
-            bridge.bind(server);
+            String serviceName = service.definition.definition.getServiceDescriptor().getName();
+            try {
+                GrpcIoServiceBridge bridge = GrpcIoServiceBridge.bridge(serviceDefinition);
+                bridge.bind(server);
+                LOGGER.debugf("Registered gRPC service '%s'", serviceName);
+            } catch (IllegalArgumentException e) {
+                LOGGER.warnf("gRPC service '%s' does not have a proto service descriptor and cannot be registered"
+                        + " with the gRPC server - skipping", serviceName);
+            }
         }
 
         boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;

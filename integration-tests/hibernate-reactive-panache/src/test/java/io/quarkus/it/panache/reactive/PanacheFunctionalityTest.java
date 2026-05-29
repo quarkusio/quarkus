@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -285,12 +286,7 @@ public class PanacheFunctionalityTest {
 
     @ReactiveTransactional
     Uni<Long> reactiveTransactional() {
-        return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
-                .invoke(count -> assertEquals(0l, count))
-                .call(() -> new Person().persist())
-                .chain(tx -> Person.count());
+        return doReactiveTransactional();
     }
 
     @DisabledOnIntegrationTest
@@ -303,15 +299,7 @@ public class PanacheFunctionalityTest {
 
     @ReactiveTransactional
     Uni<Boolean> reactiveTransactional2() {
-        return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
-                .invoke(count -> assertEquals(1l, count))
-                .chain(() -> Person.deleteAll())
-                .invoke(count -> assertEquals(1l, count))
-                .chain(() -> Panache.currentTransaction())
-                .invoke(tx -> tx.markForRollback())
-                .map(tx -> true);
+        return doReactiveTransactional2();
     }
 
     @DisabledOnIntegrationTest
@@ -319,17 +307,12 @@ public class PanacheFunctionalityTest {
     @Test
     @Order(202)
     public void testReactiveTransactional3(UniAsserter asserter) {
-        asserter.assertEquals(() -> testReactiveTransactional3(), 1l);
+        asserter.assertEquals(() -> reactiveTransactional3(), 1l);
     }
 
     @ReactiveTransactional
-    Uni<Long> testReactiveTransactional3() {
-        return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
-                // make sure it was rolled back
-                .invoke(count -> assertEquals(1l, count))
-                .call(() -> Person.deleteAll());
+    Uni<Long> reactiveTransactional3() {
+        return doReactiveTransactional3();
     }
 
     @DisabledOnIntegrationTest
@@ -342,6 +325,75 @@ public class PanacheFunctionalityTest {
         // If you're wondering why we're testing this:
         // apparently we're actually testing UniAsserter here, see https://github.com/quarkusio/quarkus/pull/18794
         asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), IllegalArgumentException.class);
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(400)
+    public void testWithTransaction(UniAsserter asserter) {
+        asserter.assertEquals(() -> withTransaction(), 1l);
+    }
+
+    @WithTransaction
+    Uni<Long> withTransaction() {
+        return doReactiveTransactional();
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(401)
+    public void testWithTransaction2(UniAsserter asserter) {
+        asserter.assertTrue(() -> withTransaction2());
+    }
+
+    @WithTransaction
+    Uni<Boolean> withTransaction2() {
+        return doReactiveTransactional2();
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(402)
+    public void testWithTransaction3(UniAsserter asserter) {
+        asserter.assertEquals(() -> withTransaction3(), 1l);
+    }
+
+    @WithTransaction
+    Uni<Long> withTransaction3() {
+        return doReactiveTransactional3();
+    }
+
+    private Uni<Long> doReactiveTransactional() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                .invoke(count -> assertEquals(0l, count))
+                .call(() -> new Person().persist())
+                .chain(tx -> Person.count());
+    }
+
+    private Uni<Boolean> doReactiveTransactional2() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                .invoke(count -> assertEquals(1l, count))
+                .chain(() -> Person.deleteAll())
+                .invoke(count -> assertEquals(1l, count))
+                .chain(() -> Panache.currentTransaction())
+                .invoke(tx -> tx.markForRollback())
+                .map(tx -> true);
+    }
+
+    private Uni<Long> doReactiveTransactional3() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx))
+                .chain(tx -> Person.count())
+                // make sure it was rolled back
+                .invoke(count -> assertEquals(1l, count))
+                .call(() -> Person.deleteAll());
     }
 
     @Test

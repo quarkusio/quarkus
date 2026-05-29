@@ -49,17 +49,17 @@ import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.api.ChannelBuilderCustomizer;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
-import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.stork.StorkGrpcChannel;
 import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.vertx.http.HttpServer;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -99,16 +99,15 @@ public class Channels {
             if (clientConfig.testPort().isPresent()) {
                 port = clientConfig.testPort().getAsInt();
             } else {
+                boolean clientUsesTls = clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
+                        || (clientConfig.plainText().isPresent() && !clientConfig.plainText().get());
                 ValueRegistry valueRegistry = container.instance(ValueRegistry.class).get();
-                GrpcServer grpcServer = valueRegistry.get(GrpcServer.GRPC_SERVER);
-                int actualPort = grpcServer.getPort();
+                HttpServer httpServer = valueRegistry.get(HttpServer.HTTP_SERVER);
+                int actualPort = clientUsesTls ? httpServer.getSecurePort() : httpServer.getPort();
                 if (actualPort > 0) {
                     port = actualPort;
-                } else if (clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
-                        || (clientConfig.plainText().isPresent() && !clientConfig.plainText().get())) {
-                    port = 8444;
                 } else {
-                    port = 8081;
+                    port = clientUsesTls ? 8444 : 8081;
                 }
             }
         }
@@ -232,7 +231,8 @@ public class Channels {
 
         LOGGER.debug("Creating Vert.x gRPC channel ...");
 
-        return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors));
+        return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors),
+                host + ":" + port);
 
     }
 
@@ -310,11 +310,14 @@ public class Channels {
         private final io.vertx.grpc.client.GrpcClient client;
         private final Channel original;
         private final Channel delegate;
+        private final String authority;
 
-        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel original, Channel delegate) {
+        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel original, Channel delegate,
+                String authority) {
             this.client = client;
             this.original = original;
             this.delegate = delegate;
+            this.authority = authority;
         }
 
         @Override
@@ -325,7 +328,7 @@ public class Channels {
 
         @Override
         public String authority() {
-            return delegate.authority();
+            return authority;
         }
     }
 }

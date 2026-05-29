@@ -146,7 +146,7 @@ class NettyProcessor {
 
         final NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.tryReflectionSetAccessible", "true")
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "false");
+                .addNativeImageSystemProperty("io.netty.noUnsafe", "true");
         return builder.build();
     }
 

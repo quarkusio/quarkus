@@ -3,11 +3,16 @@ package io.quarkus.it.panache.reactive;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
+import jakarta.inject.Inject;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.delegation.MutinySessionDelegator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -17,6 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
@@ -42,6 +48,9 @@ public class PanacheFunctionalityTest {
      */
     @SuppressWarnings("unused")
     Person p = new Person();
+
+    @Inject
+    Mutiny.Session injectedSession;
 
     @Test
     public void testPanacheFunctionality() throws Exception {
@@ -179,6 +188,30 @@ public class PanacheFunctionalityTest {
     @Test
     void testNoTransaction(UniAsserter asserter) {
         asserter.assertNull(() -> Panache.withSession(() -> Panache.currentTransaction()));
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    public void testTransactionalSessionAndTransaction(UniAsserter asserter) {
+        asserter.assertFailedWith(
+                () -> transactionalSessionAndTransaction(),
+                IllegalStateException.class);
+    }
+
+    @Transactional
+    Uni<Void> transactionalSessionAndTransaction() {
+        return Panache.getSession()
+                .invoke(panacheSession -> {
+                    Mutiny.Session unwrapped = ClientProxy.unwrap(injectedSession);
+                    assertSame(panacheSession, ((MutinySessionDelegator) unwrapped).delegate());
+                })
+                .chain(session -> Person.count())
+                .chain(count -> Panache.currentTransaction())
+                .invoke(tx -> assertNull(tx))
+                .chain(() -> Panache.getSession())
+                .chain(session -> session.withTransaction(t -> Person.count()))
+                .replaceWithVoid();
     }
 
     @DisabledOnIntegrationTest

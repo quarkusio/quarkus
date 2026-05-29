@@ -6,17 +6,17 @@ import java.util.function.Function;
 import io.grpc.stub.AbstractStub;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.grpc.client.GrpcClient;
+import io.vertx.grpcio.client.GrpcIoClient;
 import io.vertx.grpcio.client.GrpcIoClientChannel;
 
 public class GrpcIntegrationTestHelper {
 
     private static Vertx vertx;
-    private static GrpcClient grpcClient;
+    private static GrpcIoClient grpcClient;
 
     static void init() {
         vertx = Vertx.vertx();
-        grpcClient = GrpcClient.client(vertx);
+        grpcClient = GrpcIoClient.client(vertx);
     }
 
     static void cleanup() {

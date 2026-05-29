@@ -13,7 +13,9 @@ abstract class RandomPortVertxServerTlsTestBase extends RandomPortTestBase {
                     "quarkus.http.ssl.certificate.files", "tls/server.pem",
                     "quarkus.http.ssl.certificate.key-files", "tls/server.key",
                     "quarkus.grpc.clients.hello.host", "localhost",
-                    "quarkus.grpc.clients.hello.ssl.trust-store", "tls/ca.pem");
+                    "quarkus.grpc.clients.hello.tls.enabled", "true",
+                    "quarkus.grpc.clients.hello.tls.trust-certificate-pem.certs", "tls/ca.pem",
+                    "quarkus.grpc.clients.hello.tls.verify-hostname", "false");
         }
     }
 }

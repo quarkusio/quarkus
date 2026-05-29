@@ -30,15 +30,10 @@ public class BlockingMutinyIT extends BlockingMutinyTestBase {
         }
     }
 
-    /**
-     * Native tests cannot get the injected client, thus we build the client directly.
-     *
-     * @return the test client
-     */
     @Override
     Test getClient() {
         if (client == null) {
-            client = GrpcIntegrationTestHelper.createClient(9000, TestClient.class, MutinyTestGrpc::newMutinyStub);
+            client = GrpcIntegrationTestHelper.createClient(8081, TestClient.class, MutinyTestGrpc::newMutinyStub);
         }
         return client;
     }

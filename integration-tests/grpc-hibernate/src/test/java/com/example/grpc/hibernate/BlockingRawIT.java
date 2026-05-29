@@ -12,7 +12,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
 public class BlockingRawIT extends BlockingRawTestBase {
-
     @BeforeAll
     static void init() {
         GrpcIntegrationTestHelper.init();
@@ -30,15 +29,10 @@ public class BlockingRawIT extends BlockingRawTestBase {
         }
     }
 
-    /**
-     * Native tests cannot get the injected client, thus we build the client directly.
-     *
-     * @return the test client
-     */
     @Override
     TestRaw getClient() {
         if (client == null) {
-            client = GrpcIntegrationTestHelper.createClient(9000, TestRawClient.class, MutinyTestRawGrpc::newMutinyStub);
+            client = GrpcIntegrationTestHelper.createClient(8081, TestRawClient.class, MutinyTestRawGrpc::newMutinyStub);
         }
         return client;
     }

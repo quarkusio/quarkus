@@ -4,5 +4,4 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
 class HelloWorldNewEndpointIT extends HelloWorldNewEndpointTest {
-
 }

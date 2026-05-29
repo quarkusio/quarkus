@@ -128,7 +128,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     DotName.createSimple("jakarta.ws.rs.PATCH"), DotName.createSimple("jakarta.ws.rs.POST"),
                     DotName.createSimple("jakarta.ws.rs.PUT"));
             List<DotName> bindings = List.of(DotNames.REACTIVE_TRANSACTIONAL, DotNames.WITH_SESSION,
-                    DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION);
+                    DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION,
+                    DotName.createSimple("jakarta.transaction.Transactional"));
 
             // Collect all Panache entities and repositories
             Set<DotName> entities = new HashSet<>();
@@ -190,7 +191,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     // - returns Uni
                     // - is declared in a class that uses a panache entity/repository
                     // - is annotated with @GET, @POST, @PUT, @DELETE ,@PATCH ,@HEAD or @OPTIONS
-                    // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or @WithTransaction
+                    // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand,
+                    //   @WithTransaction or @Transactional
                     context.transform().add(DotNames.WITH_SESSION_ON_DEMAND).done();
                 }
             }));

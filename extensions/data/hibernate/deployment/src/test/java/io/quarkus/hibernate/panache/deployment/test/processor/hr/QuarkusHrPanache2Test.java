@@ -23,7 +23,7 @@ public class QuarkusHrPanache2Test {
         // Make sure it has the proper supertype
         Class<?> superclass = entityClass.getSuperclass();
         if (superclass != null) {
-            Assertions.assertEquals(WithId.class.getName() + "_", superclass.getName());
+            Assertions.assertEquals(WithId.class.getName() + "_$AutoLong_", superclass.getName());
         }
 
         // Nested repo accessor

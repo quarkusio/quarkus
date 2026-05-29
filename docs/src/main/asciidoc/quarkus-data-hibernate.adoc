@@ -429,9 +429,11 @@ identifier, or even extend `WithId<IdType>` to automatically get an attribute of
 [source,java]
 ----
 @Id
-@GeneratedValue
 public IdType id;
 ----
+
+WARNING: The identifier will not be automatically generated in this case, so you will have to set its value manually
+on creation.
 
 Naturally, you can also provide your own database identifier explicitly and implement the `PanacheEntity.Managed`
 interface in your entity, as well as use the `PanacheRepository.Managed` interface for your repository, in order to

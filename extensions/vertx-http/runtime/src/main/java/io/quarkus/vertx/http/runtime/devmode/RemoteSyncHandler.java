@@ -89,7 +89,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     handleRequest(event);
                     return null;
                 }
-            });
+            }, false);
             return;
         }
         next.handle(event);
@@ -162,7 +162,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                         }
                         return null;
                     }
-                });
+                }, false);
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override

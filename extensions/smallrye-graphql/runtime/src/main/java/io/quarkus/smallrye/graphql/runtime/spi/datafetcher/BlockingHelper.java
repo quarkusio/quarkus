@@ -53,7 +53,7 @@ public final class BlockingHelper {
             if (queue != null) {
                 ((ContextInternal) vc).executeBlocking(contextualCallable, queue).onComplete(result);
             } else {
-                vc.executeBlocking(contextualCallable).onComplete(result);
+                vc.executeBlocking(contextualCallable, false).onComplete(result);
             }
         } else {
             // No Vert.x context (e.g. ForkJoinPool thread after CompletableFuture.supplyAsync) —

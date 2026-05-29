@@ -9,17 +9,19 @@ export class QwcExtensionAction extends LitElement {
         :host {
             display: flex;
             flex-direction: row;
+            justify-content: space-between;
             align-items: center;
             padding: 2px 5px;
+            gap: 5px;
         }
         .actionButton {
             display: flex;
             flex-direction: row;
-            justify-content: flex-start;
+            justify-content: space-between;
             align-items: center;
             color: var(--lumo-contrast-70pct);
             font-size: var(--lumo-font-size-s);
-            padding: 2px 5px;
+            padding: 4px 8px;
             cursor: pointer;
             gap: 5px;
             border-radius: var(--devui-radius-sm, 6px);

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -17,8 +18,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
-import io.quarkus.hibernate.reactive.panache.common.WithSession;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -201,14 +200,14 @@ public class PanacheFunctionalityTest {
                 }).flatMap(v -> Panache.withTransaction(() -> Person.deleteAll())));
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Person> createBug7102() {
         Person personPanache = new Person();
         personPanache.name = "pero";
         return personPanache.persistAndFlush().map(v -> personPanache);
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Void> updateBug7102(Long id) {
         return Person.<Person> findById(id)
                 .map(person -> {
@@ -217,7 +216,7 @@ public class PanacheFunctionalityTest {
                 });
     }
 
-    @WithSession
+    @Transactional
     Uni<Person> getBug7102(Long id) {
         return Person.findById(id);
     }
@@ -251,7 +250,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> reactiveTransactional(), 1l);
     }
 
-    @WithTransaction
+    @ReactiveTransactional
     Uni<Long> reactiveTransactional() {
         return Panache.currentTransaction()
                 .invoke(tx -> assertNotNull(tx))
@@ -269,7 +268,7 @@ public class PanacheFunctionalityTest {
         asserter.assertTrue(() -> reactiveTransactional2());
     }
 
-    @WithTransaction
+    @ReactiveTransactional
     Uni<Boolean> reactiveTransactional2() {
         return Panache.currentTransaction()
                 .invoke(tx -> assertNotNull(tx))

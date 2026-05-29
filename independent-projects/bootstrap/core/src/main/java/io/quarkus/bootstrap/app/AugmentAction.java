@@ -21,4 +21,17 @@ public interface AugmentAction {
 
     StartupAction reloadExistingApplication(boolean hasStartedSuccessfully, Set<String> changedResources,
             ClassChangeInformation classChangeInformation);
+
+    /**
+     * Returns the bytecode transformation function from the most recent augmentation,
+     * for use during instrumentation-based hot reload.
+     * <p>
+     * Callers must not cache the result: the transformer is updated after each augmentation,
+     * and {@code RuntimeUpdatesProcessor} is created before the first build completes.
+     *
+     * @return the transformer, never {@code null}
+     */
+    default ClassTransformer getClassTransformer() {
+        return ClassTransformer.IDENTITY;
+    }
 }

@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -27,6 +28,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationContextBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -58,6 +60,7 @@ public class QuarkusAugmentor {
     private final List<PathCollection> additionalApplicationArchives;
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
+    private final Map<Class<?>, Object> curatedApplicationContext;
     private final Properties buildSystemProperties;
     private final Properties runtimeProperties;
     private final Path targetDir;
@@ -80,6 +83,7 @@ public class QuarkusAugmentor {
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
+        this.curatedApplicationContext = builder.curatedApplicationContext;
         this.buildSystemProperties = builder.buildSystemProperties;
         this.runtimeProperties = builder.runtimeProperties;
         this.targetDir = builder.targetDir;
@@ -130,6 +134,7 @@ public class QuarkusAugmentor {
                     .addInitial(LaunchModeBuildItem.class)
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
+                    .addInitial(CuratedApplicationContextBuildItem.class)
                     .addInitial(CuratedApplicationShutdownBuildItem.class)
                     .addInitial(BuildSystemTargetBuildItem.class)
                     .addInitial(AppModelProviderBuildItem.class);
@@ -164,6 +169,7 @@ public class QuarkusAugmentor {
                     .produce(rootBuilder.build(buildCloseables))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
+                    .produce(new CuratedApplicationContextBuildItem(curatedApplicationContext))
                     .produce(new CuratedApplicationShutdownBuildItem((QuarkusClassLoader) deploymentClassLoader.getParent(),
                             !liveReloadBuildItem.isLiveReload()))
                     .produce(new LaunchModeBuildItem(launchMode,
@@ -235,6 +241,7 @@ public class QuarkusAugmentor {
         private final List<Consumer<BuildExecutionBuilder>> buildExecutionCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
+        Map<Class<?>, Object> curatedApplicationContext;
         Properties buildSystemProperties;
         Properties runtimeProperties;
 
@@ -378,6 +385,11 @@ public class QuarkusAugmentor {
 
         public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
             this.liveReloadState = liveReloadState;
+            return this;
+        }
+
+        public Builder setCuratedApplicationContext(Map<Class<?>, Object> curatedApplicationContext) {
+            this.curatedApplicationContext = curatedApplicationContext;
             return this;
         }
 

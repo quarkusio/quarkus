@@ -68,7 +68,7 @@
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <jakarta.interceptor-api.version>2.2.0</jakarta.interceptor-api.version>
         <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
-        <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
+        <jakarta.json.bind-api.version>3.0.2</jakarta.json.bind-api.version>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <!--jakarta.persistence-api.version is located in the root pom -->
         <!--jakarta.data-api.version is located in the root pom -->

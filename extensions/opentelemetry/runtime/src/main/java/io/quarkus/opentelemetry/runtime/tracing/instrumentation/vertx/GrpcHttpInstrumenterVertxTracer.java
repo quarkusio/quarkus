@@ -34,6 +34,7 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
     public static final String GRPC_HTTP_URL_SCHEME = "grpc.http.url.scheme";
     public static final String GRPC_HTTP_CLIENT_ADDRESS = "grpc.http.client.address";
     public static final String GRPC_HTTP_PROTOCOL_VERSION = "grpc.http.protocol.version";
+    public static final String GRPC_HTTP_AUTHORITY = "grpc.http.authority";
 
     private final OpenTelemetry openTelemetry;
 
@@ -156,6 +157,10 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
         if (httpRequest instanceof HttpServerRequest) {
             HttpServerRequest serverRequest = (HttpServerRequest) httpRequest;
             data.put(GRPC_HTTP_URL_SCHEME, serverRequest.scheme());
+            String authority = serverRequest.authority() != null ? serverRequest.authority().toString() : null;
+            if (authority != null) {
+                data.put(GRPC_HTTP_AUTHORITY, authority);
+            }
             String clientIp = VertxUtil.extractClientIP(serverRequest);
             if (clientIp != null) {
                 data.put(GRPC_HTTP_CLIENT_ADDRESS, clientIp);

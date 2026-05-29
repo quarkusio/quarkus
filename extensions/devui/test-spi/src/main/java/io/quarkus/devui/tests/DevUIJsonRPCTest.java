@@ -72,8 +72,12 @@ public class DevUIJsonRPCTest {
 
     @AfterEach
     public void afterEach() {
-        this.client.close().await();
-        this.vertx.close().await();
+        if (this.client != null) {
+            this.client.close().await();
+        }
+        if (this.vertx != null) {
+            this.vertx.close().await();
+        }
     }
 
     public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {

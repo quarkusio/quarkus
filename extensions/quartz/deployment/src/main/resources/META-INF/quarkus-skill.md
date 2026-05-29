@@ -1,4 +1,3 @@
-
 ### When to Use
 
 Use `quartz` instead of `scheduler` when you need: JDBC-backed persistent jobs, clustering, the direct Quartz API for programmatic job management, or misfire handling. For simple in-memory scheduling, `quarkus-scheduler` alone is sufficient.
@@ -16,7 +15,7 @@ public class Jobs {
 }
 ```
 
-- Methods must be on CDI beans, return `void` or `Uni<Void>`, and take no arguments (or `ScheduledExecution`).
+- Methods must return `void`, `Uni<Void>`, or `CompletionStage<Void>`, and take no arguments (or `ScheduledExecution`).
 - The `identity` is used for pause/resume operations and must be unique.
 - Quartz cron uses **6 fields** by default (seconds minutes hours day-of-month month day-of-week). This is configurable via `quarkus.scheduler.cron-type` — see the [scheduler reference](https://quarkus.io/guides/scheduler-reference#quarkus-scheduler_quarkus-scheduler-cron-type).
 
@@ -69,8 +68,8 @@ public class MyJob implements Job {
 ### Concurrent Execution
 
 - By default, `@Scheduled` methods CAN run concurrently with themselves.
-- Use `@Nonconcurrent` on a `@Scheduled` method to prevent overlapping executions.
-- Alternatively, use `@Scheduled(concurrentExecution = SKIP)`.
+- Use `@Nonconcurrent` on a `@Scheduled` method to prevent overlapping executions. Note: unlike `SKIP`, the `SkippedExecution` event is never fired when Quartz skips execution.
+- Alternatively, use `@Scheduled(concurrentExecution = SKIP)` — this fires a `SkippedExecution` event when an execution is skipped.
 - For Quartz `Job` classes, use `@DisallowConcurrentExecution`.
 
 ### JDBC Job Store (Persistent Jobs)
@@ -94,22 +93,29 @@ Requires a datasource. Quartz tables must be created manually via SQL migration 
 
 ### Misfire Handling
 
-Misfires occur when a job's trigger time passes without the job executing (e.g., the application was down). Configure misfire policies on `@Scheduled`:
+Misfires occur when a job's trigger time passes without the job executing (e.g., the application was down). Configure misfire policies in `application.properties`:
 
-```java
-@Scheduled(cron = "0 0 8 * * ?", identity = "daily-report",
-    misfirePolicy = MisfirePolicy.FIRE_NOW)
-void dailyReport() { /* ... */ }
+```properties
+# Per-job misfire policy (keyed by the job's identity)
+quarkus.quartz.misfire-policy."daily-report"=fire-now
+
+# Global defaults for all triggers of a given type
+quarkus.quartz.cron-trigger.misfire-policy=smart-policy
+quarkus.quartz.simple-trigger.misfire-policy=smart-policy
 ```
 
-- `SMART_POLICY` (default) — Quartz picks a sensible policy based on the trigger type.
-- `FIRE_NOW` — execute immediately on recovery.
-- `IGNORE_MISFIRE_POLICY` — fire all missed triggers.
-- `DO_NOTHING` — skip misfired triggers and wait for the next scheduled time.
+Available policies (common):
+- `smart-policy` (default) — Quartz picks a sensible policy based on the trigger type.
+- `fire-now` — execute immediately on recovery.
+- `ignore-misfire-policy` — fire all missed triggers.
+- `cron-trigger-do-nothing` — skip misfired cron triggers and wait for the next scheduled time.
+
+Additional simple-trigger-specific policies: `simple-trigger-reschedule-now-with-existing-repeat-count`, `simple-trigger-reschedule-now-with-remaining-repeat-count`, `simple-trigger-reschedule-next-with-existing-count`, `simple-trigger-reschedule-next-with-remaining-count`.
 
 ### Common Pitfalls
 
 - Quartz cron uses **6 fields** by default (with seconds) — `"0 */5 * * * ?"` not `"*/5 * * * *"`.
-- `@Scheduled` methods must be on CDI beans — plain classes are ignored.
+- `@Scheduled` methods must be on CDI beans — a class that has no scope and declares at least one non-static method annotated with `@Scheduled` is automatically annotated with `@Singleton`.
 - Do NOT use `@Scheduled` on private methods.
 - The Quarkus `Scheduler` and Quartz `Scheduler` are different types — inject the right one for your use case.
+- If using only programmatic jobs (no `@Scheduled` methods), set `quarkus.scheduler.start-mode=forced` — otherwise the scheduler won't start.

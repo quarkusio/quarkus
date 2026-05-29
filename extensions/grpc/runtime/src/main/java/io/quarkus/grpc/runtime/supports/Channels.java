@@ -28,7 +28,6 @@ import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -50,12 +49,14 @@ import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.api.ChannelBuilderCustomizer;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
+import io.quarkus.grpc.runtime.GrpcServer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.stork.StorkGrpcChannel;
 import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
@@ -95,15 +96,20 @@ public class Channels {
         String host = clientConfig.host();
         int port = clientConfig.port();
         if (LaunchMode.current() == LaunchMode.TEST) {
-            if (clientConfig.testPort().isEmpty()) {
-                if (clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
+            if (clientConfig.testPort().isPresent()) {
+                port = clientConfig.testPort().getAsInt();
+            } else {
+                ValueRegistry valueRegistry = container.instance(ValueRegistry.class).get();
+                GrpcServer grpcServer = valueRegistry.get(GrpcServer.GRPC_SERVER);
+                int actualPort = grpcServer.getPort();
+                if (actualPort > 0) {
+                    port = actualPort;
+                } else if (clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
                         || (clientConfig.plainText().isPresent() && !clientConfig.plainText().get())) {
                     port = 8444;
                 } else {
                     port = 8081;
                 }
-            } else {
-                port = clientConfig.testPort().getAsInt();
             }
         }
 
@@ -122,11 +128,11 @@ public class Channels {
             perClientInterceptors.add(VertxStorkMeasuringGrpcInterceptor.class.getName());
         }
 
-        List<ChannelBuilderCustomizer<?>> channelBuilderCustomizers = container
-                .select(new TypeLiteral<ChannelBuilderCustomizer<?>>() {
-                }, Any.Literal.INSTANCE)
+        @SuppressWarnings("rawtypes")
+        List<ChannelBuilderCustomizer> channelBuilderCustomizers = container
+                .select(ChannelBuilderCustomizer.class, Any.Literal.INSTANCE)
                 .stream()
-                .sorted(Comparator.<ChannelBuilderCustomizer<?>, Integer> comparing(ChannelBuilderCustomizer::priority))
+                .sorted(Comparator.<ChannelBuilderCustomizer, Integer> comparing(ChannelBuilderCustomizer::priority))
                 .toList();
 
         // Look whether the client use plain text

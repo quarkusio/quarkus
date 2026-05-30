@@ -67,7 +67,7 @@ public class DevUIJsonRPCTest {
             URI localBaseUri = valueRegistry.get(LOCAL_BASE_URI);
             this.uri = URI.create(localBaseUri.toString() + managementRootPath(Config.get(), "/dev-ui/json-rpc-ws"));
         }
-        this.vertx = Vertx.vertx();
+        initVertxIfNeeded();
     }
 
     @AfterEach
@@ -75,9 +75,7 @@ public class DevUIJsonRPCTest {
         if (this.client != null) {
             this.client.close().await();
         }
-        if (this.vertx != null) {
-            this.vertx.close().await();
-        }
+       closeVertx();
     }
 
     public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {
@@ -211,43 +209,65 @@ public class DevUIJsonRPCTest {
     }
 
     private int sendRequest(String methodName, Map<String, Object> params) throws IOException {
-        if (uri == null) {
-            throw new IllegalStateException("No URI available. Did Quarkus start with HTTP support?");
-        }
-
-        int id = random.nextInt(Integer.MAX_VALUE);
-        String request = createJsonRPCRequest(id, methodName, params);
-        log.debug("request = " + request);
-
-        WebSocketClientOptions socketOptions = new WebSocketClientOptions()
-                .setDefaultHost(this.uri.getHost())
-                .setDefaultPort(this.uri.getPort());
-
-        client = vertx.createWebSocketClient(socketOptions);
-
-        client.connect(this.uri.getPath()).onComplete(ar -> {
-            if (ar.succeeded()) {
-                WebSocket socket = ar.result();
-                Buffer accumulatedBuffer = Buffer.buffer();
-
-                socket.frameHandler((e) -> {
-                    Buffer b = accumulatedBuffer.appendBuffer(e.binaryData());
-                    if (e.isFinal()) {
-                        RESPONSES.put(id, new WebSocketResponse(b.toString()));
-                    }
-                });
-
-                socket.writeTextMessage(request);
-
-                socket.exceptionHandler((e) -> {
-                    RESPONSES.put(id, new WebSocketResponse(e));
-                });
-            } else {
-                RESPONSES.put(id, new WebSocketResponse(ar.cause()));
+        boolean initialized = initVertxIfNeeded();
+        try {
+            if (uri == null) {
+                throw new IllegalStateException("No URI available. Did Quarkus start with HTTP support?");
             }
-        });
-        return id;
+
+            int id = random.nextInt(Integer.MAX_VALUE);
+            String request = createJsonRPCRequest(id, methodName, params);
+            log.debug("request = " + request);
+
+            WebSocketClientOptions socketOptions = new WebSocketClientOptions()
+                    .setDefaultHost(this.uri.getHost())
+                    .setDefaultPort(this.uri.getPort());
+
+            client = vertx.createWebSocketClient(socketOptions);
+
+            client.connect(this.uri.getPath()).onComplete(ar -> {
+                if (ar.succeeded()) {
+                    WebSocket socket = ar.result();
+                    Buffer accumulatedBuffer = Buffer.buffer();
+
+                    socket.frameHandler((e) -> {
+                        Buffer b = accumulatedBuffer.appendBuffer(e.binaryData());
+                        if (e.isFinal()) {
+                            RESPONSES.put(id, new WebSocketResponse(b.toString()));
+                        }
+                    });
+
+                    socket.writeTextMessage(request);
+
+                    socket.exceptionHandler((e) -> {
+                        RESPONSES.put(id, new WebSocketResponse(e));
+                    });
+                } else {
+                    RESPONSES.put(id, new WebSocketResponse(ar.cause()));
+                }
+            });
+            return id;
+        } finally {
+            if (initialized) {
+                closeVertx();
+            }
+        }
     }
+
+    boolean initVertxIfNeeded() {
+        if (vertx == null) {
+            vertx = Vertx.vertx();
+            return true;
+        }
+        return false;
+    }
+
+    void closeVertx() {
+        if (vertx != null) {
+            vertx.close().await();
+        }
+    }
+
 
     private static final ConcurrentHashMap<Integer, WebSocketResponse> RESPONSES = new ConcurrentHashMap<>();
 

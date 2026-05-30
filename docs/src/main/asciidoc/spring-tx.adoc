@@ -1,0 +1,346 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Extension for Spring Transaction API
+include::_attributes.adoc[]
+:categories: compatibility
+:summary: While you are encouraged to use Jakarta @Transactional directly, Quarkus provides a compatibility layer for Spring @Transactional in the form of the spring-tx extension.
+:topics: spring,transactions,compatibility
+:extensions: io.quarkus:quarkus-spring-tx
+
+While users are encouraged to use Jakarta `@Transactional` annotations directly, Quarkus provides a compatibility layer for Spring `@Transactional` in the form of the `spring-tx` extension.
+
+This guide explains how a Quarkus application can leverage the Spring `@Transactional` annotation to manage transactions.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* Some familiarity with the Spring DI extension
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: spring-tx-quickstart
+:create-app-extensions: spring-web,spring-di,spring-tx,spring-data-jpa,jdbc-postgresql
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a project which imports the `spring-tx`, `spring-di`, `spring-web`, and `spring-data-jpa` extensions.
+
+If you already have your Quarkus project configured, you can add the `spring-tx` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: spring-tx
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-tx</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-tx")
+----
+
+== Define the entity
+
+Throughout the course of this guide, the following JPA Entity will be used:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+@Entity
+public class Fruit {
+
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    public Fruit() {
+    }
+
+    public Fruit(String name) {
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+----
+
+== Define the repository
+
+In a typical Spring Data fashion, create a repository for `Fruit`:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import java.util.List;
+
+import org.springframework.data.repository.CrudRepository;
+
+public interface FruitRepository extends CrudRepository<Fruit, Long> {
+
+    List<Fruit> findByName(String name);
+}
+----
+
+== Creating a transactional service
+
+Now let's create a service that uses Spring's `@Transactional` annotation to manage transactions.
+Create `src/main/java/org/acme/spring/tx/FruitService.java` with the following content:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class FruitService {
+
+    @Autowired
+    FruitRepository fruitRepository;
+
+    @Transactional // <1>
+    public Fruit addFruit(String name) {
+        return fruitRepository.save(new Fruit(name));
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRED) // <2>
+    public void addMultipleFruits(List<String> names) {
+        for (String name : names) {
+            fruitRepository.save(new Fruit(name));
+        }
+    }
+}
+----
+<1> The Spring `@Transactional` annotation is automatically transformed into a Jakarta `@Transactional` annotation at build time.
+<2> You can specify propagation attributes just like in Spring. `REQUIRED` is the default.
+
+You can also place `@Transactional` at the class level to make all public methods transactional:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional // <1>
+public class TransactionalService {
+
+    public void doSomething() {
+        // this method is transactional
+    }
+
+    public void doSomethingElse() {
+        // this method is also transactional
+    }
+}
+----
+<1> All public methods of this class are transactional.
+
+== Controlling rollback behavior
+
+Spring's `rollbackFor` and `noRollbackFor` attributes are supported:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class RollbackService {
+
+    @Transactional(rollbackFor = BusinessException.class) // <1>
+    public void performBusinessOperation() throws BusinessException {
+        // if BusinessException is thrown, the transaction rolls back
+    }
+
+    @Transactional(noRollbackFor = NonCriticalException.class) // <2>
+    public void performTolerantOperation() throws NonCriticalException {
+        // if NonCriticalException is thrown, the transaction still commits
+    }
+}
+----
+<1> The transaction will roll back if `BusinessException` (or a subclass) is thrown.
+<2> The transaction will NOT roll back if `NonCriticalException` is thrown.
+
+== Update the Jakarta REST resource
+
+With the repository and service in place, create the Jakarta REST resource that will use the `FruitService`.
+Create `src/main/java/org/acme/spring/tx/FruitResource.java` with the following content:
+
+[source,java]
+----
+package org.acme.spring.tx;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class FruitResource {
+
+    @Autowired
+    FruitService fruitService;
+
+    @Autowired
+    FruitRepository fruitRepository;
+
+    @GetMapping("/fruits")
+    public List<Fruit> list() {
+        return (List<Fruit>) fruitRepository.findAll();
+    }
+
+    @PostMapping("/fruits")
+    public Fruit add(@RequestBody Fruit fruit) {
+        return fruitService.addFruit(fruit.getName());
+    }
+}
+----
+
+== Package and run the application
+
+NOTE: Quarkus Dev Services will automatically start a PostgreSQL container in dev and test modes, so no manual database configuration is needed.
+
+Run the application with:
+
+include::{includes}/devtools/dev.adoc[]
+
+In another terminal, add a fruit:
+
+[source,bash]
+----
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Apple"}' http://localhost:8080/fruits
+----
+
+Then list all fruits:
+
+[source,bash]
+----
+curl http://localhost:8080/fruits
+----
+
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::{includes}/devtools/build-native.adoc[]
+
+== Supported Spring @Transactional features
+
+The table below summarizes the supported attributes:
+
+.Supported Spring @Transactional attributes
+|===
+|Attribute|Status|Comments
+
+|`propagation`
+|Supported
+|All values except `NESTED`: `REQUIRED` (default), `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`. `NESTED` causes a build-time error.
+
+|`rollbackFor`
+|Supported
+|
+
+|`rollbackForClassName`
+|Supported
+|
+
+|`noRollbackFor`
+|Supported
+|
+
+|`noRollbackForClassName`
+|Supported
+|
+
+|`readOnly`
+|Unsupported
+|Ignored with a warning
+
+|`timeout` / `timeoutString`
+|Unsupported
+|Ignored with a warning
+
+|`isolation`
+|Unsupported
+|Only `DEFAULT` is accepted; other values are ignored with a warning
+
+|`value` / `transactionManager`
+|Unsupported
+|Quarkus manages the transaction manager
+
+|`label`
+|Unsupported
+|Ignored with a warning
+|===
+
+== Important Technical Note
+
+Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
+== More Spring guides
+
+Quarkus has more Spring compatibility features. See the following guides for more details:
+
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]

@@ -26,7 +26,6 @@ public class Filters {
     public void getFilter(ContainerResponseContext responseContext) {
         if (responseContext.getHeaders().get("X-filter") != null) {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
-            // the request filter, the method, and here.
             assert CDI.current().select(Counter.class).get().increment() == 3;
             assert "test test".equals(ContextLocals.get("test", null));
             assert MDC.get("mdc").equals("test test");

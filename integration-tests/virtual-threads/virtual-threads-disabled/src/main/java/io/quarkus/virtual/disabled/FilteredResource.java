@@ -27,7 +27,7 @@ public class FilteredResource {
 
         // DC
         assert "test".equals(ContextLocals.get("filter", null));
-        ContextLocals.put("filter", "test test");
+        ContextLocals.put("test", "test test");
 
         // MDC
         assert MDC.get("mdc").equals("test");

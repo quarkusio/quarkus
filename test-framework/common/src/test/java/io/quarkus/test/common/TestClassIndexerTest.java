@@ -1,5 +1,9 @@
 package io.quarkus.test.common;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,5 +92,32 @@ class TestClassIndexerTest {
         if (failure.get() != null) {
             throw new AssertionError("Concurrent writeIndex caused readIndex to fail", failure.get());
         }
+    }
+
+    /**
+     * Defence-in-depth for the same race as
+     * {@link #writeIndex_concurrentWritersAndReaders_neverObserveCorruptIndex}.
+     *
+     * <p>
+     * Even with the atomic-write fix, an index file may still be left corrupt by a JVM
+     * crash mid-write, an external process, or a downgrade. The current {@code readIndex}
+     * only catches {@link IOException}, so {@link IllegalArgumentException} from
+     * {@code IndexReader.readVersion("Not a jandex index")} escapes and kills the test
+     * worker. This test plants bytes that look like a corrupt jandex file and asserts
+     * {@code readIndex} recovers by re-indexing instead of throwing.
+     */
+    @Test
+    void readIndex_recoversFromCorruptIndexFile(@TempDir Path tmpDir) throws IOException {
+        Path indexFile = tmpDir.resolve(TestClassIndexer.TEST_CLASSES_IDX);
+        // Arbitrary bytes that do not start with the jandex magic; this is exactly the
+        // shape a torn write leaves behind (a sparse-zero or stale prefix).
+        Files.write(indexFile, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+
+        Index index = TestClassIndexer.readIndex(tmpDir, TestClassIndexerTest.class);
+
+        assertThat(index).isNotNull();
+        assertThat(index.getClassByName(TestClassIndexerTest.class.getName()))
+                .as("fallback should re-index the test classes location")
+                .isNotNull();
     }
 }

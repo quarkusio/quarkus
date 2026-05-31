@@ -23,22 +23,6 @@ class TestClassIndexerTest {
 
     /**
      * Reproduces https://github.com/quarkusio/quarkus/issues/54579.
-     *
-     * <p>
-     * Multiple writer threads invoke {@link TestClassIndexer#writeIndex} against a single
-     * target file, mirroring what happens when Gradle runs with {@code maxParallelForks > 1}
-     * and several forks share the same {@code build/classes/java/test/}. The current
-     * {@code writeIndex} opens {@code new FileOutputStream(file, false)} which truncates the
-     * shared file on every call; concurrent writers therefore leave sparse-zero prefixes
-     * (one writer's still-open file descriptor keeps writing at a non-zero offset after
-     * another writer's {@code O_TRUNC} reset the inode).
-     *
-     * <p>
-     * Reader threads exercise the production {@link TestClassIndexer#readIndex} path. When
-     * a reader catches the file with a sparse-zero prefix, {@code IndexReader.readVersion}
-     * throws {@code IllegalArgumentException("Not a jandex index")}; the current
-     * {@code readIndex} only catches {@link java.io.IOException}, so the IAE escapes —
-     * exactly the failure that kills Gradle test workers in the field.
      */
     @Test
     void writeIndex_concurrentWritersAndReaders_neverObserveCorruptIndex(@TempDir Path tmpDir) throws Exception {
@@ -97,14 +81,6 @@ class TestClassIndexerTest {
     /**
      * Defence-in-depth for the same race as
      * {@link #writeIndex_concurrentWritersAndReaders_neverObserveCorruptIndex}.
-     *
-     * <p>
-     * Even with the atomic-write fix, an index file may still be left corrupt by a JVM
-     * crash mid-write, an external process, or a downgrade. The current {@code readIndex}
-     * only catches {@link IOException}, so {@link IllegalArgumentException} from
-     * {@code IndexReader.readVersion("Not a jandex index")} escapes and kills the test
-     * worker. This test plants bytes that look like a corrupt jandex file and asserts
-     * {@code readIndex} recovers by re-indexing instead of throwing.
      */
     @Test
     void readIndex_recoversFromCorruptIndexFile(@TempDir Path tmpDir) throws IOException {

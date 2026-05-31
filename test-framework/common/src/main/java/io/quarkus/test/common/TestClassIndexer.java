@@ -60,11 +60,7 @@ public final class TestClassIndexer {
 
     public static void writeIndex(Index index, Path testClassLocation, Class<?> testClass) {
         // Write to a temp file in a sibling directory, then atomically rename onto the
-        // target. This avoids the truncate-then-write race where concurrent forks sharing
-        // the same test-classes/ directory each open the target with FileOutputStream
-        // (which O_TRUNCs the inode); one writer's still-open FD then continues writing at
-        // a non-zero offset, leaving a sparse-zero prefix that fails IndexReader's magic
-        // check with "Not a jandex index" (see https://github.com/quarkusio/quarkus/issues/54579).
+        // target. see https://github.com/quarkusio/quarkus/issues/54579).
         Path target = indexPath(testClassLocation);
         Path tmp = null;
         try {

@@ -19,7 +19,10 @@ import static java.util.Optional.empty;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -78,6 +81,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
         BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
+
+    private static final int APP_LOG_TAIL_LINES = 50;
 
     private static boolean failedBoot;
 
@@ -196,6 +201,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     if (appLogFile.exists() && (appLogFile.length() > 0)) {
                         System.err.println("Failed to launch the application. The application logs can be found at: "
                                 + appLogFile.getAbsolutePath());
+                        printApplicationLogTail(appLogFile);
                     }
                 } catch (IllegalStateException ignored) {
 
@@ -206,6 +212,33 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
         }
         return state;
+    }
+
+    // When the application fails to boot, the launcher only reports a generic "Unable to determine the
+    // status of the running process" error; the real cause is in the application log file. Echo the tail of
+    // that file to System.err so the cause is visible directly in the test output (e.g. in CI), not only on disk.
+    private static void printApplicationLogTail(File appLogFile) {
+        try {
+            applicationLogTail(Files.readAllLines(appLogFile.toPath()), APP_LOG_TAIL_LINES, appLogFile.getName())
+                    .forEach(System.err::println);
+        } catch (IOException ignored) {
+            // best-effort; the path to the full log was already printed above
+        }
+    }
+
+    // Formats the last `maxLines` lines of the given log content with a header, or returns an empty list
+    // when there is nothing to show. Kept package-private and pure so it can be unit-tested directly.
+    static List<String> applicationLogTail(List<String> lines, int maxLines, String fileName) {
+        if (lines.isEmpty()) {
+            return List.of();
+        }
+        int from = Math.max(0, lines.size() - maxLines);
+        List<String> tail = new ArrayList<>(lines.size() - from + 1);
+        tail.add("Last " + (lines.size() - from) + " line(s) of " + fileName + ":");
+        for (String line : lines.subList(from, lines.size())) {
+            tail.add("    " + line);
+        }
+        return tail;
     }
 
     private QuarkusTestExtensionState doProcessStart(Class<? extends QuarkusTestProfile> profile, ExtensionContext context)

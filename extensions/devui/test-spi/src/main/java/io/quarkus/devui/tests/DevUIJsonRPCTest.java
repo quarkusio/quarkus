@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -225,30 +226,40 @@ public class DevUIJsonRPCTest {
 
             client = vertx.createWebSocketClient(socketOptions);
 
-            client.connect(this.uri.getPath()).onComplete(ar -> {
-                if (ar.succeeded()) {
-                    WebSocket socket = ar.result();
-                    Buffer accumulatedBuffer = Buffer.buffer();
+            try {
+                WebSocket socket = client.connect(this.uri.getPath()).await();
 
-                    socket.frameHandler((e) -> {
-                        Buffer b = accumulatedBuffer.appendBuffer(e.binaryData());
-                        if (e.isFinal()) {
-                            RESPONSES.put(id, new WebSocketResponse(b.toString()));
-                        }
-                    });
+                CompletableFuture<String> responseFuture = new CompletableFuture<>();
+                Buffer accumulatedBuffer = Buffer.buffer();
 
-                    socket.writeTextMessage(request);
+                socket.frameHandler((e) -> {
+                    accumulatedBuffer.appendBuffer(e.binaryData());
+                    if (e.isFinal()) {
+                        responseFuture.complete(accumulatedBuffer.toString());
+                    }
+                });
 
-                    socket.exceptionHandler((e) -> {
-                        RESPONSES.put(id, new WebSocketResponse(e));
-                    });
-                } else {
-                    RESPONSES.put(id, new WebSocketResponse(ar.cause()));
-                }
-            });
+                socket.exceptionHandler(responseFuture::completeExceptionally);
+
+                socket.writeTextMessage(request);
+
+                String response = responseFuture.get(30, TimeUnit.SECONDS);
+                RESPONSES.put(id, new WebSocketResponse(response));
+            } catch (Exception e) {
+                RESPONSES.put(id, new WebSocketResponse(e));
+            }
+
             return id;
         } finally {
             if (initialized) {
+                if (client != null) {
+                    try {
+                        client.close().await();
+                    } catch (Exception e) {
+                        // ignore cleanup errors
+                    }
+                    client = null;
+                }
                 closeVertx();
             }
         }

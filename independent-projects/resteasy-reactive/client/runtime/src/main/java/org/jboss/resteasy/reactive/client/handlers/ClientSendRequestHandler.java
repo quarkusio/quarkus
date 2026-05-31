@@ -515,9 +515,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 .setPort(port).setSsl(isHttps));
 
         return requestOptions.onItem()
-                .transform(r -> r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
-                        .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
-                        .setFollowRedirects(followRedirects))
+                .transform(r -> {
+                    r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
+                            .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
+                            .setFollowRedirects(followRedirects);
+                    String pathTemplate = (String) state.getClientFilterProperties().get("UrlPathTemplate");
+                    if (pathTemplate != null) {
+                        r.setTraceOperation(state.getHttpMethod() + " " + pathTemplate);
+                    }
+                    return r;
+                })
                 .onItem().invoke(r -> {
                     if (readTimeout instanceof Long) {
                         r.setTimeout((Long) readTimeout);

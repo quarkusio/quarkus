@@ -116,8 +116,10 @@ public final class TestClassIndexer {
                 return new IndexReader(fis).read();
             } catch (UnsupportedVersion e) {
                 throw new UnsupportedVersion("Can't read Jandex index from " + path + ": " + e.getMessage());
-            } catch (IOException e) {
-                // be lenient since the error is recoverable
+            } catch (IOException | IllegalArgumentException e) {
+                // be lenient since the error is recoverable; IllegalArgumentException covers
+                // "Not a jandex index" when the file was left corrupt by a JVM crash mid-write,
+                // an external process, or a downgrade (see https://github.com/quarkusio/quarkus/issues/54579)
                 return indexTestClasses(testClass);
             }
         } else {

@@ -26,6 +26,7 @@ public class HttpRequestMetric extends RequestMetricInfo {
     private String normalizedPath;
     private boolean normalizedPathComputed = false;
     private final LongAdder activeRequests;
+    private io.vertx.core.Context executionContext;
 
     private boolean requestActive = false;
 
@@ -83,6 +84,14 @@ public class HttpRequestMetric extends RequestMetricInfo {
         return request;
     }
 
+    public void setExecutionContext(io.vertx.core.Context ctx) {
+        this.executionContext = ctx;
+    }
+
+    public io.vertx.core.Context getExecutionContext() {
+        return executionContext;
+    }
+
     public void requestStarted() {
         if (!requestActive) {
             requestActive = true;
@@ -123,10 +132,12 @@ public class HttpRequestMetric extends RequestMetricInfo {
 
     String getUrlTemplatePath() {
         String urlTemplatePath = null;
-        if (request != null && VertxContext.isDuplicatedContext(request.context())) {
+        if (executionContext != null && VertxContext.isDuplicatedContext(executionContext)) {
+            urlTemplatePath = (String) VertxContext.localContextData(executionContext).get("UrlPathTemplate");
+        }
+        if (urlTemplatePath == null && request != null && VertxContext.isDuplicatedContext(request.context())) {
             urlTemplatePath = (String) VertxContext.localContextData(request.context()).get("UrlPathTemplate");
         }
-        // Fall back to Servlet container filter set templatePath if a path was not set in the request context
         return (urlTemplatePath == null ? templatePath : urlTemplatePath);
     }
 

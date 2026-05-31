@@ -26,7 +26,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -157,6 +156,15 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
+    @Override
+    public void responseBegin(HttpRequestMetric requestMetric, HttpResponse response) {
+        io.vertx.core.Context current = io.vertx.core.Vertx.currentContext();
+        if (current != null && current != requestMetric.request().context()
+                && VertxContext.isDuplicatedContext(current)) {
+            requestMetric.setExecutionContext(current);
+        }
+    }
+
     /**
      * Called when an HTTP server request begins. Vert.x will invoke
      * {@link #responseEnd} when the response has ended or {@link #requestReset} if
@@ -225,7 +233,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(), response);
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric, response);
                 for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
                     try {
                         Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
@@ -278,12 +286,34 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    private record DefaultContext(HttpServerRequest request,
-            HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
+    private static final class DefaultContext implements HttpServerMetricsTagsContributor.Context {
+        private final HttpRequestMetric requestMetric;
+        private final HttpResponse response;
+
+        DefaultContext(HttpRequestMetric requestMetric, HttpResponse response) {
+            this.requestMetric = requestMetric;
+            this.response = response;
+        }
+
         @Override
+        public HttpServerRequest request() {
+            return requestMetric.request();
+        }
+
+        @Override
+        public HttpResponse response() {
+            return response;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
         public <T> T requestContextLocalData(Object key) {
-            var c = ((HttpServerRequestInternal) request).context();
-            return (T) VertxContext.localContextData(c).get(key);
+            var c = requestMetric.request().context();
+            T value = (T) VertxContext.localContextData(c).get(key);
+            if (value == null && requestMetric.getExecutionContext() != null) {
+                value = (T) VertxContext.localContextData(requestMetric.getExecutionContext()).get(key);
+            }
+            return value;
         }
     }
 }

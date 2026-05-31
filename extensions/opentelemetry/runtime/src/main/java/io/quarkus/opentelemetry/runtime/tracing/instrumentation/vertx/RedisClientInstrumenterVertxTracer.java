@@ -49,7 +49,7 @@ public class RedisClientInstrumenterVertxTracer implements
             return true;
         }
 
-        return "redis".equals(tagExtractor.extract(request).get("db.type"));
+        return "redis".equals(tagExtractor.extract(request).get("db.system"));
     }
 
     @Override
@@ -99,11 +99,11 @@ public class RedisClientInstrumenterVertxTracer implements
 
     static class CommandTrace {
 
-        // From io.vertx.redis.client.impl.CommandReporter.Tags
-        static final String DB_STATEMENT = "db.statement";
+        // From io.vertx.redis.client.impl.CommandReporter.Tags (Vert.x 5)
+        static final String DB_OPERATION_NAME = "db.operation.name";
         static final String DB_USER = "db.user";
         static final String NETWORK_PEER_ADDRESS = "network.peer.address";
-        static final String DB_INSTANCE = "db.instance";
+        static final String DB_NAMESPACE = "db.namespace";
         static final String NETWORK_PEER_PORT = "network.peer.port";
         static final String SERVER_ADDRESS = "server.address";
         static final String SERVER_PORT = "server.port";
@@ -120,7 +120,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         public String operation() {
-            return attributes.get(DB_STATEMENT);
+            return attributes.get(DB_OPERATION_NAME);
         }
 
         public String user() {
@@ -149,7 +149,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         public String dbIndex() {
-            return attributes.get(DB_INSTANCE);
+            return attributes.get(DB_NAMESPACE);
         }
 
         static int parsePort(String port) {

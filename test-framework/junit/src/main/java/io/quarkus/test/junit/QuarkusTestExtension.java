@@ -81,6 +81,7 @@ import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.common.ClearCache;
+import io.quarkus.test.junit.launcher.SelectedTestsIndex;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -585,6 +586,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         return false;
     }
 
+    private boolean shouldBootstrap(ExtensionContext context) {
+        return SelectedTestsIndex.shouldStart(context.getRequiredTestClass());
+    }
+
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         QuarkusTestExtensionState state = getState(extensionContext);
 
@@ -680,7 +685,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         currentTestClassStack.push(requiredTestClass);
         //set the right launch mode in the outer CL, used by the HTTP host config source
         LaunchMode.set(LaunchMode.TEST);
-        if (isNativeOrIntegrationTest(requiredTestClass)) {
+        if (isNativeOrIntegrationTest(requiredTestClass) || !shouldBootstrap(context)) {
             return;
         }
         resetHangTimeout();
@@ -725,7 +730,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+        if (isNativeOrIntegrationTest(extensionContext.getRequiredTestClass()) || !shouldBootstrap(extensionContext)) {
             invocation.proceed();
             return;
         }
@@ -744,7 +749,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     public <T> T interceptTestClassConstructor(Invocation<T> invocation,
             ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
         Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
-        if (isNativeOrIntegrationTest(requiredTestClass)) {
+        if (isNativeOrIntegrationTest(requiredTestClass) || !shouldBootstrap(extensionContext)) {
             return invocation.proceed();
         }
 

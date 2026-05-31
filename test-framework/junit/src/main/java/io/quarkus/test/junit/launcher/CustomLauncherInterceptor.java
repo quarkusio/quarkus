@@ -211,7 +211,7 @@ public class CustomLauncherInterceptor
      */
     @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
-        // Do nothing, but have the method here for symmetry :)
+        SelectedTestsIndex.initialize(testPlan);
     }
 
     /**
@@ -231,6 +231,7 @@ public class CustomLauncherInterceptor
      */
     @Override
     public void testPlanExecutionFinished(TestPlan testPlan) {
+        SelectedTestsIndex.clear();
         clearContextClassloader();
     }
 }

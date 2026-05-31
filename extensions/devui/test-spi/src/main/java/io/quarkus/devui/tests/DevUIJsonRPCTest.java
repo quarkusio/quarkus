@@ -75,7 +75,7 @@ public class DevUIJsonRPCTest {
         if (this.client != null) {
             this.client.close().await();
         }
-       closeVertx();
+        closeVertx();
     }
 
     public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {
@@ -267,7 +267,6 @@ public class DevUIJsonRPCTest {
             vertx.close().await();
         }
     }
-
 
     private static final ConcurrentHashMap<Integer, WebSocketResponse> RESPONSES = new ConcurrentHashMap<>();
 

@@ -1,6 +1,6 @@
 package ilove.quark.us;
 
-import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheEntity;
 import jakarta.persistence.Entity;
 
 

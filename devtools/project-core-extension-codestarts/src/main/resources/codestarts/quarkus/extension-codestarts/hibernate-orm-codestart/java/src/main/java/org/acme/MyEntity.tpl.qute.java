@@ -1,7 +1,7 @@
 package org.acme;
 
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
-import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheEntity;
 import jakarta.persistence.Entity;
 
 

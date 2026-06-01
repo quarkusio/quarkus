@@ -1,2 +1,1 @@
-io.quarkus.vertx.core.runtime.ContextLocalsVertxServiceProvider
 io.quarkus.vertx.core.runtime.VertxMDCServiceProvider

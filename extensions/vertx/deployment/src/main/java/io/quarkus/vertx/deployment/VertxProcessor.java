@@ -304,7 +304,9 @@ class VertxProcessor {
     @BuildStep
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<ServiceProviderBuildItem> serviceProviders) {
-        // Accessed by io.vertx.core.impl.VertxBuilder.<init> via ServiceLoader
+        // VertxServiceProvider implementations are discovered at build time and passed to
+        // VertxBootstrap.serviceProviders() to bypass ServiceLoader at runtime.
+        // This registration is still needed for native image reflection support.
         serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(VertxServiceProvider.class.getName()));
         // Accessed by io.vertx.core.impl.VertxImpl.<init>
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VerticleFactory"));

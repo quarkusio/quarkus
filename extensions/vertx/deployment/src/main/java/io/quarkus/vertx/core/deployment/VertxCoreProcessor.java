@@ -66,6 +66,7 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.impl.SysProps;
 import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
+import io.vertx.core.spi.VertxServiceProvider;
 
 class VertxCoreProcessor {
 
@@ -161,10 +162,11 @@ class VertxCoreProcessor {
                 .toList();
 
         List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
+        List<VertxServiceProvider> serviceProviders = loadServices(VertxServiceProvider.class);
 
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown,
                 bootstrapCustomizer, optionsCustomizer,
-                verticleFactories, executorBuildItem.getExecutorProxy());
+                verticleFactories, serviceProviders, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)

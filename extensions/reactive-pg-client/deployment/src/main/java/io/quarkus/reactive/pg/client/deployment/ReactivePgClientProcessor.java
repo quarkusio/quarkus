@@ -42,7 +42,9 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem config() {
-        return NativeImageConfigBuildItem.builder().addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.StartupMessage")
+        return NativeImageConfigBuildItem.builder()
+                .addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.StartupMessage")
+                .addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.DataTypeCodec")
                 .build();
     }
 

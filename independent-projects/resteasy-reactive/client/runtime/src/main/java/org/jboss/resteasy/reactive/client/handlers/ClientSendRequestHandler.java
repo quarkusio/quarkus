@@ -520,7 +520,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
                             .setFollowRedirects(followRedirects);
                     String pathTemplate = (String) state.getClientFilterProperties().get("UrlPathTemplate");
-                    if (pathTemplate != null) {
+                    if (pathTemplate != null && pathTemplate.length() > 1) {
                         r.setTraceOperation(state.getHttpMethod() + " " + pathTemplate);
                     }
                     return r;

@@ -44,7 +44,38 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
+                    <!--
+                      Shade only jprotoc into the main artifact so the published POM can drop
+                      jprotoc as a transitive dependency (it bundles V3 protobuf classes that
+                      conflict with the V4 protobuf-java declared above). See #53044.
+                    -->
                     <execution>
+                        <id>shade-main</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <createSourcesJar>false</createSourcesJar>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.salesforce.servicelibs:jprotoc</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>com.salesforce.servicelibs:jprotoc</artifact>
+                                    <excludes>
+                                        <exclude>com/google/protobuf/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>shaded-classifier</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>

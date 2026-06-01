@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
-:hibernate-panache-api: https://javadoc.io/doc/io.quarkus.hibernate.panache/hibernate-panache/{quarkus-version}
+:hibernate-panache-api: https://javadoc.io/doc/io.quarkus.data.hibernate/hibernate-panache/{quarkus-version}
 :extension-status: experimental
 
 Quarkus Data Hibernate is the perfect solution if you want to get started using Hibernate in Quarkus.
@@ -116,7 +116,7 @@ create an entity:
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheEntity;
 import jakarta.persistence.Entity;
 
 import java.time.LocalDate;
@@ -184,8 +184,8 @@ placing them on an interface nested in the entity:
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
@@ -346,7 +346,7 @@ packed with most of the operations you need to work on your entity, such as, out
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.hibernate.Session;
@@ -390,7 +390,7 @@ you want to write non-type-safe queries, you can always use the provided methods
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.hibernate.Session;
@@ -446,8 +446,8 @@ specify you database identifier type:
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.processing.Find;
@@ -522,9 +522,9 @@ the `PanacheEntity.Stateless` and `PanacheRepository.Stateless` interfaces:
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
-import io.quarkus.hibernate.panache.WithId;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.WithId;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
@@ -672,9 +672,9 @@ Now, in your code, the only differences with a regular managed session entity ar
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
-import io.quarkus.hibernate.panache.WithId;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
@@ -760,9 +760,9 @@ the `PanacheEntity.Reactive.Stateless` for your entity, and `PanacheRepository.R
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
-import io.quarkus.hibernate.panache.WithId;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
@@ -947,8 +947,8 @@ But you can also define any number of repositories for your custom operations wi
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
@@ -1121,7 +1121,7 @@ Otherwise, just replace `@HQL` with `@Query` and change the package import of `@
 
 [source,java]
 ----
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheRepository;
 
 import jakarta.data.repository.Delete;
 import jakarta.data.repository.Find;

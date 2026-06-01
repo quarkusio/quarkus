@@ -2,8 +2,8 @@ package io.quarkus.it.panache.next;
 
 import jakarta.persistence.Entity;
 
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
 
 @Entity
 public class Person extends PanacheEntity {

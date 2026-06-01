@@ -5,8 +5,8 @@ import java.util.List;
 import jakarta.data.repository.Find;
 import jakarta.persistence.Entity;
 
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.PanacheRepository;
 
 @Entity
 public class Book extends PanacheEntity {

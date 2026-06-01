@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -62,6 +63,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
     private volatile boolean buildTimeLoggingActivated = false;
     private volatile boolean activated = false;
     private volatile boolean callerCalculationRequired = false;
+    private volatile Consumer<Handler[]> onHandlersInitialized;
     //accessed under lock
     private int discardLevel = Integer.MIN_VALUE;
     private int lowestInQueue = Integer.MAX_VALUE;
@@ -187,6 +189,10 @@ public class QuarkusDelayedHandler extends ExtHandler {
     public Handler[] setHandlers(final Handler[] newHandlers) throws SecurityException {
         final Handler[] result = super.setHandlers(newHandlers);
         activate();
+        Consumer<Handler[]> callback = onHandlersInitialized;
+        if (callback != null) {
+            callback.accept(newHandlers);
+        }
         return result;
     }
 
@@ -194,9 +200,22 @@ public class QuarkusDelayedHandler extends ExtHandler {
         logCloseTasks.add(runnable);
     }
 
+    /**
+     * Sets a callback that is invoked whenever handlers are configured via {@link #setHandlers(Handler[])}
+     * or {@link #setBuildTimeHandlers(Handler[])}. This allows external code (e.g., the test framework)
+     * to post-process newly installed handlers without detaching this handler from the root logger.
+     */
+    public void setOnHandlersInitialized(Consumer<Handler[]> callback) {
+        this.onHandlersInitialized = callback;
+    }
+
     public synchronized Handler[] setBuildTimeHandlers(final Handler[] newHandlers) throws SecurityException {
         final Handler[] result = super.setHandlers(newHandlers);
         buildTimeLoggingActivated = true;
+        Consumer<Handler[]> callback = onHandlersInitialized;
+        if (callback != null) {
+            callback.accept(newHandlers);
+        }
         ExtLogRecord record;
         while ((record = logRecords.pollFirst()) != null) {
             if (isEnabled() && isLoggable(record) && Logger.getLogger(record.getLoggerName()).isLoggable(record.getLevel())) {

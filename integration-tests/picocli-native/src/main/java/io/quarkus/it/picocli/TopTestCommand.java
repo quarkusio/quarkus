@@ -17,7 +17,8 @@ import picocli.CommandLine;
         UnmatchedCommand.class,
         DynamicProxyInvokerCommand.class,
         WithMethodSubCommand.class,
-        SystemPropertyCommand.class })
+        SystemPropertyCommand.class,
+        JsonLoggingCommand.class })
 public class TopTestCommand {
 
 }

@@ -18,7 +18,8 @@ import java.util.Optional;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Handler;
 
-import org.jboss.logmanager.LogContext;
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.OutputStreamHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
-import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -160,42 +160,45 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         result = null;
     }
 
-    private static Handler ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
-    private static Handler REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
+    private static Handler originalConsoleHandler;
+    private static ExtHandler originalConsoleHandlerParent;
+    private static Handler redirectConsoleHandler;
 
     private static void installLoggerRedirect() {
-        var rootLogger = LogContext.getLogContext()
-                .getLogger("");
-
-        ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
-        REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
-
-        for (var topLevelHandler : rootLogger.getHandlers()) {
-            if (topLevelHandler instanceof QuarkusDelayedHandler) {
-                ORIGINAL_QUARKUS_CONSOLE_HANDLER = topLevelHandler;
-                for (var h : ((QuarkusDelayedHandler) topLevelHandler).getHandlers()) {
-                    if (h instanceof org.jboss.logmanager.handlers.ConsoleHandler) {
-                        REDIRECT_QUARKUS_CONSOLE_HANDLER = new OutputStreamHandler(QuarkusConsole.REDIRECT_OUT,
-                                h.getFormatter());
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
-            rootLogger.removeHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
-            rootLogger.addHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
-        }
+        InitialConfigurator.DELAYED_HANDLER.setOnHandlersInitialized(
+                handlers -> swapConsoleHandler(InitialConfigurator.DELAYED_HANDLER, handlers));
     }
 
     private static void uninstallLoggerRedirect() {
-        var rootLogger = LogContext.getLogContext()
-                .getLogger("");
-        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
-            rootLogger.addHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
-            rootLogger.removeHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
+        InitialConfigurator.DELAYED_HANDLER.setOnHandlersInitialized(null);
+        if (originalConsoleHandler != null && originalConsoleHandlerParent != null) {
+            originalConsoleHandlerParent.removeHandler(redirectConsoleHandler);
+            originalConsoleHandlerParent.addHandler(originalConsoleHandler);
+            originalConsoleHandler = null;
+            originalConsoleHandlerParent = null;
+            redirectConsoleHandler = null;
+        }
+    }
+
+    private static void swapConsoleHandler(ExtHandler parent, Handler[] handlers) {
+        for (Handler handler : handlers) {
+            if (handler instanceof ConsoleHandler) {
+                originalConsoleHandler = handler;
+                originalConsoleHandlerParent = parent;
+                OutputStreamHandler redirect = new OutputStreamHandler(QuarkusConsole.REDIRECT_OUT, handler.getFormatter());
+                redirect.setLevel(handler.getLevel());
+                redirect.setFilter(handler.getFilter());
+                redirect.setErrorManager(handler.getErrorManager());
+                redirectConsoleHandler = redirect;
+                parent.removeHandler(handler);
+                parent.addHandler(redirect);
+                return;
+            } else if (handler instanceof ExtHandler) {
+                swapConsoleHandler((ExtHandler) handler, ((ExtHandler) handler).getHandlers());
+                if (originalConsoleHandler != null) {
+                    return;
+                }
+            }
         }
     }
 

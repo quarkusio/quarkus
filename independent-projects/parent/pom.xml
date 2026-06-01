@@ -474,8 +474,8 @@
                         <artifactId>maven-clean-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>default-clean</id>
-                                <phase>clean</phase>
+                                <id>clean-cache</id>
+                                <phase>pre-clean</phase>
                                 <goals>
                                     <goal>clean</goal>
                                 </goals>

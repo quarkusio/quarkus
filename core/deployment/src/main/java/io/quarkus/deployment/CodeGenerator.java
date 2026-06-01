@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -79,6 +81,7 @@ public class CodeGenerator {
             generator.setRedirectIO(true);
             trigger(classLoader, generator, appModel, config, test);
         }
+        clearAnnotationProcessorOutputDir(generatedSourcesDir);
     }
 
     private static List<CodeGenData> init(
@@ -411,6 +414,40 @@ public class CodeGenerator {
         } catch (IOException e) {
             throw new CodeGenException(
                     "Failed to create output directory for generated sources: " + outputDir.toAbsolutePath(), e);
+        }
+    }
+
+    /**
+     * Removes stale annotation-processor-generated sources left over from a
+     * previous compilation. When code generation (e.g.&nbsp;protoc) rewrites
+     * its output the {@code maven-compiler-plugin} detects "changed source
+     * code", adds the previously generated annotation sources to the
+     * {@code javac} source list, then clears the annotation output directory
+     * — leaving {@code javac} with references to files that no longer exist.
+     * <p>
+     * Clearing the directory here, between code generation and compilation,
+     * prevents the compiler from ever picking up those stale files; the
+     * annotation processor will regenerate them during the next compile
+     * because the code generation changes will trigger a full recompilation.
+     */
+    private static void clearAnnotationProcessorOutputDir(Path generatedSourcesDir) {
+        Path annotationOutputDir = generatedSourcesDir.resolve("annotations");
+        if (!Files.isDirectory(annotationOutputDir)) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(annotationOutputDir)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .filter(p -> !p.equals(annotationOutputDir))
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            // best-effort
+                        }
+                    });
+        } catch (IOException e) {
+            // best-effort — if we cannot clean up, the compiler may still fail
+            // on stale annotation sources, which is the pre-existing behavior
         }
     }
 

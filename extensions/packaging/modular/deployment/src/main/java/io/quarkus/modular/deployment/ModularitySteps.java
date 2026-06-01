@@ -91,8 +91,6 @@ public final class ModularitySteps {
             CurateOutcomeBuildItem curateOutcome) {
         // TODO: migrate these to their relevant extensions
         return List.of(
-                new AddDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
-                        Modifier.Set.of(Modifier.SERVICES)),
                 // todo: this one must be READ and LINKED because an ArC synthetic bean requires it
                 new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
                         Modifier.Set.of(Modifier.SERVICES, Modifier.READ, Modifier.LINKED)),

@@ -106,7 +106,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         } else {
             var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
                     actualTestMethodArgs, uniAsserter);
-            Future<Object> future = context.executeBlocking(handler::execute);
+            Future<Object> future = context.executeBlocking(handler::execute, false);
             return future.await(30, TimeUnit.SECONDS);
         }
     }

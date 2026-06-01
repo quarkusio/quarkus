@@ -22,7 +22,7 @@ public class MdcVerticle extends AbstractVerticle {
                         vertx.executeBlocking(() -> {
                             LOGGER.warn("Blocking task executed ### " + MDC.get(MDC_KEY));
                             return null;
-                        }).onComplete(bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
+                        }, false).onComplete(bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
                     });
                 })
                 .completion().onComplete(promise);

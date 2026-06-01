@@ -18,7 +18,7 @@ import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveRepo
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class Panache2BookCustomId implements PanacheEntity.Reactive {
+public class QuarkusDataBookCustomId implements PanacheEntity.Reactive {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;
@@ -28,16 +28,16 @@ public class Panache2BookCustomId implements PanacheEntity.Reactive {
 
     public interface DoesThisWork {
         @Find
-        Uni<List<Panache2BookCustomId>> findBook(String isbn);
+        Uni<List<QuarkusDataBookCustomId>> findBook(String isbn);
     }
 
-    public interface ManagedQueries extends PanacheManagedReactiveRepositoryBase<Panache2BookCustomId, String> {
+    public interface ManagedQueries extends PanacheManagedReactiveRepositoryBase<QuarkusDataBookCustomId, String> {
         @Find
-        Uni<List<Panache2BookCustomId>> findBook(String isbn);
+        Uni<List<QuarkusDataBookCustomId>> findBook(String isbn);
     }
 
-    public interface StatelessQueries extends PanacheStatelessReactiveRepositoryBase<Panache2BookCustomId, String> {
+    public interface StatelessQueries extends PanacheStatelessReactiveRepositoryBase<QuarkusDataBookCustomId, String> {
         @Find
-        Uni<List<Panache2BookCustomId>> findBook(String isbn);
+        Uni<List<QuarkusDataBookCustomId>> findBook(String isbn);
     }
 }

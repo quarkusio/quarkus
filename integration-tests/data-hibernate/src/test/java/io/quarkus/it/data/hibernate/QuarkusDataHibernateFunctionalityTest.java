@@ -1,4 +1,4 @@
-package io.quarkus.it.panache.next;
+package io.quarkus.it.data.hibernate;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class PanacheNextFunctionalityTest {
+public class QuarkusDataHibernateFunctionalityTest {
 
     @Test
     public void testPersonEndpoint() {

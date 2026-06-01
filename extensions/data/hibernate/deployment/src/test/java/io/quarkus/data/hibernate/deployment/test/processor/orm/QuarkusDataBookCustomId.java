@@ -17,7 +17,7 @@ import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingReposito
 import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepositoryBase;
 
 @Entity
-public class Panache2BookCustomId implements PanacheEntity.Managed {
+public class QuarkusDataBookCustomId implements PanacheEntity.Managed {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;
@@ -27,16 +27,16 @@ public class Panache2BookCustomId implements PanacheEntity.Managed {
 
     public interface DoesThisWork {
         @Find
-        List<Panache2BookCustomId> findBook(String isbn);
+        List<QuarkusDataBookCustomId> findBook(String isbn);
     }
 
-    public interface ManagedQueries extends PanacheManagedBlockingRepositoryBase<Panache2BookCustomId, String> {
+    public interface ManagedQueries extends PanacheManagedBlockingRepositoryBase<QuarkusDataBookCustomId, String> {
         @Find
-        List<Panache2BookCustomId> findBook(String isbn);
+        List<QuarkusDataBookCustomId> findBook(String isbn);
     }
 
-    public interface StatelessQueries extends PanacheStatelessBlockingRepositoryBase<Panache2BookCustomId, String> {
+    public interface StatelessQueries extends PanacheStatelessBlockingRepositoryBase<QuarkusDataBookCustomId, String> {
         @Find
-        List<Panache2BookCustomId> findBook(String isbn);
+        List<QuarkusDataBookCustomId> findBook(String isbn);
     }
 }

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,22 +45,30 @@ public final class JandexUtil {
     }
 
     public static Index createIndex(Path path) {
-        Indexer indexer = new Indexer();
+        List<Path> classFilesToIndex = new ArrayList<>();
         try (Stream<Path> files = Files.walk(path)) {
             files.forEach(new Consumer<Path>() {
                 @Override
                 public void accept(Path path) {
                     if (path.toString().endsWith(".class")) {
-                        try (InputStream in = Files.newInputStream(path)) {
-                            indexer.index(in);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                        classFilesToIndex.add(path);
                     }
                 }
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        Indexer indexer = new Indexer();
+        for (Path file : classFilesToIndex) {
+            try (InputStream in = Files.newInputStream(file)) {
+                indexer.index(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return indexer.complete();
     }

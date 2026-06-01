@@ -25,7 +25,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
@@ -63,7 +62,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
@@ -395,23 +394,21 @@ public class ResteasyReactiveScanningProcessor {
         // if we have custom filters, we need to index these classes
         if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()
                 || !customExceptionMappers.isEmpty()) {
-            Indexer indexer = new Indexer();
-            Set<DotName> additionalIndex = new HashSet<>();
             //we have to use the non-computing index here
             //the logic checks if the bean is already indexed, so the computing one breaks this
+            LazyIndexer indexer = new LazyIndexer(Thread.currentThread().getContextClassLoader(),
+                    combinedIndexBuildItem.getIndex());
             for (CustomContainerRequestFilterBuildItem filter : customContainerRequestFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                indexer.add(filter.getClassName());
             }
             for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                indexer.add(filter.getClassName());
             }
             for (CustomExceptionMapperBuildItem mapper : customExceptionMappers) {
-                IndexingUtil.indexClass(mapper.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                indexer.add(mapper.getClassName());
             }
-            index = CompositeIndex.create(index, indexer.complete());
+            LazyIndexer.Result result = indexer.complete();
+            index = CompositeIndex.create(index, result.index());
         }
 
         List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,

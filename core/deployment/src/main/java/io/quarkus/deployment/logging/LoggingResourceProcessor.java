@@ -414,7 +414,7 @@ public final class LoggingResourceProcessor {
             LogBuildTimeConfig logBuildTimeConfig,
             BuildProducer<LoggingDecorateBuildItem> loggingDecorateProducer) {
         List<IndexView> indexList = new ArrayList<>();
-        for (ApplicationArchive i : item.getAllApplicationArchives()) {
+        for (ApplicationArchive i : item.getAllArchives()) {
             if (i.getResolvedPaths().isSinglePath() && Files.isDirectory(i.getResolvedPaths().getSinglePath())) {
                 indexList.add(i.getIndex());
             }

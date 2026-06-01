@@ -17,7 +17,7 @@ import io.quarkus.data.hibernate.PanacheEntity;
 import io.quarkus.data.hibernate.PanacheRepository;
 
 @Entity
-public class Panache2Book extends PanacheEntity {
+public class QuarkusDataBook extends PanacheEntity {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;
@@ -26,16 +26,16 @@ public class Panache2Book extends PanacheEntity {
 
     public interface Queries {
         @Find
-        List<Panache2Book> findBook(String isbn);
+        List<QuarkusDataBook> findBook(String isbn);
 
         @HQL("WHERE isbn = :isbn")
-        List<Panache2Book> hqlBook(String isbn);
+        List<QuarkusDataBook> hqlBook(String isbn);
     }
 
     public interface JDQueries {
         // This should work without @Repository
         @jakarta.data.repository.Find
-        List<Panache2Book> findBook(String isbn);
+        List<QuarkusDataBook> findBook(String isbn);
 
         // should pick up the primary entity from the outer entity
         @Delete
@@ -43,10 +43,10 @@ public class Panache2Book extends PanacheEntity {
     }
 
     // this should work just because we're extending a panache repo, no member required
-    public interface MyRepo extends PanacheRepository<Panache2Book> {
+    public interface MyRepo extends PanacheRepository<QuarkusDataBook> {
     }
 
-    public interface StatelessRepo extends PanacheRepository.Stateless<Long, Panache2Book> {
+    public interface StatelessRepo extends PanacheRepository.Stateless<Long, QuarkusDataBook> {
         // should pick up the primary entity from the outer entity
         @Delete
         long deleteByTitle(String title);

@@ -1,4 +1,4 @@
-package io.quarkus.it.panache.next;
+package io.quarkus.it.data.hibernate;
 
 import java.util.List;
 

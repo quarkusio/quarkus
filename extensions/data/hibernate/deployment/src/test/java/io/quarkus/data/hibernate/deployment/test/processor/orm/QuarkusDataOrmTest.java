@@ -15,11 +15,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.data.hibernate.WithId;
 
-public class QuarkusOrmPanache2Test {
+public class QuarkusDataOrmTest {
     @Test
     public void testPanacheEntityMetamodel() throws Exception {
         // Panache entity
-        Class<?> entityClass = Panache2Book_.class;
+        Class<?> entityClass = QuarkusDataBook_.class;
         Assertions.assertNotNull(entityClass);
 
         // Make sure it has the proper supertype
@@ -32,80 +32,80 @@ public class QuarkusOrmPanache2Test {
         Method method = entityClass.getDeclaredMethod("queries");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2Book.Queries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBook.Queries.class, method.getReturnType());
 
         // Nested repo accessor
         method = entityClass.getDeclaredMethod("JDQueries");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2Book.JDQueries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBook.JDQueries.class, method.getReturnType());
 
         // Nested repo accessor
         method = entityClass.getDeclaredMethod("myRepo");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2Book.MyRepo.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBook.MyRepo.class, method.getReturnType());
 
         // Predefined repo accessors
         method = entityClass.getDeclaredMethod("managedBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2Book.class.getName() + "$MyRepo", method.getReturnType().getName());
+        Assertions.assertEquals(QuarkusDataBook.class.getName() + "$MyRepo", method.getReturnType().getName());
 
         method = entityClass.getDeclaredMethod("statelessBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2Book.class.getName() + "$StatelessRepo",
+        Assertions.assertEquals(QuarkusDataBook.class.getName() + "$StatelessRepo",
                 method.getReturnType().getName());
     }
 
     @Test
     public void testPanacheEntityCustomIdMetamodel() throws Exception {
         // Panache entity
-        Class<?> entityClass = Panache2BookCustomId_.class;
+        Class<?> entityClass = QuarkusDataBookCustomId_.class;
         Assertions.assertNotNull(entityClass);
 
         // Nested repo accessor
         Method method = entityClass.getDeclaredMethod("managedQueries");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2BookCustomId.ManagedQueries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class, method.getReturnType());
 
         // Nested repo accessor
         method = entityClass.getDeclaredMethod("statelessQueries");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2BookCustomId.StatelessQueries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
 
         // Predefined repo accessors
         method = entityClass.getDeclaredMethod("managedBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2BookCustomId.ManagedQueries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class, method.getReturnType());
 
         method = entityClass.getDeclaredMethod("statelessBlocking");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(Panache2BookCustomId.StatelessQueries.class, method.getReturnType());
+        Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
 
-        Class<?> managedQueriesClass = Panache2BookCustomId_.ManagedQueries_.class;
+        Class<?> managedQueriesClass = QuarkusDataBookCustomId_.ManagedQueries_.class;
         Assertions.assertNotNull(managedQueriesClass);
         // make sure it's a repository
         Assertions.assertFalse(Modifier.isAbstract(managedQueriesClass.getModifiers()));
         Class<?>[] interfaces = managedQueriesClass.getInterfaces();
         Assertions.assertEquals(1, interfaces.length);
-        Assertions.assertEquals(Panache2BookCustomId.ManagedQueries.class.getName(), interfaces[0].getName());
+        Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class.getName(), interfaces[0].getName());
 
         Constructor<?> constructor = managedQueriesClass.getConstructor(Session.class);
         Assertions.assertNotNull(constructor);
 
-        Class<?> statelessQueriesClass = Panache2BookCustomId_.StatelessQueries_.class;
+        Class<?> statelessQueriesClass = QuarkusDataBookCustomId_.StatelessQueries_.class;
         Assertions.assertNotNull(statelessQueriesClass);
         // make sure it's a repository
         Assertions.assertFalse(Modifier.isAbstract(statelessQueriesClass.getModifiers()));
         interfaces = statelessQueriesClass.getInterfaces();
         Assertions.assertEquals(1, interfaces.length);
-        Assertions.assertEquals(Panache2BookCustomId.StatelessQueries.class.getName(), interfaces[0].getName());
+        Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class.getName(), interfaces[0].getName());
 
         constructor = statelessQueriesClass.getConstructor(StatelessSession.class);
         Assertions.assertNotNull(constructor);

@@ -1,4 +1,4 @@
-package io.quarkus.it.panache.next;
+package io.quarkus.it.data.hibernate;
 
 import jakarta.inject.Inject;
 
@@ -10,7 +10,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class PanacheNextInjectMockTest {
+public class QuarkusDataHibernateInjectMockTest {
 
     @Inject
     PersonService personService;

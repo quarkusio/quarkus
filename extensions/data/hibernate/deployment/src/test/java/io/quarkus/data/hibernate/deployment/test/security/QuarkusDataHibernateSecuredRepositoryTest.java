@@ -48,7 +48,7 @@ import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
 
 @ActivateRequestContext
-class PanacheNextSecuredRepositoryTest {
+class QuarkusDataHibernateSecuredRepositoryTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest runner = new QuarkusExtensionTest()

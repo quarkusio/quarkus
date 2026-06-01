@@ -17,7 +17,7 @@ import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class Panache2Book extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class QuarkusDataBook extends WithId.AutoLong implements PanacheEntity.Reactive {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;
@@ -26,9 +26,9 @@ public class Panache2Book extends WithId.AutoLong implements PanacheEntity.React
 
     public interface Queries {
         @Find
-        Uni<List<Panache2Book>> findBook(String isbn);
+        Uni<List<QuarkusDataBook>> findBook(String isbn);
 
         @HQL("WHERE isbn = :isbn")
-        Uni<List<Panache2Book>> hqlBook(String isbn);
+        Uni<List<QuarkusDataBook>> hqlBook(String isbn);
     }
 }

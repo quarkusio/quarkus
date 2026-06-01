@@ -128,7 +128,7 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    void makePanache2ReposApplicationScopedAndUnremovable(
+    void makeQuarkusDataReposApplicationScopedAndUnremovable(
             CombinedIndexBuildItem index,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItems) {

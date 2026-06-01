@@ -27,13 +27,28 @@ public final class GeneratedResourceBuildItem extends MultiBuildItem {
     }
 
     public GeneratedResourceBuildItem(String name, byte[] data, boolean excludeFromDevCL) {
-        if (name.startsWith("META-INF/services/")) {
+        this(name, data, excludeFromDevCL, false);
+    }
+
+    private GeneratedResourceBuildItem(String name, byte[] data, boolean excludeFromDevCL,
+            boolean allowMetaInfServices) {
+        if (name.startsWith("META-INF/services/") && !allowMetaInfServices) {
             throw new IllegalArgumentException(
-                    "Use GeneratedServiceProviderBuildItem to register service providers instead of GeneratedResourceBuildItem");
+                    "Use GeneratedServiceProviderBuildItem to register service providers instead of GeneratedResourceBuildItem, or use GeneratedResourceBuildItem.allowingMetaInfServices(...) if your "
+                            + name + " resource is not a service provider");
         }
         this.name = name;
         this.data = data;
         this.excludeFromDevCL = excludeFromDevCL;
+    }
+
+    /**
+     * Use only for {@code META-INF/services/} resources with a non-standard format incompatible with
+     * {@link GeneratedServiceProviderBuildItem}. Prefer {@link GeneratedServiceProviderBuildItem} for standard
+     * Java {@link java.util.ServiceLoader} registrations.
+     */
+    public static GeneratedResourceBuildItem allowingMetaInfServices(String name, byte[] data) {
+        return new GeneratedResourceBuildItem(name, data, false, true);
     }
 
     public String getName() {

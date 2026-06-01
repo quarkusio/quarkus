@@ -62,17 +62,61 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <!-- Generates the DelayedConfiguration class from the
-                         @ServiceDiscoveryType / @ServiceDiscoveryAttribute annotations
-                         on DelayedServiceDiscoveryProvider. -->
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.smallrye.stork</groupId>
-                            <artifactId>stork-configuration-generator</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <!-- Generate DelayedConfiguration and *ProviderLoader in a dedicated
+                         phase so javac compile does not read AP output while it is written
+                         (avoids intermittent "error reading" failures in parallel builds). -->
+                    <execution>
+                        <id>generate-stork-configuration</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <proc>only</proc>
+                            <!-- Only the Stork registrar: gRPC stubs are generated later by quarkus:generate-code. -->
+                            <includes>
+                                <include>**/DelayedServiceDiscoveryProvider.java</include>
+                            </includes>
+                            <!-- Outside generated-sources/annotations so default-compile cleanup does not delete these files. -->
+                            <generatedSourcesDirectory>${project.build.directory}/generated-stork-sources</generatedSourcesDirectory>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.smallrye.stork</groupId>
+                                    <artifactId>stork-configuration-generator</artifactId>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <proc>none</proc>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-stork-generated-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-stork-sources</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>

@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -73,6 +74,21 @@ public class AmazonLambdaHttpProcessor {
     @BuildStep
     public ProvidedAmazonLambdaHandlerBuildItem setHandler() {
         return new ProvidedAmazonLambdaHandlerBuildItem(LambdaHttpHandler.class, "AWS Lambda HTTP");
+    }
+
+    @BuildStep
+    public AdditionalIndexedClassesBuildItem addModelClassesToIndex() {
+        return new AdditionalIndexedClassesBuildItem(
+                AlbContext.class.getName(),
+                ApiGatewayAuthorizerContext.class.getName(),
+                ApiGatewayRequestIdentity.class.getName(),
+                AwsProxyRequest.class.getName(),
+                AwsProxyRequestContext.class.getName(),
+                AwsProxyResponse.class.getName(),
+                CognitoAuthorizerClaims.class.getName(),
+                ErrorModel.class.getName(),
+                Headers.class.getName(),
+                MultiValuedTreeMap.class.getName());
     }
 
     @BuildStep

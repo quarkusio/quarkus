@@ -1,0 +1,287 @@
+# This file is generated from MAINTAINERS.adoc
+# Each line maps a path pattern to one or more GitHub usernames.
+
+# Agroal
+/extensions/agroal/ @gsmet @barreiro
+
+# Amazon Lambda
+/extensions/amazon-lambda*/ @patriot1burke
+/integration-tests/amazon-lambda*/ @patriot1burke
+
+# ArC
+/extensions/arc/ @mkouba @manovotn
+/independent-projects/arc/ @mkouba @manovotn
+
+# Avro
+/extensions/avro/ @cescoffier
+/integration-tests/avro-reload/ @cescoffier
+
+# Azure Functions HTTP
+/extensions/azure-functions*/ @patriot1burke
+
+# Cache
+/extensions/cache/ @gwenneg
+/integration-tests/cache*/ @gwenneg
+
+# Caffeine
+/extensions/caffeine/ @galderz @wburns
+
+# Container Image
+/extensions/container-image/ @geoand
+/integration-tests/container-image/ @geoand
+
+# Elasticsearch
+/extensions/elasticsearch-rest-client-common/ @gsmet @yrodiere @loicmathieu
+/extensions/elasticsearch-rest-client/ @loicmathieu @gsmet
+/extensions/elasticsearch-java-client/ @gsmet @yrodiere @loicmathieu
+/integration-tests/elasticsearch-*/ @loicmathieu @gsmet
+
+# Elytron Security
+/extensions/elytron-security/ @sberyozkin
+/extensions/elytron-security-common/ @sberyozkin
+/extensions/elytron-security-oauth2/ @loicmathieu
+/extensions/elytron-security-jdbc/ @danielpetisme
+/extensions/elytron-security-ldap/
+/extensions/elytron-security-properties-file/
+/integration-tests/elytron-*/ @sberyozkin
+
+# Flyway
+/extensions/flyway*/ @cristhiank @gastaldi @geoand
+/integration-tests/flyway/ @cristhiank @gastaldi @geoand
+
+# Funqy
+/extensions/funqy/ @patriot1burke
+/integration-tests/funqy-*/ @patriot1burke
+
+# Google Cloud Functions
+/extensions/google-cloud-functions*/ @loicmathieu
+/integration-tests/google-cloud-functions*/ @loicmathieu
+
+# gRPC
+/extensions/grpc/ @cescoffier @alesj
+/extensions/grpc-common/ @cescoffier @alesj
+/integration-tests/grpc-*/ @cescoffier @alesj
+
+# Hibernate ORM
+/extensions/hibernate-orm/ @yrodiere @gsmet
+/extensions/hibernate-envers/ @yrodiere @gsmet
+/extensions/hibernate-reactive/ @yrodiere @gsmet
+/integration-tests/hibernate-orm-*/ @yrodiere @gsmet
+/integration-tests/hibernate-reactive-*/ @yrodiere @gsmet
+/integration-tests/hibernate-panache-next/ @yrodiere @gsmet
+/integration-tests/jpa*/ @yrodiere @gsmet
+
+# Hibernate ORM with Panache
+/extensions/panache/ @FroMage
+
+# Hibernate Search
+/extensions/hibernate-search-*/ @yrodiere @gsmet
+/integration-tests/hibernate-search-*/ @yrodiere @gsmet
+
+# Hibernate Validator
+/extensions/hibernate-validator/ @gsmet
+/integration-tests/hibernate-validator*/ @gsmet
+
+# Infinispan
+/extensions/infinispan-*/ @wburns @karesti
+/integration-tests/infinispan-*/ @wburns @karesti
+
+# Jackson
+/extensions/jackson/ @geoand @gsmet
+/integration-tests/jackson/ @geoand @gsmet
+
+# JAXB
+/extensions/jaxb/ @gsmet
+/integration-tests/jaxb/ @gsmet
+
+# JAXP
+/extensions/jaxp/ @gsmet
+/integration-tests/jaxp/ @gsmet
+
+# JDBC
+/extensions/jdbc/ @Sanne @gsmet
+
+# JSON-B
+/extensions/jsonb/ @geoand @gsmet
+/integration-tests/jsonb/ @geoand @gsmet
+
+# JSON-P
+/extensions/jsonp/ @gsmet
+
+# Kafka Client
+/extensions/kafka-client/ @cescoffier
+/integration-tests/kafka/ @cescoffier
+/integration-tests/kafka-*/ @cescoffier
+
+# Kafka Streams
+/extensions/kafka-streams/ @gunnarmorling
+/integration-tests/kafka-streams/ @gunnarmorling
+
+# Kotlin
+/extensions/kotlin/ @geoand
+/integration-tests/kotlin*/ @geoand
+
+# Kubernetes
+/extensions/kubernetes/ @Sgitario
+/integration-tests/kubernetes/ @Sgitario
+
+# Kubernetes Client
+/extensions/kubernetes-client/ @geoand @gastaldi
+/integration-tests/kubernetes-client*/ @geoand @gastaldi
+/integration-tests/kubernetes-service-binding-*/ @geoand @gastaldi
+
+# Liquibase
+/extensions/liquibase/ @andrejpetras @geoand
+/integration-tests/liquibase*/ @andrejpetras @geoand
+
+# Mailer
+/extensions/mailer/ @cescoffier
+/integration-tests/mailer/ @cescoffier
+
+# MongoDB
+/extensions/mongodb-client/ @cescoffier
+/integration-tests/mongodb-*/ @cescoffier
+
+# Narayana JTA
+/extensions/narayana-jta/ @mmusgrov @gsmet
+/integration-tests/narayana-jta/ @mmusgrov @gsmet
+/integration-tests/narayana-lra/ @mmusgrov @gsmet
+
+# Narayana STM
+/extensions/narayana-stm/ @mmusgrov
+/integration-tests/narayana-stm/ @mmusgrov
+
+# Netty
+/extensions/netty/ @cescoffier
+
+# OIDC (OpenID Connect)
+/extensions/oidc*/ @sberyozkin @pedroigor
+/integration-tests/oidc*/ @sberyozkin @pedroigor
+/integration-tests/keycloak-authorization/ @sberyozkin @pedroigor
+
+# OpenShift
+/extensions/openshift-client/ @geoand
+/integration-tests/openshift-client/ @geoand
+
+# Quartz
+/extensions/quartz/ @mkouba @machi1990
+/integration-tests/quartz*/ @mkouba @machi1990
+
+# Qute (Templates)
+/extensions/qute/ @mkouba
+/independent-projects/qute/ @mkouba
+/integration-tests/qute/ @mkouba
+
+# Reactive Messaging
+/extensions/smallrye-reactive-messaging/ @cescoffier
+/extensions/smallrye-reactive-messaging-amqp/ @cescoffier
+/extensions/smallrye-reactive-messaging-kafka/ @cescoffier @ozangunalp
+/extensions/smallrye-reactive-messaging-mqtt/ @cescoffier
+/extensions/smallrye-reactive-messaging-pulsar/ @cescoffier
+/extensions/smallrye-reactive-messaging-rabbitmq/ @cescoffier
+/integration-tests/reactive-messaging-*/ @cescoffier
+
+# Reactive SQL Clients
+/extensions/reactive-mysql-client/ @tsegismont
+/extensions/reactive-pg-client/ @tsegismont
+/extensions/reactive-db2-client/ @tsegismont
+/extensions/reactive-mssql-client/ @tsegismont
+/extensions/reactive-oracle-client/ @tsegismont
+/integration-tests/reactive-mysql-client/ @tsegismont
+/integration-tests/reactive-pg-client/ @tsegismont
+/integration-tests/reactive-db2-client/ @tsegismont
+/integration-tests/reactive-mssql-client/ @tsegismont
+/integration-tests/reactive-oracle-client/ @tsegismont
+
+# Reactive Streams Operators
+/extensions/reactive-streams-operators/ @cescoffier
+
+# Redis
+/extensions/redis-*/ @machi1990 @cescoffier @gsmet
+/integration-tests/redis-*/ @machi1990 @cescoffier @gsmet
+
+# REST Client / RESTEasy Reactive
+/extensions/resteasy-reactive/ @geoand @gsmet
+/independent-projects/resteasy-reactive/ @geoand @gsmet
+/integration-tests/rest-client-reactive*/ @geoand @gsmet
+/integration-tests/resteasy-reactive-kotlin/ @geoand @gsmet
+
+# RESTEasy Classic
+/extensions/resteasy-classic/ @patriot1burke @gsmet
+/integration-tests/rest-client/ @patriot1burke @gsmet
+/integration-tests/resteasy-jackson/ @patriot1burke @gsmet
+/integration-tests/resteasy-mutiny/ @patriot1burke @gsmet
+
+# Scala
+/extensions/scala/
+/integration-tests/scala/
+
+# Scheduler
+/extensions/scheduler/ @mkouba
+
+# SmallRye Config
+/integration-tests/smallrye-config/ @radcortez
+
+# SmallRye Context Propagation
+/extensions/smallrye-context-propagation/ @FroMage @manovotn
+/integration-tests/smallrye-context-propagation/ @FroMage @manovotn
+
+# SmallRye Fault Tolerance
+/extensions/smallrye-fault-tolerance/ @Ladicek
+
+# SmallRye Health
+/extensions/smallrye-health/ @antoinesd @jmartisk
+
+# SmallRye JWT
+/extensions/smallrye-jwt/ @sberyozkin @radcortez
+/extensions/smallrye-jwt-build/ @sberyozkin @radcortez
+/integration-tests/smallrye-jwt*/ @sberyozkin @radcortez
+
+# SmallRye OpenAPI
+/extensions/smallrye-openapi/ @phillip-kruger @radcortez @EricWittmann
+/extensions/smallrye-openapi-common/ @phillip-kruger @radcortez @EricWittmann
+/integration-tests/openapi/ @phillip-kruger @radcortez @EricWittmann
+
+# SmallRye GraphQL
+/extensions/smallrye-graphql/ @phillip-kruger @jmartisk
+/extensions/smallrye-graphql-client/ @jmartisk @phillip-kruger
+/integration-tests/smallrye-graphql/ @phillip-kruger @jmartisk
+/integration-tests/smallrye-graphql-client*/ @jmartisk @phillip-kruger
+
+# Spring
+/extensions/spring-boot-properties/
+/extensions/spring-cache/ @geoand
+/extensions/spring-cloud-config-client/ @geoand
+/extensions/spring-di/ @geoand
+/extensions/spring-data-jpa/ @geoand
+/extensions/spring-scheduled/ @aureamunoz
+/extensions/spring-web/ @geoand
+/integration-tests/spring-boot-properties/
+/integration-tests/spring-cloud-config-client/ @geoand
+/integration-tests/spring-di/ @geoand
+/integration-tests/spring-data-jpa/ @geoand
+/integration-tests/spring-data-rest/ @geoand
+/integration-tests/spring-web/ @geoand
+/integration-tests/spring-tx/ @geoand
+
+# Swagger UI
+/extensions/swagger-ui/ @phillip-kruger
+
+# Undertow
+/extensions/undertow/
+
+# Vert.x
+/extensions/vertx/ @cescoffier
+/extensions/vertx-http/ @cescoffier
+/extensions/vertx-graphql/ @cescoffier
+/independent-projects/vertx-utils/ @cescoffier
+/integration-tests/vertx/ @cescoffier
+/integration-tests/vertx-http/ @cescoffier
+/integration-tests/vertx-http-compressors/ @cescoffier
+/integration-tests/vertx-graphql/ @cescoffier
+/integration-tests/vertx-kotlin/ @cescoffier
+/integration-tests/vertx-web*/ @cescoffier
+
+# Websockets Next
+/extensions/websockets-next/ @mkouba
+/integration-tests/websockets-next/ @mkouba

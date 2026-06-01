@@ -105,7 +105,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.HIBERNATE_ORM_PANACHE); // FIXME
+        return new FeatureBuildItem(Feature.QUARKUS_DATA_HIBERNATE);
     }
 
     @BuildStep

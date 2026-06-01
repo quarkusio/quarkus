@@ -276,6 +276,7 @@ public class DevUIJsonRPCTest {
     void closeVertx() {
         if (vertx != null) {
             vertx.close().await();
+            vertx = null;
         }
     }
 

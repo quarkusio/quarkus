@@ -313,6 +313,7 @@ public final class LoggingResourceProcessor {
 
             context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
             context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
+            context.registerSubstitution(Level.class, String.class, LogCleanupFilterElement.LevelSubstitution.class);
 
             DiscoveredLogComponents discoveredLogComponents = discoverLogComponents(combinedIndexBuildItem.getIndex());
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
@@ -323,14 +324,6 @@ public final class LoggingResourceProcessor {
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }
 
-            shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
-                    recorder.initializeLogging(discoveredLogComponents,
-                            categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                            streamingDevUiLogHandler, handlers, namedHandlers,
-                            possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
-                            possibleSocketFormatters, namedHandlerFormatters,
-                            possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
-
             List<LogCleanupFilterElement> additionalLogCleanupFilters = new ArrayList<>(logCleanupFilters.size());
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {
                 LogCleanupFilterElement filterElement = i.getFilterElement();
@@ -340,6 +333,15 @@ public final class LoggingResourceProcessor {
                                 : filterElement.getTargetLevel(),
                         filterElement.getMessageStarts()));
             }
+
+            shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
+                    recorder.initializeLogging(discoveredLogComponents,
+                            categoryMinLevelDefaults.content, alwaysEnableLogStream,
+                            streamingDevUiLogHandler, handlers, namedHandlers,
+                            possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
+                            possibleSocketFormatters, namedHandlerFormatters,
+                            possibleSupplier, launchModeBuildItem.getLaunchMode(), true,
+                            additionalLogCleanupFilters)));
 
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
             LogBuildTimeConfig logBuildTimeConfig = config.getConfigMapping(LogBuildTimeConfig.class);

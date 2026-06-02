@@ -22,6 +22,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Used for Amazon Lambda java runtime
@@ -37,9 +38,13 @@ public class AmazonLambdaRecorder {
     protected static Set<Class<?>> expectedExceptionClasses;
 
     private final RuntimeValue<LambdaConfig> runtimeConfig;
+    private final RuntimeValue<ValueRegistry> valueRegistry;
 
-    public AmazonLambdaRecorder(RuntimeValue<LambdaConfig> runtimeConfig) {
+    public AmazonLambdaRecorder(
+            RuntimeValue<LambdaConfig> runtimeConfig,
+            RuntimeValue<ValueRegistry> valueRegistry) {
         this.runtimeConfig = runtimeConfig;
+        this.valueRegistry = valueRegistry;
     }
 
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
@@ -185,8 +190,7 @@ public class AmazonLambdaRecorder {
                 return expectedExceptionClasses.stream().noneMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
             }
         };
-        loop.startPollLoop(context);
-
+        loop.startPollLoop(valueRegistry.getValue(), context);
     }
 
     public record RequestHandlerDefinition(Class<? extends RequestHandler<?, ?>> handlerClass,

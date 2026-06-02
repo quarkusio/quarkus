@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.runtime.ValueRegistryImpl;
+
 public class TestResourceManagerTest {
 
     private static final String OVERRIDEN_KEY = "overridenKey";
@@ -26,7 +28,7 @@ public class TestResourceManagerTest {
     void testRepeatableAnnotationsAreIndexed(Class<?> clazz) {
         AtomicInteger counter = new AtomicInteger();
         TestResourceManager manager = new TestResourceManager(clazz);
-        manager.inject(counter);
+        manager.inject(ValueRegistryImpl.builder().build(), counter);
         assertThat(counter.intValue()).isEqualTo(2);
     }
 

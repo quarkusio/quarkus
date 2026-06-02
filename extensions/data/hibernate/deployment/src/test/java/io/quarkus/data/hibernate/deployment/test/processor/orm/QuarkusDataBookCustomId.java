@@ -13,11 +13,11 @@ import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.processing.Find;
 
 import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingRepositoryBase;
-import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepositoryBase;
+import io.quarkus.data.hibernate.ManagedRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 
 @Entity
-public class QuarkusDataBookCustomId implements ManagedEntity {
+public class QuarkusDataBookCustomId implements ManagedEntity.CustomId {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;
@@ -30,12 +30,12 @@ public class QuarkusDataBookCustomId implements ManagedEntity {
         List<QuarkusDataBookCustomId> findBook(String isbn);
     }
 
-    public interface ManagedQueries extends PanacheManagedBlockingRepositoryBase<QuarkusDataBookCustomId, String> {
+    public interface ManagedQueries extends ManagedRepository.CustomId<QuarkusDataBookCustomId, String> {
         @Find
         List<QuarkusDataBookCustomId> findBook(String isbn);
     }
 
-    public interface StatelessQueries extends PanacheStatelessBlockingRepositoryBase<QuarkusDataBookCustomId, String> {
+    public interface StatelessQueries extends RecordRepository.CustomId<QuarkusDataBookCustomId, String> {
         @Find
         List<QuarkusDataBookCustomId> findBook(String isbn);
     }

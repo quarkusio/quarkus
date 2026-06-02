@@ -9,22 +9,22 @@ import io.quarkus.data.hibernate.RecordRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class JakartaDataSaveEntity extends ManagedEntity.AutoLong {
+public class JakartaDataSaveEntity extends ManagedEntity {
 
     public String name;
 
-    public interface MethodSecured extends RecordRepository<JakartaDataSaveEntity, Long> {
+    public interface MethodSecured extends RecordRepository<JakartaDataSaveEntity> {
         @Authenticated
         @Save
         void mySave(JakartaDataSaveEntity entity);
     }
 
     @Authenticated
-    public interface ClassSecured extends RecordRepository<JakartaDataSaveEntity, Long> {
+    public interface ClassSecured extends RecordRepository<JakartaDataSaveEntity> {
         @Save
         void mySave(JakartaDataSaveEntity entity);
     }
 
-    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<JakartaDataSaveEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository<JakartaDataSaveEntity> {
     }
 }

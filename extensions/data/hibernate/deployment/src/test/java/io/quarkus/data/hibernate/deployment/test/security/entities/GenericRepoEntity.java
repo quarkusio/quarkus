@@ -12,7 +12,7 @@ import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class GenericRepoEntity extends ManagedEntity.AutoLong {
+public class GenericRepoEntity extends ManagedEntity {
 
     public String name;
 
@@ -27,6 +27,6 @@ public class GenericRepoEntity extends ManagedEntity.AutoLong {
         List<GenericRepoEntity> securedFindAll(Order<GenericRepoEntity> order);
     }
 
-    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<GenericRepoEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository<GenericRepoEntity> {
     }
 }

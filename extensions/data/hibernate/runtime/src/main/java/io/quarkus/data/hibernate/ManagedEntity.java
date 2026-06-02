@@ -6,15 +6,16 @@ import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveEntity;
 /**
  * Represents an entity with managed blocking operations.
  */
-public interface ManagedEntity extends PanacheManagedBlockingEntity {
+public class ManagedEntity extends WithId.AutoLong implements PanacheManagedBlockingEntity {
 
-    class AutoLong extends WithId.AutoLong implements ManagedEntity {
+    public interface CustomId extends PanacheManagedBlockingEntity {
     }
 
     /**
      * Represents an entity with managed reactive operations.
      */
-    interface Reactive extends PanacheManagedReactiveEntity {
-
+    public static class Reactive extends WithId.AutoLong implements PanacheManagedReactiveEntity {
+        public interface CustomId extends PanacheManagedReactiveEntity {
+        }
     }
 }

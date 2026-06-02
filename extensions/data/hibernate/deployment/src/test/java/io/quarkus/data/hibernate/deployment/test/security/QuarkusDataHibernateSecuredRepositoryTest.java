@@ -331,12 +331,12 @@ class QuarkusDataHibernateSecuredRepositoryTest {
     }
 
     @Transactional
-    <T> T findEntity(Long id, ManagedRepository.AutoLong<T> panacheRepository) {
+    <T> T findEntity(Long id, ManagedRepository<T> panacheRepository) {
         return panacheRepository.findById(id);
     }
 
     @Transactional
-    <T> void cleanUp(ManagedRepository.AutoLong<T> panacheRepository) {
+    <T> void cleanUp(ManagedRepository<T> panacheRepository) {
         clearIdentity();
         assertActionAllowed(panacheRepository::deleteAll);
         assertThat(panacheRepository.count()).isEqualTo(0);
@@ -357,7 +357,7 @@ class QuarkusDataHibernateSecuredRepositoryTest {
         assertThatNoException().isThrownBy(runnable::run);
     }
 
-    <T> void createEntity(T entity, ManagedRepository.AutoLong<T> panacheRepository) {
+    <T> void createEntity(T entity, ManagedRepository<T> panacheRepository) {
         assertActionAllowed(() -> panacheRepository.persist(entity));
     }
 

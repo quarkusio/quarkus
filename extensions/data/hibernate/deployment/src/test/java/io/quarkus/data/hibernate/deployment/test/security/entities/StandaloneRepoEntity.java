@@ -6,10 +6,10 @@ import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.ManagedRepository;
 
 @Entity
-public class StandaloneRepoEntity extends ManagedEntity.AutoLong {
+public class StandaloneRepoEntity extends ManagedEntity {
 
     public String name;
 
-    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<StandaloneRepoEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository<StandaloneRepoEntity> {
     }
 }

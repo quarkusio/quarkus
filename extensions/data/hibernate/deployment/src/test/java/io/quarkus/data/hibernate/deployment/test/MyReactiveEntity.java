@@ -9,16 +9,15 @@ import org.hibernate.annotations.processing.HQL;
 
 import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.ManagedRepository;
-import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class MyReactiveEntity extends WithId.AutoLong implements ManagedEntity.Reactive {
+public class MyReactiveEntity extends ManagedEntity.Reactive {
 
     public String foo;
     public String bar;
 
-    interface ManagedReactiveQueries extends ManagedRepository.Reactive<MyReactiveEntity, Long> {
+    interface ManagedReactiveQueries extends ManagedRepository.Reactive<MyReactiveEntity> {
         default Uni<List<MyReactiveEntity>> findFoos(String val) {
             return list("foo", val);
         }

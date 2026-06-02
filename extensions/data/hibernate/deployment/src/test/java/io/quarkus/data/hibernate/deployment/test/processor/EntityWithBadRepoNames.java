@@ -8,7 +8,7 @@ import jakarta.persistence.Entity;
 import io.quarkus.data.hibernate.ManagedEntity;
 
 @Entity
-public class EntityWithBadRepoNames extends ManagedEntity.AutoLong {
+public class EntityWithBadRepoNames extends ManagedEntity {
     // These repos lie, they're just here to validate that we don't generate clashing accessors
     public interface ManagedBlocking {
         @Find

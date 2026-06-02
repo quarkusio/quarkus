@@ -122,7 +122,7 @@ import jakarta.persistence.Entity;
 import java.time.LocalDate;
 
 @Entity
-public class Cat extends ManagedEntity.AutoLong {
+public class Cat extends ManagedEntity {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -137,7 +137,7 @@ In order to map a Java class to a Database table, just:
 
 - Write a class
 - Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`]
-- Make it extend `ManagedEntity.AutoLong`
+- Make it extend `ManagedEntity`
 - Make its fields `public`
 
 And that's it, now you can start creating instances of your entity, persist it to your database, after which point
@@ -194,7 +194,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends ManagedEntity.AutoLong {
+public class Cat extends ManagedEntity {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -203,7 +203,7 @@ public class Cat extends ManagedEntity.AutoLong {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends ManagedRepository.AutoLong<Cat> {
+    public interface Repo extends ManagedRepository<Cat> {
         @Find
         Cat findByName(String name);
 
@@ -222,7 +222,7 @@ public class Cat extends ManagedEntity.AutoLong {
 A Quarkus Data Hibernate repository is:
 
 - An interface nested in the entity (though it could be a toplevel interface if you prefer)
-- Which extends the `ManagedRepository.AutoLong` interface, with the entity in question as type parameter
+- Which extends the `ManagedRepository` interface, with the entity in question as type parameter
 - And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
   `default` methods with implementation of queries
 
@@ -424,8 +424,8 @@ public class Code {
 
 == About entity identifiers
 
-In the example above, we extended the `ManagedEntity.AutoLong` type, and did not define any database identifier, that's
-because `ManagedEntity.AutoLong` comes with a default generated database identifier, so you don't have to worry about it. It
+In the example above, we extended the `ManagedEntity` type, and did not define any database identifier, that's
+because `ManagedEntity` comes with a default generated database identifier, so you don't have to worry about it. It
 does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
 
 You can choose to extend the `WithId.AutoString` for a `String` identifier, or `WithId.AutoUUID` for a `UUID`
@@ -440,8 +440,8 @@ public IdType id;
 WARNING: The identifier will not be automatically generated in this case, so you will have to set its value manually
 on creation.
 
-Naturally, you can also provide your own database identifier explicitly and implement the `ManagedEntity`
-interface in your entity, as well as use the `ManagedRepository` interface for your repository, in order to
+Naturally, you can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId`
+interface in your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, in order to
 specify you database identifier type:
 
 [source,java]
@@ -457,7 +457,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class CatWithId implements ManagedEntity {
+public class CatWithId implements ManagedEntity.CustomId {
     @Id
     public String id;
     public String name;
@@ -468,7 +468,7 @@ public class CatWithId implements ManagedEntity {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends ManagedRepository<CatWithId, String> {
+    public interface Repo extends ManagedRepository.CustomId<CatWithId, String> {
         @Find
         CatWithId findByName(String name);
 
@@ -493,7 +493,7 @@ extend any of these types if you define you own ID:
 
 |`Long`
 |`WithId.AutoLong`
-|`ManagedEntity.AutoLong`
+|`ManagedEntity`
 
 |`UUID`
 |`WithId.AutoUUID`
@@ -517,8 +517,8 @@ be automatically sent to the database without requiring any explicit `update` op
 If on the other hand, you wish to make every `update` operation explicit, then you need to use what Hibernate ORM calls
 a _stateless session_.
 
-In this case, you need to extend the `RecordEntity.AutoLong` class and implement the
-`RecordRepository.AutoLong` interfaces:
+In this case, you need to extend the `RecordEntity` class and extend the
+`RecordRepository` interface:
 
 [source,java]
 ----
@@ -533,7 +533,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends RecordEntity.AutoLong {
+public class Cat extends RecordEntity {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -542,7 +542,7 @@ public class Cat extends RecordEntity.AutoLong {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends RecordRepository.AutoLong<Cat, Long> {
+    public interface Repo extends RecordRepository<Cat, Long> {
         @Find
         Cat findByName(String name);
 
@@ -666,7 +666,7 @@ quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_
 
 Now, in your code, the only differences with a regular managed session entity are:
 
-- Your entity implements `ManagedEntity.Reactive`
+- Your entity extends `ManagedEntity.Reactive`
 - Your repository extends `ManagedRepository.Reactive`
 - All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
 
@@ -684,7 +684,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements ManagedEntity.Reactive {
+public class Cat extends ManagedEntity.Reactive {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -693,7 +693,7 @@ public class Cat extends WithId.AutoLong implements ManagedEntity.Reactive {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends ManagedRepository.Reactive<Cat, Long> {
+    public interface Repo extends ManagedRepository.Reactive<Cat> {
         @Find
         Uni<Cat> findByName(String name);
 
@@ -772,7 +772,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements RecordEntity.Reactive {
+public class Cat extends RecordEntity.Reactive {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -781,7 +781,7 @@ public class Cat extends WithId.AutoLong implements RecordEntity.Reactive {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends RecordRepository.Reactive<Cat, Long> {
+    public interface Repo extends RecordRepository.Reactive<Cat> {
         @Find
         Uni<Cat> findByName(String name);
 
@@ -927,19 +927,19 @@ generated metamodel accessors, or by injecting them with `@Inject`:
 
 |`Session`
 |`Cat_.managedBlocking()`
-|`ManagedRepository.Managed<Cat, Long>`
+|`ManagedRepository<Cat>`
 
 |`StatelessSession`
 |`Cat_.statelessBlocking()`
-|`RecordRepository.Stateless<Cat, Long>`
+|`RecordRepository<Cat>`
 
 |`Mutiny.Session`
 |`Cat_.managedReactive()`
-|`ManagedRepository.Reactive<Cat, Long>`
+|`ManagedRepository.Reactive<Cat>`
 
 |`Mutiny.StatelessSession`
 |`Cat_.statelessReactive()`
-|`RecordRepository.Reactive<Cat, Long>`
+|`RecordRepository.Reactive<Cat>`
 
 |===
 
@@ -959,7 +959,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends ManagedEntity.AutoLong {
+public class Cat extends ManagedEntity {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -968,12 +968,12 @@ public class Cat extends ManagedEntity.AutoLong {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends ManagedRepository.AutoLong<Cat> {
+    public interface Repo extends ManagedRepository<Cat> {
         @Find
         Cat findByName(String name);
     }
 
-    public interface TheOtherRepo extends RecordRepository.Reactive<Cat, Long> {
+    public interface TheOtherRepo extends RecordRepository<Cat> {
         @Find
         Uni<Cat> findByName(String name);
     }
@@ -1026,34 +1026,51 @@ define your own ID entity field:
 
 |`Session` (managed, blocking)
 |`Long`
-|`ManagedEntity.AutoLong`
+|`ManagedEntity`
 |
-|`ManagedRepository.AutoLong<Entity>`
+|`ManagedRepository<Entity>`
 
 |`Session` (managed, blocking)
 |`Id`
 |`WithId<Id>`
-|`ManagedEntity`
-|`ManagedRepository<Entity, Id>`
+|`ManagedEntity.CustomId`
+|`ManagedRepository.CustomId<Entity, Id>`
+
+|`StatelessSession` (stateless, blocking)
+|`Long`
+|`RecordEntity`
+|
+|`RecordRepository<Entity>`
 
 |`StatelessSession` (stateless, blocking)
 |`Id`
 |`WithId<Id>`
-|`RecordEntity`
-|`RecordRepository<Entity, Id>`
+|`RecordEntity.CustomId`
+|`RecordRepository.CustomId<Entity, Id>`
+
+|`Mutiny.Session` (managed, reactive)
+|`Long`
+|`ManagedEntity.Reactive`
+|
+|`ManagedRepository.Reactive<Entity>`
 
 |`Mutiny.Session` (managed, reactive)
 |`Id`
 |`WithId<Id>`
-|`ManagedEntity.Reactive`
-|`ManagedRepository.Reactive<Entity, Id>`
+|`ManagedEntity.Reactive.CustomId`
+|`ManagedRepository.Reactive.CustomId<Entity, Id>`
 
+|`Mutiny.StatelessSession` (stateless, reactive)
+|`Long`
+|`RecordEntity.Reactive`
+|
+|`RecordRepository.Reactive<Entity>`
 
 |`Mutiny.StatelessSession` (stateless, reactive)
 |`Id`
 |`WithId<Id>`
-|`RecordEntity.Reactive`
-|`RecordRepository.Reactive<Entity, Id>`
+|`RecordEntity.Reactive.CustomId`
+|`RecordRepository.Reactive.CustomId<Entity, Id>`
 
 |===
 
@@ -1372,7 +1389,7 @@ Therefore, you must not attempt to secure such methods and instead use two alter
 [source,java]
 ----
 @Entity
-public class Cat extends ManagedEntity.AutoLong {
+public class Cat extends ManagedEntity {
     public String name;
 
     public interface ParentRepo<T extends Cat> {
@@ -1411,7 +1428,7 @@ Alternative 2: Replace the type variable `T` with a concrete type in the reposit
 [source,java]
 ----
 @Entity
-public class Cat extends ManagedEntity.AutoLong {
+public class Cat extends ManagedEntity {
     public String name;
 
     public interface Repo {

@@ -11,11 +11,11 @@ import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.ManagedRepository;
 
 @Entity
-public class MyEntity extends ManagedEntity.AutoLong {
+public class MyEntity extends ManagedEntity {
     public String foo;
     public String bar;
 
-    interface ManagedBlockingQueries extends ManagedRepository.AutoLong<MyEntity> {
+    interface ManagedBlockingQueries extends ManagedRepository<MyEntity> {
         default List<MyEntity> findFoos(String val) {
             return list("foo", val);
         }

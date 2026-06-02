@@ -6,11 +6,13 @@ import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveEnti
 /**
  * Represents an entity with stateless blocking operations.
  */
-public interface RecordEntity extends PanacheStatelessBlockingEntity {
+public class RecordEntity extends WithId.AutoLong implements PanacheStatelessBlockingEntity {
 
-    class AutoLong extends WithId.AutoLong implements RecordEntity {
+    public interface CustomId extends PanacheStatelessBlockingEntity {
     }
 
-    interface Reactive extends PanacheStatelessReactiveEntity {
+    public static class Reactive extends WithId.AutoLong implements PanacheStatelessReactiveEntity {
+        public interface CustomId extends PanacheStatelessReactiveEntity {
+        }
     }
 }

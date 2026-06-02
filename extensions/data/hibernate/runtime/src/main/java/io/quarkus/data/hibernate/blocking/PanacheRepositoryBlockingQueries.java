@@ -8,10 +8,10 @@ import java.util.stream.Stream;
 import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
-import io.quarkus.data.hibernate.PanacheRepositoryQueries;
+import io.quarkus.data.hibernate.RepositoryQueries;
 
 public interface PanacheRepositoryBlockingQueries<Entity, Id>
-        extends PanacheRepositoryQueries<Entity, List<Entity>, PanacheBlockingQuery<Entity>, Long, Boolean, Id> {
+        extends RepositoryQueries<Entity, List<Entity>, PanacheBlockingQuery<Entity>, Long, Boolean, Id> {
 
     // Queries
 

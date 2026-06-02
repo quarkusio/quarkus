@@ -5,12 +5,12 @@ import java.util.List;
 import jakarta.data.repository.Query;
 import jakarta.persistence.Entity;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class JakartaDataQueryEntity extends PanacheEntity {
+public class JakartaDataQueryEntity extends ManagedEntity.AutoLong {
 
     public String name;
 
@@ -26,6 +26,6 @@ public class JakartaDataQueryEntity extends PanacheEntity {
         List<JakartaDataQueryEntity> findByName(String name);
     }
 
-    public interface InnerPanacheRepository extends PanacheRepository<JakartaDataQueryEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<JakartaDataQueryEntity> {
     }
 }

@@ -6,9 +6,9 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.NonUniqueResultException;
 
-import io.quarkus.data.hibernate.PanacheQuery;
+import io.quarkus.data.hibernate.DataQuery;
 
-public interface PanacheBlockingQuery<Entity> extends PanacheQuery<Entity, List<Entity>, Boolean, Long> {
+public interface PanacheBlockingQuery<Entity> extends DataQuery<Entity, List<Entity>, Boolean, Long> {
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following
@@ -34,7 +34,7 @@ public interface PanacheBlockingQuery<Entity> extends PanacheQuery<Entity, List<
      *         <code>type</code>
      * @throws PanacheQueryException if this represents an already-projected query
      */
-    public <T> PanacheQuery<T, List<T>, Boolean, Long> project(Class<T> type);
+    public <T> DataQuery<T, List<T>, Boolean, Long> project(Class<T> type);
 
     /**
      * Returns the current page of results as a {@link Stream}.

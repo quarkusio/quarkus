@@ -2,15 +2,15 @@ package io.quarkus.it.data.hibernate;
 
 import jakarta.persistence.Entity;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 
 @Entity
-public class Person extends PanacheEntity {
+public class Person extends ManagedEntity.AutoLong {
     public String name;
     public int age;
 
     // Nested repository interface - Panache Next pattern
-    public interface Repository extends PanacheRepository<Person> {
+    public interface Repository extends ManagedRepository.AutoLong<Person> {
     }
 }

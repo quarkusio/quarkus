@@ -6,12 +6,12 @@ import jakarta.persistence.Entity;
 
 import org.hibernate.annotations.processing.SQL;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class HibernateAnnotationSqlEntity extends PanacheEntity {
+public class HibernateAnnotationSqlEntity extends ManagedEntity.AutoLong {
 
     public String name;
 
@@ -27,6 +27,6 @@ public class HibernateAnnotationSqlEntity extends PanacheEntity {
         List<HibernateAnnotationSqlEntity> findByName(String name);
     }
 
-    public interface InnerPanacheRepository extends PanacheRepository<HibernateAnnotationSqlEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<HibernateAnnotationSqlEntity> {
     }
 }

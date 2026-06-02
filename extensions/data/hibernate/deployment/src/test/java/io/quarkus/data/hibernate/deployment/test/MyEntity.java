@@ -7,15 +7,15 @@ import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 
 @Entity
-public class MyEntity extends PanacheEntity {
+public class MyEntity extends ManagedEntity.AutoLong {
     public String foo;
     public String bar;
 
-    interface ManagedBlockingQueries extends PanacheRepository<MyEntity> {
+    interface ManagedBlockingQueries extends ManagedRepository.AutoLong<MyEntity> {
         default List<MyEntity> findFoos(String val) {
             return list("foo", val);
         }

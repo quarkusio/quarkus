@@ -26,7 +26,7 @@ import org.hibernate.query.Page;
  * @author Stéphane Épardaud
  * @param <Entity> The entity type being queried
  */
-public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
+public interface DataQuery<Entity, EntityList, Confirmation, Count> {
 
     // Builder
 
@@ -38,7 +38,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #page(int, int)
      * @see #page()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> page(Page page);
+    public DataQuery<Entity, EntityList, Confirmation, Count> page(Page page);
 
     /**
      * Sets the current page.
@@ -49,7 +49,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #page(Page)
      * @see #page()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> page(int pageIndex, int pageSize);
+    public DataQuery<Entity, EntityList, Confirmation, Count> page(int pageIndex, int pageSize);
 
     /**
      * Sets the current page to the next page
@@ -58,7 +58,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #previousPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> nextPage();
+    public DataQuery<Entity, EntityList, Confirmation, Count> nextPage();
 
     /**
      * Sets the current page to the previous page (or the first page if there is no previous page)
@@ -67,7 +67,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #nextPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> previousPage();
+    public DataQuery<Entity, EntityList, Confirmation, Count> previousPage();
 
     /**
      * Sets the current page to the first page
@@ -76,7 +76,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #lastPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> firstPage();
+    public DataQuery<Entity, EntityList, Confirmation, Count> firstPage();
 
     /**
      * Sets the current page to the last page. This will cause reading of the entity count.
@@ -86,7 +86,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #firstPage()
      * @see #count()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> lastPage();
+    public DataQuery<Entity, EntityList, Confirmation, Count> lastPage();
 
     /**
      * Returns true if there is another page to read after the current one.
@@ -135,7 +135,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param lastIndex the index of the last element
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> range(int startIndex, int lastIndex);
+    public DataQuery<Entity, EntityList, Confirmation, Count> range(int startIndex, int lastIndex);
 
     /**
      * Define the locking strategy used for this query.
@@ -143,7 +143,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param lockModeType the locking strategy to be used for this query.
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> withLock(LockModeType lockModeType);
+    public DataQuery<Entity, EntityList, Confirmation, Count> withLock(LockModeType lockModeType);
 
     /**
      * Set a query property or hint on the underlying JPA Query.
@@ -152,7 +152,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param value value for the property or hint.
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> withHint(String hintName, Object value);
+    public DataQuery<Entity, EntityList, Confirmation, Count> withHint(String hintName, Object value);
 
     /**
      * <p>
@@ -168,7 +168,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> filter(String filterName, Map<String, Object> parameters);
+    public DataQuery<Entity, EntityList, Confirmation, Count> filter(String filterName, Map<String, Object> parameters);
 
     /**
      * <p>
@@ -183,7 +183,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param filterName The name of the filter to enable
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> filter(String filterName);
+    public DataQuery<Entity, EntityList, Confirmation, Count> filter(String filterName);
 
     // Results
 

@@ -7,18 +7,18 @@ import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class MyReactiveEntity extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class MyReactiveEntity extends WithId.AutoLong implements ManagedEntity.Reactive {
 
     public String foo;
     public String bar;
 
-    interface ManagedReactiveQueries extends PanacheRepository.Reactive<MyReactiveEntity, Long> {
+    interface ManagedReactiveQueries extends ManagedRepository.Reactive<MyReactiveEntity, Long> {
         default Uni<List<MyReactiveEntity>> findFoos(String val) {
             return list("foo", val);
         }

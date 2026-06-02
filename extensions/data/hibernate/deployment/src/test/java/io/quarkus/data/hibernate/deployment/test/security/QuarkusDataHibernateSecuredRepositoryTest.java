@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.data.hibernate.deployment.test.security.entities.GenericRepoEntity;
 import io.quarkus.data.hibernate.deployment.test.security.entities.HibernateAnnotationFindEntity;
 import io.quarkus.data.hibernate.deployment.test.security.entities.HibernateAnnotationHqlEntity;
@@ -331,12 +331,12 @@ class QuarkusDataHibernateSecuredRepositoryTest {
     }
 
     @Transactional
-    <T> T findEntity(Long id, PanacheRepository<T> panacheRepository) {
+    <T> T findEntity(Long id, ManagedRepository.AutoLong<T> panacheRepository) {
         return panacheRepository.findById(id);
     }
 
     @Transactional
-    <T> void cleanUp(PanacheRepository<T> panacheRepository) {
+    <T> void cleanUp(ManagedRepository.AutoLong<T> panacheRepository) {
         clearIdentity();
         assertActionAllowed(panacheRepository::deleteAll);
         assertThat(panacheRepository.count()).isEqualTo(0);
@@ -357,7 +357,7 @@ class QuarkusDataHibernateSecuredRepositoryTest {
         assertThatNoException().isThrownBy(runnable::run);
     }
 
-    <T> void createEntity(T entity, PanacheRepository<T> panacheRepository) {
+    <T> void createEntity(T entity, ManagedRepository.AutoLong<T> panacheRepository) {
         assertActionAllowed(() -> panacheRepository.persist(entity));
     }
 

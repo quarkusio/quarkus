@@ -9,7 +9,7 @@ import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingEnti
 import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveEntity;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheEntityMarker {
+public interface EntitySwitcher {
     default PanacheManagedBlockingEntity managedBlocking() {
         if (this instanceof PanacheManagedBlockingEntity) {
             return (PanacheManagedBlockingEntity) this;

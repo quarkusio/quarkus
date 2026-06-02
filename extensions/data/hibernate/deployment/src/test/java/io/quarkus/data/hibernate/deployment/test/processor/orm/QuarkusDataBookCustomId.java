@@ -12,12 +12,12 @@ import jakarta.persistence.Id;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.processing.Find;
 
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingRepositoryBase;
 import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepositoryBase;
 
 @Entity
-public class QuarkusDataBookCustomId implements PanacheEntity.Managed {
+public class QuarkusDataBookCustomId implements ManagedEntity {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

@@ -578,7 +578,7 @@ public class KafkaProcessor {
                 .setUnremovable();
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
-                || QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")) {
+                || QuarkusClassLoader.isClassPresentAtRuntime("io.confluent.kafka.serializers.KafkaAvroDeserializer")) {
             builder.addBeanClass(AvroDecoder.class);
         }
 

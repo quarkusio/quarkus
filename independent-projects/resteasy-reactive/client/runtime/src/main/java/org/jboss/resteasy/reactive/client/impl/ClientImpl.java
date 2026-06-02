@@ -626,7 +626,7 @@ public class ClientImpl implements Client {
 
         @Override
         public <T> Future<T> executeBlocking(Callable<T> blockingCodeHandler) {
-            return getDelegate().executeBlocking(blockingCodeHandler);
+            return getDelegate().executeBlocking(blockingCodeHandler, true);
         }
 
         @Override

@@ -3,6 +3,7 @@ package io.quarkus.oidc.client.deployment;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -208,7 +209,7 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     }
 
     public static List<ClassInfo> detectCustomFiltersThatRequireResponseFilter(Class<?> abstractFilterClass,
-            Class<?> registerProviderClass, IndexView index) {
+            Class<?> registerProviderClass, Class<?> registerProvidersClass, IndexView index) {
         List<ClassInfo> result = new ArrayList<>();
         for (ClassInfo subClass : index.getKnownDirectSubclasses(abstractFilterClass)) {
             if (!subClass.isInterface() && !subClass.isAbstract()) {
@@ -224,6 +225,13 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
                                 .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
                                 .map(ai -> ai.target().asClass())
                                 .toList());
+                        result.addAll(index
+                                .getAnnotations(registerProvidersClass).stream()
+                                .filter(ai -> ai.value() != null)
+                                .filter(ai -> registersDeclaringClass(ai, declaringClassName))
+                                .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                                .map(ai -> ai.target().asClass())
+                                .toList());
                     }
                 }
             }
@@ -234,5 +242,10 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     private static void throwBothMethodAndClassAnnotated(AnnotationInstance instance) {
         throw new RuntimeException(OidcClientFilter.class.getName() + " annotation can be applied either on class "
                 + getTargetRestClient(instance) + " or its methods");
+    }
+
+    private static boolean registersDeclaringClass(AnnotationInstance ai, DotName declaringClassName) {
+        return Arrays.stream(ai.value().asNestedArray())
+                .anyMatch(nestedAi -> nestedAi.value().asClass().name().equals(declaringClassName));
     }
 }

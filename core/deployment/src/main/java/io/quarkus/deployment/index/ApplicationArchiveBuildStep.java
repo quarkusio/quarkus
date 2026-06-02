@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -156,26 +157,33 @@ public class ApplicationArchiveBuildStep {
         List<ApplicationArchive> appArchives = new ArrayList<>();
         Set<Path> indexedPaths = new HashSet<>();
 
-        //get paths that are included via marker files
-        final Set<String> markers = new HashSet<>(appMarkers.size() + 1);
+        // archives that have a marker file
+        final List<String> markers = new ArrayList<>(appMarkers.size() + 1);
         for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
             final String marker = i.getFile();
             markers.add(marker.endsWith("/") ? marker.substring(0, marker.length() - 1) : marker);
         }
         markers.add(IndexingUtil.JANDEX_INDEX);
+        markers.sort(Comparator.naturalOrder());
         addMarkerFilePaths(markers, root, indexedPaths, appArchives, indexCache, removedResources);
 
-        //get paths that are included via index-dependencies
+        // archives included via index-dependencies
         addIndexDependencyPaths(indexDependencyBuildItem, root, indexedPaths, appArchives, buildCloseables,
                 indexCache, curateOutcomeBuildItem, removedResources);
 
+        // additional archives
+        List<Path> additionalPaths = new ArrayList<>();
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             for (Path apPath : i.getResolvedPaths()) {
                 if (!root.getResolvedPaths().contains(apPath) && indexedPaths.add(apPath)) {
-                    appArchives.add(createApplicationArchive(buildCloseables, indexCache, apPath, null,
-                            removedResources));
+                    additionalPaths.add(apPath);
                 }
             }
+        }
+        additionalPaths.sort(Comparator.comparing(Path::toString));
+        for (Path apPath : additionalPaths) {
+            appArchives.add(createApplicationArchive(buildCloseables, indexCache, apPath, null,
+                    removedResources));
         }
 
         return appArchives;
@@ -201,10 +209,15 @@ public class ApplicationArchiveBuildStep {
                 indexGroupIds.add(indexDependencyBuildItem.getGroupId());
             }
         }
-        for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+
+        List<ResolvedDependency> dependencies = new ArrayList<>(curateOutcomeBuildItem.getApplicationModel().getDependencies());
+        dependencies.sort(Comparator.comparing(ResolvedDependency::getKey));
+        for (ResolvedDependency dep : dependencies) {
             if (dep.isRuntimeCp()
                     && (indexDependencyKeys.contains(dep.getKey()) || indexGroupIds.contains(dep.getGroupId()))) {
-                for (Path path : dep.getContentTree().getRoots()) {
+                List<Path> roots = new ArrayList<>(dep.getContentTree().getRoots());
+                roots.sort(Comparator.comparing(Path::toString));
+                for (Path path : roots) {
                     if (!root.isExcludedFromIndexing(path)
                             && !root.getResolvedPaths().contains(path)
                             && indexedDeps.add(path)) {
@@ -238,10 +251,9 @@ public class ApplicationArchiveBuildStep {
         return new ApplicationArchiveImpl(index, openTree, resolvedDependency);
     }
 
-    private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
+    private static void addMarkerFilePaths(List<String> applicationArchiveMarkers,
             ArchiveRootBuildItem root, Set<Path> indexedPaths, List<ApplicationArchive> appArchives,
-            IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
-            throws IOException {
+            IndexCache indexCache, Map<ArtifactKey, Set<String>> removed) {
         final QuarkusClassLoader cl = ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader());
         final Set<ArtifactKey> indexedElements = new HashSet<>();
         for (String marker : applicationArchiveMarkers) {
@@ -301,8 +313,8 @@ public class ApplicationArchiveBuildStep {
         }
     }
 
-    private static Index indexPathTree(PathTree tree, Set<String> removed) throws IOException {
-        Indexer indexer = new Indexer();
+    private static Index indexPathTree(OpenPathTree tree, Set<String> removed) throws IOException {
+        List<Path> classFilesToIndex = new ArrayList<>();
         tree.walk(new PathVisitor() {
             @Override
             public void visitPath(PathVisit visit) {
@@ -314,13 +326,21 @@ public class ApplicationArchiveBuildStep {
                         || removed != null && removed.contains(visit.getRelativePath("/"))) {
                     return;
                 }
-                try (InputStream in = Files.newInputStream(path)) {
-                    indexer.index(in);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                classFilesToIndex.add(path);
             }
         });
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        Indexer indexer = new Indexer();
+        for (Path path : classFilesToIndex) {
+            try (InputStream in = Files.newInputStream(path)) {
+                indexer.index(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return indexer.complete();
     }
 

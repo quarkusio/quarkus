@@ -7,7 +7,10 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.Index;
@@ -28,55 +31,49 @@ public class ApplicationIndexBuildStep {
     @BuildStep
     ApplicationIndexBuildItem build(ArchiveRootBuildItem root, CurateOutcomeBuildItem curation,
             ClassLoadingConfig classLoadingConfig) throws IOException {
-        Indexer indexer = new Indexer();
-        Set<String> removedApplicationClasses = removedApplicationClasses(curation, classLoadingConfig);
+        List<Path> classFilesToIndex = new ArrayList<>();
         for (Path p : root.getRootDirectories()) {
-            Files.walkFileTree(p, new FileVisitor<Path>() {
+            Files.walkFileTree(p, new FileVisitor<>() {
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.getFileName().toString().endsWith(".class")) {
-                        if (isRemovedApplicationClass(file, removedApplicationClasses)) {
-                            log.debugf("File %s will not be indexed because the class has been configured as part of '%s'",
-                                    file, "quarkus.class-loading.removed-resources");
-                        } else {
-                            log.debugf("Indexing %s", file);
-                            try (InputStream stream = Files.newInputStream(file)) {
-                                indexer.index(stream);
-                            }
-                        }
+                        classFilesToIndex.add(file);
                     }
                     return FileVisitResult.CONTINUE;
                 }
 
-                private boolean isRemovedApplicationClass(Path file, Set<String> removedApplicationClasses) {
-                    if (removedApplicationClasses.isEmpty()) {
-                        return false;
-                    }
-                    String fileName = file.toString().replace('\\', '/');
-                    String sanitizedFileName = (fileName.startsWith("/") ? fileName.substring(1) : fileName);
-                    for (String removedApplicationClass : removedApplicationClasses) {
-                        if (sanitizedFileName.endsWith(removedApplicationClass)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
                 @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     return FileVisitResult.CONTINUE;
                 }
             });
+        }
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        Indexer indexer = new Indexer();
+        Set<String> removedApplicationClasses = removedApplicationClasses(curation, classLoadingConfig);
+        for (Path file : classFilesToIndex) {
+            if (isRemovedApplicationClass(file, removedApplicationClasses)) {
+                log.debugf("File %s will not be indexed because the class has been configured as part of '%s'",
+                        file, "quarkus.class-loading.removed-resources");
+            } else {
+                log.debugf("Indexing %s", file);
+                try (InputStream stream = Files.newInputStream(file)) {
+                    indexer.index(stream);
+                }
+            }
         }
         Index appIndex = indexer.complete();
         return new ApplicationIndexBuildItem(appIndex);
@@ -87,6 +84,20 @@ public class ApplicationIndexBuildStep {
         Set<String> entry = classLoadingConfig.removedResources()
                 .get(appArtifact.getGroupId() + ":" + appArtifact.getArtifactId());
         return entry != null ? entry : Collections.emptySet();
+    }
+
+    private boolean isRemovedApplicationClass(Path file, Set<String> removedApplicationClasses) {
+        if (removedApplicationClasses.isEmpty()) {
+            return false;
+        }
+        String fileName = file.toString().replace('\\', '/');
+        String sanitizedFileName = (fileName.startsWith("/") ? fileName.substring(1) : fileName);
+        for (String removedApplicationClass : removedApplicationClasses) {
+            if (sanitizedFileName.endsWith(removedApplicationClass)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

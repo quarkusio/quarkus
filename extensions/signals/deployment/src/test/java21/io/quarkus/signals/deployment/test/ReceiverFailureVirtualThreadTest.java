@@ -86,9 +86,8 @@ public class ReceiverFailureVirtualThreadTest extends AbstractSignalTest {
     @Test
     public void testRequestFailureVirtualThread() {
         var reg = receivers.newReceiver(Cmd.class)
-                .setResponseType(String.class)
                 .setExecutionModel(ExecutionModel.VIRTUAL_THREAD)
-                .notify(new Function<SignalContext<Cmd>, Uni<String>>() {
+                .notify(String.class, new Function<SignalContext<Cmd>, Uni<String>>() {
 
                     @Override
                     public Uni<String> apply(SignalContext<Cmd> ctx) {

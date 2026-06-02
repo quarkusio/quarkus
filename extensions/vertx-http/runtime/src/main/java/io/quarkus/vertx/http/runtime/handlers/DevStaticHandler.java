@@ -99,7 +99,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
 
         context.vertx().<byte[]> executeBlocking(() -> {
             return getClasspathResourceContent(path);
-        }).onComplete(asyncResult -> {
+        }, false).onComplete(asyncResult -> {
             if (asyncResult.succeeded()) {
                 byte[] result = asyncResult.result();
                 handleAsyncResultSucceeded(context, result == null ? null : Buffer.buffer(result), path);

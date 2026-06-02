@@ -4,6 +4,7 @@ name: "Info"
 metadata:
   keywords:
   - "info"
+  guide: "https://quarkus.io/guides/info"
   categories:
   - "observability"
   status: "stable"

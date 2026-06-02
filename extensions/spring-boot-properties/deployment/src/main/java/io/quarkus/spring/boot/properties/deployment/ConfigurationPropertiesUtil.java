@@ -1,15 +1,14 @@
 package io.quarkus.spring.boot.properties.deployment;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
-import jakarta.enterprise.inject.spi.DeploymentException;
-
-import org.eclipse.microprofile.config.Config;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.ConfigBuildStep;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -20,11 +19,24 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.configuration.ArrayListFactory;
 import io.quarkus.runtime.configuration.HashSetFactory;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 final class ConfigurationPropertiesUtil {
 
     static final String PACKAGE_TO_PLACE_GENERATED_CLASSES = "io.quarkus.spring.boot.properties.runtime.config";
+
+    private static final MethodDescriptor CONFIG_GET_VALUES_MAP = MethodDescriptor.ofMethod(
+            Config.class, "getValues", Map.class, String.class, Class.class, Class.class);
+    private static final MethodDescriptor CONFIG_GET_OPTIONAL_VALUES_MAP = MethodDescriptor.ofMethod(
+            Config.class, "getOptionalValues", Optional.class, String.class, Class.class, Class.class);
+    private static final MethodDescriptor CONFIG_GET_VALUES_COLLECTION = MethodDescriptor.ofMethod(
+            Config.class, "getValues", Collection.class, String.class, Class.class, IntFunction.class);
+    private static final MethodDescriptor CONFIG_GET_OPTIONAL_VALUES_COLLECTION = MethodDescriptor.ofMethod(
+            Config.class, "getOptionalValues", Optional.class, String.class, Class.class, IntFunction.class);
+    private static final MethodDescriptor CONFIG_GET_VALUE = MethodDescriptor.ofMethod(
+            Config.class, "getValue", Object.class, String.class, Class.class);
+    private static final MethodDescriptor CONFIG_GET_OPTIONAL_VALUE = MethodDescriptor.ofMethod(
+            Config.class, "getOptionalValue", Optional.class, String.class, Class.class);
 
     private ConfigurationPropertiesUtil() {
     }
@@ -39,32 +51,44 @@ final class ConfigurationPropertiesUtil {
      * @param bytecodeCreator Where the bytecode will be generated
      * @param config Reference to the MP config object
      */
-    static ResultHandle createReadMandatoryValueAndConvertIfNeeded(String propertyName,
+    static ResultHandle createReadMandatoryValueAndConvertIfNeeded(
+            String propertyName,
             Type resultType,
             DotName declaringClass,
-            BytecodeCreator bytecodeCreator, ResultHandle config) {
+            BytecodeCreator bytecodeCreator,
+            ResultHandle config) {
 
         if (isMap(resultType)) {
-            throw new DeploymentException(
-                    "Using a Map is not supported for classes annotated with '@ConfigProperties'. Consider using https://quarkus.io/guides/config-mappings instead.");
-        }
-        if (isCollection(resultType)) {
-            ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
+            if (resultType.kind() != Kind.PARAMETERIZED_TYPE) {
+                throw new IllegalArgumentException("Unable to resolve Map parameter types for " + propertyName);
+            }
 
+            ParameterizedType parameterizedType = resultType.asParameterizedType();
+            String keyType = parameterizedType.arguments().get(0).name().toString();
+            String valueType = parameterizedType.arguments().get(1).name().toString();
+
+            // Only support Map#value with Converter
+            // We don't have a way to validate, so it will fail at runtime (with a proper error message from SR Config)
+            return bytecodeCreator.invokeInterfaceMethod(
+                    CONFIG_GET_VALUES_MAP,
+                    config,
+                    bytecodeCreator.load(propertyName),
+                    bytecodeCreator.loadClassFromTCCL(keyType),
+                    bytecodeCreator.loadClassFromTCCL(valueType));
+        } else if (isCollection(resultType)) {
             Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class : ArrayListFactory.class;
             ResultHandle collectionFactory = bytecodeCreator.invokeStaticMethod(
                     MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
 
-            return bytecodeCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues", Collection.class, String.class,
-                            Class.class, IntFunction.class),
-                    smallryeConfig,
+            return bytecodeCreator.invokeInterfaceMethod(
+                    CONFIG_GET_VALUES_COLLECTION,
+                    config,
                     bytecodeCreator.load(propertyName),
                     bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
                     collectionFactory);
         } else {
             return bytecodeCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Config.class, "getValue", Object.class, String.class, Class.class),
+                    CONFIG_GET_VALUE,
                     config, bytecodeCreator.load(propertyName),
                     bytecodeCreator.loadClassFromTCCL(resultType.name().toString()));
         }
@@ -80,33 +104,45 @@ final class ConfigurationPropertiesUtil {
      * @param bytecodeCreator Where the bytecode will be generated
      * @param config Reference to the MP config object
      */
-    static ReadOptionalResponse createReadOptionalValueAndConvertIfNeeded(String propertyName, Type resultType,
+    static ReadOptionalResponse createReadOptionalValueAndConvertIfNeeded(
+            String propertyName,
+            Type resultType,
             DotName declaringClass,
-            BytecodeCreator bytecodeCreator, ResultHandle config) {
+            BytecodeCreator bytecodeCreator,
+            ResultHandle config) {
 
         ResultHandle optionalValue;
         if (isMap(resultType)) {
-            throw new DeploymentException(
-                    "Using a Map is not supported for classes annotated with '@ConfigProperties'. Consider using https://quarkus.io/guides/config-mappings instead.");
-        }
-        if (isCollection(resultType)) {
-            ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
+            if (resultType.kind() != Kind.PARAMETERIZED_TYPE) {
+                throw new IllegalArgumentException("Unable to resolve Map parameter types for " + propertyName);
+            }
 
+            ParameterizedType parameterizedType = resultType.asParameterizedType();
+            String keyType = parameterizedType.arguments().get(0).name().toString();
+            String valueType = parameterizedType.arguments().get(1).name().toString();
+
+            // Only support Map#value with Converter
+            // We don't have a way to validate, so it will fail at runtime (with a proper error message from SR Config)
+            optionalValue = bytecodeCreator.invokeInterfaceMethod(
+                    CONFIG_GET_OPTIONAL_VALUES_MAP,
+                    config,
+                    bytecodeCreator.load(propertyName),
+                    bytecodeCreator.loadClassFromTCCL(keyType),
+                    bytecodeCreator.loadClassFromTCCL(valueType));
+        } else if (isCollection(resultType)) {
             Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class : ArrayListFactory.class;
             ResultHandle collectionFactory = bytecodeCreator.invokeStaticMethod(
                     MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
 
-            optionalValue = bytecodeCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValues", Optional.class, String.class,
-                            Class.class, IntFunction.class),
-                    smallryeConfig,
+            optionalValue = bytecodeCreator.invokeInterfaceMethod(
+                    CONFIG_GET_OPTIONAL_VALUES_COLLECTION,
+                    config,
                     bytecodeCreator.load(propertyName),
                     bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
                     collectionFactory);
         } else {
             optionalValue = bytecodeCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
-                            Class.class),
+                    CONFIG_GET_OPTIONAL_VALUE,
                     config, bytecodeCreator.load(propertyName),
                     bytecodeCreator.loadClassFromTCCL(resultType.name().toString()));
         }

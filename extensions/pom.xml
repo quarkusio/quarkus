@@ -25,6 +25,7 @@
         <module>jaxp</module>
         <module>smallrye-stork</module>
         <module>signals</module>
+        <module>packaging</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>
@@ -103,6 +104,7 @@
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>data</module>
         <module>hibernate-search-backend-elasticsearch-common</module>
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-search-orm-outbox-polling</module>

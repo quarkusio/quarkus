@@ -52,7 +52,7 @@ public class WebAuthnAuthenticatorStorage {
             return Uni.createFrom().deferred(supplier).runSubscriptionOn(VirtualThreadsRecorder.getCurrent());
         }
         // run it in a worker thread
-        return vertx.executeBlocking(() -> supplier.get().await().indefinitely());
+        return vertx.executeBlocking(() -> supplier.get().await().indefinitely(), false);
     }
 
     private boolean isNonBlocking(Class<?> klass) {

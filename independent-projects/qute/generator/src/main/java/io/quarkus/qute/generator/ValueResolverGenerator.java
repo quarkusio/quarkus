@@ -856,16 +856,16 @@ public class ValueResolverGenerator extends AbstractGenerator {
             // Match name
             if (methodParams <= 0 && isGetterName(methodName, returnType)) {
                 // Getter found - match the property name first
-                nested.ifNot(nested.objEquals(name, Const.of(getPropertyName(methodName))), propertyNotMatched -> {
+                nested.ifNot(nested.exprEquals(name, Const.of(getPropertyName(methodName))), propertyNotMatched -> {
                     // If the property does not match then try to use the exact method name
-                    propertyNotMatched.ifNot(propertyNotMatched.objEquals(name, Const.of(methodName)),
+                    propertyNotMatched.ifNot(propertyNotMatched.exprEquals(name, Const.of(methodName)),
                             nameNotMatched -> {
                                 nameNotMatched.break_(nested);
                             });
                 });
             } else {
                 // No getter - only match the exact method name
-                nested.ifNot(nested.objEquals(name, Const.of(methodName)), notMatched -> {
+                nested.ifNot(nested.exprEquals(name, Const.of(methodName)), notMatched -> {
                     notMatched.break_(nested);
                 });
             }

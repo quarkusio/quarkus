@@ -1,0 +1,248 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Application Info Endpoint
+include::_attributes.adoc[]
+:categories: observability
+:summary: Expose build, git, Java, and OS information via the /q/info endpoint.
+:topics: info,observability
+:extensions: io.quarkus:quarkus-info
+
+The `quarkus-info` extension exposes an HTTP endpoint at `/q/info` that returns information about the application: build metadata, git commit, Java version, and operating system.
+
+== Adding the extension
+
+Add the `quarkus-info` extension to your project:
+
+:add-extension-extensions: info
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-info</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-info")
+----
+
+Once added, start your application and access the info endpoint:
+
+[source,shell]
+----
+$ curl -s http://localhost:8080/q/info | jq
+----
+
+== Response structure
+
+The endpoint returns a JSON object with up to four sections:
+
+[source,json]
+----
+{
+  "os": {
+    "name": "Mac OS X",
+    "version": "15.5",
+    "arch": "aarch64"
+  },
+  "java": {
+    "version": "21.0.7",
+    "vendor": "Eclipse Adoptium",
+    "vendorVersion": "Temurin-21.0.7+6"
+  },
+  "build": {
+    "group": "org.acme",
+    "artifact": "getting-started",
+    "version": "1.0.0-SNAPSHOT",
+    "time": "2026-05-21T10:30:00Z",
+    "quarkusVersion": "{quarkus-version}"
+  },
+  "git": {
+    "branch": "main",
+    "commit": {
+      "id": "a1b2c3d",
+      "time": "2026-05-20T14:22:00Z"
+    }
+  }
+}
+----
+
+Each section can be individually enabled or disabled via configuration.
+
+NOTE: Git information is only available if the project is in a Git repository. If no `.git` directory is found, the `git` section is omitted.
+
+== Git information modes
+
+The `quarkus.info.git.mode` property controls how much git information is included.
+
+`standard` (default):: Branch name, abbreviated commit ID, and commit time.
+`full`:: Adds remote URL, tags, full commit ID, commit message, author and committer details.
+
+[source,properties]
+----
+quarkus.info.git.mode=full
+----
+
+With `full` mode, the `git` section expands to:
+
+[source,json]
+----
+{
+  "git": {
+    "branch": "main",
+    "remote": "https://github.com/acme/getting-started.git",
+    "tags": [],
+    "commit": {
+      "id": {
+        "full": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "abbrev": "a1b2c3d"
+      },
+      "time": "2026-05-20T14:22:00Z",
+      "message": {
+        "full": "Add greeting endpoint",
+        "short": "Add greeting endpoint"
+      },
+      "user": {
+        "name": "Jane Doe",
+        "email": "jane@example.com"
+      }
+    }
+  }
+}
+----
+
+== Adding custom build properties
+
+You can add custom key-value pairs to the `build` section:
+
+[source,properties]
+----
+quarkus.info.build.my-custom-key=my-value
+quarkus.info.build.environment=staging
+----
+
+These will appear alongside the standard build properties:
+
+[source,json]
+----
+{
+  "build": {
+    "group": "org.acme",
+    "artifact": "getting-started",
+    "version": "1.0.0-SNAPSHOT",
+    "time": "2026-05-21T10:30:00Z",
+    "quarkusVersion": "{quarkus-version}",
+    "my-custom-key": "my-value",
+    "environment": "staging"
+  }
+}
+----
+
+== Custom info contributors
+
+You can contribute your own sections to the info endpoint by implementing the `InfoContributor` interface and making it a CDI bean:
+
+[source,java]
+----
+package org.acme;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.info.runtime.spi.InfoContributor;
+
+@ApplicationScoped
+public class CustomInfoContributor implements InfoContributor {
+
+    @Override
+    public String name() {
+        return "aws";
+    }
+
+    @Override
+    public Map<String, Object> data() {
+        return Map.of(
+            "region", "eu-west-1",
+            "instance", System.getenv().getOrDefault("HOSTNAME", "unknown")
+        );
+    }
+}
+----
+
+This adds a `custom` section to the info endpoint response:
+
+[source,json]
+----
+{
+  "aws": {
+    "region": "eu-west-1",
+    "instance": "app-7f8d9c-xk2lp"
+  }
+}
+----
+
+The `name()` method determines the key in the JSON output.
+The `data()` method is called once at startup, use it for values that don't change at runtime.
+
+== Programmatic access
+
+The extension also exposes injectable beans that you can use directly in your code:
+
+[source,java]
+----
+import io.quarkus.info.GitInfo;
+import io.quarkus.info.BuildInfo;
+import io.quarkus.info.JavaInfo;
+import io.quarkus.info.OsInfo;
+
+@Path("/version")
+public class VersionResource {
+
+    @Inject
+    BuildInfo buildInfo;
+
+    @Inject
+    GitInfo gitInfo;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String version() {
+        return buildInfo.version() + " (" + gitInfo.latestCommitId() + ")";
+    }
+}
+----
+
+The available beans are:
+
+* `GitInfo`: `branch()`, `latestCommitId()`, `commitTime()`
+* `BuildInfo`: `group()`, `artifact()`, `version()`, `time()`, `quarkusVersion()`
+* `JavaInfo`: `version()`, `vendor()`, `vendorVersion()`
+* `OsInfo`: `name()`, `version()`, `architecture()`
+
+NOTE: These beans are only available if the corresponding section is enabled in configuration.
+
+== Management interface
+
+If you use the xref:management-interface-reference.adoc[management interface], the info endpoint is automatically exposed on the management port instead of the main HTTP port:
+
+[source,properties]
+----
+quarkus.management.enabled=true
+----
+
+The info endpoint will then be available at `http://0.0.0.0:9000/q/info` instead of `http://localhost:8080/q/info`.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-info.adoc[opts=optional, leveloffset=+2]

@@ -37,6 +37,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         if (VertxContext.isOnDuplicatedContext()) {
             VertxContextSafetyToggle.setCurrentContextSafe(true);
         }
+        // If a CDI request context is already active (e.g. activated by a @RouteFilter),
+        // capture it so that it can be reused when the handler chain resumes on a worker thread
+        if (requestContext.isRequestContextActive()) {
+            captureCDIRequestScope();
+        }
     }
 
     protected void handleRequestScopeActivation() {

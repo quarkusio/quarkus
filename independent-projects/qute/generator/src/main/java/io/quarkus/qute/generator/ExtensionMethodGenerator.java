@@ -346,7 +346,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                             bc.block(nested -> {
                                 // Test name
                                 if (!matchAny) {
-                                    nested.ifNot(nested.objEquals(name, Const.of(matchName)),
+                                    nested.ifNot(nested.exprEquals(name, Const.of(matchName)),
                                             notMatching -> notMatching.break_(nested));
                                 }
                                 // Test number of evaluated params
@@ -376,7 +376,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                                 // Test that any of the names matches
                                 nested.block(nested2 -> {
                                     for (String matchName : matchNames.stream().sorted().toList()) {
-                                        nested2.if_(nested2.objEquals(name, Const.of(matchName)),
+                                        nested2.if_(nested2.exprEquals(name, Const.of(matchName)),
                                                 namesMatch -> namesMatch.break_(nested2));
                                     }
                                     nested2.break_(nested);
@@ -440,7 +440,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                                     // Test that any of the names matches
                                     nested.block(nested2 -> {
                                         for (String matchName : em.matchNames().stream().sorted().toList()) {
-                                            nested2.if_(nested2.objEquals(name, Const.of(matchName)),
+                                            nested2.if_(nested2.exprEquals(name, Const.of(matchName)),
                                                     namesMatch -> namesMatch.break_(nested2));
                                         }
                                         nested2.break_(nested);
@@ -450,7 +450,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                                     boolean matchAny = matchName.equals(TemplateExtension.ANY);
                                     // Test name
                                     if (!matchAny) {
-                                        nested.ifNot(nested.objEquals(name, Const.of(matchName)),
+                                        nested.ifNot(nested.exprEquals(name, Const.of(matchName)),
                                                 notMatching -> notMatching.break_(nested));
                                     }
                                 }
@@ -872,13 +872,13 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                         // Any of the name matches
                         bc.block(nested -> {
                             for (String match : matchNames) {
-                                nested.if_(nested.objEquals(name, Const.of(match)), namesMatch -> namesMatch.break_(nested));
+                                nested.if_(nested.exprEquals(name, Const.of(match)), namesMatch -> namesMatch.break_(nested));
                             }
                             nested.returnFalse();
                         });
 
                     } else {
-                        bc.ifNot(bc.objEquals(name, Const.of(matchName)),
+                        bc.ifNot(bc.exprEquals(name, Const.of(matchName)),
                                 nameNotMatched -> nameNotMatched.returnFalse());
                     }
                 }

@@ -1323,7 +1323,7 @@ public class MessageBundleProcessor {
                 LocalVar ret = bc.localVar("ret", bc.new_(CompletableFuture.class));
 
                 // First handle dynamic messages, i.e. the "message" virtual method
-                bc.if_(bc.objEquals(name, Const.of(MESSAGE)), dynamicMessage -> {
+                bc.if_(bc.exprEquals(name, Const.of(MESSAGE)), dynamicMessage -> {
                     Expr evaluatedMessageKey = dynamicMessage.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY,
                             evalContext);
                     Expr paramsReady = evaluatedMessageKey.field(Descriptors.EVALUATED_PARAMS_STAGE);
@@ -1412,7 +1412,7 @@ public class MessageBundleProcessor {
             Var evaluatedParams, Var ret, Var this_) {
         List<Type> methodParams = method.parameterTypes();
 
-        resolve.if_(resolve.objEquals(name, Const.of(key)), matched -> {
+        resolve.if_(resolve.exprEquals(name, Const.of(key)), matched -> {
             if (methodParams.isEmpty()) {
                 matched.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,
                         method.isMessageBundleInterfaceMethod()
@@ -1596,7 +1596,7 @@ public class MessageBundleProcessor {
         List<MessageFile> messageFiles = new ArrayList<>();
 
         addMessageFiles(applicationArchives.getRootArchive(), 10, messageFiles);
-        for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchives.getArchives()) {
             addMessageFiles(archive, 1, messageFiles);
         }
 

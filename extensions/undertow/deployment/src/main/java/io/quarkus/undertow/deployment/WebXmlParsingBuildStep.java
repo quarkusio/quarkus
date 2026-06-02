@@ -118,7 +118,7 @@ public class WebXmlParsingBuildStep {
      */
     private List<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
         List<WebFragmentMetaData> webFragments = new ArrayList<>();
-        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllArchives()) {
             archive.accept(tree -> {
                 Path webFragment = tree.getPath(WEB_FRAGMENT_XML);
                 if (webFragment != null && Files.isRegularFile(webFragment)) {

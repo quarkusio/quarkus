@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -286,16 +287,23 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLModifiedClasesBuildItem graphQLIndexBuildItem,
             List<SmallRyeGraphQLFinalIndexModifierBuildItem> indexModifiers) {
 
-        Indexer indexer = new Indexer();
-        Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
+        List<Map.Entry<String, byte[]>> list = new ArrayList<>();
+        for (Map.Entry<String, byte[]> entry : graphQLIndexBuildItem.getModifiedClases().entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                list.add(entry);
+            }
+        }
 
-        for (Map.Entry<String, byte[]> kv : modifiedClases.entrySet()) {
-            if (kv.getKey() != null && kv.getValue() != null) {
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
-                    indexer.index(bais);
-                } catch (IOException ex) {
-                    LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
-                }
+        // feed classes to the `Indexer` in deterministic order
+        list.sort(Map.Entry.comparingByKey());
+
+        Indexer indexer = new Indexer();
+
+        for (Map.Entry<String, byte[]> kv : list) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
+                indexer.index(bais);
+            } catch (IOException ex) {
+                LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
             }
         }
 

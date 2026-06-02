@@ -28,15 +28,13 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
 
     @Override
     public Uni<Long> where(String query, Object... params) {
-        String bindQuery = operations.bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = operations.bindFilter(entityClass, query, params);
         return executeUpdate(docQuery);
     }
 
     @Override
     public Uni<Long> where(String query, Map<String, Object> params) {
-        String bindQuery = operations.bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = operations.bindFilter(entityClass, query, params);
         return executeUpdate(docQuery);
     }
 

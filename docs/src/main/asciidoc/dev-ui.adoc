@@ -1306,8 +1306,7 @@ For example, the following Page definition will call the `devui-dev-services:dev
 cardPageBuildItem.addPage(Page.externalPageBuilder("External Page")
                 .dynamicUrlJsonRPCMethodName("devui-dev-services:devServicesConfig", // <1>
                     Map.of("name", "my-dev-service", // <2>
-                            "configKey", "url-config-key"))
-                .isHtmlContent());
+                            "configKey", "url-config-key")));
 ----
 <1> Use the `devServicesConfig` RPC method from the namespace `devui-dev-services`.
 <2> Set the parameters needed by the RPC method, `name` and `configKey`.

@@ -6,7 +6,7 @@ export const templates = {
     'quarkus-openshift-default': 'Par défaut',
     'quarkus-openshift-jar': 'Fichier JAR',
     'quarkus-openshift-mutable-jar': 'Jar modifiable',
-    'quarkus-openshift-native': 'AutNative',
+    'quarkus-openshift-native': 'Natif',
     'quarkus-openshift-build-type': 'Type de construction',
     'quarkus-openshift-expose-route': 'Exposer la route',
     'quarkus-openshift-accept-untrusted': 'Accepter les certificats non fiables',

@@ -90,6 +90,7 @@ updates:
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: eu.maveniverse.maven.njord:*
+      - dependency-name: eu.maveniverse.maven.nisse:*
       - dependency-name: io.github.gitflow-incremental-builder:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*

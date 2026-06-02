@@ -72,7 +72,19 @@ We could define a qualifier to distinguish urgent orders:
 @Qualifier
 @Retention(RUNTIME)
 @Target({PARAMETER, FIELD})
-public @interface Urgent {}
+public @interface Urgent {
+
+    /**
+     * Supports inline instantiation of the qualifier.
+     */
+    public static final class Literal extends AnnotationLiteral<Urgent> implements Urgent {
+        
+        public static final Literal INSTANCE = new Literal();
+
+        private static final long serialVersionUID = 1L;
+    }
+
+}
 ----
 
 == Emitting Signals
@@ -93,6 +105,23 @@ Any combination of qualifiers may be specified at the injection point:
 @Inject
 @Urgent
 Signal<OrderPlaced> urgentOrderPlaced;
+----
+
+When CDI injection is not available (e.g. in a static method or a class that is not a CDI bean), a `Signal` instance can be created programmatically using the `Signal.create()` factory method:
+
+[source,java]
+----
+Signal<OrderPlaced> orderPlaced = Signal.create(OrderPlaced.class);
+
+// With qualifiers
+Signal<OrderPlaced> urgentOrderPlaced = Signal.create(OrderPlaced.class, Urgent.Literal.INSTANCE);
+----
+
+For parameterized signal types, use `TypeLiteral`:
+
+[source,java]
+----
+Signal<List<OrderPlaced>> orderPlaced = Signal.create(new TypeLiteral<List<OrderPlaced>>() {});
 ----
 
 === Emission Modes
@@ -344,15 +373,13 @@ The builder supports the following options:
 Registration reg = receivers.newReceiver(OrderPlaced.class)
         .setQualifiers(new Urgent.Literal())                        // <1>
         .setExecutionModel(ExecutionModel.VIRTUAL_THREAD)           // <2>
-        .setResponseType(String.class)                              // <3>
-        .notify(ctx -> {                                            // <4>
+        .notify(String.class, ctx -> {                              // <3>
             return Uni.createFrom().item("processed-" + ctx.signal().orderId());
         });
 ----
 <1> Set qualifiers for type-safe resolution.
 <2> Set the execution model (`BLOCKING`, `NON_BLOCKING`, or `VIRTUAL_THREAD`).
-<3> Set the response type for request-reply patterns.
-<4> The callback receives a `SignalContext` and returns a `Uni`.
+<3> The response type and callback; the callback receives a `SignalContext` and returns a `Uni`.
 
 For simple fire-and-forget receivers, a `Consumer`-based callback can be used:
 

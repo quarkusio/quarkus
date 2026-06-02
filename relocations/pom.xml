@@ -29,6 +29,8 @@
         <module>quarkus-junit5-mockito</module>
         <module>quarkus-junit5-mockito-config</module>
         <module>junit5-virtual-threads</module>
+        <module>quarkus-hibernate-panache-next</module>
+        <module>quarkus-hibernate-panache-next-deployment</module>
     </modules>
 
 </project>

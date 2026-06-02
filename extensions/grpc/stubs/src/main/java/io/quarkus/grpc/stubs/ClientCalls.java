@@ -1,5 +1,6 @@
 package io.quarkus.grpc.stubs;
 
+import java.util.Queue;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -8,7 +9,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.jctools.queues.SpscChunkedArrayQueue;
+import org.jctools.queues.atomic.unpadded.SpscChunkedAtomicUnpaddedArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +122,7 @@ public class ClientCalls {
 
     private static <I> void drainLoop(ClientCallStreamObserver<I> requestFlow, Multi<I> items,
             AtomicReference<Flow.Subscription> cancellable, AtomicReference<Runnable> drainRef) {
-        SpscChunkedArrayQueue<I> queue = new SpscChunkedArrayQueue<>((int) PREFETCH, (int) PREFETCH * 2);
+        Queue<I> queue = new SpscChunkedAtomicUnpaddedArrayQueue<>((int) PREFETCH, (int) PREFETCH * 2);
         AtomicBoolean done = new AtomicBoolean(false);
         AtomicInteger wip = new AtomicInteger(0);
         long[] consumed = { 0 };

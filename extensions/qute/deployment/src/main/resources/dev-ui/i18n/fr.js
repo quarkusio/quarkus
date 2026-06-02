@@ -5,7 +5,7 @@ export const templates = {
     'quarkus-qute-template_data': 'Données de modèle',
     'quarkus-qute-global_variables': 'Variables globales',
     'quarkus-qute-template': 'Modèle',
-    'quarkus-qute-type-safe-template-method': 'Méthode de modèle sans type',
+    'quarkus-qute-type-safe-template-method': 'Méthode de template type-safe',
     'quarkus-qute-parameter-declarations': 'Déclarations de paramètres',
     'quarkus-qute-fragment-identifiers': 'Identifiants de Fragment',
     'quarkus-qute-extension-method': 'Méthode d\'extension',
@@ -16,7 +16,7 @@ export const templates = {
     'quarkus-qute-target-class': 'Classe cible',
     'quarkus-qute-ignore-members': 'Ignorer les membres',
     'quarkus-qute-only-properties': 'Propriétés uniquement',
-    'quarkus-qute-template-globals-description': '<translation error>',
+    'quarkus-qute-template-globals-description': 'Les variables globales sont accessibles dans tous les templates, c\'est-à-dire qu\'une variable globale nommée foo peut être utilisée ainsi : {foo}.',
     'quarkus-qute-name': 'Nom',
     'quarkus-qute-target': 'Cible',
 };

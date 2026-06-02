@@ -44,7 +44,9 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
                 .newMember("acme-magic-bom")
                 .addExtension("acme-magic")
                 .setPlatformProjectCodestartData("property-dump-codestart",
-                        Map.of("property", Map.of("source", Map.of("acme-platform", "acme-platform"))))
+                        Map.of("property", Map.of("source",
+                                Map.of("acme-platform", "acme-platform",
+                                        "common", "acme-platform"))))
                 .release()
                 .stream().platform()
                 .registry()
@@ -64,7 +66,9 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
                 .addExtensionWithCodestart("quarkus-property-dump", "property-dump")
                 .addCodestartsArtifact(ArtifactCoords.jar("org.acme", "acme-codestarts", "1.0"), packageCodestart())
                 .setPlatformProjectCodestartData("property-dump-codestart",
-                        Map.of("property", Map.of("source", Map.of("quarkus-platform", "quarkus-platform"))))
+                        Map.of("property", Map.of("source",
+                                Map.of("quarkus-platform", "quarkus-platform",
+                                        "common", "quarkus-platform"))))
                 .release()
                 .newMember("quarkus-zoo-bom")
                 .addExtension("quarkus-giraffe")
@@ -163,7 +167,7 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         createProject(projectDir, List.of("acme-magic"));
 
         assertModel(projectDir,
-                List.of(mainPlatformBom(), ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7")),
+                List.of(ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7"), mainPlatformBom()),
                 List.of(ArtifactCoords.jar("org.acme.platform", "acme-magic", null)),
                 "2.0.4");
     }
@@ -174,8 +178,8 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         createProject(projectDir, List.of("giraffe", "acme-magic"));
 
         assertModel(projectDir,
-                List.of(mainPlatformBom(),
-                        ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7"),
+                List.of(ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7"),
+                        mainPlatformBom(),
                         ArtifactCoords.pom("${quarkus.platform.group-id}", "quarkus-zoo-bom", "${quarkus.platform.version}")),
                 List.of(ArtifactCoords.jar("org.acme.platform", "acme-magic", null),
                         ArtifactCoords.jar("org.quarkus.platform", "quarkus-giraffe", null)),
@@ -195,6 +199,7 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         assertPropertyDump(projectDir, Map.of(
                 "property.source.codestart", "codestart",
                 "property.source.quarkus-platform", "quarkus-platform",
+                "property.source.common", "quarkus-platform",
                 "property.source.acme-platform", "codestart"));
     }
 
@@ -204,7 +209,7 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         createProject(projectDir, List.of("quarkus-property-dump", "acme-magic"));
 
         assertModel(projectDir,
-                List.of(mainPlatformBom(), ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7")),
+                List.of(ArtifactCoords.pom(MAIN_PLATFORM_KEY, "acme-magic-bom", "7.0.7"), mainPlatformBom()),
                 List.of(ArtifactCoords.jar("org.quarkus.platform", "quarkus-property-dump", null),
                         ArtifactCoords.jar("org.acme.platform", "acme-magic", null)),
                 "2.0.4");
@@ -212,6 +217,7 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         assertPropertyDump(projectDir, Map.of(
                 "property.source.codestart", "codestart",
                 "property.source.quarkus-platform", "quarkus-platform",
+                "property.source.common", "acme-platform",
                 "property.source.acme-platform", "acme-platform"));
     }
 

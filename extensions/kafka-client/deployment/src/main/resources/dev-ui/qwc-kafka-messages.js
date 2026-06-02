@@ -217,7 +217,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
     _timestampToFormattedString(UNIX_timestamp) {
         const a = new Date(UNIX_timestamp);
         const year = a.getFullYear();
-        const month = this._addTrailingZero(a.getMonth());
+        const month = this._addTrailingZero(a.getMonth() + 1);
         const date = this._addTrailingZero(a.getDate());
         const hour = this._addTrailingZero(a.getHours());
         const min = this._addTrailingZero(a.getMinutes());

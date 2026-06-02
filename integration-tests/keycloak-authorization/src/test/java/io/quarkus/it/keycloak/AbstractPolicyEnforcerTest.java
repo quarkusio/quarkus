@@ -15,7 +15,7 @@ import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 

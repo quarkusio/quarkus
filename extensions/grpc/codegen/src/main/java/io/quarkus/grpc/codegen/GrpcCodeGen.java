@@ -408,6 +408,14 @@ public class GrpcCodeGen implements CodeGenProvider {
                                 protoDirectories.add(path.getParent().normalize().toAbsolutePath().toString());
                             } else { // archive
                                 Path relativePath = path.getRoot().relativize(path);
+                                String relativePathStr = relativePath.toString().replace('\\', '/');
+                                if (relativePathStr.startsWith("src/main/proto/")) {
+                                    relativePathStr = relativePathStr.substring("src/main/proto/".length());
+                                } else if (relativePathStr.startsWith("src/test/proto/")) {
+                                    relativePathStr = relativePathStr.substring("src/test/proto/".length());
+                                } else if (relativePathStr.startsWith("proto/")) {
+                                    relativePathStr = relativePathStr.substring("proto/".length());
+                                }
                                 String uniqueName = artifact.getGroupId() + ":" + artifact.getArtifactId();
                                 if (artifact.getVersion() != null) {
                                     uniqueName += ":" + artifact.getVersion();
@@ -424,10 +432,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                                 } catch (IOException e) {
                                     throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
                                 }
-                                Path outPath = protoUnzipDir;
-                                for (Path part : relativePath) {
-                                    outPath = outPath.resolve(part.toString());
-                                }
+                                Path outPath = protoUnzipDir.resolve(relativePathStr);
                                 try {
                                     Files.createDirectories(outPath.getParent());
                                     if (isDependency) {

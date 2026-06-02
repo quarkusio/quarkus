@@ -65,7 +65,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
@@ -120,7 +119,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.pkg.AotJarEnabled;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -444,21 +443,16 @@ public final class HibernateOrmProcessor {
             CombinedIndexBuildItem index,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             List<io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem> deprecatedAdditionalJpaModelBuildItems) {
-        Set<String> additionalClassNames = new HashSet<>();
+        // build a composite index with additional jpa model classes
+        LazyIndexer indexer = new LazyIndexer(HibernateOrmProcessor.class.getClassLoader(), index.getIndex());
         for (AdditionalJpaModelBuildItem jpaModel : additionalJpaModelBuildItems) {
-            additionalClassNames.add(jpaModel.getClassName());
+            indexer.add(jpaModel.getClassName());
         }
         for (io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem jpaModel : deprecatedAdditionalJpaModelBuildItems) {
-            additionalClassNames.add(jpaModel.getClassName());
+            indexer.add(jpaModel.getClassName());
         }
-        // build a composite index with additional jpa model classes
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        for (String className : additionalClassNames) {
-            IndexingUtil.indexClass(className, indexer, index.getIndex(), additionalIndex,
-                    HibernateOrmProcessor.class.getClassLoader());
-        }
-        CompositeIndex compositeIndex = CompositeIndex.create(index.getComputingIndex(), indexer.complete());
+        LazyIndexer.Result result = indexer.complete();
+        CompositeIndex compositeIndex = CompositeIndex.create(index.getComputingIndex(), result.index());
         return new JpaModelIndexBuildItem(compositeIndex);
     }
 

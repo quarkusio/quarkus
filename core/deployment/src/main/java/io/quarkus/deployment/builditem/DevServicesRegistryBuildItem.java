@@ -151,7 +151,22 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
             reallyStart(request, customizers, additionalConfigBuildItems, config, overrideConfig);
         } else {
-            config.putAll(matchedDevService.configs());
+            Map<String, String> reusedConfig = new HashMap<>(matchedDevService.configs());
+
+            // Re-evaluate additional config build items on reuse,
+            // because they are contextual to the current augmentation and may produce
+            // different results than the previous run.
+            // For example, Hibernate ORM's drop-and-create strategy should not persist
+            // across restarts when Flyway takes over schema management.
+            for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
+                Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
+                        .provide(reusedConfig);
+                if (!extraFromBuildItem.isEmpty()) {
+                    reusedConfig.putAll(extraFromBuildItem);
+                }
+            }
+
+            config.putAll(reusedConfig);
             overrideConfig.putAll(matchedDevService.overrideConfigs());
         }
     }
@@ -212,6 +227,9 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 currentDevServiceConfig.putAll(overrideConfig);
                 allDevServicesOverrideConfigs.putAll(overrideConfig);
 
+                RunningService service = new RunningService(request.getName(), request.getDescription(),
+                        new HashMap<>(currentDevServiceConfig), overrideConfig, startable.getContainerId(), startable);
+
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
                             .provide(currentDevServiceConfig);
@@ -221,9 +239,6 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 }
 
                 allDevServicesConfig.putAll(currentDevServiceConfig);
-
-                RunningService service = new RunningService(request.getName(), request.getDescription(),
-                        currentDevServiceConfig, overrideConfig, startable.getContainerId(), startable);
                 this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
                 compressor.close();
 

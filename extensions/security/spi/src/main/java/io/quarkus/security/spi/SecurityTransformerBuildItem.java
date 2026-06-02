@@ -1,6 +1,5 @@
 package io.quarkus.security.spi;
 
-import static io.quarkus.deployment.index.IndexingUtil.OBJECT;
 import static java.util.stream.Collectors.toSet;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
@@ -262,7 +261,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
                 .map(ClassInfo::interfaceNames)
                 .flatMap(Collection::stream)
                 .filter(Objects::nonNull)
-                .filter(n -> !OBJECT.equals(n))
+                .filter(n -> !DotName.OBJECT_NAME.equals(n))
                 .filter(n -> !ignoredPackages.contains(n.packagePrefix()))
                 .map(index::getClassByName)
                 .filter(Objects::nonNull)

@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -362,55 +361,49 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         // get the recommended catalogs in the right order according to the preferences
         List<ExtensionCatalog> sortedCatalogs = recommendedCombination.getUniqueSortedCatalogs();
 
+        sortedCatalogs = normalizeCatalogs(extensionsToAdd, sortedCatalogs);
+
         if (!containsQuarkusCore(extensionsToAdd)) {
             sortedCatalogs = ensureQuarkusCorePresent(sortedCatalogs, quarkusCore);
             if (sortedCatalogs.isEmpty()) {
                 throw new QuarkusCommandException(noCompatibleQuarkusCoreVersion(extensionsToAdd));
             }
         }
+        return sortedCatalogs;
+    }
 
-        // with the introduction of offering-based filtering, some extensions may appear to be picked
-        // from a catalog with a lower preference while still having their version managed in a catalog
-        // with a higher preference.
-        // For example, an unsupported extension managed in a downstream quarkus-bom could have been picked
-        // from the upstream quarkus-bom. In this case we don't want to import both downstream and upstream
-        // quarkus-boms. The logic below is making sure there is no unnecessary BOM overlap in such cases.
-        if (sortedCatalogs.size() < 2) {
-            return sortedCatalogs;
-        }
-
+    /**
+     * With the introduction of offering-based filtering, some extensions may appear to be picked
+     * from a catalog with a lower preference while still having their version managed in a catalog
+     * with a higher preference.
+     * For example, an unsupported extension managed in a downstream quarkus-bom could have been picked
+     * from the upstream quarkus-bom. In this case we don't want to import both downstream and upstream
+     * quarkus-boms. The logic below is making sure there is no unnecessary BOM overlap in such cases.
+     *
+     * @param extensionsToAdd extensions to add
+     * @param sortedCatalogs sorted catalogs
+     * @return normalized catalog list
+     */
+    private static List<ExtensionCatalog> normalizeCatalogs(List<Extension> extensionsToAdd,
+            List<ExtensionCatalog> sortedCatalogs) {
         final List<ArtifactKey> extDeps = new ArrayList<>(extensionsToAdd.size());
         for (Extension e : extensionsToAdd) {
             extDeps.add(e.getArtifact().getKey());
         }
-        List<ExtensionCatalog> reducedCatalogs = null;
-        for (int i = 0; i < sortedCatalogs.size(); ++i) {
-            var catalog = sortedCatalogs.get(i);
-            if (reducedCatalogs != null) {
-                reducedCatalogs.add(catalog);
+        final List<ExtensionCatalog> result = new ArrayList<>(sortedCatalogs.size());
+        for (ExtensionCatalog catalog : sortedCatalogs) {
+            if (catalog.isPlatform()
+                    && catalog.getMetadata()
+                            .get(Constants.REGISTRY_CLIENT_ALL_CATALOG_EXTENSIONS) instanceof Map<?, ?> allManagedExtensionKeys
+                    && !extDeps.removeIf(allManagedExtensionKeys::containsKey)) {
+                continue;
             }
-            if (catalog.isPlatform()) {
-                var o = catalog.getMetadata().get(Constants.REGISTRY_CLIENT_ALL_CATALOG_EXTENSIONS);
-                if (o instanceof Map<?, ?> allManagedExtensionKeys) {
-                    if (extDeps.removeIf(allManagedExtensionKeys::containsKey)) {
-                        if (reducedCatalogs == null) {
-                            // if we got to the end, then we return the original catalogs
-                            if (i == sortedCatalogs.size() - 1) {
-                                break;
-                            }
-                            reducedCatalogs = new ArrayList<>(sortedCatalogs.size());
-                            for (int j = 0; j <= i; ++j) {
-                                reducedCatalogs.add(sortedCatalogs.get(j));
-                            }
-                        }
-                        if (extDeps.isEmpty()) {
-                            break;
-                        }
-                    }
-                }
+            result.add(catalog);
+            if (extDeps.isEmpty()) {
+                break;
             }
         }
-        return reducedCatalogs == null ? sortedCatalogs : reducedCatalogs;
+        return result;
     }
 
     private static List<ExtensionCatalog> ensureQuarkusCorePresent(List<ExtensionCatalog> catalogs, Extension quarkusCore) {
@@ -442,14 +435,33 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         if (matchingQuarkusCoreOrigin == null) {
             return List.of();
         }
-        if (catalogContainingCoreIndex >= 0) {
-            final List<ExtensionCatalog> result = new ArrayList<>(catalogs);
-            Collections.swap(result, 0, catalogContainingCoreIndex);
-            return result;
+
+        for (int i = 0; i < catalogs.size(); ++i) {
+            ExtensionCatalog c = catalogs.get(i);
+            if (catalogContainingCoreIndex == i) {
+                // the core bom appears before the BOMs with the same groupId
+                return catalogs;
+            }
+            if (c.isPlatform() && c.getBom().getGroupId().equals(matchingQuarkusCoreOrigin.getBom().getGroupId())) {
+                List<ExtensionCatalog> result = new ArrayList<>(catalogs.size() + (catalogContainingCoreIndex < 0 ? 0 : 1));
+                int j = 0;
+                while (j < i) {
+                    result.add(catalogs.get(j++));
+                }
+                result.add(matchingQuarkusCoreOrigin);
+                while (j < catalogs.size()) {
+                    if (catalogContainingCoreIndex != j) {
+                        result.add(catalogs.get(j));
+                    }
+                    ++j;
+                }
+                return result;
+            }
         }
-        final List<ExtensionCatalog> result = new ArrayList<>(catalogs.size() + 1);
-        result.add(matchingQuarkusCoreOrigin);
+
+        List<ExtensionCatalog> result = new ArrayList<>(catalogs.size());
         result.addAll(catalogs);
+        result.add(matchingQuarkusCoreOrigin);
         return result;
     }
 

@@ -29,7 +29,7 @@
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <style-observer.version>0.1.2</style-observer.version>
         <marked.version>17.0.5</marked.version>
-        <dompurify.version>3.2.7</dompurify.version>
+        <dompurify.version>3.4.7</dompurify.version>
         <vaadin-router.version>2.0.1</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>6.0.0</echarts.version>
@@ -41,7 +41,7 @@
         <qomponent.version>1.0.6</qomponent.version>
         <ldrs.version>1.1.9</ldrs.version>
         <directory-tree.version>1.0.4</directory-tree.version>
-        <hpcc-js-wasm.version>2.33.6</hpcc-js-wasm.version>
+        <hpcc-js-wasm.version>2.33.8</hpcc-js-wasm.version>
         <yargs.version>17.7.2</yargs.version>
         <cliui.version>8.0.1</cliui.version>
         <escalade.version>3.1.2</escalade.version>
@@ -59,7 +59,7 @@
         <color-convert.version>2.0.1</color-convert.version>
         <color-name.version>1.1.4</color-name.version>
         <dot.version>0.0.2</dot.version>
-        <viz-js.version>3.26.0</viz-js.version>
+        <viz-js.version>3.27.0</viz-js.version>
         <panzoom.version>4.6.2</panzoom.version>
     </properties>
 
@@ -336,7 +336,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>markdown-it</artifactId>
-                <version>14.1.1</version>
+                <version>14.2.0</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>
@@ -354,7 +354,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>linkify-it</artifactId>
-                <version>5.0.0</version>
+                <version>5.0.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

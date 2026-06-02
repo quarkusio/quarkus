@@ -40,6 +40,11 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-junit5-mockito", junitJupiterRelocation);
         RELOCATIONS.put("quarkus-junit5-mockito-config", junitJupiterRelocation);
         RELOCATIONS.put("quarkus-junit5-component", junitJupiterRelocation);
+
+        Function<String, Relocation> panacheNextRelocation = a -> Relocation.ofArtifactId(a,
+                a.replace("quarkus-hibernate-panache-next", "quarkus-data-hibernate"), "3.37");
+        RELOCATIONS.put("quarkus-hibernate-panache-next", panacheNextRelocation);
+        RELOCATIONS.put("quarkus-hibernate-panache-next-deployment", panacheNextRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

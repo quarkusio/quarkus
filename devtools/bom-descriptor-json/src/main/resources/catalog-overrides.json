@@ -139,6 +139,11 @@
       "name": "Alternative languages",
       "id": "alt-languages",
       "description": "Support for other JVM based languages"
+    },
+    {
+      "name": "Packaging",
+      "id": "packaging",
+      "description": "Support for packaging a built application in various ways"
     }
   ],
   "metadata":{

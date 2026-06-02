@@ -1,7 +1,7 @@
 {#include readme-header /}
 
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
-[Related Hibernate with Panache Next section...](https://quarkus.io/guides/hibernate-panache-next)
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
+[Related Quarkus Data Hibernate section...](https://quarkus.io/guides/quarkus-data-hibernate)
 {/if}
 
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache')}

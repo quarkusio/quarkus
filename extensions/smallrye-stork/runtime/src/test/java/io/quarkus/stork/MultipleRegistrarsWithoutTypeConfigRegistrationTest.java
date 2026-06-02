@@ -2,7 +2,11 @@ package io.quarkus.stork;
 
 import static org.assertj.core.api.Fail.fail;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
@@ -21,9 +25,9 @@ public class MultipleRegistrarsWithoutTypeConfigRegistrationTest {
             .setForcedDependencies(
                     Arrays.asList(
                             Dependency.of("io.quarkus", "quarkus-smallrye-stork", Version.getVersion()),
-                            Dependency.of("io.smallrye.stork", "stork-service-registration-consul", "2.7.6")))
+                            Dependency.of("io.smallrye.stork", "stork-service-registration-static-list", storkVersion())))
             .overrideConfigKey("quarkus.stork.red-service.service-registrar.ip-address", "145.123.145.122")
-            .overrideConfigKey("quarkus.stork.blue-service.service-registrar.type", "consul")
+            .overrideConfigKey("quarkus.stork.blue-service.service-registrar.type", "static")
             .overrideConfigKey("quarkus.stork.blue-service.service-registrar.ip-address", "145.123.145.157")
             .assertException(throwable -> {
                 Assertions.assertThat(throwable)
@@ -35,5 +39,16 @@ public class MultipleRegistrarsWithoutTypeConfigRegistrationTest {
     @Test
     public void testBuildShouldFail() {
         fail("Should fail");
+    }
+
+    private static String storkVersion() {
+        try (InputStream is = MultipleRegistrarsWithoutTypeConfigRegistrationTest.class
+                .getResourceAsStream("/META-INF/maven/io.smallrye.stork/stork-core/pom.properties")) {
+            Properties props = new Properties();
+            props.load(is);
+            return props.getProperty("version");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

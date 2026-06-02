@@ -1,0 +1,8 @@
+quarkus:
+  application:
+    name: module-a
+  datasource:
+    "ds-a":
+      db-kind: postgresql
+      jdbc:
+        driver: org.postgresql.Driver

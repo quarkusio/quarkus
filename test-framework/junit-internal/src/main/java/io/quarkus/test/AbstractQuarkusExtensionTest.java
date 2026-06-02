@@ -79,11 +79,14 @@ import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
 
 /**
- * A test extension for testing Quarkus internals, not intended for end user consumption
- * * @deprecated should not be used directly, use {@link QuarkusExtensionTest}
+ * A test extension for testing Quarkus internals, not intended for end user consumption.
+ * <p>
+ * This abstract class will be dropped as soon as we get rid of the deprecated {@link QuarkusUnitTest},
+ * and its content incorporated into {@link QuarkusExtensionTest}.
+ * <p>
+ * Do NOT use or extend this class.
  */
-@Deprecated(since = "3.35", forRemoval = true)
-public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest<S>>
+public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest<S>>
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
         InvocationInterceptor, ParameterResolver {
 
@@ -168,10 +171,6 @@ public class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest
 
     public AbstractQuarkusExtensionTest() {
         this(false);
-    }
-
-    public static AbstractQuarkusExtensionTest withSecuredConnection() {
-        return new AbstractQuarkusExtensionTest(true);
     }
 
     protected AbstractQuarkusExtensionTest(boolean useSecureConnection) {

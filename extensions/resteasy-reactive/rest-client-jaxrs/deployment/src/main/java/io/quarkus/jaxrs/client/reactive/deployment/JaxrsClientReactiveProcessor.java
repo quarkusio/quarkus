@@ -22,6 +22,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI;
@@ -91,7 +92,6 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
-import org.jboss.resteasy.reactive.client.impl.AbstractRxInvoker;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
@@ -233,7 +233,8 @@ public class JaxrsClientReactiveProcessor {
     private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
     private static final DotName WEB_TARGET = DotName.createSimple(WebTarget.class);
 
-    private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI, REST_MULTI);
+    private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI, REST_MULTI,
+            REST_MULTI_RESPONSE);
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
@@ -2562,7 +2563,9 @@ public class JaxrsClientReactiveProcessor {
                         ? ReturnCategory.COMPLETION_STAGE
                         : paramType.name().equals(MULTI) || paramType.name().equals(REST_MULTI)
                                 ? ReturnCategory.MULTI
-                                : ReturnCategory.UNI;
+                                : paramType.name().equals(REST_MULTI_RESPONSE)
+                                        ? ReturnCategory.REST_MULTI_RESPONSE
+                                        : ReturnCategory.UNI;
 
                 // the async types have one type argument:
                 if (paramType.arguments().isEmpty()) {
@@ -2739,26 +2742,30 @@ public class JaxrsClientReactiveProcessor {
                                     CONTINUATION.toString()),
                             result, tryBlock.getMethodParam(continuationIndex));
                 }
-            } else if (returnCategory == ReturnCategory.MULTI) {
+            } else if (returnCategory == ReturnCategory.MULTI
+                    || returnCategory == ReturnCategory.REST_MULTI_RESPONSE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
                         builder, tryBlock.loadClassFromTCCL(MultiInvoker.class));
                 ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
-                // with entity
+                boolean wrapResponse = returnCategory == ReturnCategory.REST_MULTI_RESPONSE;
                 if (genericReturnType != null) {
                     result = tryBlock.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(MultiInvoker.class, "method",
                                     Multi.class, String.class,
-                                    Entity.class, GenericType.class),
+                                    Entity.class, GenericType.class, boolean.class),
                             multiInvoker, tryBlock.load(httpMethod), entity,
-                            genericReturnType);
+                            genericReturnType, tryBlock.load(wrapResponse));
                 } else {
                     result = tryBlock.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
-                                    Object.class, String.class,
-                                    Entity.class, Class.class),
+                            MethodDescriptor.ofMethod(MultiInvoker.class, "method",
+                                    Multi.class, String.class,
+                                    Entity.class, GenericType.class, boolean.class),
                             multiInvoker, tryBlock.load(httpMethod), entity,
-                            tryBlock.loadClassFromTCCL(simpleReturnType));
+                            tryBlock.newInstance(
+                                    MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
+                                    tryBlock.loadClassFromTCCL(simpleReturnType)),
+                            tryBlock.load(wrapResponse));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -2820,24 +2827,31 @@ public class JaxrsClientReactiveProcessor {
                                     CONTINUATION.toString()),
                             result, tryBlock.getMethodParam(continuationIndex));
                 }
-            } else if (returnCategory == ReturnCategory.MULTI) {
+            } else if (returnCategory == ReturnCategory.MULTI
+                    || returnCategory == ReturnCategory.REST_MULTI_RESPONSE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
                         builder, tryBlock.loadClassFromTCCL(MultiInvoker.class));
                 ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
+                boolean wrapResponse = returnCategory == ReturnCategory.REST_MULTI_RESPONSE;
                 if (genericReturnType != null) {
                     result = tryBlock.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
-                                    Object.class, String.class,
-                                    GenericType.class),
-                            multiInvoker, tryBlock.load(httpMethod), genericReturnType);
+                            MethodDescriptor.ofMethod(MultiInvoker.class, "method",
+                                    Multi.class, String.class,
+                                    Entity.class, GenericType.class, boolean.class),
+                            multiInvoker, tryBlock.load(httpMethod),
+                            tryBlock.loadNull(), genericReturnType, tryBlock.load(wrapResponse));
                 } else {
                     result = tryBlock.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractRxInvoker.class, "method",
-                                    Object.class, String.class,
-                                    Class.class),
+                            MethodDescriptor.ofMethod(MultiInvoker.class, "method",
+                                    Multi.class, String.class,
+                                    Entity.class, GenericType.class, boolean.class),
                             multiInvoker, tryBlock.load(httpMethod),
-                            tryBlock.loadClassFromTCCL(simpleReturnType));
+                            tryBlock.loadNull(),
+                            tryBlock.newInstance(
+                                    MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
+                                    tryBlock.loadClassFromTCCL(simpleReturnType)),
+                            tryBlock.load(wrapResponse));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -3595,7 +3609,8 @@ public class JaxrsClientReactiveProcessor {
         UNI,
         MULTI,
         REST_MULTI,
-        COROUTINE
+        COROUTINE,
+        REST_MULTI_RESPONSE
     }
 
     private static class SubResourceParameter {

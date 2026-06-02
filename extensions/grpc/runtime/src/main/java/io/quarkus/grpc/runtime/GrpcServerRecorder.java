@@ -796,7 +796,7 @@ public class GrpcServerRecorder {
                         startPromise.fail(e);
                     }
                     return null;
-                });
+                }, false);
             }
         }
 

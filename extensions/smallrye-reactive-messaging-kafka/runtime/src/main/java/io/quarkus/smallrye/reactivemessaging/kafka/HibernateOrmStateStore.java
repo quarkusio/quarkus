@@ -97,7 +97,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
                     emitter.fail(t);
                 }
 
-            }));
+            }), false);
         });
     }
 
@@ -125,7 +125,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
                     }
                     e.fail(t);
                 }
-            }));
+            }), false);
         });
     }
 

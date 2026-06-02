@@ -1,0 +1,75 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="modularity"]
+= Quarkus modularity
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: architecture
+:extension-status: experimental
+:summary: Quarkus modularity builds on JPMS to produce a complete and enhanced module graph for the application at build time.
+:topics: modularity,jpms,modules,extensions
+
+The Quarkus modularity extension constructs a complete module graph for a Quarkus application at build time.
+It is a superset of the Java Platform Module System (JPMS), enhancing and completing the module information for every artifact in the application.
+This extension is intended to be consumed by other Quarkus extensions (such as the xref:jlink.adoc[jlink extension]) rather than by application developers directly.
+
+include::{includes}/extension-status.adoc[]
+
+== What Quarkus modularity does
+
+Quarkus modularity processes every artifact in the application's dependency graph and produces a unified module model.
+It handles two cases.
+
+For artifacts that contain a `module-info.class` descriptor, the extension reads the existing module information and enhances it with Quarkus-specific dependency data.
+This includes additional `opens` and `exports` directives, extra inter-module dependencies, and service provider information that JPMS does not capture on its own.
+
+For artifacts that lack a `module-info.class` (automatic modules), the extension computes a module descriptor.
+Unlike the default JDK behavior where automatic modules can read every other module, Quarkus scopes each automatic module's dependencies to match its Maven dependency graph.
+This produces a more accurate and constrained set of module relationships.
+
+The extension also supports dependency semantics that go beyond what JPMS provides.
+Module dependencies carry distinct modifiers such as `LINKED`, `READ`, `SERVICES`, and `OPTIONAL`, which control how and whether modules are wired together at both link time and run time.
+
+== Boot modules and dynamic modules
+
+The modularity extension organizes modules into two tiers: boot modules and dynamic modules.
+
+Boot modules are loaded by the JDK's boot module layer.
+A small set of modules must be present on the boot module path in order for the JVM to start in module mode.
+This set includes the module system loader itself (`smallrye-modules`), a minimal launcher, and the transitive dependencies of those components (typically logging support and a few common libraries).
+The boot module set is kept as small as possible.
+
+Dynamic modules are loaded at runtime by `smallrye-modules`.
+This module loader is more capable and more flexible than the JDK's built-in module layer support.
+Application code and the majority of library modules reside in this tier.
+
+One consequence of this split is that JDK AOT precompilation via Class Data Sharing (CDS) currently only supports modules on the boot module path.
+This is a known limitation.
+
+== `smallrye-modules`
+
+The https://github.com/smallrye/smallrye-modules[`smallrye-modules`] project provides the module loader that powers the dynamic module tier.
+It supports extended dependency semantics beyond those offered by JPMS, including the additional modifier types described above.
+
+Extension authors do not usually interact with `smallrye-modules` directly.
+Instead, they use the build items described in the xref:modularity-reference.adoc[modularity SPI reference] to declare boot modules, add inter-module dependencies, and contribute other module metadata at build time.
+
+== How the module model is built
+
+At build time, the modularity extension assembles the module model through the following process.
+
+All runtime artifacts are collected from the application's dependency model.
+Classes and resources generated or transformed during the Quarkus build (such as those produced by ArC or bytecode recorders) are assigned to their owning modules based on package membership.
+
+For each artifact, the extension either reads its `module-info.class` descriptor or computes an automatic module descriptor from its Maven dependencies.
+Contributions from other extensions, provided through build items, are then merged into each module's descriptor.
+These contributions include extra dependencies between modules, additional `opens` and `exports` directives, and native access flags.
+
+The boot module set is computed as the transitive closure of all modules declared as boot modules by extensions.
+Automatic modules are excluded from the boot set because they cannot be linked by `jlink`.
+
+The final result is an `ApplicationModuleInfoBuildItem` containing the complete `AppModuleModel`.
+Downstream packaging extensions, such as the xref:jlink.adoc[`jlink` extension], consume this model to produce the application's runtime image.

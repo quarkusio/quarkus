@@ -1,5 +1,6 @@
 package io.quarkus.grpc.stubs;
 
+import java.util.Queue;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
-import org.jctools.queues.SpscChunkedArrayQueue;
+import org.jctools.queues.atomic.unpadded.SpscChunkedAtomicUnpaddedArrayQueue;
 
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -148,7 +149,7 @@ public class ServerCalls {
     }
 
     public static <O> void handleSubscription(Multi<O> items, ServerCallStreamObserver<O> response) {
-        SpscChunkedArrayQueue<O> queue = new SpscChunkedArrayQueue<>((int) PREFETCH, (int) PREFETCH * 2);
+        Queue<O> queue = new SpscChunkedAtomicUnpaddedArrayQueue<>((int) PREFETCH, (int) PREFETCH * 2);
         AtomicBoolean done = new AtomicBoolean(false);
         AtomicInteger wip = new AtomicInteger(0);
         long[] consumed = { 0 };

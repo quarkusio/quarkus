@@ -299,6 +299,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties().putAll(buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
+            params.getForkedSystemProperties().putAll(quarkusProperties);
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);

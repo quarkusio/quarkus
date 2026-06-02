@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.quarkus.data.hibernate.PanacheQuery;
 import jakarta.persistence.NonUniqueResultException;
 
+import io.quarkus.data.hibernate.DataQuery;
+
 public interface PanacheBlockingQuery<Entity>
-        extends PanacheQuery<PanacheBlockingQuery<Entity>, Entity, List<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> {
+        extends DataQuery<PanacheBlockingQuery<Entity>, Entity, List<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> {
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following

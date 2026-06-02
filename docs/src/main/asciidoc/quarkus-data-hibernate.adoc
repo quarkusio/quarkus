@@ -116,13 +116,13 @@ create an entity:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import jakarta.persistence.Entity;
 
 import java.time.LocalDate;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -137,7 +137,7 @@ In order to map a Java class to a Database table, just:
 
 - Write a class
 - Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`]
-- Make it extend `PanacheEntity`
+- Make it extend `ManagedEntity.AutoLong`
 - Make its fields `public`
 
 And that's it, now you can start creating instances of your entity, persist it to your database, after which point
@@ -184,8 +184,8 @@ placing them on an interface nested in the entity:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
@@ -194,7 +194,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -203,7 +203,7 @@ public class Cat extends PanacheEntity {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository<Cat> {
+    public interface Repo extends ManagedRepository.AutoLong<Cat> {
         @Find
         Cat findByName(String name);
 
@@ -222,7 +222,7 @@ public class Cat extends PanacheEntity {
 A Quarkus Data Hibernate repository is:
 
 - An interface nested in the entity (though it could be a toplevel interface if you prefer)
-- Which extends the `PanacheRepository` interface, with the entity in question as type parameter
+- Which extends the `ManagedRepository.AutoLong` interface, with the entity in question as type parameter
 - And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
   `default` methods with implementation of queries
 
@@ -339,9 +339,9 @@ All the repositories you define as nested interfaces of your entity will be avai
 class under accessor methods of the same name as the repository. This is strictly equivalent to injecting the repository
 type, and in fact uses CDI under the hood to look up the repository.
 
-== The `PanacheRepository` super type
+== The `ManagedRepository` super type
 
-Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `PanacheRepository` type comes
+Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `ManagedRepository` type comes
 packed with most of the operations you need to work on your entity, such as, out of the box:
 
 [source,java]
@@ -386,7 +386,7 @@ public class Code {
 == Non-type-safe queries
 
 With generated finder and query methods, as we've previously shown, everything is validated at build-time, but if
-you want to write non-type-safe queries, you can always use the provided methods of `PanacheRepository`:
+you want to write non-type-safe queries, you can always use the provided methods of `ManagedRepository`:
 
 [source,java]
 ----
@@ -424,12 +424,12 @@ public class Code {
 
 == About entity identifiers
 
-In the example above, we extended the `PanacheEntity` type, and did not define any database identifier, that's
-because `PanacheEntity` comes with a default generated database identifier, so you don't have to worry about it. It
+In the example above, we extended the `ManagedEntity.AutoLong` type, and did not define any database identifier, that's
+because `ManagedEntity.AutoLong` comes with a default generated database identifier, so you don't have to worry about it. It
 does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
 
 You can choose to extend the `WithId.AutoString` for a `String` identifier, or `WithId.AutoUUID` for a `UUID`
-identifier, or even extend `WithId<IdType>` to automatically get an attribute of the form:
+identifier to automatically get an attribute of the form:
 
 [source,java]
 ----
@@ -440,14 +440,14 @@ public IdType id;
 WARNING: The identifier will not be automatically generated in this case, so you will have to set its value manually
 on creation.
 
-Naturally, you can also provide your own database identifier explicitly and implement the `PanacheEntity.Managed`
-interface in your entity, as well as use the `PanacheRepository.Managed` interface for your repository, in order to
+Naturally, you can also provide your own database identifier explicitly and implement the `ManagedEntity`
+interface in your entity, as well as use the `ManagedRepository` interface for your repository, in order to
 specify you database identifier type:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.processing.Find;
@@ -457,7 +457,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class CatWithId implements PanacheEntity.Managed {
+public class CatWithId implements ManagedEntity {
     @Id
     public String id;
     public String name;
@@ -468,7 +468,7 @@ public class CatWithId implements PanacheEntity.Managed {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository.Managed<CatWithId, String> {
+    public interface Repo extends ManagedRepository<CatWithId, String> {
         @Find
         CatWithId findByName(String name);
 
@@ -493,7 +493,7 @@ extend any of these types if you define you own ID:
 
 |`Long`
 |`WithId.AutoLong`
-|`PanacheEntity`
+|`ManagedEntity.AutoLong`
 
 |`UUID`
 |`WithId.AutoUUID`
@@ -511,19 +511,19 @@ extend any of these types if you define you own ID:
 
 == Use stateless sessions
 
-Out of the box, your subtype of `PanacheEntity` will be managed by Hibernate ORM, and every change to the entity will
+Out of the box, your subtype of `ManagedEntity` will be managed by Hibernate ORM, and every change to the entity will
 be automatically sent to the database without requiring any explicit `update` operation.
 
 If on the other hand, you wish to make every `update` operation explicit, then you need to use what Hibernate ORM calls
 a _stateless session_.
 
-In this case, you need to extend `WithId.AutoLong` (or any other ID class or provide your own ID), and implement
-the `PanacheEntity.Stateless` and `PanacheRepository.Stateless` interfaces:
+In this case, you need to extend the `RecordEntity.AutoLong` class and implement the
+`RecordRepository.AutoLong` interfaces:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.RecordEntity;
+import io.quarkus.data.hibernate.RecordRepository;
 import io.quarkus.data.hibernate.WithId;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
@@ -533,7 +533,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless {
+public class Cat extends RecordEntity.AutoLong {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -542,7 +542,7 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository.Stateless<Cat, Long> {
+    public interface Repo extends RecordRepository.AutoLong<Cat, Long> {
         @Find
         Cat findByName(String name);
 
@@ -666,14 +666,14 @@ quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_
 
 Now, in your code, the only differences with a regular managed session entity are:
 
-- Your entity implements `PanacheEntity.Reactive`
-- Your repository extends `PanacheRepository.Reactive`
+- Your entity implements `ManagedEntity.Reactive`
+- Your repository extends `ManagedRepository.Reactive`
 - All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
@@ -684,7 +684,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class Cat extends WithId.AutoLong implements ManagedEntity.Reactive {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -693,7 +693,7 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository.Reactive<Cat, Long> {
+    public interface Repo extends ManagedRepository.Reactive<Cat, Long> {
         @Find
         Uni<Cat> findByName(String name);
 
@@ -756,12 +756,12 @@ public class Code {
 == Reactive and stateless
 
 If you want to manage manually your entity changes, then you can use a stateless session by switching to
-the `PanacheEntity.Reactive.Stateless` for your entity, and `PanacheRepository.Reactive.Stateless`:
+the `RecordEntity.Reactive` for your entity, and `RecordRepository.Reactive`:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.RecordEntity;
+import io.quarkus.data.hibernate.RecordRepository;
 import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
@@ -772,7 +772,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.Stateless {
+public class Cat extends WithId.AutoLong implements RecordEntity.Reactive {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -781,7 +781,7 @@ public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.State
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository.Reactive.Stateless<Cat, Long> {
+    public interface Repo extends RecordRepository.Reactive<Cat, Long> {
         @Find
         Uni<Cat> findByName(String name);
 
@@ -902,19 +902,19 @@ All the alternative entity operations are available from these methods:
 
 |`Session`
 |`.managedBlocking()`
-|`PanacheEntity.Managed`
+|`ManagedEntity`
 
 |`StatelessSession`
 |`.statelessBlocking()`
-|`PanacheEntity.Stateless`
+|`RecordEntity`
 
 |`Mutiny.Session`
 |`.managedReactive()`
-|`PanacheEntity.Reactive`
+|`ManagedEntity.Reactive`
 
 |`Mutiny.StatelessSession`
 |`.statelessReactive()`
-|`PanacheEntity.Reactive.Stateless`
+|`RecordEntity.Reactive`
 
 |===
 
@@ -927,19 +927,19 @@ generated metamodel accessors, or by injecting them with `@Inject`:
 
 |`Session`
 |`Cat_.managedBlocking()`
-|`PanacheRepository.Managed<Cat, Long>`
+|`ManagedRepository.Managed<Cat, Long>`
 
 |`StatelessSession`
 |`Cat_.statelessBlocking()`
-|`PanacheRepository.Stateless<Cat, Long>`
+|`RecordRepository.Stateless<Cat, Long>`
 
 |`Mutiny.Session`
 |`Cat_.managedReactive()`
-|`PanacheRepository.Reactive<Cat, Long>`
+|`ManagedRepository.Reactive<Cat, Long>`
 
 |`Mutiny.StatelessSession`
 |`Cat_.statelessReactive()`
-|`PanacheRepository.Reactive.Stateless<Cat, Long>`
+|`RecordRepository.Reactive<Cat, Long>`
 
 |===
 
@@ -947,8 +947,9 @@ But you can also define any number of repositories for your custom operations wi
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.Find;
@@ -958,7 +959,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -967,12 +968,12 @@ public class Cat extends PanacheEntity {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository<Cat> {
+    public interface Repo extends ManagedRepository.AutoLong<Cat> {
         @Find
         Cat findByName(String name);
     }
 
-    public interface TheOtherRepo extends PanacheRepository.Reactive.Stateless<Cat, Long> {
+    public interface TheOtherRepo extends RecordRepository.Reactive<Cat, Long> {
         @Find
         Uni<Cat> findByName(String name);
     }
@@ -1025,34 +1026,34 @@ define your own ID entity field:
 
 |`Session` (managed, blocking)
 |`Long`
-|`PanacheEntity`
+|`ManagedEntity.AutoLong`
 |
-|`PanacheRepository<Entity>`
+|`ManagedRepository.AutoLong<Entity>`
 
 |`Session` (managed, blocking)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Managed`
-|`PanacheRepository.Managed<Entity, Id>`
+|`ManagedEntity`
+|`ManagedRepository<Entity, Id>`
 
 |`StatelessSession` (stateless, blocking)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Stateless`
-|`PanacheRepository.Stateless<Entity, Id>`
+|`RecordEntity`
+|`RecordRepository<Entity, Id>`
 
 |`Mutiny.Session` (managed, reactive)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Reactive`
-|`PanacheRepository.Reactive<Entity, Id>`
+|`ManagedEntity.Reactive`
+|`ManagedRepository.Reactive<Entity, Id>`
 
 
 |`Mutiny.StatelessSession` (stateless, reactive)
 |`Id`
 |`WithId<Id>`
-|`PanacheEntity.Reactive.Stateless`
-|`PanacheRepository.Reactive.Stateless<Entity, Id>`
+|`RecordEntity.Reactive`
+|`RecordRepository.Reactive<Entity, Id>`
 
 |===
 
@@ -1110,10 +1111,12 @@ Naturally, you can also use link:{jakarta-data-spec-url}[Jakarta Data] to define
 implementation 'jakarta.data:jakarta.data-api'
 ----
 
-And then you can write your entity as described before, extending a variant of `PanacheEntity` or not, as you wish.
+And then you can write your entity as described before, extending a variant of `ManagedEntity` or `RecordEntity`
+or not, as you wish.
 
 As for the repositories, given that Jakarta Data 1.0 only supports the stateless variants (managed entities are
-being added to the upcoming 1.1 version), we recommend that you stick to the `PanacheRepository` variants in order
+being added to the upcoming 1.1 version), we recommend that you stick to the `ManagedRepository` or
+`RecordRepository` variants in order
 to support stateless or managed entities. Both blocking and reactive variants are supported, though.
 
 Otherwise, just replace `@HQL` with `@Query` and change the package import of `@Find`, and you can even write
@@ -1121,7 +1124,7 @@ Otherwise, just replace `@HQL` with `@Query` and change the package import of `@
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 
 import jakarta.data.repository.Delete;
 import jakarta.data.repository.Find;
@@ -1146,7 +1149,7 @@ public class Cat {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends PanacheRepository.Stateless<Cat, Long> {
+    public interface Repo extends RecordRepository<Cat, Long> {
         @Find <1>
         Cat findByName(String name);
 
@@ -1167,8 +1170,8 @@ public class Cat {
 returning how many were deleted.
 <4> You can always explicitly write delete methods as query methods.
 
-But otherwise you can still make your entity extend `PanacheEntity` or any of its variants, and you still get
-your repository injectable, or via the `Cat_.repo()` accessor.
+But otherwise you can still make your entity extend `ManagedEntity` or `RecordEntity` or any of its variants,
+and you still get your repository injectable, or via the `Cat_.repo()` accessor.
 
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
 and link:{jakarta-data-spec-url}[Jakarta Data]
@@ -1296,7 +1299,7 @@ link:https://jakarta.ee/specifications/query/1.0/jakarta-query-1.0-m1[Jakarta Qu
 - The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JD-QL), which is a subset of the
 Jakarta Persistence Query Language, supported by the `@Query` annotation.
 - The Panache Query Language, which is a superset of the Hibernate Query Language adding very few shortcuts, which
-is supported in all the `PanacheRepository` queries.
+is supported in all the `ManagedRepository` and `RecordRepository` queries.
 
 === Panache Query Language
 
@@ -1330,7 +1333,7 @@ Quarkus Security provides an initial support for securing Panache Repositories w
 [source,java]
 ----
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
 
     public interface SecuredRepo {
@@ -1346,7 +1349,7 @@ public class Cat extends PanacheEntity {
 [source,java]
 ----
 @RolesAllowed("admin")
-public interface SecuredCatRepo extends PanacheManagedBlockingRepository<Cat> {
+public interface SecuredCatRepo extends ManagedRepository.AutoLong<Cat> {
 
     @Find
     List<Cat> findByName(String name);
@@ -1357,7 +1360,7 @@ public interface SecuredCatRepo extends PanacheManagedBlockingRepository<Cat> {
 [WARNING]
 ====
 In the example above, only methods directly declared on the `SecuredCatRepo` interface are secured.
-Methods inherited from `PanacheRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only affect the type they annotate.
+Methods inherited from `ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only affect the type they annotate.
 ====
 
 [IMPORTANT]
@@ -1369,7 +1372,7 @@ Therefore, you must not attempt to secure such methods and instead use two alter
 [source,java]
 ----
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
 
     public interface ParentRepo<T extends Cat> {
@@ -1408,7 +1411,7 @@ Alternative 2: Replace the type variable `T` with a concrete type in the reposit
 [source,java]
 ----
 @Entity
-public class Cat extends PanacheEntity {
+public class Cat extends ManagedEntity.AutoLong {
     public String name;
 
     public interface Repo {

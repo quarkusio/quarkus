@@ -1,11 +1,11 @@
 package io.quarkus.data.hibernate;
 
 /**
- * Utility class for Panache.
+ * Utility class for Quarkus Data Hibernate.
  *
  * @author Stéphane Épardaud
  */
-public class Panache {
+public class QuarkusData {
     // FIXME
     //    /**
     //     * Returns the default {@link EntityManager}

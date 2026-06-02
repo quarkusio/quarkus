@@ -1,10 +1,10 @@
 package io.quarkus.data.hibernate.stateless.blocking;
 
-import io.quarkus.data.hibernate.PanacheRepositorySwitcher;
+import io.quarkus.data.hibernate.RepositorySwitcher;
 
 public interface PanacheStatelessBlockingRepositoryBase<Entity, Id>
         extends PanacheStatelessBlockingRepositoryOperations<Entity, Id>,
         PanacheStatelessBlockingRepositoryQueries<Entity, Id>,
-        PanacheRepositorySwitcher<Entity, Id> {
+        RepositorySwitcher<Entity, Id> {
 
 }

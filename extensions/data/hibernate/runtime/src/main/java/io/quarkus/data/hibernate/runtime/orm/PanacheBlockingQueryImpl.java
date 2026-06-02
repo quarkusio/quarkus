@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.quarkus.panache.common.Page;
-import io.quarkus.panache.common.Sort;
 import jakarta.data.Limit;
 import jakarta.data.page.PageRequest;
 import jakarta.persistence.LockModeType;
@@ -16,6 +14,8 @@ import org.hibernate.SharedSessionContract;
 
 import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 
 public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<Entity> {
 

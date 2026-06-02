@@ -6,7 +6,7 @@ import jakarta.data.Order;
 import jakarta.data.Sort;
 import jakarta.persistence.LockModeType;
 
-public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
+public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQuery<?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
 
     // Queries
 
@@ -32,7 +32,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      *
      * @param query a {@link io.quarkus.data.hibernate query string}
      * @param params optional sequence of indexed parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      * @see #find(String, Sort, Object...)
      * @see #find(String, Map)
      * @see #list(String, Object...)
@@ -46,7 +46,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @param query a {@link io.quarkus.data.hibernate query string}
      * @param order the sort strategy to use
      * @param params optional sequence of indexed parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      * @see #find(String, Object...)
      * @see #find(String, Order, Map)
      * @see #list(String, Order, Object...)
@@ -61,7 +61,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @param query a {@link io.quarkus.hibernate.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      */
     default Query find(String query, Sort<?> sort, Object... params) {
         return find(query, Order.by(sort), params);
@@ -72,7 +72,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      *
      * @param query a {@link io.quarkus.data.hibernate query string}
      * @param params {@link Map} of named parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      * @see #find(String, Sort, Map)
      * @see #find(String, Object...)
      * @see #list(String, Map)
@@ -86,7 +86,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @param query a {@link io.quarkus.data.hibernate query string}
      * @param order the sort strategy to use
      * @param params {@link Map} of indexed parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      * @see #find(String, Map)
      * @see #find(String, Order, Object...)
      * @see #list(String, Order, Map)
@@ -101,7 +101,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @param query a {@link io.quarkus.hibernate.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of named parameters
-     * @return a new {@link PanacheQuery} instance for the given query
+     * @return a new {@link DataQuery} instance for the given query
      */
     default Query find(String query, Sort<?> sort, Map<String, Object> params) {
         return find(query, Order.by(sort), params);
@@ -110,7 +110,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
     /**
      * Find all entities of this type.
      *
-     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     * @return a new {@link DataQuery} instance to find all entities of this type.
      * @see #findAll(Sort)
      * @see #listAll()
      * @see #streamAll()
@@ -121,7 +121,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * Find all entities of this type, in the given order.
      *
      * @param order the sort order to use
-     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     * @return a new {@link DataQuery} instance to find all entities of this type.
      * @see #findAll()
      * @see #listAll(Order)
      * @see #streamAll(Order)
@@ -133,7 +133,7 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * This is a shortcut for <code>findAll(Order.by(sort))</code>.
      *
      * @param sort the sort order to use
-     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     * @return a new {@link DataQuery} instance to find all entities of this type.
      */
     default Query findAll(Sort<?> sort) {
         return findAll(Order.by(sort));

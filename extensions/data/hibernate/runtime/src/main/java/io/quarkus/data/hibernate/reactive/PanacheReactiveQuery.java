@@ -2,14 +2,14 @@ package io.quarkus.data.hibernate.reactive;
 
 import java.util.List;
 
-import io.quarkus.data.hibernate.PanacheQuery;
+import io.quarkus.data.hibernate.DataQuery;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheReactiveQuery<Entity>
         extends
-        PanacheQuery<PanacheReactiveQuery<Entity>, Uni<Entity>, Uni<List<Entity>>, Uni<PanacheReactiveQuery<Entity>>, Uni<Boolean>, Uni<Long>> {
+        DataQuery<PanacheReactiveQuery<Entity>, Uni<Entity>, Uni<List<Entity>>, Uni<PanacheReactiveQuery<Entity>>, Uni<Boolean>, Uni<Long>> {
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following

@@ -28,7 +28,7 @@ import org.hibernate.query.Page;
  * @author Stéphane Épardaud
  * @param <Entity> The entity type being queried
  */
-public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityList, QueryAfterCount, Confirmation, Count>, Entity, EntityList, QueryAfterCount, Confirmation, Count> {
+public interface DataQuery<Query extends DataQuery<Query, Entity, EntityList, QueryAfterCount, Confirmation, Count>, Entity, EntityList, QueryAfterCount, Confirmation, Count> {
 
     /**
      * Provides operations for limiting the number of results returned by a query using absolute row indices.
@@ -38,7 +38,7 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
      *
      * @param <Query> the query type, so that fluent methods return the correct query type
      */
-    public interface Limits<Query extends PanacheQuery<?, ?, ?, ?, ?, ?>> {
+    public interface Limits<Query extends DataQuery<?, ?, ?, ?, ?, ?>> {
 
         /**
          * Returns the current limit as a Jakarta Data {@link Limit}.
@@ -109,7 +109,7 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
      * @param <Confirmation> the return type for boolean checks (may be async)
      * @param <Count> the return type for count values (may be async)
      */
-    public interface Pages<Query extends PanacheQuery<?, ?, ?, ?, ?, ?>, QueryAfterCount, Confirmation, Count> {
+    public interface Pages<Query extends DataQuery<?, ?, ?, ?, ?, ?>, QueryAfterCount, Confirmation, Count> {
 
         /**
          * Returns the current page as a Jakarta Data {@link PageRequest}.

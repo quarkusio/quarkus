@@ -6,7 +6,7 @@ import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepo
 import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveRepositoryBase;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
-public interface PanacheRepositorySwitcher<Entity, Id> {
+public interface RepositorySwitcher<Entity, Id> {
     default PanacheManagedBlockingRepositoryBase<Entity, Id> managedBlocking() {
         // FIXME: generate in impl
         throw AbstractJpaOperations.implementationInjectionMissing();

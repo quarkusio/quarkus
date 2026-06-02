@@ -34,8 +34,8 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
-import io.quarkus.data.hibernate.PanacheEntityMarker;
-import io.quarkus.data.hibernate.PanacheRepositorySwitcher;
+import io.quarkus.data.hibernate.EntitySwitcher;
+import io.quarkus.data.hibernate.RepositorySwitcher;
 import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingEntity;
 import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveEntity;
 import io.quarkus.data.hibernate.runtime.PanacheHibernateRecorder;
@@ -79,7 +79,7 @@ public final class PanacheHibernateResourceProcessor {
             "jakarta.data.repository.Update",
             "jakarta.data.repository.Save");
 
-    static final DotName DOTNAME_PANACHE_REPOSITORY_SWITCHER = DotName.createSimple(PanacheRepositorySwitcher.class.getName());
+    static final DotName DOTNAME_PANACHE_REPOSITORY_SWITCHER = DotName.createSimple(RepositorySwitcher.class.getName());
 
     static final DotName DOTNAME_PANACHE_MANAGED_BLOCKING_ENTITY = DotName
             .createSimple(PanacheManagedBlockingEntity.class.getName());
@@ -89,7 +89,7 @@ public final class PanacheHibernateResourceProcessor {
             .createSimple(PanacheStatelessBlockingEntity.class.getName());
     static final DotName DOTNAME_PANACHE_STATELESS_REACTIVE_ENTITY = DotName
             .createSimple(PanacheStatelessReactiveEntity.class.getName());
-    static final DotName DOTNAME_PANACHE_ENTITY_MARKER = DotName.createSimple(PanacheEntityMarker.class.getName());
+    static final DotName DOTNAME_PANACHE_ENTITY_MARKER = DotName.createSimple(EntitySwitcher.class.getName());
 
     private static final Set<String> ALL_REPOSITORY_METHOD_ANNOTATIONS;
     static {

@@ -13,16 +13,17 @@ import jakarta.persistence.Entity;
 import org.hibernate.annotations.processing.HQL;
 import org.hibernate.annotations.processing.SQL;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class SessionTypeEntity extends PanacheEntity {
+public class SessionTypeEntity extends ManagedEntity.AutoLong {
 
     public String field;
 
-    public interface ManagedBlockingRepo extends PanacheRepository<SessionTypeEntity> {
+    public interface ManagedBlockingRepo extends ManagedRepository.AutoLong<SessionTypeEntity> {
         @Find
         List<SessionTypeEntity> all();
 
@@ -54,7 +55,7 @@ public class SessionTypeEntity extends PanacheEntity {
         //        void myRefresh(SessionTypeEntity entity);
     }
 
-    public interface StatelessBlockingRepo extends PanacheRepository.Stateless<SessionTypeEntity, Long> {
+    public interface StatelessBlockingRepo extends RecordRepository<SessionTypeEntity, Long> {
         @Find
         List<SessionTypeEntity> all();
 
@@ -86,7 +87,7 @@ public class SessionTypeEntity extends PanacheEntity {
         void mySave(SessionTypeEntity entity);
     }
 
-    public interface ManagedReactiveRepo extends PanacheRepository.Reactive<SessionTypeEntity, Long> {
+    public interface ManagedReactiveRepo extends ManagedRepository.Reactive<SessionTypeEntity, Long> {
         @Find
         Uni<List<SessionTypeEntity>> all();
 
@@ -118,7 +119,7 @@ public class SessionTypeEntity extends PanacheEntity {
         //        Uni<Void> myRefresh(SessionTypeEntity entity);
     }
 
-    public interface StatelessReactiveRepo extends PanacheRepository.Reactive.Stateless<SessionTypeEntity, Long> {
+    public interface StatelessReactiveRepo extends RecordRepository.Reactive<SessionTypeEntity, Long> {
         @Find
         Uni<List<SessionTypeEntity>> all();
 

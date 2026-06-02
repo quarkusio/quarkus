@@ -3,13 +3,13 @@ package io.quarkus.data.hibernate.deployment.test.security.entities;
 import jakarta.data.repository.Delete;
 import jakarta.persistence.Entity;
 
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveRepository;
 import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class JakartaDataDeleteEntity extends PanacheEntity {
+public class JakartaDataDeleteEntity extends ManagedEntity.AutoLong {
 
     public String name;
 

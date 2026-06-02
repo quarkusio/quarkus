@@ -12,12 +12,12 @@ import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.WithId;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class QuarkusDataBook extends WithId.AutoLong implements PanacheEntity.Reactive {
+public class QuarkusDataBook extends WithId.AutoLong implements ManagedEntity.Reactive {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

@@ -12,13 +12,13 @@ import jakarta.persistence.Id;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.processing.Find;
 
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveRepositoryBase;
 import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveRepositoryBase;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class QuarkusDataBookCustomId implements PanacheEntity.Reactive {
+public class QuarkusDataBookCustomId implements ManagedEntity.Reactive {
     public @NaturalId String isbn;
     public @NaturalId String title;
     public @NaturalId String author;

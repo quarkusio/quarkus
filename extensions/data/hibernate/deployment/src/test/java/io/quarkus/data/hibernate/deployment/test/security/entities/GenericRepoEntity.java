@@ -7,12 +7,12 @@ import jakarta.persistence.Entity;
 
 import org.hibernate.annotations.processing.Find;
 
-import io.quarkus.data.hibernate.PanacheEntity;
-import io.quarkus.data.hibernate.PanacheRepository;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class GenericRepoEntity extends PanacheEntity {
+public class GenericRepoEntity extends ManagedEntity.AutoLong {
 
     public String name;
 
@@ -27,6 +27,6 @@ public class GenericRepoEntity extends PanacheEntity {
         List<GenericRepoEntity> securedFindAll(Order<GenericRepoEntity> order);
     }
 
-    public interface InnerPanacheRepository extends PanacheRepository<GenericRepoEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<GenericRepoEntity> {
     }
 }

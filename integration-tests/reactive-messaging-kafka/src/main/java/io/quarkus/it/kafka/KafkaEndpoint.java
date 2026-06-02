@@ -7,37 +7,15 @@ import java.util.stream.Collectors;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import io.quarkus.redis.client.RedisClientName;
-import io.quarkus.redis.datasource.RedisDataSource;
 import io.smallrye.reactive.messaging.kafka.Record;
-import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 
 @Path("/kafka")
 public class KafkaEndpoint {
     @Inject
     KafkaReceivers receivers;
-
-    @Inject
-    @RedisClientName("my-redis")
-    RedisDataSource rds;
-
-    @GET
-    @Path("/people")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Person> getPeople() {
-        return receivers.getPeople();
-    }
-
-    @GET
-    @Path("/people-state/{key}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public ProcessingState<KafkaReceivers.PeopleState> getPeopleState(@PathParam("key") String key) {
-        return (ProcessingState<KafkaReceivers.PeopleState>) rds.value(ProcessingState.class).get(key);
-    }
 
     @GET
     @Path("/fruits")

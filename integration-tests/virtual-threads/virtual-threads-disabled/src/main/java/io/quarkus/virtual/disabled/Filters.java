@@ -1,6 +1,5 @@
 package io.quarkus.virtual.disabled;
 
-import io.smallrye.common.vertx.ContextLocals;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -27,7 +26,6 @@ public class Filters {
     public void getFilter(ContainerResponseContext responseContext) {
         if (responseContext.getHeaders().get("X-filter") != null) {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
-            // the request filter, the method, and here.
             assert CDI.current().select(Counter.class).get().increment() == 3;
             assert "test test".equals(ContextLocals.get("test", null));
             assert MDC.get("mdc").equals("test test");

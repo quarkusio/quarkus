@@ -1,0 +1,9 @@
+Native build disabled due to third-party library incompatibilities with Netty 4.2 and Protobuf:
+
+1. netty-incubator-transport-native-io_uring calls PlatformDependent.getIntVolatile(long)
+   which was removed in Netty 4.2.
+
+2. protobuf-java-util calls Descriptors$FileDescriptor.getSyntax() which was removed
+   in newer protobuf-java versions (version mismatch between protobuf-java-util and protobuf-java).
+
+Waiting for upstream libraries to release compatible versions.

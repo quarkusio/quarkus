@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc;
 
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_AUTHORITY;
 import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_CLIENT_ADDRESS;
 import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_PROTOCOL_VERSION;
 import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer.GRPC_HTTP_URL_SCHEME;
@@ -66,8 +67,16 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
             final ServerCall<ReqT, RespT> call, final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
 
+        String authority = call.getAuthority();
+        if (authority == null) {
+            io.vertx.core.Context vertxContext = Vertx.currentContext();
+            if (vertxContext != null && VertxContext.isDuplicatedContext(vertxContext)) {
+                ConcurrentHashMap<String, Object> data = VertxContext.localContextData(vertxContext);
+                authority = (String) data.get(GRPC_HTTP_AUTHORITY);
+            }
+        }
         GrpcRequest grpcRequest = GrpcRequest.server(call.getMethodDescriptor(), headers, call.getAttributes(),
-                call.getAuthority());
+                authority);
         Context parentContext = Context.current();
         boolean shouldStart = instrumenter.shouldStart(parentContext, grpcRequest);
         if (shouldStart) {

@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -127,6 +128,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.internal.ContextInternal;
@@ -1638,6 +1640,17 @@ public class VertxHttpRecorder {
         return rootHandler;
     }
 
+    private static boolean isGrpc(RoutingContext rc) {
+        HttpServerRequest request = rc.request();
+        HttpVersion version = request.version();
+        if (HttpVersion.HTTP_1_0.equals(version) || HttpVersion.HTTP_1_1.equals(version)) {
+            LOGGER.debugf("Expecting %s, received %s - not a gRPC request", HttpVersion.HTTP_2, version);
+            return false;
+        }
+        String header = request.getHeader("content-type");
+        return header != null && header.toLowerCase(Locale.ROOT).startsWith("application/grpc"); //See https://chromium.googlesource.com/external/github.com/grpc/grpc/+/HEAD/doc/PROTOCOL-HTTP2.md
+    }
+
     private static Handler<RoutingContext> configureAndGetBody(Optional<MemorySize> maxBodySize, BodyConfig bodyConfig) {
         BodyHandler bodyHandler = BodyHandler.create();
         if (maxBodySize.isPresent()) {
@@ -1651,6 +1664,12 @@ public class VertxHttpRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
+                // Skip gRPC content
+                if (isGrpc(event)) {
+                    event.next();
+                    return;
+                }
+
                 if (!Context.isOnEventLoopThread()) {
                     ((ConnectionBase) event.request().connection()).channel().eventLoop().execute(new Runnable() {
                         @Override

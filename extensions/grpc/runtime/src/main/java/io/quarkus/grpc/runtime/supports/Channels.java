@@ -28,7 +28,6 @@ import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -59,6 +58,8 @@ import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.vertx.http.HttpServer;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -95,15 +96,19 @@ public class Channels {
         String host = clientConfig.host();
         int port = clientConfig.port();
         if (LaunchMode.current() == LaunchMode.TEST) {
-            if (clientConfig.testPort().isEmpty()) {
-                if (clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
-                        || (clientConfig.plainText().isPresent() && !clientConfig.plainText().get())) {
-                    port = 8444;
-                } else {
-                    port = 8081;
-                }
-            } else {
+            if (clientConfig.testPort().isPresent()) {
                 port = clientConfig.testPort().getAsInt();
+            } else {
+                boolean clientUsesTls = clientConfig.tlsConfigurationName().isPresent() || clientConfig.tls().enabled()
+                        || (clientConfig.plainText().isPresent() && !clientConfig.plainText().get());
+                ValueRegistry valueRegistry = container.instance(ValueRegistry.class).get();
+                HttpServer httpServer = valueRegistry.get(HttpServer.HTTP_SERVER);
+                int actualPort = clientUsesTls ? httpServer.getSecurePort() : httpServer.getPort();
+                if (actualPort > 0) {
+                    port = actualPort;
+                } else {
+                    port = clientUsesTls ? 8444 : 8081;
+                }
             }
         }
 
@@ -122,11 +127,11 @@ public class Channels {
             perClientInterceptors.add(VertxStorkMeasuringGrpcInterceptor.class.getName());
         }
 
-        List<ChannelBuilderCustomizer<?>> channelBuilderCustomizers = container
-                .select(new TypeLiteral<ChannelBuilderCustomizer<?>>() {
-                }, Any.Literal.INSTANCE)
+        @SuppressWarnings("rawtypes")
+        List<ChannelBuilderCustomizer> channelBuilderCustomizers = container
+                .select(ChannelBuilderCustomizer.class, Any.Literal.INSTANCE)
                 .stream()
-                .sorted(Comparator.<ChannelBuilderCustomizer<?>, Integer> comparing(ChannelBuilderCustomizer::priority))
+                .sorted(Comparator.<ChannelBuilderCustomizer, Integer> comparing(ChannelBuilderCustomizer::priority))
                 .toList();
 
         // Look whether the client use plain text
@@ -226,7 +231,8 @@ public class Channels {
 
         LOGGER.debug("Creating Vert.x gRPC channel ...");
 
-        return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors));
+        return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors),
+                host + ":" + port);
 
     }
 
@@ -304,11 +310,14 @@ public class Channels {
         private final io.vertx.grpc.client.GrpcClient client;
         private final Channel original;
         private final Channel delegate;
+        private final String authority;
 
-        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel original, Channel delegate) {
+        public InternalGrpcChannel(io.vertx.grpc.client.GrpcClient client, Channel original, Channel delegate,
+                String authority) {
             this.client = client;
             this.original = original;
             this.delegate = delegate;
+            this.authority = authority;
         }
 
         @Override
@@ -319,7 +328,7 @@ public class Channels {
 
         @Override
         public String authority() {
-            return delegate.authority();
+            return authority;
         }
     }
 }

@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
@@ -39,6 +40,13 @@ class ReactiveMSSQLClientProcessor {
 
     private static final String HEALTH_CHECK_SQL = "SELECT 1";
     public static final String TYPE = "MSSQL";
+
+    @BuildStep
+    NativeImageConfigBuildItem config() {
+        return NativeImageConfigBuildItem.builder()
+                .addRuntimeInitializedClass("io.vertx.mssqlclient.impl.codec.DataType")
+                .build();
+    }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)

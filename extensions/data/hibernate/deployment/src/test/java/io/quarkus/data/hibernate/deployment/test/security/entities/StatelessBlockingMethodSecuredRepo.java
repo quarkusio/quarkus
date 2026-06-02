@@ -7,10 +7,10 @@ import jakarta.annotation.security.RolesAllowed;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 
-import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 import io.quarkus.security.PermissionsAllowed;
 
-public interface StatelessBlockingMethodSecuredRepo extends PanacheStatelessBlockingRepository<StandaloneRepoEntity> {
+public interface StatelessBlockingMethodSecuredRepo extends RecordRepository<StandaloneRepoEntity> {
 
     @RolesAllowed("admin")
     @Find

@@ -4,12 +4,12 @@ import jakarta.data.repository.Delete;
 import jakarta.persistence.Entity;
 
 import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveRepository;
+import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class JakartaDataDeleteEntity extends ManagedEntity.AutoLong {
+public class JakartaDataDeleteEntity extends ManagedEntity {
 
     public String name;
 
@@ -25,6 +25,6 @@ public class JakartaDataDeleteEntity extends ManagedEntity.AutoLong {
         Uni<Integer> deleteByName(String name);
     }
 
-    public interface InnerPanacheRepository extends PanacheManagedReactiveRepository<JakartaDataDeleteEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository.Reactive<JakartaDataDeleteEntity> {
     }
 }

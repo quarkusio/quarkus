@@ -19,11 +19,11 @@ import io.quarkus.data.hibernate.RecordRepository;
 import io.smallrye.mutiny.Uni;
 
 @Entity
-public class SessionTypeEntity extends ManagedEntity.AutoLong {
+public class SessionTypeEntity extends ManagedEntity {
 
     public String field;
 
-    public interface ManagedBlockingRepo extends ManagedRepository.AutoLong<SessionTypeEntity> {
+    public interface ManagedBlockingRepo extends ManagedRepository<SessionTypeEntity> {
         @Find
         List<SessionTypeEntity> all();
 
@@ -55,7 +55,7 @@ public class SessionTypeEntity extends ManagedEntity.AutoLong {
         //        void myRefresh(SessionTypeEntity entity);
     }
 
-    public interface StatelessBlockingRepo extends RecordRepository<SessionTypeEntity, Long> {
+    public interface StatelessBlockingRepo extends RecordRepository<SessionTypeEntity> {
         @Find
         List<SessionTypeEntity> all();
 
@@ -87,7 +87,7 @@ public class SessionTypeEntity extends ManagedEntity.AutoLong {
         void mySave(SessionTypeEntity entity);
     }
 
-    public interface ManagedReactiveRepo extends ManagedRepository.Reactive<SessionTypeEntity, Long> {
+    public interface ManagedReactiveRepo extends ManagedRepository.Reactive<SessionTypeEntity> {
         @Find
         Uni<List<SessionTypeEntity>> all();
 
@@ -119,7 +119,7 @@ public class SessionTypeEntity extends ManagedEntity.AutoLong {
         //        Uni<Void> myRefresh(SessionTypeEntity entity);
     }
 
-    public interface StatelessReactiveRepo extends RecordRepository.Reactive<SessionTypeEntity, Long> {
+    public interface StatelessReactiveRepo extends RecordRepository.Reactive<SessionTypeEntity> {
         @Find
         Uni<List<SessionTypeEntity>> all();
 

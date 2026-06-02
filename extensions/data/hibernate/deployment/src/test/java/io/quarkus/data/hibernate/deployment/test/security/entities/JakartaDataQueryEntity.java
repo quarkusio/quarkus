@@ -10,7 +10,7 @@ import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class JakartaDataQueryEntity extends ManagedEntity.AutoLong {
+public class JakartaDataQueryEntity extends ManagedEntity {
 
     public String name;
 
@@ -26,6 +26,6 @@ public class JakartaDataQueryEntity extends ManagedEntity.AutoLong {
         List<JakartaDataQueryEntity> findByName(String name);
     }
 
-    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<JakartaDataQueryEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository<JakartaDataQueryEntity> {
     }
 }

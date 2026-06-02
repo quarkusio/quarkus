@@ -6,10 +6,10 @@ import jakarta.annotation.security.RolesAllowed;
 
 import org.hibernate.annotations.processing.Find;
 
-import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingRepository;
+import io.quarkus.data.hibernate.ManagedRepository;
 
 @RolesAllowed("admin")
-public interface ManagedBlockingClassSecuredRepo extends PanacheManagedBlockingRepository<StandaloneRepoEntity> {
+public interface ManagedBlockingClassSecuredRepo extends ManagedRepository<StandaloneRepoEntity> {
 
     @Find
     List<StandaloneRepoEntity> findByName(String name);

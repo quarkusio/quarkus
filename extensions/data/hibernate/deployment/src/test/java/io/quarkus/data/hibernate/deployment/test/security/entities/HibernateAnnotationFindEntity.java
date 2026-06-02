@@ -11,7 +11,7 @@ import io.quarkus.data.hibernate.ManagedRepository;
 import io.quarkus.security.Authenticated;
 
 @Entity
-public class HibernateAnnotationFindEntity extends ManagedEntity.AutoLong {
+public class HibernateAnnotationFindEntity extends ManagedEntity {
 
     public String name;
 
@@ -27,6 +27,6 @@ public class HibernateAnnotationFindEntity extends ManagedEntity.AutoLong {
         List<HibernateAnnotationFindEntity> findByName(String name);
     }
 
-    public interface InnerPanacheRepository extends ManagedRepository.AutoLong<HibernateAnnotationFindEntity> {
+    public interface InnerPanacheRepository extends ManagedRepository<HibernateAnnotationFindEntity> {
     }
 }

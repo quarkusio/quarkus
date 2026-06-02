@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 import io.quarkus.smallrye.graphql.runtime.RequestScopedTaskQueue;

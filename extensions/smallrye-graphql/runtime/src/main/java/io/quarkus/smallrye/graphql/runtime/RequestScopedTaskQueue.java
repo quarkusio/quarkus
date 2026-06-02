@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.impl.TaskQueue;
 
@@ -25,12 +26,12 @@ public final class RequestScopedTaskQueue {
         if (vc == null) {
             return null;
         }
-        TaskQueue existing = vc.getLocal(LOCAL_KEY);
+        TaskQueue existing = (TaskQueue) VertxContext.localContextData(vc).get(LOCAL_KEY);
         if (existing != null) {
             return existing;
         }
         TaskQueue queue = new TaskQueue();
-        vc.putLocal(LOCAL_KEY, queue);
+        VertxContext.localContextData(vc).put(LOCAL_KEY, queue);
         return queue;
     }
 
@@ -42,6 +43,7 @@ public final class RequestScopedTaskQueue {
         if (vc == null) {
             return null;
         }
-        return vc.getLocal(LOCAL_KEY);
+        return (TaskQueue) VertxContext.localContextData(vc).get(LOCAL_KEY);
+
     }
 }

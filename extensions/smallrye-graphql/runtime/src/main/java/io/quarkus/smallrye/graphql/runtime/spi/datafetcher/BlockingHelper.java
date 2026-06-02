@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 import io.quarkus.smallrye.graphql.runtime.RequestScopedTaskQueue;
@@ -9,8 +10,8 @@ import io.smallrye.graphql.schema.model.Execute;
 import io.smallrye.graphql.schema.model.Operation;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.TaskQueue;
+import io.vertx.core.internal.ContextInternal;
 
 public final class BlockingHelper {
 
@@ -51,7 +52,13 @@ public final class BlockingHelper {
             // from different requests can run in parallel
             TaskQueue queue = RequestScopedTaskQueue.get(vc);
             if (queue != null) {
-                ((ContextInternal) vc).executeBlocking(contextualCallable, queue).onComplete(result);
+                queue.execute(() -> {
+                    try {
+                        result.complete(contextualCallable.call());
+                    } catch (Throwable t) {
+                        result.tryFail(t);
+                    }
+                }, ((ContextInternal) vc).workerPool().executor());
             } else {
                 vc.executeBlocking(contextualCallable, false).onComplete(result);
             }

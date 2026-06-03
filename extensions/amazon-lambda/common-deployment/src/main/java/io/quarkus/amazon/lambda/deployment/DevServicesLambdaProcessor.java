@@ -56,6 +56,7 @@ public class DevServicesLambdaProcessor {
     public void startEventServer(LaunchModeBuildItem launchModeBuildItem,
             LambdaBuildConfig config,
             Optional<EventServerOverrideBuildItem> override,
+            Optional<EventServerPortOverrideBuildItem> portOverride,
             BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer) {
         LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
         if (!launchMode.isDevOrTest())
@@ -77,12 +78,14 @@ public class DevServicesLambdaProcessor {
         String portPropertySuffix = isTest ? "test-port" : "dev-port";
         String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
 
+        int overridePort = portOverride.map(EventServerPortOverrideBuildItem::getPort).orElse(Integer.MIN_VALUE);
+
         // No compose support, and no using of external services, so no need to discover existing services
 
         DevServicesResultBuildItem buildItem = DevServicesResultBuildItem.owned().feature(Feature.AMAZON_LAMBDA)
                 .serviceName(Feature.AMAZON_LAMBDA.getName())
                 .serviceConfig(config)
-                .startable(() -> new StartableEventServer(server, propName, isTest))
+                .startable(() -> new StartableEventServer(server, propName, isTest, overridePort))
                 .highPriorityConfig(Set.of(propName)) // Pass through the external config for the port, so that it can be overridden if it's an ephemeral port
                 .configProvider(
                         Map.of(propName, s -> String.valueOf(s.getExposedPort()),
@@ -98,25 +101,32 @@ public class DevServicesLambdaProcessor {
         private final MockEventServer server;
         private final String propName;
         private final boolean isTest;
+        private final int overridePort;
 
-        public StartableEventServer(MockEventServer server, String propName, boolean isTest) {
+        public StartableEventServer(MockEventServer server, String propName, boolean isTest, int overridePort) {
             this.server = server;
             this.propName = propName;
             this.isTest = isTest;
+            this.overridePort = overridePort;
         }
 
         @Override
         public void start() {
             // Technically, we shouldn't peek at the runtime config, but every dev service does it
             // However, we won't get defaults, so we need to fill our own in
-            int port = isTest ? Integer.parseInt(MockEventServerConfig.TEST_PORT)
-                    : Integer.parseInt(MockEventServerConfig.DEV_PORT);
+            int port;
+            if (overridePort >= 0) {
+                port = overridePort;
+            } else {
+                port = isTest ? Integer.parseInt(MockEventServerConfig.TEST_PORT)
+                        : Integer.parseInt(MockEventServerConfig.DEV_PORT);
+            }
             int configuredPort = ConfigProvider.getConfig().getOptionalValue(propName, Integer.class)
                     .or(() -> Optional.of(port))
                     .get();
 
             server.start(configuredPort);
-            log.debugf("Starting event server on port %d", configuredPort);
+            log.debugf("Started event server on port %d", server.getPort());
         }
 
         public int getExposedPort() {

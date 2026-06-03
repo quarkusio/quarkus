@@ -57,7 +57,8 @@ public class InitTaskProcessor {
                         .withCommand(task.getCommand())
                         .withArguments(task.getArguments())
                         .withSharedEnvironment(task.isSharedEnvironment())
-                        .withSharedFilesystem(task.isSharedFilesystem()));
+                        .withSharedFilesystem(task.isSharedFilesystem())
+                        .withTtlSecondsAfterFinished(config.ttlSecondsAfterFinished()));
 
                 task.getAppEnvVars().forEach((k, v) -> {
                     decorators.produce(new DecoratorBuildItem(target,

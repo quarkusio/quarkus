@@ -1656,7 +1656,7 @@ public class ResteasyReactiveProcessor {
                 .map(this::getDuplicateEndpointMessage)
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining());
-        if (message.length() > 0) {
+        if (!message.isEmpty()) {
             if (config.failOnDuplicate()) {
                 throw new DeploymentException(message);
             }
@@ -1671,8 +1671,54 @@ public class ResteasyReactiveProcessor {
     }
 
     private String getEndpointClassifier(ResourceMethod resourceMethod, String path) {
-        return resourceMethod.getHttpMethod() + " " + (path.equals("/") ? "" : path)
-                + resourceMethod.getPath();
+        String fullPath = (path.equals("/") ? "" : path) + resourceMethod.getPath();
+        return resourceMethod.getHttpMethod() + " " + normalizePathParamNames(fullPath);
+    }
+
+    /**
+     * Replaces path parameter names with a fixed placeholder so that structurally equivalent
+     * paths like {@code v1/{parentId}} and {@code v1/{product}} produce the same {@code v1/{*}} path.
+     * Custom regex is preserved: {@code {id:\d+}} becomes {@code {*:\d+}}.
+     *
+     * Visible for testing
+     */
+    static String normalizePathParamNames(String path) {
+        int len = path.length();
+        StringBuilder sb = new StringBuilder(len);
+        int i = 0;
+        while (i < len) {
+            char c = path.charAt(i);
+            if (c != '{') {
+                sb.append(c);
+                i++;
+                continue;
+            }
+            sb.append("{*");
+            do {
+                i++;
+            } while (i < len && path.charAt(i) != '}' && path.charAt(i) != ':');
+            if (i < len && path.charAt(i) == ':') {
+                int braceDepth = 0;
+                do {
+                    c = path.charAt(i);
+                    sb.append(c);
+                    if (c == '{') {
+                        braceDepth++;
+                    } else if (c == '}') {
+                        if (braceDepth == 0) {
+                            i++;
+                            break;
+                        }
+                        braceDepth--;
+                    }
+                    i++;
+                } while (i < len);
+            } else if (i < len) {
+                sb.append('}');
+                i++;
+            }
+        }
+        return sb.toString();
     }
 
     private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {

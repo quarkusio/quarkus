@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 import org.jboss.logging.Logger;
@@ -16,6 +17,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
     private final String configKey;
+    private final boolean lazyDelegate;
 
     private T delegate;
     private Object mock;
@@ -25,6 +27,12 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;
+        this.lazyDelegate = lazyDelegate;
+    }
+
+    @PostConstruct
+    @NoClassInterceptors
+    void init() {
         if (!lazyDelegate) {
             constructDelegate();
         }

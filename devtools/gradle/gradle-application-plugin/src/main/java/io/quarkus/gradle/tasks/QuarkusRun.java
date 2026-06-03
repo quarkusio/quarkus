@@ -115,7 +115,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
-                .setMode(QuarkusBootstrap.Mode.TEST)
+                .setMode(QuarkusBootstrap.Mode.RUN)
                 .build().bootstrap()) {
 
             AugmentAction action = curatedApplication.createAugmentor();

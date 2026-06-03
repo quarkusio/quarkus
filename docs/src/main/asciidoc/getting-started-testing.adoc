@@ -1535,7 +1535,7 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 ----
 
 [NOTE]
---
+=====
 Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.
 
 For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
@@ -1613,7 +1613,7 @@ idea.module {
 }
 ----
 ====
---
+=====
 
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE

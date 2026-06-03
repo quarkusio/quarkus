@@ -33,13 +33,14 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     private final DatabaseVersion buildTimeDbVersion;
     private final boolean dbVersionUserSpecified;
     private final boolean versionCheckEnabled;
+    private final boolean startOffline;
 
     private boolean triedToRetrieveDbVersion = false;
     private Optional<DatabaseVersion> actualDbVersion = Optional.empty();
 
     public QuarkusRuntimeInitDialectFactory(String persistenceUnitName, boolean isFromPersistenceXml, Dialect dialect,
             Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion, boolean dbVersionUserSpecified,
-            boolean versionCheckEnabled) {
+            boolean versionCheckEnabled, boolean startOffline) {
         this.persistenceUnitName = persistenceUnitName;
         this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
@@ -47,6 +48,7 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
         this.buildTimeDbVersion = buildTimeDbVersion;
         this.dbVersionUserSpecified = dbVersionUserSpecified;
         this.versionCheckEnabled = versionCheckEnabled;
+        this.startOffline = startOffline;
     }
 
     @Override
@@ -60,8 +62,22 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
 
     public void checkActualDbVersion() {
         if (!versionCheckEnabled) {
-            LOG.debugf("Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
-                    persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
+            // Warn about potentially incorrect configuration when using start-offline with default db-version
+            if (startOffline && !dbVersionUserSpecified && datasourceName.isPresent()
+                    && buildTimeDbVersion.getMajor() != DatabaseVersion.NO_VERSION
+                    && !isEmbeddedDatabase(dialect)) {
+                LOG.warnf("Persistence unit '%1$s' is configured to start offline"
+                                + " but is using a default database version ('%2$s') rather than an explicitly configured one."
+                                + " This may cause Hibernate ORM to behave incorrectly if the actual database version differs."
+                                + " Consider setting '%3$s' explicitly to match your database version.",
+                        persistenceUnitName,
+                        DialectVersions.toString(buildTimeDbVersion),
+                        DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"));
+            }
+            else {
+                LOG.debugf("Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
+                        persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
+            }
             return;
         }
         if (!triedToRetrieveDbVersion) {
@@ -133,5 +149,12 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     // Used for testing purposes
     public boolean isVersionCheckEnabled() {
         return versionCheckEnabled;
+    }
+
+    private static boolean isEmbeddedDatabase(Dialect dialect) {
+        String dialectClassName = dialect.getClass().getName();
+        return dialectClassName.contains("H2Dialect")
+                || dialectClassName.contains("DerbyDialect")
+                || dialectClassName.contains("HSQLDialect");
     }
 }

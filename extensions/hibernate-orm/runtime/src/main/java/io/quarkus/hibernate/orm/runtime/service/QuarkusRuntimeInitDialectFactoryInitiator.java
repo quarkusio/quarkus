@@ -23,6 +23,7 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     private final DatabaseVersion buildTimeDbVersion;
     private final boolean dbVersionUserSpecified;
     private final boolean versionCheckEnabled;
+    private final boolean startOffline;
 
     public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName,
             boolean isFromPersistenceXml, Dialect dialect,
@@ -43,8 +44,9 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
                     "When using offline mode `quarkus.hibernate-orm.database.start-offline=true`, version check `quarkus.hibernate-orm.database.version-check.enabled` must be unset or set to `false`");
         }
 
+        this.startOffline = database.startOffline();
         this.versionCheckEnabled = runtimePuConfig.database().versionCheckEnabled()
-                .orElse(!database.startOffline());
+                .orElse(!startOffline);
     }
 
     @Override
@@ -55,6 +57,6 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     @Override
     public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
         return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, isFromPersistenceXml, dialect, datasourceName,
-                buildTimeDbVersion, dbVersionUserSpecified, versionCheckEnabled);
+                buildTimeDbVersion, dbVersionUserSpecified, versionCheckEnabled, startOffline);
     }
 }

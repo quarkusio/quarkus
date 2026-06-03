@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Optional;
+
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.smallrye.config.WithDefault;
 
@@ -9,6 +11,12 @@ public interface InitTaskConfig {
      */
     @WithDefault("true")
     boolean enabled();
+
+    /**
+     * Limits the lifetime of an init-task Job that has finished execution (either Complete or Failed).
+     * If set, after this many seconds the Job is eligible to be automatically deleted by Kubernetes.
+     */
+    Optional<Integer> ttlSecondsAfterFinished();
 
     /**
      * The configuration of the `wait for` container.

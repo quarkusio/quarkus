@@ -295,6 +295,14 @@ triage:
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
+    - id: data
+      labels: [area/data]
+      title: "(quarkus.data(?!source)|jakarta data)"
+      notify: [FroMage]  # yrodiere/lucamolteni use the lottery instead
+      directories:
+        - extensions/data/
+        - integration-tests/data/
+        - integration-tests/data-
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"

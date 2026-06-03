@@ -25,7 +25,6 @@ public class KubernetesWithFlywayInitAndTtlTest {
 
     private static final String NAME = "kubernetes-with-flyway-ttl";
     private static final String TASK_NAME = "flyway";
-    private static final String IMAGE_PULL_SECRET = "my-pull-secret";
     private static final int TTL = 30;
 
     @RegisterExtension
@@ -34,7 +33,6 @@ public class KubernetesWithFlywayInitAndTtlTest {
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
-            .overrideConfigKey("quarkus.kubernetes.image-pull-secrets", IMAGE_PULL_SECRET)
             .overrideConfigKey("quarkus.kubernetes.init-task-defaults.ttl-seconds-after-finished", String.valueOf(TTL))
             .setForcedDependencies(Arrays.asList(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),

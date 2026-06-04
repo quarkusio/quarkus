@@ -8,8 +8,6 @@ import static io.quarkus.vertx.http.HttpServer.HTTP_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.LOCAL_BASE_URI;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_PORT;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_TEST_PORT;
-import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP;
-import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
@@ -765,10 +763,20 @@ public class VertxHttpRecorder {
             httpManagementServerOptions = httpServerOptionsForManagement;
         }
 
+        // In Vert.x 5.1, if the configured port is 0, we need to switch to a socket address.
+        SocketAddress address;
+        if (httpServerOptionsForManagement != null && httpServerOptionsForManagement.getPort() <= 0) {
+            address = SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT,
+                    httpServerOptionsForManagement.getHost());
+        } else {
+            address = SocketAddress.inetSocketAddress(httpServerOptionsForManagement.getPort(),
+                    httpServerOptionsForManagement.getHost());
+        }
+
         if (httpManagementServerOptions != null) {
             vertx.createHttpServer(httpManagementServerOptions)
                     .requestHandler(managementRouter)
-                    .listen().onComplete(ar -> {
+                    .listen(address).onComplete(ar -> {
                         if (ar.failed()) {
                             managementInterfaceFuture.completeExceptionally(
                                     new IllegalStateException("Unable to start the management interface on "
@@ -1088,7 +1096,9 @@ public class VertxHttpRecorder {
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfig.determinePort(launchMode);
-        options.setPort(port == 0 ? RANDOM_PORT_MAIN_HTTP : port);
+        options.setPort(port <= 0
+                ? SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP, httpConfig.host()).port()
+                : port);
 
         HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, websocketSubProtocols);
 
@@ -1103,7 +1113,10 @@ public class VertxHttpRecorder {
         }
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfig.determinePort(launchMode);
-        options.setPort(port == 0 ? RANDOM_PORT_MANAGEMENT : port);
+        options.setPort(port == 0
+                ? SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT, httpConfig.host()).port()
+                : port);
+        System.out.println("Port set to " + options.getPort());
 
         HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(options, buildTimeConfig, httpConfig,
                 websocketSubProtocols);
@@ -1394,7 +1407,10 @@ public class VertxHttpRecorder {
                     }
                 });
             }
-            httpServer.listen(options.getPort(), options.getHost()).onComplete(new Handler<>() {
+            SocketAddress address = options.getPort() <= 0 ? SocketAddress.sharedRandomPort(
+                    https ? HttpServerOptionsUtils.RANDOM_PORT_MAIN_TLS : HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP,
+                    options.getHost()) : SocketAddress.inetSocketAddress(options.getPort(), options.getHost());
+            httpServer.listen(address).onComplete(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<HttpServer> event) {
                     if (event.cause() != null) {

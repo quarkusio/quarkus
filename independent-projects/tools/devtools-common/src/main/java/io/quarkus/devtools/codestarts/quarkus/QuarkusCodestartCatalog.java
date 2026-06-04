@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -204,8 +203,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
         return getSelectedExtensionsAsStream(projectInput)
-                .map(ExtensionProcessor::getCodestartName)
-                .filter(Objects::nonNull)
+                .flatMap(e -> ExtensionProcessor.getCodestartNames(e).stream())
                 .collect(Collectors.toSet());
     }
 

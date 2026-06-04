@@ -1,6 +1,7 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 
 import java.util.Map;
 
@@ -42,14 +43,15 @@ public class RegistrarConfigDoesNotLeakBetweenServicesTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/red-service")
                 .then()
                 .statusCode(200)
-                .body(containsString("\"Service\": \"red-service\""));
+                .body(containsString("\"ServiceName\": \"red-service\""));
 
-        RestAssured.get("http://localhost:8500/v1/agent/service/blue-service")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/blue-service")
                 .then()
-                .statusCode(404);
+                .statusCode(200)
+                .body("$", hasSize(0));
 
     }
 

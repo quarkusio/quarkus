@@ -44,7 +44,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 String host = StorkConfigUtil.getOrDefaultHost(parameters,
                         quarkusConfig);
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
-                Stork.getInstance().getService(serviceName).registerInstance(serviceName, instanceName, host,
+                Stork.getInstance().getService(serviceName).registerInstance(instanceName, host,
                         port).await().indefinitely();
             }
 
@@ -89,7 +89,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
-                        .deregisterServiceInstance(serviceName, host, port);
+                        .deregisterServiceInstance(host, port);
             }
             deregistration
                     .subscribe()

@@ -548,6 +548,20 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 }
                 String resourceName = fromClassNameToResourceName(name);
                 if (classPathResourceIndex.isBanned(resourceName)) {
+                    // Application classes are banned in the base runtime classloader so they are
+                    // exclusively loaded by the child runtime classloader.  However, when an
+                    // external library (loaded in the base classloader) calls Class.forName(name),
+                    // the JVM resolves the *caller's* classloader — the base one — and never
+                    // reaches the child.  If the Thread Context ClassLoader is a different loader
+                    // (i.e. the runtime classloader set by @QuarkusTest), delegate to it so that
+                    // external libraries can still reflectively load application classes.
+                    ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+                    if (tccl != null && tccl != this) {
+                        try {
+                            return tccl.loadClass(name);
+                        } catch (ClassNotFoundException ignored) {
+                        }
+                    }
                     throw new ClassNotFoundException(name);
                 }
                 boolean parentFirst = parentFirst(resourceName, classPathResourceIndex);

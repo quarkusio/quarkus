@@ -650,10 +650,21 @@ public class VertxHttpRecorder {
         } else if (nonRootPath.startsWith(rootPath)) {
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
         } else if (rootPath.startsWith(nonRootPath)) {
-            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            // The framework (non-application) routes live on a dedicated router mounted above the
+            // application router. If that router was never created (e.g. all non-application routes
+            // moved to the management interface, or none were classified as framework routes), fall
+            // back to the application router so application routes are still logged.
+            if (frameworkRouter != null) {
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            } else {
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            }
         } else {
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            // Only attach to the framework router when it exists; see comment above.
+            if (frameworkRouter != null) {
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            }
         }
     }
 

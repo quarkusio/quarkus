@@ -16,7 +16,7 @@ import org.mockito.quality.Strictness;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
@@ -32,7 +32,7 @@ class ForwardedServerRequestWrapperTest {
     void setUp() {
         mockRequest = Mockito.mock(HttpServerRequestInternal.class, Answers.RETURNS_DEEP_STUBS);
 
-        MultiMap headers = HeadersMultiMap.httpHeaders();
+        MultiMap headers = Http1xHeaders.httpHeaders();
         when(mockRequest.headers()).thenReturn(headers);
         when(mockRequest.scheme()).thenReturn("http");
         when(mockRequest.uri()).thenReturn("/original");

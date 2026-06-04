@@ -65,15 +65,20 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerBuilder;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.PoolOptions;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.net.ServerSSLOptions;
+import io.vertx.core.net.TcpClientConfig;
+import io.vertx.core.net.TcpServerConfig;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.core.spi.VerticleFactory;
 
@@ -416,6 +421,11 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public NetServer createNetServer(TcpServerConfig tcpServerConfig, ServerSSLOptions serverSSLOptions) {
+            return getDelegate().createNetServer(tcpServerConfig, serverSSLOptions);
+        }
+
+        @Override
         public NetServer createNetServer(NetServerOptions netServerOptions) {
             return getDelegate().createNetServer(netServerOptions);
         }
@@ -423,6 +433,11 @@ public class ClientImpl implements Client {
         @Override
         public NetServer createNetServer() {
             return getDelegate().createNetServer();
+        }
+
+        @Override
+        public NetClient createNetClient(TcpClientConfig tcpClientConfig, ClientSSLOptions clientSSLOptions) {
+            return getDelegate().createNetClient(tcpClientConfig, clientSSLOptions);
         }
 
         @Override
@@ -443,6 +458,11 @@ public class ClientImpl implements Client {
         @Override
         public HttpServer createHttpServer() {
             return getDelegate().createHttpServer();
+        }
+
+        @Override
+        public HttpServerBuilder httpServerBuilder() {
+            return getDelegate().httpServerBuilder();
         }
 
         @Override

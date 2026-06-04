@@ -265,7 +265,7 @@ public class AbstractResponseWrapperTest {
 
     @Test
     void streamId_delegates() {
-        when(delegate.streamId()).thenReturn(7);
+        when(delegate.streamId()).thenReturn(7L);
         assertEquals(7, wrapper.streamId());
         verify(delegate).streamId();
     }

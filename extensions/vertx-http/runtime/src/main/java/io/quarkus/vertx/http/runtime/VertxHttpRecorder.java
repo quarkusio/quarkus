@@ -122,6 +122,7 @@ import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
+import io.vertx.core.http.Http1ServerConfig;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -129,7 +130,9 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.http.QueryParamDecoderConfig;
+import io.vertx.core.http.WebSocketServerConfig;
+import io.vertx.core.http.impl.http1.Http1ServerConnection;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
@@ -1585,9 +1588,10 @@ public class VertxHttpRecorder {
                         // This is the root context used by the HTTP connection (read and write MUST be done from
                         // THAT event loop).
                         ContextInternal rootContext = vertx.getOrCreateContext();
-                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
+                        HttpServerOptions options = createVirtualHttpServerOptions();
+                        VertxHandler<Http1ServerConnection> handler = VertxHandler.create(chctx -> {
 
-                            Http1xServerConnection conn = new Http1xServerConnection(
+                            Http1ServerConnection conn = new Http1ServerConnection(
                                     io.vertx.core.ThreadingModel.EVENT_LOOP,
                                     () -> {
                                         ContextInternal duplicated = (ContextInternal) VertxContext
@@ -1595,11 +1599,23 @@ public class VertxHttpRecorder {
                                         setContextSafe(duplicated, true);
                                         return duplicated;
                                     },
+                                    false,
+                                    options.isHandle100ContinueAutomatically(),
                                     null,
-                                    createVirtualHttpServerOptions(),
+                                    null,
+                                    options.getMaxFormAttributeSize(),
+                                    options.getMaxFormFields(),
+                                    options.getMaxFormBufferedBytes(),
+                                    new QueryParamDecoderConfig(),
+                                    options.getHttp1Config() != null ? options.getHttp1Config() : new Http1ServerConfig(),
+                                    options.isRegisterWebSocketWriteHandlers(),
+                                    options.getWebSocketConfig() != null ? options.getWebSocketConfig()
+                                            : new WebSocketServerConfig(),
                                     chctx,
                                     rootContext,
                                     "localhost",
+                                    options.getTracingPolicy(),
+                                    null,
                                     null);
                             conn.handler(ACTUAL_ROOT);
                             return conn;

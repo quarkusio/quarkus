@@ -436,12 +436,9 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 executor.shutdown();
                 executor = null;
             }
-            if (verticleId != null) {
-                vertx.undeploy(verticleId).await(10, TimeUnit.SECONDS);
-                verticleId = null;
-            }
+            verticleId = null;
             if (vertx != null) {
-                vertx.close().await(10, TimeUnit.SECONDS);
+                vertx.close().toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
                 vertx = null;
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);

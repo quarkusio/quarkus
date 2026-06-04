@@ -293,7 +293,7 @@ public class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-    public int streamId() {
+    public long streamId() {
         return delegate.streamId();
     }
 
@@ -310,6 +310,11 @@ public class AbstractResponseWrapper implements HttpServerResponse {
     @Override
     public Future<Void> reset(long code) {
         return delegate.reset(code);
+    }
+
+    @Override
+    public Future<Boolean> cancel() {
+        return delegate.cancel();
     }
 
     @Override
@@ -367,6 +372,11 @@ public class AbstractResponseWrapper implements HttpServerResponse {
     @Override
     public Cookie removeCookie(String name, String domain, String path, boolean invalidate) {
         return delegate.removeCookie(name, domain, path, invalidate);
+    }
+
+    @Override
+    public Future<Void> writeAltSvc(String s) {
+        return delegate.writeAltSvc(s);
     }
 
     @Override

@@ -13,9 +13,17 @@ include::_attributes.adoc[]
 :topics: management,observability
 :extensions: io.quarkus:quarkus-vertx-http
 
-By default, Quarkus exposes the _management_ endpoints under `/q` on the main HTTP server.
-The same HTTP server provides the application endpoints and the management endpoints.
+Various Quarkus extensions contribute non-application endpoints that provide different kinds of information about the application.
+Examples of such extensions are the xref:smallrye-health.adoc[health], xref:telemetry-micrometer.adoc[metrics], xref:openapi-swaggerui.adoc[OpenAPI] and xref:info.adoc[info] extensions.
 
+These non-application endpoints are normally accessible under the `/q` prefix like so:
+
+* `/q/health`
+* `/q/metrics`
+* `/q/openapi`
+* `/q/info`
+
+By default, these management endpoints are served by the same HTTP server as your application endpoints.
 This document presents how you can use a separate HTTP server (bound to a different network interface and port) for the management endpoints.
 It avoids exposing these endpoints on the main server and, therefore, prevents undesired accesses.
 

@@ -57,12 +57,15 @@ public interface ManagementInterfaceBuildTimeConfig {
     boolean enableCompression();
 
     /**
-     * When enabled, Vert.x installs Netty's {@code HttpContentDecompressor} so request bodies may be
-     * decompressed before they reach application code, based on the {@code Content-Encoding} header.
+     * Enables inbound request body decompression on the management interface, based on the {@code Content-Encoding}
+     * header.
      * <p>
-     * Supported codings match Netty (see {@code quarkus.http.enable-decompression} on the primary HTTP server for the
-     * full description, including Snappy framing requirements, GraalVM native limits, and behavior when inbound
-     * decompression fails).
+     * When {@code false} (the default), request body bytes are passed through unchanged and {@code Content-Encoding}
+     * is not interpreted for inbound decompression.
+     * <p>
+     * See the <a href="https://quarkus.io/guides/http-reference#inbound-http-decompression">HTTP reference guide</a>
+     * for supported codings, GraalVM native limits, security considerations, and failure behavior.
+     * The primary HTTP server equivalent is {@code quarkus.http.enable-decompression}.
      */
     @WithDefault("false")
     boolean enableDecompression();

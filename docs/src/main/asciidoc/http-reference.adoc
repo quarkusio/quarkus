@@ -497,6 +497,7 @@ include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.access-log.adoc[
 |Bytes sent, excluding HTTP headers, or '-' if no bytes were sent             | `%b`     |
 |Bytes sent, excluding HTTP headers                                           | `%B`     | `%{BYTES_SENT}`
 |Remote host name                                                             | `%h`     | `%{REMOTE_HOST}`
+|Remote logical username from identd (always returns '-')                     | `%l`     |
 |Request protocol                                                             | `%H`     | `%{PROTOCOL}`
 |Request method                                                               | `%m`     | `%{METHOD}`
 |Local port                                                                   | `%p`     | `%{LOCAL_PORT}`

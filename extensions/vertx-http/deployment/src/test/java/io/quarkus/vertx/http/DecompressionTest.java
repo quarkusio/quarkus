@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -132,6 +134,8 @@ public class DecompressionTest {
                 }
                 return bout.toByteArray();
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         } finally {
             channel.finishAndReleaseAll();
         }

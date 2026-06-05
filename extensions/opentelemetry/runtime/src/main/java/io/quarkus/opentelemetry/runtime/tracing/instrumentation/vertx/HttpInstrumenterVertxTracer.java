@@ -45,7 +45,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.HttpRequestHead;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -463,8 +463,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -522,8 +527,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -543,7 +553,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @Override
         public MultiMap headers() {
-            HeadersAdaptor headers = new HeadersAdaptor(HeadersMultiMap.httpHeaders()) {
+            HeadersAdaptor headers = new HeadersAdaptor(Http1xHeaders.httpHeaders()) {
                 @Override
                 public HeadersAdaptor set(final String name, final String value) {
                     super.set(name, value);

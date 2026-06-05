@@ -10,7 +10,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.OpenTeleme
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -168,7 +168,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         if (headers instanceof MultiMap) {
             headersMultiMap = (MultiMap) headers;
         } else {
-            headersMultiMap = HeadersMultiMap.httpHeaders();
+            headersMultiMap = MultiMap.caseInsensitiveMultiMap();
             for (final Map.Entry<String, String> header : headers) {
                 headersMultiMap.add(header.getKey(), header.getValue());
             }
@@ -177,7 +177,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     }
 
     private static MultiMap toMultiMap(BiConsumer<String, String> headers) {
-        return new HeadersAdaptor(HeadersMultiMap.httpHeaders()) {
+        return new HeadersAdaptor(Http1xHeaders.httpHeaders()) {
             @Override
             public HeadersAdaptor set(final String name, final String value) {
                 super.set(name, value);

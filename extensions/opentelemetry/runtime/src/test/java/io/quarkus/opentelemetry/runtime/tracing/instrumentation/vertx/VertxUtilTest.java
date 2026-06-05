@@ -12,7 +12,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
@@ -147,7 +147,7 @@ class VertxUtilTest {
 
             @Override
             public MultiMap headers() {
-                HeadersMultiMap entries = HeadersMultiMap.httpHeaders();
+                Http1xHeaders entries = Http1xHeaders.httpHeaders();
                 entries.add("host", hostHeader);
                 return entries;
             }

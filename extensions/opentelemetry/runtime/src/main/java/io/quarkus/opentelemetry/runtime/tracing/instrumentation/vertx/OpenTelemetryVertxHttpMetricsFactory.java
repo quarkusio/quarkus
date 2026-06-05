@@ -3,7 +3,7 @@ package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.VertxMetricsFactory;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
@@ -27,17 +27,16 @@ public class OpenTelemetryVertxHttpMetricsFactory implements VertxMetricsFactory
     }
 
     public static class OpenTelemetryVertxHttpServerMetrics
-            implements HttpServerMetrics<MetricRequest, Object, Object>,
+            implements HttpServerMetrics<MetricRequest, Object>,
             VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
-
         @Override
-        public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(final HttpServerOptions options,
-                final SocketAddress localAddress) {
+        public HttpServerMetrics<?, ?> createHttpServerMetrics(HttpServerConfig config, SocketAddress tcpLocalAddress,
+                SocketAddress udpLocalAddress) {
             return this;
         }
 
         @Override
-        public MetricRequest requestBegin(final Object socketMetric, final HttpRequest request) {
+        public MetricRequest requestBegin(SocketAddress remoteAddress, HttpRequest request) {
             return MetricRequest.request(request);
         }
 

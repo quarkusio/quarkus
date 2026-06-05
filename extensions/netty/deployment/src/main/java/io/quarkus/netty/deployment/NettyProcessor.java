@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
@@ -302,6 +303,36 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.quic.Quiche")) {
+            builder.addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSL")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLAsyncPrivateKeyMethod")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLContextOption")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLKeylessPrivateKey")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLLoggingKeylog")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLNativeStaticallyReferencedJniMethods")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLPrivateKeyMethod")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLSessionCallback")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.ConnectionIdChannelMap")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.InsecureQuicTokenHandler")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quic")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quiche")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicConnectionAddress")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheError")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheNativeStaticallyReferencedJniMethods")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicChannel")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicCodec")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicConnection")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicServerCodec")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicSslContext")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicStreamChannel")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheSendInfo")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.SockaddrIn");
+        } else {
+            log.debug("Not registering Netty QUIC classes as they were not found");
+        }
+
+        // tcnative is handled via RuntimeInitializedPackageBuildItem in a separate build step
+
         // Runtime initialize due to platform dependent initialization and to respect the run-time provided value of the
         // properties:
         // - io.netty.maxDirectMemory
@@ -370,6 +401,13 @@ class NettyProcessor {
 
         return builder //TODO: make configurable
                 .build();
+    }
+
+    @BuildStep
+    void runtimeInitQuicAndTcnative(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
+            runtimeInitializedPackages.produce(new RuntimeInitializedPackageBuildItem("io.netty.internal.tcnative"));
+        }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus.arc</groupId>
+        <artifactId>arc-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>arc-cdi-tck-signature</artifactId>
+    <name>ArC - CDI TCK Signature Test</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus.arc</groupId>
+            <artifactId>arc</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>download-sigfile</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>jakarta.cdi</groupId>
+                                    <artifactId>jakarta.cdi-tck-core-impl</artifactId>
+                                    <version>${version.cdi-tck}</version>
+                                    <type>sigfile</type>
+                                    <classifier>jdk17</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>cdi-api.sigfile</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>jakarta.tck</groupId>
+                <artifactId>sigtest-maven-plugin</artifactId>
+                <version>${version.sigtest}</version>
+                <executions>
+                    <execution>
+                        <id>sigtest</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <action>strictcheck</action>
+                    <sigfile>${project.build.directory}/cdi-api.sigfile</sigfile>
+                    <packages>jakarta.decorator,jakarta.enterprise.**,jakarta.interceptor</packages>
+                    <excludes>jakarta.enterprise.inject.spi.el</excludes>
+                    <report>${project.build.directory}/cdi-sig-report.xml</report>
+                    <ignoreAllJDKClasses>true</ignoreAllJDKClasses>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

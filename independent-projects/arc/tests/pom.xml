@@ -122,12 +122,16 @@
                             <!-- Replacing default-compile as it is treated specially by Maven -->
                             <execution>
                                 <id>default-compile</id>
-                                <phase>none</phase>
+                                <configuration>
+                                    <skipMain>true</skipMain>
+                                </configuration>
                             </execution>
                             <!-- Replacing default-testCompile as it is treated specially by Maven -->
                             <execution>
                                 <id>default-testCompile</id>
-                                <phase>none</phase>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
                             </execution>
                             <execution>
                                 <id>java-compile</id>

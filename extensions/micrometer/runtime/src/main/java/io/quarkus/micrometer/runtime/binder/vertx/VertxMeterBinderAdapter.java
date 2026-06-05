@@ -19,21 +19,12 @@ import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
 import io.vertx.core.VertxException;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpClientConfig;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.metrics.MetricsOptions;
-import io.vertx.core.net.NetClientOptions;
-import io.vertx.core.net.NetServerOptions;
-import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.*;
 import io.vertx.core.spi.VertxMetricsFactory;
-import io.vertx.core.spi.metrics.ClientMetrics;
-import io.vertx.core.spi.metrics.DatagramSocketMetrics;
-import io.vertx.core.spi.metrics.EventBusMetrics;
-import io.vertx.core.spi.metrics.HttpClientMetrics;
-import io.vertx.core.spi.metrics.HttpServerMetrics;
-import io.vertx.core.spi.metrics.PoolMetrics;
-import io.vertx.core.spi.metrics.TCPMetrics;
-import io.vertx.core.spi.metrics.VertxMetrics;
+import io.vertx.core.spi.metrics.*;
 
 public class VertxMeterBinderAdapter extends MetricsOptions
         implements VertxMetricsFactory, VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
@@ -75,7 +66,8 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(HttpServerOptions options, SocketAddress localAddress) {
+    public HttpServerMetrics<?, ?> createHttpServerMetrics(final HttpServerConfig options,
+            final SocketAddress tcpLocalAddress, final SocketAddress localAddress) {
         if (httpBinderConfiguration == null) {
             throw new VertxException("HttpBinderConfiguration was not found");
         }
@@ -91,19 +83,22 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public HttpClientMetrics<?, ?, ?> createHttpClientMetrics(HttpClientOptions options) {
+    public HttpClientMetrics<?, ?> createHttpClientMetrics(HttpClientConfig config) {
         if (httpBinderConfiguration == null) {
             return null;
         }
         if (httpBinderConfiguration.isClientEnabled()) {
-            if (options.getMetricsName() == null || options.getMetricsName().trim().isEmpty()) {
+            String metricsName = config.getObservabilityConfig() != null
+                    ? config.getObservabilityConfig().getMetricsName()
+                    : null;
+            if (metricsName == null || metricsName.trim().isEmpty()) {
                 return null; // Not monitored, no name
             }
 
-            String prefix = extractPrefix(options.getMetricsName());
+            String prefix = extractPrefix(metricsName);
             boolean isRestClient = "rest-client".equals(prefix);
             // If the name is set, check if it follows the type/client-name syntax
-            String clientName = extractClientName(options.getMetricsName());
+            String clientName = extractClientName(metricsName);
             if (clientName != null) {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
                         Tags.of(Tag.of("clientName", clientName)),
@@ -118,21 +113,22 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     @Override
-    public TCPMetrics<?> createNetServerMetrics(NetServerOptions options, SocketAddress localAddress) {
+    public TransportMetrics<?> createTcpServerMetrics(TcpServerConfig config, String protocol, SocketAddress localAddress) {
         return new VertxTcpServerMetrics(Metrics.globalRegistry, "tcp", Tags.of(
                 Tag.of("port", Integer.toString(localAddress.port())),
-                Tag.of("host", options.getHost()),
+                Tag.of("protocol", protocol),
+                Tag.of("host", config.getHost()),
                 Tag.of("address", VertxTcpServerMetrics.toString(localAddress))), longAdderGauges);
     }
 
     @Override
-    public TCPMetrics<?> createNetClientMetrics(NetClientOptions options) {
-        if (options.getMetricsName() == null || options.getMetricsName().trim().isEmpty()) {
+    public TransportMetrics<?> createTcpClientMetrics(TcpClientConfig config, String protocol) {
+        if (config.getMetricsName() == null || config.getMetricsName().trim().isEmpty()) {
             return null; // Not monitored, no name
         }
         // If the name is set, check if it follows the type/client-name syntax
-        String prefix = extractPrefix(options.getMetricsName());
-        String clientName = extractClientName(options.getMetricsName());
+        String prefix = extractPrefix(config.getMetricsName());
+        String clientName = extractClientName(config.getMetricsName());
         if (clientName != null) {
             return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", clientName)),
                     longAdderGauges);

@@ -23,9 +23,10 @@ import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrap
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -39,7 +40,7 @@ import io.vertx.core.spi.observability.HttpResponse;
  * </ul>
  */
 public class VertxHttpServerMetrics extends VertxTcpServerMetrics
-        implements HttpServerMetrics<HttpRequestMetric, LongTaskTimer.Sample, LongTaskTimer.Sample> {
+        implements HttpServerMetrics<HttpRequestMetric, LongTaskTimer.Sample> {
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
 
     HttpBinderConfiguration config;
@@ -55,16 +56,16 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
-            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions,
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerConfig httpServerConfig,
             Gauges<LongAdder> gauges) {
-        super(registry, "http.server", commonTags(httpServerOptions), gauges);
+        super(registry, "http.server", commonTags(httpServerConfig), gauges);
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
 
-        Tags commonTags = commonTags(httpServerOptions);
+        Tags commonTags = commonTags(httpServerConfig);
 
         activeRequests = gauges.builder(config.getHttpServerActiveRequestsName(), LongAdder::doubleValue)
-                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
+                .tag("url.scheme", httpServerConfig.getTcpConfig().isSsl() ? "https" : "http")
                 .tags(commonTags)
                 .register(registry);
 
@@ -85,12 +86,13 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         // not dev-mode changeable -----ˆ
     }
 
-    private static Tags commonTags(HttpServerOptions httpServerOptions) {
+    private static Tags commonTags(HttpServerConfig httpServerConfig) {
         Tags result = Tags.empty();
         // we add a port tag (the one the application should actually bind to on the network host,
         // not the public one which we can't know easily) only if it's not random
-        if (httpServerOptions.getPort() > 0) {
-            result = result.and("server.port", "" + httpServerOptions.getPort());
+
+        if (httpServerConfig.getTcpPort() > 0) {
+            result = result.and("server.port", "" + httpServerConfig.getTcpPort());
         } else {
             result = result.and("server.port", "UNSET");
         }
@@ -119,14 +121,14 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     /**
      * Called when an HTTP server response is pushed.
      *
-     * @param socketMetric a Map for socket metric context or null
+     * @param SocketAddress the client remote address
      * @param method the pushed response method
      * @param uri the pushed response uri
      * @param response the http server response
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric responsePushed(LongTaskTimer.Sample socketMetric, HttpMethod method, String uri,
+    public HttpRequestMetric responsePushed(SocketAddress remoteAddress, HttpMethod method, String uri,
             HttpResponse response) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(uri, activeRequests);
         String path = requestMetric.getNormalizedUriPath(
@@ -142,7 +144,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                             HttpCommonTags.status(response.statusCode())))
                     .increment();
         }
-        log.debugf("responsePushed %s, %s", socketMetric, requestMetric);
+        log.debugf("responsePushed %s", requestMetric);
         return requestMetric;
     }
 
@@ -156,26 +158,17 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    @Override
-    public void responseBegin(HttpRequestMetric requestMetric, HttpResponse response) {
-        io.vertx.core.Context current = io.vertx.core.Vertx.currentContext();
-        if (current != null && current != requestMetric.request().context()
-                && VertxContext.isDuplicatedContext(current)) {
-            requestMetric.setExecutionContext(current);
-        }
-    }
-
     /**
      * Called when an HTTP server request begins. Vert.x will invoke
      * {@link #responseEnd} when the response has ended or {@link #requestReset} if
      * the request/response has failed before.
      *
-     * @param sample the sample
+     * @param remoteAddress the client remote address
      * @param request the http server request
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric requestBegin(LongTaskTimer.Sample sample, HttpRequest request) {
+    public HttpRequestMetric requestBegin(SocketAddress remoteAddress, HttpRequest request) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(request, activeRequests);
         requestMetric.setSample(Timer.start(registry));
         requestMetric.requestStarted();
@@ -233,7 +226,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric, response);
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(), response);
                 for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
                     try {
                         Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
@@ -255,13 +248,12 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     /**
      * Called when a server web socket connects.
      *
-     * @param requestMetric a RequestMetricContext or null
-     * @param serverWebSocket the server web socket
+     * @param request the observable request
      * @return a LongTaskTimer.Sample or null
      */
     @Override
-    public LongTaskTimer.Sample connected(LongTaskTimer.Sample sample, HttpRequestMetric requestMetric,
-            ServerWebSocket serverWebSocket) {
+    public LongTaskTimer.Sample connected(HttpRequest request) {
+        HttpRequestMetric requestMetric = new HttpRequestMetric(request, activeRequests);
         String path = requestMetric.getNormalizedUriPath(
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());
@@ -286,34 +278,12 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    private static final class DefaultContext implements HttpServerMetricsTagsContributor.Context {
-        private final HttpRequestMetric requestMetric;
-        private final HttpResponse response;
-
-        DefaultContext(HttpRequestMetric requestMetric, HttpResponse response) {
-            this.requestMetric = requestMetric;
-            this.response = response;
-        }
-
+    private record DefaultContext(HttpServerRequest request,
+            HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
         @Override
-        public HttpServerRequest request() {
-            return requestMetric.request();
-        }
-
-        @Override
-        public HttpResponse response() {
-            return response;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
         public <T> T requestContextLocalData(Object key) {
-            var c = requestMetric.request().context();
-            T value = (T) VertxContext.localContextData(c).get(key);
-            if (value == null && requestMetric.getExecutionContext() != null) {
-                value = (T) VertxContext.localContextData(requestMetric.getExecutionContext()).get(key);
-            }
-            return value;
+            var c = ((HttpServerRequestInternal) request).context();
+            return (T) VertxContext.localContextData(c).get(key);
         }
     }
 }

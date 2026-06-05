@@ -11,9 +11,9 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.core.spi.metrics.TCPMetrics;
+import io.vertx.core.spi.metrics.TransportMetrics;
 
-public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
+public class NetworkMetrics implements TransportMetrics<LongTaskTimer.Sample> {
 
     final MeterRegistry registry;
     final DistributionSummary received;

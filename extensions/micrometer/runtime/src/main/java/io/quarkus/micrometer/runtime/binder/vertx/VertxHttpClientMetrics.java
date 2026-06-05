@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
-import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -30,7 +29,7 @@ import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 
 class VertxHttpClientMetrics extends VertxTcpClientMetrics
-        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void, LongTaskTimer.Sample> {
+        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void> {
     static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
     private final LongAdder pending;
@@ -84,8 +83,12 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         String remote = NetworkMetrics.toString(remoteAddress);
         return new ClientMetrics<RequestTracker, HttpRequest, HttpResponse>() {
             @Override
-            public RequestTracker requestBegin(String uri, HttpRequest request) {
-                RequestTracker tracker = new RequestTracker();
+            public RequestTracker init() {
+                return new RequestTracker();
+            }
+
+            @Override
+            public void requestBegin(RequestTracker tracker, String uri, HttpRequest request) {
                 tracker.request = request;
                 tracker.tags = tags.and(
                         Tag.of("address", remote),
@@ -98,7 +101,6 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                     pending.increment();
                     tracker.timer = new EventTiming(null);
                 }
-                return tracker;
             }
 
             @Override

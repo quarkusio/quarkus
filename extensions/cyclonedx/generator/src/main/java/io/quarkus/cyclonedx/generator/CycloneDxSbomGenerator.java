@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class CycloneDxSbomGenerator {
     private static final String CLASSIFIER_CYCLONEDX = "cyclonedx";
     private static final String FORMAT_ALL = "all";
     private static final String DEFAULT_FORMAT = "json";
+    private static final String SERIAL_NUMBER_PREFIX = "urn:uuid:";
 
     public static CycloneDxSbomGenerator newInstance() {
         return new CycloneDxSbomGenerator();
@@ -204,6 +206,11 @@ public class CycloneDxSbomGenerator {
         allDescriptors.sort(Comparator.comparing(ComponentDescriptor::getBomRef));
         allDependencies.sort(Comparator.comparing(ComponentDependencies::getBomRef));
 
+        var serialNumber = resolveSerialNumber(allDescriptors);
+        if (serialNumber != null) {
+            bom.setSerialNumber(serialNumber);
+        }
+
         // Render components
         for (ComponentDescriptor descriptor : allDescriptors) {
             if (descriptor.getBomRef().equals(mainComponentBomRef)) {
@@ -245,6 +252,22 @@ public class CycloneDxSbomGenerator {
                 return;
             }
         }
+    }
+
+    private String resolveSerialNumber(List<ComponentDescriptor> allDescriptors) {
+        if (mainComponentBomRef != null) {
+            for (ComponentDescriptor descriptor : allDescriptors) {
+                if (descriptor.getBomRef().equals(mainComponentBomRef)) {
+                    return deterministicSerialNumber(descriptor.getBomRef());
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String deterministicSerialNumber(String identity) {
+        var uuid = java.util.UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8));
+        return SERIAL_NUMBER_PREFIX + uuid;
     }
 
     /**

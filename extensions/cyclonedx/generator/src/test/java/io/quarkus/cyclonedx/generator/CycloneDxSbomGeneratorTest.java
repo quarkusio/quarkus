@@ -2,7 +2,9 @@ package io.quarkus.cyclonedx.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Dependency;
@@ -59,6 +61,15 @@ class CycloneDxSbomGeneratorTest {
 
         // Parse the output back to verify dependency structure
         Bom bom = parseBom(result.get(0));
+        Bom secondBom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(coreContribution, extensionContribution))
+                .generateText()
+                .get(0));
+
+        assertThat(bom.getSerialNumber())
+                .isEqualTo("urn:uuid:" + UUID.nameUUIDFromBytes(mainBomRef.getBytes(StandardCharsets.UTF_8)));
+        assertThat(secondBom.getSerialNumber()).isEqualTo(bom.getSerialNumber());
 
         // Find main component dependency entry
         Dependency mainDep = bom.getDependencies().stream()
@@ -93,6 +104,7 @@ class CycloneDxSbomGeneratorTest {
         assertThat(result).hasSize(1);
         // Should not crash — no main component to link to
         assertThat(result.get(0)).contains("react");
+        assertThat(parseBom(result.get(0)).getSerialNumber()).isNull();
     }
 
     @Test

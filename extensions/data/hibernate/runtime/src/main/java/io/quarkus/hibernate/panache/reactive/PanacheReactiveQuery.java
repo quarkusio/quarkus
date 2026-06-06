@@ -2,12 +2,25 @@ package io.quarkus.hibernate.panache.reactive;
 
 import java.util.List;
 
+import jakarta.data.Order;
+import jakarta.data.Sort;
+
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.hibernate.panache.PanacheQuery;
 import io.quarkus.panache.common.exception.PanacheQueryException;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheReactiveQuery<Entity> extends PanacheQuery<Uni<Entity>, Uni<List<Entity>>, Uni<Boolean>, Uni<Long>> {
+public interface PanacheReactiveQuery<Entity>
+        extends PanacheQuery<Uni<Entity>, Entity, Uni<List<Entity>>, Uni<Boolean>, Uni<Long>> {
+
+    @Override
+    PanacheReactiveQuery<Entity> sort(Order<? super Entity> order);
+
+    @Override
+    default PanacheReactiveQuery<Entity> sort(Sort<? super Entity> sort) {
+        return sort(PanacheJpaUtil.toOrder(sort));
+    }
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following
@@ -33,5 +46,5 @@ public interface PanacheReactiveQuery<Entity> extends PanacheQuery<Uni<Entity>, 
      *         <code>type</code>
      * @throws PanacheQueryException if this represents an already-projected query
      */
-    public <T> PanacheQuery<Uni<T>, Uni<List<T>>, Boolean, Long> project(Class<T> type);
+    public <T> PanacheQuery<Uni<T>, T, Uni<List<T>>, Boolean, Long> project(Class<T> type);
 }

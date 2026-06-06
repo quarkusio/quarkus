@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
@@ -13,20 +15,23 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.query.Page;
 
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
+
 /**
  * <p>
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
  * operating on {@link List} or {@link Stream}.
  * </p>
  * <p>
- * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
- * modified, and instances of this interface can be reused to obtain multiple pages of results.
+ * Instances of this interface cannot mutate the query itself or its parameters: only paging and sort
+ * information can be modified, and instances of this interface can be reused to obtain multiple pages of results.
  * </p>
  *
  * @author Stéphane Épardaud
- * @param <Entity> The entity type being queried
+ * @param <Result> The result type returned by single-result operations
+ * @param <SortEntity> The entity type used for typed sorting
  */
-public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
+public interface PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> {
 
     // Builder
 
@@ -38,7 +43,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #page(int, int)
      * @see #page()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> page(Page page);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> page(Page page);
 
     /**
      * Sets the current page.
@@ -49,7 +54,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #page(Page)
      * @see #page()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> page(int pageIndex, int pageSize);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> page(int pageIndex, int pageSize);
 
     /**
      * Sets the current page to the next page
@@ -58,7 +63,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #previousPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> nextPage();
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> nextPage();
 
     /**
      * Sets the current page to the previous page (or the first page if there is no previous page)
@@ -67,7 +72,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #nextPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> previousPage();
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> previousPage();
 
     /**
      * Sets the current page to the first page
@@ -76,7 +81,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #lastPage()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> firstPage();
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> firstPage();
 
     /**
      * Sets the current page to the last page. This will cause reading of the entity count.
@@ -86,7 +91,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @see #firstPage()
      * @see #count()
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> lastPage();
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> lastPage();
 
     /**
      * Returns true if there is another page to read after the current one.
@@ -135,7 +140,25 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param lastIndex the index of the last element
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> range(int startIndex, int lastIndex);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> range(int startIndex, int lastIndex);
+
+    /**
+     * Applies sort criteria to this query.
+     *
+     * @param order the sort order to use, or {@code null} for no sorting
+     * @return this query, modified
+     */
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> sort(Order<? super SortEntity> order);
+
+    /**
+     * Applies sort criteria to this query.
+     *
+     * @param sort the sort strategy to use, or {@code null} for no sorting
+     * @return this query, modified
+     */
+    default PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> sort(Sort<? super SortEntity> sort) {
+        return sort(PanacheJpaUtil.toOrder(sort));
+    }
 
     /**
      * Define the locking strategy used for this query.
@@ -143,7 +166,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param lockModeType the locking strategy to be used for this query.
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> withLock(LockModeType lockModeType);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> withLock(LockModeType lockModeType);
 
     /**
      * Set a query property or hint on the underlying JPA Query.
@@ -152,7 +175,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param value value for the property or hint.
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> withHint(String hintName, Object value);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> withHint(String hintName, Object value);
 
     /**
      * <p>
@@ -168,7 +191,8 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> filter(String filterName, Map<String, Object> parameters);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> filter(String filterName,
+            Map<String, Object> parameters);
 
     /**
      * <p>
@@ -183,7 +207,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @param filterName The name of the filter to enable
      * @return this query, modified
      */
-    public PanacheQuery<Entity, EntityList, Confirmation, Count> filter(String filterName);
+    public PanacheQuery<Result, SortEntity, EntityList, Confirmation, Count> filter(String filterName);
 
     // Results
 
@@ -224,7 +248,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @return the first result of the current page index, or null if there are no results.
      * @see #singleResult()
      */
-    public Entity firstResult();
+    public Result firstResult();
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch
@@ -244,7 +268,7 @@ public interface PanacheQuery<Entity, EntityList, Confirmation, Count> {
      * @throws NonUniqueResultException if there are more than one result
      * @see #firstResult()
      */
-    public Entity singleResult();
+    public Result singleResult();
 
     /**
      * Executes this query for the current page and return a single result.

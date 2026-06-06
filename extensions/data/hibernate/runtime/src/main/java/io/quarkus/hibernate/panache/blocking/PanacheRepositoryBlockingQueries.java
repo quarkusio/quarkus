@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.panache.PanacheRepositoryQueries;
@@ -40,29 +39,11 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @param query a {@link io.quarkus.hibernate.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Sort, Object...)
      * @see #stream(String, Map)
      * @see #find(String, Object...)
      * @see #list(String, Object...)
      */
     Stream<Entity> stream(String query, Object... params);
-
-    /**
-     * Find entities matching a query and the given sort options, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, order, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.panache query string}
-     * @param order the sort strategy to use
-     * @param params optional sequence of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Object...)
-     * @see #stream(String, Order, Map)
-     * @see #find(String, Order, Object...)
-     * @see #list(String, Order, Object...)
-     */
-    Stream<Entity> stream(String query, Order<?> order, Object... params);
 
     /**
      * Find entities matching a query, with named parameters.
@@ -73,29 +54,11 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @param query a {@link io.quarkus.hibernate.panache query string}
      * @param params {@link Map} of named parameters
      * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Sort, Map)
      * @see #stream(String, Object...)
      * @see #find(String, Map)
      * @see #list(String, Map)
      */
     Stream<Entity> stream(String query, Map<String, Object> params);
-
-    /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, order, params).stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @param query a {@link io.quarkus.hibernate.panache query string}
-     * @param order the sort strategy to use
-     * @param params {@link Map} of indexed parameters
-     * @return a {@link Stream} containing all results, without paging
-     * @see #stream(String, Map)
-     * @see #stream(String, Order, Object...)
-     * @see #find(String, Order, Map)
-     * @see #list(String, Order, Map)
-     */
-    Stream<Entity> stream(String query, Order<?> order, Map<String, Object> params);
 
     /**
      * Find all entities of this type.
@@ -104,22 +67,8 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @return a {@link Stream} containing all results, without paging
-     * @see #streamAll(Order)
      * @see #findAll()
      * @see #listAll()
-     */
-    Stream<Entity> streamAll(Order<?> order);
-
-    /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for <code>findAll().stream()</code>.
-     * It requires a transaction to work.
-     * Without a transaction, the underlying cursor can be closed before the end of the stream.
-     *
-     * @return a {@link Stream} containing all results, without paging
-     * @see #streamAll()
-     * @see #findAll(Order)
-     * @see #listAll(Order)
      */
     Stream<Entity> streamAll();
 }

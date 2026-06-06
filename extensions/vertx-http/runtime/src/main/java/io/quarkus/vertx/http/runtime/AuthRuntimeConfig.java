@@ -74,7 +74,8 @@ public interface AuthRuntimeConfig {
     Optional<Path> certificateRoleProperties();
 
     /**
-     * The authentication realm
+     * The authentication realm used for Basic authentication.
+     * Legacy HTTP clients may fail to parse a Basic authentication challenge when this property is not set.
      */
     Optional<String> realm();
 

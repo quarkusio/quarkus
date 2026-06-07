@@ -2,9 +2,7 @@ package io.quarkus.cyclonedx.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Dependency;
@@ -67,9 +65,9 @@ class CycloneDxSbomGeneratorTest {
                 .generateText()
                 .get(0));
 
-        assertThat(bom.getSerialNumber())
-                .isEqualTo("urn:uuid:" + UUID.nameUUIDFromBytes(mainBomRef.getBytes(StandardCharsets.UTF_8)));
-        assertThat(secondBom.getSerialNumber()).isEqualTo(bom.getSerialNumber());
+        assertValidSerialNumber(bom.getSerialNumber());
+        assertValidSerialNumber(secondBom.getSerialNumber());
+        assertThat(secondBom.getSerialNumber()).isNotEqualTo(bom.getSerialNumber());
 
         // Find main component dependency entry
         Dependency mainDep = bom.getDependencies().stream()
@@ -103,8 +101,74 @@ class CycloneDxSbomGeneratorTest {
 
         assertThat(result).hasSize(1);
         // Should not crash — no main component to link to
+        Bom bom = parseBom(result.get(0));
+        Bom secondBom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText()
+                .get(0));
         assertThat(result.get(0)).contains("react");
-        assertThat(parseBom(result.get(0)).getSerialNumber()).isNull();
+        assertValidSerialNumber(bom.getSerialNumber());
+        assertValidSerialNumber(secondBom.getSerialNumber());
+        assertThat(secondBom.getSerialNumber()).isNotEqualTo(bom.getSerialNumber());
+    }
+
+    @Test
+    void deterministicSerialNumberCanBeEnabled() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0",
+                List.of(ArtifactCoords.jar("io.quarkus", "quarkus-rest", "3.0.0")));
+        ResolvedDependency restDep = resolvedDep("io.quarkus", "quarkus-rest", "3.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .addComponent(restDep)
+                .toSbomContribution();
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setTopLevel(true)
+                .build();
+        SbomContribution extensionContribution = SbomContribution.ofComponents(List.of(react));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setDeterministicSerialNumber(true)
+                .setContributions(List.of(coreContribution, extensionContribution))
+                .generateText()
+                .get(0));
+        Bom secondBom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setDeterministicSerialNumber(true)
+                .setContributions(List.of(coreContribution, extensionContribution))
+                .generateText()
+                .get(0));
+
+        assertValidSerialNumber(bom.getSerialNumber());
+        assertThat(secondBom.getSerialNumber()).isEqualTo(bom.getSerialNumber());
+    }
+
+    @Test
+    void deterministicSerialNumberWorksWithoutMainComponent() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setTopLevel(true)
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setDeterministicSerialNumber(true)
+                .setContributions(List.of(contribution))
+                .generateText()
+                .get(0));
+        Bom secondBom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setDeterministicSerialNumber(true)
+                .setContributions(List.of(contribution))
+                .generateText()
+                .get(0));
+
+        assertValidSerialNumber(bom.getSerialNumber());
+        assertThat(secondBom.getSerialNumber()).isEqualTo(bom.getSerialNumber());
     }
 
     @Test
@@ -185,6 +249,11 @@ class CycloneDxSbomGeneratorTest {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse BOM JSON", e);
         }
+    }
+
+    private static void assertValidSerialNumber(String serialNumber) {
+        assertThat(serialNumber)
+                .matches("^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
     }
 
     private static io.quarkus.maven.dependency.ResolvedDependency resolvedDep(

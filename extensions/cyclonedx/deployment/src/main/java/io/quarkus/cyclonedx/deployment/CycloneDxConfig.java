@@ -54,6 +54,18 @@ public interface CycloneDxConfig {
     boolean prettyPrint();
 
     /**
+     * Whether generated SBOMs should use deterministic serial numbers.
+     * <p>
+     * By default, Quarkus generates a fresh UUID for every SBOM generation to align
+     * with CycloneDX's recommendation that each generated BOM have a unique serial number.
+     * Enable this option only when reproducible serial numbers are preferred.
+     *
+     * @return whether generated SBOMs should use deterministic serial numbers
+     */
+    @WithDefault("false")
+    boolean deterministicSerialNumber();
+
+    /**
      * Embedded dependency SBOM configuration
      */
     @ConfigDocSection

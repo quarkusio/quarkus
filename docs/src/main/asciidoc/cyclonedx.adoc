@@ -183,6 +183,13 @@ By default, generated JSON SBOMs are not pretty-printed. To enable pretty-printi
 quarkus.cyclonedx.pretty-print=true
 ----
 
+By default, each generated SBOM gets a fresh `serialNumber` to align with the CycloneDX recommendation that generated BOMs use unique serial numbers. If reproducible serial numbers are preferred instead, enable deterministic serial number generation:
+
+[source,properties]
+----
+quarkus.cyclonedx.deterministic-serial-number=true
+----
+
 === Pedigree
 
 Pedigree is a way to provide information that patches or modifications have been applied to a component.

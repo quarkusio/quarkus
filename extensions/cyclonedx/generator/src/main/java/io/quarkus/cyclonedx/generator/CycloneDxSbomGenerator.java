@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
@@ -82,6 +83,7 @@ public class CycloneDxSbomGenerator {
     private EffectiveModelResolver modelResolver;
     private boolean includeLicenseText;
     private boolean prettyPrint;
+    private boolean deterministicSerialNumber;
     private List<SbomContribution> contributions = List.of();
 
     private Version effectiveSchemaVersion;
@@ -132,6 +134,12 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setPrettyPrint(boolean prettyPrint) {
         ensureNotGenerated();
         this.prettyPrint = prettyPrint;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setDeterministicSerialNumber(boolean deterministicSerialNumber) {
+        ensureNotGenerated();
+        this.deterministicSerialNumber = deterministicSerialNumber;
         return this;
     }
 
@@ -206,10 +214,7 @@ public class CycloneDxSbomGenerator {
         allDescriptors.sort(Comparator.comparing(ComponentDescriptor::getBomRef));
         allDependencies.sort(Comparator.comparing(ComponentDependencies::getBomRef));
 
-        var serialNumber = resolveSerialNumber(allDescriptors);
-        if (serialNumber != null) {
-            bom.setSerialNumber(serialNumber);
-        }
+        bom.setSerialNumber(resolveSerialNumber(allDescriptors, allDependencies));
 
         // Render components
         for (ComponentDescriptor descriptor : allDescriptors) {
@@ -254,20 +259,35 @@ public class CycloneDxSbomGenerator {
         }
     }
 
-    private String resolveSerialNumber(List<ComponentDescriptor> allDescriptors) {
-        if (mainComponentBomRef != null) {
-            for (ComponentDescriptor descriptor : allDescriptors) {
-                if (descriptor.getBomRef().equals(mainComponentBomRef)) {
-                    return deterministicSerialNumber(descriptor.getBomRef());
-                }
-            }
+    private String resolveSerialNumber(List<ComponentDescriptor> allDescriptors,
+            List<ComponentDependencies> allDependencies) {
+        if (deterministicSerialNumber) {
+            return deterministicSerialNumber(allDescriptors, allDependencies);
         }
-        return null;
+        return randomSerialNumber();
     }
 
-    private static String deterministicSerialNumber(String identity) {
-        var uuid = java.util.UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8));
+    private static String deterministicSerialNumber(List<ComponentDescriptor> allDescriptors,
+            List<ComponentDependencies> allDependencies) {
+        StringBuilder identity = new StringBuilder();
+        for (ComponentDescriptor descriptor : allDescriptors) {
+            identity.append(descriptor.getBomRef()).append('\n');
+        }
+        for (ComponentDependencies dependency : allDependencies) {
+            identity.append(dependency.getBomRef()).append("->");
+            List<String> dependsOn = new ArrayList<>(dependency.getDependsOn());
+            Collections.sort(dependsOn);
+            for (String depRef : dependsOn) {
+                identity.append(depRef).append(',');
+            }
+            identity.append('\n');
+        }
+        UUID uuid = UUID.nameUUIDFromBytes(identity.toString().getBytes(StandardCharsets.UTF_8));
         return SERIAL_NUMBER_PREFIX + uuid;
+    }
+
+    private static String randomSerialNumber() {
+        return SERIAL_NUMBER_PREFIX + UUID.randomUUID();
     }
 
     /**

@@ -2,6 +2,7 @@ package io.quarkus.cyclonedx.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.cyclonedx.model.Bom;
@@ -92,6 +93,72 @@ class CycloneDxSbomGeneratorTest {
         assertThat(result).hasSize(1);
         // Should not crash — no main component to link to
         assertThat(result.get(0)).contains("react");
+    }
+
+    @Test
+    void serialNumberIsDeterministicWithOutputTimestamp() {
+        Instant timestamp = Instant.parse("2025-01-15T10:00:00Z");
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        Bom bom1 = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setOutputTimestamp(timestamp)
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+        Bom bom2 = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setOutputTimestamp(timestamp)
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        assertThat(bom1.getSerialNumber())
+                .isNotNull()
+                .startsWith("urn:uuid:")
+                .isEqualTo(bom2.getSerialNumber());
+    }
+
+    @Test
+    void serialNumberChangesWhenComponentsChange() {
+        Instant timestamp = Instant.parse("2025-01-15T10:00:00Z");
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        ComponentDescriptor vue = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "vue", "3.0.0"))
+                .build();
+
+        Bom bom1 = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setOutputTimestamp(timestamp)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(react))))
+                .generateText().get(0));
+
+        Bom bom2 = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setOutputTimestamp(timestamp)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(react, vue))))
+                .generateText().get(0));
+
+        assertThat(bom1.getSerialNumber()).isNotEqualTo(bom2.getSerialNumber());
+    }
+
+    @Test
+    void serialNumberIsSetWithoutOutputTimestamp() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(react))))
+                .generateText().get(0));
+
+        assertThat(bom.getSerialNumber())
+                .isNotNull()
+                .startsWith("urn:uuid:");
     }
 
     private static Bom parseBom(String json) {

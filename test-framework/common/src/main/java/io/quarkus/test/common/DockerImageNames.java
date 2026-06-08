@@ -2,13 +2,13 @@ package io.quarkus.test.common;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.TreeMap;
 
 public final class DockerImageNames {
 
-    private static final Map<String, String> IMAGES = new TreeMap<>();
+    private static final Map<String, String> IMAGES = new HashMap<>();
 
     static {
         InputStream in = Thread.currentThread().getContextClassLoader()
@@ -50,7 +50,8 @@ public final class DockerImageNames {
         String value = IMAGES.get(key);
         if (value == null) {
             throw new IllegalArgumentException(
-                    "No docker image defined for key: " + key + ". Valid Docker images: " + IMAGES.keySet());
+                    "No docker image defined for key: " + key + ". Valid Docker images: "
+                            + IMAGES.keySet().stream().sorted().toList());
         }
         return value;
     }

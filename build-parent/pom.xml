@@ -84,16 +84,23 @@
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
 
-        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/library/postgres:18</postgres.image>
-        <postgis.image>docker.io/postgis/postgis:18-3.6</postgis.image>
-        <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
-        <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
+        <!-- Database default versions for `quarkus.datasource.db-version` and images for devservices -->
+        <db2.version>12.1</db2.version>
+        <db2.image>icr.io/db2_community/db2:${db2.version}.0.0</db2.image>
+        <mariadb.version>12.1</mariadb.version>
+        <mariadb.image>docker.io/library/mariadb:${mariadb.version}</mariadb.image>
+        <mssql.version>16</mssql.version> <!-- SQL Server 2022 = version 16 -->
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
-        <mysql.image>docker.io/library/mysql:9.5</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
+        <mysql.version>9.5</mysql.version>
+        <mysql.image>docker.io/library/mysql:${mysql.version}</mysql.image>
+        <oracle.version>23</oracle.version>
+        <oracle.image>docker.io/gvenzl/oracle-free:${oracle.version}-slim-faststart</oracle.image>
+        <postgres.version>18</postgres.version>
+        <postgres.image>docker.io/library/postgres:${postgres.version}</postgres.image>
+        <postgis.image>docker.io/postgis/postgis:${postgres.version}-3.6</postgis.image>
+        <pgvector.image>docker.io/pgvector/pgvector:pg${postgres.version}</pgvector.image>
+
         <mongo.image>docker.io/library/mongo:7.0</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->

@@ -1839,10 +1839,11 @@ jobs:
           export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
             && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
             $JVM_TEST_MAVEN_ARGS \
-            -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
-            -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
-            -Doracle.username=${TESTPILOT_USERNAME} \
-            -Doracle.password=${TESTPILOT_PASSWORD} \
+            -Dtest.oracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Dtest.oracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Dtest.oracle.username=${TESTPILOT_USERNAME} \
+            -Dtest.oracle.password=${TESTPILOT_PASSWORD} \
+            -Dtest.oracle.version=${{matrix.db-version}} \
             -f integration-tests -pl "$TEST_MODULES" \
             clean install
       - name: Delete Oracle Test Pilot Database
@@ -1960,10 +1961,11 @@ jobs:
         run: |
           export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
             && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
-            -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
-            -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
-            -Doracle.username=${TESTPILOT_USERNAME} \
-            -Doracle.password=${TESTPILOT_PASSWORD} \
+            -Dtest.oracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Dtest.oracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
+            -Dtest.oracle.username=${TESTPILOT_USERNAME} \
+            -Dtest.oracle.password=${TESTPILOT_PASSWORD} \
+            -Dtest.oracle.version=${{matrix.db-version}} \
             $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=false -Dquarkus.native.native-image-xmx=16g \
             -f integration-tests -pl "$TEST_MODULES"
       - name: Delete Oracle Test Pilot Database

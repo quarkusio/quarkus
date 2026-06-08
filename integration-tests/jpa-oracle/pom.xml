@@ -14,9 +14,10 @@
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
     <properties>
-        <oracle.jdbc.url/><!-- Default is empty, meaning we'll use dev services -->
-        <oracle.username/>
-        <oracle.password/>
+        <test.oracle.jdbc.url/><!-- Default is empty, meaning we'll use dev services -->
+        <test.oracle.username/>
+        <test.oracle.password/>
+        <test.oracle.version>${oracle.version}</test.oracle.version>
     </properties>
 
     <dependencies>
@@ -133,12 +134,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.version>${oracle.version}</oracle.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.version>${oracle.version}</oracle.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -182,9 +189,23 @@
         </profile>
         <profile>
             <id>test-oracle-external</id>
+            <!--
+                 Note to whoever ends up debugging this: you can test it locally.
+                 You will need to start Oracle locally, for examble using the `./docker_db.sh oracle_18`
+                 from the Hibernate ORM repository (or setting up an Oracle DB yourself if you are brave enough).
+                 Then:
+                  ./mvnw clean verify \
+                     '-Dtest.oracle.jdbc.url=jdbc:oracle:thin:@localhost:1521/xepdb1' \
+                     '-Dtest.oracle.reactive.url=vertx-reactive:oracle:thin:@localhost:1521/xepdb1' \
+                     -Dtest.oracle.username=hibernate_orm_test -Dtest.oracle.password=hibernate_orm_test \
+                     -Dtest.oracle.version=18 \
+                     -pl integration-tests/jpa-oracle,integration-tests/hibernate-reactive-oracle
+                 Add -Dnative for native.
+                 Note if you target a really old version, you will get warnings and HibernateOrmNoWarningsTest will fail.
+             -->
             <activation>
                 <property>
-                    <name>oracle.jdbc.url</name>
+                    <name>test.oracle.jdbc.url</name>
                 </property>
             </activation>
             <build>
@@ -202,9 +223,15 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <systemPropertyVariables combine.children="append">
-                                <quarkus.test.profile>prod,external-db</quarkus.test.profile>
-                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
+                        <configuration>
+                            <systemProperties combine.children="append">
+                                <quarkus.profile>prod,external-db</quarkus.profile>
+                            </systemProperties>
                         </configuration>
                     </plugin>
                 </plugins>

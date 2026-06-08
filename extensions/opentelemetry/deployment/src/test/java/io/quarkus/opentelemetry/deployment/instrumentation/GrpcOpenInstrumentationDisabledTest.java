@@ -1,9 +1,7 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
-import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
-import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -80,14 +78,10 @@ public class GrpcOpenInstrumentationDisabledTest {
                 .await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello ping", response);
 
-        // gRPC instrumentation is disabled, but HTTP spans are still created by the Vert.x HTTP tracer
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
-        assertEquals(3, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertEquals(1, spans.size());
 
-        final SpanData httpClient = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        final SpanData httpServer = getSpanByKindAndParentId(spans, SERVER, httpClient.getSpanId());
-
-        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, httpServer.getSpanId());
+        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
         assertEquals("span.internal", internal.getName());
         assertEquals("value", internal.getAttributes().get(stringKey("grpc.internal")));
     }

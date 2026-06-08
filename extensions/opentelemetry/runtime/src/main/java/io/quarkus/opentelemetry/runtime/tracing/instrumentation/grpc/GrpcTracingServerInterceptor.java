@@ -8,6 +8,7 @@ import static io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.Grp
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.inject.Singleton;
@@ -23,10 +24,10 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesExtractor;
@@ -60,7 +61,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.buildInstrumenter(SpanKindExtractor.alwaysServer());
+        this.instrumenter = builder.buildServerInstrumenter(new GrpcTextMapGetter());
     }
 
     @Override
@@ -208,6 +209,24 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 }
                 throw e;
             }
+        }
+    }
+
+    private static class GrpcTextMapGetter implements TextMapGetter<GrpcRequest> {
+        @Override
+        public Iterable<String> keys(GrpcRequest carrier) {
+            if (carrier.getMetadata() != null) {
+                return carrier.getMetadata().keys();
+            }
+            return Collections.emptySet();
+        }
+
+        @Override
+        public String get(GrpcRequest carrier, String key) {
+            if (carrier != null && carrier.getMetadata() != null) {
+                return carrier.getMetadata().get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
+            }
+            return null;
         }
     }
 

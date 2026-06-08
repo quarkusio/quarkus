@@ -328,6 +328,7 @@ class NettyProcessor {
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicSslContext")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicStreamChannel")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheSendInfo")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.SecureRandomQuicConnectionIdGenerator")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.SockaddrIn");
         } else {
             log.debug("Not registering Netty QUIC classes as they were not found");

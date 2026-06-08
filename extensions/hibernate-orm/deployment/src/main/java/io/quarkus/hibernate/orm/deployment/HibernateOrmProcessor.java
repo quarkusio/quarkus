@@ -274,8 +274,7 @@ public final class HibernateOrmProcessor {
                 // See https://github.com/quarkusio/quarkus/issues/1886
                 DialectVersions.Defaults.H2));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MARIADB, "MariaDB",
-                Set.of("org.hibernate.dialect.MariaDBDialect"),
-                DialectVersions.Defaults.MARIADB));
+                Set.of("org.hibernate.dialect.MariaDBDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MSSQL, "Microsoft SQL Server",
                 Set.of("org.hibernate.dialect.SQLServerDialect"),
                 DialectVersions.Defaults.MSSQL));

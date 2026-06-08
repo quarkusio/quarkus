@@ -202,6 +202,17 @@ public interface JsonLogConfig extends LogRuntimeConfig {
         @WithDefault("default")
         LogFormat logFormat();
 
+        /**
+         * When true, MDC entries are written as root-level JSON fields instead of being grouped under a
+         * nested {@code "mdc"} object.
+         * <p>
+         * This is useful when log aggregators (such as OpenSearch or Elasticsearch) expect MDC fields to
+         * be queryable as top-level document fields rather than nested properties.
+         */
+        @WithDefault("false")
+        @WithName("mdc.flat-fields")
+        boolean mdcFlatFields();
+
         enum LogFormat {
             DEFAULT,
             ECS,

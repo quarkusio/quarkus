@@ -140,6 +140,7 @@ public class LoggingJsonRecorder {
         if (JsonConfig.LogFormat.GCP == config.logFormat()) {
             formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
+        formatter.setFlatMdc(config.mdcFlatFields());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
         formatter.setDiscoveredProviders(providers);

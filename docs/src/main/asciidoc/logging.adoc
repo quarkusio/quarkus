@@ -499,6 +499,38 @@ This is useful when a log aggregator (such as OpenSearch or Elasticsearch) needs
 ----
 +
 The option is available for all handler types: `quarkus.log.console.json.mdc.flat-fields`, `quarkus.log.file.json.mdc.flat-fields`, `quarkus.log.syslog.json.mdc.flat-fields`, `quarkus.log.socket.json.mdc.flat-fields`, and named handlers such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`.
++
+Set `quarkus.log.console.json.access-log.structured=true` to enrich HTTP access log records with a nested `accessLog` JSON object.
+Access log records are those produced by the `io.quarkus.http.access-log` logger, which is active when `quarkus.http.access-log.enabled=true`.
+When the option is disabled (the default), access log entries appear as plain `message` strings with no structured fields.
++
+The `accessLog` object contains the following fields:
++
+[cols="1,1,3",options="header"]
+|===
+|Field |Type |Description
+|`method` |string |HTTP request method (e.g. `GET`)
+|`uri` |string |Request URI, including query string when present
+|`status` |number |HTTP response status code (e.g. `200`)
+|`responseTimeMs` |number |Response time in milliseconds
+|`bytesSent` |number |Number of bytes sent in the response body (excluding headers)
+|`remoteIp` |string |Remote IP address of the client
+|`protocol` |string |HTTP protocol version (e.g. `HTTP/1.1`)
+|===
++
+.Example: access log without `structured-access-log` (default)
+[source,json]
+----
+{"timestamp":"...","level":"INFO","loggerName":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12"}
+----
++
+.Example: access log with `structured-access-log=true`
+[source,json]
+----
+{"timestamp":"...","level":"INFO","loggerName":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12","accessLog":{"method":"GET","uri":"/hello","status":200,"responseTimeMs":12,"bytesSent":512,"remoteIp":"127.0.0.1","protocol":"HTTP/1.1"}}
+----
++
+The option is available for all handler types: `quarkus.log.console.json.access-log.structured`, `quarkus.log.file.json.access-log.structured`, `quarkus.log.syslog.json.access-log.structured`, `quarkus.log.socket.json.access-log.structured`, and named handlers such as `quarkus.log.handler.console.<name>.json.access-log.structured`.
 * *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
 This format modifies some default field names and adds other fields to align with ECS.
 +

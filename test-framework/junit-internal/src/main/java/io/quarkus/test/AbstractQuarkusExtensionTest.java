@@ -868,6 +868,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             CuratedApplication currentCuratedApplication = null;
             StartupActionImpl currentStartupAction = null;
             try {
+                resetLegacyGizmoFunctionCounters();
                 currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir,
                         cachedApplicationModel);
                 if (cachedApplicationModel == null) {
@@ -907,6 +908,26 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check passed for %s%n", testName);
         throw new TestAbortedException(
                 "Reproducibility check passed (" + reproducibilityRuns + " runs). Test execution skipped.");
+    }
+
+    /**
+     *
+     * Legacy Gizmo createFunction() uses a static counter keyed by generated class name, which leaks between
+     * reproducibility runs in the same JVM. This affects generators that emit $$function$$ helper classes, such as
+     * {@link io.quarkus.rest.data.panache.deployment.JaxRsResourceImplementor#implement},
+     * {@link io.quarkus.hibernate.reactive.rest.data.panache.deployment.ResourceImplementor#implement},
+     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateIdentityProvider}
+     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateTrustedIdentityProvider}.
+     */
+    private static void resetLegacyGizmoFunctionCounters() {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            ((Map<?, ?>) countersField.get(null)).clear();
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset legacy Gizmo function counters", e);
+        }
     }
 
     private CuratedApplication createCuratedApplication(ExtensionContext extensionContext, Path testLocation, Path projectDir,

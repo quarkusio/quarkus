@@ -191,6 +191,7 @@ updates:
       - dependency-name: org.codejive:java-properties
       - dependency-name: org.json:json
       - dependency-name: de.thetaphi:forbiddenapis
+      - dependency-name: org.cyclonedx:*
     groups:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:

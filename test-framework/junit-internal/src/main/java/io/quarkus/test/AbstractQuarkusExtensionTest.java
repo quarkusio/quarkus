@@ -49,6 +49,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstantiationException;
+import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -57,6 +58,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -92,6 +94,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus.test.reproducibility-check";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -142,8 +145,8 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
 
     private boolean debugBytecode = false;
+    private boolean reproducibilityCheckActive = false;
     private List<String> traceCategories = new ArrayList<>();
-
     private Map<String, String> systemPropertiesToRestore = new HashMap<>();
     private Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
 
@@ -551,6 +554,25 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }
+        String reproducibilityProp = System.getProperty(REPRODUCIBILITY_CHECK_PROPERTY_NAME);
+        boolean reproducibilityCheck = reproducibilityProp != null;
+        int reproducibilityRuns = 0;
+        if (reproducibilityCheck) {
+            if (reproducibilityProp.isEmpty() || Boolean.parseBoolean(reproducibilityProp)) {
+                reproducibilityRuns = 3;
+            } else {
+                reproducibilityRuns = Integer.parseInt(reproducibilityProp);
+                if (reproducibilityRuns < 2) {
+                    throw new IllegalArgumentException(
+                            "%s must be >= 2, got: %s".formatted(REPRODUCIBILITY_CHECK_PROPERTY_NAME, reproducibilityRuns));
+                }
+            }
+        }
+        if (reproducibilityCheck) {
+            reproducibilityCheckActive = true;
+            // pin the output timestamp so that build time values are stable across runs
+            overrideConfigKey("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
+        }
         if (debugBytecode) {
             // Use a unique ID to avoid overriding dumps between test classes (and re-execution of flaky tests).
             var testRunId = extensionContext.getRequiredTestClass().getName() + "/" + UUID.randomUUID();
@@ -663,41 +685,25 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             try {
                 final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
                 final Path projectDir = Path.of("").normalize().toAbsolutePath();
-                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                        .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
-                        .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
-                        .setMode(QuarkusBootstrap.Mode.TEST)
-                        .addExcludedPath(testLocation)
-                        .setProjectRoot(projectDir)
-                        .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
-                        .setFlatClassPath(flatClassPath)
-                        .setForcedDependencies(forcedDependencies);
-                for (JavaArchive dependency : additionalDependencies) {
-                    builder.addAdditionalApplicationArchive(
-                            new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
-                }
-                if (!forcedDependencies.isEmpty()) {
-                    //if we have forced dependencies we can't use the cache
-                    //as it can screw everything up
-                    builder.setDisableClasspathCache(true);
-                }
                 if (!allowTestClassOutsideDeployment) {
                     quarkusUnitTestClassLoader = QuarkusClassLoader
                             .builder("AbstractQuarkusExtensionTest ClassLoader for " + extensionContext.getDisplayName(),
                                     getClass().getClassLoader(), false)
                             .addClassLoaderEventListeners(this.classLoadListeners)
                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
-                    builder.setBaseClassLoader(quarkusUnitTestClassLoader);
                 }
-                builder.addClassLoaderEventListeners(this.classLoadListeners);
 
-                for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
-                    bootstrapCustomizer.accept(builder);
+                if (reproducibilityCheck) {
+                    runReproducibilityCheck(extensionContext, testLocation, projectDir,
+                            reproducibilityRuns, customizers);
                 }
-                curatedApplication = builder.build().bootstrap();
+
+                // Normal path: single augmentation, start app, run tests
+                curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, null);
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication();
+
                 Map<String, String> overriddenConfig = new HashMap<>(testResourceManager.getConfigProperties());
                 if (customRuntimeApplicationProperties != null) {
                     overriddenConfig.putAll(customRuntimeApplicationProperties);
@@ -729,6 +735,10 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 if (assertException != null) {
                     if (e instanceof AssertionError && e.getMessage().equals(THE_BUILD_WAS_EXPECTED_TO_FAIL)) {
                         //don't pass the 'no failure' assertion into the assert exception function
+                        throw e;
+                    }
+                    if (e instanceof TestAbortedException) {
+                        // reproducibility check passed; don't confuse it with an expected build failure
                         throw e;
                     }
                     if (e instanceof RuntimeException) {
@@ -803,7 +813,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 runningQuarkusApplication.close();
                 runningQuarkusApplication = null;
             }
-            if (afterUndeployListener != null) {
+            if (afterUndeployListener != null && !reproducibilityCheckActive) {
                 afterUndeployListener.run();
             }
             if (curatedApplication != null) {
@@ -841,9 +851,96 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             ClearCache.clearCaches();
             TestConfigUtil.cleanUp();
         }
-        if (records != null) {
+        // skip log assertions during reproducibility checks — the app was never started
+        if (records != null && !reproducibilityCheckActive) {
             assertLogRecords.accept(records);
         }
+    }
+
+    private void runReproducibilityCheck(ExtensionContext extensionContext, Path testLocation, Path projectDir,
+            int reproducibilityRuns, List<Consumer<BuildChainBuilder>> customizers) throws Exception {
+        String testName = extensionContext.getRequiredTestClass().getSimpleName();
+        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check (%d runs) for %s%n",
+                reproducibilityRuns, testName);
+        Map<String, byte[]> referenceInMemoryClasses = null;
+        ApplicationModel cachedApplicationModel = null;
+        for (int run = 1; run <= reproducibilityRuns; run++) {
+            CuratedApplication currentCuratedApplication = null;
+            StartupActionImpl currentStartupAction = null;
+            try {
+                currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir,
+                        cachedApplicationModel);
+                if (cachedApplicationModel == null) {
+                    // Reuse the resolved model so this check focuses on repeated augmentation bytecode.
+                    cachedApplicationModel = currentCuratedApplication.getApplicationModel();
+                }
+                currentStartupAction = new AugmentActionImpl(currentCuratedApplication, customizers, classLoadListeners)
+                        .createInitialRuntimeApplication();
+
+                Map<String, byte[]> currentInMemoryClasses = currentStartupAction.getClassLoader().getInMemoryClassBytes();
+                if (referenceInMemoryClasses == null) {
+                    referenceInMemoryClasses = currentInMemoryClasses;
+                } else {
+                    var diff = BytecodeTools.diff(referenceInMemoryClasses, currentInMemoryClasses);
+                    if (!diff.isEmpty()) {
+                        String testRunId = extensionContext.getRequiredTestClass().getName()
+                                + "/" + UUID.randomUUID();
+                        Path dumpDir = Path.of("target", "debug").resolve(testRunId)
+                                .resolve("reproducibility-mismatch");
+                        Path mismatchDumpPath = BytecodeTools.dumpReproducibilityMismatch(diff,
+                                referenceInMemoryClasses, currentInMemoryClasses, run, dumpDir);
+                        throw new AssertionError("Build reproducibility check failed on run " + run + "/"
+                                + reproducibilityRuns + ": " + diff + ". Dumped to "
+                                + mismatchDumpPath);
+                    }
+                }
+            } finally {
+                if (currentStartupAction != null) {
+                    currentStartupAction.getClassLoader().close();
+                }
+                if (currentCuratedApplication != null) {
+                    currentCuratedApplication.close();
+                }
+                inMemoryLogHandler.clearRecords();
+            }
+        }
+        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check passed for %s%n", testName);
+        throw new TestAbortedException(
+                "Reproducibility check passed (" + reproducibilityRuns + " runs). Test execution skipped.");
+    }
+
+    private CuratedApplication createCuratedApplication(ExtensionContext extensionContext, Path testLocation, Path projectDir,
+            ApplicationModel existingModel)
+            throws Exception {
+        QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
+                .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
+                .setMode(QuarkusBootstrap.Mode.TEST)
+                .addExcludedPath(testLocation)
+                .setProjectRoot(projectDir)
+                .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
+                .setFlatClassPath(flatClassPath)
+                .setForcedDependencies(forcedDependencies);
+        for (JavaArchive dependency : additionalDependencies) {
+            builder.addAdditionalApplicationArchive(
+                    new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
+        }
+        if (!forcedDependencies.isEmpty()) {
+            //if we have forced dependencies we can't use the cache
+            //as it can screw everything up
+            builder.setDisableClasspathCache(true);
+        }
+        if (quarkusUnitTestClassLoader != null) {
+            builder.setBaseClassLoader(quarkusUnitTestClassLoader);
+        }
+        builder.addClassLoaderEventListeners(this.classLoadListeners);
+        for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
+            bootstrapCustomizer.accept(builder);
+        }
+        if (existingModel != null) {
+            builder.setExistingModel(existingModel);
+        }
+        return builder.build().bootstrap();
     }
 
     @Override

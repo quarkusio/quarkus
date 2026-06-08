@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
@@ -59,6 +60,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
@@ -180,6 +182,16 @@ class SignalsProcessor {
                 current = superName != null ? index.getClassByName(superName) : null;
             }
         }
+    }
+
+    @BuildStep
+    ExecutionModelAnnotationsAllowedBuildItem receiversEntryPoints() {
+        return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {
+            @Override
+            public boolean test(MethodInfo method) {
+                return method.hasAnnotation(DotNames.RECEIVES);
+            }
+        });
     }
 
     private static boolean hasReceiverInHierarchy(ClassInfo clazz, Set<DotName> classesWithReceivers, IndexView index) {

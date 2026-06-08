@@ -22,11 +22,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.vertx.core.impl.SysProps;
 
@@ -65,13 +68,32 @@ public class AmazonLambdaHttpProcessor {
     }
 
     @BuildStep
-    public RequireVirtualHttpBuildItem requestVirtualHttp() {
-        return RequireVirtualHttpBuildItem.ALWAYS_VIRTUAL;
+    public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
+        // In dev mode, allow the real HTTP socket to start alongside the virtual channel
+        // so that Dev UI and other non-application routes are accessible
+        return launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT
+                ? RequireVirtualHttpBuildItem.MARKER
+                : RequireVirtualHttpBuildItem.ALWAYS_VIRTUAL;
     }
 
     @BuildStep
     public ProvidedAmazonLambdaHandlerBuildItem setHandler() {
         return new ProvidedAmazonLambdaHandlerBuildItem(LambdaHttpHandler.class, "AWS Lambda HTTP");
+    }
+
+    @BuildStep
+    public AdditionalIndexedClassesBuildItem addModelClassesToIndex() {
+        return new AdditionalIndexedClassesBuildItem(
+                APIGatewayV2HTTPEvent.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.Http.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.Authorizer.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.CognitoIdentity.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.IAM.class.getName(),
+                APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.class.getName(),
+                APIGatewayV2HTTPResponse.class.getName(),
+                Headers.class.getName(),
+                MultiValuedTreeMap.class.getName());
     }
 
     @BuildStep

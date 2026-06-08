@@ -141,6 +141,57 @@ This will cause all rest endpoints to be resolve relative to `/api`, so the endp
 be accessible at `/api/rest/`. You can also set the <<quarkus-rest-common_quarkus-rest-path,`quarkus.rest.path`>> build time property to set the root path if you
 don't want to use an annotation.
 
+==== Duplicate endpoint detection
+
+Quarkus detects duplicate REST endpoints at build time. If two methods resolve to the same effective path pattern,
+HTTP method, and content types, the build will fail with a deployment error indicating which methods conflict.
+
+For example, the following two classes both expose `GET /hello` producing `text/plain`, which is a duplicate:
+
+[source,java]
+----
+@Path("hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() { ... }
+}
+
+@Path("")
+public class GreetingResource2 {
+
+    @Path("hello")
+    @GET
+    public String hello() { ... }
+}
+----
+
+This also applies when only the path parameter name differs. The following two methods are
+considered duplicates because `{parentId}` and `{product}` both match the same URL paths:
+
+[source,java]
+----
+@Path("api-path")
+public class MyResource {
+
+    @GET
+    @Path("v1/{parentId}")
+    public String getByParentId(@PathParam("parentId") Long parentId) { ... }
+
+    @GET
+    @Path("v1/{product}")
+    public String getByProduct(@PathParam("product") Long product) { ... }
+}
+----
+
+To receive a warning instead of a build failure, set the following configuration property:
+
+[source,properties]
+----
+quarkus.rest.fail-on-duplicate=false
+----
+
 === Declaring endpoints: HTTP methods
 
 Each endpoint method must be annotated with one of the following annotations, which defines which HTTP

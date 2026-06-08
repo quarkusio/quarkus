@@ -209,6 +209,7 @@
                 <module>hibernate-orm-panache</module>
                 <module>data-hibernate</module>
                 <module>hibernate-orm-rest-data-panache</module>
+                <module>rest-data-hibernate-json-types</module>
                 <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>

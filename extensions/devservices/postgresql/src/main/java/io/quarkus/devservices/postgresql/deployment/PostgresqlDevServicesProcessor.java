@@ -192,7 +192,33 @@ public class PostgresqlDevServicesProcessor {
         }
 
         public String getReactiveUrl() {
-            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
+            return stripJdbcParameters(getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:"));
+        }
+
+        /**
+         * Strips JDBC-driver-specific parameters from the URL so they are not sent as
+         * PostgreSQL server startup parameters by the Vert.x PG client.
+         * Testcontainers adds {@code loggerLevel=OFF} for the JDBC driver, but
+         * PostgreSQL does not recognize it as a server configuration parameter.
+         */
+        private static String stripJdbcParameters(String url) {
+            int qmark = url.indexOf('?');
+            if (qmark < 0) {
+                return url;
+            }
+            String base = url.substring(0, qmark);
+            String query = url.substring(qmark + 1);
+            StringBuilder sb = new StringBuilder();
+            for (String param : query.split("&")) {
+                if (param.toLowerCase().startsWith("loggerlevel=")) {
+                    continue;
+                }
+                if (sb.length() > 0) {
+                    sb.append('&');
+                }
+                sb.append(param);
+            }
+            return sb.length() > 0 ? base + "?" + sb : base;
         }
 
         @Override

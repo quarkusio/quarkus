@@ -307,6 +307,7 @@ class NettyProcessor {
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.quic.Quiche")) {
             builder.addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSL")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.SecureRandomQuicConnectionIdGenerator")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLAsyncPrivateKeyMethod")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLContextOption")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLKeylessPrivateKey")

@@ -123,7 +123,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add("--rm");
 
             if (!volumeMounts.isEmpty()) {
-                args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+                args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
             }
 
             if (httpPort != 0) {
@@ -240,7 +240,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add("--rm");
 
         if (!volumeMounts.isEmpty()) {
-            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
         }
 
         args.add("-p");
@@ -431,7 +431,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         if (!volumeMounts.isEmpty()) {
-            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
         }
 
         args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",

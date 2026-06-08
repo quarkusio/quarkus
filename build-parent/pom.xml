@@ -35,7 +35,7 @@
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
         <htmlunit.version>5.0.0</htmlunit.version>
-        <javaparser-core.version>3.28.1</javaparser-core.version>
+        <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
@@ -106,6 +106,8 @@
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 
         <assertj.version>3.27.7</assertj.version>
+        <!-- Keep in sync with VineflowerDecompiler.DEFAULT_VINEFLOWER_VERSION -->
+        <vineflower.version>1.12.0</vineflower.version>
 
         <wiremock.version>3.13.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
@@ -302,6 +304,11 @@
                 <artifactId>junit-pioneer</artifactId>
                 <version>${junit-pioneer.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.vineflower</groupId>
+                <artifactId>vineflower</artifactId>
+                <version>${vineflower.version}</version>
             </dependency>
 
             <dependency>

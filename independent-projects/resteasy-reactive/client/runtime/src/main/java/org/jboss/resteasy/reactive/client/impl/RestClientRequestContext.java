@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -44,6 +45,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.api.ServiceInstance;
@@ -381,7 +383,20 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     @Override
     public void close() {
+        if (closed) {
+            return;
+        }
         super.close();
+        // Release the duplicated Vert.x context and break any parent-context reference chains
+        // to prevent memory leaks in reactive pipelines (see #54639)
+        if (this.clientRequestContext != null) {
+            Context ctx = this.clientRequestContext.getContext();
+            if (ctx != null) {
+                ctx.removeLocal(VertxContext.PARENT_CONTEXT_LOCAL);
+            }
+            this.clientRequestContext = null;
+        }
+        this.properties.remove(ResteasyReactiveClientRequestContext.VERTX_CONTEXT_PROPERTY);
         if (!result.isDone()) {
             try {
                 ClientRestHandler[] handlers = this.handlers;

@@ -89,6 +89,7 @@ import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.spi.buildtime.jsonrpc.RuntimeJsonRpcMethod;
 import io.quarkus.devui.spi.page.CardAction;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.CardText;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.LibraryLink;
 import io.quarkus.devui.spi.page.MenuPageBuildItem;
@@ -879,7 +880,8 @@ public class DevUIProcessor {
 
                                 if (cardPagesMap.containsKey(namespace)
                                         && (cardPagesMap.get(namespace).hasPages()
-                                                || cardPagesMap.get(namespace).hasCardActions())) { // Active
+                                                || cardPagesMap.get(namespace).hasCardActions()
+                                                || cardPagesMap.get(namespace).hasCardTexts())) { // Active
                                     CardPageBuildItem cardPageBuildItem = cardPagesMap.get(namespace);
 
                                     // Add all card links
@@ -896,6 +898,11 @@ public class DevUIProcessor {
                                     // Add card actions
                                     for (CardAction action : cardPageBuildItem.getCardActions()) {
                                         extension.addCardAction(action);
+                                    }
+
+                                    // Add card texts
+                                    for (CardText text : cardPageBuildItem.getCardTexts()) {
+                                        extension.addCardText(text);
                                     }
 
                                     // See if there is a custom card component

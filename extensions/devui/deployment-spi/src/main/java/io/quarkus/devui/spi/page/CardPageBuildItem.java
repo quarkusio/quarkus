@@ -17,6 +17,7 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
     private Optional<Card> optionalCard = Optional.empty();
     private List<LibraryLink> libraryVersions;
     private List<CardAction> cardActions;
+    private List<CardText> cardTexts;
 
     private String darkLogo;
     private String lightLogo;
@@ -69,6 +70,20 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
 
     public boolean hasCardActions() {
         return this.cardActions != null && !this.cardActions.isEmpty();
+    }
+
+    public void addText(CardText text) {
+        if (cardTexts == null)
+            cardTexts = new ArrayList<>();
+        cardTexts.add(text);
+    }
+
+    public List<CardText> getCardTexts() {
+        return this.cardTexts == null ? Collections.emptyList() : this.cardTexts;
+    }
+
+    public boolean hasCardTexts() {
+        return this.cardTexts != null && !this.cardTexts.isEmpty();
     }
 
     public void setLogo(String darkLogo, String lightLogo) {

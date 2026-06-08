@@ -1173,6 +1173,110 @@ types of repositories in your entity to support managed entities.
 TIP: You can also use <<Use stateless sessions,Panache Stateless repositories>> or
 <<Reactive and stateless,Panache Stateless Reactive repositories>>.
 
+== REST integration
+
+When your application uses both `quarkus-data-hibernate` and `quarkus-rest-jackson`, Quarkus automatically
+adds REST support for common Jakarta Data parameter types. This lets you declare Jakarta Data types directly as
+REST endpoint parameters, and they will be populated from HTTP query parameters without any manual parsing.
+
+=== Supported parameter types
+
+The following Jakarta Data types are automatically mapped from query parameters:
+
+[cols="1,2,1,2"]
+|===
+|Jakarta Data type|Query parameters|Defaults|Example URL
+
+|`PageRequest`
+|`page`, `size`, `requestTotal`
+|`page=1`, `size=10`, `requestTotal=true`
+|`?page=2&size=25`
+
+|`Sort<?>`
+|`sort`
+|`null`
+|`?sort=name` (asc) or `?sort=-name` (desc)
+
+|`Order<?>`
+|`sort` (repeating)
+|`null`
+|`?sort=name&sort=-salary`
+
+|`Limit`
+|`limit`, `startAt`, `endAt`
+|`null` (no limit), `startAt=1`
+|`?limit=10` or `?limit=10&startAt=51` or `?startAt=51&endAt=60`
+
+|`Direction`
+|`direction`
+|`null`
+|`?direction=ASC` or `?direction=desc`
+
+|===
+
+For `Sort` and `Order`, prefix the property name with `-` to indicate descending order.
+
+NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
+by this REST integration. Only offset-based pagination is available via query parameters.
+
+=== Page serialization
+
+When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination
+metadata, rather than as a plain array:
+
+[source,json]
+----
+{
+  "content": [ ... ],
+  "hasNext": true,
+  "hasPrevious": false,
+  "totalElements": 100,
+  "totalPages": 34
+}
+----
+
+The `totalElements` and `totalPages` fields are only included when the `PageRequest` was created with
+`requestTotal=true`.
+
+=== Example endpoint
+
+Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
+list of cats. `PanacheRepository` already provides a `findAll(PageRequest, Order)` method, so you can use
+the entity and repository we defined earlier directly:
+
+[source,java]
+----
+import jakarta.data.Order;
+import jakarta.data.page.Page;
+import jakarta.data.page.PageRequest;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("cats")
+public class CatResource {
+
+    @Inject
+    Cat.Repo repo;
+
+    @GET
+    public Page<Cat> list(PageRequest pageRequest, Order<Cat> order) { // <1>
+        return repo.findAll(pageRequest, order);
+    }
+}
+----
+<1> `PageRequest` is populated from `page`, `size`, and `requestTotal` query parameters.
+`Order` is populated from repeating `sort` query parameters.
+
+A client can then call:
+
+[source]
+----
+GET /cats?page=1&size=20&sort=name&sort=-birth
+----
+
+This produces a `PageRequest.ofPage(1, 20, true)` and `Order.by(Sort.asc("name"), Sort.desc("birth"))`.
+
 == HQL, JD-QL, Jakarta-QL, Panache-QL
 
 There are different query languages used in this API:

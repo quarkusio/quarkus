@@ -3,6 +3,7 @@ package io.quarkus.vertx.core.deployment;
 import java.util.function.Consumer;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.vertx.core.VertxOptions;
 
 /**
@@ -28,6 +29,17 @@ public final class VertxOptionsConsumerBuildItem extends MultiBuildItem implemen
 
     @Override
     public int compareTo(VertxOptionsConsumerBuildItem o) {
-        return Integer.compare(this.priority, o.priority);
+        int result = Integer.compare(this.priority, o.priority);
+        if (result != 0) {
+            return result;
+        }
+        return deterministicConsumerKey(this.optionsConsumer).compareTo(deterministicConsumerKey(o.optionsConsumer));
+    }
+
+    private static String deterministicConsumerKey(Consumer<VertxOptions> consumer) {
+        if (consumer instanceof BytecodeRecorderImpl.ReturnedProxy returnedProxy) {
+            return returnedProxy.__returned$proxy$key();
+        }
+        return consumer.getClass().getName();
     }
 }

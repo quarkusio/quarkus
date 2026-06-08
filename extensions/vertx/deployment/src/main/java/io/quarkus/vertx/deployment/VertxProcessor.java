@@ -10,7 +10,7 @@ import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
@@ -126,7 +126,7 @@ class VertxProcessor {
         }
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
+        Map<Class<?>, Class<?>> codecByClass = new LinkedHashMap<>();
         for (MessageCodecBuildItem messageCodecItem : codecs) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(messageCodecItem.getType()).constructors(false).build());
@@ -239,7 +239,7 @@ class VertxProcessor {
 
                     InvokerInfo invoker = builder.build();
 
-                    messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, consumeEvent,
+                    messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent,
                             method.hasAnnotation(Blocking.class), method.hasAnnotation(RunOnVirtualThread.class),
                             parametersCount == 2, invoker));
                     LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);

@@ -253,16 +253,20 @@ public class VertxCoreRecorder {
         if (verticleFactoryClassNames == null) {
             verticleFactoryClassNames = Collections.emptyList();
         }
-        List<VertxServiceProvider> vertxServiceProviders = instantiateServices(vertxServiceProviderClassNames,
-                VertxServiceProvider.class);
-        List<VerticleFactory> verticleFactories = instantiateServices(verticleFactoryClassNames, VerticleFactory.class);
 
         var bootstrap = VertxBootstrap.create()
-                .serviceProviders(vertxServiceProviders)
-                .verticleFactories(verticleFactories)
                 .options(options.setDisableTCCL(true))
                 .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
                 .threadFactory(vertxThreadFactory);
+
+        if (launchMode != LaunchMode.DEVELOPMENT) {
+            List<VertxServiceProvider> vertxServiceProviders = instantiateServices(vertxServiceProviderClassNames,
+                    VertxServiceProvider.class);
+            bootstrap.serviceProviders(vertxServiceProviders);
+        }
+
+        List<VerticleFactory> verticleFactories = instantiateServices(verticleFactoryClassNames, VerticleFactory.class);
+        bootstrap.verticleFactories(verticleFactories);
 
         if (customizer != null) {
             customizer.customize(bootstrap);

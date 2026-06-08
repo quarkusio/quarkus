@@ -24,7 +24,7 @@ import io.smallrye.common.annotation.SuppressForbidden;
         to establish some kind of deterministic ordering, nothing more.
         """)
 public class Reproducibility {
-    static final Comparator<BeanInfo> BEAN_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
+    public static final Comparator<BeanInfo> BEAN_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
     static final Comparator<ObserverInfo> OBSERVER_COMPARATOR = Comparator.comparing(ObserverInfo::getIdentifier);
     static final Comparator<Type> TYPE_COMPARATOR = Comparator.comparing(Type::name).thenComparing(Type::toString);
     static final Comparator<ClassInfo> CLASS_COMPARATOR = Comparator.comparing(c -> c.name().toString());
@@ -38,8 +38,9 @@ public class Reproducibility {
             .comparing(InjectionPointInfo::getType, TYPE_COMPARATOR)
             .thenComparing(InjectionPointInfo::getRequiredQualifiers,
                     setComparator(ANNOTATION_COMPARATOR, AnnotationInstance[]::new));
-    static final Comparator<MethodInfo> METHOD_COMPARATOR = Comparator
-            .comparing(MethodInfo::name)
+    public static final Comparator<MethodInfo> METHOD_COMPARATOR = Comparator
+            .comparing(MethodInfo::declaringClass, CLASS_COMPARATOR)
+            .thenComparing(MethodInfo::name)
             .thenComparing(MethodInfo::parameterTypes, listComparator(TYPE_COMPARATOR))
             .thenComparing(MethodInfo::returnType, TYPE_COMPARATOR);
 

@@ -7,6 +7,7 @@ import { allowExtensionManagement } from 'devui-data';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
 import 'qwc/qwc-extension-action.js';
+import 'qwc/qwc-extension-text.js';
 import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
 import '@vaadin/dialog';
@@ -407,6 +408,7 @@ export class QwcExtensions extends observeState(LitElement) {
                     </span>
                     ${this._renderCardLinks(extension)}
                     ${this._renderCardActions(extension)}
+                    ${this._renderCardTexts(extension)}
                 </div>
                 ${this._renderLibraryVersions(extension)}
             </div>`;
@@ -480,6 +482,24 @@ export class QwcExtensions extends observeState(LitElement) {
                         actionReference="${action.actionReference}"
                         ?showResultNotification=${action.showResultNotification}>
                     </qwc-extension-action>`;
+    }
+
+    _renderCardTexts(extension){
+        if (extension.cardTexts && extension.cardTexts.length > 0) {
+            return html`${extension.cardTexts.map(text => html`${this._renderCardText(extension, text)}`)}`;
+        }
+    }
+
+    _renderCardText(extension, text){
+        return html`<qwc-extension-text
+                        namespace="${extension.namespace}"
+                        displayName="${text.title}"
+                        iconName="${text.icon}"
+                        staticText="${text.staticText}"
+                        dynamicText="${text.dynamicText}"
+                        streamingText="${text.streamingText}"
+                        streamingTextParams="${text.streamingTextParams}">
+                    </qwc-extension-text>`;
     }
 
     _renderLibraryVersions(extension) {

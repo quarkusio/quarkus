@@ -495,6 +495,86 @@ Google Cloud requires the `trace` field to follow the `"projects/<my-trace-proje
 `<my-trace-project>` uses the value of the `quarkus.application.name` configuration property.
 
 
+[id="json-provider"]
+==== Custom JSON fields with JsonProvider
+
+The `JsonProvider` SPI allows you to dynamically inject additional JSON fields into every log record at formatting time.
+Each registered provider's `writeTo` method is called once per log record, receiving a `JsonLogGenerator` and the `ExtLogRecord` being formatted.
+
+Providers can inspect the log record (level, logger name, MDC values, message, etc.) to decide which fields, if any, to add.
+Any keys listed in `quarkus.log.*.json.excluded-keys` are still filtered, even when written by a provider.
+
+===== CDI registration
+
+In a Quarkus application, the preferred way to register a `JsonProvider` is as a CDI bean:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.Level;
+import io.quarkus.logging.json.runtime.JsonProvider;
+import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
+
+@ApplicationScoped
+public class MyJsonProvider implements JsonProvider {
+
+    @Override
+    public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+        // Add a static field to every log record
+        generator.add("environment", "production");
+
+        // Conditionally add a field based on the log level
+        if (record.getLevel().intValue() >= Level.ERROR.intValue()) {
+            generator.add("alert", "true");
+        }
+
+        // Add an MDC value as a top-level field
+        String requestId = record.getMDC("requestId");
+        if (requestId != null) {
+            generator.add("requestId", requestId);
+        }
+
+        // Add a nested JSON object
+        generator.startObject("metadata")
+                .add("version", "1.0")
+                .add("region", "us-east-1")
+                .endObject();
+    }
+}
+----
+
+===== ServiceLoader registration
+
+For providers that must work without CDI (for example, in libraries or during early startup), register them via the Java `ServiceLoader` mechanism.
+Create a file named `META-INF/services/io.quarkus.logging.json.runtime.JsonProvider` containing the fully-qualified class name of each implementation:
+
+[source]
+----
+com.example.MyJsonProvider
+----
+
+The implementation does not need to be a CDI bean:
+
+[source,java]
+----
+import io.quarkus.logging.json.runtime.JsonProvider;
+import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
+import org.jboss.logmanager.ExtLogRecord;
+
+public class MyJsonProvider implements JsonProvider {
+
+    @Override
+    public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+        generator.add("source", "my-library");
+    }
+}
+----
+
+NOTE: When both CDI beans and ServiceLoader providers are present, all of them are called for each log record.
+ServiceLoader providers are called first, in the order they appear in the service file.
+CDI beans are called afterwards, but their relative order is not guaranteed.
+
 ==== Configuration
 
 Configure the JSON logging extension using supported properties to customize its behavior.
@@ -505,7 +585,6 @@ WARNING: Enabling pretty printing might cause certain processors and JSON parser
 
 NOTE: Printing the details can be expensive as the values are retrieved from the caller.
 The details include the source class name, source file name, source method name, and source line number.
-
 
 == Log handlers
 

@@ -550,3 +550,7 @@ SbomContributionBuildItem contributeNpmComponents() {
 * The `scope` field classifies components as `runtime` or `development` dependencies, which is recorded in the SBOM as the `quarkus:component:scope` property.
 * The `integrity` field can carry an SRI-format hash (e.g., from lock files) for component verification.
 * Dependency relationships are optional. If you only need to list components without expressing their dependency graph, use `SbomContribution.ofComponents(...)`.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-cyclonedx.adoc[opts=optional, leveloffset=+2]

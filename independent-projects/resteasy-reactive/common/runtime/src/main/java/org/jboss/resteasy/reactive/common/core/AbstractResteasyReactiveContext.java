@@ -41,7 +41,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private List<CompletionCallback> completionCallbacks;
     private boolean abortHandlerChainStarted;
 
-    private boolean closed = false;
+    protected boolean closed = false;
 
     public AbstractResteasyReactiveContext(H[] handlerChain, H[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.handlers = handlerChain;

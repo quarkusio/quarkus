@@ -19,7 +19,6 @@ import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.MutinyTestServiceGrpc;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
-import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.grpc.server.services.MutinyTestService;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -35,7 +34,6 @@ public class MutinyGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addPackage(io.grpc.testing.integration.Test.class.getPackage())
-                            .addPackage(HelloService.class.getPackage())
                             .addPackage(HelloWorldProto.class.getPackage())
                             .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
                                     GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,

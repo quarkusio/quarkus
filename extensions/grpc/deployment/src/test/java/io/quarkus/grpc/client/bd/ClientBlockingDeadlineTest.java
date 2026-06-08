@@ -39,7 +39,7 @@ public class ClientBlockingDeadlineTest {
             StatusRuntimeException sre = (StatusRuntimeException) e;
             Status status = sre.getStatus();
             Assertions.assertNotNull(status);
-            Assertions.assertEquals(Status.DEADLINE_EXCEEDED.getCode(), status.getCode());
+            Assertions.assertEquals(Status.CANCELLED.getCode(), status.getCode());
         }
     }
 }

@@ -48,9 +48,8 @@ public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestB
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addPackage(io.grpc.testing.integration.Test.class.getPackage())
-                            .addPackage(HelloService.class.getPackage())
                             .addPackage(HelloWorldProto.class.getPackage())
-                            .addClasses(TestService.class, AssertHelper.class,
+                            .addClasses(HelloService.class, TestService.class, AssertHelper.class,
                                     GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
                                     HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
                                     EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,

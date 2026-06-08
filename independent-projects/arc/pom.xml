@@ -45,7 +45,7 @@
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.10.1</version.gizmo>
-        <version.jandex>3.5.3</version.jandex>
+        <version.jandex>3.6.0</version.jandex>
         <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.3.Final</version.jboss-logging>
         <version.mutiny>3.2.1</version.mutiny>

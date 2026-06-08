@@ -1,5 +1,7 @@
 package io.quarkus.devservices.keycloak;
 
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatHostAndPort;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -21,6 +23,21 @@ final class KeycloakDevServicesUtils {
     private static final byte AMP = '&';
     private static final byte EQ = '=';
 
+    /**
+     * Host and port for Keycloak admin HTTP calls. Uses raw host (no brackets) with
+     * {@link WebClient#post(int, String, String)} to avoid URL parsing issues with IPv6.
+     */
+    record KeycloakHttpTarget(int port, String host, String pathPrefix) {
+
+        String path(String suffix) {
+            return pathPrefix + suffix;
+        }
+
+        String hostHeader() {
+            return formatHostAndPort(host, port);
+        }
+    }
+
     private KeycloakDevServicesUtils() {
 
     }
@@ -32,14 +49,25 @@ final class KeycloakDevServicesUtils {
         return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
     }
 
+    static HttpRequest<Buffer> get(WebClient client, KeycloakHttpTarget target, String path) {
+        return client.get(target.port(), target.host(), path)
+                .putHeader(HttpHeaders.HOST.toString(), target.hostHeader());
+    }
+
+    static HttpRequest<Buffer> post(WebClient client, KeycloakHttpTarget target, String path) {
+        return client.post(target.port(), target.host(), path)
+                .putHeader(HttpHeaders.HOST.toString(), target.hostHeader());
+    }
+
     static Uni<String> getPasswordAccessToken(WebClient client,
-            String tokenUrl,
+            KeycloakHttpTarget target,
+            String tokenPath,
             String clientId,
             String clientSecret,
             String userName,
             String userPassword,
             Map<String, String> passwordGrantOptions) {
-        HttpRequest<Buffer> request = client.postAbs(tokenUrl);
+        HttpRequest<Buffer> request = post(client, target, tokenPath);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
         io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());

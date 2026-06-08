@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.client.deployment;
 
 import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatResolvedHostAndPort;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.api_only;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -455,19 +456,25 @@ public class DevServicesKubernetesProcessor {
             this.containerInfo = dockerClient.inspectContainerCmd(getContainerId()).exec();
         }
 
+        private String resolvedConnectionAddress() {
+            return formatResolvedHostAndPort(containerAddress.getId(), containerAddress.getHost(),
+                    containerAddress.getPort());
+        }
+
         private KubeConfig getKubeconfigFromContainer() {
             var image = getContainerInfo().getConfig().getImage();
+            String connectionAddress = resolvedConnectionAddress();
             if (image.contains("rancher/k3s")) {
                 return KubeConfigUtils
-                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + containerAddress.getUrl(),
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
                                 getFileContentFromContainer(K3S_KUBECONFIG)));
             } else if (image.contains("kindest/node")) {
                 return KubeConfigUtils
-                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + containerAddress.getUrl(),
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
                                 getFileContentFromContainer(KIND_KUBECONFIG)));
             } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
                     image.contains("registry.k8s.io/kube-apiserver")) {
-                return getKubeconfigFromApiContainer(containerAddress.getUrl());
+                return getKubeconfigFromApiContainer(connectionAddress);
             }
 
             // this can happen only if the user manually start

@@ -24,6 +24,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -133,15 +134,18 @@ public class MariaDBDevServicesProcessor {
             }
         }
 
-        // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
-        // from being able to determine the status of the container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? PORT : getMappedPort(PORT);
+            String authority = DevServicesHostUtil.formatHostAndPort(host, port);
+            String additionalUrlParams = constructUrlParameters("?", "&");
+            return "jdbc:mariadb://" + authority + "/" + getDatabaseName() + additionalUrlParams;
+        }
+
+        // Delegates to getJdbcUrl() so Testcontainers startup and Quarkus config use the same URL.
         public String getEffectiveJdbcUrl() {
-            if (useSharedNetwork) {
-                String additionalUrlParams = constructUrlParameters("?", "&");
-                return "jdbc:mariadb://" + hostName + ":" + PORT + "/" + getDatabaseName() + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
-            }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

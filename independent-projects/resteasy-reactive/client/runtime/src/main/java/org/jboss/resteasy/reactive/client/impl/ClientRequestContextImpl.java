@@ -41,12 +41,12 @@ import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.impl.ContextInternal;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -73,10 +73,13 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.context = VertxContext.createNewDuplicatedContext(current);
         if (VertxContext.isDuplicatedContext(current)) {
             // Copy old-style locals from the caller context so they remain visible
-            ((ContextInternal) this.context).localContextData()
-                    .putAll(((ContextInternal) current).localContextData());
+            VertxContext.localContextData(this.context).putAll(VertxContext.localContextData(current));
         }
-        this.context.putLocal(VertxContext.PARENT_CONTEXT, current);
+
+        for (Map.Entry<String, Object> entry : VertxContext.localContextData(current).entrySet()) {
+            ContextLocals.putInParent(this.context, entry.getKey(), entry.getValue());
+        }
+
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

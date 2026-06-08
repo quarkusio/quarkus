@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import io.vertx.core.spi.VertxServiceProvider;
 import org.jboss.logging.Logger;
 import org.jboss.threads.ContextHandler;
 
@@ -59,6 +58,7 @@ import io.vertx.core.impl.VertxThread;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
+import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.VertxThreadFactory;
 
 @Recorder
@@ -108,9 +108,9 @@ public class VertxCoreRecorder {
     }
 
     public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
-                                          List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
-                                          List<String> vertxServiceProviderClassNames,
-                                          List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
+            List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
+            List<String> vertxServiceProviderClassNames,
+            List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
         // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
 
@@ -247,6 +247,12 @@ public class VertxCoreRecorder {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
+        if (vertxServiceProviderClassNames == null) {
+            vertxServiceProviderClassNames = Collections.emptyList();
+        }
+        if (verticleFactoryClassNames == null) {
+            verticleFactoryClassNames = Collections.emptyList();
+        }
         List<VertxServiceProvider> vertxServiceProviders = instantiateServices(vertxServiceProviderClassNames,
                 VertxServiceProvider.class);
         List<VerticleFactory> verticleFactories = instantiateServices(verticleFactoryClassNames, VerticleFactory.class);
@@ -670,7 +676,7 @@ public class VertxCoreRecorder {
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
         return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), Collections.emptyList(),
-                threadPoolConfig, null,
+                threadPoolConfig, null, List.of(),
                 List.of());
 
     }

@@ -15,6 +15,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 
 public class PulsarContainer extends GenericContainer<PulsarContainer> implements Startable {
 
@@ -50,8 +51,10 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> implement
     @Override
     protected void containerIsStarting(InspectContainerResponse containerInfo, boolean reused) {
         super.containerIsStarting(containerInfo, reused);
-        String advertisedListeners = String.format("internal:pulsar://localhost:%s,external:pulsar://%s:%s",
-                BROKER_PORT, this.getHost(), this.getMappedPort(BROKER_PORT));
+        String host = DevServicesHostUtil.publishedPortHost(containerInfo.getId(), useSharedNetwork, hostName,
+                this.getHost());
+        String advertisedListeners = "internal:pulsar://localhost:" + BROKER_PORT + ",external:"
+                + DevServicesHostUtil.formatPrefixedAuthority("pulsar", host, this.getMappedPort(BROKER_PORT));
 
         String command = "#!/bin/bash \n";
         command += "export PULSAR_PREFIX_advertisedListeners=" + advertisedListeners + " \n";
@@ -73,22 +76,26 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> implement
         if (useSharedNetwork) {
             return getServiceUrl(this.hostName, PulsarContainer.BROKER_PORT);
         }
-        return getServiceUrl(this.getHost(), this.getMappedPort(BROKER_PORT));
+        return getServiceUrl(
+                DevServicesHostUtil.publishedPortHost(getContainerId(), this.getHost()),
+                this.getMappedPort(BROKER_PORT));
     }
 
     private String getServiceUrl(String host, int port) {
-        return String.format("pulsar://%s:%d", host, port);
+        return DevServicesHostUtil.formatPrefixedAuthority("pulsar", host, port);
     }
 
     public String getHttpServiceUrl() {
         if (useSharedNetwork) {
             return getHttpServiceUrl(this.hostName, PulsarContainer.BROKER_HTTP_PORT);
         }
-        return getHttpServiceUrl(this.getHost(), this.getMappedPort(BROKER_HTTP_PORT));
+        return getHttpServiceUrl(
+                DevServicesHostUtil.publishedPortHost(getContainerId(), this.getHost()),
+                this.getMappedPort(BROKER_HTTP_PORT));
     }
 
     private String getHttpServiceUrl(String host, int port) {
-        return String.format("http://%s:%d", host, port);
+        return DevServicesHostUtil.formatPrefixedAuthority("http", host, port);
     }
 
     @Override

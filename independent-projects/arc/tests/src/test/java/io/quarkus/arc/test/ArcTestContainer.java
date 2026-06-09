@@ -74,7 +74,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private static final String TARGET_TEST_CLASSES = "target/test-classes";
 
-    private static final String REPRODUCIBILITY_CHECK_PROPERTY = "quarkus.test.reproducibility-check";
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY = "quarkus-internal.test.reproducibility-check";
 
     public static Builder builder() {
         return new Builder();

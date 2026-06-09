@@ -41,7 +41,7 @@ class BytecodeTools {
 
     private static Set<String> loadExclusions() {
         Set<String> result = new TreeSet<>(DEFAULT_EXCLUDED);
-        String additional = System.getProperty("quarkus.test.reproducibility-check.excludes");
+        String additional = System.getProperty("quarkus-internal.test.reproducibility-check.excludes");
         if (additional != null && !additional.isBlank()) {
             for (String prefix : additional.split(",")) {
                 String trimmed = prefix.trim();

@@ -94,7 +94,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";
-    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus.test.reproducibility-check";
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;

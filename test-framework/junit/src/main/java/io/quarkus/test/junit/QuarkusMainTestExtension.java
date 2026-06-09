@@ -15,12 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import org.jboss.logmanager.ExtHandler;
-import org.jboss.logmanager.handlers.ConsoleHandler;
-import org.jboss.logmanager.handlers.OutputStreamHandler;
+import org.jboss.logmanager.LogContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -121,8 +123,24 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication(), false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
+        List<LogRecord> capturedRecords = new CopyOnWriteArrayList<>();
+        ExtHandler logHandler = new ExtHandler() {
+            @Override
+            public void publish(LogRecord record) {
+                capturedRecords.add(record);
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public java.util.logging.Level getLevel() {
+                return Level.ALL;
+            }
+        };
         try {
-            var result = doJavaStart(context, arguments);
+            var exitCode = doJavaStart(context, arguments, logHandler);
             //merge all the output into one, strip ansi, then split into lines
             List<String> out = Arrays
                     .asList(String.join("", filter.captureOutput())
@@ -132,6 +150,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                     .asList(String.join("", filter.captureErrorOutput())
                             .replaceAll("\\u001B\\[(.*?)[a-zA-Z]", "")
                             .split("\n"));
+            List<LogRecord> logRecords = new ArrayList<>(capturedRecords);
             return new LaunchResult() {
                 @Override
                 public List<String> getOutputStream() {
@@ -145,7 +164,12 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
                 @Override
                 public int exitCode() {
-                    return result;
+                    return exitCode;
+                }
+
+                @Override
+                public List<LogRecord> getLogRecords() {
+                    return logRecords;
                 }
             };
         } finally {
@@ -160,54 +184,12 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         result = null;
     }
 
-    private static Handler originalConsoleHandler;
-    private static ExtHandler originalConsoleHandlerParent;
-    private static Handler redirectConsoleHandler;
-
-    private static void installLoggerRedirect() {
-        InitialConfigurator.DELAYED_HANDLER.setOnHandlersInitialized(
-                handlers -> swapConsoleHandler(InitialConfigurator.DELAYED_HANDLER, handlers));
-    }
-
-    private static void uninstallLoggerRedirect() {
-        InitialConfigurator.DELAYED_HANDLER.setOnHandlersInitialized(null);
-        if (originalConsoleHandler != null && originalConsoleHandlerParent != null) {
-            originalConsoleHandlerParent.removeHandler(redirectConsoleHandler);
-            originalConsoleHandlerParent.addHandler(originalConsoleHandler);
-            originalConsoleHandler = null;
-            originalConsoleHandlerParent = null;
-            redirectConsoleHandler = null;
-        }
-    }
-
-    private static void swapConsoleHandler(ExtHandler parent, Handler[] handlers) {
-        for (Handler handler : handlers) {
-            if (handler instanceof ConsoleHandler) {
-                originalConsoleHandler = handler;
-                originalConsoleHandlerParent = parent;
-                OutputStreamHandler redirect = new OutputStreamHandler(QuarkusConsole.REDIRECT_OUT, handler.getFormatter());
-                redirect.setLevel(handler.getLevel());
-                redirect.setFilter(handler.getFilter());
-                redirect.setErrorManager(handler.getErrorManager());
-                redirectConsoleHandler = redirect;
-                parent.removeHandler(handler);
-                parent.addHandler(redirect);
-                return;
-            } else if (handler instanceof ExtHandler) {
-                swapConsoleHandler((ExtHandler) handler, ((ExtHandler) handler).getHandlers());
-                if (originalConsoleHandler != null) {
-                    return;
-                }
-            }
-        }
-    }
-
     private void flushAllLoggers() {
-        Enumeration<String> loggerNames = org.jboss.logmanager.LogContext.getLogContext()
+        Enumeration<String> loggerNames = LogContext.getLogContext()
                 .getLoggerNames();
         while (loggerNames != null && loggerNames.hasMoreElements()) {
             String loggerName = loggerNames.nextElement();
-            var logger = org.jboss.logmanager.LogContext.getLogContext()
+            var logger = LogContext.getLogContext()
                     .getLogger(loggerName);
             for (Handler h : logger.getHandlers()) {
                 h.flush();
@@ -215,7 +197,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private int doJavaStart(ExtensionContext context, String[] arguments) throws Exception {
+    private int doJavaStart(ExtensionContext context, String[] arguments, ExtHandler logHandler) throws Exception {
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;
         try {
@@ -223,7 +205,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
             QuarkusConsole.installRedirects();
             flushAllLoggers();
-            installLoggerRedirect();
+            var rootLogger = LogContext.getLogContext().getLogger("");
+            rootLogger.addHandler(logHandler);
 
             Class<? extends QuarkusTestProfile> profileClass = getQuarkusTestProfile(context).orElse(null);
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profileClass, TEST);
@@ -267,7 +250,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                 System.err.println("Unable to shutdown resource: " + e.getMessage());
             }
 
-            uninstallLoggerRedirect();
+            var rootLogger = LogContext.getLogContext().getLogger("");
+            rootLogger.removeHandler(logHandler);
             QuarkusConsole.uninstallRedirects();
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);

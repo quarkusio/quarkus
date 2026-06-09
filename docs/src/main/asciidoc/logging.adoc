@@ -531,6 +531,8 @@ The `accessLog` object contains the following fields:
 ----
 +
 The option is available for all handler types: `quarkus.log.console.json.access-log.structured`, `quarkus.log.file.json.access-log.structured`, `quarkus.log.syslog.json.access-log.structured`, `quarkus.log.socket.json.access-log.structured`, and named handlers such as `quarkus.log.handler.console.<name>.json.access-log.structured`.
++
+TIP: To add custom fields beyond the standard access log fields, use the <<json-provider,JsonProvider SPI>>.
 * *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
 This format modifies some default field names and adds other fields to align with ECS.
 +

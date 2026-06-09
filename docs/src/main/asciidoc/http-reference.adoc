@@ -656,6 +656,10 @@ NOTE: Configure enough DN components to uniquely identify your proxy. Using only
 
 Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client.
 
+By default, the `proto` values from `Forwarded` and `X-Forwarded-Proto` headers are validated against the https://datatracker.ietf.org/doc/html/rfc3986#section-3.1[URI scheme syntax].
+Requests with an invalid proto value receive a `400 Bad Request` response.
+To disable this validation, set the `quarkus.http.proxy.forwarded-proto-validation` configuration property to `none`.
+
 Supported forwarding address headers are:
 
 * `Forwarded`

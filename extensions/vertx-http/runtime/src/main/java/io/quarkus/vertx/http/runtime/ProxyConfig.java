@@ -172,4 +172,25 @@ public interface ProxyConfig {
         @WithConverter(TrimmedStringConverter.class)
         String subjectDn();
     }
+
+    /**
+     * Validation mode for the {@code Forwarded} proto and {@code X-Forwarded-Proto} header values.
+     */
+    enum ForwardedProtoValidation {
+        /** No validation — accept any proto value. */
+        NONE,
+        /**
+         * Reject proto values that do not conform to the
+         * <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.1">URI scheme</a> syntax
+         * with a {@code 400 Bad Request} response.
+         */
+        REJECT
+    }
+
+    /**
+     * How to handle {@code Forwarded} proto and {@code X-Forwarded-Proto} header values
+     * that are not valid <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.1">URI schemes</a>.
+     */
+    @WithDefault("reject")
+    ForwardedProtoValidation forwardedProtoValidation();
 }

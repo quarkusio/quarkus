@@ -231,16 +231,7 @@ public class HttpServerCommonHandlers {
 
         @Override
         public void handle(HttpServerRequest event) {
-            ForwardedServerRequestWrapper wrapper;
-            try {
-                wrapper = new ForwardedServerRequestWrapper(event, forwardingProxyOptions, getProxyCheck(event));
-                @SuppressWarnings("unused")
-                var unused = wrapper.authority();
-            } catch (IllegalArgumentException e) {
-                event.response().setStatusCode(400).end();
-                return;
-            }
-            root.handle(wrapper);
+            ForwardedServerRequestWrapper.handleOrReject(event, forwardingProxyOptions, getProxyCheck(event), root);
         }
     }
 }

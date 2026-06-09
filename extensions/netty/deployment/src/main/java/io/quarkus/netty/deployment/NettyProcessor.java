@@ -86,7 +86,7 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public NativeImageSystemPropertyBuildItem disableNettyDefaultEndpointVerification() {
+    public SystemPropertyBuildItem disableNettyDefaultEndpointVerification() {
         /*
          * Netty 4.2 defaults endpoint verification to "HTTPS", which is read during
          * SslContext static initialization (build time in native mode). Vert.x explicitly
@@ -94,7 +94,7 @@ class NettyProcessor {
          * so the Netty default is not needed and causes SSL failures in native mode when
          * Vert.x's runtime override on the SslContextBuilder doesn't take effect.
          */
-        return new NativeImageSystemPropertyBuildItem("io.netty.handler.ssl.defaultEndpointVerificationAlgorithm", "NONE");
+        return new SystemPropertyBuildItem("io.netty.handler.ssl.defaultEndpointVerificationAlgorithm", "NONE");
     }
 
     @BuildStep

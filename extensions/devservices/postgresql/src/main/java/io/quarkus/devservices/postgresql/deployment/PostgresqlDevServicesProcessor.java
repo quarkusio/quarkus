@@ -34,6 +34,7 @@ import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.cpu.CPU;
 
 public class PostgresqlDevServicesProcessor {
 
@@ -72,7 +73,8 @@ public class PostgresqlDevServicesProcessor {
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                 String selectedImage = PostgresImageSelector.selectImage(containerConfig.getImageName(),
-                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName());
+                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName(),
+                        CPU.host());
                 QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(Optional.of(selectedImage),
                         containerConfig.getFixedExposedPort(),
                         composeProjectBuildItem.getDefaultNetworkId(),
@@ -114,7 +116,8 @@ public class PostgresqlDevServicesProcessor {
                     DevServicesComposeProjectBuildItem composeProjectBuildItem) {
 
                 String selectedImage = PostgresImageSelector.selectImage(containerConfig.getImageName(),
-                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName());
+                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName(),
+                        CPU.host());
                 List<String> images = List.of(selectedImage, "postgres");
                 return ComposeLocator
                         .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork)

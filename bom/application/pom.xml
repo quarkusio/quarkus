@@ -398,6 +398,26 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- Vert.x 5.1+ ships Jackson 3 (tools.jackson.core) in a multi-release JAR;
+                 Quarkus uses Jackson 2 (com.fasterxml.jackson.core) for now.
+                 This entry must come before the vertx-dependencies BOM import so that
+                 the exclusions take effect. -->
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-core</artifactId>
+                <version>${vertx.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>tools.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tools.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!-- Vert.x dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.vertx</groupId>

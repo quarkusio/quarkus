@@ -801,7 +801,9 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         if (assertLogRecords != null) {
             records = new ArrayList<>(inMemoryLogHandler.records);
         }
-        rootLogger.setHandlers(originalHandlers);
+        if (originalHandlers != null) {
+            rootLogger.setHandlers(originalHandlers);
+        }
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
         if (testMethodInvokers != null) {
@@ -827,10 +829,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 quarkusUnitTestClassLoader.close();
                 quarkusUnitTestClassLoader = null;
             }
-            timeoutTask.cancel();
-            timeoutTask = null;
-            timeoutTimer.cancel();
-            timeoutTimer = null;
+            if (timeoutTask != null) {
+                timeoutTask.cancel();
+                timeoutTask = null;
+            }
+            if (timeoutTimer != null) {
+                timeoutTimer.cancel();
+                timeoutTimer = null;
+            }
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
             }

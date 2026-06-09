@@ -152,7 +152,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     public void requestRouted(HttpRequestMetric requestMetric, String route) {
         log.debugf("requestRouted %s %s", route, requestMetric);
         requestMetric.appendCurrentRoutePath(route);
-        if (route != null) {
+        if (route != null && requestMetric.request() != null) {
             var c = requestMetric.request().context();
             VertxContext.localContextData(c).put("VertxRoute", route);
         }
@@ -183,6 +183,9 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
      */
     @Override
     public void requestReset(HttpRequestMetric requestMetric) {
+        if (requestMetric == null) {
+            return;
+        }
         log.debugf("requestReset %s", requestMetric);
 
         String path = requestMetric.getNormalizedUriPath(
@@ -191,14 +194,15 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
 
+            io.vertx.core.Context ctx = requestMetric.request() != null ? requestMetric.request().context() : null;
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
                     requestsTimer.withTags(Tags.of(
-                            VertxMetricsTags.method(requestMetric.request().method()),
+                            VertxMetricsTags.method(requestMetric.httpRequest().method()),
                             HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET)),
-                    requestMetric.request().context());
+                    ctx);
         }
         requestMetric.requestEnded();
     }
@@ -220,13 +224,13 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
-                    VertxMetricsTags.method(requestMetric.request().method()),
+                    VertxMetricsTags.method(requestMetric.httpRequest().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(), response);
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.httpRequest(), response);
                 for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
                     try {
                         Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
@@ -237,10 +241,11 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 }
             }
 
+            io.vertx.core.Context ctx = requestMetric.request() != null ? requestMetric.request().context() : null;
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
                     requestsTimer.withTags(allTags),
-                    requestMetric.request().context());
+                    ctx);
         }
         requestMetric.requestEnded();
     }
@@ -278,12 +283,21 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    private record DefaultContext(HttpServerRequest request,
+    private record DefaultContext(HttpRequest httpRequest,
             HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
         @Override
+        public HttpServerRequest request() {
+            return httpRequest instanceof HttpServerRequest ? (HttpServerRequest) httpRequest : null;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
         public <T> T requestContextLocalData(Object key) {
-            var c = ((HttpServerRequestInternal) request).context();
-            return (T) VertxContext.localContextData(c).get(key);
+            if (httpRequest instanceof HttpServerRequestInternal internal) {
+                var c = internal.context();
+                return (T) VertxContext.localContextData(c).get(key);
+            }
+            return null;
         }
     }
 }

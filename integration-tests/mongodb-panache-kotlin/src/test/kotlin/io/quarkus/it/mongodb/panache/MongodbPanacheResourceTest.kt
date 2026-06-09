@@ -13,6 +13,7 @@ import io.restassured.RestAssured
 import io.restassured.RestAssured.get
 import io.restassured.common.mapper.TypeRef
 import io.restassured.config.ObjectMapperConfig
+import io.restassured.mapper.ObjectMapperType
 import io.restassured.parsing.Parser
 import io.restassured.response.Response
 import java.util.Calendar
@@ -48,14 +49,15 @@ open class MongodbPanacheResourceTest {
 
     private fun callBookEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
-        RestAssured.config.objectMapperConfig(
-            ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
-                ObjectMapper()
-                    .registerModule(Jdk8Module())
-                    .registerModule(JavaTimeModule())
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            }
-        )
+        RestAssured.config =
+            RestAssured.config.objectMapperConfig(
+                ObjectMapperConfig(ObjectMapperType.JACKSON_2).jackson2ObjectMapperFactory { _, _ ->
+                    ObjectMapper()
+                        .registerModule(Jdk8Module())
+                        .registerModule(JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                }
+            )
         var list: List<BookDTO> = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val book1: BookDTO =
@@ -196,14 +198,15 @@ open class MongodbPanacheResourceTest {
 
     private fun callPersonEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
-        RestAssured.config.objectMapperConfig(
-            ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
-                ObjectMapper()
-                    .registerModule(Jdk8Module())
-                    .registerModule(JavaTimeModule())
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            }
-        )
+        RestAssured.config =
+            RestAssured.config.objectMapperConfig(
+                ObjectMapperConfig(ObjectMapperType.JACKSON_2).jackson2ObjectMapperFactory { _, _ ->
+                    ObjectMapper()
+                        .registerModule(Jdk8Module())
+                        .registerModule(JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                }
+            )
         var list: List<Person> = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val person1 = Person()

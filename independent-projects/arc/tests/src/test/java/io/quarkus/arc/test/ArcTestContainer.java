@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,12 +64,17 @@ import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     // our specific namespace for storing anything into ExtensionContext.Store
-    private static ExtensionContext.Namespace EXTENSION_NAMESPACE;
+    private static ExtensionContext.Namespace EXTENSION_NAMESPACE = ExtensionContext.Namespace.create(ArcTestContainer.class);
 
     // Strings used as keys in ExtensionContext.Store
     private static final String KEY_OLD_TCCL = "arcExtensionOldTccl";
+    private static final String KEY_IMMUTABLE_INDEX = "arcReproducibilityImmutableIndex";
+    private static final String KEY_APPLICATION_INDEX = "arcReproducibilityApplicationIndex";
+    private static final String KEY_REPRODUCIBILITY_DONE = "arcReproducibilityDone";
 
     private static final String TARGET_TEST_CLASSES = "target/test-classes";
+
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY = "quarkus.test.reproducibility-check";
 
     public static Builder builder() {
         return new Builder();
@@ -282,6 +290,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final boolean optimizeContexts;
     private final boolean testMode;
 
+    private final int reproducibilityRuns;
+
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
         this.beanClasses = Arrays.asList(beanClasses);
@@ -307,6 +317,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.optimizeContexts = false;
         this.excludeTypes = Collections.emptyList();
         this.testMode = false;
+        this.reproducibilityRuns = parseReproducibilityRuns();
     }
 
     public ArcTestContainer(Builder builder) {
@@ -334,6 +345,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.optimizeContexts = builder.optimizeContexts;
         this.excludeTypes = builder.excludeTypes;
         this.testMode = builder.testMode;
+        this.reproducibilityRuns = parseReproducibilityRuns();
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -345,16 +357,29 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     // this is where we shutdown Arc
     @Override
     public void afterEach(ExtensionContext extensionContext) throws Exception {
-        ClassLoader oldTccl = getRootExtensionStore(extensionContext).get(KEY_OLD_TCCL, ClassLoader.class);
-        Thread.currentThread().setContextClassLoader(oldTccl);
+        ExtensionContext.Store rootStore = getRootExtensionStore(extensionContext);
+        ClassLoader oldTccl = rootStore.get(KEY_OLD_TCCL, ClassLoader.class);
+        if (oldTccl != null) {
+            Thread.currentThread().setContextClassLoader(oldTccl);
+        }
         shutdown();
+
+        ExtensionContext.Store classStore = getClassExtensionStore(extensionContext);
+        IndexView immutableIndex = classStore.get(KEY_IMMUTABLE_INDEX, IndexView.class);
+        if (immutableIndex != null && classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
+            IndexView applicationIndex = classStore.get(KEY_APPLICATION_INDEX, IndexView.class);
+            runReproducibilityCheck(extensionContext.getRequiredTestClass(),
+                    immutableIndex, applicationIndex, reproducibilityRuns);
+            classStore.put(KEY_REPRODUCIBILITY_DONE, Boolean.TRUE);
+        }
     }
 
     private static synchronized ExtensionContext.Store getRootExtensionStore(ExtensionContext context) {
-        if (EXTENSION_NAMESPACE == null) {
-            EXTENSION_NAMESPACE = ExtensionContext.Namespace.create(ArcTestContainer.class);
-        }
         return context.getRoot().getStore(EXTENSION_NAMESPACE);
+    }
+
+    private static synchronized ExtensionContext.Store getClassExtensionStore(ExtensionContext context) {
+        return context.getParent().orElseThrow().getStore(EXTENSION_NAMESPACE);
     }
 
     /**
@@ -417,6 +442,14 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
 
+        if (reproducibilityRuns > 0 && !shouldFail) {
+            ExtensionContext.Store classStore = getClassExtensionStore(context);
+            if (classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
+                classStore.put(KEY_IMMUTABLE_INDEX, immutableBeanArchiveIndex);
+                classStore.put(KEY_APPLICATION_INDEX, applicationIndex);
+            }
+        }
+
         try {
             String arcContainerAbsolutePath = ArcTestContainer.class.getClassLoader()
                     .getResource(ArcTestContainer.class.getName().replace(".", "/") + ".class").getFile();
@@ -443,31 +476,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
 
             String deploymentName = testClass.getName().replace('.', '_');
-            BeanProcessor.Builder builder = BeanProcessor.builder()
-                    .setName(deploymentName)
-                    .setImmutableBeanArchiveIndex(immutableBeanArchiveIndex)
-                    .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
-                            new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
-                    .setApplicationIndex(applicationIndex)
-                    .setBuildCompatibleExtensions(buildCompatibleExtensions)
-                    .setStrictCompatibility(strictCompatibility)
-                    .setOptimizeContexts(optimizeContexts);
-            if (!resourceAnnotations.isEmpty()) {
-                builder.addResourceAnnotations(resourceAnnotations.stream()
-                        .map(c -> DotName.createSimple(c.getName()))
-                        .collect(Collectors.toList()));
-            }
-            beanRegistrars.forEach(builder::addBeanRegistrar);
-            observerRegistrars.forEach(builder::addObserverRegistrar);
-            contextRegistrars.forEach(builder::addContextRegistrar);
-            qualifierRegistrars.forEach(builder::addQualifierRegistrar);
-            interceptorBindingRegistrars.forEach(builder::addInterceptorBindingRegistrar);
-            stereotypeRegistrars.forEach(builder::addStereotypeRegistrar);
-            annotationsTransformers.forEach(builder::addAnnotationTransformation);
-            injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
-            observerTransformers.forEach(builder::addObserverTransformer);
-            beanDeploymentValidators.forEach(builder::addBeanDeploymentValidator);
-            excludeTypes.forEach(builder::addExcludeType);
+            BeanProcessor.Builder builder = configureBeanProcessorBuilder(deploymentName,
+                    immutableBeanArchiveIndex, applicationIndex, buildCompatibleExtensions);
             builder.setOutput(new ResourceOutput() {
 
                 @Override
@@ -491,11 +501,6 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                     }
                 }
             });
-            builder.setRemoveUnusedBeans(removeUnusedBeans);
-            for (Predicate<BeanInfo> exclusion : removalExclusions) {
-                builder.addRemovalExclusion(exclusion);
-            }
-            builder.setAlternativePriorities(alternativePriorities);
 
             BeanProcessor beanProcessor = builder.build();
 
@@ -532,6 +537,106 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
         }
         return old;
+    }
+
+    private void runReproducibilityCheck(Class<?> testClass, IndexView immutableBeanArchiveIndex,
+            IndexView applicationIndex, int runs) {
+        String testName = testClass.getSimpleName();
+        System.out.printf("[ArcTestContainer] Reproducibility check (%d runs) for %s%n", runs, testName);
+
+        String deploymentName = testClass.getName().replace('.', '_');
+        Map<String, byte[]> referenceClasses = null;
+
+        IndexView bceIndex = applicationIndex != null
+                ? CompositeIndex.create(immutableBeanArchiveIndex, applicationIndex)
+                : immutableBeanArchiveIndex;
+
+        for (int run = 1; run <= runs; run++) {
+            Map<String, byte[]> capturedClasses = new HashMap<>();
+            ExtensionsEntryPoint bcextensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+            // Additional classes from discovery are already merged in the immutable index
+            bcextensions.runDiscovery(bceIndex, new HashSet<>());
+            BeanProcessor.Builder builder = configureBeanProcessorBuilder(deploymentName,
+                    immutableBeanArchiveIndex, applicationIndex, bcextensions);
+            builder.setOutput(resource -> {
+                if (resource.getType() == ResourceOutput.Resource.Type.JAVA_CLASS) {
+                    capturedClasses.put(resource.getName(), resource.getData());
+                }
+            });
+
+            try {
+                builder.build().process();
+            } catch (Exception e) {
+                throw new IllegalStateException("Error generating resources during reproducibility check run " + run, e);
+            }
+
+            if (referenceClasses == null) {
+                referenceClasses = capturedClasses;
+            } else {
+                ReproducibilityCheck.Diff diff = ReproducibilityCheck.diff(referenceClasses, capturedClasses);
+                if (!diff.isEmpty()) {
+                    Path dumpDir = Path.of("target", "debug", testClass.getName(), "reproducibility-mismatch");
+                    Path mismatchPath = ReproducibilityCheck.dumpMismatch(diff,
+                            referenceClasses, capturedClasses, run, dumpDir);
+                    throw new AssertionError("Build reproducibility check failed on run " + run + "/"
+                            + runs + ": " + diff + ". Dumped to " + mismatchPath);
+                }
+            }
+        }
+
+        System.out.printf("[ArcTestContainer] Reproducibility check passed for %s; %s checked classes%n", testName,
+                referenceClasses.size());
+    }
+
+    private BeanProcessor.Builder configureBeanProcessorBuilder(String deploymentName,
+            IndexView immutableBeanArchiveIndex, IndexView applicationIndex,
+            ExtensionsEntryPoint buildCompatibleExtensions) {
+        BeanProcessor.Builder builder = BeanProcessor.builder()
+                .setName(deploymentName)
+                .setImmutableBeanArchiveIndex(immutableBeanArchiveIndex)
+                .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
+                        new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
+                .setApplicationIndex(applicationIndex)
+                .setBuildCompatibleExtensions(buildCompatibleExtensions)
+                .setStrictCompatibility(strictCompatibility)
+                .setOptimizeContexts(optimizeContexts);
+        if (!resourceAnnotations.isEmpty()) {
+            builder.addResourceAnnotations(resourceAnnotations.stream()
+                    .map(c -> DotName.createSimple(c.getName()))
+                    .collect(Collectors.toList()));
+        }
+        beanRegistrars.forEach(builder::addBeanRegistrar);
+        observerRegistrars.forEach(builder::addObserverRegistrar);
+        contextRegistrars.forEach(builder::addContextRegistrar);
+        qualifierRegistrars.forEach(builder::addQualifierRegistrar);
+        interceptorBindingRegistrars.forEach(builder::addInterceptorBindingRegistrar);
+        stereotypeRegistrars.forEach(builder::addStereotypeRegistrar);
+        annotationsTransformers.forEach(builder::addAnnotationTransformation);
+        injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
+        observerTransformers.forEach(builder::addObserverTransformer);
+        beanDeploymentValidators.forEach(builder::addBeanDeploymentValidator);
+        excludeTypes.forEach(builder::addExcludeType);
+        builder.setRemoveUnusedBeans(removeUnusedBeans);
+        for (Predicate<BeanInfo> exclusion : removalExclusions) {
+            builder.addRemovalExclusion(exclusion);
+        }
+        builder.setAlternativePriorities(alternativePriorities);
+        return builder;
+    }
+
+    private static int parseReproducibilityRuns() {
+        String value = System.getProperty(REPRODUCIBILITY_CHECK_PROPERTY);
+        if (value == null) {
+            return 0;
+        }
+        if (value.isEmpty() || Boolean.parseBoolean(value)) {
+            return 3;
+        }
+        int runs = Integer.parseInt(value);
+        if (runs < 2) {
+            throw new IllegalArgumentException(REPRODUCIBILITY_CHECK_PROPERTY + " must be >= 2, got: " + runs);
+        }
+        return runs;
     }
 
     private Index index(Iterable<Class<?>> classes) throws IOException {

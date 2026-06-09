@@ -120,6 +120,14 @@ public class NetworkMetrics implements TransportMetrics<LongTaskTimer.Sample> {
                 .increment();
     }
 
+    LongTaskTimer getConnDuration() {
+        return connDuration;
+    }
+
+    LongAdder getConnCount() {
+        return connCount;
+    }
+
     public static String toString(SocketAddress remoteAddress) {
         if (remoteAddress.isDomainSocket()) {
             return "unix://" + remoteAddress.path();

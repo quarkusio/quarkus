@@ -2,14 +2,17 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -82,6 +85,23 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             SocketAddress remoteAddress, int maxPoolSize) {
         String remote = NetworkMetrics.toString(remoteAddress);
         return new ClientMetrics<RequestTracker, HttpRequest, HttpResponse>() {
+            private final Deque<LongTaskTimer.Sample> connectionSamples = new ConcurrentLinkedDeque<>();
+
+            @Override
+            public void connected() {
+                getConnCount().increment();
+                connectionSamples.push(getConnDuration().start());
+            }
+
+            @Override
+            public void disconnected() {
+                getConnCount().decrement();
+                LongTaskTimer.Sample sample = connectionSamples.poll();
+                if (sample != null) {
+                    sample.stop();
+                }
+            }
+
             @Override
             public RequestTracker init() {
                 return new RequestTracker();
@@ -105,6 +125,9 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void requestEnd(RequestTracker tracker, long bytesWritten) {
+                if (bytesWritten > 0) {
+                    sent.record(bytesWritten);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }
@@ -132,6 +155,9 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void responseEnd(RequestTracker tracker, long bytesRead) {
+                if (bytesRead > 0) {
+                    received.record(bytesRead);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }

@@ -116,7 +116,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     public TransportMetrics<?> createTcpServerMetrics(TcpServerConfig config, String protocol, SocketAddress localAddress) {
         return new VertxTcpServerMetrics(Metrics.globalRegistry, "tcp", Tags.of(
                 Tag.of("port", Integer.toString(localAddress.port())),
-                Tag.of("protocol", protocol),
+                Tag.of("protocol", protocol == null ? "tcp" : protocol),
                 Tag.of("host", config.getHost()),
                 Tag.of("address", VertxTcpServerMetrics.toString(localAddress))), longAdderGauges);
     }

@@ -44,7 +44,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.5.3</jandex.version>
+        <jandex.version>3.6.0</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit.version>6.1.0</junit.version>
         <maven.version>3.9.16</maven.version>

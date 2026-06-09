@@ -271,6 +271,12 @@ public class IndexWrapper implements IndexView {
     }
 
     @Override
+    public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName annotationName,
+            DotName containerAnnotationName) {
+        return this.index.getAnnotationsWithRepeatable(annotationName, containerAnnotationName);
+    }
+
+    @Override
     public Collection<ModuleInfo> getKnownModules() {
         return this.index.getKnownModules();
     }

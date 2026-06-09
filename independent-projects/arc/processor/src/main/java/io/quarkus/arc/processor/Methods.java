@@ -258,7 +258,8 @@ final class Methods {
             classLevelBindings = Set.of();
         }
 
-        if (ignoreMethodLevelBindings) {
+        // default methods keep their method-level bindings
+        if (ignoreMethodLevelBindings && !isDefault(method)) {
             return classLevelBindings;
         }
 

@@ -24,7 +24,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
     private final Map<String, String> envVars;
     private final boolean sharedEnvironment;
     private final boolean sharedFilesystem;
-    private final Optional<Integer> ttlSecondsAfterFinished;
+    private final Integer ttlSecondsAfterFinished;
 
     public static KubernetesJobBuildItem create(String image) {
         return new KubernetesJobBuildItem("init", null, image, Collections.emptyList(), Collections.emptyList(),
@@ -33,12 +33,12 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem(String name, String target, String image, List<String> command, List<String> arguments,
             Map<String, String> envVars, boolean sharedEnvironment, boolean sharedFilesystem) {
-        this(name, target, image, command, arguments, envVars, sharedEnvironment, sharedFilesystem, Optional.empty());
+        this(name, target, image, command, arguments, envVars, sharedEnvironment, sharedFilesystem, null);
     }
 
     private KubernetesJobBuildItem(String name, String target, String image, List<String> command, List<String> arguments,
             Map<String, String> envVars, boolean sharedEnvironment, boolean sharedFilesystem,
-            Optional<Integer> ttlSecondsAfterFinished) {
+            Integer ttlSecondsAfterFinished) {
         this.name = name;
         this.target = target;
         this.image = image;
@@ -144,11 +144,11 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
      * When set, the Job is eligible to be automatically deleted after this many seconds following completion or failure.
      */
     public Optional<Integer> getTtlSecondsAfterFinished() {
-        return ttlSecondsAfterFinished;
+        return Optional.ofNullable(ttlSecondsAfterFinished);
     }
 
     public KubernetesJobBuildItem withTtlSecondsAfterFinished(Optional<Integer> ttlSecondsAfterFinished) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem, ttlSecondsAfterFinished);
+                sharedFilesystem, ttlSecondsAfterFinished.orElse(null));
     }
 }

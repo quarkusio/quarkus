@@ -98,6 +98,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -148,6 +149,11 @@ class ReactiveRoutesProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.REACTIVE_ROUTES);
+    }
+
+    @BuildStep
+    ReinitializeVertxJsonBuildItem vertxJsonReinitialization() {
+        return new ReinitializeVertxJsonBuildItem();
     }
 
     @BuildStep

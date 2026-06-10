@@ -29,11 +29,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class AmazonLambdaHttpProcessor {
@@ -67,8 +69,12 @@ public class AmazonLambdaHttpProcessor {
     }
 
     @BuildStep
-    public RequireVirtualHttpBuildItem requestVirtualHttp() {
-        return RequireVirtualHttpBuildItem.ALWAYS_VIRTUAL;
+    public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
+        // In dev mode, allow the real HTTP socket to start alongside the virtual channel
+        // so that Dev UI and other non-application routes are accessible
+        return launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT
+                ? RequireVirtualHttpBuildItem.MARKER
+                : RequireVirtualHttpBuildItem.ALWAYS_VIRTUAL;
     }
 
     @BuildStep

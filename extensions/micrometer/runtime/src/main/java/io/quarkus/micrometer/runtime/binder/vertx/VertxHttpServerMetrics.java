@@ -152,7 +152,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     public void requestRouted(HttpRequestMetric requestMetric, String route) {
         log.debugf("requestRouted %s %s", route, requestMetric);
         requestMetric.appendCurrentRoutePath(route);
-        if (route != null) {
+        if (route != null && requestMetric.request() != null) {
             var c = requestMetric.request().context();
             VertxContext.localContextData(c).put("VertxRoute", route);
         }
@@ -160,6 +160,9 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     @Override
     public void responseBegin(HttpRequestMetric requestMetric, HttpResponse response) {
+        if (requestMetric.request() == null) {
+            return;
+        }
         io.vertx.core.Context current = io.vertx.core.Vertx.currentContext();
         if (current != null && current != requestMetric.request().context()
                 && VertxContext.isDuplicatedContext(current)) {

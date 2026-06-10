@@ -407,7 +407,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startObject(key);
@@ -427,7 +427,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startArray(key);

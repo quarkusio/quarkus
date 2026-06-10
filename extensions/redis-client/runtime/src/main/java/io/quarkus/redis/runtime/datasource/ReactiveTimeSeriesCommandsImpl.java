@@ -186,8 +186,15 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
                 Map<String, String> labels = new HashMap<>();
                 List<Sample> samples = new ArrayList<>();
                 var nested = response.get(group);
-                for (Response label : nested.get(0)) {
-                    labels.put(label.get(0).toString(), label.get(1).toString());
+                var labelsResponse = nested.get(0);
+                if (isMap(labelsResponse)) {
+                    for (String labelKey : labelsResponse.getKeys()) {
+                        labels.put(labelKey, labelsResponse.get(labelKey).toString());
+                    }
+                } else {
+                    for (Response label : labelsResponse) {
+                        labels.put(label.get(0).toString(), label.get(1).toString());
+                    }
                 }
                 for (Response sample : nested.get(nested.size() - 1)) { // samples are last
                     if (sample.type() == ResponseType.MULTI) {

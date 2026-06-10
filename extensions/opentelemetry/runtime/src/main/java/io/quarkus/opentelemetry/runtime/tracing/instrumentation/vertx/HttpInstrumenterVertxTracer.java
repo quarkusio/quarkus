@@ -129,12 +129,18 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 request,
                 operation, headers, tagExtractor);
         if (spanOperation != null) {
-            Context runningCtx = spanOperation.getContext();
-            if (VertxContext.isDuplicatedContext(runningCtx)) {
-                String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
-                if (pathTemplate != null && !pathTemplate.isEmpty()) {
-                    Span.fromContext(spanOperation.getSpanContext())
-                            .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);
+            // Use the trace operation provided by Vert.x when it differs from the default HTTP method name.
+            HttpRequest httpRequest = (HttpRequest) spanOperation.getRequest();
+            if (operation != null && !operation.equals(httpRequest.method().name())) {
+                Span.fromContext(spanOperation.getSpanContext()).updateName(operation);
+            } else {
+                Context runningCtx = spanOperation.getContext();
+                if (VertxContext.isDuplicatedContext(runningCtx)) {
+                    String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
+                    if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                        Span.fromContext(spanOperation.getSpanContext())
+                                .updateName(httpRequest.method().name() + " " + pathTemplate);
+                    }
                 }
             }
         }

@@ -197,6 +197,14 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
+                // Pulsar 4.2.x's LightProtoCodec computes Unsafe field offsets
+                // (String.value field offset, byte[] base offset) in its static
+                // initializer. GraalVM cannot auto-recompute these, so building
+                // them at image-build time bakes in host-JVM offsets and segfaults
+                // at runtime in writeRawString. Initialize at run time so the
+                // offsets match the SubstrateVM heap layout. Revisit when bumping
+                // pulsar-client — Pulsar 25883 embeds this config upstream.
+                .addRuntimeInitializedClass("org.apache.pulsar.common.api.proto.LightProtoCodec")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.crypto.MessageCryptoBc")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema")

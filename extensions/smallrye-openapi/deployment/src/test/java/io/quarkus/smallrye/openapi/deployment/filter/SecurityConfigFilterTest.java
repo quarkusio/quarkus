@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.OpenApiDocumentConfig;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiJsClientConfig;
 
 class SecurityConfigFilterTest {
 
@@ -74,6 +75,11 @@ class SecurityConfigFilterTest {
         @Override
         public boolean managementEnabled() {
             return false;
+        }
+
+        @Override
+        public SmallRyeOpenApiJsClientConfig jsClient() {
+            return () -> false;
         }
 
         @Override

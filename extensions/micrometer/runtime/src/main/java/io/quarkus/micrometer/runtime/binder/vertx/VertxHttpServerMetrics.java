@@ -152,9 +152,18 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     public void requestRouted(HttpRequestMetric requestMetric, String route) {
         log.debugf("requestRouted %s %s", route, requestMetric);
         requestMetric.appendCurrentRoutePath(route);
-        if (route != null && requestMetric.request() != null) {
+        if (route != null) {
             var c = requestMetric.request().context();
             VertxContext.localContextData(c).put("VertxRoute", route);
+        }
+    }
+
+    @Override
+    public void responseBegin(HttpRequestMetric requestMetric, HttpResponse response) {
+        io.vertx.core.Context current = io.vertx.core.Vertx.currentContext();
+        if (current != null && current != requestMetric.request().context()
+                && VertxContext.isDuplicatedContext(current)) {
+            requestMetric.setExecutionContext(current);
         }
     }
 
@@ -230,7 +239,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.httpRequest(), response);
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.httpRequest(), response,
+                        requestMetric.request(), requestMetric.getExecutionContext());
                 for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
                     try {
                         Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
@@ -284,7 +294,9 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     }
 
     private record DefaultContext(HttpRequest httpRequest,
-            HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
+            HttpResponse response,
+            HttpServerRequestInternal requestInternal,
+            io.vertx.core.Context executionContext) implements HttpServerMetricsTagsContributor.Context {
         @Override
         public HttpServerRequest request() {
             return httpRequest instanceof HttpServerRequest ? (HttpServerRequest) httpRequest : null;
@@ -293,9 +305,17 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         @Override
         @SuppressWarnings("unchecked")
         public <T> T requestContextLocalData(Object key) {
-            if (httpRequest instanceof HttpServerRequestInternal internal) {
-                var c = internal.context();
-                return (T) VertxContext.localContextData(c).get(key);
+            if (executionContext != null && VertxContext.isDuplicatedContext(executionContext)) {
+                T value = (T) VertxContext.localContextData(executionContext).get(key);
+                if (value != null) {
+                    return value;
+                }
+            }
+            if (requestInternal != null) {
+                var c = requestInternal.context();
+                if (VertxContext.isDuplicatedContext(c)) {
+                    return (T) VertxContext.localContextData(c).get(key);
+                }
             }
             return null;
         }

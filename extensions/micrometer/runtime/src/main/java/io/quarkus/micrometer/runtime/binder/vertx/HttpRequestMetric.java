@@ -144,11 +144,8 @@ public class HttpRequestMetric extends RequestMetricInfo {
         if (executionContext != null && VertxContext.isDuplicatedContext(executionContext)) {
             urlTemplatePath = (String) VertxContext.localContextData(executionContext).get("UrlPathTemplate");
         }
-        if (urlTemplatePath == null && request != null) {
-            Context ctx = request.context();
-            if (VertxContext.isDuplicatedContext(ctx)) {
-                urlTemplatePath = (String) VertxContext.localContextData(ctx).get("UrlPathTemplate");
-            }
+        if (urlTemplatePath == null && request != null && VertxContext.isDuplicatedContext(request.context())) {
+            urlTemplatePath = (String) VertxContext.localContextData(request.context()).get("UrlPathTemplate");
         }
         return (urlTemplatePath == null ? templatePath : urlTemplatePath);
     }

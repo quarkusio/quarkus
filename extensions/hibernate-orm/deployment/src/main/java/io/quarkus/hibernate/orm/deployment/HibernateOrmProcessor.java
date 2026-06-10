@@ -148,6 +148,7 @@ import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
+import io.quarkus.hibernate.orm.runtime.graal.RegisterStateManagementForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -211,6 +212,11 @@ public final class HibernateOrmProcessor {
         }
 
         return new NativeImageFeatureBuildItem(RegisterServicesForReflectionFeature.class);
+    }
+
+    @BuildStep
+    NativeImageFeatureBuildItem registerStateManagementForReflection() {
+        return new NativeImageFeatureBuildItem(RegisterStateManagementForReflectionFeature.class);
     }
 
     @BuildStep

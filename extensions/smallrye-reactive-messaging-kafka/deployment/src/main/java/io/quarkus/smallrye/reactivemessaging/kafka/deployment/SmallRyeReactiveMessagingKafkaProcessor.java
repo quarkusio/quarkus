@@ -66,9 +66,7 @@ import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveExactlyOnceInvoker;
-import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveTransactionalExactlyOnceInvoker;
 import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
-import io.quarkus.smallrye.reactivemessaging.kafka.TransactionalExactlyOnceInvoker;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
 import io.smallrye.reactive.messaging.Shape;
@@ -334,7 +332,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     .builder(method.declaringClass().name().toString(), method.name(), invokerClassName)
                     .shape(Shape.SUBSCRIBER)
                     .production(MediatorConfiguration.Production.NONE)
-                    .acknowledgment(Acknowledgment.Strategy.NONE)
+                    .acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
                     .syntheticParameterTypes(List.of(
                             IncomingKafkaRecordMetadata.class.getName(),
                             IncomingKafkaRecordBatchMetadata.class.getName()))
@@ -350,16 +348,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         DotName returnTypeName = method.returnType().name();
         boolean reactive = DotNames.UNI.equals(returnTypeName) || DotNames.MULTI.equals(returnTypeName)
                 || DotNames.COMPLETION_STAGE.equals(returnTypeName);
-        boolean transactional = method.hasAnnotation(DotNames.TRANSACTIONAL);
-        boolean withTransaction = method.hasAnnotation(DotNames.WITH_TRANSACTION);
-        boolean dbTransaction = transactional || withTransaction;
 
         String superClass;
-        if (dbTransaction && reactive) {
-            superClass = ReactiveTransactionalExactlyOnceInvoker.class.getName();
-        } else if (transactional) {
-            superClass = TransactionalExactlyOnceInvoker.class.getName();
-        } else if (reactive) {
+        if (reactive) {
             superClass = ReactiveExactlyOnceInvoker.class.getName();
         } else {
             superClass = ExactlyOnceInvoker.class.getName();

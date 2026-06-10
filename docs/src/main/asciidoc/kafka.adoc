@@ -1823,8 +1823,11 @@ Uni<Record<String, Integer>> process(Record<String, Integer> order) {
 
 ===== Combining with Database Transactions
 
-`@ExactlyOnce` can be combined with database transactions to atomically persist data and produce Kafka messages.
-The Kafka transaction wraps the database transaction, so if the Kafka transaction fails, the database transaction is rolled back too.
+`@ExactlyOnce` can be combined with database transactions.
+The database transaction runs inside the Kafka transaction: if the database commit fails, the Kafka transaction is rolled back too.
+If the database commit succeeds but the Kafka transaction fails, the database changes persist but the message will be reprocessed.
+So you need to design your consumer to be idempotent to handle this case.
+For stronger guarantees, consider using the transactional outbox pattern.
 
 For **Hibernate ORM** (blocking), use `@Transactional`:
 
@@ -1855,6 +1858,31 @@ Uni<Record<String, Order>> process(Record<String, Order> order) {
             .map(e -> Record.of(order.key(), order.value()));
 }
 ----
+
+===== Error Handling
+
+When an `@ExactlyOnce` method throws an exception, the Kafka transaction is aborted and the consumer offset is reset to the last committed position.
+The message will be retried automatically on the next poll.
+If the method is also annotated with `@Transactional`, the database transaction is rolled back as well.
+
+===== Routing to a Different Topic
+
+To route records to a different topic within the exactly-once transaction (e.g., a dead-letter topic), return a `ProducerRecord` with the target topic:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+ProducerRecord<String, Order> process(Record<String, Order> order) {
+    if (order.value().isInvalid()) {
+        return new ProducerRecord<>("orders-dlq", order.key(), order.value());
+    }
+    return new ProducerRecord<>("orders-out", order.key(), order.value());
+}
+----
+
+The record is sent transactionally — if the transaction is aborted, neither the main output nor the dead-letter record is published.
 
 ==== Manual Exactly-Once with `KafkaTransactions`
 

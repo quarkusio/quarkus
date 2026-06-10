@@ -30,6 +30,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -47,6 +48,8 @@ import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
 import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 public final class QuarkusMediatorConfigurationUtil {
+
+    private static final Logger log = Logger.getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
     private QuarkusMediatorConfigurationUtil() {
     }
@@ -240,6 +243,13 @@ public final class QuarkusMediatorConfigurationUtil {
         boolean hasReactiveReturnType = methodInfo.returnType().name().equals(ReactiveMessagingDotNames.UNI)
                 || methodInfo.returnType().name().equals(COMPLETION_STAGE);
         boolean isTransactionalBlocking = transactionalAnnotation != null && !hasReactiveReturnType;
+
+        if (transactionalAnnotation != null && hasReactiveReturnType) {
+            log.warnf("Method '%s#%s' is annotated with @Transactional but has a reactive return type. "
+                    + "It will not be automatically run on a worker thread. "
+                    + "Add @Blocking explicitly if blocking execution is required.",
+                    methodInfo.declaringClass().name(), methodInfo.name());
+        }
 
         if (blockingAnnotation != null || smallryeBlockingAnnotation != null || isTransactionalBlocking
                 || runOnVirtualThreadAnnotation != null) {

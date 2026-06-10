@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-signals-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.37.999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-signals</artifactId>
     <name>Quarkus - Signals - Runtime</name>

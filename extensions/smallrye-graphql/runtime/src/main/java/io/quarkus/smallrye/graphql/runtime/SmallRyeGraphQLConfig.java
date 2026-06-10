@@ -90,6 +90,12 @@ public interface SmallRyeGraphQLConfig {
     SmallRyeGraphQLUIConfig ui();
 
     /**
+     * Configuration properties for the JavaScript client proxy generation
+     */
+    @WithName("js-client")
+    SmallRyeGraphQLJsClientConfig jsClient();
+
+    /**
      * Additional scalars to register in the schema.
      * These are taken from the `graphql-java-extended-scalars` library.
      */

@@ -14,7 +14,7 @@
     <name>Quarkus - Integration Tests - gRPC - Kotlin Coroutine</name>
 
     <properties>
-        <grpc-kotlin.version>1.4.3</grpc-kotlin.version>
+        <grpc-kotlin.version>1.5.0</grpc-kotlin.version>
     </properties>
 
     <dependencies>

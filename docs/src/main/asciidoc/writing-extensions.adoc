@@ -1580,7 +1580,7 @@ Build step ShutdownListenerBuildStep.setupShutdown completed in: 1ms
 ==== Using Gizmo
 
 In some scenarios, more significant manipulation of bytecode may be needed.
-If bytecode recording isn't sufficient, link:https://github.com/quarkusio/gizmo/blob/main/USAGE.adoc[Gizmo] is a convenient alternative to ASM, with a higher-level API.
+If bytecode recording isn't sufficient, link:https://github.com/quarkusio/gizmo/blob/main/MANUAL.adoc[Gizmo] is a convenient alternative to ASM, with a higher-level API.
 
 ==== Runtime Classpath check
 

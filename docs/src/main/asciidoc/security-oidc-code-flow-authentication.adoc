@@ -1703,7 +1703,7 @@ This redirect also includes the `acr_values` parameter, so the provider can requ
 How the requested ACR values are enforced is specific to each OIDC provider.
 For example, see the link:https://www.keycloak.org/docs/latest/server_admin/index.html#_step-up-flow[Keycloak Step-up Authentication] documentation describing how Keycloak maps ACR values to Levels of Authentication (LoA) in browser authentication flows.
 
-For more information about how the `acr` claim is verified, see the xref:security-oidc-bearer-token-authentication.adoc#step-up-authentication[Step Up Authentication] section of the Quarkus OIDC Bearer token authentication guide.
+For information about how a required authentication level is enforced in a Bearer token authentication flow, see the xref:security-oidc-bearer-token-authentication.adoc#step-up-authentication[Step Up Authentication] section of the Quarkus OIDC Bearer token authentication guide.
 
 [[oauth2]]
 === Integration with GitHub and non-OIDC OAuth2 providers

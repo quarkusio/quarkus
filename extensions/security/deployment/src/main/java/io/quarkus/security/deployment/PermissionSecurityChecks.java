@@ -3,14 +3,12 @@ package io.quarkus.security.deployment;
 import static io.quarkus.arc.processor.DotNames.BOOLEAN;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.arc.processor.DotNames.UNI;
-import static io.quarkus.gizmo.Type.classType;
-import static io.quarkus.gizmo.Type.parameterizedType;
 import static io.quarkus.security.PermissionsAllowed.AUTODETECTED;
 import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.SecurityProcessor.isPublicNonStaticNonConstructor;
 
-import java.lang.annotation.RetentionPolicy;
+import java.lang.constant.ClassDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.security.Permission;
@@ -28,7 +26,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -39,18 +36,24 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.VoidType;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.SignatureBuilder;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.TypeArgument;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
@@ -244,9 +247,12 @@ interface PermissionSecurityChecks {
 
         PermissionSecurityChecksBuilder prepareParamConverterGenerator(SecurityCheckRecorder recorder,
                 BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+                BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+                BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
                 BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
             this.recorder = recorder;
-            this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer, reflectiveClassesProducer,
+            this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer,
+                    generatedResourcesProducer, generatedServiceProvidersProducer, reflectiveClassesProducer,
                     recorder, index);
             return this;
         }
@@ -781,23 +787,26 @@ interface PermissionSecurityChecks {
          * }
          * </pre>
          */
-        void generatePermissionCheckers(BuildProducer<GeneratedClassBuildItem> generatedClassProducer) {
+        void generatePermissionCheckers(BuildProducer<GeneratedClassBuildItem> generatedClassProducer,
+                BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
+                BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviderProducer) {
+            var gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClassProducer, generatedResourceProducer,
+                    generatedServiceProviderProducer, true));
+
             permissionNameToChecker.values().forEach(checkerMetadata -> {
                 var declaringCdiBean = checkerMetadata.checkerMethod().declaringClass();
-                var declaringCdiBeanType = classType(declaringCdiBean.name());
+                var declaringCdiBeanClassDesc = ClassDesc.of(declaringCdiBean.name().toString());
                 var generatedClassName = checkerMetadata.generatedClassName();
-                try (var classCreator = ClassCreator.builder()
-                        .classOutput(new GeneratedClassGizmoAdaptor(generatedClassProducer, true))
-                        .setFinal(true)
-                        .className(generatedClassName)
-                        .signature(SignatureBuilder
-                                .forClass()
-                                // extends QuarkusPermission<XYZ>
-                                // XYZ == @PermissionChecker declaring class
-                                .setSuperClass(parameterizedType(classType(QuarkusPermission.class), declaringCdiBeanType)))
-                        .build()) {
+                var generatedClassDesc = ClassDesc.of(generatedClassName);
 
-                    record SecuredMethodParamDesc(FieldDescriptor fieldDescriptor, int ctorParamIdx) {
+                gizmo.class_(generatedClassName, cc -> {
+                    cc.final_();
+                    // extends QuarkusPermission<XYZ>
+                    // XYZ == @PermissionChecker declaring class
+                    cc.extends_(GenericType.ofClass(QuarkusPermission.class,
+                            TypeArgument.of(declaringCdiBeanClassDesc)));
+
+                    record SecuredMethodParamDesc(FieldDesc fieldDescriptor, int ctorParamIdx) {
                         SecuredMethodParamDesc() {
                             this(null, -1);
                         }
@@ -816,12 +825,14 @@ interface PermissionSecurityChecks {
                             // GENERATED CODE: private final SomeDto securedMethodParameter1;
                             var fieldName = SECURED_METHOD_PARAMETER + paramMapper.securedMethodIdx();
                             var ctorParamIdx = paramMapper.permConstructorIdx();
-                            var fieldTypeName = checkerMetadata.quarkusPermissionConstructor().parameterType(ctorParamIdx)
-                                    .name();
-                            var fieldCreator = classCreator.getFieldCreator(fieldName, fieldTypeName.toString());
-                            fieldCreator.setModifiers(Modifier.PRIVATE | Modifier.FINAL);
-                            securedMethodParams[i] = new SecuredMethodParamDesc(fieldCreator.getFieldDescriptor(),
-                                    ctorParamIdx);
+                            var fieldType = checkerMetadata.quarkusPermissionConstructor().parameterType(ctorParamIdx);
+                            var fieldTypeClassDesc = Jandex2Gizmo.classDescOf(fieldType);
+                            var fd = cc.field(fieldName, fc -> {
+                                fc.setType(fieldTypeClassDesc);
+                                fc.private_();
+                                fc.final_();
+                            });
+                            securedMethodParams[i] = new SecuredMethodParamDesc(fd, ctorParamIdx);
                         }
                     }
 
@@ -830,33 +841,41 @@ interface PermissionSecurityChecks {
                     //  this.securedMethodParameter1 = securedMethodParameter1;
                     // }
                     // How many 'securedMethodParameterXYZ' are there depends on the secured method
-                    var ctorParams = Stream.concat(Stream.of(String.class.getName()), Arrays
-                            .stream(securedMethodParams)
-                            .filter(SecuredMethodParamDesc::isNotSecurityIdentity)
-                            .map(SecuredMethodParamDesc::fieldDescriptor)
-                            .map(FieldDescriptor::getType)).toArray(String[]::new);
-                    try (var ctor = classCreator.getConstructorCreator(ctorParams)) {
-                        ctor.setModifiers(Modifier.PUBLIC);
-
-                        // GENERATED CODE: super("io.quarkus.security.runtime.GeneratedQuarkusPermission");
-                        // why not to propagate permission name to the java.security.Permission ?
-                        // if someone declares @PermissionChecker("permission-name-1") we expect that required permission
-                        // @PermissionAllowed("permission-name-1") is only granted by the checker method and accidentally some
-                        // user-defined augmentor won't grant it based on permission name match in case they misunderstand docs
-                        var superCtorDesc = MethodDescriptor.ofConstructor(classCreator.getSuperClass(), String.class);
-                        ctor.invokeSpecialMethod(superCtorDesc, ctor.getThis(), ctor.load(generatedClassName));
-
-                        // GENERATED CODE: this.securedMethodParameterXYZ = securedMethodParameterXYZ;
+                    cc.constructor(ctorCreator -> {
+                        ctorCreator.public_();
+                        ctorCreator.parameter("permissionName", String.class);
+                        // Collect parameter vars for non-SecurityIdentity params
+                        ParamVar[] ctorParamVars = new ParamVar[checkerMetadata.quarkusPermissionConstructor()
+                                .parametersCount()];
                         for (var securedMethodParamDesc : securedMethodParams) {
                             if (securedMethodParamDesc.isNotSecurityIdentity()) {
-                                var field = securedMethodParamDesc.fieldDescriptor();
-                                var constructorParameter = ctor.getMethodParam(securedMethodParamDesc.ctorParamIdx());
-                                ctor.writeInstanceField(field, ctor.getThis(), constructorParameter);
+                                var fd = securedMethodParamDesc.fieldDescriptor();
+                                ctorParamVars[securedMethodParamDesc.ctorParamIdx()] = ctorCreator.parameter(
+                                        fd.name(), fd.type());
                             }
                         }
+                        ctorCreator.body(bc -> {
+                            // GENERATED CODE: super("io.quarkus.security.runtime.GeneratedQuarkusPermission");
+                            // why not to propagate permission name to the java.security.Permission ?
+                            // if someone declares @PermissionChecker("permission-name-1") we expect that required permission
+                            // @PermissionAllowed("permission-name-1") is only granted by the checker method and accidentally
+                            // some user-defined augmentor won't grant it based on permission name match in case they
+                            // misunderstand docs
+                            var superCtorDesc = ConstructorDesc.of(QuarkusPermission.class, String.class);
+                            bc.invokeSpecial(superCtorDesc, cc.this_(), Const.of(generatedClassName));
 
-                        ctor.returnVoid();
-                    }
+                            // GENERATED CODE: this.securedMethodParameterXYZ = securedMethodParameterXYZ;
+                            for (var securedMethodParamDesc : securedMethodParams) {
+                                if (securedMethodParamDesc.isNotSecurityIdentity()) {
+                                    var fd = securedMethodParamDesc.fieldDescriptor();
+                                    bc.set(cc.this_().field(fd),
+                                            ctorParamVars[securedMethodParamDesc.ctorParamIdx()]);
+                                }
+                            }
+
+                            bc.return_();
+                        });
+                    });
 
                     // @Override
                     // protected final boolean isGranted(SecurityIdentity securityIdentity) {
@@ -868,87 +887,112 @@ interface PermissionSecurityChecks {
                     //  return getBean().hasPermission(securityIdentity, securedMethodParameter1);
                     // }
                     var isGrantedName = checkerMetadata.reactive() ? IS_GRANTED_UNI : IS_GRANTED;
-                    var isGrantedReturn = DescriptorUtils.typeToString(checkerMetadata.checkerMethod().returnType());
-                    try (var methodCreator = classCreator.getMethodCreator(isGrantedName, isGrantedReturn,
-                            SecurityIdentity.class)) {
-                        methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
-                        methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
+                    var isGrantedReturnType = Jandex2Gizmo.classDescOf(checkerMetadata.checkerMethod().returnType());
+                    cc.method(isGrantedName, mc -> {
+                        mc.protected_();
+                        mc.final_();
+                        mc.returning(isGrantedReturnType);
+                        var secIdentityParam = mc.parameter("securityIdentity", SecurityIdentity.class);
+                        mc.addAnnotation(Override.class);
+                        mc.body(bc -> {
+                            // getBean()
+                            var getBeanDescriptor = ClassMethodDesc.of(generatedClassDesc, "getBean",
+                                    ClassDesc.of(Object.class.getName()));
+                            Expr cdiBean = bc.invokeVirtual(getBeanDescriptor, cc.this_());
 
-                        // getBean()
-                        var getBeanDescriptor = MethodDescriptor.ofMethod(generatedClassName, "getBean", Object.class);
-                        var cdiBean = methodCreator.invokeVirtualMethod(getBeanDescriptor, methodCreator.getThis());
-
-                        // <<cdiBean>>.hasPermission(securityIdentity, securedMethodParameter1)
-                        var isGrantedDescriptor = MethodDescriptor.of(checkerMetadata.checkerMethod());
-                        var securedMethodParamHandles = new ResultHandle[securedMethodParams.length];
-                        for (int i = 0; i < securedMethodParams.length; i++) {
-                            var securedMethodParam = securedMethodParams[i];
-                            if (securedMethodParam.isNotSecurityIdentity()) {
-                                // QuarkusPermission field assigned in the permission constructor
-                                // for example: this.securedMethodParameter1
-                                securedMethodParamHandles[i] = methodCreator
-                                        .readInstanceField(securedMethodParam.fieldDescriptor(), methodCreator.getThis());
-                            } else {
-                                // SecurityIdentity from QuarkusPermission#isGranted method parameter
-                                securedMethodParamHandles[i] = methodCreator.getMethodParam(0);
+                            // <<cdiBean>>.hasPermission(securityIdentity, securedMethodParameter1)
+                            var isGrantedDescriptor = Jandex2Gizmo.methodDescOf(checkerMetadata.checkerMethod());
+                            Expr[] securedMethodParamExprs = new Expr[securedMethodParams.length];
+                            for (int i = 0; i < securedMethodParams.length; i++) {
+                                var securedMethodParam = securedMethodParams[i];
+                                if (securedMethodParam.isNotSecurityIdentity()) {
+                                    // QuarkusPermission field assigned in the permission constructor
+                                    // for example: this.securedMethodParameter1
+                                    securedMethodParamExprs[i] = bc.get(
+                                            cc.this_().field(securedMethodParam.fieldDescriptor()));
+                                } else {
+                                    // SecurityIdentity from QuarkusPermission#isGranted method parameter
+                                    securedMethodParamExprs[i] = secIdentityParam;
+                                }
                             }
-                        }
-                        final ResultHandle result;
-                        if (checkerMetadata.checkerMethod.isDefault()) {
-                            result = methodCreator.invokeInterfaceMethod(isGrantedDescriptor, cdiBean,
-                                    securedMethodParamHandles);
-                        } else {
-                            result = methodCreator.invokeVirtualMethod(isGrantedDescriptor, cdiBean, securedMethodParamHandles);
-                        }
+                            final Expr result;
+                            if (checkerMetadata.checkerMethod.isDefault()) {
+                                result = bc.invokeInterface(isGrantedDescriptor, cdiBean,
+                                        securedMethodParamExprs);
+                            } else {
+                                result = bc.invokeVirtual(isGrantedDescriptor, cdiBean, securedMethodParamExprs);
+                            }
 
-                        // return 'hasPermission' result
-                        methodCreator.returnValue(result);
-                    }
+                            // return 'hasPermission' result
+                            bc.return_(result);
+                        });
+                    });
+
                     var alwaysFalseName = checkerMetadata.reactive() ? IS_GRANTED : IS_GRANTED_UNI;
-                    var alwaysFalseType = checkerMetadata.reactive() ? boolean.class.getName() : UNI.toString();
-                    try (var methodCreator = classCreator.getMethodCreator(alwaysFalseName, alwaysFalseType,
-                            SecurityIdentity.class)) {
-                        methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
-                        methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
+                    cc.method(alwaysFalseName, mc -> {
+                        mc.protected_();
+                        mc.final_();
                         if (checkerMetadata.reactive()) {
-                            methodCreator.returnValue(methodCreator.load(false));
+                            mc.returning(boolean.class);
                         } else {
-                            var accessDenied = methodCreator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(QuarkusPermission.class, "accessDenied", UNI.toString()));
-                            methodCreator.returnValue(accessDenied);
+                            mc.returning(ClassDesc.of(UNI.toString()));
                         }
-                    }
+                        mc.parameter("securityIdentity", SecurityIdentity.class);
+                        mc.addAnnotation(Override.class);
+                        mc.body(bc -> {
+                            if (checkerMetadata.reactive()) {
+                                bc.return_(Const.of(false));
+                            } else {
+                                var accessDenied = bc.invokeStatic(
+                                        ClassMethodDesc.of(ClassDesc.of(QuarkusPermission.class.getName()),
+                                                "accessDenied", ClassDesc.of(UNI.toString())));
+                                bc.return_(accessDenied);
+                            }
+                        });
+                    });
 
                     // @Override
                     // protected final Class<T> getBeanClass() {
                     //  return io.quarkus.security.runtime.GeneratedQuarkusPermission.class;
                     // }
-                    try (var methodCreator = classCreator.getMethodCreator("getBeanClass", Class.class)) {
-                        methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
-                        methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                        methodCreator.returnValue(methodCreator.loadClassFromTCCL(declaringCdiBean.name().toString()));
-                    }
+                    cc.method("getBeanClass", mc -> {
+                        mc.protected_();
+                        mc.final_();
+                        mc.returning(Class.class);
+                        mc.addAnnotation(Override.class);
+                        mc.body(bc -> {
+                            bc.return_(bc.classForName(Const.of(declaringCdiBean.name().toString())));
+                        });
+                    });
 
                     // @Override
                     // protected final boolean isBlocking() {
                     //  return false; // or true
                     // }
-                    try (var methodCreator = classCreator.getMethodCreator("isBlocking", boolean.class)) {
-                        methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
-                        methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                        methodCreator.returnValue(methodCreator.load(checkerMetadata.blocking()));
-                    }
+                    cc.method("isBlocking", mc -> {
+                        mc.protected_();
+                        mc.final_();
+                        mc.returning(boolean.class);
+                        mc.addAnnotation(Override.class);
+                        mc.body(bc -> {
+                            bc.return_(Const.of(checkerMetadata.blocking()));
+                        });
+                    });
 
                     // @Override
                     // protected final boolean isReactive() {
                     //  return false; // true when checker method returns Uni<Boolean>
                     // }
-                    try (var methodCreator = classCreator.getMethodCreator("isReactive", boolean.class)) {
-                        methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
-                        methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                        methodCreator.returnValue(methodCreator.load(checkerMetadata.reactive()));
-                    }
-                }
+                    cc.method("isReactive", mc -> {
+                        mc.protected_();
+                        mc.final_();
+                        mc.returning(boolean.class);
+                        mc.addAnnotation(Override.class);
+                        mc.body(bc -> {
+                            bc.return_(Const.of(checkerMetadata.reactive()));
+                        });
+                    });
+                });
             });
         }
 
@@ -1564,37 +1608,30 @@ interface PermissionSecurityChecks {
     final class PermissionConverterGenerator {
         private static final String GENERATED_CLASS_NAME = "io.quarkus.security.runtime.PermissionMethodConverter";
         private final BuildProducer<GeneratedClassBuildItem> generatedClassesProducer;
+        private final BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer;
+        private final BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer;
         private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer;
         private final SecurityCheckRecorder recorder;
         private final Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle = new HashMap<>();
         private final IndexView index;
-        private ClassCreator classCreator;
-        private boolean closed;
+        // Collected converter generation tasks to be executed in close()
+        private final List<ConverterTask> converterTasks = new ArrayList<>();
+        private boolean needsClass;
         private RuntimeValue<Class<?>> clazz;
 
         private PermissionConverterGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+                BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+                BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
                 BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer, SecurityCheckRecorder recorder,
                 IndexView index) {
             this.generatedClassesProducer = generatedClassesProducer;
+            this.generatedResourcesProducer = generatedResourcesProducer;
+            this.generatedServiceProvidersProducer = generatedServiceProvidersProducer;
             this.reflectiveClassesProducer = reflectiveClassesProducer;
             this.recorder = recorder;
             this.index = index;
-            this.classCreator = null;
-            this.closed = true;
+            this.needsClass = false;
             this.clazz = null;
-        }
-
-        private ClassCreator getOrCreateClass() {
-            if (classCreator == null) {
-                classCreator = ClassCreator.builder()
-                        .classOutput(new GeneratedClassGizmoAdaptor(generatedClassesProducer, true))
-                        .className(GENERATED_CLASS_NAME)
-                        .setFinal(true)
-                        .build();
-                closed = false;
-                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
-            }
-            return classCreator;
         }
 
         private RuntimeValue<Class<?>> getClazz() {
@@ -1605,9 +1642,26 @@ interface PermissionSecurityChecks {
         }
 
         private void close() {
-            if (!closed) {
-                closed = true;
-                classCreator.close();
+            if (!converterTasks.isEmpty()) {
+                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
+
+                var gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, generatedResourcesProducer,
+                        generatedServiceProvidersProducer, true));
+                gizmo.class_(GENERATED_CLASS_NAME, cc -> {
+                    cc.final_();
+                    for (ConverterTask task : converterTasks) {
+                        cc.staticMethod(task.converterName, mc -> {
+                            mc.public_();
+                            mc.returning(Object.class);
+                            var param = mc.parameter("input", Object.class);
+                            mc.body(bc -> {
+                                Expr result = generateNestedParam(task.nestedParams, 0, param, bc,
+                                        task.paramType, task.securedMethod, task.methodParamIdx);
+                                bc.return_(result);
+                            });
+                        });
+                    }
+                });
             }
         }
 
@@ -1618,26 +1672,24 @@ interface PermissionSecurityChecks {
         private String createConverter(String paramRemainder, MethodInfo securedMethod, int methodParamIdx) {
             String[] nestedParams = paramRemainder.split("\\.");
             var converterName = createConverterName(securedMethod);
-            try (MethodCreator methodCreator = getOrCreateClass().getMethodCreator(converterName, Object.class, Object.class)) {
-                methodCreator.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-                var paramToConvert = methodCreator.getMethodParam(0);
-                var paramType = securedMethod.parameterType(methodParamIdx);
-                ResultHandle result = getNestedParam(nestedParams, 0, paramToConvert, methodCreator, paramType,
-                        securedMethod, methodParamIdx);
-                methodCreator.returnValue(result);
-            }
+            var paramType = securedMethod.parameterType(methodParamIdx);
+
+            // Validate nested params eagerly (before deferring to close())
+            validateNestedParams(nestedParams, 0, paramType, securedMethod, methodParamIdx);
+
+            converterTasks.add(new ConverterTask(converterName, nestedParams, paramType, securedMethod, methodParamIdx));
+
             var methodHandleRuntimeVal = recorder.createPermissionMethodConverter(converterName, getClazz());
             converterNameToMethodHandle.put(converterName, methodHandleRuntimeVal);
             return converterName;
         }
 
-        private ResultHandle getNestedParam(String[] nestedParams, int nestedParamIdx, ResultHandle outer,
-                MethodCreator methodCreator, Type outerType, MethodInfo securedMethod, int methodParamIdx) {
+        private void validateNestedParams(String[] nestedParams, int nestedParamIdx, Type outerType,
+                MethodInfo securedMethod, int methodParamIdx) {
             if (nestedParamIdx == nestedParams.length) {
-                return outer;
+                return;
             }
 
-            // param name or getter name
             var paramExpression = nestedParams[nestedParamIdx];
             var outerClass = index.getClassByName(outerType.name());
             if (outerClass == null) {
@@ -1650,14 +1702,10 @@ interface PermissionSecurityChecks {
                         securedMethod.parameterName(methodParamIdx), paramExpression, outerType.name()));
             }
 
-            // try exact method name match
             var method = outerClass.method(paramExpression);
             if (method == null) {
-                // try getter
                 method = outerClass.method(toFieldGetter(paramExpression));
             }
-            final ResultHandle newOuter;
-            final Type newOuterType;
             if (method != null) {
                 if (!Modifier.isPublic(method.flags())) {
                     throw new IllegalArgumentException("""
@@ -1668,14 +1716,8 @@ interface PermissionSecurityChecks {
                             securedMethod.parameterName(methodParamIdx), paramExpression, method.declaringClass().name(),
                             method.name()));
                 }
-                if (outerClass.isInterface()) {
-                    newOuter = methodCreator.invokeInterfaceMethod(method, outer);
-                } else {
-                    newOuter = methodCreator.invokeVirtualMethod(method, outer);
-                }
-                newOuterType = method.returnType();
+                validateNestedParams(nestedParams, nestedParamIdx + 1, method.returnType(), securedMethod, methodParamIdx);
             } else {
-                // fallback to a field access
                 var field = outerClass.field(paramExpression);
                 if (field == null) {
                     throw new IllegalArgumentException("""
@@ -1694,11 +1736,47 @@ interface PermissionSecurityChecks {
                             securedMethod.parameterName(methodParamIdx), paramExpression, field.declaringClass().name(),
                             field.name()));
                 }
+                validateNestedParams(nestedParams, nestedParamIdx + 1, field.type(), securedMethod, methodParamIdx);
+            }
+        }
 
-                newOuter = methodCreator.readInstanceField(field, outer);
+        private Expr generateNestedParam(String[] nestedParams, int nestedParamIdx, Expr outer,
+                BlockCreator bc, Type outerType, MethodInfo securedMethod, int methodParamIdx) {
+            if (nestedParamIdx == nestedParams.length) {
+                return outer;
+            }
+
+            // param name or getter name
+            var paramExpression = nestedParams[nestedParamIdx];
+            var outerClass = index.getClassByName(outerType.name());
+
+            // Cast outer to the correct type — the parameter may be typed as Object
+            Expr typedOuter = bc.cast(outer, Jandex2Gizmo.classDescOf(outerType));
+
+            // try exact method name match
+            var method = outerClass.method(paramExpression);
+            if (method == null) {
+                // try getter
+                method = outerClass.method(toFieldGetter(paramExpression));
+            }
+            final Expr newOuter;
+            final Type newOuterType;
+            if (method != null) {
+                var methodDesc = Jandex2Gizmo.methodDescOf(method);
+                if (outerClass.isInterface()) {
+                    newOuter = bc.invokeInterface(methodDesc, typedOuter);
+                } else {
+                    newOuter = bc.invokeVirtual(methodDesc, typedOuter);
+                }
+                newOuterType = method.returnType();
+            } else {
+                // fallback to a field access
+                var field = outerClass.field(paramExpression);
+                var fieldDesc = Jandex2Gizmo.fieldDescOf(field);
+                newOuter = bc.get(typedOuter.field(fieldDesc));
                 newOuterType = field.type();
             }
-            return getNestedParam(nestedParams, nestedParamIdx + 1, newOuter, methodCreator, newOuterType, securedMethod,
+            return generateNestedParam(nestedParams, nestedParamIdx + 1, newOuter, bc, newOuterType, securedMethod,
                     methodParamIdx);
         }
 
@@ -1715,6 +1793,9 @@ interface PermissionSecurityChecks {
             return converterName;
         }
 
+        private record ConverterTask(String converterName, String[] nestedParams, Type paramType,
+                MethodInfo securedMethod, int methodParamIdx) {
+        }
     }
 
     private static String hashCodeToString(Object object) {

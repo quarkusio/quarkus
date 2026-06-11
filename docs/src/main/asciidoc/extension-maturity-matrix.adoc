@@ -141,7 +141,7 @@ Quarkus's reactive core is a key contributor to its excellent throughput and sca
 === Add Mutiny-based APIs
 
 For maximum scalability, go beyond the reactive core and enable fully reactive programming, using Mutiny. Most projects that support a reactive programming model offer two distinct extensions, a `-reactive` and a plain one.
-See, for example, https://quarkus.io/extensions/io.quarkiverse.quarkus-elasticsearch/quarkus-elasticsearch/[ElasticSearch] and https://quarkus.io/extensions/io.quarkiverse.quarkus-elasticsearch-reactive/quarkus-elasticsearch-reactive/[ElasticSearch Reactive] extensions.
+See, for example, the https://quarkus.io/extensions/io.quarkus/quarkus-hibernate-orm/[Hibernate ORM] and https://quarkus.io/extensions/io.quarkus/quarkus-hibernate-reactive/[Hibernate Reactive] extensions.
 
 == Operations
 

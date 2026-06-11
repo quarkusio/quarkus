@@ -1,7 +1,7 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS;
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo2.desc.MethodDesc.of;
 import static io.quarkus.security.deployment.DotNames.AUTHENTICATED;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
 import static io.quarkus.security.deployment.DotNames.INHERITED;
@@ -18,6 +18,7 @@ import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurit
 import static io.quarkus.security.spi.SecurityTransformerBuildItem.getAllSecurityAnnotations;
 
 import java.io.IOException;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -90,6 +91,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -103,13 +106,12 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
@@ -492,82 +494,88 @@ public class SecurityProcessor {
 
         if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
 
+            MethodDesc insertProviderAt = MethodDesc.of(Security.class, "insertProviderAt",
+                    int.class, Provider.class, int.class);
+
             // Prepare BouncyCastle AutoFeature generation
-            ClassCreator file = new ClassCreator(new ClassOutput() {
-                @Override
-                public void write(String s, byte[] bytes) {
-                    nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(s, bytes));
+            Gizmo gizmo = Gizmo.create((resourceName, bytes) -> {
+                if (resourceName.endsWith(".class")) {
+                    String className = resourceName.substring(0, resourceName.length() - 6).replace('/', '.');
+                    nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(className, bytes));
                 }
-            }, "io.quarkus.security.BouncyCastleFeature", null, Object.class.getName(),
-                    org.graalvm.nativeimage.hosted.Feature.class.getName());
+            });
 
-            MethodCreator afterRegistration = file.getMethodCreator("afterRegistration", "V",
-                    org.graalvm.nativeimage.hosted.Feature.AfterRegistrationAccess.class.getName());
+            gizmo.class_("io.quarkus.security.BouncyCastleFeature", cc -> {
+                cc.implements_(org.graalvm.nativeimage.hosted.Feature.class);
+                cc.defaultConstructor();
 
-            TryBlock overallCatch = afterRegistration.tryBlock();
+                cc.method("afterRegistration", mc -> {
+                    mc.public_();
+                    mc.parameter("access",
+                            org.graalvm.nativeimage.hosted.Feature.AfterRegistrationAccess.class);
+                    mc.body(bc -> {
+                        bc.try_(tc -> {
+                            tc.body(tryBody -> {
+                                if (bouncyCastleJsseProvider.isPresent()) {
+                                    // BCJSSE or BCJSSEFIPS
+                                    if (!bouncyCastleJsseProvider.get().isInFipsMode()) {
+                                        final int sunJsseIndex = findProviderIndex(
+                                                SecurityProviderUtils.SUN_JSSE_PROVIDER_NAME);
+
+                                        LocalVar bcProv = tryBody.localVar("bcProv", tryBody.new_(ConstructorDesc.of(
+                                                ClassDesc.of(SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME))));
+                                        LocalVar bcJsseProv = tryBody.localVar("bcJsseProv", tryBody.new_(ConstructorDesc.of(
+                                                ClassDesc.of(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME))));
+
+                                        tryBody.invokeStatic(insertProviderAt,
+                                                bcProv, Const.of(sunJsseIndex));
+                                        tryBody.invokeStatic(insertProviderAt,
+                                                bcJsseProv, Const.of(sunJsseIndex + 1));
+                                    } else {
+                                        final int sunIndex = findProviderIndex(
+                                                SecurityProviderUtils.SUN_PROVIDER_NAME);
+
+                                        LocalVar bcFipsProv = tryBody.localVar("bcFipsProv", tryBody.new_(ConstructorDesc.of(
+                                                ClassDesc.of(SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME))));
+                                        ConstructorDesc bcJsseProvCtor = ConstructorDesc.of(
+                                                ClassDesc.of(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME),
+                                                boolean.class, Provider.class);
+                                        LocalVar bcJsseProv = tryBody.localVar("bcJsseProv", tryBody.new_(bcJsseProvCtor,
+                                                Const.of(true), bcFipsProv));
+
+                                        tryBody.invokeStatic(insertProviderAt,
+                                                bcFipsProv, Const.of(sunIndex));
+                                        tryBody.invokeStatic(insertProviderAt,
+                                                bcJsseProv, Const.of(sunIndex + 1));
+                                    }
+                                } else {
+                                    // BC or BCFIPS
+                                    final String providerName = bouncyCastleProvider.get().isInFipsMode()
+                                            ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                                            : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
+
+                                    Expr bcProv = tryBody.new_(ConstructorDesc.of(ClassDesc.of(providerName)));
+                                    tryBody.invokeStatic(
+                                            MethodDesc.of(Security.class, "addProvider",
+                                                    int.class, Provider.class),
+                                            bcProv);
+                                }
+                            });
+                            tc.catch_(Throwable.class, "t", (catchBody, caught) -> {
+                                catchBody.invokeVirtual(
+                                        of(Throwable.class, "printStackTrace", void.class),
+                                        caught);
+                            });
+                        });
+                        bc.return_();
+                    });
+                });
+            });
 
             if (bouncyCastleJsseProvider.isPresent()) {
-                // BCJSSE or BCJSSEFIPS
-
                 additionalProviders.produce(
                         new NativeImageSecurityProviderBuildItem(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
-
-                if (!bouncyCastleJsseProvider.get().isInFipsMode()) {
-                    final int sunJsseIndex = findProviderIndex(SecurityProviderUtils.SUN_JSSE_PROVIDER_NAME);
-
-                    ResultHandle bcProvider = overallCatch
-                            .newInstance(
-                                    MethodDescriptor.ofConstructor(SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
-                    ResultHandle bcJsseProvider = overallCatch.newInstance(
-                            MethodDescriptor.ofConstructor(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
-
-                    overallCatch.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Security.class, "insertProviderAt", int.class, Provider.class,
-                                    int.class),
-                            bcProvider, overallCatch.load(sunJsseIndex));
-                    overallCatch.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Security.class, "insertProviderAt", int.class, Provider.class,
-                                    int.class),
-                            bcJsseProvider, overallCatch.load(sunJsseIndex + 1));
-                } else {
-                    final int sunIndex = findProviderIndex(SecurityProviderUtils.SUN_PROVIDER_NAME);
-
-                    ResultHandle bcFipsProvider = overallCatch
-                            .newInstance(MethodDescriptor
-                                    .ofConstructor(SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME));
-                    MethodDescriptor bcJsseProviderConstructor = MethodDescriptor.ofConstructor(
-                            SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME, "boolean",
-                            Provider.class.getName());
-                    ResultHandle bcJsseProvider = overallCatch.newInstance(bcJsseProviderConstructor,
-                            overallCatch.load(true), bcFipsProvider);
-
-                    overallCatch.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Security.class, "insertProviderAt", int.class, Provider.class,
-                                    int.class),
-                            bcFipsProvider, overallCatch.load(sunIndex));
-                    overallCatch.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Security.class, "insertProviderAt", int.class, Provider.class,
-                                    int.class),
-                            bcJsseProvider, overallCatch.load(sunIndex + 1));
-                }
-            } else {
-                // BC or BCFIPS
-
-                final String providerName = bouncyCastleProvider.get().isInFipsMode()
-                        ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
-                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
-
-                ResultHandle bcProvider = overallCatch.newInstance(MethodDescriptor.ofConstructor(providerName));
-                overallCatch.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Security.class, "addProvider", int.class, Provider.class),
-                        bcProvider);
             }
-
-            // Complete BouncyCastle AutoFeature generation
-            CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
-            print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
-            afterRegistration.returnValue(null);
-            file.close();
         }
 
     }
@@ -821,7 +829,9 @@ public class SecurityProcessor {
     void configurePermissionCheckers(PermissionSecurityChecksBuilderBuildItem checkerBuilder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, SecurityCheckRecorder recorder,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
-            BuildProducer<GeneratedClassBuildItem> generatedClassProducer) {
+            BuildProducer<GeneratedClassBuildItem> generatedClassProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviderProducer) {
         if (checkerBuilder.instance.foundPermissionChecker()) {
 
             // ==== produce SecurityIdentityAugmentor that checks QuarkusPermissions
@@ -867,7 +877,8 @@ public class SecurityProcessor {
             syntheticBeanProducer.produce(syntheticBeanConfigurator.done());
 
             // ==== Generate QuarkusPermission for each @PermissionChecker annotation instance
-            checkerBuilder.instance.generatePermissionCheckers(generatedClassProducer);
+            checkerBuilder.instance.generatePermissionCheckers(generatedClassProducer, generatedResourceProducer,
+                    generatedServiceProviderProducer);
         }
     }
 
@@ -886,6 +897,8 @@ public class SecurityProcessor {
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks,
             PermissionSecurityChecksBuilderBuildItem permissionSecurityChecksBuilderBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
             SecurityTransformerBuildItem securityTransformerBuildItem) {
 
@@ -907,7 +920,8 @@ public class SecurityProcessor {
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
                 permissionSecurityChecksBuilderBuildItem.instance,
-                generatedClassesProducer, reflectiveClassesProducer, securityTransformer);
+                generatedClassesProducer, generatedResourcesProducer, generatedServiceProvidersProducer,
+                reflectiveClassesProducer, securityTransformer);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -995,6 +1009,8 @@ public class SecurityProcessor {
             Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
             PermissionSecurityChecksBuilder permissionCheckBuilder,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
             SecurityTransformer securityTransformer) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
@@ -1032,7 +1048,8 @@ public class SecurityProcessor {
                     .map(RegisterClassSecurityCheckBuildItem::getSecurityAnnotationInstance)
                     .toList();
             var securityChecks = permissionCheckBuilder
-                    .prepareParamConverterGenerator(recorder, generatedClassesProducer, reflectiveClassesProducer)
+                    .prepareParamConverterGenerator(recorder, generatedClassesProducer, generatedResourcesProducer,
+                            generatedServiceProvidersProducer, reflectiveClassesProducer)
                     .gatherPermissionsAllowedAnnotations(methodToInstanceCollector, classAnnotations, additionalClassInstances,
                             hasAdditionalSecurityAnnotations)
                     .validatePermissionClasses()

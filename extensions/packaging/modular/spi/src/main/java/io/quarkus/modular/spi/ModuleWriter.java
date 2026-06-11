@@ -1,16 +1,17 @@
 package io.quarkus.modular.spi;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.constant.ClassDesc;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
@@ -32,6 +32,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.modular.spi.model.AutoDependencyGroup;
 import io.quarkus.modular.spi.model.DependencyInfo;
 import io.quarkus.modular.spi.model.ModuleInfo;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathTree;
 import io.smallrye.classfile.Annotation;
 import io.smallrye.classfile.AnnotationElement;
@@ -45,6 +46,9 @@ import io.smallrye.classfile.extras.constant.ModuleDesc;
 import io.smallrye.classfile.extras.constant.PackageDesc;
 import io.smallrye.classfile.extras.reflect.AccessFlag;
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.common.io.FileAttributes;
+import io.smallrye.common.io.archive.ArchiveBuilder;
+import io.smallrye.common.io.archive.ZipOption;
 import io.smallrye.common.resource.Resource;
 import io.smallrye.modules.desc.Dependency;
 import io.smallrye.modules.desc.ModuleDescriptor;
@@ -88,111 +92,110 @@ public final class ModuleWriter {
         Set<String> directories = new HashSet<>();
         directories.add("META-INF");
         Path outputPath = outputDirectory.resolve(fileName);
-        try (OutputStream fos = Files.newOutputStream(outputPath)) {
-            try (JarOutputStream jarOutput = new JarOutputStream(fos)) {
-                // start with the Manifest
-                try (JarDirEntry dir = new JarDirEntry(jarOutput, "META-INF/")) {
-                    // todo: set dates & times based on original resource
-                }
-                try (JarEntryOutputStream os = new JarEntryOutputStream(jarOutput, "META-INF/MANIFEST.MF")) {
-                    manifest.write(os);
-                }
-                // next, write module descriptor
-                if (bootModule) {
-                    // descriptor for "normal" module
-                    byte[] moduleInfoClass = getModuleInfoClass(moduleInfo);
-                    try (JarEntryOutputStream os = new JarEntryOutputStream(jarOutput, "module-info.class", false,
-                            moduleInfoClass.length)) {
-                        os.write(moduleInfoClass);
+        try (ArchiveBuilder ab = ArchiveBuilder.open(outputPath, StandardOpenOption.TRUNCATE_EXISTING)) {
+            PathCollection resolvedPaths = artifact.getResolvedPaths();
+            FileAttribute<?>[] defaultAttrs;
+            if (resolvedPaths.isSinglePath()) {
+                Path path = resolvedPaths.getSinglePath();
+                BasicFileAttributes attrs = Files.getFileAttributeView(path, BasicFileAttributeView.class)
+                        .readAttributes();
+                defaultAttrs = new FileAttribute[] {
+                        FileAttributes.creationTime(attrs.creationTime()),
+                        FileAttributes.lastModifiedTime(attrs.lastModifiedTime()),
+                        FileAttributes.lastAccessTime(attrs.lastAccessTime())
+                };
+            } else {
+                defaultAttrs = new FileAttribute<?>[0];
+            }
+            ab.addDirectory("META-INF/", defaultAttrs);
+            try (OutputStream os = ab.addEntry("META-INF/MANIFEST.MF", Set.of(ZipOption.STORED), defaultAttrs)) {
+                manifest.write(os);
+            }
+            // next, write module descriptor
+            if (bootModule) {
+                // descriptor for "normal" module
+                ab.addEntry("module-info.class", getModuleInfoClass(moduleInfo), Set.of(ZipOption.STORED), defaultAttrs);
+            } else {
+                // write XML for automatic module
+                try (Writer w = ab.addEntry("module.xml", StandardCharsets.UTF_8)) {
+                    XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newDefaultFactory();
+                    xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, Boolean.TRUE);
+                    XMLStreamWriter xml = xmlOutputFactory.createXMLStreamWriter(w);
+                    try (XmlCloser ignored = xml::close) {
+                        writeModuleXml(new FormattingXMLStreamWriter(xml), moduleInfo);
                     }
-                } else {
-                    // write XML for automatic module
-                    try (JarEntryOutputStream os = new JarEntryOutputStream(jarOutput, "module.xml")) {
-                        try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-                            try (BufferedWriter bw = new BufferedWriter(osw)) {
-                                XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newDefaultFactory();
-                                xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, Boolean.TRUE);
-                                XMLStreamWriter xml = xmlOutputFactory.createXMLStreamWriter(bw);
-                                try (XmlCloser ignored = xml::close) {
-                                    writeModuleXml(new FormattingXMLStreamWriter(xml), moduleInfo);
-                                }
-                            } catch (XMLStreamException e) {
-                                throw new IOException(e);
-                            }
-                        }
-                    }
+                } catch (XMLStreamException e) {
+                    throw new IOException(e);
                 }
-                // write all resources
-                for (Resource resource : moduleInfo.generated()) {
-                    if (resource.isDirectory()) {
-                        continue;
-                    }
-                    // todo: create parent directories
-                    try (JarEntryOutputStream os = new JarEntryOutputStream(jarOutput, resource.pathName(), false,
-                            resource.size())) {
-                        try (InputStream is = resource.openStream()) {
-                            is.transferTo(os);
-                        }
-                    }
+            }
+            // write all resources
+            for (Resource resource : moduleInfo.generated()) {
+                if (resource.isDirectory()) {
+                    continue;
                 }
-                // now, find and process all files using our own walker
-                contentTree.walk(visited -> {
-                    String rp = visited.getResourceName();
-                    if (generated.containsKey(rp)) {
-                        // skip it until the end
+                int idx = resource.pathName().lastIndexOf('/');
+                if (idx != -1) {
+                    addDirectoryRecursive(ab, resource.pathName().substring(0, idx), directories);
+                }
+                try (InputStream is = resource.openStream()) {
+                    ab.addEntry(resource.pathName(), is, Set.of(ZipOption.STORED), defaultAttrs);
+                }
+            }
+            // now, find and process all files using our own walker
+            contentTree.walk(visited -> {
+                String rp = visited.getResourceName();
+                if (generated.containsKey(rp)) {
+                    // skip it until the end
+                    return;
+                }
+                BasicFileAttributes attr;
+                try {
+                    attr = Files.getFileAttributeView(visited.getPath(), BasicFileAttributeView.class).readAttributes();
+                } catch (IOException e) {
+                    throw sneak(e);
+                }
+                if (attr.isDirectory()) {
+                    if (rp.isEmpty()) {
+                        // skip base directory entry
                         return;
                     }
-                    BasicFileAttributes attr;
+                    if (directories.add(rp)) {
+                        try {
+                            ab.addDirectory(rp,
+                                    FileAttributes.creationTime(attr.creationTime()),
+                                    FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
+                                    FileAttributes.lastAccessTime(attr.lastAccessTime()));
+                        } catch (IOException e) {
+                            throw sneak(e);
+                        }
+                    }
+                } else {
+                    if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
+                            || rp.endsWith("/module-info.class")) {
+                        // skip
+                        return;
+                    }
+                    int idx = rp.lastIndexOf('/');
+                    if (idx != -1) {
+                        // make sure the directory exists
+                        String dirName = rp.substring(0, idx);
+                        try {
+                            addDirectoryRecursive(ab, dirName, directories);
+                        } catch (IOException e) {
+                            throw sneak(e);
+                        }
+                    }
+                    // copy the content
                     try {
-                        attr = Files.getFileAttributeView(visited.getPath(), BasicFileAttributeView.class).readAttributes();
-                    } catch (IOException e) {
-                        throw sneak(e);
+                        ab.addEntry(rp, visited.getPath(), Set.of(ZipOption.STORED),
+                                FileAttributes.creationTime(attr.creationTime()),
+                                FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
+                                FileAttributes.lastAccessTime(attr.lastAccessTime()));
+                    } catch (IOException ioe) {
+                        throw sneak(ioe);
                     }
-                    if (attr.isDirectory()) {
-                        if (rp.isEmpty()) {
-                            // skip base directory entry
-                            return;
-                        }
-                        if (directories.add(rp)) {
-                            try (JarDirEntry dir = new JarDirEntry(jarOutput, rp + "/")) {
-                                dir.setCreationTime(attr.creationTime());
-                                dir.setLastModifiedTime(attr.lastModifiedTime());
-                                dir.setLastAccessTime(attr.lastAccessTime());
-                            } catch (IOException e) {
-                                throw sneak(e);
-                            }
-                        }
-                    } else {
-                        if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
-                                || rp.endsWith("/module-info.class")) {
-                            // skip
-                            return;
-                        }
-                        int idx = rp.lastIndexOf('/');
-                        if (idx != -1) {
-                            // make sure the directory exists
-                            // todo: recurse to parents, extract to method for reuse
-                            String dirName = rp.substring(0, idx);
-                            if (directories.add(dirName)) {
-                                try (JarDirEntry dir = new JarDirEntry(jarOutput, dirName)) {
-                                    // todo: default date & time
-                                } catch (IOException e) {
-                                    throw sneak(e);
-                                }
-                            }
-                        }
-                        // copy the content
-                        try (JarEntryOutputStream os = new JarEntryOutputStream(jarOutput, rp, false, attr.size())) {
-                            os.setCreationTime(attr.creationTime());
-                            os.setLastModifiedTime(attr.lastModifiedTime());
-                            os.setLastAccessTime(attr.lastAccessTime());
-                            Files.copy(visited.getPath(), os);
-                        } catch (IOException ioe) {
-                            throw sneak(ioe);
-                        }
-                    }
-                });
-            }
+                }
+            });
         } catch (Throwable t) {
             // don't leave a half-written file around
             try {
@@ -203,6 +206,17 @@ public final class ModuleWriter {
             throw t;
         }
         return outputPath;
+    }
+
+    private static void addDirectoryRecursive(final ArchiveBuilder ab, final String dirName, final Set<String> directories)
+            throws IOException {
+        if (directories.add(dirName)) {
+            int idx = dirName.lastIndexOf('/');
+            if (idx != -1) {
+                addDirectoryRecursive(ab, dirName.substring(0, idx), directories);
+            }
+            ab.addDirectory(dirName);
+        }
     }
 
     /**

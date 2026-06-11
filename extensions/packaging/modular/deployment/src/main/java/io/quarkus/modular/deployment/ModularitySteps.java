@@ -515,6 +515,9 @@ public final class ModularitySteps {
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)
             .collect(Collectors.toUnmodifiableSet());
 
+    private static final Set<String> bootAlwaysExclude = Set.of(
+            "io.smallrye.common.annotation");
+
     /**
      * Add a module to the boot path, including its transitive dependency set.
      * The Quarkus module dependency model is more flexible than the core JVM model, so this
@@ -529,6 +532,11 @@ public final class ModularitySteps {
     private static boolean computeBootPath(ModuleInfo toAdd, final Map<String, ModuleInfo> modulesByName,
             final HashSet<String> visited, final Set<ModuleInfo> set) {
         if (visited.add(toAdd.name())) {
+            if (bootAlwaysExclude.contains(toAdd.name())) {
+                log.infof("Excluding %s from boot path because it is marked to always be excluded", toAdd.name());
+                // but allow dependents to be included
+                return true;
+            }
             if (toAdd.modifiers().contains(ModuleDescriptor.Modifier.AUTOMATIC)
                     // TODO: remove this once this is modular
                     && !toAdd.name().equals("org.jboss.logmanager.slf4j")) {

@@ -128,7 +128,7 @@ Running the `jcmd` command give us a list of running Java processes and the PID 
 
 == Open JFR dump file
 
-We can open a JFR dump using two tools: the `jfr` CLI and JDK Mission Control (JMC).
+We can open a JFR dump using two tools: the `jfr` CLI and JDK Mission Control (https://www.oracle.com/java/technologies/jdk-mission-control.html[JMC]).
 It is also possible to read them using JFR APIs, but we won't go into that in this guide.
 
 === jfr CLI

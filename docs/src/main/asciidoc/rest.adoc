@@ -2025,7 +2025,7 @@ Using this injected bean of type `RestLinksProvider`, you can get the links by t
 
 ==== JSON Hypertext Application Language (HAL) support
 
-The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links.
+The https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-08[HAL] standard is a simple format to represent web links.
 
 To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-rest-jsonb` or the `quarkus-rest-jackson` extension.
 
@@ -2033,7 +2033,7 @@ To enable the HAL support, add the `quarkus-hal` extension to your project. Also
 |GAV|Usage
 
 |`io.quarkus:quarkus-hal`
-|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+|https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-08[HAL]
 
 |===
 

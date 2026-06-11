@@ -231,12 +231,14 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ reactiveTransactional() }, 1L)
     }
 
+    // We shall assert tx is not null after the first operation
+    // As the session is created lazily
     @Transactional
     fun reactiveTransactional(): Uni<Long> {
-        return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain { tx -> Person.count() }
+        return Person.count()
             .invoke { count -> assertEquals(0L, count) }
+            .chain { c -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
             .call(Supplier { Person().persist<Person>() })
             .chain { tx -> Person.count() }
     }
@@ -249,12 +251,14 @@ open class PanacheFunctionalityTest {
         asserter.assertTrue { reactiveTransactional2() }
     }
 
+    // We shall assert tx is not null after the first operation
+    // As the session is created lazily
     @Transactional
     fun reactiveTransactional2(): Uni<Boolean> {
-        return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain(Supplier { Person.count() })
+        return Person.count()
             .invoke { count -> assertEquals(1L, count) }
+            .chain { c -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
             .chain(Supplier { Person.deleteAll() })
             .invoke { count -> assertEquals(1L, count) }
             .chain(Supplier { Panache.currentTransaction() })
@@ -270,13 +274,15 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ testReactiveTransactional3() }, 1L)
     }
 
+    // We shall assert tx is not null after the first operation
+    // As the session is created lazily
     @Transactional
     fun testReactiveTransactional3(): Uni<Long> {
-        return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain { tx -> Person.count() }
+        return Person.count()
             // make sure it was rolled back
             .invoke { count -> assertEquals(1L, count) }
+            .chain { c -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
             .call(Supplier { Person.deleteAll() })
     }
 

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -19,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
-import jakarta.transaction.Transactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
@@ -251,12 +251,14 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> reactiveTransactional(), 1l);
     }
 
+    // We shall assert tx is not null after the first operation
+    // As the session is created lazily
     @Transactional
     Uni<Long> reactiveTransactional() {
-        return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
+        return Person.count()
                 .invoke(count -> assertEquals(0l, count))
+                .chain(c -> Panache.currentTransaction())
+                .invoke(tx -> assertNotNull(tx))
                 .call(() -> new Person().persist())
                 .chain(tx -> Person.count());
     }
@@ -269,12 +271,14 @@ public class PanacheFunctionalityTest {
         asserter.assertTrue(() -> reactiveTransactional2());
     }
 
+    // We shall assert tx is not null after the first operation
+    // As the session is created lazily
     @Transactional
     Uni<Boolean> reactiveTransactional2() {
-        return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
+        return Person.count()
                 .invoke(count -> assertEquals(1l, count))
+                .chain(c -> Panache.currentTransaction())
+                .invoke(tx -> assertNotNull(tx))
                 .chain(() -> Person.deleteAll())
                 .invoke(count -> assertEquals(1l, count))
                 .chain(() -> Panache.currentTransaction())

@@ -150,7 +150,7 @@ For now the application does nothing new.
 ====
 To edit the JBang script in an IDE/editor with content assist you can run `jbang edit quarkusapp.java` or `jbang edit quarkusapp.java`.
 
-For more information please refer to the https://www.jbang.dev/documentation/guide/latest/editing.html[the JBang documentation].
+For more information please refer to the https://www.jbang.dev/documentation/jbang/latest/editing.html[the JBang documentation].
 ====
 
 

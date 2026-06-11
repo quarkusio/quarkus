@@ -397,6 +397,12 @@ public class ClientBuilderImpl extends ClientBuilder {
             options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
             options.setUseAlpn(sslOptions.isUseAlpn());
             if (sslOptions.isUseHybridKeyExchangeProtocol()) {
+                if (options.getSslEngineOptions() != null
+                        && !(options.getSslEngineOptions() instanceof OpenSSLEngineOptions)) {
+                    throw new IllegalStateException(
+                            "PQC hybrid key exchange requires OpenSSL, but a different SSL engine is already configured: "
+                                    + options.getSslEngineOptions().getClass().getSimpleName());
+                }
                 options.setSslEngineOptions(new OpenSSLEngineOptions());
                 options.setUseHybridKeyExchangeProtocol(true);
             }

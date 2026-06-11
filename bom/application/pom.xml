@@ -59,6 +59,7 @@
         <smallrye-mutiny-vertx-binding.version>3.22.2</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.34.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.9</smallrye-stork.version>
+        <smallrye-openssl.version>0.1.4</smallrye-openssl.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.1.0</jakarta.authentication-api>
@@ -133,6 +134,7 @@
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
         <netty.version>4.1.135.Final</netty.version>
+        <netty-tcnative.version>2.0.76.Final</netty-tcnative.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.3.Final</jboss-logging.version>
@@ -293,11 +295,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-<!--            <dependency>-->
-<!--                <groupId>io.netty</groupId>-->
-<!--                <artifactId>netty-tcnative-classes</artifactId>-->
-<!--                <version>2.0.76.Final</version>-->
-<!--            </dependency>-->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-tcnative-classes</artifactId>
+                <version>${netty-tcnative.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.aayushatharva.brotli4j</groupId>
                 <artifactId>brotli4j</artifactId>
@@ -352,6 +354,13 @@
                 <groupId>com.aayushatharva.brotli4j</groupId>
                 <artifactId>native-osx-aarch64</artifactId>
                 <version>${brotli4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-openssl</artifactId>
+                <classifier>linux-x86_64</classifier>
+                <version>${smallrye-openssl.version}</version>
             </dependency>
 
             <dependency>

@@ -109,7 +109,6 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-openssl</artifactId>
             <classifier>linux-x86_64</classifier>
-            <version>0.1.4</version>
             <scope>test</scope>
         </dependency>
 

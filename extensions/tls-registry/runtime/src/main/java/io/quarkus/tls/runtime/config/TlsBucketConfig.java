@@ -74,10 +74,23 @@ public interface TlsBucketConfig {
     boolean alpn();
 
     /**
-     * Enables the hybrid key exchange protocol.
+     * Sets the PQC enforcing policy
+     *
+     * STRICT: a connection will be refused unless both the client and the server support PQC (x25519mlkem768)
+     * CLIENT_NEGOTIATED: the server has to support x25519mlkem768 but won't refuse a connection if the client doesn't
+     * RELAXED: the server doesn't have to support x25519mlkem768
      */
-    @WithDefault("false")
-    boolean hybridKeyExchangeProtocol();
+    @WithDefault("relaxed")
+    PqcEnforcePolicyEnum enforcePQC();
+
+    /**
+     * Sets the ordered list of enabled key exchange protocols (supported groups).
+     * If none is given, a reasonable default is selected from the built-in protocols.
+     * <p>
+     * When protocols are set, it takes precedence over the default set defined by the {@code SSLEngineOptions} in use.
+     */
+    Optional<List<String>> keyExchangeProtocols();
+
 
     /**
      * Sets the list of revoked certificates (paths to files).

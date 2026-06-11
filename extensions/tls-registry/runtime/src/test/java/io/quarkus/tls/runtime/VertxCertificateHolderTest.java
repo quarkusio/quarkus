@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
+import io.quarkus.tls.runtime.config.PqcEnforcePolicyEnum;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 
@@ -65,8 +66,13 @@ class VertxCertificateHolderTest {
             }
 
             @Override
-            public boolean hybridKeyExchangeProtocol() {
-                return true;
+            public PqcEnforcePolicyEnum enforcePQC() {
+                return PqcEnforcePolicyEnum.STRICT;
+            }
+
+            @Override
+            public Optional<List<String>> keyExchangeProtocols() {
+                return Optional.empty();
             }
 
             @Override

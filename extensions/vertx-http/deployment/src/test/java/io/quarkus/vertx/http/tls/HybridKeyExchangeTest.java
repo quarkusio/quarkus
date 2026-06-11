@@ -10,19 +10,15 @@ import javax.net.ssl.SSLException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.netty.handler.ssl.OpenSsl;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.ext.web.Router;
@@ -30,10 +26,9 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-@EnabledIf("isOpenSslAvailable")
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-hybrid-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
-public class HybridKeyExchangeTest {
+public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
 
     @TestHTTPResource(value = "/hybrid", tls = true)
     URL url;
@@ -46,11 +41,8 @@ public class HybridKeyExchangeTest {
                     .addAsResource(new File("target/certs/ssl-hybrid-test.crt"), "server-cert.pem"))
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
-            .overrideConfigKey("quarkus.tls.hybrid-key-exchange-protocol", "true")
+            .overrideConfigKey("quarkus.tls.enforce-pqc", "strict")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
-
-    @Inject
-    Vertx vertx;
 
     @Test
     void testHybridKeyExchangeHandshake() {
@@ -77,10 +69,6 @@ public class HybridKeyExchangeTest {
         assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
                 .send().toCompletionStage().toCompletableFuture().join())
                 .hasRootCauseInstanceOf(SSLException.class);
-    }
-
-    static boolean isOpenSslAvailable() {
-        return OpenSsl.isAvailable() && OpenSsl.version() >= 0x30500000L;
     }
 
     @ApplicationScoped

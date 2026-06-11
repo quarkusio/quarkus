@@ -129,7 +129,7 @@ public class HttpServerOptionsUtils {
         return bucket;
     }
 
-    private static void applySslConfigToHttpServerOptions(ServerSslConfig sslConfig, HttpServerOptions serverOptions)
+        private static void applySslConfigToHttpServerOptions(ServerSslConfig sslConfig, HttpServerOptions serverOptions)
             throws IOException {
         // credentials provider
         Map<String, String> credentials = Map.of();
@@ -255,6 +255,12 @@ public class HttpServerOptionsUtils {
             serverOptions.setUseAlpn(false);
         }
         if (other.isUseHybridKeyExchangeProtocol()) {
+            if (serverOptions.getSslEngineOptions() != null
+                    && !(serverOptions.getSslEngineOptions() instanceof OpenSSLEngineOptions)) {
+                throw new IllegalStateException(
+                        "PQC hybrid key exchange requires OpenSSL, but a different SSL engine is already configured: "
+                                + serverOptions.getSslEngineOptions().getClass().getSimpleName());
+            }
             serverOptions.setSslEngineOptions(new OpenSSLEngineOptions());
             serverOptions.setUseHybridKeyExchangeProtocol(true);
         }

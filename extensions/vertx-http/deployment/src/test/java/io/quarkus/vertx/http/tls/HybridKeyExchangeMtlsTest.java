@@ -7,19 +7,15 @@ import java.net.URL;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.netty.handler.ssl.OpenSsl;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.OpenSSLEngineOptions;
@@ -28,10 +24,9 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-@EnabledIf("isOpenSslAvailable")
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-hybrid-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }, client = true))
-public class HybridKeyExchangeMtlsTest {
+public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
 
     @TestHTTPResource(value = "/hybrid-mtls", tls = true)
     URL url;
@@ -47,12 +42,9 @@ public class HybridKeyExchangeMtlsTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret")
             .overrideConfigKey("quarkus.tls.trust-store.jks.path", "server-truststore.jks")
             .overrideConfigKey("quarkus.tls.trust-store.jks.password", "secret")
-            .overrideConfigKey("quarkus.tls.hybrid-key-exchange-protocol", "true")
+            .overrideConfigKey("quarkus.tls.enforce-pqc", "strict")
             .overrideConfigKey("quarkus.http.ssl.client-auth", "REQUIRED")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
-
-    @Inject
-    Vertx vertx;
 
     @Test
     void testHybridKeyExchangeWithMtls() {
@@ -70,10 +62,6 @@ public class HybridKeyExchangeMtlsTest {
                 .send().toCompletionStage().toCompletableFuture().join();
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.bodyAsString()).isEqualTo("mtls-hybrid-ok");
-    }
-
-    static boolean isOpenSslAvailable() {
-        return OpenSsl.isAvailable() && OpenSsl.version() >= 0x30500000L;
     }
 
     @ApplicationScoped

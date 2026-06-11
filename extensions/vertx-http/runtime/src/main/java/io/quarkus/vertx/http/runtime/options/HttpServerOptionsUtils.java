@@ -301,6 +301,8 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setTcpCork(httpConfig.tcpCork());
         httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
         httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
+        httpServerOptions
+                .setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
         httpServerOptions.setCompressionSupported(httpBuildTimeConfig.enableCompression());
         if (httpBuildTimeConfig.compressionLevel().isPresent()) {
             httpServerOptions.setCompressionLevel(httpBuildTimeConfig.compressionLevel().getAsInt());
@@ -431,6 +433,7 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
+        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
     }

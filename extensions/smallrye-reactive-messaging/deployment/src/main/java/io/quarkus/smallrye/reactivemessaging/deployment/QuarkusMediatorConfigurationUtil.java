@@ -30,7 +30,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -48,8 +47,6 @@ import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
 import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 public final class QuarkusMediatorConfigurationUtil {
-
-    private static final Logger log = Logger.getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
     private QuarkusMediatorConfigurationUtil() {
     }
@@ -240,18 +237,7 @@ public final class QuarkusMediatorConfigurationUtil {
         // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual threads.
         AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass()
                 .declaredAnnotation(RUN_ON_VIRTUAL_THREAD);
-        boolean hasReactiveReturnType = methodInfo.returnType().name().equals(ReactiveMessagingDotNames.UNI)
-                || methodInfo.returnType().name().equals(COMPLETION_STAGE);
-        boolean isTransactionalBlocking = transactionalAnnotation != null && !hasReactiveReturnType;
-
-        if (transactionalAnnotation != null && hasReactiveReturnType) {
-            log.warnf("Method '%s#%s' is annotated with @Transactional but has a reactive return type. "
-                    + "It will not be automatically run on a worker thread. "
-                    + "Add @Blocking explicitly if blocking execution is required.",
-                    methodInfo.declaringClass().name(), methodInfo.name());
-        }
-
-        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || isTransactionalBlocking
+        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
                 || runOnVirtualThreadAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
@@ -522,17 +508,10 @@ public final class QuarkusMediatorConfigurationUtil {
     }
 
     public static boolean hasBlockingAnnotation(MethodInfo method) {
-        if (method.hasAnnotation(BLOCKING)
+        return method.hasAnnotation(BLOCKING)
                 || method.hasAnnotation(SMALLRYE_BLOCKING)
-                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)) {
-            return true;
-        }
-        if (method.hasAnnotation(TRANSACTIONAL)) {
-            DotName returnType = method.returnType().name();
-            return !ReactiveMessagingDotNames.UNI.equals(returnType)
-                    && !COMPLETION_STAGE.equals(returnType);
-        }
-        return false;
+                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
+                || method.hasAnnotation(TRANSACTIONAL);
     }
 
     private static boolean hasBlockingPayloadSignature(MethodInfo methodInfo) {

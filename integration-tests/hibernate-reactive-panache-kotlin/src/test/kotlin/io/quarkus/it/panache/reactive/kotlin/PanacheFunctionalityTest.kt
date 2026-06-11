@@ -3,7 +3,6 @@ package io.quarkus.it.panache.reactive.kotlin
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.hibernate.reactive.panache.Panache
 import io.quarkus.hibernate.reactive.panache.common.WithSession
-import jakarta.transaction.Transactional
 import io.quarkus.test.TestReactiveTransaction
 import io.quarkus.test.junit.DisabledOnIntegrationTest
 import io.quarkus.test.junit.QuarkusTest
@@ -14,6 +13,7 @@ import io.restassured.RestAssured.`when`
 import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
 import jakarta.json.bind.JsonbBuilder
+import jakarta.transaction.Transactional
 import java.util.function.Supplier
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
@@ -283,7 +283,7 @@ open class PanacheFunctionalityTest {
             .invoke { count -> assertEquals(1L, count) }
             .chain { c -> Panache.currentTransaction() }
             .invoke { tx -> Assertions.assertNotNull(tx) }
-            .call(Supplier { Person.deleteAll() })
+            .chain { tx -> Person.deleteAll() }
     }
 
     @Test

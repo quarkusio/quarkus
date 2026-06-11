@@ -14,9 +14,9 @@ import io.quarkus.panache.common.exception.PanacheQueryException
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
-import jakarta.transaction.Transactional
 import jakarta.persistence.NoResultException
 import jakarta.persistence.NonUniqueResultException
+import jakarta.transaction.Transactional
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.Path
 import java.util.function.Supplier
@@ -1749,7 +1749,8 @@ class TestEndpoint {
         val person = Person()
         person.name = "smoke-test"
         person.uniqueName = "smoke-unique"
-        return person.persist<Person>()
+        return person
+            .persist<Person>()
             .flatMap { Person.count("name", "smoke-test") }
             .map { count ->
                 assertEquals(1L, count)

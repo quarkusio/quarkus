@@ -15,12 +15,12 @@ This guide explains how to enable automatic registration and deregistration of a
 == Overview
 
 SmallRye Stork supports service registration backends like Consul and Eureka.
-Traditionally, developers link:{quickstarts-tree-url}/stork-programmatic-custom-registration-quickstart[had to explicitly configure and manually register] their service instances using code.
+Traditionally, developers had to explicitly configure and manually register their service instances using code.
 With this feature, Quarkus applications can automatically register with a supported registry (e.g., Consul) during startup and deregister during shutdown — without writing boilerplate code.
 
 **IMPORTANT**: Note that automatic registration is possible **only** for built-in registrars such as Consul, Eureka, and Static.
 If you're using a custom registrar, registration must still be handled programmatically.
-Check the `stork-programmatic-custom-registration-quickstart` link:{quickstarts-tree-url}/stork-programmatic-custom-registration-quickstart[directory] example for this use case.
+See the link:https://smallrye.io/smallrye-stork/2.7.10/programmatic-api/[stork.adoc][Stork API documentation] for an example of programmatic service registration.
 
 This integration minimizes configuration effort and adheres to Quarkus' philosophy of doing as much as possible at build time.
 
@@ -33,7 +33,7 @@ When the application starts and the `stork-service-registration-consul` dependen
 - **During startup**, the application registers itself automatically using the detected or configured IP address and port.
 - During shutdown, the service is automatically deregistered.
 
-The solution is located in the `stork-automatic-consul-registration-quickstart` link:{quickstarts-tree-url}/stork-automatic-consul-registration-quickstart[directory].
+The `stork-quickstart` link:{quickstarts-tree-url}/stork-quickstart[directory] demonstrates Stork with Consul service discovery, which can be extended with automatic registration as shown below.
 
 
 == Use cases/configuration options

@@ -814,7 +814,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         addExtraParamsToUri(codeFlowParams, authenticationConfig.extraParams());
 
                         // acr_values and max_age, set when the requested endpoint requires
-                        // a specific authentication level, see https://www.rfc-editor.org/rfc/rfc9470
+                        // a specific authentication level
                         StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRoutingContext(context);
                         if (stepUpAuthPolicy != null) {
                             codeFlowParams.append(AMP).append(OidcConstants.ACR_VALUES).append(EQ)

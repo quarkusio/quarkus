@@ -228,7 +228,7 @@ aa.begin(); <2>
 
 <1> An object for manually controlling transaction boundaries (AtomicAction and many other useful
     classes are included in the extension).
-    Refer https://narayana.io//docs/api/com/arjuna/ats/arjuna/AtomicAction.html[to the javadoc] for more detail.
+    Refer https://javadoc.io/doc/org.jboss.narayana.jta/narayana-jta/latest/com/arjuna/ats/arjuna/AtomicAction.html[to the javadoc] for more detail.
 <2> Programmatically begin a transaction.
 <3> Notice that object updates can be composed which means that updates to multiple objects can be committed together as a single action.
     [Note that it is also possible to begin nested transactions so that you can perform speculative work which may then be abandoned

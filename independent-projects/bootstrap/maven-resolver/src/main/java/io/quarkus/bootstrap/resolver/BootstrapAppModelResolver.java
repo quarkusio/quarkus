@@ -296,7 +296,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 version = constraint.getArtifact().getVersion();
             }
             directDeps.add(new Dependency(
-                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), version),
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), null, version,
+                            mvn.getSession().getArtifactTypeRegistry().get(d.getType())),
                     d.getScope(), d.isOptional(), toAetherExclusions(d.getExclusions())));
         }
 

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.ArtifactProperties;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
@@ -26,26 +27,24 @@ public class DependencyUtils {
 
     public static ArtifactKey getKey(Artifact artifact) {
         return ArtifactKey.of(artifact.getGroupId(), artifact.getArtifactId(),
-                artifact.getClassifier(), artifact.getExtension());
+                artifact.getClassifier(), getType(artifact));
     }
 
     public static ArtifactCoords getCoords(Artifact artifact) {
         return new GACTV(artifact.getGroupId(), artifact.getArtifactId(),
-                artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
+                artifact.getClassifier(), getType(artifact), artifact.getVersion());
     }
 
     public static Map<ArtifactKey, Dependency> toMap(List<Dependency> deps) {
         final Map<ArtifactKey, Dependency> map = new HashMap<>(deps.size());
-        for (int i = 0; i < deps.size(); i++) {
-            final Dependency dep = deps.get(i);
+        for (Dependency dep : deps) {
             map.put(getKey(dep.getArtifact()), dep);
         }
         return map;
     }
 
     public static void putAll(Map<ArtifactKey, Dependency> map, List<Dependency> deps) {
-        for (int i = 0; i < deps.size(); i++) {
-            final Dependency dep = deps.get(i);
+        for (Dependency dep : deps) {
             map.putIfAbsent(getKey(dep.getArtifact()), dep);
         }
     }
@@ -166,9 +165,13 @@ public class DependencyUtils {
                 .setGroupId(artifact.getGroupId())
                 .setArtifactId(artifact.getArtifactId())
                 .setClassifier(artifact.getClassifier())
-                .setType(artifact.getExtension())
+                .setType(getType(artifact))
                 .setVersion(artifact.getVersion())
                 .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
+    }
+
+    public static String getType(Artifact artifact) {
+        return artifact.getProperty(ArtifactProperties.TYPE, artifact.getExtension());
     }
 
     public static boolean hasWinner(DependencyNode node) {

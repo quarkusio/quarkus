@@ -4,7 +4,7 @@ import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSI
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildIdentity;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildTrustedIdentity;
 
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +27,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.deployment.Feature;
@@ -35,12 +35,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -130,131 +132,139 @@ class QuarkusSecurityJpaProcessor {
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
             BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate,
             boolean requireActiveCDIRequestContext) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
-            FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
-                    .setModifiers(Modifier.PRIVATE)
-                    .getFieldDescriptor();
+        Gizmo.create(gizmoAdaptor)
+                .class_(name, cc -> {
+                    cc.extends_(JpaIdentityProvider.class);
+                    cc.addAnnotation(Singleton.class);
+                    cc.defaultConstructor();
+                    FieldDesc passwordProviderField = cc.field("passwordProvider", ifc -> {
+                        ifc.setType(PasswordProvider.class);
+                        ifc.private_();
+                    });
 
-            if (requireActiveCDIRequestContext) {
-                activateCDIRequestContext(classCreator);
-            }
+                    if (requireActiveCDIRequestContext) {
+                        activateCDIRequestContext(cc);
+                    }
 
-            try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
-                    EntityManager.class, UsernamePasswordAuthenticationRequest.class)) {
-                methodCreator.setModifiers(Modifier.PUBLIC);
+                    cc.method("authenticate", mc -> {
+                        mc.public_();
+                        mc.returning(SecurityIdentity.class);
+                        var emParam = mc.parameter("entityManager", EntityManager.class);
+                        var requestParam = mc.parameter("request", UsernamePasswordAuthenticationRequest.class);
+                        mc.body(bc -> {
+                            LocalVar username = bc.localVar("username", bc.invokeVirtual(
+                                    MethodDesc.of(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
+                                    requestParam));
 
-                ResultHandle username = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
-                        methodCreator.getMethodParam(1));
+                            // two strategies, depending on whether the username is natural id
+                            AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username
+                                    .annotation(DOTNAME_NATURAL_ID);
+                            Expr user = lookupUserById(jpaSecurityDefinition, name, bc, cc.this_(), emParam, username,
+                                    naturalIdAnnotation, JpaIdentityProvider.class);
 
-                // two strategies, depending on whether the username is natural id
-                AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
-                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
+                            String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
+                            LocalVar userVar = bc.localVar("user",
+                                    bc.cast(user, ClassDesc.of(declaringClassName)));
 
-                String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
-                String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
-                AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
-                methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
-
-                buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue, panacheEntityPredicate,
-                        passwordProviderField, methodCreator, userVar, methodCreator);
-            }
-        }
+                            buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue,
+                                    panacheEntityPredicate,
+                                    passwordProviderField, cc.this_(), requestParam, userVar, bc);
+                        });
+                    });
+                });
     }
 
     private void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate,
             boolean requireActiveCDIRequestContext) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaTrustedIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaTrustedIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
-            try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
-                    EntityManager.class, TrustedAuthenticationRequest.class)) {
-                methodCreator.setModifiers(Modifier.PUBLIC);
+        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
+            cc.extends_(JpaTrustedIdentityProvider.class);
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
 
-                if (requireActiveCDIRequestContext) {
-                    activateCDIRequestContext(classCreator);
-                }
-
-                ResultHandle username = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
-                        methodCreator.getMethodParam(1));
-
-                // two strategies, depending on whether the username is natural id
-                AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
-                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
-
-                String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
-                String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
-                AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
-                methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
-
-                buildTrustedIdentity(index, jpaSecurityDefinition, panacheEntityPredicate, methodCreator, userVar,
-                        methodCreator);
+            if (requireActiveCDIRequestContext) {
+                activateCDIRequestContext(cc);
             }
-        }
+
+            cc.method("authenticate", mc -> {
+                mc.public_();
+                mc.returning(SecurityIdentity.class);
+                var emParam = mc.parameter("entityManager", EntityManager.class);
+                var requestParam = mc.parameter("request", TrustedAuthenticationRequest.class);
+                mc.body(bc -> {
+                    LocalVar username = bc.localVar("username", bc.invokeVirtual(
+                            MethodDesc.of(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
+                            requestParam));
+
+                    // two strategies, depending on whether the username is natural id
+                    AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
+                    Expr user = lookupUserById(jpaSecurityDefinition, name, bc, cc.this_(), emParam, username,
+                            naturalIdAnnotation, JpaTrustedIdentityProvider.class);
+
+                    String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
+                    LocalVar userVar = bc.localVar("user",
+                            bc.cast(user, ClassDesc.of(declaringClassName)));
+
+                    buildTrustedIdentity(index, jpaSecurityDefinition, panacheEntityPredicate, requestParam,
+                            userVar, bc);
+                });
+            });
+        });
     }
 
-    private ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, String name, MethodCreator methodCreator,
-            ResultHandle username, AnnotationInstance naturalIdAnnotation) {
-        ResultHandle user;
+    private Expr lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, String name, BlockCreator bc,
+            Expr thisRef, Expr emParam, Expr username, AnnotationInstance naturalIdAnnotation,
+            Class<?> identityProviderClass) {
         if (naturalIdAnnotation != null) {
             // Session session = em.unwrap(Session.class);
-            ResultHandle session = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(EntityManager.class, "unwrap", Object.class, Class.class),
-                    methodCreator.getMethodParam(0),
-                    methodCreator.loadClassFromTCCL(Session.class));
+            Expr session = bc.invokeInterface(
+                    MethodDesc.of(EntityManager.class, "unwrap", Object.class, Class.class),
+                    emParam,
+                    bc.classForName(Const.of(Session.class.getName())));
             // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
-            ResultHandle naturalIdLoadAccess = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId",
+            Expr naturalIdLoadAccess = bc.invokeInterface(
+                    MethodDesc.of(Session.class, "bySimpleNaturalId",
                             SimpleNaturalIdLoadAccess.class, Class.class),
-                    methodCreator.checkCast(session, Session.class),
-                    methodCreator.loadClassFromTCCL(jpaSecurityDefinition.annotatedClass.name().toString()));
+                    bc.cast(session, Session.class),
+                    bc.classForName(Const.of(jpaSecurityDefinition.annotatedClass.name().toString())));
             // PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
-            user = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load",
+            return bc.invokeInterface(
+                    MethodDesc.of(SimpleNaturalIdLoadAccess.class, "load",
                             Object.class, Object.class),
                     naturalIdLoadAccess, username);
         } else {
             // Query query = entityManager.createQuery("FROM Entity WHERE field = :name")
             String hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " WHERE "
                     + jpaSecurityDefinition.username.name() + " = :name";
-            ResultHandle query = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(EntityManager.class, "createQuery", Query.class, String.class),
-                    methodCreator.getMethodParam(0), methodCreator.load(hql));
+            Expr query = bc.invokeInterface(
+                    MethodDesc.of(EntityManager.class, "createQuery", Query.class, String.class),
+                    emParam, Const.of(hql));
             // query.setParameter("name", request.getUsername())
-            ResultHandle query2 = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Query.class, "setParameter", Query.class, String.class, Object.class),
-                    query, methodCreator.load("name"), username);
+            Expr query2 = bc.invokeInterface(
+                    MethodDesc.of(Query.class, "setParameter", Query.class, String.class, Object.class),
+                    query, Const.of("name"), username);
 
             // UserEntity user = getSingleUser(query2);
-            user = methodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(name, "getSingleUser", Object.class, Query.class),
-                    methodCreator.getThis(), query2);
+            return bc.invokeVirtual(
+                    MethodDesc.of(identityProviderClass, "getSingleUser", Object.class, Query.class),
+                    thisRef, query2);
         }
-        return user;
     }
 
-    private static void activateCDIRequestContext(ClassCreator classCreator) {
-        try (MethodCreator methodCreator = classCreator.getMethodCreator("requireActiveCDIRequestContext",
-                DotName.createSimple(boolean.class.getName()).toString())) {
-            methodCreator.setModifiers(Modifier.PROTECTED);
-            methodCreator.returnBoolean(true);
-        }
+    private static void activateCDIRequestContext(ClassCreator cc) {
+        cc.method("requireActiveCDIRequestContext", mc -> {
+            mc.protected_();
+            mc.returning(boolean.class);
+            mc.body(bc -> {
+                bc.return_(true);
+            });
+        });
     }
 
     private static boolean shouldActivateCDIReqCtx(List<PersistenceUnitDescriptorBuildItem> puDescriptors,

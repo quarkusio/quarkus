@@ -147,8 +147,8 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
         return Optional.ofNullable(ttlSecondsAfterFinished);
     }
 
-    public KubernetesJobBuildItem withTtlSecondsAfterFinished(Optional<Integer> ttlSecondsAfterFinished) {
+    public KubernetesJobBuildItem withTtlSecondsAfterFinished(Integer ttlSecondsAfterFinished) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem, ttlSecondsAfterFinished.orElse(null));
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 }

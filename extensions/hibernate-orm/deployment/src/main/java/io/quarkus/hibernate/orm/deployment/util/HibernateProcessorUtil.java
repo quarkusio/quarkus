@@ -143,11 +143,15 @@ public final class HibernateProcessorUtil {
 
         Optional<SupportedDatabaseKind> supportedDbKind = dbKind.flatMap(SupportedDatabaseKind::from);
 
-        handleDialectSpecificSettings(
-                persistenceUnitName,
-                puPropertiesCollector,
-                dialectConfig,
-                supportedDbKind);
+        // dialectConfig is null for persistence units contributed through the SPI, which do not support
+        // storage-engine or dialect-specific customization.
+        if (dialectConfig != null) {
+            handleDialectSpecificSettings(
+                    persistenceUnitName,
+                    puPropertiesCollector,
+                    dialectConfig,
+                    supportedDbKind);
+        }
 
         return supportedDbKind;
     }

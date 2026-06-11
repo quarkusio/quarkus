@@ -174,7 +174,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
+            <artifactId>opentelemetry-runtime-telemetry</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

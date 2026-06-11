@@ -110,8 +110,16 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
     }
 
     static StepUpAuthenticationPolicy getFromRequest(TokenAuthenticationRequest request) {
-        RoutingContext routingContext = getRoutingContextAttribute(request);
+        return getFromRoutingContext(getRoutingContextAttribute(request));
+    }
+
+    static StepUpAuthenticationPolicy getFromRoutingContext(RoutingContext routingContext) {
         return routingContext != null ? routingContext.get(AUTHENTICATION_POLICY_KEY) : null;
+    }
+
+    static boolean isInsufficientUserAuthException(Throwable throwable) {
+        return throwable instanceof AuthenticationFailedException authFailure
+                && isInsufficientUserAuthException(authFailure);
     }
 
     static boolean isInsufficientUserAuthException(RoutingContext routingContext) {

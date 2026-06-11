@@ -32,6 +32,9 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             if ("b".equals(realmId)) {
                 realm.getClients().add(createClient("quarkus-app-b2"));
             }
+            if ("webapp".equals(realmId)) {
+                realm.getClients().add(createStepUpClient("quarkus-app-webapp-stepup"));
+            }
             realm.getUsers().add(createUser("alice", "user"));
             realm.getUsers().add(createUser("admin", "user", "admin"));
             realm.getUsers().add(createUser("jdoe", "user", "confidential"));
@@ -79,6 +82,20 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
         }
         client.setProtocolMappers(List.of(audienceMapper(clientId)));
+
+        return client;
+    }
+
+    private static ClientRepresentation createStepUpClient(String clientId) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setPublicClient(false);
+        client.setSecret("secret");
+        client.setEnabled(true);
+        client.setRedirectUris(Arrays.asList("*"));
+        // Default client scopes are not overridden so that the 'basic' scope
+        // adds the 'acr' claim to the ID token
 
         return client;
     }

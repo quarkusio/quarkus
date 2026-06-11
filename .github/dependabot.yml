@@ -91,7 +91,7 @@ updates:
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: eu.maveniverse.maven.njord:*
       - dependency-name: eu.maveniverse.maven.nisse:*
-      - dependency-name: io.github.gitflow-incremental-builder:*
+      - dependency-name: eu.maveniverse.maven.scalpel:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*

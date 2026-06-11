@@ -26,6 +26,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     private final Map<String, String> appEnvVars;
     private final boolean sharedEnvironment;
     private final boolean sharedFilesystem;
+    private final Integer ttlSecondsAfterFinished;
 
     public static InitTaskBuildItem create() {
         return new InitTaskBuildItem("init", Optional.empty(), Collections.emptyList(), Collections.emptyList(),
@@ -35,6 +36,12 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     public InitTaskBuildItem(String name, Optional<String> image, List<String> command, List<String> arguments,
             Map<String, String> taskEnvVars, Map<String, String> appEnvVars, boolean sharedEnvironment,
             boolean sharedFilesystem) {
+        this(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment, sharedFilesystem, null);
+    }
+
+    private InitTaskBuildItem(String name, Optional<String> image, List<String> command, List<String> arguments,
+            Map<String, String> taskEnvVars, Map<String, String> appEnvVars, boolean sharedEnvironment,
+            boolean sharedFilesystem, Integer ttlSecondsAfterFinished) {
         this.name = name;
         this.image = image;
         this.command = command;
@@ -43,6 +50,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
         this.appEnvVars = appEnvVars;
         this.sharedEnvironment = sharedEnvironment;
         this.sharedFilesystem = sharedFilesystem;
+        this.ttlSecondsAfterFinished = ttlSecondsAfterFinished;
     }
 
     public String getName() {
@@ -51,7 +59,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withName(String name) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public Optional<String> getImage() {
@@ -60,7 +68,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withImage(String image) {
         return new InitTaskBuildItem(name, Optional.of(image), command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public List<String> getCommand() {
@@ -69,7 +77,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withCommand(List<String> command) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public List<String> getArguments() {
@@ -78,7 +86,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withArguments(List<String> arguments) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public Map<String, String> getTaskEnvVars() {
@@ -87,7 +95,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withTaskEnvVars(Map<String, String> taskEnvVars) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public Map<String, String> getAppEnvVars() {
@@ -96,7 +104,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withAppEnvVars(Map<String, String> appEnvVars) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     /**
@@ -112,7 +120,7 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withSharedEnvironment(boolean sharedEnvironment) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     /**
@@ -130,6 +138,22 @@ public final class InitTaskBuildItem extends MultiBuildItem {
 
     public InitTaskBuildItem withSharedFilesystem(boolean sharedFilesystem) {
         return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
+    }
+
+    /**
+     * The number of seconds the task is allowed to stay around after it has finished, before it is eligible to be
+     * automatically deleted. This is a default that may be overridden by the deployment target configuration (e.g.
+     * the Kubernetes init-task configuration).
+     *
+     * @return the time-to-live in seconds, or empty when not set
+     */
+    public Optional<Integer> getTtlSecondsAfterFinished() {
+        return Optional.ofNullable(ttlSecondsAfterFinished);
+    }
+
+    public InitTaskBuildItem withTtlSecondsAfterFinished(Integer ttlSecondsAfterFinished) {
+        return new InitTaskBuildItem(name, image, command, arguments, taskEnvVars, appEnvVars, sharedEnvironment,
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 }

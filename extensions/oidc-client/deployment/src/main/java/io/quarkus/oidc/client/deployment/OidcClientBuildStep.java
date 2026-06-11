@@ -2,7 +2,6 @@ package io.quarkus.oidc.client.deployment;
 
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.sanitize;
 
-import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -10,6 +9,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassType;
@@ -18,7 +18,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -36,11 +36,9 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.oidc.client.NamedOidcClient;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -133,13 +131,13 @@ public class OidcClientBuildStep {
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             OidcClientNamesBuildItem oidcClientNames) {
 
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean));
 
         String targetPackage = DotNames
-                .internalPackageNameWithTrailingSlash(DotName.createSimple(TokensProducer.class.getName()));
+                .packageName(DotName.createSimple(TokensProducer.class.getName()));
 
         for (String oidcClientName : oidcClientNames.oidcClientNames()) {
-            createNamedTokensProducerFor(classOutput, targetPackage, oidcClientName);
+            createNamedTokensProducerFor(gizmo, targetPackage, oidcClientName);
         }
     }
 
@@ -176,38 +174,42 @@ public class OidcClientBuildStep {
      * }
      * </pre>
      */
-    private String createNamedTokensProducerFor(ClassOutput classOutput, String targetPackage, String oidcClientName) {
-        String generatedName = targetPackage + "TokensProducer_" + sanitize(oidcClientName);
+    private String createNamedTokensProducerFor(Gizmo gizmo, String targetPackage, String oidcClientName) {
+        String generatedName = targetPackage + ".TokensProducer_" + sanitize(oidcClientName);
 
-        try (ClassCreator tokensProducer = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(AbstractTokensProducer.class)
-                .build()) {
-            tokensProducer.addAnnotation(DotNames.SINGLETON.toString());
+        gizmo.class_(generatedName, cc -> {
+            cc.extends_(AbstractTokensProducer.class);
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
 
-            try (MethodCreator produceMethod = tokensProducer.getMethodCreator("produceTokens", Tokens.class)) {
-                produceMethod.setModifiers(Modifier.PUBLIC);
+            cc.method("produceTokens", mc -> {
+                mc.public_();
+                mc.returning(Tokens.class);
 
-                produceMethod.addAnnotation(DotNames.PRODUCES.toString());
-                produceMethod.addAnnotation(NamedOidcClient.class.getName()).addValue("value", oidcClientName);
-                produceMethod.addAnnotation(RequestScoped.class.getName());
+                mc.addAnnotation(Produces.class);
+                mc.addAnnotation(NamedOidcClient.class, ac -> ac.add("value", oidcClientName));
+                mc.addAnnotation(RequestScoped.class);
 
-                ResultHandle tokensResult = produceMethod.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(AbstractTokensProducer.class, "awaitTokens", Tokens.class),
-                        produceMethod.getThis());
+                mc.body(bc -> {
+                    bc.return_(bc.invokeVirtual(
+                            MethodDesc.of(AbstractTokensProducer.class, "awaitTokens", Tokens.class),
+                            cc.this_()));
+                });
+            });
 
-                produceMethod.returnValue(tokensResult);
-            }
+            cc.method("clientId", mc -> {
+                mc.protected_();
+                mc.returning(Optional.class);
 
-            try (MethodCreator clientIdMethod = tokensProducer.getMethodCreator("clientId", Optional.class)) {
-                clientIdMethod.setModifiers(Modifier.PROTECTED);
+                mc.body(bc -> {
+                    bc.return_(bc.invokeStatic(
+                            MethodDesc.of(Optional.class, "of", Optional.class, Object.class),
+                            Const.of(oidcClientName)));
+                });
+            });
+        });
 
-                clientIdMethod.returnValue(clientIdMethod.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                        clientIdMethod.load(oidcClientName)));
-            }
-        }
-
-        return generatedName.replace('/', '.');
+        return generatedName;
     }
 
     public static class IsEnabled implements BooleanSupplier {

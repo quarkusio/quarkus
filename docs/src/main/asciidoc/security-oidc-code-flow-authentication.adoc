@@ -1663,6 +1663,48 @@ You cannot extend the user session indefinitely.
 The returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token expires.
 ====
 
+[[code-flow-step-up-authentication]]
+=== Step Up Authentication
+
+The `io.quarkus.oidc.AuthenticationContext` annotation can be used to list one or more Authentication Context Class Reference (ACR) values to enforce a required authentication level for the Jakarta REST resource classes and methods.
+Consider the following example:
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.oidc.AuthenticationContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/transfer")
+public class TransferResource {
+
+    @GET
+    @AuthenticationContext("gold") <1>
+    public String transfer() {
+        return "transferred";
+    }
+}
+----
+<1> The ID token of the current session must have an `acr` claim with the `gold` ACR value.
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false <1>
+----
+<1> Disable proactive authentication so that the `@AuthenticationContext` annotation can be matched with the endpoint before Quarkus authenticates incoming requests.
+
+The authorization request to the OIDC provider includes the `acr_values` parameter listing the required ACR values, and the `max_age` parameter when the annotation's `maxAge` attribute is set.
+
+When the current session does not provide the required authentication level, for example, because the ID token `acr` claim does not list the required ACR values, the user is redirected to the OIDC provider to re-authenticate.
+This redirect also includes the `acr_values` parameter, so the provider can request a stronger authentication method, for example, a multi-factor authentication, before issuing new tokens.
+
+How the requested ACR values are enforced is specific to each OIDC provider.
+For example, see the link:https://www.keycloak.org/docs/latest/server_admin/index.html#_step-up-flow[Keycloak Step-up Authentication] documentation describing how Keycloak maps ACR values to Levels of Authentication (LoA) in browser authentication flows.
+
+For information about how a required authentication level is enforced in a Bearer token authentication flow, see the xref:security-oidc-bearer-token-authentication.adoc#step-up-authentication[Step Up Authentication] section of the Quarkus OIDC Bearer token authentication guide.
+
 [[oauth2]]
 === Integration with GitHub and non-OIDC OAuth2 providers
 

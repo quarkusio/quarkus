@@ -1,9 +1,12 @@
 package io.quarkus.jlink.deployment;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -121,11 +124,30 @@ public final class JLinkSteps {
                                 .toList())
                         .withMainClass(APP_MAIN);
             }
+            // find the first manifest file
+            Manifest manifest = new Manifest();
+            moduleInfo.resolvedArtifact().getContentTree().apply("META-INF/MANIFEST.MF", pv -> {
+                if (pv != null) {
+                    Path mfPath = pv.getPath();
+                    try (InputStream is = Files.newInputStream(mfPath)) {
+                        manifest.read(is);
+                        return null;
+                    } catch (FileNotFoundException | NoSuchFileException ignored) {
+                    } catch (IOException e) {
+                        throw sneak(e);
+                    }
+                }
+                return null;
+            });
             // write the JAR
-            // TODO: create an actual manifest (if needed)
-            bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, new Manifest(), true));
+            bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, manifest, true));
         }
         return new JLinkStagedOutputItem(staging, bmp);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> RuntimeException sneak(Throwable t) throws E {
+        throw (E) t;
     }
 
     /**

@@ -181,6 +181,11 @@ public final class VertxHttpSender implements HttpSender {
             return shutdownResult;
         }
 
+        if (client == null) {
+            throttlingLogger.log(Level.FINE, "Client is null. Cannot close.");
+            return shutdownResult;
+        }
+
         try {
             client.close()
                     .onSuccess(

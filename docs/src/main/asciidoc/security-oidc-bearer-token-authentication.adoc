@@ -1638,6 +1638,7 @@ public class OidcStartup {
 For more complex setup involving multiple tenants please see the xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
 section of the OpenID Connect Multi-Tenancy guide.
 
+[[step-up-authentication]]
 == Step Up Authentication
 
 The `io.quarkus.oidc.AuthenticationContext` annotation can be used to list one or more Authentication Context Class Reference (ACR) values to enforce a required authentication level for the Jakarta REST resource classes and methods.

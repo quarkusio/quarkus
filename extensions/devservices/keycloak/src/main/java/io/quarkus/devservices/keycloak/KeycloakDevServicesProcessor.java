@@ -44,6 +44,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -216,7 +217,8 @@ public class KeycloakDevServicesProcessor {
                 safeMapHash(config.containerEnv()),
                 config.containerMemoryLimit(),
                 config.webClientTimeout(),
-                config.disableHttps());
+                config.disableHttps(),
+                config.hostAccessiblePorts());
         serviceConfigIdentifier.append(configHashCode);
 
         for (int fileTimeHashCode : getRealmFileLastModifiedDateHashCode(config.realmPath())) {
@@ -609,6 +611,13 @@ public class KeycloakDevServicesProcessor {
                 super.withLogConsumer(t -> {
                     LOG.info("Keycloak: " + t.getUtf8StringWithoutLineEnding());
                 });
+            }
+
+            if (config.hostAccessiblePorts().isPresent()) {
+                // Exposed ports are accessible from the container via http://host.testcontainers.internal:<port>
+                for (int port : config.hostAccessiblePorts().get()) {
+                    Testcontainers.exposeHostPorts(port);
+                }
             }
 
             super.withCreateContainerCmdModifier((container) -> Optional.ofNullable(container.getHostConfig())

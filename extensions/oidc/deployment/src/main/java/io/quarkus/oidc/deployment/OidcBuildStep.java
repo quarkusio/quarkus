@@ -84,6 +84,7 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.runtime.AttestationJwksHandler;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
@@ -118,6 +119,7 @@ import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
@@ -217,7 +219,8 @@ public class OidcBuildStep {
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(ResourceMetadataHandler.class)
-                .addBeanClass(AzureAccessTokenCustomizer.class);
+                .addBeanClass(AzureAccessTokenCustomizer.class)
+                .addBeanClass(AttestationJwksHandler.class);
         additionalBeans.produce(builder.build());
     }
 
@@ -518,6 +521,16 @@ public class OidcBuildStep {
     FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    RouteBuildItem registerAttestationJwksHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getAttestationJwksHandler(beanContainerBuildItem.getValue());
+        return RouteBuildItem.builder()
+                .route(AttestationJwksHandler.ATTESTATION_JWKS_WELL_KNOWN_PATH + "/*")
+                .handler(handler)
+                .build();
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

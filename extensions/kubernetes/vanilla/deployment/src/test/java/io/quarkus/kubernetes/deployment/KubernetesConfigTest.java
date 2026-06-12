@@ -4,6 +4,7 @@ import static io.quarkus.kubernetes.deployment.KubernetesConfigTest.Reader.read;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -180,6 +181,20 @@ class KubernetesConfigTest {
                 assertEquals("earth", items.get("key"));
                 assertEquals("earth", items.get("path"));
                 assertEquals("777", items.get("mode").toString());
+            } else if (volume.get("name").equals("lightning")) {
+                assertEquals("lightning", read(volume).asMap("secret").get("secretName"));
+                assertEquals("384", read(volume).asMap("secret").get("defaultMode").toString());
+                Map<String, Object> items = read(read(volume).asMap("secret").get("items")).list(0).asMap();
+                assertEquals("keystore", items.get("key"));
+                assertEquals("keystore.p12", items.get("path"));
+                assertNull(items.get("mode"));
+            } else if (volume.get("name").equals("rock")) {
+                assertEquals("rock", read(volume).asMap("configMap").get("name"));
+                assertEquals("384", read(volume).asMap("configMap").get("defaultMode").toString());
+                Map<String, Object> items = read(read(volume).asMap("configMap").get("items")).list(0).asMap();
+                assertEquals("rock", items.get("key"));
+                assertEquals("application.properties", items.get("path"));
+                assertNull(items.get("mode"));
             } else if (volume.get("name").equals("one")) {
                 assertNotNull(read(volume).asMap("emptyDir"));
             } else if (volume.get("name").equals("two")) {

@@ -13,7 +13,13 @@ public interface SecretVolumeConfig extends VolumeConfig {
         final var volume = new VolumeBuilder()
                 .withName(name)
                 .withNewSecret();
-        items().forEach((k, v) -> volume.addNewItem().withKey(k).withMode(v.mode()).withPath(v.path()).endItem());
+        items().forEach((k, v) -> {
+            final var item = volume.addNewItem().withKey(k).withPath(v.path());
+            if (v.hasExplicitMode()) {
+                item.withMode(v.mode());
+            }
+            item.endItem();
+        });
 
         return volume
                 .withSecretName(secretName())

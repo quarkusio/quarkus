@@ -37,6 +37,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
                 if (ctx.ready()) {
                     BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(ctx.oidcConfig());
                     ResourceMetadataHandler.fireResourceMetadataReadyEvent(ctx.oidcConfig());
+                    AttestationJwksHandler.fireAttestationJwksReadyEvent(ctx.oidcConfig());
                 }
             });
         }

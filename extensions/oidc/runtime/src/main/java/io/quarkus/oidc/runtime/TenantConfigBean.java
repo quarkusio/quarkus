@@ -58,6 +58,7 @@ public final class TenantConfigBean {
                             BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(oidcConfig);
                             ResourceMetadataHandler.fireResourceMetadataReadyEvent(oidcConfig);
                             ClientIdMetadataHandler.fireClientIdMetadataReadyEvent(oidcConfig);
+                            AttestationJwksHandler.fireAttestationJwksReadyEvent(oidcConfig);
                         }
                         return t;
                     }
@@ -74,6 +75,7 @@ public final class TenantConfigBean {
             BackChannelLogoutHandler.fireBackChannelLogoutChangedEvent(oidcConfig, tenant);
             ResourceMetadataHandler.fireResourceMetadataChangedEvent(oidcConfig, tenant);
             ClientIdMetadataHandler.fireClientIdMetadataChangedEvent(oidcConfig, tenant);
+            AttestationJwksHandler.fireAttestationJwksChangedEvent(oidcConfig, tenant);
             return Uni.createFrom().item(newTenant);
         } else {
             return createDynamicTenantContext(oidcConfig);

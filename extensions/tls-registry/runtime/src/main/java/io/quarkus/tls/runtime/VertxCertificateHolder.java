@@ -120,7 +120,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
                         config().keyExchangeProtocols().get().contains("x25519mlkem768")) {
                     sslOptions.setUseHybridKeyExchangeProtocol(true);
                 } else {
-                    throw new IllegalStateException("PQC can't be enforced if x25519mlkem768 is not in the server's supported key exchange protocols");
+                    throw new IllegalStateException(
+                            "PQC can't be enforced if x25519mlkem768 is not in the server's supported key exchange protocols");
                 }
             }
             case RELAXED -> {

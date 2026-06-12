@@ -129,7 +129,7 @@ public class HttpServerOptionsUtils {
         return bucket;
     }
 
-        private static void applySslConfigToHttpServerOptions(ServerSslConfig sslConfig, HttpServerOptions serverOptions)
+    private static void applySslConfigToHttpServerOptions(ServerSslConfig sslConfig, HttpServerOptions serverOptions)
             throws IOException {
         // credentials provider
         Map<String, String> credentials = Map.of();

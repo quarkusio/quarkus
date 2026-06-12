@@ -91,7 +91,6 @@ public interface TlsBucketConfig {
      */
     Optional<List<String>> keyExchangeProtocols();
 
-
     /**
      * Sets the list of revoked certificates (paths to files).
      * <p>

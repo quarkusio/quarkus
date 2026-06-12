@@ -12,8 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -40,6 +43,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.oidc.common.ClientAttester;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
@@ -1013,6 +1017,68 @@ public class OidcCommonUtils {
             case BEARER, CLIENT -> "JWT bearer";
             case SPIFFE_JWT -> "SPIFFE JWT-SVID";
         };
+    }
+
+    public static AttestationKeyRegistry initAttestationJwtContext(OidcClientCommonConfig oidcConfig) {
+        if (oidcConfig.credentials().attestation().enabled()) {
+            AttestationKeyRegistry registry = Arc.container().instance(AttestationKeyRegistry.class).get();
+            if (registry == null) {
+                throw new RuntimeException("AttestationKeyRegistry bean is not available");
+            }
+            try {
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+                keyPairGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+                KeyPair keyPair = keyPairGenerator.generateKeyPair();
+                SignatureAlgorithm sigAlg = SignatureAlgorithm
+                        .fromAlgorithm(oidcConfig.credentials().attestation().signatureAlgorithm());
+                registry.register(oidcConfig.clientId().get(), keyPair,
+                        sigAlg, oidcConfig.credentials().jwt().lifespan());
+                return registry;
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to generate attestation key pair", ex);
+            }
+        }
+        return null;
+    }
+
+    public static String buildClientAttestationJwt(String clientId,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        JsonObject cnf = new JsonObject().put("jwk",
+                AttestationKeyRegistry.convertPublicKeyToJwk(ctx.keyPair().getPublic()));
+        return Jwt.issuer(clientId)
+                .subject(clientId)
+                .claim(OidcConstants.CONFIRMATION_CLAIM, cnf.getMap())
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .keyId(ctx.kid())
+                .sign((PrivateKey) ctx.keyPair().getPrivate());
+    }
+
+    public static String buildClientAttestationPopJwt(String clientId, String audience,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        return Jwt.issuer(clientId)
+                .audience(audience)
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_POP_JWT_TYPE)
+                .sign((PrivateKey) ctx.keyPair().getPrivate());
+    }
+
+    public static Uni<HttpRequest<Buffer>> prepareClientAttestation(
+            ClientAttester attester, AttestationKeyRegistry keyRegistry,
+            AttestationKeyRegistry.AttestationJwtContext jwtContext,
+            String clientId, String audience,
+            HttpRequest<Buffer> request) {
+        ClientAttester.KeyOwnershipProof keyOwnershipProof = keyRegistry.getKeyOwnershipProof(clientId);
+        return attester
+                .attest(new ClientAttester.ClientAttestationContext(clientId, keyOwnershipProof))
+                .map(attestationJwt -> {
+                    request.putHeader(OidcConstants.CLIENT_ATTESTATION_HEADER, attestationJwt);
+                    request.putHeader(OidcConstants.CLIENT_ATTESTATION_POP_HEADER,
+                            buildClientAttestationPopJwt(clientId, audience, jwtContext));
+                    return request;
+                });
     }
 
 }

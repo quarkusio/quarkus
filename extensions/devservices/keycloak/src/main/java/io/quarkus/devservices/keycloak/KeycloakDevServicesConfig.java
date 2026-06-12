@@ -229,4 +229,14 @@ public interface KeycloakDevServicesConfig {
     @WithDefault("false")
     boolean disableHttps();
 
+    /**
+     * The host ports to expose to the Keycloak container.
+     *
+     * When this list is non-empty, the host is made accessible from the container
+     * using the {@code host.testcontainers.internal} hostname, and only the listed ports are exposed.
+     * This may be necessary when Keycloak needs to make HTTP callbacks to the application running on the host,
+     * for example, to fetch attestation keys from a JWKS endpoint.
+     */
+    Optional<List<Integer>> hostAccessiblePorts();
+
 }

@@ -10,7 +10,11 @@ import io.vertx.core.http.HttpServerOptions;
  * <p>
  * The passed {@link HttpServerOptions} must be customized in the body of the implementation. The default implementations
  * are no-op.
+ *
+ * @deprecated Use {@link HttpServerConfigCustomizer} instead, which consume both a
+ *             {@link io.vertx.core.http.HttpServerConfig} and a {@link io.vertx.core.net.ServerSSLOptions}.
  */
+@Deprecated(forRemoval = true)
 public interface HttpServerOptionsCustomizer {
 
     /**

@@ -54,7 +54,7 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <gitflow-incremental-builder.version>4.6.0</gitflow-incremental-builder.version>
+
         <quarkus-platform-bom-plugin.version>0.0.131</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
@@ -287,36 +287,18 @@
                 </property>
             </activation>
             <properties>
-                <!-- the *local* main, not refs/remotes/... -->
-                <gib.referenceBranch>main</gib.referenceBranch>
+                <!-- Scalpel configuration: https://github.com/maveniverse/scalpel -->
+                <!-- Scalpel is a Maven core extension configured in .mvn/extensions.xml -->
+                <!-- It auto-detects the base branch on GitHub Actions via GITHUB_BASE_REF -->
+                <scalpel.baseBranch>main</scalpel.baseBranch>
+                <!-- these metadata files can't affect the build -->
+                <scalpel.excludePaths>.sdkmanrc,.gitpod.yml,.gitpod/**,LICENSE,*.md,*.txt,*.adoc</scalpel.excludePaths>
+                <!-- pointless to attempt incremental build if something like mvnw was changed
+                     (and also potentially wrong, given that independent-projects might not be built) -->
+                <scalpel.disableTriggers>.github/**,.mvn/**,mvnw*</scalpel.disableTriggers>
+                <scalpel.skipTestsForUpstream>true</scalpel.skipTestsForUpstream>
+                <scalpel.upstreamArgs>skipITs=true,invoker.skip=true,no-format=true</scalpel.upstreamArgs>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.github.gitflow-incremental-builder</groupId>
-                        <artifactId>gitflow-incremental-builder</artifactId>
-                        <version>${gitflow-incremental-builder.version}</version>
-                        <extensions>true</extensions>
-                        <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
-                             General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
-                             See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
-                        <configuration>
-                            <!-- these metadata file can't affect the build -->
-                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
-                            <!-- pointless to attempt incremental build if something like mvnw was changed
-                                 (and also potentially wrong, given that independent-projects might not be built) -->
-                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
-                            <!-- Note: *Upstream* is only relevant in case of:
-                                 -am or
-                                 -Dgib.buildUpstream=always|true or
-                                 -Dgib.buildAll=true or
-                                 -Dgib.forceBuildModules=... -->
-                            <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
-                            <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>owasp-check</id>

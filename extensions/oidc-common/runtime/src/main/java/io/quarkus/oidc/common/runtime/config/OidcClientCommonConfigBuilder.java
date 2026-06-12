@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Attestation;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
@@ -162,7 +163,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     public static final class CredentialsBuilder<T> {
 
         private record CredentialsImpl(Optional<String> secret, Secret clientSecret, Jwt jwt,
-                boolean forAllEndpoints) implements Credentials {
+                boolean forAllEndpoints, Attestation attestation) implements Credentials {
         }
 
         private final OidcClientCommonConfigBuilder<T> builder;
@@ -170,6 +171,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         private Secret clientSecret;
         private Jwt jwt;
         private boolean forAllEndpoints;
+        private Attestation attestation;
 
         public CredentialsBuilder() {
             this(getConfigBuilderWithDefaults());
@@ -181,6 +183,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.clientSecret = builder.credentials.clientSecret();
             this.jwt = builder.credentials.jwt();
             this.forAllEndpoints = builder.credentials.forAllEndpoints();
+            this.attestation = builder.credentials.attestation();
         }
 
         /**
@@ -265,6 +268,15 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
+         * @param attestation {@link Credentials#attestation()} created with SmallRye Config
+         * @return this builder
+         */
+        public CredentialsBuilder<T> attestation(Attestation attestation) {
+            this.attestation = Objects.requireNonNull(attestation);
+            return this;
+        }
+
+        /**
          * Builds {@link Credentials} and returns the builder.
          *
          * @return T builder
@@ -278,7 +290,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          * @return Credentials
          */
         public Credentials build() {
-            return new CredentialsImpl(secret, clientSecret, jwt, forAllEndpoints);
+            return new CredentialsImpl(secret, clientSecret, jwt, forAllEndpoints, attestation);
         }
 
         private static <T> OidcClientCommonConfigBuilder<T> getConfigBuilderWithDefaults() {

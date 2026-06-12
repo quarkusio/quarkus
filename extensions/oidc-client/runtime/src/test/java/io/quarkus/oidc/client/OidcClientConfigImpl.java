@@ -97,7 +97,10 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_TOKEN_ID,
         JWT_BEARER_TOKEN_PATH,
         PROXY_CONFIGURATION_NAME,
-        REFRESH_INTERVAL
+        REFRESH_INTERVAL,
+        CREDENTIALS_ATTESTATION,
+        CREDENTIALS_ATTESTATION_ENABLED,
+        CREDENTIALS_ATTESTATION_SIGNATURE_ALGORITHM
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -323,6 +326,24 @@ final class OidcClientConfigImpl implements OidcClientConfig {
             public boolean forAllEndpoints() {
                 invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_FOR_ALL_ENDPOINTS, true);
                 return false;
+            }
+
+            @Override
+            public Attestation attestation() {
+                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION, true);
+                return new Attestation() {
+                    @Override
+                    public boolean enabled() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION_ENABLED, true);
+                        return false;
+                    }
+
+                    @Override
+                    public String signatureAlgorithm() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION_SIGNATURE_ALGORITHM, true);
+                        return "ES256";
+                    }
+                };
             }
         };
     }

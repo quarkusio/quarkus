@@ -83,6 +83,11 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
         boolean forAllEndpoints();
 
         /**
+         * Client attestation authentication method.
+         */
+        Attestation attestation();
+
+        /**
          * Supports the client authentication methods that involve sending a client secret.
          *
          * @see <a href=
@@ -277,6 +282,28 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
              */
             @WithDefault("false")
             boolean assertion();
+
+        }
+
+        /**
+         * Configures attestation-based client authentication.
+         */
+        interface Attestation {
+
+            /**
+             * Enable attestation-based client authentication.
+             */
+            @WithDefault("false")
+            boolean enabled();
+
+            /**
+             * The signature algorithm used for attestation and proof-of-possession JWTs.
+             * Supported values: {@code ES256} (default), {@code ES384}, {@code ES512}.
+             * <p>
+             * The attestation JWT lifespan is controlled by {@link Jwt#lifespan()}.
+             */
+            @WithDefault("ES256")
+            String signatureAlgorithm();
 
         }
 

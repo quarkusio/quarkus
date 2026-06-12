@@ -101,7 +101,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <keycloak.server.version>26.6.2</keycloak.server.version>
-        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:nightly</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 

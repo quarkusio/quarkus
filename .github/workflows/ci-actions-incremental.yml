@@ -424,11 +424,16 @@ jobs:
               SCALPEL_ARGS+=" -Dscalpel.baseBranch=refs/remotes/quarkusio/main -Dscalpel.fetchBaseBranch=true -Dscalpel.disableOnBranch='main|\d+\.\d+|.*backport.*'"
             fi
 
-            # mvnw just for creating scalpel-impacted.log and the JSON report ("validate" should not waste much time if not incremental at all, e.g. on main)
-            ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $SCALPEL_ARGS -Dscalpel.impactedLog=scalpel-impacted.log validate
-            if [ -s scalpel-impacted.log ]
-            then
-              SCALPEL_IMPACTED=$(cat scalpel-impacted.log)
+            # mvnw just for creating the JSON report ("validate" should not waste much time if not incremental at all, e.g. on main)
+            # report mode includes direct, downstream and upstream modules in the JSON report
+            ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $SCALPEL_ARGS -Dscalpel.mode=report validate
+            if [ -f target/scalpel-report.json ]; then
+              # Extract impacted module paths, excluding upstream-only modules (they don't need testing)
+              SCALPEL_IMPACTED=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | .path' target/scalpel-report.json)
+              if [ -z "$SCALPEL_IMPACTED" ]; then
+                SCALPEL_IMPACTED='_all_'
+                SCALPEL_ARGS=''
+              fi
             else
               SCALPEL_IMPACTED='_all_'
               # when we impact all modules, we do not need to run Scalpel in further jobs
@@ -436,8 +441,8 @@ jobs:
             fi
 
             # Extract GAV-formatted impacted modules from the JSON report for quickstarts testing
-            if [[ "$SCALPEL_IMPACTED" != '_all_' ]] && [ -f target/scalpel-report.json ]; then
-              SCALPEL_IMPACTED_GAV=$(jq -r '.affectedModules[] | "\(.groupId):\(.artifactId)"' target/scalpel-report.json)
+            if [[ "$SCALPEL_IMPACTED" != '_all_' ]]; then
+              SCALPEL_IMPACTED_GAV=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | "\(.groupId):\(.artifactId)"' target/scalpel-report.json)
               if [ -z "$SCALPEL_IMPACTED_GAV" ]; then
                 SCALPEL_IMPACTED_GAV='_all_'
               fi

@@ -27,7 +27,9 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.ServerSSLOptions;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -55,13 +57,13 @@ class TlsCertificateReloaderTest {
     @Test
     void initCertReloadingAction_periodBelow30Seconds_throws() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(29));
-        HttpServerOptions options = new HttpServerOptions();
-        options.setSsl(true);
-        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
+        HttpServerConfig config = new HttpServerConfig();
+        ServerSSLOptions sslOptions = new ServerSSLOptions();
+        sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, options, sslConfig, registry, Optional.empty()));
+                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty()));
 
         assertEquals("Unable to configure TLS reloading - The reload period cannot be less than 30 seconds",
                 ex.getMessage());
@@ -70,52 +72,52 @@ class TlsCertificateReloaderTest {
     @Test
     void initCertReloadingAction_periodExactly30Seconds_isAccepted() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(30));
-        HttpServerOptions options = new HttpServerOptions();
-        options.setSsl(true);
-        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
+        HttpServerConfig config = new HttpServerConfig();
+        ServerSSLOptions sslOptions = new ServerSSLOptions();
+        sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         when(vertx.setPeriodic(anyLong(), any(Handler.class))).thenReturn(42L);
 
         assertDoesNotThrow(() -> {
             lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                    vertx, server, options, sslConfig, registry, Optional.empty());
+                    vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
         });
     }
 
     @Test
     void initCertReloadingAction_periodOf1Second_throws() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(1));
-        HttpServerOptions options = new HttpServerOptions();
-        options.setSsl(true);
-        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
+        HttpServerConfig config = new HttpServerConfig();
+        ServerSSLOptions sslOptions = new ServerSSLOptions();
+        sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, options, sslConfig, registry, Optional.empty()));
+                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty()));
     }
 
     @Test
     void initCertReloadingAction_noReloadPeriod_returnsMinusOne() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(null);
-        HttpServerOptions options = new HttpServerOptions();
-        options.setSsl(true);
-        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
+        HttpServerConfig config = new HttpServerConfig();
+        ServerSSLOptions sslOptions = new ServerSSLOptions();
+        sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         long result = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, options, sslConfig, registry, Optional.empty());
+                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
 
         assertEquals(-1L, result);
     }
 
     @Test
-    void initCertReloadingAction_nullOptions_throws() {
+    void initCertReloadingAction_nullConfig_throws() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(60));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, null, sslConfig, registry, Optional.empty()));
+                        vertx, server, null, null, sslConfig, registry, Optional.empty()));
 
-        assertEquals("Unable to configure TLS reloading - The HTTP server options were not provided",
+        assertEquals("Unable to configure TLS reloading - The HTTP server configuration was not provided",
                 ex.getMessage());
     }
 
@@ -129,14 +131,14 @@ class TlsCertificateReloaderTest {
     @Test
     void initCertReloadingAction_withTlsRegistry_acceptsValidPeriod() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(60));
-        HttpServerOptions options = new HttpServerOptions();
+        HttpServerConfig config = new HttpServerConfig();
 
         TlsConfiguration tlsConfig = mock(TlsConfiguration.class);
         when(registry.get("my-tls")).thenReturn(Optional.of(tlsConfig));
         when(vertx.setPeriodic(anyLong(), any(Handler.class))).thenReturn(200L);
 
         lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, options, sslConfig, registry, Optional.of("my-tls"));
+                vertx, server, config, null, sslConfig, registry, Optional.of("my-tls"));
 
         assertEquals(200L, lastTimerId);
     }
@@ -144,14 +146,14 @@ class TlsCertificateReloaderTest {
     @Test
     void initCertReloadingAction_returnsTimerId() {
         ServerSslConfig sslConfig = mockSslConfigWithReloadPeriod(Duration.ofSeconds(60));
-        HttpServerOptions options = new HttpServerOptions();
-        options.setSsl(true);
-        options.setKeyCertOptions(new io.vertx.core.net.PemKeyCertOptions());
+        HttpServerConfig config = new HttpServerConfig();
+        ServerSSLOptions sslOptions = new ServerSSLOptions();
+        sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         when(vertx.setPeriodic(anyLong(), any(Handler.class))).thenReturn(555L);
 
         lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, options, sslConfig, registry, Optional.empty());
+                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
 
         assertEquals(555L, lastTimerId);
     }

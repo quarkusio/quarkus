@@ -66,7 +66,6 @@ import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerConfigCustomizer;
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -176,11 +175,6 @@ class VertxHttpProcessor {
                 .addBeanClass(CurrentRequestProducer.class)
                 .addBeanClass(HttpCertificateUpdateEventListener.class)
                 .build();
-    }
-
-    @BuildStep
-    UnremovableBeanBuildItem shouldNotRemoveHttpServerOptionsCustomizers() {
-        return UnremovableBeanBuildItem.beanTypes(HttpServerOptionsCustomizer.class);
     }
 
     @BuildStep

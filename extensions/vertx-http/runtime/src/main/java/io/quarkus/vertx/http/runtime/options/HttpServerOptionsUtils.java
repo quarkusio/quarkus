@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -22,11 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
-import io.netty.handler.codec.compression.BrotliOptions;
-import io.netty.handler.codec.compression.DeflateOptions;
-import io.netty.handler.codec.compression.GzipOptions;
-import io.netty.handler.codec.compression.StandardCompressionOptions;
-import io.netty.handler.logging.ByteBufFormat;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
@@ -49,10 +43,8 @@ import io.vertx.core.http.Http1ServerConfig;
 import io.vertx.core.http.Http2ServerConfig;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerConfig;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.WebSocketServerConfig;
-import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TcpOption;
@@ -884,26 +876,6 @@ public class HttpServerOptionsUtils {
         return sslOptions;
     }
 
-    private static void applySslConfigToHttpServerOptions(ServerSslConfig sslConfig, HttpServerOptions serverOptions)
-            throws IOException {
-        ServerSSLOptions resolved = createSslOptionsFromLegacyConfig(sslConfig);
-        if (resolved == null) {
-            return;
-        }
-        if (resolved.getKeyCertOptions() != null) {
-            serverOptions.setKeyCertOptions(resolved.getKeyCertOptions());
-        }
-        if (resolved.getTrustOptions() != null) {
-            serverOptions.setTrustOptions(resolved.getTrustOptions());
-        }
-        for (String cipher : resolved.getEnabledCipherSuites()) {
-            serverOptions.addEnabledCipherSuite(cipher);
-        }
-        serverOptions.setEnabledSecureTransportProtocols(resolved.getEnabledSecureTransportProtocols());
-        serverOptions.setSsl(true);
-        serverOptions.setSni(resolved.isSni());
-    }
-
     private static void applyCompressionConfig(HttpServerConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         applyCompressionConfig(config, httpBuildTimeConfig.enableCompression(),
                 httpBuildTimeConfig.enableDecompression(), httpBuildTimeConfig.compressors(),
@@ -984,13 +956,6 @@ public class HttpServerOptionsUtils {
         }
     }
 
-    // Deprecated overload for HttpServerOptions
-    private static void configureTrafficShapingIfEnabled(HttpServerOptions httpServerOptions, VertxHttpConfig httpConfig) {
-        if (httpConfig.trafficShaping().enabled()) {
-            httpServerOptions.setTrafficShapingOptions(buildTrafficShapingOptions(httpConfig));
-        }
-    }
-
     private static void applyWebSocketOptions(WebSocketServerConfig wsConfig, WebsocketServerConfig ws) {
         wsConfig.setUsePerFrameCompression(ws.perFrameCompression());
         wsConfig.setUsePerMessageCompression(ws.perMessageCompression());
@@ -1001,26 +966,8 @@ public class HttpServerOptionsUtils {
         wsConfig.setUseUnmaskedFrames(ws.acceptUnmaskedFrames());
     }
 
-    // Deprecated overload for HttpServerOptions
-    private static void applyWebSocketOptions(HttpServerOptions options, WebsocketServerConfig ws) {
-        options.setPerFrameWebSocketCompressionSupported(ws.perFrameCompression());
-        options.setPerMessageWebSocketCompressionSupported(ws.perMessageCompression());
-        options.setWebSocketCompressionLevel(ws.compressionLevel());
-        options.setWebSocketAllowServerNoContext(ws.allowServerNoContext());
-        options.setWebSocketPreferredClientNoContext(ws.preferredClientNoContext());
-        options.setWebSocketClosingTimeout(ws.closingTimeout());
-        options.setAcceptUnmaskedFrames(ws.acceptUnmaskedFrames());
-    }
-
     private static void setIdleTimeout(VertxHttpConfig httpConfig, HttpServerConfig config) {
         config.setIdleTimeout(httpConfig.idleTimeout());
-    }
-
-    // Deprecated overload for HttpServerOptions
-    private static void setIdleTimeout(VertxHttpConfig httpConfig, HttpServerOptions options) {
-        int idleTimeout = (int) httpConfig.idleTimeout().toMillis();
-        options.setIdleTimeout(idleTimeout);
-        options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
     }
 
     private static byte[] doRead(InputStream is) throws IOException {

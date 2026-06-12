@@ -5,9 +5,6 @@ import io.vertx.core.net.ServerSSLOptions;
 
 /**
  * Interface exposed by CDI beans willing to customize the HTTP server configuration.
- * <p>
- * Replaces the deprecated {@link HttpServerOptionsCustomizer} to work with the new
- * Vert.x {@link HttpServerConfig} and {@link ServerSSLOptions} APIs.
  */
 public interface HttpServerConfigCustomizer {
 

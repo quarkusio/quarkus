@@ -154,4 +154,22 @@ open class ResourceTest {
     fun testEmptySet() {
         When { get("/emptySet") } Then { statusCode(200) }
     }
+
+    @Test
+    fun testFoo() {
+        When { get("/foo") } Then
+            {
+                statusCode(200)
+                body(CoreMatchers.containsString("a"), CoreMatchers.containsString("b"))
+            }
+    }
+
+    @Test
+    fun testBar() {
+        When { get("/bar") } Then
+            {
+                statusCode(200)
+                body(CoreMatchers.containsString("a"), CoreMatchers.containsString("b"))
+            }
+    }
 }

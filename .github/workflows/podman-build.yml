@@ -103,7 +103,7 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Initial build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS

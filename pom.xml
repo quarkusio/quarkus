@@ -286,19 +286,11 @@
                     <name>incremental</name>
                 </property>
             </activation>
-            <properties>
-                <!-- Scalpel configuration: https://github.com/maveniverse/scalpel -->
-                <!-- Scalpel is a Maven core extension configured in .mvn/extensions.xml -->
-                <!-- It auto-detects the base branch on GitHub Actions via GITHUB_BASE_REF -->
-                <scalpel.baseBranch>main</scalpel.baseBranch>
-                <!-- these metadata files can't affect the build -->
-                <scalpel.excludePaths>.sdkmanrc,.gitpod.yml,.gitpod/**,LICENSE,*.md,*.txt,*.adoc</scalpel.excludePaths>
-                <!-- pointless to attempt incremental build if something like mvnw was changed
-                     (and also potentially wrong, given that independent-projects might not be built) -->
-                <scalpel.disableTriggers>.github/**,.mvn/**,mvnw*</scalpel.disableTriggers>
-                <scalpel.skipTestsForUpstream>true</scalpel.skipTestsForUpstream>
-                <scalpel.upstreamArgs>skipITs=true,invoker.skip=true,no-format=true</scalpel.upstreamArgs>
-            </properties>
+            <!-- Scalpel configuration: https://github.com/maveniverse/scalpel -->
+            <!-- Scalpel is a Maven core extension configured in .mvn/extensions.xml -->
+            <!-- Default Scalpel settings are in .mvn/maven.config -->
+            <!-- Profile properties are NOT read by Maven core extensions so they cannot be used here -->
+            <!-- For local incremental builds, use: ./mvnw -Dscalpel.enabled=true -Dscalpel.baseBranch=main -->
         </profile>
         <profile>
             <id>owasp-check</id>

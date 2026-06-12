@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
@@ -394,5 +396,19 @@ public class OidcUtilsTest {
         assertFalse(OidcUtils.isApplicationJwtContentType(" application/jwt-custom"));
         assertFalse(OidcUtils.isApplicationJwtContentType(" application/json"));
         assertFalse(OidcUtils.isApplicationJwtContentType(null));
+    }
+
+    @Test
+    public void testAttestationRejectsRS256() {
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.RS256));
+        assertTrue(ex.getMessage().contains("Only EC algorithms (ES256, ES384, ES512) are supported"));
+    }
+
+    @Test
+    public void testAttestationAcceptsEcCurves() {
+        assertEquals("secp256r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES256));
+        assertEquals("secp384r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES384));
+        assertEquals("secp521r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES512));
     }
 }

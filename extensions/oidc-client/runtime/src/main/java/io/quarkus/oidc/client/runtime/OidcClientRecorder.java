@@ -315,13 +315,6 @@ public class OidcClientRecorder {
 
     }
 
-    static final class OidcConfigurationMetadata {
-        final String tokenRequestUri;
-        final String tokenRevokeUri;
-
-        OidcConfigurationMetadata(String tokenRequestUri, String tokenRevokeUri) {
-            this.tokenRequestUri = tokenRequestUri;
-            this.tokenRevokeUri = tokenRevokeUri;
-        }
+    record OidcConfigurationMetadata(String tokenRequestUri, String tokenRevokeUri) {
     }
 }

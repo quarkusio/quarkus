@@ -115,6 +115,14 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-2";
         }
 
+        if (path.contains("tenant-attestation-custom")) {
+            return "tenant-attestation-custom";
+        }
+
+        if (path.contains("tenant-attestation")) {
+            return "tenant-attestation";
+        }
+
         if (path.contains("pushed-authorization-request/tenant-jwt")) {
             return "par-tenant-jwt";
         }

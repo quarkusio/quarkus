@@ -85,6 +85,9 @@ interface PermissionSecurityChecks {
         private static final String IS_GRANTED = "isGranted";
         private static final DotName SECURITY_IDENTITY_NAME = DotName.createSimple(SecurityIdentity.class);
         private static final String SECURED_METHOD_PARAMETER = "securedMethodParameter";
+        private static final Comparator<Map.Entry<PermissionNameAndChecker, Set<String>>> PERMISSION_TO_ACTION_COMPARATOR = Comparator
+                .comparing((Map.Entry<PermissionNameAndChecker, Set<String>> e) -> e.getKey().permissionName())
+                .thenComparing(e -> e.getKey().checker() != null ? e.getKey().checker().generatedClassName() : "");
         private final Map<AnnotationTarget, List<List<PermissionKey>>> targetToPermissionKeys = new HashMap<>();
         private final Map<AnnotationTarget, LogicalAndPermissionPredicate> targetToPredicate = new HashMap<>();
         private final Map<String, MethodInfo> classSignatureToConstructor = new HashMap<>();
@@ -575,12 +578,13 @@ interface PermissionSecurityChecks {
                     .orElse(null);
         }
 
+        // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
+        // here we transform it to permission -> actions
+        record PermissionNameAndChecker(String permissionName, PermissionCheckerMetadata checker) {
+        }
+
         private <T extends AnnotationTarget> void gatherPermissionKeys(AnnotationInstance instance, T annotationTarget,
                 List<PermissionKey> cache, Map<T, List<List<PermissionKey>>> targetToPermissionKeys) {
-            // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
-            // here we transform it to permission -> actions
-            record PermissionNameAndChecker(String permissionName, PermissionCheckerMetadata checker) {
-            }
             boolean foundPermissionChecker = false;
             final var permissionToActions = new HashMap<PermissionNameAndChecker, Set<String>>();
             for (String permissionValExpression : instance.value().asStringArray()) {
@@ -683,8 +687,8 @@ interface PermissionSecurityChecks {
                 }
             }
 
-            for (var permissionToAction : permissionToActions.entrySet().stream()
-                    .sorted(Comparator.comparing(e -> e.getKey().permissionName())).toList()) {
+            for (var permissionToAction : permissionToActions.entrySet().stream().sorted(PERMISSION_TO_ACTION_COMPARATOR)
+                    .toList()) {
                 final var permissionNameKey = permissionToAction.getKey();
                 final var permissionActions = permissionToAction.getValue();
                 final var key = new PermissionKey(permissionNameKey.permissionName, permissionActions, params, classType,

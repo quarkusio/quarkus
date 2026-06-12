@@ -56,7 +56,6 @@ import io.quarkus.deployment.steps.LocaleProcessor;
 import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
-import io.quarkus.runtime.graal.CLDRLocaleProviderFeature;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.graal.GraalVM.Distribution;
 import io.quarkus.runtime.graal.JVMChecksFeature;
@@ -98,9 +97,6 @@ public class NativeImageBuildStep {
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
         features.produce(new NativeImageFeatureBuildItem(JVMChecksFeature.class));
         if (!nativeConfig.autoServiceLoaderRegistration()) {
-            if (NativeImageFutureDefault.RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(nativeConfig)) {
-                features.produce(new NativeImageFeatureBuildItem(CLDRLocaleProviderFeature.class));
-            }
             features.produce(new NativeImageFeatureBuildItem(SkipConsoleServiceProvidersFeature.class));
         }
     }

@@ -44,6 +44,6 @@ public class DbOfflineOnStartupTest {
         var entity = new MyEntity("someName");
         asserter.assertFailedWith(
                 () -> sessionFactory.withTransaction(session -> session.persist(entity).chain(session::flush)),
-                t -> assertThat(t).hasMessageContaining("Connection refused"));
+                t -> assertThat(t).hasMessageContaining("HR000092"));
     }
 }

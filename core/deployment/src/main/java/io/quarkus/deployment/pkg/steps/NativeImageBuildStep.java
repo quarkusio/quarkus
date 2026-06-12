@@ -1165,6 +1165,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add(excludeConfig.getResourceName());
                 }
 
+                nativeImageArgs.add("-o");
                 nativeImageArgs.add(nativeImageName);
 
                 //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"

@@ -15,8 +15,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 /**
@@ -53,6 +55,12 @@ public class LocaleProcessor {
         generatedServiceProviders.produce(new GeneratedServiceProviderBuildItem(
                 "sun.util.resources.LocaleData$CommonResourceBundleProvider",
                 "sun.util.resources.provider.LocaleDataProvider"));
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeResourceBundles.class)
+    ServiceProviderBuildItem cldrLocaleProvider() {
+        return new ServiceProviderBuildItem("sun.util.locale.provider.LocaleDataMetaInfo",
+                "sun.util.resources.cldr.provider.CLDRLocaleDataMetaInfo");
     }
 
     /**

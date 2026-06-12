@@ -1,6 +1,7 @@
 package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.steps.NativeImageFFMConfigStep.isGraalVm25OrNewer;
+import static io.quarkus.deployment.steps.NativeImageReflectConfigStep.addAllDeclaredFields;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -26,8 +27,11 @@ import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
+ * @formatter:off
  * Schema used:
- * https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json
+ * <a href="https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json">reachability-metadata-schema-v1.2.0.json</a>
+ * Notes on proper testing: At least integration-tests module awt.
+ * @formatter:on
  */
 public class NativeImageJNIConfigStep {
 
@@ -82,25 +86,18 @@ public class NativeImageJNIConfigStep {
                     methodsArray.add(methodObject);
                 }
             }
-
-            if (!methodsArray.isEmpty()) {
-                json.put("methods", methodsArray);
-            }
-
-            if (info.fields) {
-                json.put("allDeclaredFields", true);
-            } else if (!info.fieldSet.isEmpty()) {
-                final JsonArrayBuilder fieldsArray = Json.array();
-                for (String fieldName : info.fieldSet) {
-                    fieldsArray.add(Json.object().put("name", fieldName));
-                }
-                json.put("fields", fieldsArray);
-            }
-
+            addAllDeclaredFields(info.fields, info.fieldSet, methodsArray, json);
             reflectionArray.add(json);
         }
         final boolean isGraalVm25OrNewer = isGraalVm25OrNewer(nativeImageRunnerBuildItem);
         final JsonObjectBuilder root = Json.object();
+        if (isGraalVm25OrNewer) {
+            root.put("reflection", reflectionArray);
+        } else {
+            // GraalVM/Mandrel 21 vs 25+ reachability-metadata.json ParserConfigurationAdapter incompatibility.
+            // TODO: Remove when we drop GraalVM/Mandrel for JDK 21
+            root.put("jni", reflectionArray);
+        }
         root.put("reflection", reflectionArray);
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);

@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
 import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
 import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -38,7 +39,6 @@ public class RegisterForReflectionITCase {
     @Test
     public void testSelfWithNested() {
         final String resourceB = BASE_PKG + ".ResourceB";
-
         assertRegistration("ResourceB", resourceB);
         assertRegistration("InnerClassOfB", resourceB + "$InnerClassOfB");
         assertRegistration("StaticClassOfB", resourceB + "$StaticClassOfB");
@@ -49,7 +49,6 @@ public class RegisterForReflectionITCase {
     @Test
     public void testTargetWithNestedPost22_1() {
         final String resourceC = BASE_PKG + ".ResourceC";
-
         // Starting with GraalVM 22.1 ResourceC implicitly gets registered by GraalVM
         // (see https://github.com/oracle/graal/pull/4414)
         assertRegistration("ResourceC", resourceC);
@@ -58,9 +57,22 @@ public class RegisterForReflectionITCase {
     }
 
     @Test
-    public void testTargetWithoutNested() {
+    @DisableIfBuiltWithGraalVMNewerThan(GraalVMVersion.GRAALVM_24_0_0)
+    public void testTargetWithoutNested_Mandrel21() {
         final String resourceD = BASE_PKG + ".ResourceD";
+        // GraalVM/Mandrel for JDK 21 traverses up and flags the enclosing
+        // class as reachable when processing reachability-metadata.json for a nested target.
+        assertRegistration("ResourceD", resourceD);
+        assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
+        assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
 
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_24_0_0)
+    public void testTargetWithoutNested_Mandrel25() {
+        final String resourceD = BASE_PKG + ".ResourceD";
+        // GraalVM/Mandrel for JDK 25 isolates the nested target without
+        // leaking reachability to the enclosing class.
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
         // StaticClassOfD is registered. Mandrel/GraalVM reachability-metadata.json workflow unconditionally

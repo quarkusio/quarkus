@@ -29,8 +29,11 @@ import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
+ * @formatter:off
  * Schema used:
- * https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json
+ * <a href="https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json">reachability-metadata-schema-v1.2.0.json</a>
+ * Notes on proper testing: At least integration-tests modules awt, main, hibernate-orm-panache, native-image-annotations, rest-client.
+ * @formatter:on
  */
 public class NativeImageReflectConfigStep {
 
@@ -108,19 +111,7 @@ public class NativeImageReflectConfigStep {
                     extractToJsonArray(info.methodSet, methodsArray);
                 }
             }
-            if (!methodsArray.isEmpty()) {
-                json.put("methods", methodsArray);
-            }
-            // reachability-metadata-schema-v1.2.0 delegates fields to DCE
-            if (info.fields) {
-                json.put("allDeclaredFields", true);
-            } else if (!info.fieldSet.isEmpty()) {
-                final JsonArrayBuilder fieldsArray = Json.array();
-                for (String fieldName : info.fieldSet) {
-                    fieldsArray.add(Json.object().put("name", fieldName));
-                }
-                json.put("fields", fieldsArray);
-            }
+            addAllDeclaredFields(info.fields, info.fieldSet, methodsArray, json);
             if (info.unsafeAllocated) {
                 json.put("unsafeAllocated", true);
             }
@@ -151,6 +142,23 @@ public class NativeImageReflectConfigStep {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static void addAllDeclaredFields(boolean fields, Set<String> fieldSet, JsonArrayBuilder methodsArray,
+            JsonObjectBuilder json) {
+        if (!methodsArray.isEmpty()) {
+            json.put("methods", methodsArray);
+        }
+        // reachability-metadata-schema-v1.2.0 delegates fields to DCE
+        if (fields) {
+            json.put("allDeclaredFields", true);
+        } else if (!fieldSet.isEmpty()) {
+            final JsonArrayBuilder fieldsArray = Json.array();
+            for (String fieldName : fieldSet) {
+                fieldsArray.add(Json.object().put("name", fieldName));
+            }
+            json.put("fields", fieldsArray);
         }
     }
 

@@ -21,10 +21,14 @@ import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.runtime.graal.GraalVM;
 
 /**
+ * @formatter:off
  * Creates reachability-metadata.json with:
- * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#registering-foreign-calls
- * https://www.graalvm.org/latest/reference-manual/native-image/metadata/#foreign-function-and-memory-api
- *
+ * <a href="https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#registering-foreign-calls">Foreign calls</a>
+ * <a href="https://www.graalvm.org/latest/reference-manual/native-image/metadata/#foreign-function-and-memory-api">FFM/FFI config</a>
+ * Schema used:
+ * <a href="https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json">reachability-metadata-schema-v1.2.0.json</a>
+ * Notes on proper testing: At least integration-tests module awt.
+ * @formatter:on
  */
 public class NativeImageFFMConfigStep {
 

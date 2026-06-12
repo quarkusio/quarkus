@@ -8,7 +8,6 @@ import static java.util.Collections.emptyMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -60,6 +59,7 @@ import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.LogBuildTimeConfig.CategoryBuildTimeConfig;
@@ -816,22 +816,22 @@ public class LoggingSetupRecorder {
             });
             handler.setLevel(config.level());
             if (config.maxLength().isPresent()) {
-                BigInteger maxLen = config.maxLength().get().asBigInteger();
-                if (maxLen.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                MemorySize maxLen = config.maxLength().get();
+                int maxLenInt;
+                if (maxLen.compareTo(Integer.MAX_VALUE) > 0) {
                     errorManager.error(
                             "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value", null,
                             ErrorManager.GENERIC_FAILURE);
-                    maxLen = BigInteger.valueOf(Integer.MAX_VALUE);
+                    maxLenInt = Integer.MAX_VALUE;
+                } else if (maxLen.compareTo(128) < 0) {
+                    errorManager.error(
+                            "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
+                            null, ErrorManager.GENERIC_FAILURE);
+                    maxLenInt = 128;
                 } else {
-                    BigInteger minimumAllowedMaxLength = BigInteger.valueOf(128);
-                    if (maxLen.compareTo(minimumAllowedMaxLength) < 0) {
-                        errorManager.error(
-                                "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
-                                null, ErrorManager.GENERIC_FAILURE);
-                        maxLen = minimumAllowedMaxLength;
-                    }
+                    maxLenInt = maxLen.asIntValue();
                 }
-                handler.setMaxLength(maxLen.intValue());
+                handler.setMaxLength(maxLenInt);
             }
 
             Formatter formatter = null;

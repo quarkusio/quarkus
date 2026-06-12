@@ -40,7 +40,6 @@ import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.InetAddressConverter;
 import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.LocaleConverter;
-import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.quarkus.runtime.configuration.PathConverter;
 import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.ZoneIdConverter;
@@ -58,7 +57,6 @@ class QuarkusComponentTestConfiguration {
             new RegexConverter(),
             new PathConverter(),
             new DurationConverter(),
-            new MemorySizeConverter(),
             new LocaleConverter(),
             new ZoneIdConverter(),
             new LevelConverter());

@@ -80,7 +80,7 @@ public class MockEventServer implements Closeable {
         Optional<MemorySize> maybeMaxHeadersSize = config
                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
         if (maybeMaxHeadersSize.isPresent()) {
-            options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+            options.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
         }
         Optional<Boolean> enableCompression = config.getOptionalValue("quarkus.http.enable-compression", Boolean.class);
         if (enableCompression.isPresent()) {

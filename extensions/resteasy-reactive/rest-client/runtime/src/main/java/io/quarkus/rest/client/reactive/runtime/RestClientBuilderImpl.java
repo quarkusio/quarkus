@@ -613,7 +613,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         if (maxChunkSize != null) {
             clientBuilder.maxChunkSize(maxChunkSize);
         } else if (restClients.maxChunkSize().isPresent()) {
-            clientBuilder.maxChunkSize((int) restClients.maxChunkSize().get().asLongValue());
+            clientBuilder.maxChunkSize(restClients.maxChunkSize().get().asIntValue());
         } else if (restClients.multipart().maxChunkSize().isPresent()) {
             clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
@@ -630,7 +630,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
             clientBuilder.http2UpgradeMaxContentLength(
                     (int) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH));
         } else if (restClients.http2UpgradeMaxContentLength().isPresent()) {
-            clientBuilder.http2UpgradeMaxContentLength((int) restClients.http2UpgradeMaxContentLength().get().asLongValue());
+            clientBuilder.http2UpgradeMaxContentLength(restClients.http2UpgradeMaxContentLength().get().asIntValue());
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.ALPN)) {

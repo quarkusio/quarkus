@@ -10,7 +10,7 @@ import jakarta.ws.rs.Priorities;
 /**
  * Used to easily define a custom redirect handler for the specific REST Client on which it's used.
  * This method is called when the HTTP response from the invoked service has a status code of 300 or higher.
- *
+ * <p>
  * The annotation MUST be placed on a method of the REST Client interface that meets the following criteria:
  * <ul>
  * <li>Is a {@code static} method</li>
@@ -23,7 +23,7 @@ import jakarta.ws.rs.Priorities;
  * <pre>
  * {@code
  * &#64;ClientRedirectHandler
- * static DummyException map(Response response) {
+ * static URI map(Response response) {
  *     if (response.getStatus() == 307) {
  *         return response.getLocation();
  *     }

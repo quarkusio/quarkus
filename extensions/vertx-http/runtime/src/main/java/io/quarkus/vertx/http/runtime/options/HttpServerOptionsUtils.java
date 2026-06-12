@@ -298,10 +298,6 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setCompressionSupported(httpBuildTimeConfig.enableCompression());
         if (httpBuildTimeConfig.compressionLevel().isPresent()) {
             httpServerOptions.setCompressionLevel(httpBuildTimeConfig.compressionLevel().getAsInt());
-        } else {
-            // Workaround for Vert.x 5.1.1 regression: HttpServerOptions.init() no longer
-            // initializes compressionLevel to DEFAULT_COMPRESSION_LEVEL (6), so it defaults to 0.
-            httpServerOptions.setCompressionLevel(HttpServerOptions.DEFAULT_COMPRESSION_LEVEL);
         }
         httpServerOptions.setDecompressionSupported(httpBuildTimeConfig.enableDecompression());
         httpServerOptions.setMaxInitialLineLength(httpConfig.limits().maxInitialLineLength());

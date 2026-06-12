@@ -12,18 +12,6 @@ import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeInfo.SimpleRuntimeInfo;
 import io.smallrye.config.Config;
 
-/**
- * Implementation of {@link ValueRegistry}.
- * <p>
- * Each Quarkus application has its own separate instance, created on application start. The {@link ValueRegistry} is
- * then stored in the {@link io.quarkus.runtime.StartupContext} before any recorders are executed, so that it can be
- * injected into the recorders' constructors as a {@link RuntimeValue}.
- *
- * @see Application#Application(boolean)
- * @see "io.quarkus.deployment.steps.MainClassBuildStep#build for storage"
- * @see "io.quarkus.deployment.ExtensionLoader#loadStepsFrom for retrieval"
- * @see "io.quarkus.deployment.recording.ObjectLoader"
- */
 public class ValueRegistryImpl implements ValueRegistry {
     private final Map<String, RuntimeInfo<?>> values = new ConcurrentHashMap<>();
 
@@ -49,7 +37,7 @@ public class ValueRegistryImpl implements ValueRegistry {
         }
         RuntimeInfo<?> mapValue = values.putIfAbsent(key.key(), runtimeInfo);
         if (mapValue != null) {
-            throw new IllegalArgumentException("Key already registered " + key.key());
+            throw new IllegalStateException("Key already registered " + key.key());
         }
     }
 

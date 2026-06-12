@@ -1,6 +1,8 @@
 package io.quarkus.oidc.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +14,7 @@ import java.util.StringTokenizer;
 
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
@@ -208,6 +211,28 @@ public class OidcCommonUtilsTest {
         String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
         JsonObject json = decodeJwtContent(jwt);
         assertEquals("https://server.example.com/", json.getString("aud"));
+    }
+
+    @Test
+    public void testAttestationRejectsRS256() {
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> OidcCommonUtils.resolveAttestationEcCurve(SignatureAlgorithm.RS256));
+        assertTrue(ex.getMessage().contains("Only EC algorithms (ES256, ES384, ES512) are supported"));
+    }
+
+    @Test
+    public void testAttestationAcceptsES256() {
+        assertEquals("secp256r1", OidcCommonUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES256));
+    }
+
+    @Test
+    public void testAttestationAcceptsES384() {
+        assertEquals("secp384r1", OidcCommonUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES384));
+    }
+
+    @Test
+    public void testAttestationAcceptsES512() {
+        assertEquals("secp521r1", OidcCommonUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES512));
     }
 
     public static JsonObject decodeJwtContent(String jwt) {

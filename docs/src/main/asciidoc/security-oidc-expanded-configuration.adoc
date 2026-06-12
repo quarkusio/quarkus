@@ -301,6 +301,25 @@ When the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present an
 
 See the <<tls-properties>> section if the MTLS authentication is required.
 
+=== Attestation
+
+https://datatracker.ietf.org/doc/draft-ietf-oauth-attestation-based-client-auth/[OAuth 2.0 Attestation-Based Client Authentication] specifies a mechanism that allows OAuth2 client to prove its authenticity verified by a client attester and authenticate without using a client secret.
+
+.Client attestation properties
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.credentials.attestation.enabled |false|Enable a custom attestation or default self-attestation
+|quarkus.oidc.credentials.attestation.signature-algorithm |ES256|Attestation JWT PoP token signature algorithm
+|====
+
+`quarkus.oidc.credentials.attestation.enabled=true` enables an attestation-based client authentication, using either a registered `io.quarkus.oidc.common.ClientAttester` attester or a default self-attestation.
+
+`quarkus.oidc.credentials.attestation.signature-algorithm` specifies an Attestation JWT PoP token signature algorithm, and, in case of the self-attestation, an Attestation JWT signature algorithm.
+
+Currently, only `ES256`, `ES384` and `ES512` signature algorithms are supported. Custom client attesters can chose any other standard JWT token signature algorithm.
+
 === Introspection credentials
 
 When the tokens must be introspected, some providers may require the introspection specific authentication credentials, as opposed to the already configured OIDC client id and one of the OIDC client authentication credentials:

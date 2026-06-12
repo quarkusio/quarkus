@@ -2,22 +2,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
+        <artifactId>quarkus-http3-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>4.0.999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-http3-parent</artifactId>
-    <name>Quarkus - HTTP/3</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>deployment-spi</module>
-        <module>runtime</module>
-        <module>deployment</module>
-    </modules>
+    <artifactId>quarkus-http3-deployment-spi</artifactId>
+    <name>Quarkus - HTTP/3 - Deployment - SPI</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

@@ -42,6 +42,7 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
             .overrideConfigKey("quarkus.tls.enforce-pqc", "strict")
+            .overrideConfigKey("quarkus.tls.key-exchange-protocols", "x25519mlkem768")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test

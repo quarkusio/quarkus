@@ -72,7 +72,7 @@ class VertxCertificateHolderTest {
 
             @Override
             public Optional<List<String>> keyExchangeProtocols() {
-                return Optional.empty();
+                return Optional.of(List.of("x25519mlkem768"));
             }
 
             @Override

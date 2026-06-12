@@ -44,6 +44,7 @@ public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
             .overrideConfigKey("quarkus.tls.trust-store.jks.password", "secret")
             .overrideConfigKey("quarkus.tls.enforce-pqc", "strict")
             .overrideConfigKey("quarkus.http.ssl.client-auth", "REQUIRED")
+            .overrideConfigKey("quarkus.tls.key-exchange-protocols", "x25519mlkem768")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test

@@ -607,7 +607,7 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
 * Using `java.util.concurrent.Future` and classes that extend it as return types of repository methods.
 * Native and named queries when using `@Query`
-* https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
+* https://docs.spring.io/spring-data/jpa/reference/data-commons/is-new-state-detection.html[Entity State-detection Strategies]
 via `EntityInformation`.
 * The use of `org.springframework.data.jpa.repository.Lock`
 

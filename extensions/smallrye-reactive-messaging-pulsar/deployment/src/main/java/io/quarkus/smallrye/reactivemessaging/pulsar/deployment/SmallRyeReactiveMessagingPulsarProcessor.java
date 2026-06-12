@@ -195,6 +195,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
 
         NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
+                .addNativeImageSystemProperty("pulsar.enableUring", "false")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
                 // Pulsar 4.2.x's LightProtoCodec computes Unsafe field offsets

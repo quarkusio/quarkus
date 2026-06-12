@@ -15,6 +15,10 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment</artifactId>
         </dependency>
         <dependency>
@@ -45,6 +49,36 @@
         <dependency>
             <groupId>io.smallrye.certs</groupId>
             <artifactId>smallrye-certificate-generator-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+            <classifier>linux-x86_64</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+            <classifier>linux-aarch_64</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+            <classifier>osx-x86_64</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+            <classifier>osx-aarch_64</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+            <classifier>windows-x86_64</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>

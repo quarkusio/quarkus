@@ -2,10 +2,12 @@ package io.quarkus.http3.deployment;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.http3.deployment.spi.Http3EnabledBuildItem;
+import io.quarkus.http3.runtime.Http3Customizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 class Http3Processor {
@@ -35,6 +37,11 @@ class Http3Processor {
 
         LOG.info("HTTP/3 (QUIC) support enabled");
         return new Http3EnabledBuildItem();
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerCustomizer() {
+        return AdditionalBeanBuildItem.unremovableOf(Http3Customizer.class);
     }
 
     private static boolean isQuicNativeAvailable() {

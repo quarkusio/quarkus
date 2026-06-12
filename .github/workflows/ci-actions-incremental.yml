@@ -409,6 +409,7 @@ jobs:
           else
             # See also: https://github.com/maveniverse/scalpel#configuration
             # Scalpel is configured as a Maven core extension in .mvn/extensions.xml
+            # Default Scalpel settings are in .mvn/maven.config
             # It auto-detects GITHUB_BASE_REF on GitHub Actions
             SCALPEL_ARGS="-Dincremental -Dscalpel.reportFile=target/scalpel-report.json"
             if [ -n "$PULL_REQUEST_BASE" ]

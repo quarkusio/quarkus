@@ -338,10 +338,11 @@ public class GrpcServerRecorder {
             Map<String, List<String>> virtualMethodsPerService,
             LaunchMode launchMode) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
+        AtomicBoolean registerPort = new AtomicBoolean();
 
         vertx.deployVerticle(
                 () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService,
-                        virtualMethodsPerService),
+                        virtualMethodsPerService, registerPort),
                 new DeploymentOptions().setInstances(configuration.instances()),
                 result -> {
                     if (result.failed()) {
@@ -730,19 +731,22 @@ public class GrpcServerRecorder {
         private final LaunchMode launchMode;
         private final Map<String, List<String>> blockingMethodsPerService;
         private final Map<String, List<String>> virtualMethodsPerService;
+        private final AtomicBoolean registerPort;
 
         private Server grpcServer;
 
         GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer,
                 GrpcBuilderProvider provider, LaunchMode launchMode,
                 Map<String, List<String>> blockingMethodsPerService,
-                Map<String, List<String>> virtualMethodsPerService) {
+                Map<String, List<String>> virtualMethodsPerService,
+                AtomicBoolean registerPort) {
             this.configuration = configuration;
             this.grpcContainer = grpcContainer;
             this.provider = provider;
             this.launchMode = launchMode;
             this.blockingMethodsPerService = blockingMethodsPerService;
             this.virtualMethodsPerService = virtualMethodsPerService;
+            this.registerPort = registerPort;
         }
 
         @Override
@@ -768,14 +772,17 @@ public class GrpcServerRecorder {
                         }
                         startPromise.fail(effectiveCause);
                     } else {
-                        try {
-                            int actualPort = grpcServer.getPort();
-                            valueRegistry.getValue().register(GRPC_PORT, actualPort);
-                            if (launchMode.isDevOrTest()) {
-                                valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
+                        if (!registerPort.get()) {
+                            try {
+                                int actualPort = grpcServer.getPort();
+                                valueRegistry.getValue().register(GRPC_PORT, actualPort);
+                                if (launchMode.isDevOrTest()) {
+                                    valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
+                                }
+                            } catch (IllegalStateException e) {
+                                // Ignore, port reused. Check io.grpc.Server#getPort, called multiple times if instances > 1
                             }
-                        } catch (IllegalStateException e) {
-                            // Ignore, port reused. Check io.grpc.Server#getPort, called multiple times if instances > 1
+                            registerPort.set(true);
                         }
                         startPromise.complete();
                         grpcVerticleCount.incrementAndGet();
@@ -786,10 +793,13 @@ public class GrpcServerRecorder {
                 vertx.executeBlocking(() -> {
                     try {
                         grpcServer.start();
-                        int actualPort = grpcServer.getPort();
-                        valueRegistry.getValue().register(GRPC_PORT, actualPort);
-                        if (launchMode.isDevOrTest()) {
-                            valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
+                        if (!registerPort.get()) {
+                            int actualPort = grpcServer.getPort();
+                            valueRegistry.getValue().register(GRPC_PORT, actualPort);
+                            if (launchMode.isDevOrTest()) {
+                                valueRegistry.getValue().register(GRPC_TEST_PORT, actualPort);
+                            }
+                            registerPort.set(true);
                         }
                         startPromise.complete();
                     } catch (Exception e) {

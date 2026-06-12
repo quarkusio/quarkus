@@ -3,7 +3,6 @@ package io.quarkus.vertx.core.deployment;
 import java.util.function.Consumer;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.vertx.core.VertxOptions;
 
 /**
@@ -11,16 +10,26 @@ import io.vertx.core.VertxOptions;
  * Vert.x system behavior, e.g. setting MetricsOptions to enable
  * and configure a metrics provider.
  * <p>
- * Consumers will be called in priority order (lowest to highest)
+ * Consumers will be called in priority order (lowest to highest), then by order key,
  * after VertxConfiguration has been read and applied.
  */
 public final class VertxOptionsConsumerBuildItem extends MultiBuildItem implements Comparable<VertxOptionsConsumerBuildItem> {
     private final Consumer<VertxOptions> optionsConsumer;
     private final int priority;
+    private final String orderKey;
 
-    public VertxOptionsConsumerBuildItem(Consumer<VertxOptions> optionsConsumer, int priority) {
+    /**
+     * @param optionsConsumer the consumer to apply to VertxOptions
+     * @param priority consumers are called from lowest to highest priority
+     * @param orderKey a stable key used to order consumers with the same priority
+     */
+    public VertxOptionsConsumerBuildItem(Consumer<VertxOptions> optionsConsumer, int priority, String orderKey) {
+        if (orderKey == null || orderKey.isEmpty()) {
+            throw new IllegalArgumentException("orderKey must be present and not empty");
+        }
         this.optionsConsumer = optionsConsumer;
         this.priority = priority;
+        this.orderKey = orderKey;
     }
 
     public Consumer<VertxOptions> getConsumer() {
@@ -29,17 +38,21 @@ public final class VertxOptionsConsumerBuildItem extends MultiBuildItem implemen
 
     @Override
     public int compareTo(VertxOptionsConsumerBuildItem o) {
+        if (this == o) {
+            return 0;
+        }
         int result = Integer.compare(this.priority, o.priority);
         if (result != 0) {
             return result;
         }
-        return deterministicConsumerKey(this.optionsConsumer).compareTo(deterministicConsumerKey(o.optionsConsumer));
-    }
+        result = this.orderKey.compareTo(o.orderKey);
 
-    private static String deterministicConsumerKey(Consumer<VertxOptions> consumer) {
-        if (consumer instanceof BytecodeRecorderImpl.ReturnedProxy returnedProxy) {
-            return returnedProxy.__returned$proxy$key();
+        if (result == 0) {
+            throw new IllegalStateException(
+                    "Two VertxOptionsConsumerBuildItem instances have the same priority and orderKey, which is not allowed. "
+                            + "First instance: [priority: " + this.priority + ", orderKey: " + this.orderKey + "], "
+                            + "second instance: [priority: " + o.priority + ", orderKey: " + o.orderKey + "]");
         }
-        return consumer.getClass().getName();
+        return result;
     }
 }

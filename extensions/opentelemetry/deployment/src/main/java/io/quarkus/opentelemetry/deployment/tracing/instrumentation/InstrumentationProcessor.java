@@ -113,20 +113,23 @@ public class InstrumentationProcessor {
     @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxHttpMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxHttpMetricsOptions(), LIBRARY_AFTER + 1);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxHttpMetricsOptions(), LIBRARY_AFTER + 1,
+                "opentelemetry.vertx.http-metrics");
     }
 
     @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1,
+                "opentelemetry.vertx.metrics");
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(
             InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER,
+                "opentelemetry.vertx.tracing");
     }
 
     // RESTEasy and Vert.x web

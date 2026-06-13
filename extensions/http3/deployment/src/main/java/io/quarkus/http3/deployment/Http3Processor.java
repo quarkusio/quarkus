@@ -40,7 +40,10 @@ class Http3Processor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerCustomizer() {
+    AdditionalBeanBuildItem registerCustomizer(Http3BuildTimeConfig config) {
+        if (!config.enabled()) {
+            return null;
+        }
         return AdditionalBeanBuildItem.unremovableOf(Http3Customizer.class);
     }
 

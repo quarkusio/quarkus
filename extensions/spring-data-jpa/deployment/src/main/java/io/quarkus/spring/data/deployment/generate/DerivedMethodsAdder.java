@@ -3,6 +3,7 @@ package io.quarkus.spring.data.deployment.generate;
 import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
 
 import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.function.Consumer;
 import jakarta.transaction.Transactional;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -102,8 +104,10 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             List<Integer> queryParameterIndexes = new ArrayList<>(parameters.size());
             Integer pageableParameterIndex = null;
             Integer sortParameterIndex = null;
+            Integer dynamicProjectionParameterIndex = null;
             for (int i = 0; i < parameters.size(); i++) {
-                DotName parameterType = parameters.get(i).name();
+                Type paramType = parameters.get(i);
+                DotName parameterType = paramType.name();
                 parameterTypesStr[i] = parameterType.toString();
                 if (DotNames.SPRING_DATA_PAGEABLE.equals(parameterType)
                         || DotNames.SPRING_DATA_PAGE_REQUEST.equals(parameterType)) {
@@ -120,6 +124,13 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                                 + " can be specified");
                     }
                     sortParameterIndex = i;
+                } else if (isDynamicProjectionParameter(paramType, method)) {
+                    if (dynamicProjectionParameterIndex != null) {
+                        throw new IllegalArgumentException("Method " + method.name() + " of Repository " + repositoryClassInfo
+                                + "has invalid parameters - only a single dynamic projection parameter of type "
+                                + DotNames.CLASS + " can be specified");
+                    }
+                    dynamicProjectionParameterIndex = i;
                 } else {
                     queryParameterIndexes.add(i);
                 }
@@ -135,6 +146,8 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             // Need effectively final copies for use in lambdas
             final Integer finalPageableParameterIndex = pageableParameterIndex;
             final Integer finalSortParameterIndex = sortParameterIndex;
+            final Integer finalDynamicProjectionParameterIndex = dynamicProjectionParameterIndex;
+            final Type finalReturnType = returnType;
 
             MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(returnType.name().toString(), parameterTypesStr);
             classCreator.method(method.name(), mc -> {
@@ -194,43 +207,86 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                                     pageableSort);
                         }
 
-                        // call JpaOperations.find()
-                        Expr panacheQuery = bc.invokeVirtual(
-                                MethodDesc.of(AbstractManagedJpaOperations.class, "find", Object.class,
-                                        Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
-                                ops, entityClass,
-                                Const.of(finalQuery), sort, paramsArray);
+                        DotName customResultTypeName = null;
+                        DotName elementTypeToCast = entityClassInfo.name();
+                        Expr panacheQuery;
 
-                        Type resultType = extractResultType(repositoryClassInfo, method);
+                        if (finalDynamicProjectionParameterIndex != null) {
+                            // For DTO projections Panache needs a FROM-only query so it can build
+                            // "SELECT new Dto(...) FROM ...". Entity projections keep the full SELECT query.
+                            String fromQuery = stripEntitySelectClause(finalQuery, getEntityName(entityClassInfo));
+                            Expr projectionType = params[finalDynamicProjectionParameterIndex];
+                            Expr isEntityProjection = bc.invokeVirtual(
+                                    MethodDesc.of(Class.class, "equals", boolean.class, Object.class),
+                                    projectionType, entityClass);
 
-                        DotName customResultTypeName = resultType.name();
-
-                        if (customResultTypeName.equals(entityClassInfo.name())
-                                || isHibernateSupportedReturnType(customResultTypeName)) {
-                            // no special handling needed
-                            customResultTypeName = null;
+                            LocalVar panacheQueryVar = bc.localVar("panacheQuery",
+                                    ConstantDescs.CD_Object, Const.ofNull(ConstantDescs.CD_Object));
+                            final String entityQuery = finalQuery;
+                            final String projectionQuery = fromQuery;
+                            final Expr projectionSort = sort;
+                            bc.ifElse(isEntityProjection,
+                                    entityBranch -> {
+                                        Expr entityPanacheQuery = entityBranch.invokeVirtual(
+                                                MethodDesc.of(AbstractManagedJpaOperations.class, "find", Object.class,
+                                                        Class.class, String.class, io.quarkus.panache.common.Sort.class,
+                                                        Object[].class),
+                                                ops, entityClass, Const.of(entityQuery), projectionSort, paramsArray);
+                                        entityBranch.set(panacheQueryVar, entityPanacheQuery);
+                                    },
+                                    dtoBranch -> {
+                                        Expr dtoPanacheQuery = dtoBranch.invokeVirtual(
+                                                MethodDesc.of(AbstractManagedJpaOperations.class, "find", Object.class,
+                                                        Class.class, String.class, io.quarkus.panache.common.Sort.class,
+                                                        Object[].class),
+                                                ops, entityClass, Const.of(projectionQuery), projectionSort, paramsArray);
+                                        Expr projectedPanacheQuery = dtoBranch.invokeInterface(
+                                                MethodDesc.of(io.quarkus.hibernate.orm.panache.PanacheQuery.class, "project",
+                                                        io.quarkus.hibernate.orm.panache.PanacheQuery.class, Class.class),
+                                                dtoPanacheQuery, projectionType);
+                                        dtoBranch.set(panacheQueryVar, projectedPanacheQuery);
+                                    });
+                            panacheQuery = panacheQueryVar;
+                            elementTypeToCast = DotNames.OBJECT;
                         } else {
-                            // If the custom type is an interface, we need to generate the implementation
-                            ClassInfo resultClassInfo = index.getClassByName(customResultTypeName);
-                            if (Modifier.isInterface(resultClassInfo.flags())) {
-                                // Find the implementation name, and use that for subsequent query result generation
-                                customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
-                                        k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
+                            panacheQuery = bc.invokeVirtual(
+                                    MethodDesc.of(AbstractManagedJpaOperations.class, "find", Object.class,
+                                            Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
+                                    ops, entityClass,
+                                    Const.of(finalQuery), sort, paramsArray);
+                            Type resultType = extractResultType(repositoryClassInfo, method);
+                            customResultTypeName = resultType.name();
 
-                                // Remember the parameters for this usage of the custom type, we'll deal with it later
-                                customResultTypes.computeIfAbsent(customResultTypeName,
-                                        k -> new ArrayList<>()).add(method.name());
+                            if (customResultTypeName.equals(entityClassInfo.name())
+                                    || isHibernateSupportedReturnType(customResultTypeName)) {
+                                // no special handling needed
+                                customResultTypeName = null;
                             } else {
-                                throw new IllegalArgumentException(
-                                        method.name() + " of Repository " + repositoryClassInfo
-                                                + " can only use interfaces to map results to non-entity types.");
+                                // If the custom type is an interface, we need to generate the implementation
+                                ClassInfo resultClassInfo = index.getClassByName(customResultTypeName);
+                                if (Modifier.isInterface(resultClassInfo.flags())) {
+                                    // Find the implementation name, and use that for subsequent query result generation
+                                    customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
+                                            k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
+
+                                    // Remember the parameters for this usage of the custom type, we'll deal with it later
+                                    customResultTypes.computeIfAbsent(customResultTypeName,
+                                            k -> new ArrayList<>()).add(method.name());
+                                } else {
+                                    throw new IllegalArgumentException(
+                                            method.name() + " of Repository " + repositoryClassInfo
+                                                    + " can only use interfaces to map results to non-entity types.");
+                                }
                             }
                         }
 
+                        DotName effectiveReturnTypeName = finalReturnType.kind() == Type.Kind.TYPE_VARIABLE ? DotNames.OBJECT
+                                : finalReturnType.name();
+
                         generateFindQueryResultHandling(bc, panacheQuery, finalPageableParameterIndex, params,
-                                repositoryClassInfo, entityClassInfo, returnType.name(), parseResult.getTopCount(),
+                                repositoryClassInfo, entityClassInfo, effectiveReturnTypeName, parseResult.getTopCount(),
                                 method.name(), customResultTypeName,
-                                entityClassInfo.name().toString());
+                                entityClassInfo.name().toString(), elementTypeToCast);
 
                     } else if (parseResult.getQueryType() == MethodNameParser.QueryType.COUNT) {
                         if (!DotNames.PRIMITIVE_LONG.equals(returnType.name())
@@ -457,6 +513,52 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
         for (MethodInfo method : methods) {
             if (method.name().equals(getterName)) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    private static String getEntityName(ClassInfo entityClassInfo) {
+        AnnotationInstance annotationInstance = entityClassInfo.declaredAnnotation(DotNames.JPA_ENTITY);
+        if (annotationInstance != null && annotationInstance.value("name") != null) {
+            AnnotationValue annotationValue = annotationInstance.value("name");
+            return annotationValue.asString().length() > 0 ? annotationValue.asString() : entityClassInfo.simpleName();
+        }
+        return entityClassInfo.simpleName();
+    }
+
+    private static String stripEntitySelectClause(String query, String entityName) {
+        String prefix = "SELECT " + entityName.toLowerCase() + " ";
+        if (query.regionMatches(true, 0, prefix, 0, prefix.length())) {
+            return query.substring(prefix.length());
+        }
+        return query;
+    }
+
+    // Spring Data dynamic projection: a Class<T> argument whose type variable matches the method return type
+    // (e.g. <T> T findById(Long id, Class<T> type)). Such parameters are not query bind values; they select
+    // the result shape at runtime and are passed to PanacheQuery.project(Class) instead.
+    private boolean isDynamicProjectionParameter(Type paramType, MethodInfo method) {
+        if (!DotNames.CLASS.equals(paramType.name())) {
+            return false;
+        }
+        if (paramType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            return false;
+        }
+        List<Type> typeArgs = paramType.asParameterizedType().arguments();
+        if (typeArgs.size() != 1 || typeArgs.get(0).kind() != Type.Kind.TYPE_VARIABLE) {
+            return false;
+        }
+        Type methodReturnType = method.returnType();
+        if (methodReturnType.kind() == Type.Kind.TYPE_VARIABLE) {
+            return methodReturnType.asTypeVariable().identifier()
+                    .equals(typeArgs.get(0).asTypeVariable().identifier());
+        }
+        if (methodReturnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            List<Type> retArgs = methodReturnType.asParameterizedType().arguments();
+            if (retArgs.size() == 1 && retArgs.get(0).kind() == Type.Kind.TYPE_VARIABLE) {
+                return retArgs.get(0).asTypeVariable().identifier()
+                        .equals(typeArgs.get(0).asTypeVariable().identifier());
             }
         }
         return false;

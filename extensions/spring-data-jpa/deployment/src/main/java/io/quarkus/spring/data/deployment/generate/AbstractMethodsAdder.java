@@ -69,6 +69,16 @@ public abstract class AbstractMethodsAdder {
             Integer pageableParameterIndex, Expr[] methodParams,
             ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
             DotName returnType, Integer limit, String methodName, DotName customResultType, String originalResultType) {
+        generateFindQueryResultHandling(bc, panacheQueryExpr, pageableParameterIndex, methodParams,
+                repositoryClassInfo, entityClassInfo, returnType, limit, methodName, customResultType, originalResultType,
+                entityClassInfo.name());
+    }
+
+    protected void generateFindQueryResultHandling(BlockCreator bc, Expr panacheQueryExpr,
+            Integer pageableParameterIndex, Expr[] methodParams,
+            ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
+            DotName returnType, Integer limit, String methodName, DotName customResultType, String originalResultType,
+            DotName elementTypeToCast) {
 
         // Store panacheQuery in a LocalVar so it can be used across nested blocks (try_, ifElse, etc.)
         Expr panacheQuery = bc.localVar("panacheQuery", panacheQueryExpr);
@@ -102,7 +112,7 @@ public abstract class AbstractMethodsAdder {
                             MethodDesc.of(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
                             finalPanacheQuery);
 
-                    Expr casted = tb.cast(singleResult, ClassDesc.of(entityClassInfo.name().toString()));
+                    Expr casted = tb.cast(singleResult, ClassDesc.of(elementTypeToCast.toString()));
                     tb.return_(casted);
                 });
                 tc.catch_(NoResultException.class, "e", (cb, e) -> {
@@ -120,7 +130,7 @@ public abstract class AbstractMethodsAdder {
                             finalPanacheQuery);
 
                     if (customResultType == null) {
-                        Expr casted = tb.cast(singleResult, ClassDesc.of(entityClassInfo.name().toString()));
+                        Expr casted = tb.cast(singleResult, ClassDesc.of(elementTypeToCast.toString()));
                         Expr optional = tb.invokeStatic(
                                 MethodDesc.of(Optional.class, "ofNullable", Optional.class, Object.class),
                                 casted);

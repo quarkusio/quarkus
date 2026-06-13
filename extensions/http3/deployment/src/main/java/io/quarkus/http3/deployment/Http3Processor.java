@@ -7,8 +7,10 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.http3.deployment.spi.Http3EnabledBuildItem;
+import io.quarkus.http3.runtime.Http3AltSvcHandler;
 import io.quarkus.http3.runtime.Http3Customizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 class Http3Processor {
 
@@ -45,6 +47,14 @@ class Http3Processor {
             return null;
         }
         return AdditionalBeanBuildItem.unremovableOf(Http3Customizer.class);
+    }
+
+    @BuildStep
+    FilterBuildItem altSvcFilter(Http3BuildTimeConfig config, Http3EnabledBuildItem http3Enabled) {
+        if (!config.altSvc()) {
+            return null;
+        }
+        return new FilterBuildItem(new Http3AltSvcHandler(), 10);
     }
 
     private static boolean isQuicNativeAvailable() {

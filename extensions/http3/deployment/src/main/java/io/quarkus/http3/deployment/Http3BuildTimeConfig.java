@@ -18,4 +18,16 @@ public interface Http3BuildTimeConfig {
     @WithDefault("true")
     boolean enabled();
 
+    /**
+     * Whether to add the {@code Alt-Svc} response header to HTTP/1.1 and HTTP/2 responses
+     * on the HTTPS server, advertising HTTP/3 availability.
+     * <p>
+     * The header value follows the format {@code h3=":PORT"; ma=86400}, where PORT
+     * is the HTTPS port the server is listening on.
+     * <p>
+     * Only effective when HTTP/3 is enabled.
+     */
+    @WithDefault("true")
+    boolean altSvc();
+
 }

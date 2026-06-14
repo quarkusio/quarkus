@@ -303,6 +303,7 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setDecompressionSupported(httpBuildTimeConfig.enableDecompression());
         httpServerOptions.setMaxInitialLineLength(httpConfig.limits().maxInitialLineLength());
         httpServerOptions.setHandle100ContinueAutomatically(httpConfig.handle100ContinueAutomatically());
+        httpServerOptions.setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
 
         if (httpBuildTimeConfig.compressors().isPresent()) {
             // Adding defaults too, because mere addition of .addCompressor(brotli) actually
@@ -431,6 +432,7 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
+        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
 

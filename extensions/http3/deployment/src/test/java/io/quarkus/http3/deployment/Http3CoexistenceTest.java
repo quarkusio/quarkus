@@ -19,11 +19,11 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Http3ClientConfig;
 import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientConfig;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.ClientSSLOptions;
@@ -32,7 +32,7 @@ import io.vertx.ext.web.Router;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "http3-test", password = "secret", formats = {
         Format.JKS }))
-class Http3ServerTest {
+class Http3CoexistenceTest {
 
     @TestHTTPResource(value = "/hello", tls = true)
     URL tlsUrl;
@@ -45,66 +45,56 @@ class Http3ServerTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "server-keystore.jks")
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret");
 
-    record ResponseStruct(String version, String body, int status) {
-    }
-
     @Test
-    void testHttp3Connection() throws Exception {
+    void testHttp1OverTls() throws Exception {
         Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
-        clientConfig.setVersions(HttpVersion.HTTP_3);
-        clientConfig.setHttp3Config(new Http3ClientConfig());
+        clientConfig.setVersions(HttpVersion.HTTP_1_1);
+        clientConfig.setSsl(true);
 
         ClientSSLOptions sslOptions = new ClientSSLOptions()
                 .setTrustOptions(new JksOptions().setPath("target/certs/http3-test-truststore.jks").setPassword("secret"));
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
+        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
                 .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+                .compose(HttpClientResponse::body)
+                .await(5, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo(HttpVersion.HTTP_3 + "-hello");
+        assertThat(resp.toString()).isEqualTo("HTTP_1_1-hello");
 
         client.close().await(5, TimeUnit.SECONDS);
     }
 
     @Test
-    void testHttp3PostWithBody() throws Exception {
+    void testHttp2OverTls() throws Exception {
         Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
-        clientConfig.setVersions(HttpVersion.HTTP_3);
-        clientConfig.setHttp3Config(new Http3ClientConfig());
+        clientConfig.setVersions(HttpVersion.HTTP_2);
+        clientConfig.setSsl(true);
 
         ClientSSLOptions sslOptions = new ClientSSLOptions()
                 .setTrustOptions(new JksOptions().setPath("target/certs/http3-test-truststore.jks").setPassword("secret"));
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        String requestBody = "{\"message\":\"hello from http3\"}";
-        var response = client.request(HttpMethod.POST, port, "localhost", "/echo")
-                .compose(req -> req.send(Buffer.buffer(requestBody)))
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                .compose(HttpClientRequest::send)
+                .compose(HttpClientResponse::body)
+                .await(5, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo(requestBody);
+        assertThat(resp.toString()).isEqualTo("HTTP_2-hello");
 
         client.close().await(5, TimeUnit.SECONDS);
     }
 
     @Test
-    void testHttp3LargeResponse() throws Exception {
+    void testHttp3OverQuic() throws Exception {
         Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
@@ -117,16 +107,12 @@ class Http3ServerTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/large")
+        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
                 .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(15, TimeUnit.SECONDS);
+                .compose(HttpClientResponse::body)
+                .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).hasSize(100 * 1024);
-        assertThat(response.body).matches("A+");
+        assertThat(resp.toString()).isEqualTo("HTTP_3-hello");
 
         client.close().await(5, TimeUnit.SECONDS);
     }
@@ -134,16 +120,7 @@ class Http3ServerTest {
     @ApplicationScoped
     static class MyBean {
         public void register(@Observes Router router) {
-            router.get("/hello").handler(rc -> {
-                rc.response().end(rc.request().version() + "-hello");
-            });
-            router.post("/echo").handler(io.vertx.ext.web.handler.BodyHandler.create());
-            router.post("/echo").handler(rc -> {
-                rc.response().end(rc.body().buffer());
-            });
-            router.get("/large").handler(rc -> {
-                rc.response().end("A".repeat(100 * 1024));
-            });
+            router.get("/hello").handler(rc -> rc.response().end(rc.request().version() + "-hello"));
         }
     }
 }

@@ -1,0 +1,186 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= HTTP/3 Reference
+include::_attributes.adoc[]
+:categories: web
+:summary: Enable HTTP/3 (QUIC) support in Quarkus for reduced latency and improved performance.
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: http3,quic,h3,udp
+:extensions: io.quarkus:quarkus-http3
+
+NOTE: HTTP/3 support is **experimental**. Configuration properties and behavior may change in future releases.
+
+== Overview
+
+HTTP/3 is the latest version of the HTTP protocol.
+It replaces TCP with https://datatracker.ietf.org/doc/html/rfc9000[QUIC], a transport protocol built on UDP that provides built-in encryption, reduced connection setup latency, and elimination of head-of-line blocking.
+
+From an application perspective, HTTP/3 is transparent: request and response handling is identical to HTTP/1.1 and HTTP/2.
+The same handlers, filters, and endpoints work across all three protocols.
+The only differences are at the transport level — QUIC uses UDP instead of TCP, and TLS 1.3 is mandatory.
+
+Quarkus serves HTTP/1.1, HTTP/2, and HTTP/3 on the **same port**.
+Clients discover HTTP/3 availability through the `Alt-Svc` response header on HTTP/1.1 and HTTP/2 responses, then upgrade to QUIC/UDP for subsequent requests.
+
+== Getting started
+
+Add the `quarkus-http3` extension to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-http3</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-http3")
+----
+
+HTTP/3 requires TLS.
+In **dev and test mode**, a TLS certificate is auto-generated if none is configured (see <<auto-tls>>).
+In **production**, you must configure TLS explicitly — see the xref:tls-registry-reference.adoc[TLS registry reference] for details.
+
+With TLS in place, HTTP/3 is enabled automatically.
+No additional configuration is needed.
+
+== Configuration
+
+[cols="3,1,1,4",options="header"]
+|===
+|Configuration property |Type |Default |Description
+
+|`quarkus.http3.enabled`
+|boolean
+|`true`
+|Whether HTTP/3 (QUIC) support is enabled.
+When enabled and the native QUIC library is on the classpath, HTTP/3 is added to the set of supported HTTP versions on the HTTPS server.
+
+|`quarkus.http3.alt-svc`
+|boolean
+|`true`
+|Whether to add the `Alt-Svc` response header to HTTP/1.1 and HTTP/2 responses on the HTTPS server, advertising HTTP/3 availability.
+The header value follows the format `h3=":PORT"; ma=86400`.
+|===
+
+[[auto-tls]]
+== Auto-TLS in dev and test mode
+
+When the HTTP/3 extension is on the classpath and no TLS configuration is detected, Quarkus auto-generates a certificate in dev and test mode:
+
+* If the **Quarkus Dev CA** exists at `~/.quarkus/quarkus-dev-root-ca.pem`, the certificate is signed by it.
+Browsers and clients that trust the Dev CA will accept the certificate without warnings.
+* Otherwise, a **self-signed certificate** is generated.
+Browsers will show a certificate warning, which is acceptable for development.
+
+TIP: Run `quarkus tls generate-quarkus-ca --install` to create the Dev CA and install it in your system trust store for the best developer experience.
+
+When auto-TLS is active, plain HTTP requests are **redirected to HTTPS** by default.
+To allow plain HTTP alongside HTTPS, set:
+
+[source,properties]
+----
+quarkus.http.insecure-requests=enabled
+----
+
+In **production mode**, no auto-generation occurs.
+If TLS is not configured, the server fails at startup with a clear error message.
+
+== How it works
+
+=== Same port, dual transport
+
+The Quarkus HTTP server listens on the HTTPS port (default `8443`) for both TCP (HTTP/1.1, HTTP/2) and UDP (HTTP/3 over QUIC) traffic.
+There is no separate port for HTTP/3.
+
+=== Alt-Svc discovery
+
+When HTTP/3 is enabled, the server automatically adds an `Alt-Svc` header to HTTP/1.1 and HTTP/2 responses:
+
+----
+Alt-Svc: h3=":8443"; ma=86400
+----
+
+This tells clients that HTTP/3 is available on the same port.
+Browsers and HTTP clients that support HTTP/3 will upgrade to QUIC for subsequent requests.
+
+To disable the `Alt-Svc` header:
+
+[source,properties]
+----
+quarkus.http3.alt-svc=false
+----
+
+=== Transparent to application code
+
+HTTP/3 does not change how you write application code.
+The same Jakarta REST resources, Vert.x routes, filters, and interceptors work across all HTTP versions.
+You can check the protocol version of a request using `HttpServerRequest.version()` if needed.
+
+== Limitations
+
+* **Experimental** — This feature is under active development. APIs and behavior may change.
+* **UDP in containers** — HTTP/3 uses UDP. If your application runs in a container (Docker, Kubernetes), ensure UDP port forwarding is configured for the HTTPS port. Some corporate firewalls may also block UDP traffic.
+* **No WebSocket over HTTP/3** — WebSocket connections use HTTP/1.1 or HTTP/2. This is a Vert.x limitation, not specific to Quarkus.
+* **Native image** — HTTP/3 requires a platform-specific native QUIC library (`netty-codec-native-quic`). The correct classifier for your platform must be on the classpath.
+
+== Verifying your HTTP/3 setup
+
+=== Using curl
+
+If your `curl` build supports HTTP/3 (check with `curl --version` — look for `HTTP3` in the features list):
+
+[source,bash]
+----
+curl --http3 -k https://localhost:8443/hello
+----
+
+The `-k` flag skips certificate verification (useful with self-signed certificates in dev mode).
+
+=== Using browser DevTools
+
+Open your browser's developer tools, go to the **Network** tab, and enable the **Protocol** column.
+Requests served over HTTP/3 will show `h3`.
+
+=== Using the Vert.x HTTP client
+
+You can verify HTTP/3 programmatically using the Vert.x HTTP client:
+
+[source,java]
+----
+Vertx vertx = ...; // Inject or obtain the Vert.x instance
+int port = 8443;
+
+HttpClientConfig clientConfig = new HttpClientConfig();
+clientConfig.setVersions(HttpVersion.HTTP_3);
+clientConfig.setHttp3Config(new Http3ClientConfig());
+
+ClientSSLOptions sslOptions = new ClientSSLOptions()
+        .setTrustAll(true); // For dev mode only
+
+HttpClientAgent client = vertx.httpClientBuilder()
+        .with(clientConfig)
+        .with(sslOptions)
+        .build();
+
+client.request(HttpMethod.GET, port, "localhost", "/hello")
+        .compose(HttpClientRequest::send)
+        .compose(resp -> {
+            System.out.println("Protocol: " + resp.version()); // HTTP_3
+            return resp.body();
+        })
+        .compose(body -> {
+            System.out.println("Body: " + body);
+            return client.close();
+        })
+        .await(10, TimeUnit.SECONDS);
+----

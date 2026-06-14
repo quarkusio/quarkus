@@ -36,7 +36,6 @@ class Http3AutoTlsInsecureEnabledTest {
             .withApplicationRoot(jar -> jar.addClasses(MyBean.class))
             .overrideConfigKey("quarkus.http.insecure-requests", "enabled");
 
-
     @Test
     void testHttpNotRedirected() throws Exception {
         Vertx vertx = VertxCoreRecorder.getVertx().get();

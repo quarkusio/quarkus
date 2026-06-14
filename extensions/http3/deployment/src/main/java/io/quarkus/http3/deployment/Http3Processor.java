@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.http3.deployment.spi.Http3EnabledBuildItem;
+import io.quarkus.http3.runtime.CertOrigin;
 import io.quarkus.http3.runtime.Http3AltSvcHandler;
 import io.quarkus.http3.runtime.Http3Customizer;
 import io.quarkus.http3.runtime.Http3DevTlsSupplier;
@@ -97,24 +98,25 @@ class Http3Processor {
     }
 
     @BuildStep
-    void autoConfigureTls(
+    Http3CertOriginBuildItem autoConfigureTls(
             Http3EnabledBuildItem http3Enabled,
             LaunchModeBuildItem launchMode,
             BuildProducer<TlsCertificateBuildItem> tlsCertificateProducer,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
 
         if (isTlsAlreadyConfigured()) {
-            return;
+            return new Http3CertOriginBuildItem(CertOrigin.CONFIGURED);
         }
 
         if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
             LOG.warn("HTTP/3 is enabled but no TLS configuration was detected at build time. "
                     + "HTTP/3 requires TLS. If TLS is not configured at runtime, the server will fail to start. "
                     + "Configure quarkus.tls.key-store.* or set quarkus.http3.enabled=false to disable HTTP/3.");
-            return;
+            return new Http3CertOriginBuildItem(CertOrigin.CONFIGURED);
         }
 
         // Dev or test mode: auto-generate a certificate
+        CertOrigin certOrigin;
         Path outputDir = Path.of("target", "http3-dev-cert");
         try {
             Files.createDirectories(outputDir);
@@ -131,9 +133,11 @@ class Http3Processor {
                 PrivateKey caKey = loadDevCaPrivateKey();
                 request.signedWith(caCert, caKey);
                 LOG.info("HTTP/3: auto-generated TLS certificate signed by Quarkus Dev CA");
+                certOrigin = CertOrigin.DEV_CA;
             } else {
                 LOG.info("HTTP/3: auto-generated self-signed TLS certificate "
                         + "(run 'quarkus tls generate-quarkus-ca --install' for browser-trusted certificates)");
+                certOrigin = CertOrigin.SELF_SIGNED;
             }
 
             new CertificateGenerator(outputDir, true).generate(request);
@@ -150,6 +154,16 @@ class Http3Processor {
                 new RunTimeConfigurationDefaultBuildItem("quarkus.http.insecure-requests", "redirect"));
         LOG.info("HTTP/3: insecure HTTP requests will be redirected to HTTPS "
                 + "(set quarkus.http.insecure-requests=enabled to allow plain HTTP)");
+        return new Http3CertOriginBuildItem(certOrigin);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setCertOrigin(
+            Http3EnabledBuildItem http3Enabled,
+            Http3CertOriginBuildItem certOriginItem,
+            Http3Recorder recorder) {
+        recorder.setCertOrigin(certOriginItem.getCertOrigin());
     }
 
     @BuildStep
@@ -160,7 +174,7 @@ class Http3Processor {
             LaunchModeBuildItem launchMode,
             Http3Recorder recorder) {
         if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
-            recorder.checkTlsAvailable();
+            recorder.checkTlsAndLogContainerWarning();
         }
     }
 

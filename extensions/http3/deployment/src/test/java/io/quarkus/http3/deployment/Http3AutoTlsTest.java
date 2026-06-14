@@ -40,7 +40,6 @@ class Http3AutoTlsTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyBean.class));
 
-
     @Inject
     TlsConfigurationRegistry registry;
 

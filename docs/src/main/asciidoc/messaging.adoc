@@ -784,7 +784,7 @@ For more information check the xref:context-propagation.adoc#context-propagation
 In some cases, you might need to activate the request context while processing messages consumed from a broker.
 While using `@ActivateRequestContext` on the `@Incoming` method is an option, its lifecycle does not follow that of a Quarkus Messaging message.
 For incoming channels, you can enable the request scope activation with the build time property `quarkus.messaging.request-scoped.enabled=true`.
-This will activate the request context for each message processed by incoming channels, and close the context once the message is processed.
+This activates a new request context when an `@Incoming` method is invoked, and closes the context once the message is processed (including when a returned `Uni` or `CompletionStage` completes).
 
 == Health Checks
 
@@ -1037,7 +1037,6 @@ Incoming channels (PublisherDecorator) in the order of priority:
 
 - `io.quarkus.smallrye.reactivemessaging.runtime.ConnectorContextPropagationDecorator` (-100): Clears the context propagation for incoming channels
 - `io.smallrye.reactive.messaging.providers.locals.ContextDecorator` (0): Ensures messages are dispatched on the message context
-- `io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator` (100): Handles pausable channels
 - `io.smallrye.reactive.messaging.providers.IncomingInterceptorDecorator` (500): Handles `IncomingInterceptor` beans
 - `io.smallrye.reactive.messaging.providers.metrics.MicrometerDecorator` (1000): Micrometer Metrics support, enabled with `quarkus-micrometer` extension
 - `io.smallrye.reactive.messaging.providers.extension.ObservationDecorator` (1000): Message observation support for incoming channels

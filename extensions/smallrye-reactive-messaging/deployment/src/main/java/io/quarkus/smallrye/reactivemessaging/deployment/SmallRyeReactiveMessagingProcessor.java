@@ -79,11 +79,11 @@ import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorF
 import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
 import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.IncomingRequestContextInvokerSupport;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigBuilderCustomizer;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
-import io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
@@ -105,6 +105,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     static final String DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY = "1024";
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
+    static final String REQUEST_SCOPED_INVOKER_SUFFIX = "_RequestScopedInvoker";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -112,14 +113,11 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBean, ReactiveMessagingBuildTimeConfig buildTimeConfig) {
+    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         // We add the connector and channel qualifiers to make them part of the index.
         additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
                 Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
                 QuarkusWorkerPoolRegistry.class, ConnectorContextPropagationDecorator.class, ContextualEmitterFactory.class));
-        if (buildTimeConfig.activateRequestScopeEnabled()) {
-            additionalBean.produce(new AdditionalBeanBuildItem(RequestScopedDecorator.class));
-        }
     }
 
     @BuildStep
@@ -271,7 +269,8 @@ public class SmallRyeReactiveMessagingProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfig,
-            ReactiveMessagingConfiguration conf) {
+            ReactiveMessagingConfiguration conf,
+            ReactiveMessagingBuildTimeConfig buildTimeConfig) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
@@ -331,15 +330,19 @@ public class SmallRyeReactiveMessagingProcessor {
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
                         classOutput);
+                String invokerClassName = generatedInvokerName;
+                if (buildTimeConfig.activateRequestScopeEnabled() && hasIncoming(methodInfo)) {
+                    invokerClassName = generateRequestScopedInvokerWrapper(generatedInvokerName, classOutput);
+                }
                 /*
                  * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
                  * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
                  * it
                  */
                 reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(generatedInvokerName).build());
+                        .produce(ReflectiveClassBuildItem.builder(invokerClassName).build());
                 mediatorConfiguration
-                        .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
+                        .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(invokerClassName));
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK
             }
@@ -472,6 +475,40 @@ public class SmallRyeReactiveMessagingProcessor {
                 }
             }
         }
+    }
+
+    private String generateRequestScopedInvokerWrapper(String delegateClassName, ClassOutput classOutput) {
+        String delegateInternalName = delegateClassName.replace('.', '/');
+        String wrapperInternalName = delegateInternalName + REQUEST_SCOPED_INVOKER_SUFFIX;
+        try (ClassCreator wrapper = ClassCreator.builder().classOutput(classOutput).className(wrapperInternalName)
+                .interfaces(Invoker.class)
+                .build()) {
+
+            FieldDescriptor delegateField = wrapper.getFieldCreator("delegate", Invoker.class)
+                    .getFieldDescriptor();
+
+            try (MethodCreator ctor = wrapper.getMethodCreator("<init>", void.class, Object.class)) {
+                ctor.setModifiers(Modifier.PUBLIC);
+                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
+                ResultHandle self = ctor.getThis();
+                ResultHandle delegate = ctor.newInstance(
+                        MethodDescriptor.ofConstructor(delegateInternalName, Object.class),
+                        ctor.getMethodParam(0));
+                ctor.writeInstanceField(delegateField, self, delegate);
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator invoke = wrapper.getMethodCreator(
+                    MethodDescriptor.ofMethod(Invoker.class, "invoke", Object.class, Object[].class))) {
+                ResultHandle result = invoke.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(IncomingRequestContextInvokerSupport.class, "invoke", Object.class,
+                                Invoker.class, Object[].class),
+                        invoke.readInstanceField(delegateField, invoke.getThis()),
+                        invoke.getMethodParam(0));
+                invoke.returnValue(result);
+            }
+        }
+        return wrapperInternalName.replace('/', '.');
     }
 
     private void generateSubscribingCoroutineInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
@@ -627,6 +664,10 @@ public class SmallRyeReactiveMessagingProcessor {
                 return false;
             }
         }));
+    }
+
+    private boolean hasIncoming(MethodInfo methodInfo) {
+        return methodInfo.hasAnnotation(INCOMING) || methodInfo.hasAnnotation(INCOMINGS);
     }
 
     boolean consumesFromConnector(MethodInfo methodInfo, Set<String> connectorManagedChannels) {

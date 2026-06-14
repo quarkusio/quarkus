@@ -130,16 +130,24 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             if (dPoPNonceProvider != null) {
                 String proofNonce = proofJwtClaims.getString(OidcConstants.NONCE);
                 if (proofNonce == null) {
+                    /*
+                     * Set HTTP error status to `401` and the error code value to `use_dpop_nonce`.
+                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                     */
                     LOG.debug("Required DPoP proof nonce claim is missing");
                     throw new AuthenticationFailedException(Map.of(
                             OidcConstants.ACCESS_TOKEN_VALUE, token,
                             OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
                 }
                 if (!dPoPNonceProvider.isValid(proofNonce)) {
+                    /*
+                     * This same error code is used when supplying a new nonce value when there was a nonce mismatch.
+                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                     */
                     LOG.tracef("DPoP proof nonce claim '%s' is invalid", proofNonce);
                     throw new AuthenticationFailedException(Map.of(
                             OidcConstants.ACCESS_TOKEN_VALUE, token,
-                            OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE));
+                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
                 }
             }
 

@@ -12,8 +12,11 @@ import io.vertx.core.net.ServerSSLOptions;
 @Dependent
 public class Http3Customizer implements HttpServerConfigCustomizer {
 
+    static volatile boolean httpsConfigured;
+
     @Override
     public void customizeHttpsServer(HttpServerConfig config, ServerSSLOptions sslOptions) {
+        httpsConfigured = true;
         Set<HttpVersion> versions = config.getVersions();
         versions.add(HttpVersion.HTTP_3);
         config.setVersions(versions);

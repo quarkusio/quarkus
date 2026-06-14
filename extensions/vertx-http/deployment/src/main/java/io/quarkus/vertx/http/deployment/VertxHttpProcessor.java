@@ -70,6 +70,7 @@ import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfig
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
+import io.quarkus.vertx.http.deployment.spi.HttpServerStartedBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -536,7 +537,7 @@ class VertxHttpProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void openSocket(ApplicationStartBuildItem start,
+    HttpServerStartedBuildItem openSocket(ApplicationStartBuildItem start,
             LaunchModeBuildItem launchMode,
             CoreVertxBuildItem vertx,
             ShutdownContextBuildItem shutdown,
@@ -564,6 +565,7 @@ class VertxHttpProcessor {
                 launchMode.isAuxiliaryApplication(),
                 !capabilities.isPresent(Capability.VERTX_WEBSOCKETS)
                         && !capabilities.isPresent(Capability.WEBSOCKETS_NEXT));
+        return new HttpServerStartedBuildItem();
     }
 
     @BuildStep
@@ -571,6 +573,8 @@ class VertxHttpProcessor {
         runtimeInitializedClasses
                 .produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport"));
         runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.vertx.ext.auth.impl.jose.JWT"));
+
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.vertx.core.net.impl.quic.QuicEndpointImpl"));
     }
 
     /**

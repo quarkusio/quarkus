@@ -2,7 +2,7 @@ package io.quarkus.http3.runtime;
 
 import java.util.Set;
 
-import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -11,7 +11,7 @@ import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.ServerSSLOptions;
 
-@Dependent
+@Singleton
 public class Http3Customizer implements HttpServerConfigCustomizer {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.http3");

@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -31,12 +33,23 @@ class Http3RestClientTest {
     @TestHTTPResource(value = "/ping", tls = true)
     URL tlsUrl;
 
+    static Vertx vertx;
+
+    @BeforeAll
+    static void setup() {
+        vertx = Vertx.vertx();
+    }
+
+    @AfterAll
+    static void tearDown() throws TimeoutException {
+        vertx.close().await(10, TimeUnit.SECONDS);
+    }
+
     record ResponseStruct(String version, String body, int status) {
     }
 
     @Test
     void testRestClientUsesHttp3() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -60,7 +73,6 @@ class Http3RestClientTest {
 
     @Test
     void testDirectHttp3() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();

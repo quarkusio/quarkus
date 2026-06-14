@@ -330,6 +330,7 @@ class NettyProcessor {
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.InsecureQuicTokenHandler")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quic")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quiche")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicCongestionControlAlgorithm")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicConnectionAddress")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheError")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheNativeStaticallyReferencedJniMethods")

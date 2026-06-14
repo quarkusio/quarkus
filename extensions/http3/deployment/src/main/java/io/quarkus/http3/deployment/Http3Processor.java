@@ -41,6 +41,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.spi.HttpServerStartedBuildItem;
 import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
@@ -170,7 +171,8 @@ class Http3Processor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(ServiceStartBuildItem.class)
     void verifyTlsInProductionMode(
-            Http3EnabledBuildItem http3Enabled,
+            HttpServerStartedBuildItem httpServerStartedBuildItem, // Barrier.
+            Http3EnabledBuildItem http3Enabled, // Only produced if configured.
             LaunchModeBuildItem launchMode,
             Http3Recorder recorder) {
         if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {

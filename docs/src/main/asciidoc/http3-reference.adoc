@@ -126,6 +126,35 @@ HTTP/3 does not change how you write application code.
 The same Jakarta REST resources, Vert.x routes, filters, and interceptors work across all HTTP versions.
 You can check the protocol version of a request using `HttpServerRequest.version()` if needed.
 
+== Using HTTP/3 with the REST Client
+
+The Quarkus REST Client can connect to HTTP/3 servers.
+To enable HTTP/3 for a specific client, set:
+
+[source,properties]
+----
+quarkus.rest-client.my-client.http3=true
+----
+
+To enable HTTP/3 for all REST clients:
+
+[source,properties]
+----
+quarkus.rest-client.http3=true
+----
+
+The target server must support HTTP/3 and the connection must use TLS.
+Make sure the client's TLS configuration trusts the server's certificate:
+
+[source,properties]
+----
+quarkus.rest-client.my-client.url=https://my-server:8443
+quarkus.rest-client.my-client.http3=true
+quarkus.rest-client.tls-configuration-name=my-tls-config
+----
+
+See the xref:rest-client.adoc#http3[REST Client guide] for more details on REST Client configuration.
+
 == Limitations
 
 * **Experimental** — This feature is under active development. APIs and behavior may change.

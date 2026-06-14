@@ -15,6 +15,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -179,9 +180,9 @@ public class VertxInputStream extends InputStream {
         public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
             this.timeout = timeout;
-            final ConnectionBase connection = (ConnectionBase) request.connection();
+            final HttpConnection connection = request.connection();
             synchronized (connection) {
-                if (!connection.channel().isOpen()) {
+                if (connection instanceof ConnectionBase cb && !cb.channel().isOpen()) {
                     readException = new ClosedChannelException();
                 } else if (!request.isEnded()) {
                     request.pause();
@@ -273,8 +274,9 @@ public class VertxInputStream extends InputStream {
         @Override
         public void handle(Buffer event) {
             synchronized (request.connection()) {
-                if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
-                    // When using HTTP/2 H2, this indicates that we won't receive anymore data.
+                if (event.length() == 0
+                        && (request.version() == HttpVersion.HTTP_2 || request.version() == HttpVersion.HTTP_3)) {
+                    // When using HTTP/2 or HTTP/3, this indicates that we won't receive anymore data.
                     eof = true;
                     if (waiting) {
                         request.connection().notifyAll();

@@ -174,7 +174,7 @@ class Http3Processor {
             LaunchModeBuildItem launchMode,
             Http3Recorder recorder) {
         if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
-            recorder.checkTlsAndLogContainerWarning();
+            recorder.checkTls();
         }
     }
 

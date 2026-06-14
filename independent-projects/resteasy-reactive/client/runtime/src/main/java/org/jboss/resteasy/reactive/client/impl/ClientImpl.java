@@ -58,15 +58,18 @@ import io.vertx.core.dns.DnsClient;
 import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.file.FileSystem;
+import io.vertx.core.http.Http3ClientConfig;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientBuilder;
+import io.vertx.core.http.HttpClientConfig;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerBuilder;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.PoolOptions;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.http.WebSocketClient;
@@ -109,7 +112,8 @@ public class ClientImpl implements Client {
             LoggingScope loggingScope,
             ClientLogger clientLogger, String userAgent,
             String tlsConfigName,
-            List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers,
+            boolean http3) {
         this.userAgent = userAgent;
         this.tlsConfigName = tlsConfigName;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
@@ -195,6 +199,13 @@ public class ClientImpl implements Client {
                 .setHttp1MaxSize((int) connectionPoolSize)
                 .setHttp2MaxSize((int) connectionPoolSize);
         var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(poolOptions);
+
+        if (http3) {
+            HttpClientConfig clientConfig = new HttpClientConfig(options);
+            clientConfig.setVersions(HttpVersion.HTTP_3);
+            clientConfig.setHttp3Config(new Http3ClientConfig());
+            httpClientBuilder.with(clientConfig);
+        }
 
         Function<HttpClientResponse, Future<RequestOptions>> redirectFunction = null;
         AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);

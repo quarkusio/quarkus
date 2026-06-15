@@ -43,7 +43,6 @@ dependencies {
 {/if}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
     annotationProcessor 'org.aesh:aesh-processor'
-    annotationProcessor 'org.aesh:aesh'
 {/if}
 {#if quarkus.version == null || quarkus.version.compareVersionTo("3.30.999") > 0}
     testImplementation 'io.quarkus:quarkus-junit'

@@ -169,7 +169,6 @@
         <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.28.2</javaparser.version>
-        <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.24.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP3</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
@@ -5616,9 +5615,14 @@
                 <version>${hibernate-reactive.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.local-cache</groupId>
-                <artifactId>quarkus-local-cache</artifactId>
-                <version>${hibernate-quarkus-local-cache.version}</version>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-jcache</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>jcache</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>

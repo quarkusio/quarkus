@@ -85,6 +85,10 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.PSMW",
                 "com.github.benmanes.caffeine.cache.PSAMW",
                 "com.github.benmanes.caffeine.cache.PSAWMW",
+                // Used by Hibernate ORM's default Caffeine-based cache: expire based on last access time, bounded by size
+                "com.github.benmanes.caffeine.cache.PSAMS",
+                // Previously (mistakenly?) used by quarkus-local-cache: expire based on last write time (???), bounded by size
+                // See com.github.benmanes.caffeine.cache.NodeFactory.getClassName and how a variable Expiry leads to W instead of A
                 "com.github.benmanes.caffeine.cache.PSWMS",
                 "com.github.benmanes.caffeine.cache.PSWMW",
                 "com.github.benmanes.caffeine.cache.SILMS",

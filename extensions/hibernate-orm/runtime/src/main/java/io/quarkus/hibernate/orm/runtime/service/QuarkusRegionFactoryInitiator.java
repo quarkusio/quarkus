@@ -6,11 +6,11 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cache.internal.NoCachingRegionFactory;
+import org.hibernate.cache.jcache.internal.JCacheRegionFactory;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 public final class QuarkusRegionFactoryInitiator implements StandardServiceInitiator<RegionFactory> {
 
@@ -44,7 +44,7 @@ public final class QuarkusRegionFactoryInitiator implements StandardServiceIniti
             }
         }
 
-        return new QuarkusInfinispanRegionFactory();
+        return new JCacheRegionFactory();
     }
 
 }

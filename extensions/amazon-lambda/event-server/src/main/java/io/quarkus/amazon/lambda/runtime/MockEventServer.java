@@ -28,6 +28,7 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -91,7 +92,14 @@ public class MockEventServer implements Closeable {
         router = Router.router(vertx);
         setupRoutes();
         try {
-            this.httpServer.requestHandler(router).listen().toCompletionStage().toCompletableFuture().get();
+            SocketAddress address;
+            if (options.getPort() <= 0) {
+                // Make sure "30" is not an identifier used anywhere
+                address = SocketAddress.sharedRandomPort(30, options.getHost());
+            } else {
+                address = SocketAddress.inetSocketAddress(options.getPort(), options.getHost());
+            }
+            this.httpServer.requestHandler(router).listen(address).toCompletionStage().toCompletableFuture().get();
             log.info("Mock Lambda Event Server Started");
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);

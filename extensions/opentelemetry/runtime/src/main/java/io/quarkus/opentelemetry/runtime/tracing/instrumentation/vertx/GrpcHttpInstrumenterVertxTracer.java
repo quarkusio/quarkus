@@ -11,8 +11,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpVersion;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HttpRequestHeaders;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.SpanKind;
@@ -44,8 +44,8 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
 
     @Override
     public <R> boolean canHandle(R request, TagExtractor<R> tagExtractor) {
-        if (request instanceof HttpRequest) {
-            String contentType = ((HttpRequest) request).headers().get("content-type");
+        if (request instanceof HttpRequestHeaders multiMap) {
+            String contentType = multiMap.get("content-type");
             return contentType != null && contentType.startsWith("application/grpc");
         }
         return false;
@@ -65,15 +65,17 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
             return null;
         }
 
-        HttpRequest httpRequest = (HttpRequest) request;
+        if (!(request instanceof HttpRequestHeaders multiMap)) {
+            return null;
+        }
 
         io.opentelemetry.context.Context extractedContext = openTelemetry.getPropagators()
                 .getTextMapPropagator()
-                .extract(io.opentelemetry.context.Context.root(), httpRequest, HttpRequestTextMapGetter.INSTANCE);
+                .extract(io.opentelemetry.context.Context.root(), multiMap, MultiMapTextMapGetter.INSTANCE);
 
         Scope scope = QuarkusContextStorage.INSTANCE.attach(context, extractedContext);
 
-        storeHttpAttributes(context, httpRequest);
+        storeHttpAttributes(context, request);
 
         return OpenTelemetryVertxTracer.SpanOperation.span(context, request, null, extractedContext, scope);
     }
@@ -149,40 +151,19 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
         return null;
     }
 
-    private void storeHttpAttributes(Context context, HttpRequest httpRequest) {
+    private void storeHttpAttributes(Context context, Object request) {
         if (!VertxContext.isDuplicatedContext(context)) {
             return;
         }
-        ConcurrentHashMap<String, Object> data = VertxContext.localContextData(context);
-        if (httpRequest instanceof HttpServerRequest) {
-            HttpServerRequest serverRequest = (HttpServerRequest) httpRequest;
-            data.put(GRPC_HTTP_URL_SCHEME, serverRequest.scheme());
-            String authority = serverRequest.authority() != null ? serverRequest.authority().toString() : null;
-            if (authority != null) {
-                data.put(GRPC_HTTP_AUTHORITY, authority);
+        if (request instanceof HttpRequestHeaders requestHeaders) {
+            ConcurrentHashMap<String, Object> data = VertxContext.localContextData(context);
+            if (requestHeaders.scheme() != null) {
+                data.put(GRPC_HTTP_URL_SCHEME, requestHeaders.scheme());
             }
-            String clientIp = VertxUtil.extractClientIP(serverRequest);
-            if (clientIp != null) {
-                data.put(GRPC_HTTP_CLIENT_ADDRESS, clientIp);
+            if (requestHeaders.authority() != null) {
+                data.put(GRPC_HTTP_AUTHORITY, requestHeaders.authority().toString());
             }
-            HttpVersion version = serverRequest.version();
-            if (version != null) {
-                String versionString;
-                switch (version) {
-                    case HTTP_1_0:
-                        versionString = "1.0";
-                        break;
-                    case HTTP_1_1:
-                        versionString = "1.1";
-                        break;
-                    case HTTP_2:
-                        versionString = "2.0";
-                        break;
-                    default:
-                        versionString = version.alpnName();
-                }
-                data.put(GRPC_HTTP_PROTOCOL_VERSION, versionString);
-            }
+            data.put(GRPC_HTTP_PROTOCOL_VERSION, "2.0");
         }
     }
 
@@ -199,20 +180,21 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
     }
 
-    private enum HttpRequestTextMapGetter implements TextMapGetter<HttpRequest> {
+    private enum MultiMapTextMapGetter implements TextMapGetter<MultiMap> {
         INSTANCE;
 
         @Override
-        public Iterable<String> keys(HttpRequest carrier) {
-            return carrier.headers().names();
+        public Iterable<String> keys(MultiMap carrier) {
+            return carrier.names();
         }
 
         @Override
-        public String get(HttpRequest carrier, String key) {
+        public String get(MultiMap carrier, String key) {
             if (carrier == null) {
                 return null;
             }
-            return carrier.headers().get(key);
+            return carrier.get(key);
         }
     }
+
 }

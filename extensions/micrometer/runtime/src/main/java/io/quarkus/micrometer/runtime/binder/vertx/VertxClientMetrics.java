@@ -47,9 +47,14 @@ public class VertxClientMetrics
     }
 
     @Override
-    public EventTiming requestBegin(String uri, Object request) {
+    public EventTiming init() {
         current.increment();
         return new EventTiming(processing);
+    }
+
+    @Override
+    public void requestBegin(EventTiming et, String uri, Object request) {
+        // Ignoring request-alone metrics at the moment
     }
 
     @Override

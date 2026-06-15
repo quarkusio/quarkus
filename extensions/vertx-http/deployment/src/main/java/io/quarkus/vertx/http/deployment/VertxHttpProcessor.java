@@ -87,7 +87,7 @@ import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
-import io.vertx.core.http.impl.Http1xServerRequest;
+import io.vertx.core.http.impl.http1.Http1ServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 
@@ -105,7 +105,7 @@ class VertxHttpProcessor {
     LogCategoryBuildItem logging() {
         //this log is only used to log an error about an incorrect URI, which results in a 400 response
         //we don't want to log this
-        return new LogCategoryBuildItem(Http1xServerRequest.class.getName(), Level.OFF);
+        return new LogCategoryBuildItem(Http1ServerRequest.class.getName(), Level.OFF);
     }
 
     @BuildStep

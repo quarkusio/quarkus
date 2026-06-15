@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.RabbitMQContainer;
@@ -23,7 +22,6 @@ import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 @QuarkusTestResource(RabbitMQResource.class)
-@Disabled("Need to be investigated")
 public class RabbitMQConnectorDynCredsTest {
 
     public static class RabbitMQResource implements QuarkusTestResourceLifecycleManager {

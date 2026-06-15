@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.ws.rs.client.Client;
@@ -41,12 +42,12 @@ import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
-import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.internal.ContextInternal;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -71,15 +72,18 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         // to avoid creating a chain of parent references that prevents GC of previous calls' contexts.
         Context current = client.vertx.getOrCreateContext();
         this.context = VertxContext.createNewDuplicatedContext(current);
+        ContextInternal ctx = (ContextInternal) this.context;
         if (VertxContext.isDuplicatedContext(current)) {
             // Copy old-style locals from the caller context so they remain visible
-            VertxContext.localContextData(this.context).putAll(VertxContext.localContextData(current));
+            ContextInternal curCtx = (ContextInternal) current;
+            ConcurrentHashMap<String, Object> map = ctx.getLocal(VertxContext.DATA_MAP_LOCAL);
+            if (map == null) {
+                map = new ConcurrentHashMap<>();
+                ctx.putLocal(VertxContext.DATA_MAP_LOCAL, map);
+            }
+            map.putAll(curCtx.getLocal(VertxContext.DATA_MAP_LOCAL));
         }
-
-        for (Map.Entry<String, Object> entry : VertxContext.localContextData(current).entrySet()) {
-            ContextLocals.putInParent(this.context, entry.getKey(), entry.getValue());
-        }
-
+        ctx.putLocal(VertxContext.PARENT_CONTEXT_LOCAL, current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

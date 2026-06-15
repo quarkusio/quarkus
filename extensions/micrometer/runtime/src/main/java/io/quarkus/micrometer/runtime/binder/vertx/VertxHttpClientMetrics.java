@@ -2,8 +2,10 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
@@ -30,7 +32,7 @@ import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 
 class VertxHttpClientMetrics extends VertxTcpClientMetrics
-        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void, LongTaskTimer.Sample> {
+        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void> {
     static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
     private final LongAdder pending;
@@ -83,9 +85,30 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             SocketAddress remoteAddress, int maxPoolSize) {
         String remote = NetworkMetrics.toString(remoteAddress);
         return new ClientMetrics<RequestTracker, HttpRequest, HttpResponse>() {
+            private final Deque<LongTaskTimer.Sample> connectionSamples = new ConcurrentLinkedDeque<>();
+
             @Override
-            public RequestTracker requestBegin(String uri, HttpRequest request) {
-                RequestTracker tracker = new RequestTracker();
+            public void connected() {
+                getConnCount().increment();
+                connectionSamples.push(getConnDuration().start());
+            }
+
+            @Override
+            public void disconnected() {
+                getConnCount().decrement();
+                LongTaskTimer.Sample sample = connectionSamples.poll();
+                if (sample != null) {
+                    sample.stop();
+                }
+            }
+
+            @Override
+            public RequestTracker init() {
+                return new RequestTracker();
+            }
+
+            @Override
+            public void requestBegin(RequestTracker tracker, String uri, HttpRequest request) {
                 tracker.request = request;
                 tracker.tags = tags.and(
                         Tag.of("address", remote),
@@ -98,11 +121,13 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                     pending.increment();
                     tracker.timer = new EventTiming(null);
                 }
-                return tracker;
             }
 
             @Override
             public void requestEnd(RequestTracker tracker, long bytesWritten) {
+                if (bytesWritten > 0) {
+                    sent.record(bytesWritten);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }
@@ -130,6 +155,9 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void responseEnd(RequestTracker tracker, long bytesRead) {
+                if (bytesRead > 0) {
+                    received.record(bytesRead);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }

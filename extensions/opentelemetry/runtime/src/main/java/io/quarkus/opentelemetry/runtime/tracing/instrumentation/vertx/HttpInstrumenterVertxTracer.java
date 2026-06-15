@@ -45,7 +45,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.HttpRequestHead;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -129,12 +129,18 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 request,
                 operation, headers, tagExtractor);
         if (spanOperation != null) {
-            Context runningCtx = spanOperation.getContext();
-            if (VertxContext.isDuplicatedContext(runningCtx)) {
-                String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
-                if (pathTemplate != null && !pathTemplate.isEmpty()) {
-                    Span.fromContext(spanOperation.getSpanContext())
-                            .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);
+            // Use the trace operation provided by Vert.x when it differs from the default HTTP method name.
+            HttpRequest httpRequest = (HttpRequest) spanOperation.getRequest();
+            if (operation != null && !operation.equals(httpRequest.method().name())) {
+                Span.fromContext(spanOperation.getSpanContext()).updateName(operation);
+            } else {
+                Context runningCtx = spanOperation.getContext();
+                if (VertxContext.isDuplicatedContext(runningCtx)) {
+                    String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
+                    if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                        Span.fromContext(spanOperation.getSpanContext())
+                                .updateName(httpRequest.method().name() + " " + pathTemplate);
+                    }
                 }
             }
         }
@@ -463,8 +469,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -522,8 +533,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -543,7 +559,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @Override
         public MultiMap headers() {
-            HeadersAdaptor headers = new HeadersAdaptor(HeadersMultiMap.httpHeaders()) {
+            HeadersAdaptor headers = new HeadersAdaptor(Http1xHeaders.httpHeaders()) {
                 @Override
                 public HeadersAdaptor set(final String name, final String value) {
                     super.set(name, value);

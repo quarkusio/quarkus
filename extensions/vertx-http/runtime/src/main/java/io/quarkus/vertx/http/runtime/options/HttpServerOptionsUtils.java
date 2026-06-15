@@ -54,17 +54,17 @@ public class HttpServerOptionsUtils {
     /**
      * When the http port is set to 0, replace it by this value to let Vert.x choose a random port
      */
-    public static final int RANDOM_PORT_MAIN_HTTP = -1;
+    public static final int RANDOM_PORT_MAIN_HTTP = 10;
 
     /**
      * When the https port is set to 0, replace it by this value to let Vert.x choose a random port
      */
-    public static final int RANDOM_PORT_MAIN_TLS = -2;
+    public static final int RANDOM_PORT_MAIN_TLS = 20;
 
     /**
      * When the management port is set to 0, replace it by this value to let Vert.x choose a random port
      */
-    public static final int RANDOM_PORT_MANAGEMENT = -3;
+    public static final int RANDOM_PORT_MANAGEMENT = 30;
 
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
@@ -82,8 +82,7 @@ public class HttpServerOptionsUtils {
 
         final HttpServerOptions serverOptions = new HttpServerOptions();
         int sslPort = httpConfig.determineSslPort(launchMode);
-        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
+        serverOptions.setPort(sslPort);
         serverOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
 
         if (JdkSSLEngineOptions.isAlpnAvailable()) {
@@ -207,7 +206,7 @@ public class HttpServerOptionsUtils {
         serverOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
 
         int sslPort = managementConfig.determinePort(launchMode);
-        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MANAGEMENT : sslPort);
+        serverOptions.setPort(sslPort);
         serverOptions.setClientAuth(managementBuildTimeConfig.tlsClientAuth());
 
         TlsConfiguration bucket = getTlsConfiguration(managementConfig.tlsConfigurationName(), registry);
@@ -428,6 +427,8 @@ public class HttpServerOptionsUtils {
         options.setCompressionSupported(managementBuildTimeConfig.enableCompression());
         if (managementBuildTimeConfig.compressionLevel().isPresent()) {
             options.setCompressionLevel(managementBuildTimeConfig.compressionLevel().getAsInt());
+        } else {
+            options.setCompressionLevel(HttpServerOptions.DEFAULT_COMPRESSION_LEVEL);
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());

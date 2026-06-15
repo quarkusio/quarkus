@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
 import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.observability.HttpRequest;
@@ -20,13 +21,14 @@ public class HttpRequestMetric extends RequestMetricInfo {
     final static ConcurrentHashMap<String, String> vertxWebToUriTemplate = new ConcurrentHashMap<>();
 
     private HttpServerRequestInternal request;
+    private HttpRequest httpRequest;
     private String initialPath;
     private String templatePath;
     private String currentRoutePath;
     private String normalizedPath;
     private boolean normalizedPathComputed = false;
     private final LongAdder activeRequests;
-    private io.vertx.core.Context executionContext;
+    private Context executionContext;
 
     private boolean requestActive = false;
 
@@ -36,8 +38,11 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     public HttpRequestMetric(HttpRequest request, LongAdder activeRequests) {
-        this.request = (HttpServerRequestInternal) request;
-        this.initialPath = this.request.path();
+        this.httpRequest = request;
+        if (request instanceof HttpServerRequestInternal internal) {
+            this.request = internal;
+        }
+        this.initialPath = request.uri();
         this.activeRequests = activeRequests;
     }
 
@@ -84,11 +89,15 @@ public class HttpRequestMetric extends RequestMetricInfo {
         return request;
     }
 
-    public void setExecutionContext(io.vertx.core.Context ctx) {
+    public HttpRequest httpRequest() {
+        return httpRequest;
+    }
+
+    public void setExecutionContext(Context ctx) {
         this.executionContext = ctx;
     }
 
-    public io.vertx.core.Context getExecutionContext() {
+    public Context getExecutionContext() {
         return executionContext;
     }
 
@@ -148,9 +157,10 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     private boolean isCORSPreflightRequest() {
-        return request.method() == HttpMethod.OPTIONS
-                && request.getHeader("Origin") != null
-                && request.getHeader("Access-Control-Request-Method") != null
-                && request.getHeader("Access-Control-Request-Headers") != null;
+        HttpRequest req = httpRequest();
+        return req.method() == HttpMethod.OPTIONS
+                && req.headers().get("Origin") != null
+                && req.headers().get("Access-Control-Request-Method") != null
+                && req.headers().get("Access-Control-Request-Headers") != null;
     }
 }

@@ -16,10 +16,10 @@ import io.grpc.Status;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
@@ -27,8 +27,10 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 @GlobalInterceptor
 public class GrpcTracingClientInterceptor implements ClientInterceptor {
     private final Instrumenter<GrpcRequest, Status> instrumenter;
+    private final OpenTelemetry openTelemetry;
 
     public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
+        this.openTelemetry = openTelemetry;
         InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
@@ -40,7 +42,7 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.buildInstrumenter(SpanKindExtractor.alwaysClient());
+        this.instrumenter = builder.buildClientInstrumenter(GrpcTextMapSetter.INSTANCE);
     }
 
     @Override
@@ -98,7 +100,20 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata headers) {
             GrpcRequest clientRequest = GrpcRequest.client(grpcRequest.getMethodDescriptor(), headers);
+            openTelemetry.getPropagators().getTextMapPropagator()
+                    .inject(spanContext, clientRequest, GrpcTextMapSetter.INSTANCE);
             super.start(new TracingClientCallListener<>(responseListener, spanContext, scope, clientRequest), headers);
+        }
+    }
+
+    private enum GrpcTextMapSetter implements TextMapSetter<GrpcRequest> {
+        INSTANCE;
+
+        @Override
+        public void set(final GrpcRequest carrier, final String key, final String value) {
+            if (carrier != null && carrier.getMetadata() != null) {
+                carrier.getMetadata().put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
+            }
         }
     }
 }

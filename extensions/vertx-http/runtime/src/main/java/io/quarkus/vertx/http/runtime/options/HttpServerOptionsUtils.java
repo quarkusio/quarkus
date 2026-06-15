@@ -22,6 +22,7 @@ import io.netty.handler.codec.compression.BrotliOptions;
 import io.netty.handler.codec.compression.DeflateOptions;
 import io.netty.handler.codec.compression.GzipOptions;
 import io.netty.handler.codec.compression.StandardCompressionOptions;
+import io.netty.handler.logging.ByteBufFormat;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
@@ -369,11 +370,28 @@ public class HttpServerOptionsUtils {
             if (httpConfig.http2ConnectionWindowSize().isPresent()) {
                 httpServerOptions.setHttp2ConnectionWindowSize(httpConfig.http2ConnectionWindowSize().getAsInt());
             }
+            if (httpConfig.http2MaxSmallContinuationFrames().isPresent()) {
+                httpServerOptions
+                        .setHttp2MaxSmallContinuationFrames(httpConfig.http2MaxSmallContinuationFrames().getAsInt());
+            }
         } else {
             httpServerOptions.setHttp2ClearTextEnabled(false);
         }
 
         httpServerOptions.setUseProxyProtocol(httpConfig.proxy().useProxyProtocol());
+        httpServerOptions.setProxyProtocolTimeout(httpConfig.proxyProtocolTimeout().toMillis());
+        httpServerOptions.setProxyProtocolTimeoutUnit(TimeUnit.MILLISECONDS);
+        httpServerOptions.setTcpKeepAlive(httpConfig.tcpKeepAlive());
+        httpServerOptions.setLogActivity(httpConfig.logActivity());
+        httpServerOptions.setActivityLogDataFormat(
+                httpConfig.activityLogDataFormat() == VertxHttpConfig.ActivityLogDataFormat.SIMPLE
+                        ? ByteBufFormat.SIMPLE
+                        : ByteBufFormat.HEX_DUMP);
+        httpServerOptions.setReuseAddress(httpConfig.reuseAddress());
+        if (httpConfig.trafficClass() >= 0) {
+            httpServerOptions.setTrafficClass(httpConfig.trafficClass());
+        }
+        httpServerOptions.setDecoderInitialBufferSize(httpConfig.decoderInitialBufferSize());
         configureTrafficShapingIfEnabled(httpServerOptions, httpConfig);
 
         // WebSocket options
@@ -440,6 +458,18 @@ public class HttpServerOptionsUtils {
         // options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
+        options.setProxyProtocolTimeout(managementConfig.proxyProtocolTimeout().toMillis());
+        options.setProxyProtocolTimeoutUnit(TimeUnit.MILLISECONDS);
+        options.setTcpKeepAlive(managementConfig.tcpKeepAlive());
+        options.setLogActivity(managementConfig.logActivity());
+        options.setActivityLogDataFormat(
+                managementConfig.activityLogDataFormat() == VertxHttpConfig.ActivityLogDataFormat.SIMPLE
+                        ? ByteBufFormat.SIMPLE
+                        : ByteBufFormat.HEX_DUMP);
+        options.setReuseAddress(managementConfig.reuseAddress());
+        if (managementConfig.trafficClass() >= 0) {
+            options.setTrafficClass(managementConfig.trafficClass());
+        }
 
         options.setTcpUserTimeout((int) managementConfig.tcpUserTimeout().toMillis());
         options.setSoLinger(managementConfig.soLinger());

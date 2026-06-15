@@ -53,4 +53,22 @@ public interface StaticResourcesConfig {
      */
     @WithDefault("UTF-8")
     Charset contentEncoding();
+
+    /**
+     * Set whether directory listing should be enabled.
+     * <p>
+     * When enabled, if a request is made to a path that maps to a directory,
+     * the server returns an HTML page listing the directory contents.
+     */
+    @WithDefault("false")
+    boolean directoryListing();
+
+    /**
+     * Set whether the {@code Vary} header should be sent in responses.
+     * <p>
+     * The {@code Vary} header indicates to caches that the response may vary
+     * based on the value of the specified request headers (e.g. {@code Accept-Encoding}).
+     */
+    @WithDefault("true")
+    boolean sendVaryHeader();
 }

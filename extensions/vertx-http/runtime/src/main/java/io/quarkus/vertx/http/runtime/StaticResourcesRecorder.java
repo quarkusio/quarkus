@@ -57,7 +57,9 @@ public class StaticResourcesRecorder {
                         .setCachingEnabled(false)
                         .setIndexPage(config.indexPage())
                         .setIncludeHidden(config.includeHidden())
-                        .setEnableRangeSupport(config.enableRangeSupport());
+                        .setEnableRangeSupport(config.enableRangeSupport())
+                        .setDirectoryListing(config.directoryListing())
+                        .setSendVaryHeader(config.sendVaryHeader());
                 handlers.add(new Handler<>() {
                     @Override
                     public void handle(RoutingContext ctx) {
@@ -88,7 +90,9 @@ public class StaticResourcesRecorder {
                     .setEnableRangeSupport(config.enableRangeSupport())
                     .setMaxCacheSize(config.maxCacheSize())
                     .setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
-                    .setMaxAgeSeconds(config.maxAge().toSeconds());
+                    .setMaxAgeSeconds(config.maxAge().toSeconds())
+                    .setDirectoryListing(config.directoryListing())
+                    .setSendVaryHeader(config.sendVaryHeader());
             // normalize index page like StaticHandler because its not expose
             // TODO: create a converter to normalize filename in config.indexPage?
             final String indexPage = (config.indexPage().charAt(0) == '/')

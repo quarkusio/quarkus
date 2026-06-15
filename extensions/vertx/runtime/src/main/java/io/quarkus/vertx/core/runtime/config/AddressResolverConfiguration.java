@@ -11,24 +11,26 @@ import io.smallrye.config.WithDefault;
 public interface AddressResolverConfiguration {
 
     /**
-     * The maximum amount of time in seconds that a successfully resolved address will be cached.
+     * The maximum amount of time that a successfully resolved address will be cached.
      * <p>
      * If not set explicitly, resolved addresses may be cached forever.
+     * <p>
+     * The value must be a duration of at least 1 second.
      */
-    @WithDefault("2147483647")
-    int cacheMaxTimeToLive();
+    @WithDefault("2147483647S")
+    Duration cacheMaxTimeToLive();
 
     /**
-     * The minimum amount of time in seconds that a successfully resolved address will be cached.
+     * The minimum amount of time that a successfully resolved address will be cached.
      */
-    @WithDefault("0")
-    int cacheMinTimeToLive();
+    @WithDefault("0S")
+    Duration cacheMinTimeToLive();
 
     /**
-     * The amount of time in seconds that an unsuccessful attempt to resolve an address will be cached.
+     * The amount of time that an unsuccessful attempt to resolve an address will be cached.
      */
-    @WithDefault("0")
-    int cacheNegativeTimeToLive();
+    @WithDefault("0S")
+    Duration cacheNegativeTimeToLive();
 
     /**
      * The maximum number of queries to be sent during a resolution.
@@ -50,14 +52,16 @@ public interface AddressResolverConfiguration {
     Optional<String> hostsPath();
 
     /**
-     * Set the hosts configuration refresh period in millis, {@code 0} (default) disables it.
+     * The hosts configuration refresh period.
      * <p/>
      * The resolver caches the hosts configuration (configured using `quarkus.vertx.resolver.hosts-path` after it has read it.
      * When the content of this file can change, setting a positive refresh period will load the configuration
      * file again when necessary.
+     * <p/>
+     * A value of {@code 0} (the default) disables the refresh.
      */
     @WithDefault("0")
-    int hostRefreshPeriod();
+    Duration hostRefreshPeriod();
 
     /**
      * Set the list of DNS server addresses, an address is the IP of the dns server, followed by an optional

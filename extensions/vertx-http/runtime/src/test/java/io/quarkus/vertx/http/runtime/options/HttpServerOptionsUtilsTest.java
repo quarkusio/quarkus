@@ -367,6 +367,14 @@ class HttpServerOptionsUtilsTest {
         when(config.readIdleTimeout()).thenReturn(Duration.ZERO);
         when(config.writeIdleTimeout()).thenReturn(Duration.ZERO);
         when(config.compressionContentSizeThreshold()).thenReturn(0);
+        when(config.proxyProtocolTimeout()).thenReturn(Duration.ofSeconds(10));
+        when(config.http2MaxSmallContinuationFrames()).thenReturn(OptionalInt.empty());
+        when(config.decoderInitialBufferSize()).thenReturn(128);
+        when(config.tcpKeepAlive()).thenReturn(false);
+        when(config.logActivity()).thenReturn(false);
+        when(config.activityLogDataFormat()).thenReturn(VertxHttpConfig.ActivityLogDataFormat.HEX_DUMP);
+        when(config.reuseAddress()).thenReturn(true);
+        when(config.trafficClass()).thenReturn(-1);
 
         WebsocketServerConfig ws = mock(WebsocketServerConfig.class);
         when(ws.maxFrameSize()).thenReturn(Optional.empty());

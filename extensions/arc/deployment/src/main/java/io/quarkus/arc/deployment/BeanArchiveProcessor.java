@@ -181,7 +181,7 @@ public class BeanArchiveProcessor {
             KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
         // check for occurrences of incompatible annotations - currently only @Specializes
         Collection<AnnotationInstance> annotations = index.getAnnotations(DotNames.SPECIALIZES);
-        if (!annotations.isEmpty() && !knownCompatibleBeanArchives.isKnownCompatible(archive,
+        if (!annotations.isEmpty() && !knownCompatibleBeanArchives.isKnownCompatible(archive.getKey(),
                 KnownCompatibleBeanArchiveBuildItem.Reason.SPECIALIZES_ANNOTATION)) {
             Set<String> definitionErrors = new HashSet<>();
             for (AnnotationInstance annInstance : annotations) {
@@ -241,7 +241,7 @@ public class BeanArchiveProcessor {
                         if (text.contains("bean-discovery-mode='all'")
                                 || text.contains("bean-discovery-mode=\"all\"")) {
 
-                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive,
+                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive.getKey(),
                                     KnownCompatibleBeanArchiveBuildItem.Reason.BEANS_XML_ALL)) {
                                 LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
                                         + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "

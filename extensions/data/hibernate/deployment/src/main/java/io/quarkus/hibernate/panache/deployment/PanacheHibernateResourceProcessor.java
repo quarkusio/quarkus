@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.panache.deployment;
 
 import static io.quarkus.hibernate.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
-import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
 import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 
 import java.lang.reflect.Modifier;
@@ -215,7 +214,7 @@ public final class PanacheHibernateResourceProcessor {
             List<EntityToPersistenceUnitBuildItem> items,
             CombinedIndexBuildItem index,
             PanacheHibernateRecorder recorder,
-            Capabilities capabilities) throws ClassNotFoundException {
+            Capabilities capabilities) {
         // PU
         // FIXME: for now, this ignores the reactive PUs, but reactive PUs are not supported yet by Panache Reactive
         Map<String, String> map = new HashMap<>();
@@ -228,7 +227,7 @@ public final class PanacheHibernateResourceProcessor {
                         .orElse(false),
                 capabilities.isPresent(Capability.HIBERNATE_REACTIVE));
         // Panache 2 repos
-        Map<Class<?>, Class<?>> repositoryClassesToEntityClasses = new HashMap<>();
+        Map<String, String> repositoryClassesToEntityClasses = new HashMap<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
             // Only keep concrete classes
             if (classInfo.isInterface() || classInfo.isAbstract()) {
@@ -238,10 +237,7 @@ public final class PanacheHibernateResourceProcessor {
                     .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_SWITCHER, index.getIndex());
             if (typeParameters.get(0).kind() == Kind.CLASS) {
                 String entityClassName = typeParameters.get(0).name().toString();
-                Class<?> entityClass = Class.forName(entityClassName, false, Thread.currentThread().getContextClassLoader());
-                Class<?> repositoryClass = Class.forName(classInfo.name().toString(), false,
-                        Thread.currentThread().getContextClassLoader());
-                repositoryClassesToEntityClasses.put(repositoryClass, entityClass);
+                repositoryClassesToEntityClasses.put(classInfo.name().toString(), entityClassName);
             } else {
                 throw new RuntimeException("Failed to find entity linked to repository: " + classInfo + ", it appears to be: "
                         + typeParameters.get(0) + " but we don't know what to do with it, it should be an entity type");

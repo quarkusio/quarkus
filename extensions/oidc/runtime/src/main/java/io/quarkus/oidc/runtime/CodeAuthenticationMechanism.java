@@ -404,7 +404,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                                 boolean unresolvedKey = t.getCause() instanceof InvalidJwtException
                                                         && (t.getCause().getCause() instanceof UnresolvableKeyException);
-                                                if (unresolvedKey
+                                                if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(t)) {
+                                                    // Session does not have the required authentication level,
+                                                    // redirect the user to the OIDC provider to re-authenticate
+                                                    LOG.debug(
+                                                            "Session does not have the required authentication level, reauthentication is required");
+                                                    failure = t;
+                                                } else if (unresolvedKey
                                                         && !configContext.oidcConfig().authentication().failOnUnresolvedKid()
                                                         && OidcUtils.isJwtTokenExpired(currentIdToken)) {
                                                     // It can happen in multi-tab applications where a user login causes a JWK set refresh
@@ -806,6 +812,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
                         addExtraParamsToUri(codeFlowParams, authenticationConfig.extraParams());
+
+                        // acr_values and max_age, set when the requested endpoint requires
+                        // a specific authentication level
+                        StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRoutingContext(context);
+                        if (stepUpAuthPolicy != null) {
+                            codeFlowParams.append(AMP).append(OidcConstants.ACR_VALUES).append(EQ)
+                                    .append(OidcCommonUtils
+                                            .urlEncode(String.join(" ", stepUpAuthPolicy.expectedAcrValues())));
+                            if (stepUpAuthPolicy.maxAge() != null) {
+                                codeFlowParams.append(AMP).append(OidcConstants.MAX_AGE).append(EQ)
+                                        .append(stepUpAuthPolicy.maxAge());
+                            }
+                        }
 
                         if (pushedAuthorizationRequest) {
                             return configContext.getOidcProviderClient()

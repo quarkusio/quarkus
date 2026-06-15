@@ -124,6 +124,8 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/antora.yml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/index.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath,
+                "quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/config-reference.adoc");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/integration-tests/pom.xml");
     }
 

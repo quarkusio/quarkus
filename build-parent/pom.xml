@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.3.21</kotlin.version>
+        <kotlin.version>2.4.0</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.2.0</dokka.version>
         <scala.version>2.13.12</scala.version>
@@ -30,11 +30,11 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.5.3</jandex.version>
+        <jandex.version>3.6.0</jandex.version>
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>5.0.0</htmlunit.version>
+        <htmlunit.version>5.1.0</htmlunit.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
@@ -42,7 +42,7 @@
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.28.0</commonmark.version>
-        <jgit.version>7.6.0.202603022253-r</jgit.version>
+        <jgit.version>7.7.0.202606012155-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -74,12 +74,12 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>9.3.2</elasticsearch-server.version>
+        <elasticsearch-server.version>9.4.1</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>3.5.0</opensearch-server.version>
+        <opensearch-server.version>3.6.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
@@ -124,6 +124,7 @@
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
         <redis.image>docker.io/library/redis:7</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
+        <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

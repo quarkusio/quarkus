@@ -57,6 +57,25 @@
 
     </dependencies>
 
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>quarkus-test-container-images.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>quarkus-test-container-images.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
+
     <repositories>
         <repository>
             <id>central</id>

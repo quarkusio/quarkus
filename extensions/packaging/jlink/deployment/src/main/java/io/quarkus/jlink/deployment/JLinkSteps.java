@@ -167,9 +167,8 @@ public final class JLinkSteps {
         //jvmArgs.add("--patch-module");
         //jvmArgs.add("java.base=" + javaBasePatchPath);
         // memory
-        // todo: scale these values so they aren't silly long
-        config.minHeapSize().ifPresent(s -> jvmArgs.add("-Xms" + s.asBigInteger()));
-        config.maxHeapSize().ifPresent(s -> jvmArgs.add("-Xmx" + s.asBigInteger()));
+        config.minHeapSize().ifPresent(s -> jvmArgs.add("-Xms" + s.toLowerString()));
+        config.maxHeapSize().ifPresent(s -> jvmArgs.add("-Xmx" + s.toLowerString()));
         jvmArgs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
         // xxx CDS arguments
 

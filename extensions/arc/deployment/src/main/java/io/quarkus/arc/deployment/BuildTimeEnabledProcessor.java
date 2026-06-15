@@ -9,6 +9,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -306,6 +307,7 @@ public class BuildTimeEnabledProcessor {
                 .map(BuildTimeConditionBuildItem::getTarget)
                 .collect(groupingBy(
                         AnnotationTarget::kind,
+                        () -> new EnumMap<>(Kind.class),
                         Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
         return new BuildExclusionsBuildItem(
                 map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),

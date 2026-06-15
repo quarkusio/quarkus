@@ -94,7 +94,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";
-    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus.test.reproducibility-check";
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -801,7 +801,9 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         if (assertLogRecords != null) {
             records = new ArrayList<>(inMemoryLogHandler.records);
         }
-        rootLogger.setHandlers(originalHandlers);
+        if (originalHandlers != null) {
+            rootLogger.setHandlers(originalHandlers);
+        }
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
         if (testMethodInvokers != null) {
@@ -827,10 +829,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 quarkusUnitTestClassLoader.close();
                 quarkusUnitTestClassLoader = null;
             }
-            timeoutTask.cancel();
-            timeoutTask = null;
-            timeoutTimer.cancel();
-            timeoutTimer = null;
+            if (timeoutTask != null) {
+                timeoutTask.cancel();
+                timeoutTask = null;
+            }
+            if (timeoutTimer != null) {
+                timeoutTimer.cancel();
+                timeoutTimer = null;
+            }
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
             }
@@ -868,6 +874,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             CuratedApplication currentCuratedApplication = null;
             StartupActionImpl currentStartupAction = null;
             try {
+                resetLegacyGizmoFunctionCounters();
                 currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir,
                         cachedApplicationModel);
                 if (cachedApplicationModel == null) {
@@ -907,6 +914,26 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check passed for %s%n", testName);
         throw new TestAbortedException(
                 "Reproducibility check passed (" + reproducibilityRuns + " runs). Test execution skipped.");
+    }
+
+    /**
+     *
+     * Legacy Gizmo createFunction() uses a static counter keyed by generated class name, which leaks between
+     * reproducibility runs in the same JVM. This affects generators that emit $$function$$ helper classes, such as
+     * {@link io.quarkus.rest.data.panache.deployment.JaxRsResourceImplementor#implement},
+     * {@link io.quarkus.hibernate.reactive.rest.data.panache.deployment.ResourceImplementor#implement},
+     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateIdentityProvider}
+     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateTrustedIdentityProvider}.
+     */
+    private static void resetLegacyGizmoFunctionCounters() {
+        try {
+            Class<?> bytecodeCreatorImpl = Class.forName("io.quarkus.gizmo.BytecodeCreatorImpl");
+            Field countersField = bytecodeCreatorImpl.getDeclaredField("functionCountersByClass");
+            countersField.setAccessible(true);
+            ((Map<?, ?>) countersField.get(null)).clear();
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Unable to reset legacy Gizmo function counters", e);
+        }
     }
 
     private CuratedApplication createCuratedApplication(ExtensionContext extensionContext, Path testLocation, Path projectDir,

@@ -75,7 +75,7 @@ quarkus.oidc-client-registration.initial-token=${initial-registration-token}
 
 The above configuration will lead to two new client registrations created in your OIDC provider.
 
-You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies[Keycloak client registration policies].
+You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/securing-apps/client-registration[Keycloak client registration policies].
 
 The next step is to inject either `quarkus.oidc.client.registration.OidcClientRegistration` if only a single default client registration is done, or `quarkus.oidc.client.registration.OidcClientRegistrations` if more than one registration is configured, and use metadata of the clients registered with these configurations.
 
@@ -714,7 +714,7 @@ include::{generated-dir}/config/quarkus-oidc-client-registration.adoc[opts=optio
 
 * https://openid.net/specs/openid-connect-registration-1_0.html[OIDC client registration]
 * https://datatracker.ietf.org/doc/html/rfc7592[OAuth2 Dynamic Client Registration Management Protocol]
-* https://www.keycloak.org/docs/latest/securing_apps/#_client_registration[Keycloak Dynamic Client Registration Service]
+* https://www.keycloak.org/securing-apps/client-registration[Keycloak Dynamic Client Registration Service]
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:security-overview.adoc[Quarkus Security overview]

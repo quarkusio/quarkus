@@ -248,7 +248,6 @@ class VertxCoreProcessor {
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
         List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
-                .sorted()
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 

@@ -91,7 +91,7 @@ updates:
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: eu.maveniverse.maven.njord:*
       - dependency-name: eu.maveniverse.maven.nisse:*
-      - dependency-name: io.github.gitflow-incremental-builder:*
+      - dependency-name: eu.maveniverse.maven.scalpel:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
@@ -191,6 +191,7 @@ updates:
       - dependency-name: org.codejive:java-properties
       - dependency-name: org.json:json
       - dependency-name: de.thetaphi:forbiddenapis
+      - dependency-name: org.cyclonedx:*
     groups:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
@@ -243,37 +244,6 @@ updates:
       # Hence we update major/minor Expressly versions manually.
       - dependency-name: org.glassfish.expressly:expressly
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-    rebase-strategy: disabled
-  - package-ecosystem: maven
-    directory: "/"
-    target-branch: "3.20"
-    schedule:
-      interval: daily
-      time: "23:00"
-      timezone: Europe/Paris
-    open-pull-requests-limit: 10
-    labels:
-      - area/dependencies
-    allow:
-      # Hibernate
-      - dependency-name: org.hibernate.orm:*
-      - dependency-name: org.hibernate.reactive:*
-      - dependency-name: org.hibernate.validator:*
-      - dependency-name: org.hibernate.search:*
-    groups:
-      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
-      Hibernate:
-        patterns:
-          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
-          - "org.hibernate.orm*"
-          - "org.hibernate.reactive*"
-          - "org.hibernate.search*"
-          - "org.hibernate.validator*"
-    ignore:
-      # Major/minor upgrades require more work and synchronization, we do them manually.
-      # Only use dependabot for micros (patch versions).
-      - dependency-name: org.hibernate.*:*
-        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     rebase-strategy: disabled
   - package-ecosystem: maven
     directory: "/"

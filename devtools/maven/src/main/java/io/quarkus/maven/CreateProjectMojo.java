@@ -89,6 +89,12 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "noCode", defaultValue = "false")
     private boolean noCode;
 
+    /**
+     * When true, do not include the Maven/Gradle wrapper
+     */
+    @Parameter(property = "noBuildToolWrapper", defaultValue = "false")
+    private boolean noBuildToolWrapper;
+
     @Parameter(property = "example")
     private String example;
 
@@ -313,6 +319,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .resourcePath(path)
                     .example(example)
                     .noCode(noCode)
+                    .noBuildToolWrapper(noBuildToolWrapper)
                     .appConfig(appConfig)
                     .data(data);
 

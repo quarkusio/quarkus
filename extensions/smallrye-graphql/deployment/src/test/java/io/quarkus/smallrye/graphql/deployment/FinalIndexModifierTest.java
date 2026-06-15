@@ -170,6 +170,12 @@ public class FinalIndexModifierTest {
         }
 
         @Override
+        public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName annotationName,
+                DotName containerAnnotationName) {
+            return delegate.getAnnotationsWithRepeatable(annotationName, containerAnnotationName);
+        }
+
+        @Override
         public Collection<org.jboss.jandex.ModuleInfo> getKnownModules() {
             return delegate.getKnownModules();
         }

@@ -9,8 +9,8 @@ public interface Superinterface extends SuperSuperinterface {
 
     void inheritedNoInterceptors();
 
-    @MethodLevel // this should be ignored, only class-level interceptors apply to default methods
-    @NoClassInterceptors // and this makes sure that even class-level interceptors do not apply
+    @MethodLevel
+    @NoClassInterceptors
     default void defaultMethod() {
     }
 

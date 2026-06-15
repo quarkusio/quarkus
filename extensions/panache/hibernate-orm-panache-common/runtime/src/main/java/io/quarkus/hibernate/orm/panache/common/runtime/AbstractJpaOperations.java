@@ -2,7 +2,10 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
@@ -48,8 +51,20 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
 
     private static volatile Map<Class<?>, Class<?>> repositoryClassToEntityClass = Collections.emptyMap();
 
-    public static void setRepositoryClassesToEntityClasses(Map<Class<?>, Class<?>> map) {
-        repositoryClassToEntityClass = Collections.unmodifiableMap(map);
+    public static void setRepositoryClassesToEntityClasses(Map<String, String> map) {
+        Map<Class<?>, Class<?>> converted = new HashMap<>();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (Entry<String, String> entry : map.entrySet()) {
+            try {
+                Class<?> repoClass = Class.forName(entry.getKey(), false, classLoader);
+                Class<?> entityClass = Class.forName(entry.getValue(), false, classLoader);
+                converted.put(repoClass, entityClass);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Unable to load repository/entity class mapping "
+                        + entry.getKey() + " -> " + entry.getValue(), e);
+            }
+        }
+        repositoryClassToEntityClass = Collections.unmodifiableMap(converted);
     }
 
     public static <Entity> Class<? extends Entity> getRepositoryEntityClass(

@@ -44,7 +44,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.5.3</jandex.version>
+        <jandex.version>3.6.0</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit.version>6.1.0</junit.version>
         <maven.version>3.9.16</maven.version>
@@ -57,11 +57,11 @@
 
         <mutiny.version>3.2.1</mutiny.version>
         <smallrye-mutiny-vertx-core.version>3.22.2</smallrye-mutiny-vertx-core.version>
-        <smallrye-common.version>2.18.1</smallrye-common.version>
+        <smallrye-common.version>2.19.0</smallrye-common.version>
         <vertx.version>4.5.28</vertx.version>
         <rest-assured.version>6.0.0</rest-assured.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.21.4</jackson-bom.version>
+        <jackson-bom.version>2.22.0</jackson-bom.version>
         <smallrye-stork.version>2.7.9</smallrye-stork.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>

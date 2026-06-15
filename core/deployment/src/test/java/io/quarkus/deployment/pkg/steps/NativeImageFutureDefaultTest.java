@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.NativeImageFutureDefault.RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS;
+import static io.quarkus.deployment.pkg.steps.NativeImageFutureDefault.RUN_TIME_INITIALIZE_RESOURCE_BUNDLES;
 import static io.quarkus.deployment.pkg.steps.NativeImageFutureDefault.RUN_TIME_INITIALIZE_SECURITY_PROVIDERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,19 +16,31 @@ import io.quarkus.deployment.pkg.TestNativeConfig;
 class NativeImageFutureDefaultTest {
 
     @ParameterizedTest
-    @ValueSource(strings = { "all", "run-time-initialize-jdk",
-            "run-time-initialize-security-providers,run-time-initialize-file-system-providers" })
-    void runtimeInitFSandSecurityProvidersWithFutureDefaultsAll(String param) {
+    @ValueSource(strings = { "all", "run-time-initialize-jdk" })
+    void runtimeInitJdkDefaultsWithFutureDefaultsAll(String param) {
         List<String> futureDefaultsValue = List.of("--future-defaults=" + param);
         TestNativeConfig testNativeConfig = new TestNativeConfig(futureDefaultsValue, null);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
         testNativeConfig = new TestNativeConfig(null, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
         testNativeConfig = new TestNativeConfig(futureDefaultsValue, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
+    }
+
+    @Test
+    void runtimeInitFSandSecurityProvidersWithExplicitFutureDefaults() {
+        TestNativeConfig testNativeConfig = new TestNativeConfig(
+                List.of("--future-defaults=run-time-initialize-security-providers,run-time-initialize-file-system-providers"),
+                null);
+        assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
     }
 
     @ParameterizedTest
@@ -38,6 +51,7 @@ class NativeImageFutureDefaultTest {
                 List.of("--future-defaults=" + param), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
     }
 
     @Test
@@ -46,6 +60,18 @@ class NativeImageFutureDefaultTest {
                 List.of("--future-defaults=run-time-initialize-security-providers"), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "run-time-initialize-resource-bundles", "run-time-initialize-resource-bundles,other",
+            "other,run-time-initialize-resource-bundles" })
+    void runtimeInitResourceBundles(String param) {
+        TestNativeConfig testNativeConfig = new TestNativeConfig(
+                List.of("--future-defaults=" + param), null);
+        assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
     }
 
     @ParameterizedTest
@@ -55,11 +81,14 @@ class NativeImageFutureDefaultTest {
         TestNativeConfig testNativeConfig = new TestNativeConfig(futureDefaultsValue, null);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
         testNativeConfig = new TestNativeConfig(null, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
         testNativeConfig = new TestNativeConfig(futureDefaultsValue, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
     }
 }

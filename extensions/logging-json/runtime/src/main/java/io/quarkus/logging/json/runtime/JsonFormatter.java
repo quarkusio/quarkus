@@ -31,6 +31,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
+    private boolean flatMdc = false;
     private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
 
@@ -127,6 +128,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.tracePrefix = tracePrefix;
     }
 
+    public boolean isFlatMdc() {
+        return flatMdc;
+    }
+
+    public void setFlatMdc(boolean flatMdc) {
+        this.flatMdc = flatMdc;
+    }
+
     @Override
     protected Generator createGenerator(final Writer writer) {
         Generator superGenerator = super.createGenerator(writer);
@@ -137,7 +146,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
         String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
-        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey);
+        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc);
     }
 
     @Override
@@ -272,7 +281,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
 
         public JsonLogGenerator startObject(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startObject(key);
@@ -290,7 +299,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
 
         public JsonLogGenerator startArray(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startArray(key);
@@ -325,14 +334,16 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
          * the short process name (e.g. {@code java}).
          */
         private final String processNameKey;
+        private final boolean flatMdc;
         private int skippedDepth = 0;
 
         private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
-                final String stackTraceKeyToTrim, final String processNameKey) {
+                final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc) {
             this.delegate = delegate;
             this.excludedKeys = excludedKeys;
             this.stackTraceKeyToTrim = stackTraceKeyToTrim;
             this.processNameKey = processNameKey;
+            this.flatMdc = flatMdc;
         }
 
         @Override
@@ -360,7 +371,16 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
             if (skippedDepth == 0 && !excludedKeys.contains(key)) {
-                delegate.add(key, value);
+                if (flatMdc && value != null && !value.isEmpty()) {
+                    for (Map.Entry<String, ?> entry : value.entrySet()) {
+                        Object v = entry.getValue();
+                        if (v != null) {
+                            delegate.add(entry.getKey(), v.toString());
+                        }
+                    }
+                } else if (!flatMdc) {
+                    delegate.add(key, value);
+                }
             }
             return this;
         }
@@ -387,7 +407,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startObject(key);
@@ -407,7 +427,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            if (skippedDepth > 0 || excludedKeys.contains(key)) {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
                 skippedDepth++;
             } else {
                 delegate.startArray(key);

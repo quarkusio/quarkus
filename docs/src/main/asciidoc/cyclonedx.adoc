@@ -21,6 +21,7 @@ This guide covers:
 * <<sbom-endpoint,SBOM REST Endpoint>> — exposing embedded dependency SBOMs via a REST endpoint
 * <<distribution-sboms,Distribution SBOMs>> — generating SBOMs that manifest the final application distribution after a build
 * <<vulnerability-scanning,Vulnerability scanning>> — using generated SBOMs with tools such as Grype to identify known vulnerabilities
+* <<serial-number,Serial number>> — how the SBOM serial number is generated and how to make it reproducible
 * <<extension-sbom-contributions,Extension SBOM contributions>> — contributing additional components to the application SBOM from Quarkus extensions
 
 All SBOM generation in this guide follows the https://cyclonedx.org/[CycloneDX] specification.
@@ -465,6 +466,13 @@ plexus-utils  3.6.0      3.6.1     java-archive  GHSA-6fmv-xxpf-w3cw  High      
 ----
 
 This approach is useful for scanning applications that are already deployed, for example as part of a periodic audit or a CI/CD pipeline that verifies running instances.
+
+[[serial-number]]
+== Serial Number
+
+Every generated SBOM includes a `serialNumber` field in `urn:uuid:` format, as defined by the CycloneDX specification. The serial number is derived from the BOM's content hash, which covers metadata, components, dependency relationships, and other structural fields.
+
+When `project.build.outputTimestamp` is configured in the Maven project (the standard property for https://maven.apache.org/guides/mini/guide-reproducible-builds.html[reproducible builds]), the SBOM metadata timestamp is set to that value, making the entire BOM — including its serial number — fully deterministic across identical builds. Without a reproducible timestamp, the metadata timestamp defaults to the current time, meaning the serial number will vary between builds even if the dependencies have not changed.
 
 == SBOM Component Properties
 

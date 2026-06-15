@@ -3479,6 +3479,7 @@
                                 <argument>${generated-dir}/infra/quarkus-all-build-items.adoc</argument>
                                 <argument>${project.basedir}/../core/deployment</argument>
                                 <argument>${project.basedir}/../extensions</argument>
+                                <argument>${project.version}</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>

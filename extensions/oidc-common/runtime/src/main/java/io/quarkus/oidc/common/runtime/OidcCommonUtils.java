@@ -17,6 +17,7 @@ import java.security.PrivateKey;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -808,7 +809,7 @@ public class OidcCommonUtils {
     private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass, Predicate<Class<?>> appliesTo) {
         ArcContainer container = Arc.container();
         if (container != null) {
-            Map<OidcEndpoint.Type, List<T>> map = new HashMap<>();
+            Map<OidcEndpoint.Type, List<T>> map = new EnumMap<>(OidcEndpoint.Type.class);
             for (T filter : container.listAll(filterClass).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
                 var actualBeanClass = ClientProxy.unwrap(filter).getClass();

@@ -35,10 +35,11 @@ public class QuarkusBuildItemDoc {
 
     public Path outputFile;
     public List<Path> paths;
+    public String gitRef = "main";
 
     private PrintStream out = System.out;
 
-    // target/asciidoc/generated/config/quarkus-all-build-items.adoc core/deployment core/test-extension extensions
+    // target/asciidoc/generated/config/quarkus-all-build-items.adoc core/deployment core/test-extension extensions [version]
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
             System.err.println("Must specify output file (first) followed by at least one source directory");
@@ -47,7 +48,16 @@ public class QuarkusBuildItemDoc {
         QuarkusBuildItemDoc buildItemDoc = new QuarkusBuildItemDoc();
 
         buildItemDoc.outputFile = Path.of(args[0]);
-        buildItemDoc.paths = Arrays.stream(args).skip(1)
+
+        int sourceArgCount = args.length;
+        String lastArg = args[args.length - 1];
+        if (!Files.isDirectory(Path.of(lastArg))) {
+            sourceArgCount--;
+            if (!lastArg.endsWith("-SNAPSHOT")) {
+                buildItemDoc.gitRef = lastArg;
+            }
+        }
+        buildItemDoc.paths = Arrays.stream(args, 1, sourceArgCount)
                 .map(Path::of)
                 .collect(Collectors.toList());
 
@@ -179,9 +189,8 @@ public class QuarkusBuildItemDoc {
     }
 
     private void printTableRow(Pair<Path, JavaClassSource> pair) {
-        //TODO: Use tagged version?
         Path root = Paths.get(".").toAbsolutePath().normalize();
-        String link = "https://github.com/quarkusio/quarkus/blob/main/" + root.relativize(pair.getOne().normalize());
+        String link = "https://github.com/quarkusio/quarkus/blob/" + gitRef + "/" + root.relativize(pair.getOne().normalize());
         JavaClassSource source = pair.getTwo();
         String className = source.getQualifiedName();
         String attributes = buildAttributes(source);

@@ -185,7 +185,7 @@ jobs:
       m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
       quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
       quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
-      maven-disable-gib: ${{ steps.gib-status.outputs.maven-disable-gib }}
+      maven-disable-scalpel: ${{ steps.scalpel-status.outputs.maven-disable-scalpel }}
       maven-disable-develocity-cache: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
       common-maven-args: ${{ steps.configure-maven-args.outputs.common-maven-args }}
       run-ci-build: ${{ steps.check-changes.outputs.run-ci-build }}
@@ -219,10 +219,10 @@ jobs:
           small-instance: m6a.large
           large-instance: m6a.xlarge
           ubuntu-latest: ubuntu22-full-x64
-      - name: Determines if GIB should be disabled
-        id: gib-status
+      - name: Determines if Scalpel should be disabled
+        id: scalpel-status
         run: |
-          echo "maven-disable-gib=${{ contains( github.event.pull_request.labels.*.name, 'ci/disable-gib') }}" >> $GITHUB_OUTPUT
+          echo "maven-disable-scalpel=${{ contains( github.event.pull_request.labels.*.name, 'ci/disable-scalpel') }}" >> $GITHUB_OUTPUT
       - name: Determines if Develocity cache should be disabled
         id: develocity-cache-status
         run: |
@@ -317,9 +317,9 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     outputs:
-      gib_args: ${{ steps.get-gib-config.outputs.gib_args }}
-      gib_impacted: ${{ steps.get-gib-config.outputs.impacted_modules }}
-      gib_impacted_gav: ${{ steps.get-gib-config.outputs.impacted_modules_gav }}
+      scalpel_args: ${{ steps.get-scalpel-config.outputs.scalpel_args }}
+      scalpel_impacted: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
+      scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
     steps:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2
       - name: Gradle Enterprise environment
@@ -328,7 +328,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          # this is important for GIB to work
+          # this is important for Scalpel to work
           fetch-depth: 0
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
@@ -361,7 +361,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS -q dependency:go-offline -Dgo-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -q dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
@@ -391,70 +391,75 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-      - name: Configure GIB
-        id: get-gib-config
+      - name: Configure Scalpel
+        id: get-scalpel-config
         env:
           PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
           PULL_REQUEST_HEAD: ${{ github.event.pull_request.head.ref }}
           PUSH_BRANCH: ${{ github.event_name == 'push' && github.ref_name }}
-          GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
+          SCALPEL_DISABLED: ${{ needs.configure.outputs.maven-disable-scalpel }}
         run: |
-          GIB_IMPACTED_GAV='_all_'
-          if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
-            GIB_ARGS=''
-            GIB_IMPACTED='_all_'
+          SCALPEL_IMPACTED_GAV='_all_'
+          if [[ "$SCALPEL_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
+            SCALPEL_ARGS=''
+            SCALPEL_IMPACTED='_all_'
           else
-            # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
-            # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
-            # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
-            # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
-            GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+            # See also: https://github.com/maveniverse/scalpel#configuration
+            # Scalpel is configured as a Maven core extension in .mvn/extensions.xml
+            # Default Scalpel settings are in .mvn/maven.config
+            # It auto-detects GITHUB_BASE_REF on GitHub Actions
+            SCALPEL_ARGS="-Dincremental -Dscalpel.reportFile=target/scalpel-report.json"
             if [ -n "$PULL_REQUEST_BASE" ]
             then
               # The PR defines a clear merge target so just use that branch for reference, *unless*:
               # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
+              SCALPEL_ARGS+=" -Dscalpel.baseBranch=origin/$PULL_REQUEST_BASE -Dscalpel.disableOnBaseBranch='\d+\.\d+'"
             else
               # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
               # - the current branch is main or some released branch like 1.10
               # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+              SCALPEL_ARGS+=" -Dscalpel.baseBranch=refs/remotes/quarkusio/main -Dscalpel.fetchBaseBranch=true -Dscalpel.disableOnBranch='main|\d+\.\d+|.*backport.*'"
             fi
 
-            # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
-            ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted.log validate
-            if [ -s gib-impacted.log ]
-            then
-              GIB_IMPACTED=$(cat gib-impacted.log)
+            # mvnw just for creating the JSON report ("validate" should not waste much time if not incremental at all, e.g. on main)
+            # report mode includes direct, downstream and upstream modules in the JSON report
+            ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $SCALPEL_ARGS -Dscalpel.mode=report validate
+            if [ -f target/scalpel-report.json ]; then
+              # Extract impacted module paths, excluding upstream-only modules (they don't need testing)
+              SCALPEL_IMPACTED=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | .path' target/scalpel-report.json)
+              if [ -z "$SCALPEL_IMPACTED" ]; then
+                SCALPEL_IMPACTED='_all_'
+                SCALPEL_ARGS=''
+              fi
             else
-              GIB_IMPACTED='_all_'
-              # when we impact all modules, we do not need to run GIB in further jobs
-              GIB_ARGS=''
+              SCALPEL_IMPACTED='_all_'
+              # when we impact all modules, we do not need to run Scalpel in further jobs
+              SCALPEL_ARGS=''
             fi
 
-            # Generate GAV-formatted impacted modules for quickstarts testing
-            if [[ "$GIB_IMPACTED" != '_all_' ]]; then
-              ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted-gav.log -Dgib.logImpactedFormat=gav validate
-              if [ -s gib-impacted-gav.log ]; then
-                GIB_IMPACTED_GAV=$(cat gib-impacted-gav.log)
+            # Extract GAV-formatted impacted modules from the JSON report for quickstarts testing
+            if [[ "$SCALPEL_IMPACTED" != '_all_' ]]; then
+              SCALPEL_IMPACTED_GAV=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | "\(.groupId):\(.artifactId)"' target/scalpel-report.json)
+              if [ -z "$SCALPEL_IMPACTED_GAV" ]; then
+                SCALPEL_IMPACTED_GAV='_all_'
               fi
             fi
 
-            echo "GIB_ARGS: $GIB_ARGS"
+            echo "SCALPEL_ARGS: $SCALPEL_ARGS"
           fi
 
-          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
-          echo "GIB_IMPACTED: ${GIB_IMPACTED}"
+          echo "scalpel_args=${SCALPEL_ARGS}" >> $GITHUB_OUTPUT
+          echo "SCALPEL_IMPACTED: ${SCALPEL_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
-          echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo "${SCALPEL_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
           echo 'impacted_modules_gav<<EOF' >> $GITHUB_OUTPUT
-          echo "${GIB_IMPACTED_GAV}" >> $GITHUB_OUTPUT
+          echo "${SCALPEL_IMPACTED_GAV}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Print disk usage after build
         run: .github/ci-disk-usage.sh
@@ -494,7 +499,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-jdk17
     env:
-      GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
+      SCALPEL_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.scalpel_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
@@ -513,54 +518,54 @@ jobs:
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-integration-tests-json.sh native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh native "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from matrix-jvm-tests.json
         id: calc-jvm-matrix
         run: |
-          json=$(.github/filter-jvm-tests-json.sh "${GIB_IMPACTED_MODULES}")
+          json=$(.github/filter-jvm-tests-json.sh "${SCALPEL_IMPACTED_MODULES}")
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from virtual-threads-tests.json
         id: calc-virtual-threads-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-integration-tests-json.sh virtual-threads "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh virtual-threads "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from oracle-test-pilot-jvm-tests.json
         id: calc-otp-jvm-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-jvm "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-jvm "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from oracle-test-pilot-native-tests.json
         id: calc-otp-native-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-native "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh oracle-test-pilot-native "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags
         id: calc-run-flags
         run: |
           run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true;
-          if [ -z "${GIB_IMPACTED_MODULES}" ]
+          if [ -z "${SCALPEL_IMPACTED_MODULES}" ]
           then
             run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
-          elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
+          elif [ "${SCALPEL_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
+            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
           fi
           echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
@@ -601,9 +606,9 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          # this is important for GIB to work
+          # this is important for Scalpel to work
           fetch-depth: 0
-      - name: Add quarkusio remote for GIB
+      - name: Add quarkusio remote for Scalpel
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
@@ -784,9 +789,9 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          # this is important for GIB to work
+          # this is important for Scalpel to work
           fetch-depth: 0
-      - name: Add quarkusio remote for GIB
+      - name: Add quarkusio remote for Scalpel
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
@@ -821,8 +826,8 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_maven flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
+        # Despite the pre-calculated run_maven flag, Scalpel has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.scalpel_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -1259,16 +1264,16 @@ jobs:
         working-directory: quarkus-quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
-          GIB_IMPACTED_GAV: ${{ needs.build-jdk17.outputs.gib_impacted_gav }}
+          SCALPEL_IMPACTED_GAV: ${{ needs.build-jdk17.outputs.scalpel_impacted_gav }}
         run: |
-          echo "=== GIB_IMPACTED_GAV ==="
-          echo "$GIB_IMPACTED_GAV"
-          echo "========================"
+          echo "=== SCALPEL_IMPACTED_GAV ==="
+          echo "$SCALPEL_IMPACTED_GAV"
+          echo "============================"
           QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
-          if [ "$GIB_IMPACTED_GAV" == '_all_' ]; then
+          if [ "$SCALPEL_IMPACTED_GAV" == '_all_' ]; then
             export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
           else
-            echo "$GIB_IMPACTED_GAV" > gib-dependencies.log
+            echo "$SCALPEL_IMPACTED_GAV" > gib-dependencies.log
             export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml verify -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS \
               -Dincremental -Dgib.loadImpactedDependenciesFrom=gib-dependencies.log
           fi
@@ -1486,7 +1491,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          # this is important for GIB to work
+          # this is important for Scalpel to work
           fetch-depth: 0
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
@@ -1525,8 +1530,8 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
+        # Despite the pre-calculated run_tcks flag, Scalpel has to be re-run here to figure out the exact tcks submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.scalpel_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS

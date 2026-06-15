@@ -290,17 +290,19 @@ public class HttpServerOptionsUtils {
             List<String> websocketSubProtocols) {
         httpServerOptions.setHost(httpConfig.host());
         setIdleTimeout(httpConfig, httpServerOptions);
-        httpServerOptions.setMaxHeaderSize(httpConfig.limits().maxHeaderSize().asBigInteger().intValueExact());
-        httpServerOptions.setMaxChunkSize(httpConfig.limits().maxChunkSize().asBigInteger().intValueExact());
-        httpServerOptions.setMaxFormAttributeSize(httpConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
+        httpServerOptions.setMaxHeaderSize(httpConfig.limits().maxHeaderSize().asIntValue());
+        httpServerOptions.setMaxChunkSize(httpConfig.limits().maxChunkSize().asIntValue());
+        httpServerOptions.setMaxFormAttributeSize(httpConfig.limits().maxFormAttributeSize().asIntValue());
         httpServerOptions.setMaxFormFields(httpConfig.limits().maxFormFields());
-        httpServerOptions.setMaxFormBufferedBytes(httpConfig.limits().maxFormBufferedBytes().asBigInteger().intValue());
+        httpServerOptions.setMaxFormBufferedBytes(httpConfig.limits().maxFormBufferedBytes().asIntValue());
         httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
         httpServerOptions.setReusePort(httpConfig.soReusePort());
         httpServerOptions.setTcpQuickAck(httpConfig.tcpQuickAck());
         httpServerOptions.setTcpCork(httpConfig.tcpCork());
         httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
         httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
+        httpServerOptions
+                .setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
         httpServerOptions.setCompressionSupported(httpBuildTimeConfig.enableCompression());
         if (httpBuildTimeConfig.compressionLevel().isPresent()) {
             httpServerOptions.setCompressionLevel(httpBuildTimeConfig.compressionLevel().getAsInt());
@@ -417,11 +419,11 @@ public class HttpServerOptionsUtils {
         options.setIdleTimeout(idleTimeout);
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
 
-        options.setMaxHeaderSize(managementConfig.limits().maxHeaderSize().asBigInteger().intValueExact());
-        options.setMaxChunkSize(managementConfig.limits().maxChunkSize().asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(managementConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
+        options.setMaxHeaderSize(managementConfig.limits().maxHeaderSize().asIntValue());
+        options.setMaxChunkSize(managementConfig.limits().maxChunkSize().asIntValue());
+        options.setMaxFormAttributeSize(managementConfig.limits().maxFormAttributeSize().asIntValue());
         options.setMaxFormFields(managementConfig.limits().maxFormFields());
-        options.setMaxFormBufferedBytes(managementConfig.limits().maxFormBufferedBytes().asBigInteger().intValue());
+        options.setMaxFormBufferedBytes(managementConfig.limits().maxFormBufferedBytes().asIntValue());
         options.setMaxInitialLineLength(managementConfig.limits().maxInitialLineLength());
         options.setWebSocketSubProtocols(websocketSubProtocols);
         options.setAcceptBacklog(managementConfig.acceptBacklog());
@@ -431,6 +433,7 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
+        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
     }

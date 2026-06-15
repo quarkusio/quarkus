@@ -97,6 +97,22 @@ public interface ManagementConfig {
     boolean handle100ContinueAutomatically();
 
     /**
+     * Whether the HTTP server should treat the semicolon ({@code ;}) as a query parameter
+     * delimiter, in addition to the ampersand ({@code &}).
+     * <p>
+     * When set to {@code true} (the default), a request like {@code /path?a=1;b=2} is parsed
+     * as two parameters ({@code a=1} and {@code b=2}). When set to {@code false}, the
+     * semicolon is treated as a literal character and the request yields a single parameter
+     * ({@code a=1;b=2}).
+     * <p>
+     * The default is {@code true} to preserve backward compatibility. It will change to
+     * {@code false} in Quarkus 4, as using the semicolon as a query parameter delimiter is
+     * uncommon and can cause issues when semicolons appear as part of parameter values.
+     */
+    @WithDefault("true")
+    boolean useSemicolonAsQueryParamDelimiter();
+
+    /**
      * Server limits configuration
      */
     ServerLimitsConfig limits();

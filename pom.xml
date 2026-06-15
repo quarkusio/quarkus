@@ -54,7 +54,7 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <gitflow-incremental-builder.version>4.6.0</gitflow-incremental-builder.version>
+
         <quarkus-platform-bom-plugin.version>0.0.131</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
@@ -68,29 +68,29 @@
         <!-- Dependency versions -->
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
-        <jacoco.version>0.8.14</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <kubernetes-client.version>7.7.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>6.0.0</rest-assured.version>
-        <hibernate-orm.version>7.3.7.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
+        <hibernate-orm.version>7.4.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <bytebuddy.version>1.18.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <geolatte.version>1.10</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <geolatte.version>1.11</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <hibernate-models.version>1.1.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-reactive.version>3.3.7.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.4.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
-        <hibernate-search.version>8.3.2.Final</hibernate-search.version>
+        <hibernate-search.version>8.4.0.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.81.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
                                             <!-- com.google.auth -->
                                             <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>4.33.2</protoc.version>
+        <protoc.version>4.35.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
-        <proto-google-common-protos.version>2.70.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.71.0</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
         <!-- Used in the build parent and test BOM (for the JUnit plugin) and in the BOM (for the API) -->
@@ -286,37 +286,11 @@
                     <name>incremental</name>
                 </property>
             </activation>
-            <properties>
-                <!-- the *local* main, not refs/remotes/... -->
-                <gib.referenceBranch>main</gib.referenceBranch>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.github.gitflow-incremental-builder</groupId>
-                        <artifactId>gitflow-incremental-builder</artifactId>
-                        <version>${gitflow-incremental-builder.version}</version>
-                        <extensions>true</extensions>
-                        <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
-                             General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
-                             See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
-                        <configuration>
-                            <!-- these metadata file can't affect the build -->
-                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
-                            <!-- pointless to attempt incremental build if something like mvnw was changed
-                                 (and also potentially wrong, given that independent-projects might not be built) -->
-                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
-                            <!-- Note: *Upstream* is only relevant in case of:
-                                 -am or
-                                 -Dgib.buildUpstream=always|true or
-                                 -Dgib.buildAll=true or
-                                 -Dgib.forceBuildModules=... -->
-                            <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
-                            <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <!-- Scalpel configuration: https://github.com/maveniverse/scalpel -->
+            <!-- Scalpel is a Maven core extension configured in .mvn/extensions.xml -->
+            <!-- Default Scalpel settings are in .mvn/maven.config -->
+            <!-- Profile properties are NOT read by Maven core extensions so they cannot be used here -->
+            <!-- For local incremental builds, use: ./mvnw -Dscalpel.enabled=true -Dscalpel.baseBranch=main -->
         </profile>
         <profile>
             <id>owasp-check</id>

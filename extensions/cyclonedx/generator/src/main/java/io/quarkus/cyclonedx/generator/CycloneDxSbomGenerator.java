@@ -6,12 +6,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,6 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
@@ -80,6 +84,7 @@ public class CycloneDxSbomGenerator {
     private EffectiveModelResolver modelResolver;
     private boolean includeLicenseText;
     private boolean prettyPrint;
+    private Instant outputTimestamp;
     private List<SbomContribution> contributions = List.of();
 
     private Version effectiveSchemaVersion;
@@ -130,6 +135,26 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setPrettyPrint(boolean prettyPrint) {
         ensureNotGenerated();
         this.prettyPrint = prettyPrint;
+        return this;
+    }
+
+    /**
+     * Sets a reproducible timestamp for the BOM metadata.
+     * <p>
+     * When set, this timestamp replaces the auto-initialized {@code new Date()} in
+     * {@link org.cyclonedx.model.Metadata}, making the entire BOM — including its
+     * {@link org.cyclonedx.model.Bom#hashCode() hashCode} — deterministic. This
+     * enables the serial number to be derived from the full BOM content hash.
+     * <p>
+     * Typically sourced from {@code project.build.outputTimestamp} in Maven builds.
+     *
+     * @param outputTimestamp the reproducible build timestamp, or {@code null} to
+     *        use the current time (default behavior)
+     * @return this generator for fluent chaining
+     */
+    public CycloneDxSbomGenerator setOutputTimestamp(Instant outputTimestamp) {
+        ensureNotGenerated();
+        this.outputTimestamp = outputTimestamp;
         return this;
     }
 
@@ -190,6 +215,9 @@ public class CycloneDxSbomGenerator {
 
         var bom = new Bom();
         bom.setMetadata(new Metadata());
+        if (outputTimestamp != null) {
+            bom.getMetadata().setTimestamp(Date.from(outputTimestamp));
+        }
         addToolInfo(bom);
 
         // Collect all components and dependencies from contributions
@@ -233,6 +261,8 @@ public class CycloneDxSbomGenerator {
         for (Dependency d : dependencyMap.values()) {
             bom.addDependency(d);
         }
+
+        bom.setSerialNumber(generateSerialNumber(bom));
 
         return bom;
     }
@@ -322,6 +352,25 @@ public class CycloneDxSbomGenerator {
                 purl.getQualifiers().getOrDefault("classifier", ""),
                 purl.getQualifiers().getOrDefault("type", "jar"),
                 purl.getVersion());
+    }
+
+    /**
+     * Generates a serial number for the BOM in {@code urn:uuid:} format.
+     * <p>
+     * The UUID is derived from the BOM's {@link Bom#hashCode() hashCode}, which covers
+     * metadata, components, dependency relationships, properties, and other structural
+     * fields. When a reproducible {@link #setOutputTimestamp(Instant) output timestamp}
+     * is configured, the serial number is fully deterministic across identical builds.
+     * <p>
+     * Must be called after the BOM is fully assembled and before the serial number
+     * itself is set, since {@code Bom.hashCode()} includes the serial number field.
+     *
+     * @param bom the fully assembled BOM (with serial number still {@code null})
+     * @return a {@code urn:uuid:} serial number string
+     */
+    private static String generateSerialNumber(Bom bom) {
+        return "urn:uuid:" + UUID.nameUUIDFromBytes(
+                Integer.toString(bom.hashCode()).getBytes(StandardCharsets.UTF_8));
     }
 
     private void renderMainComponent(Bom bom, ComponentDescriptor descriptor) {

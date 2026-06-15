@@ -1,0 +1,5 @@
+= Configuration Reference
+
+include::./includes/attributes.adoc[]
+
+include::includes/{namespace.id}{extension.id}.adoc[leveloffset=+1, opts=optional]

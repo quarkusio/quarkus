@@ -1619,7 +1619,7 @@ public class VertxHttpRecorder {
                         Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
                                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
                         if (maybeMaxHeadersSize.isPresent()) {
-                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
                         }
                         return result;
                     }

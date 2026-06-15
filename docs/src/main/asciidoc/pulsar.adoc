@@ -1162,8 +1162,8 @@ StreamNative Cloud is a fully managed Pulsar-as-a-Service available in different
 whether it is fully-hosted, on a public cloud but managed by StreamNative or self-managed on Kubernetes.
 
 The StreamNative Pulsar clusters use Oauth2 authentication,
-so you need to make sure that a https://docs.streamnative.io/docs/service-account[service account] exists with
-required https://docs.streamnative.io/docs/access-control#authorize-namespaces[permissions to the Pulsar namespace/topic] your application is using.
+so you need to make sure that a https://docs.streamnative.io/cloud/security/authentication/service-accounts/service-accounts[service account] exists with
+required https://docs.streamnative.io/cloud/security/access/access-control-lists/authorization-and-acls[permissions to the Pulsar namespace/topic] your application is using.
 
 Next, you need to download the **Key file** (which serves as **private key**) of the service account and note the **issuer URL** (typically `https://auth.streamnative.cloud/`)
 and the **audience** (for example `urn:sn:pulsar:o-rf3ol:redhat`) for your cluster.

@@ -169,16 +169,23 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
         // ReflectiveChannelFactory against the platform SocketChannel returned by
         // EventLoopUtil. quarkus-netty registers only the NIO variants; register
         // Epoll/KQueue/IOUring here so native image can find their no-arg
-        // constructors at runtime. Revisit when bumping pulsar-client — if Pulsar
-        // moves to non-reflective ChannelFactory factories, these can be removed.
-        reflectiveClass.produce(ReflectiveClassBuildItem
-                .builder("io.netty.channel.epoll.EpollSocketChannel",
-                        "io.netty.channel.epoll.EpollDatagramChannel",
-                        "io.netty.channel.kqueue.KQueueSocketChannel",
-                        "io.netty.channel.kqueue.KQueueDatagramChannel",
-                        "io.netty.incubator.channel.uring.IOUringSocketChannel",
-                        "io.netty.incubator.channel.uring.IOUringDatagramChannel")
-                .constructors().build());
+        // constructors at runtime. These native transports are platform-specific
+        // and optional, so only register the ones actually on the classpath.
+        // Revisit when bumping pulsar-client — if Pulsar moves to non-reflective
+        // ChannelFactory factories, these can be removed.
+        String[] nettyTransportChannels = {
+                "io.netty.channel.epoll.EpollSocketChannel",
+                "io.netty.channel.epoll.EpollDatagramChannel",
+                "io.netty.channel.kqueue.KQueueSocketChannel",
+                "io.netty.channel.kqueue.KQueueDatagramChannel",
+                "io.netty.incubator.channel.uring.IOUringSocketChannel",
+                "io.netty.incubator.channel.uring.IOUringDatagramChannel"
+        };
+        for (String channel : nettyTransportChannels) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(channel)) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(channel).constructors().build());
+            }
+        }
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
                 .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION);

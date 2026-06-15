@@ -3,6 +3,7 @@ package io.quarkus.it.panache.reactive.kotlin
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.hibernate.reactive.panache.Panache
 import io.quarkus.hibernate.reactive.panache.common.WithSession
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.test.TestReactiveTransaction
 import io.quarkus.test.junit.DisabledOnIntegrationTest
 import io.quarkus.test.junit.QuarkusTest
@@ -231,16 +232,16 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ reactiveTransactional() }, 1L)
     }
 
-    // We shall assert tx is not null after the first operation
-    // As the session is created lazily
     @Transactional
     fun reactiveTransactional(): Uni<Long> {
-        return Person.count()
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             .invoke { count -> assertEquals(0L, count) }
-            .chain { c -> Panache.currentTransaction() }
+            .chain { _ -> Panache.currentTransaction() }
             .invoke { tx -> Assertions.assertNotNull(tx) }
             .call(Supplier { Person().persist<Person>() })
-            .chain { tx -> Person.count() }
+            .chain { _ -> Person.count() }
     }
 
     @Test
@@ -251,13 +252,13 @@ open class PanacheFunctionalityTest {
         asserter.assertTrue { reactiveTransactional2() }
     }
 
-    // We shall assert tx is not null after the first operation
-    // As the session is created lazily
     @Transactional
     fun reactiveTransactional2(): Uni<Boolean> {
-        return Person.count()
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             .invoke { count -> assertEquals(1L, count) }
-            .chain { c -> Panache.currentTransaction() }
+            .chain { _ -> Panache.currentTransaction() }
             .invoke { tx -> Assertions.assertNotNull(tx) }
             .chain(Supplier { Person.deleteAll() })
             .invoke { count -> assertEquals(1L, count) }
@@ -274,16 +275,31 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ testReactiveTransactional3() }, 1L)
     }
 
-    // We shall assert tx is not null after the first operation
-    // As the session is created lazily
     @Transactional
     fun testReactiveTransactional3(): Uni<Long> {
-        return Person.count()
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             // make sure it was rolled back
             .invoke { count -> assertEquals(1L, count) }
-            .chain { c -> Panache.currentTransaction() }
+            .chain { _ -> Panache.currentTransaction() }
             .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain { tx -> Person.deleteAll() }
+            .chain { _ -> Person.deleteAll() }
+    }
+
+    @Test
+    @Order(203)
+    @RunOnVertxContext
+    @DisabledOnIntegrationTest
+    fun testWithTransactionEagerTx(asserter: UniAsserter) {
+        asserter.assertNotNull { withTransactionEagerTx() }
+    }
+
+    @WithTransaction
+    fun withTransactionEagerTx(): Uni<Any> {
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNotNull(tx) } // tx is eager with @WithTransaction
+            .map { it as Any }
     }
 
     @Test

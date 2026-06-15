@@ -3,11 +3,13 @@ package io.quarkus.it.panache.reactive;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -19,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -251,11 +254,11 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> reactiveTransactional(), 1l);
     }
 
-    // We shall assert tx is not null after the first operation
-    // As the session is created lazily
     @Transactional
     Uni<Long> reactiveTransactional() {
-        return Person.count()
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNull(tx)) // tx is created lazily
+                .chain(() -> Person.count())
                 .invoke(count -> assertEquals(0l, count))
                 .chain(c -> Panache.currentTransaction())
                 .invoke(tx -> assertNotNull(tx))
@@ -271,11 +274,11 @@ public class PanacheFunctionalityTest {
         asserter.assertTrue(() -> reactiveTransactional2());
     }
 
-    // We shall assert tx is not null after the first operation
-    // As the session is created lazily
     @Transactional
     Uni<Boolean> reactiveTransactional2() {
-        return Person.count()
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNull(tx)) // tx is created lazily
+                .chain(() -> Person.count())
                 .invoke(count -> assertEquals(1l, count))
                 .chain(c -> Panache.currentTransaction())
                 .invoke(tx -> assertNotNull(tx))
@@ -302,6 +305,20 @@ public class PanacheFunctionalityTest {
                 // make sure it was rolled back
                 .invoke(count -> assertEquals(1l, count))
                 .call(() -> Person.deleteAll());
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(203)
+    public void testWithTransactionEagerTx(UniAsserter asserter) {
+        asserter.assertNotNull(() -> withTransactionEagerTx());
+    }
+
+    @WithTransaction
+    Uni<Mutiny.Transaction> withTransactionEagerTx() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx)); // tx is eager with @WithTransaction
     }
 
     @DisabledOnIntegrationTest

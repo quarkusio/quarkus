@@ -295,7 +295,7 @@ public final class SessionOperations {
             throw new IllegalStateException("No current Mutiny.Session found"
                     + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
                     + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
-                    + "\n\t- you may need to annotate the business method with @WithSession or @WithTransaction");
+                    + "\n\t- you may need to annotate the business method with @Transactional, @WithSession or @WithTransaction");
         }
     }
 
@@ -344,7 +344,7 @@ public final class SessionOperations {
             throw new IllegalStateException("No current Mutiny.StatelessSession found"
                     + "\n\t- no reactive stateless session was found in the Vert.x context and the context was not marked to open a new session lazily"
                     + "\n\t- a stateless session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
-                    + "\n\t- you may need to annotate the business method with @WithStatelessSession or @WithStatelessTransaction");
+                    + "\n\t- you may need to annotate the business method with @Transactional, @WithStatelessSession or @WithStatelessTransaction");
         }
     }
 

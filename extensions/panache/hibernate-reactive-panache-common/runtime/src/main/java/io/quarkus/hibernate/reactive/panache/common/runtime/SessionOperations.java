@@ -419,7 +419,4 @@ public final class SessionOperations {
         return OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName)
                 .chain(() -> OPENED_SESSIONS_STATE_STATELESS.closeSession(context, persistenceUnitName));
     }
-
-    static void clear() {
-    }
 }

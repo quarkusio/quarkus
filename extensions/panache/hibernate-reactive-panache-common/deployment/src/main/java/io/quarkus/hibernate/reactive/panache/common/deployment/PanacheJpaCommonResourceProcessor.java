@@ -39,7 +39,6 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
@@ -220,12 +219,6 @@ public final class PanacheJpaCommonResourceProcessor {
         }
 
         panacheHibernateRecorder.setNamedQueryMap(namedQueryMap);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void shutdown(ShutdownContextBuildItem shutdownContextBuildItem, PanacheHibernateRecorder panacheHibernateRecorder) {
-        panacheHibernateRecorder.clear(shutdownContextBuildItem);
     }
 
     private void lookupNamedQueries(CombinedIndexBuildItem index, DotName name, Map<String, String> namedQueries) {

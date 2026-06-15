@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -41,7 +41,7 @@ public class TestEndpoint {
     @Inject
     MockablePersonRepository mockablePersonRepository;
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("model")
     public Uni<String> testModel() {
@@ -851,7 +851,7 @@ public class TestEndpoint {
     @Inject
     NamedQueryWith2QueriesRepository namedQueryWith2QueriesRepository;
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("model-dao")
     public Uni<String> testModelDao() {
@@ -1546,7 +1546,7 @@ public class TestEndpoint {
         Assertions.assertEquals(returnType, method.getReturnType());
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("model1")
     public Uni<String> testModel1() {
@@ -1574,7 +1574,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("model2")
     public Uni<String> testModel2() {
@@ -1591,7 +1591,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection1")
     public Uni<String> testProjection() {
@@ -1640,7 +1640,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection2")
     public Uni<String> testProjection2() {
@@ -1733,7 +1733,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection-nested")
     public Uni<String> testNestedProjection() {
@@ -1796,7 +1796,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection-constructor-annotation")
     public Uni<String> testProjectedConstructor() {
@@ -1884,7 +1884,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection-projected-field-name")
     public Uni<String> testConstructorWithProjectedFieldNameProjection() {
@@ -1972,7 +1972,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection-no-arguments-constructor")
     public Uni<String> testConstructorWithNoArgsProjection() {
@@ -2060,7 +2060,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("projection-aggregate-function")
     public Uni<String> testProjectionWithAggregateFunction() {
@@ -2100,7 +2100,7 @@ public class TestEndpoint {
                 .replaceWith("OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("model3")
     public Uni<String> testModel3() {
@@ -2163,7 +2163,7 @@ public class TestEndpoint {
                 .map(v -> "OK");
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("composite")
     public Uni<String> testCompositeKey() {
@@ -2225,7 +2225,7 @@ public class TestEndpoint {
                 .map(v -> "OK"));
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("8254")
     public Uni<String> testBug8254() {
@@ -2269,7 +2269,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("9025")
     public Uni<String> testBug9025() {
@@ -2288,7 +2288,7 @@ public class TestEndpoint {
                 });
     }
 
-    @WithTransaction
+    @Transactional
     @GET
     @Path("9036")
     public Uni<String> testBug9036() {
@@ -2351,7 +2351,7 @@ public class TestEndpoint {
 
     @GET
     @Path("testSortByNullPrecedence")
-    @WithTransaction
+    @Transactional
     public Uni<String> testSortByNullPrecedence() {
         return Person.deleteAll()
                 .flatMap(v -> {
@@ -2378,7 +2378,7 @@ public class TestEndpoint {
 
     @GET
     @Path("testCaseInsensitiveSorting")
-    @WithTransaction
+    @Transactional
     public Uni<String> testCaseInsensitiveSorting() {
         return Person.deleteAll()
                 .flatMap(v -> {
@@ -2426,7 +2426,7 @@ public class TestEndpoint {
 
     @GET
     @Path("26308")
-    @WithTransaction
+    @Transactional
     public Uni<String> testBug26308() {
         return testBug26308Query("from Person2 p left join fetch p.address")
                 // This cannot work, see https://docs.hibernate.org/orm/7.0/migration-guide/#create-query
@@ -2455,7 +2455,7 @@ public class TestEndpoint {
 
     @GET
     @Path("36496")
-    @WithTransaction
+    @Transactional
     public Uni<String> testBug36496() {
         PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
         return query.list()
@@ -2473,7 +2473,7 @@ public class TestEndpoint {
 
     @GET
     @Path("40962")
-    @WithTransaction
+    @Transactional
     public Uni<String> testBug40962() {
         // should not throw
         return Bug40962Entity.find("name = :name ORDER BY locate(location, :location) DESC",

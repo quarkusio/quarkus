@@ -2,8 +2,7 @@ package io.quarkus.it.panache.reactive.kotlin
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.hibernate.reactive.panache.Panache
-import io.quarkus.hibernate.reactive.panache.common.WithSession
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction
+import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
 import io.quarkus.test.TestReactiveTransaction
 import io.quarkus.test.junit.DisabledOnIntegrationTest
 import io.quarkus.test.junit.QuarkusTest
@@ -14,6 +13,7 @@ import io.restassured.RestAssured.`when`
 import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
 import jakarta.json.bind.JsonbBuilder
+import jakarta.transaction.Transactional
 import java.util.function.Supplier
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
@@ -177,14 +177,14 @@ open class PanacheFunctionalityTest {
         }
     }
 
-    @WithTransaction
+    @Transactional
     fun createBug7102(): Uni<Person> {
         val person = Person()
         person.name = "pero"
         return person.persistAndFlush()
     }
 
-    @WithTransaction
+    @Transactional
     fun updateBug7102(id: Long): Uni<Void> {
         return Person.findById(id).map { person: Person? ->
             person?.name = "jozo"
@@ -192,7 +192,7 @@ open class PanacheFunctionalityTest {
         }
     }
 
-    @WithSession
+    @Transactional
     fun getBug7102(id: Long): Uni<Person> {
         return Person.findById(id).map { it!! }
     }
@@ -226,7 +226,7 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ reactiveTransactional() }, 1L)
     }
 
-    @WithTransaction
+    @ReactiveTransactional
     fun reactiveTransactional(): Uni<Long> {
         return Panache.currentTransaction()
             .invoke { tx -> Assertions.assertNotNull(tx) }
@@ -244,7 +244,7 @@ open class PanacheFunctionalityTest {
         asserter.assertTrue { reactiveTransactional2() }
     }
 
-    @WithTransaction
+    @ReactiveTransactional
     fun reactiveTransactional2(): Uni<Boolean> {
         return Panache.currentTransaction()
             .invoke { tx -> Assertions.assertNotNull(tx) }
@@ -265,7 +265,7 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ testReactiveTransactional3() }, 1L)
     }
 
-    @WithTransaction
+    @ReactiveTransactional
     fun testReactiveTransactional3(): Uni<Long> {
         return Panache.currentTransaction()
             .invoke { tx -> Assertions.assertNotNull(tx) }

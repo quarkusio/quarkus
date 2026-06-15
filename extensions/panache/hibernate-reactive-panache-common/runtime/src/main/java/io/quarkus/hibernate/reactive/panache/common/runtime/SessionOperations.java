@@ -23,6 +23,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -348,6 +349,10 @@ public final class SessionOperations {
                             .invoke(() -> LOG.debugf("Opening lazy session for Persistence Unit '%s'", persistenceUnitName))
                             .invoke(s -> context.putLocal(key, s));
                 }
+            } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
+                Mutiny.Session session = HibernateReactiveRecorder.getSession(persistenceUnitName);
+                context.putLocal(key, session);
+                return Uni.createFrom().item(session);
             } else {
                 throw new IllegalStateException("No current Mutiny.Session found"
                         + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
@@ -412,6 +417,10 @@ public final class SessionOperations {
                                     persistenceUnitName))
                             .invoke(s -> context.putLocal(key, s));
                 }
+            } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
+                Mutiny.StatelessSession session = HibernateReactiveRecorder.getStatelessSession(persistenceUnitName);
+                context.putLocal(key, session);
+                return Uni.createFrom().item(session);
             } else {
                 throw new IllegalStateException("No current Mutiny.StatelessSession found"
                         + "\n\t- no reactive stateless session was found in the Vert.x context and the context was not marked to open a new session lazily"

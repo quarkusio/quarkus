@@ -30,8 +30,10 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.SharedDatasourceLocator;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.cpu.CPU;
@@ -42,6 +44,10 @@ public class PostgresqlDevServicesProcessor {
 
     private static final String MAX_PREPARED_TRANSACTIONS = "max_prepared_transactions";
     private static final String DEFAULT_MAX_PREPARED_TRANSACTIONS = "--" + MAX_PREPARED_TRANSACTIONS + "=100";
+
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-postgresql";
+    private static final ContainerLocator containerLocator = ContainerLocator.locateContainerWithLabels(POSTGRESQL_PORT,
+            DEV_SERVICE_LABEL);
 
     private static final PostgresDatasourceServiceConfigurator configurator = new PostgresDatasourceServiceConfigurator();
 
@@ -106,7 +112,15 @@ public class PostgresqlDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
+                SharedDatasourceLocator.configureSharedLabel(container, launchMode, DEV_SERVICE_LABEL, containerConfig);
+
                 return container;
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return SharedDatasourceLocator.locate(containerLocator, launchMode, containerConfig, configurator);
             }
 
             @Override

@@ -23,6 +23,8 @@ public class DevServicesDatasourceContainerConfig {
     private final Map<String, String> volumes;
     private final boolean reuse;
     private final boolean showLogs;
+    private final boolean shared;
+    private final String serviceName;
     private final String datasourceName;
     private final Set<DatabaseFeature> requiredFeatures;
 
@@ -40,6 +42,8 @@ public class DevServicesDatasourceContainerConfig {
             Map<String, String> volumes,
             boolean reuse,
             boolean showLogs,
+            boolean shared,
+            String serviceName,
             String datasourceName,
             Set<DatabaseFeature> requiredFeatures) {
         this.imageName = imageName;
@@ -56,6 +60,8 @@ public class DevServicesDatasourceContainerConfig {
         this.volumes = volumes;
         this.reuse = reuse;
         this.showLogs = showLogs;
+        this.shared = shared;
+        this.serviceName = serviceName;
         this.datasourceName = datasourceName;
         this.requiredFeatures = requiredFeatures != null ? requiredFeatures : Collections.emptySet();
     }
@@ -114,6 +120,14 @@ public class DevServicesDatasourceContainerConfig {
 
     public boolean isReuse() {
         return reuse;
+    }
+
+    public boolean isShared() {
+        return shared;
+    }
+
+    public String getServiceName() {
+        return serviceName;
     }
 
     public String getDatasourceName() {

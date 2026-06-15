@@ -24,8 +24,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.SharedDatasourceLocator;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
@@ -35,6 +37,10 @@ public class MariaDBDevServicesProcessor {
 
     public static final Integer PORT = 3306;
     public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
+
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mariadb";
+    private static final ContainerLocator containerLocator = ContainerLocator.locateContainerWithLabels(PORT,
+            DEV_SERVICE_LABEL);
 
     private static final MariaDBDatasourceServiceConfigurator configurator = new MariaDBDatasourceServiceConfigurator();
 
@@ -84,7 +90,15 @@ public class MariaDBDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
+                SharedDatasourceLocator.configureSharedLabel(container, launchMode, DEV_SERVICE_LABEL, containerConfig);
+
                 return container;
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return SharedDatasourceLocator.locate(containerLocator, launchMode, containerConfig, configurator);
             }
 
             @Override

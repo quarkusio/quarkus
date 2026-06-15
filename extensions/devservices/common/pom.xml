@@ -39,5 +39,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-datasource-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-datasource-deployment-spi</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -31,14 +31,20 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.SharedDatasourceLocator;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class DB2DevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(DB2DevServicesProcessor.class);
+
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-db2";
+    private static final ContainerLocator containerLocator = ContainerLocator.locateContainerWithLabels(DB2_PORT,
+            DEV_SERVICE_LABEL);
 
     private static final DB2DatasourceServiceConfigurator configurator = new DB2DatasourceServiceConfigurator();
 
@@ -129,7 +135,15 @@ public class DB2DevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
+                SharedDatasourceLocator.configureSharedLabel(container, launchMode, DEV_SERVICE_LABEL, containerConfig);
+
                 return container;
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return SharedDatasourceLocator.locate(containerLocator, launchMode, containerConfig, configurator);
             }
 
             @Override

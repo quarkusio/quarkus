@@ -188,13 +188,13 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
         }
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
-                .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION);
+                .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
         for (ClassInfo authPluginClass : authPluginClasses) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
                     .constructors().build());
         }
         Collection<ClassInfo> sslFactoryClasses = combinedIndex.getIndex()
-                .getAllKnownImplementations(DotNames.PULSAR_SSL_FACTORY);
+                .getAllKnownImplementors(DotNames.PULSAR_SSL_FACTORY);
         for (ClassInfo sslFactoryClass : sslFactoryClasses) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(sslFactoryClass.name().toString())
                     .constructors().build());

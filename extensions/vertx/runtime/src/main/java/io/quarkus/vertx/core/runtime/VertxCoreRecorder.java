@@ -495,12 +495,12 @@ public class VertxCoreRecorder {
     private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
         AddressResolverConfiguration ar = conf.resolver();
         AddressResolverOptions opts = new AddressResolverOptions();
-        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive());
-        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive());
-        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive());
+        opts.setCacheMaxTimeToLive((int) ar.cacheMaxTimeToLive().toSeconds());
+        opts.setCacheMinTimeToLive((int) ar.cacheMinTimeToLive().toSeconds());
+        opts.setCacheNegativeTimeToLive((int) ar.cacheNegativeTimeToLive().toSeconds());
         opts.setMaxQueries(ar.maxQueries());
         opts.setQueryTimeout(ar.queryTimeout().toMillis());
-        opts.setHostsRefreshPeriod(ar.hostRefreshPeriod());
+        opts.setHostsRefreshPeriod((int) ar.hostRefreshPeriod().toMillis());
         opts.setOptResourceEnabled(ar.optResourceEnabled());
         opts.setRdFlag(ar.rdFlag());
         opts.setNdots(ar.ndots());

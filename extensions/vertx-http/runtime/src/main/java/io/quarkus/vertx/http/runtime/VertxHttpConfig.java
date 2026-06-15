@@ -300,10 +300,81 @@ public interface VertxHttpConfig {
     OptionalInt initialWindowSize();
 
     /**
+     * The timeout for the PROXY protocol handshake.
+     * When the PROXY protocol is enabled ({@code quarkus.http.proxy.use-proxy-protocol=true}),
+     * this configures how long the server waits for the PROXY protocol header before closing the connection.
+     */
+    @WithDefault("10s")
+    Duration proxyProtocolTimeout();
+
+    /**
+     * The maximum number of small HTTP/2 CONTINUATION frames allowed per request before the connection
+     * is closed. This protects against HTTP/2 CONTINUATION flood attacks.
+     * Setting zero or a negative value disables the protection.
+     */
+    OptionalInt http2MaxSmallContinuationFrames();
+
+    /**
+     * The initial buffer size for the HTTP/1.x decoder.
+     * <p>
+     * This is an advanced setting. The initial buffer size used by the HTTP/1.x decoder.
+     * A larger buffer can improve performance when processing large headers but increases memory usage.
+     */
+    @WithDefault("128")
+    int decoderInitialBufferSize();
+
+    /**
+     * Enable TCP keepalive.
+     * <p>
+     * This is an advanced setting. When enabled, the server sends TCP keepalive probes to detect dead connections.
+     */
+    @WithDefault("false")
+    boolean tcpKeepAlive();
+
+    /**
+     * Enable Netty-level wire logging for the HTTP server.
+     * <p>
+     * This is an advanced setting. When enabled, all bytes sent and received on the server are logged
+     * at DEBUG level using the Netty logging handler. This produces a large volume of logs.
+     */
+    @WithDefault("false")
+    boolean logActivity();
+
+    /**
+     * The format for Netty activity log data. Only used when {@code log-activity} is enabled.
+     * <p>
+     * This is an advanced setting.
+     */
+    @WithDefault("HEX_DUMP")
+    ActivityLogDataFormat activityLogDataFormat();
+
+    /**
+     * Enable address reuse on the server socket.
+     * <p>
+     * This is an advanced setting. When enabled, the {@code SO_REUSEADDR} option is set on the server socket.
+     */
+    @WithDefault("true")
+    boolean reuseAddress();
+
+    /**
+     * The value of the IP traffic class (TOS field) for outgoing packets.
+     * <p>
+     * This is an advanced setting. Valid values range from 0 to 255.
+     * A value of {@code -1} (the default) means the traffic class is not set.
+     */
+    @WithDefault("-1")
+    int trafficClass();
+
+    /**
      * Path to a unix domain socket
      */
     @WithDefault("/var/run/io.quarkus.app.socket")
     String domainSocket();
+
+    enum ActivityLogDataFormat {
+        HEX_DUMP,
+        SIMPLE
+    }
 
     /**
      * Enable listening to host:port

@@ -57,18 +57,18 @@ public class VertxCoreProducerTest {
                     }
 
                     @Override
-                    public int cacheNegativeTimeToLive() {
-                        return 1;
+                    public Duration cacheNegativeTimeToLive() {
+                        return Duration.ofSeconds(1);
                     }
 
                     @Override
-                    public int cacheMinTimeToLive() {
-                        return 0;
+                    public Duration cacheMinTimeToLive() {
+                        return Duration.ofSeconds(0);
                     }
 
                     @Override
-                    public int cacheMaxTimeToLive() {
-                        return 3;
+                    public Duration cacheMaxTimeToLive() {
+                        return Duration.ofSeconds(3);
                     }
 
                     @Override
@@ -77,8 +77,8 @@ public class VertxCoreProducerTest {
                     }
 
                     @Override
-                    public int hostRefreshPeriod() {
-                        return 0;
+                    public Duration hostRefreshPeriod() {
+                        return Duration.ofMillis(0);
                     }
 
                     @Override
@@ -260,18 +260,18 @@ public class VertxCoreProducerTest {
                 }
 
                 @Override
-                public int cacheNegativeTimeToLive() {
-                    return 0;
+                public Duration cacheNegativeTimeToLive() {
+                    return Duration.ofSeconds(0);
                 }
 
                 @Override
-                public int cacheMinTimeToLive() {
-                    return 0;
+                public Duration cacheMinTimeToLive() {
+                    return Duration.ofSeconds(0);
                 }
 
                 @Override
-                public int cacheMaxTimeToLive() {
-                    return Integer.MAX_VALUE;
+                public Duration cacheMaxTimeToLive() {
+                    return Duration.ofSeconds(Integer.MAX_VALUE);
                 }
 
                 @Override
@@ -280,8 +280,8 @@ public class VertxCoreProducerTest {
                 }
 
                 @Override
-                public int hostRefreshPeriod() {
-                    return 0;
+                public Duration hostRefreshPeriod() {
+                    return Duration.ofMillis(0);
                 }
 
                 @Override

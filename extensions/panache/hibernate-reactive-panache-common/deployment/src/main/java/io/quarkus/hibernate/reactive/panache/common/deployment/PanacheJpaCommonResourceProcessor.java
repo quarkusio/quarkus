@@ -191,7 +191,7 @@ public final class PanacheJpaCommonResourceProcessor {
                     // - returns Uni
                     // - is declared in a class that uses a panache entity/repository
                     // - is annotated with @GET, @POST, @PUT, @DELETE ,@PATCH ,@HEAD or @OPTIONS
-                    // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or @WithTransaction
+                    // - is not annotated with @Transactional, @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or @WithTransaction
                     context.transform().add(DotNames.WITH_SESSION_ON_DEMAND).done();
                 }
             }));

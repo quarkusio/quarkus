@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
@@ -26,6 +27,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-hybrid-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }, client = true))
+@EnabledIf("isOpenSsl35Available")
 public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
 
     @TestHTTPResource(value = "/hybrid-mtls", tls = true)

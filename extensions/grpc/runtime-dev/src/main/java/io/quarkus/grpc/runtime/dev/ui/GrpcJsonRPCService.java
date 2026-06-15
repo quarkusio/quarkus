@@ -24,8 +24,6 @@ import io.grpc.ServiceDescriptor;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.grpc.runtime.config.GrpcConfiguration;
-import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.vertx.http.runtime.CertificateConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
@@ -52,9 +50,6 @@ public class GrpcJsonRPCService {
     VertxHttpConfig httpConfig;
 
     @Inject
-    GrpcConfiguration grpcConfiguration;
-
-    @Inject
     GrpcServices grpcServices;
 
     private String host;
@@ -63,16 +58,9 @@ public class GrpcJsonRPCService {
 
     @PostConstruct
     public void init() {
-        GrpcServerConfiguration serverConfig = grpcConfiguration.server();
-        if (serverConfig.useSeparateServer()) {
-            this.host = serverConfig.host();
-            this.port = serverConfig.port();
-            this.ssl = serverConfig.ssl().certificate().isPresent() || serverConfig.ssl().keyStore().isPresent();
-        } else {
-            this.host = httpConfig.host();
-            this.port = httpConfig.port();
-            this.ssl = isTLSConfigured(httpConfig.ssl().certificate());
-        }
+        this.host = httpConfig.host();
+        this.port = httpConfig.port();
+        this.ssl = isTLSConfigured(httpConfig.ssl().certificate());
         this.grpcServiceClassInfos = getGrpcServiceClassInfos();
         this.callsInProgress = new HashMap<>();
     }

@@ -392,7 +392,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         if (this.clientRequestContext != null) {
             Context ctx = this.clientRequestContext.getContext();
             if (ctx != null) {
-                ctx.removeLocal(VertxContext.PARENT_CONTEXT);
+                ctx.removeLocal(VertxContext.PARENT_CONTEXT_LOCAL);
             }
             this.clientRequestContext = null;
         }

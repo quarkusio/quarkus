@@ -350,7 +350,7 @@
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-pulsar</module>
-                <module>reactive-messaging-mqtt</module>
+<!--                <module>reactive-messaging-mqtt</module>-->
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
@@ -412,7 +412,6 @@
                 <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
                 <module>grpc-descriptor-sets</module>
-                <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-cli</module>

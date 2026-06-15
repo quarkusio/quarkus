@@ -4,11 +4,12 @@ permissions:
   contents: read
   security-events: write
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  push:
+#    branches: [main]
+#  pull_request:
+#    branches: [main]
 
 jobs:
   analyze:

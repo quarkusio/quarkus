@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context.Key;
 import org.hibernate.reactive.context.impl.BaseKey;
+import org.hibernate.reactive.context.impl.ContextualDataStorage;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
@@ -24,6 +25,7 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -73,6 +75,19 @@ public final class SessionOperations {
         return new BaseKey<>(Mutiny.StatelessSession.class, implementor.getUuid());
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> T getFromContext(Context context, Key<T> key) {
+        return ContextualDataStorage.get(context, key);
+    }
+
+    private static <T> void putInContext(Context context, Key<T> key, T value) {
+        ContextualDataStorage.put(context, key, value);
+    }
+
+    private static void removeFromContext(Context context, Key<?> key) {
+        ContextualDataStorage.remove(context, key);
+    }
+
     // This key is used to keep track of the Set<String> sessions (managed or stateless) created on demand
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
 
@@ -89,7 +104,7 @@ public final class SessionOperations {
     static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();
 
-        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
+        if (ContextLocals.get(context, TRANSACTIONAL_METHOD_KEY, null) != null) {
             return Uni.createFrom().failure(
                     new UnsupportedOperationException(
                             "Calling a method annotated with @WithSessionOnDemand from a method annotated with @Transactional is not supported. "
@@ -97,16 +112,16 @@ public final class SessionOperations {
                                     + "but not both, throughout your whole application."));
         }
 
-        if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
+        if (ContextLocals.get(context, SESSION_ON_DEMAND_KEY, null) != null) {
             // context already marked - no need to set the key and close the session
             return work.get();
         } else {
             // mark the lazy session
-            context.putLocal(SESSION_ON_DEMAND_KEY, true);
+            ContextLocals.put(context, SESSION_ON_DEMAND_KEY, true);
             // perform the work and eventually close the session and remove the key
             return work.get().eventually(() -> {
-                context.removeLocal(SESSION_ON_DEMAND_KEY);
-                Set<String> onDemandSessionCreated = context.getLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                ContextLocals.remove(context, SESSION_ON_DEMAND_KEY);
+                Set<String> onDemandSessionCreated = ContextLocals.get(context, SESSION_ON_DEMAND_OPENED_KEY, null);
                 // Close only the sessions that have been created lazily (onDemand) in withSession
                 // See this.getSession(String persistenceUnitName)
                 if (onDemandSessionCreated != null) {
@@ -114,7 +129,7 @@ public final class SessionOperations {
                     for (String s : onDemandSessionCreated) {
                         closedSessions.add(closeSession(s));
                     }
-                    context.removeLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                    ContextLocals.remove(context, SESSION_ON_DEMAND_OPENED_KEY);
                     return Uni.combine().all().unis(closedSessions).discardItems();
                 } else {
                     return Uni.createFrom().voidItem();
@@ -206,7 +221,7 @@ public final class SessionOperations {
             return error;
         }
         Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session current = context.getLocal(key);
+        Mutiny.Session current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             // reactive session exists - reuse this session
             return work.apply(current);
@@ -215,7 +230,7 @@ public final class SessionOperations {
             return SESSION_FACTORY_MAP.getValue(persistenceUnitName)
                     .openSession()
                     .invoke(() -> LOG.debugf("Opening lazy managed session for Persistence Unit '%s'", persistenceUnitName))
-                    .invoke(s -> context.putLocal(key, s))
+                    .invoke(s -> putInContext(context, key, s))
                     .chain(work::apply)
                     .eventually(() -> closeSession(persistenceUnitName));
         }
@@ -223,7 +238,7 @@ public final class SessionOperations {
 
     private static <T> Uni<T> checkNoStatelessSession(Context context, String persistenceUnitName) {
         Key<Mutiny.StatelessSession> statelessKey = STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.StatelessSession currentStateless = context.getLocal(statelessKey);
+        Mutiny.StatelessSession currentStateless = getFromContext(context, statelessKey);
         if (currentStateless != null && currentStateless.isOpen()) {
             return Uni.createFrom().failure(
                     new IllegalStateException("There is already a stateless session opened for this persistence unit"));
@@ -260,7 +275,7 @@ public final class SessionOperations {
             return error;
         }
         Key<Mutiny.StatelessSession> key = STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.StatelessSession current = context.getLocal(key);
+        Mutiny.StatelessSession current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             // reactive session exists - reuse this session
             return work.apply(current);
@@ -269,7 +284,7 @@ public final class SessionOperations {
             return SESSION_FACTORY_MAP.getValue(persistenceUnitName)
                     .openStatelessSession()
                     .invoke(() -> LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName))
-                    .invoke(s -> context.putLocal(key, s))
+                    .invoke(s -> putInContext(context, key, s))
                     .chain(work::apply)
                     .eventually(() -> closeSession(persistenceUnitName));
         }
@@ -277,7 +292,7 @@ public final class SessionOperations {
 
     private static <T> Uni<T> checkNoManagedSession(Context context, String persistenceUnitName) {
         Key<Mutiny.Session> managedKey = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session currentManaged = context.getLocal(managedKey);
+        Mutiny.Session currentManaged = getFromContext(context, managedKey);
         if (currentManaged != null && currentManaged.isOpen()) {
             return Uni.createFrom()
                     .failure(new IllegalStateException("There is already a managed session opened for this persistence unit"));
@@ -323,17 +338,17 @@ public final class SessionOperations {
             return error;
         }
         Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session current = context.getLocal(key);
+        Mutiny.Session current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             // reuse the existing reactive session
             return Uni.createFrom().item(current);
         } else {
-            if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
+            if (ContextLocals.get(context, SESSION_ON_DEMAND_KEY, null) != null) {
                 // This will keep track of all on-demand opened sessions
-                Set<String> onDemandSessionsCreated = context.getLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                Set<String> onDemandSessionsCreated = ContextLocals.get(context, SESSION_ON_DEMAND_OPENED_KEY, null);
                 if (onDemandSessionsCreated == null) {
                     onDemandSessionsCreated = new HashSet<>();
-                    context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
+                    ContextLocals.put(context, SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
                 }
 
                 if (onDemandSessionsCreated.contains(persistenceUnitName)) {
@@ -346,7 +361,7 @@ public final class SessionOperations {
                     onDemandSessionsCreated.add(persistenceUnitName);
                     return SESSION_FACTORY_MAP.getValue(persistenceUnitName).openSession()
                             .invoke(() -> LOG.debugf("Opening lazy session for Persistence Unit '%s'", persistenceUnitName))
-                            .invoke(s -> context.putLocal(key, s));
+                            .invoke(s -> putInContext(context, key, s));
                 }
             } else {
                 throw new IllegalStateException("No current Mutiny.Session found"
@@ -386,17 +401,17 @@ public final class SessionOperations {
             return error;
         }
         Key<Mutiny.StatelessSession> key = STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.StatelessSession current = context.getLocal(key);
+        Mutiny.StatelessSession current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             // reuse the existing reactive session
             return Uni.createFrom().item(current);
         } else {
-            if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
+            if (ContextLocals.get(context, SESSION_ON_DEMAND_KEY, null) != null) {
                 // This will keep track of all on-demand opened sessions
-                Set<String> onDemandSessionsCreated = context.getLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                Set<String> onDemandSessionsCreated = ContextLocals.get(context, SESSION_ON_DEMAND_OPENED_KEY, null);
                 if (onDemandSessionsCreated == null) {
                     onDemandSessionsCreated = new HashSet<>();
-                    context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
+                    ContextLocals.put(context, SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
                 }
 
                 if (onDemandSessionsCreated.contains(persistenceUnitName)) {
@@ -410,7 +425,7 @@ public final class SessionOperations {
                     return SESSION_FACTORY_MAP.getValue(persistenceUnitName).openStatelessSession()
                             .invoke(() -> LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'",
                                     persistenceUnitName))
-                            .invoke(s -> context.putLocal(key, s));
+                            .invoke(s -> putInContext(context, key, s));
                 }
             } else {
                 throw new IllegalStateException("No current Mutiny.StatelessSession found"
@@ -426,8 +441,8 @@ public final class SessionOperations {
      */
     public static Mutiny.Session getCurrentSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Key<Mutiny.Session> value = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session current = context.getLocal(value);
+        Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
+        Mutiny.Session current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             return current;
         }
@@ -439,7 +454,8 @@ public final class SessionOperations {
      */
     public static Mutiny.StatelessSession getCurrentStatelessSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Mutiny.StatelessSession current = context.getLocal(STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName));
+        Mutiny.StatelessSession current = getFromContext(context,
+                STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName));
         if (current != null && current.isOpen()) {
             return current;
         }
@@ -469,16 +485,16 @@ public final class SessionOperations {
         LOG.debugf("Closing session for Persistence Unit '%s'", persistenceUnitName);
         Context context = vertxContext();
         Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.Session current = context.getLocal(key);
+        Mutiny.Session current = getFromContext(context, key);
         if (current != null && current.isOpen()) {
             LOG.debugf("Closing opened managed session for Persistence Unit '%s'", persistenceUnitName);
-            return current.close().eventually(() -> context.removeLocal(key));
+            return current.close().eventually(() -> removeFromContext(context, key));
         }
         Key<Mutiny.StatelessSession> statelessKey = STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.StatelessSession currentStateless = context.getLocal(statelessKey);
+        Mutiny.StatelessSession currentStateless = getFromContext(context, statelessKey);
         if (currentStateless != null && currentStateless.isOpen()) {
             LOG.debugf("Closing opened stateless session for Persistence Unit '%s'", persistenceUnitName);
-            return currentStateless.close().eventually(() -> context.removeLocal(statelessKey));
+            return currentStateless.close().eventually(() -> removeFromContext(context, statelessKey));
         }
         return Uni.createFrom().voidItem();
     }

@@ -14,6 +14,7 @@ import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool;
 import io.quarkus.transaction.annotations.Rollback;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -71,9 +72,10 @@ public abstract class TransactionalInterceptorBase {
     }
 
     protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
+        // We are running on the retrieved context, however, the method also switch the safety flag.
         Context context = vertxContext();
 
-        if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
+        if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
             // This is the parent method, responsible for commit, rollback or cancellation of the transaction
 
             /*
@@ -82,24 +84,16 @@ public abstract class TransactionalInterceptorBase {
              * Subsequent nested methods will avoid tx management
              */
             LOG.tracef("Setting this method as transactional: %s", method);
-            context.putLocal(TRANSACTIONAL_METHOD_KEY, true);
+            ContextLocals.put(TRANSACTIONAL_METHOD_KEY, true);
 
             return work.get()
-                    .onFailure().call(exception -> {
-                        return rollbackOrCommitBasedOnException(context, annotation, exception);
-                    })
-                    .onCancellation().call(() -> {
-                        return rollbackOnCancel();
-                    })
+                    .onFailure().call(exception -> rollbackOrCommitBasedOnException(context, annotation, exception))
+                    .onCancellation().call(this::rollbackOnCancel)
                     .call(() -> { // Good path - commit
                         LOG.tracef("Calling commit from method %s", method);
                         return invokeBeforeCommitAndCommit(context);
                     })
-                    .eventually(() -> {
-                        return reactiveResource.afterCommit(context);
-                    }).eventually(() -> {
-                        return closeConnection();
-                    });
+                    .eventually(() -> reactiveResource.afterCommit(context)).eventually(this::closeConnection);
         } else {
             // Nested methods should just propagate the reactive chain without transaction handling
             return work.get();
@@ -268,22 +262,23 @@ public abstract class TransactionalInterceptorBase {
     }
 
     protected void validateLegacyPanacheAnnotations() {
-        Context context = vertxContext();
-        if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
+        // We are running on the retrieved context, however, the method also switch the safety flag.
+        Context ignored = vertxContext();
+        if (ContextLocals.get(SESSION_ON_DEMAND_KEY).isPresent()) {
             throw new UnsupportedOperationException(
                     "Calling a method annotated with @Transactional from a method annotated with @WithSessionOnDemand is not supported. "
                             + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
                             + "but not both, throughout your whole application.");
         }
 
-        if (context.getLocal(WITH_TRANSACTION_METHOD_KEY) != null) {
+        if (ContextLocals.get(WITH_TRANSACTION_METHOD_KEY).isPresent()) {
             throw new UnsupportedOperationException(
                     "Calling a method annotated with @Transactional from a method annotated with @WithTransaction is not supported. "
                             + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "
                             + "but not both, throughout your whole application.");
         }
 
-        if (context.getLocal(REACTIVE_TRANSACTIONAL_METHOD_KEY) != null) {
+        if (ContextLocals.get(REACTIVE_TRANSACTIONAL_METHOD_KEY).isPresent()) {
             throw new UnsupportedOperationException(
                     "Calling a method annotated with @Transactional from a method annotated with @ReactiveTransactional is not supported. "
                             + "Use either @Transactional or @WithSessionOnDemand/@WithSession/@WithTransaction, "

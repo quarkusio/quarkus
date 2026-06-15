@@ -21,7 +21,7 @@ import io.quarkus.redis.datasource.sortedset.ZAddArgs;
 import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetCommands<K, V>
         implements ReactiveSortedSetCommands<K, V> {

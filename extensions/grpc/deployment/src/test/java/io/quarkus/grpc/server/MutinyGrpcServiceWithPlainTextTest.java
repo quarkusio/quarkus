@@ -13,6 +13,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.MutinyTestServiceGrpc;
@@ -32,6 +33,8 @@ public class MutinyGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true).setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(io.grpc.testing.integration.Test.class.getPackage())
+                            .addPackage(HelloWorldProto.class.getPackage())
                             .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
                                     GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
                                     MutinyGreeterGrpc.class,

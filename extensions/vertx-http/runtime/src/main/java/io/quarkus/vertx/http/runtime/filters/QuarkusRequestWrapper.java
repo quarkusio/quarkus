@@ -14,8 +14,8 @@ import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
-import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestWrapper;
 
 public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 

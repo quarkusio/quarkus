@@ -39,12 +39,12 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.RedisConnection;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
@@ -434,12 +434,6 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public Response execute(Command command, String... args) {
-        return reactive.execute(command, args)
-                .await().atMost(timeout);
-    }
-
-    @Override
-    public Response execute(io.vertx.redis.client.Command command, String... args) {
         return reactive.execute(command, args)
                 .await().atMost(timeout);
     }

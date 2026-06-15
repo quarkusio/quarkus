@@ -2,8 +2,8 @@ package io.quarkus.oidc.common;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.MultiMap;
-import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 
 /**
  * Response filter which can be used to intercept HTTP responses from the OIDC provider.

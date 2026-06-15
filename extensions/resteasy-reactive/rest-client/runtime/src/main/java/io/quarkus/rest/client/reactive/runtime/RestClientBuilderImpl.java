@@ -152,7 +152,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
             @Override
             public SSLOptions getSSLOptions() {
-                return tlsConfiguration.getSSLOptions();
+                return tlsConfiguration.getClientSSLOptions();
             }
 
             @Override

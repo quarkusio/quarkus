@@ -41,6 +41,7 @@ import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -65,7 +66,6 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
 
     private final Map<String, List<String>> serviceToBlockingMethods = new HashMap<>();
     private boolean hasBlockingMethods = false;
-    private final boolean notUsingSeparateGrpcServer;
     private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
 
     @Inject
@@ -74,7 +74,6 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
             IdentityProviderManager identityProviderManager,
             Instance<GrpcSecurityMechanism> securityMechanisms,
             Instance<AuthExceptionHandlerProvider> exceptionHandlers,
-            @ConfigProperty(name = "quarkus.grpc.server.use-separate-server") boolean usingSeparateGrpcServer,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             BeanManager beanManager, Event<AuthenticationFailureEvent> authFailureEvent,
             Event<AuthenticationSuccessEvent> authSuccessEvent) {
@@ -82,7 +81,6 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                 AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityAssociation = identityAssociation;
         this.identityProviderManager = identityProviderManager;
-        this.notUsingSeparateGrpcServer = !usingSeparateGrpcServer;
 
         AuthExceptionHandlerProvider maxPrioHandlerProvider = null;
 
@@ -185,15 +183,15 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                 identityAssociationNotSet = false;
             }
         }
-        if (identityAssociationNotSet && notUsingSeparateGrpcServer) {
-            // authenticate via HTTP authenticator
+        if (identityAssociationNotSet) {
+            // authenticate via HTTP authenticator (gRPC always runs on HTTP server)
             Context capturedContext = getCapturedVertxContext();
             if (capturedContext != null) {
-                if (capturedContext.getLocal(IDENTITY_KEY) != null) {
-                    identityAssociation.setIdentity(capturedContext.<SecurityIdentity> getLocal(IDENTITY_KEY));
-                } else if (capturedContext.getLocal(DEFERRED_IDENTITY_KEY) != null) {
-                    Uni<SecurityIdentity> identityUni = capturedContext
-                            .<Uni<SecurityIdentity>> getLocal(DEFERRED_IDENTITY_KEY)
+                var local = VertxContext.localContextData(getCapturedVertxContext());
+                if (local.get(IDENTITY_KEY) != null) {
+                    identityAssociation.setIdentity((SecurityIdentity) local.get(IDENTITY_KEY));
+                } else if (local.get(DEFERRED_IDENTITY_KEY) != null) {
+                    Uni<SecurityIdentity> identityUni = ((Uni<SecurityIdentity>) local.get(DEFERRED_IDENTITY_KEY))
                             .onFailure(new Predicate<Throwable>() {
                                 @Override
                                 public boolean test(Throwable t) {
@@ -229,10 +227,11 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     public static void propagateSecurityIdentityWithDuplicatedCtx(RoutingContext event) {
         Context context = getCapturedVertxContext();
         if (context != null) {
+            var local = VertxContext.localContextData(getCapturedVertxContext());
             if (event.user() instanceof QuarkusHttpUser existing) {
-                getCapturedVertxContext().putLocal(IDENTITY_KEY, existing.getSecurityIdentity());
+                local.put(IDENTITY_KEY, existing.getSecurityIdentity());
             } else {
-                getCapturedVertxContext().putLocal(DEFERRED_IDENTITY_KEY, QuarkusHttpUser.getSecurityIdentity(event, null));
+                local.put(DEFERRED_IDENTITY_KEY, QuarkusHttpUser.getSecurityIdentity(event, null));
                 // we will handle failures ourselves, so that response is written once
                 // do this even if the authentication failure handler is not DefaultAuthFailureHandler because
                 // it might be the failure handler added by the Quarkus REST when it is present

@@ -26,7 +26,7 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.KeyStoreOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
@@ -127,8 +127,8 @@ public class FluentApiMTLSAuthenticationRequiredTest {
         }
 
         @Override
-        public SSLOptions getSSLOptions() {
-            SSLOptions options = new SSLOptions();
+        public ServerSSLOptions getServerSSLOptions() {
+            ServerSSLOptions options = new ServerSSLOptions();
             options.setKeyCertOptions(getKeyStoreOptions());
             options.setTrustOptions(getTrustStoreOptions());
             options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);

@@ -19,7 +19,7 @@ public class DevUIWebSocketHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext event) {
         if (WEBSOCKET.equalsIgnoreCase(event.request().getHeader(UPGRADE)) && !event.request().isEnded()) {
-            event.request().toWebSocket(new Handler<AsyncResult<ServerWebSocket>>() {
+            event.request().toWebSocket().onComplete(new Handler<AsyncResult<ServerWebSocket>>() {
                 @Override
                 public void handle(AsyncResult<ServerWebSocket> event) {
                     if (event.succeeded()) {

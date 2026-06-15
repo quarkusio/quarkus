@@ -3,6 +3,7 @@ package io.quarkus.stork;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -11,6 +12,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.config.ServiceConfig;
 
@@ -80,6 +82,18 @@ public class SmallRyeStorkRegistrationRecorder {
                                 LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, failure.getMessage());
                                 registrationLatch.countDown();
                             });
+
+            if (Infrastructure.canCallerThreadBeBlocked()) {
+                try {
+                    if (!registrationLatch.await(10, TimeUnit.SECONDS)) {
+                        LOGGER.warnf("Failed to deregister service '%s' - Timeout reached", serviceName);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } else {
+                LOGGER.debugf("Unable to wait for the service deregistration of '%s' - running on the event loop", serviceName);
+            }
 
         }
     }

@@ -78,7 +78,7 @@ public class TrustAllWithHttpClientHandshakeTest {
         WebClient client = WebClient.create(vertx, clientOptions);
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.get(8081, "localhost", "/").send(ar -> {
+        client.get(8081, "localhost", "/").send().onComplete(ar -> {
             assertThat(ar.succeeded()).isTrue();
             assertThat(ar.result().bodyAsString()).isEqualTo("Trust All OK");
             latch.countDown();

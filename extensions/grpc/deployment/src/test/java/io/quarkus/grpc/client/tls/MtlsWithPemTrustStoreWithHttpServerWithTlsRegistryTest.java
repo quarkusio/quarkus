@@ -35,10 +35,7 @@ class MtlsWithPemTrustStoreWithHttpServerWithTlsRegistryTest {
             quarkus.grpc.clients.hello.plain-text=false
 
             quarkus.grpc.clients.hello.tls-configuration-name=my-client
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
 
-            quarkus.grpc.server.use-separate-server=false
-            quarkus.grpc.server.plain-text=false # Force the client to use TLS for the tests
 
             quarkus.http.ssl.client-auth=REQUIRED
             quarkus.http.insecure-requests=disabled

@@ -21,6 +21,7 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -52,6 +53,12 @@ public class TlsBasicConnectorRuntimeTlsConfigurationTest {
             @Override
             public TrustOptions getTrustStoreOptions() {
                 return new JksOptions().setPath("truststore.jks").setPassword("secret");
+            }
+
+            @Override
+            public ClientSSLOptions getClientSSLOptions() {
+                return new ClientSSLOptions()
+                        .setTrustOptions(getTrustStoreOptions());
             }
         });
         WebSocketClientConnection connection = connector

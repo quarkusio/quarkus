@@ -307,7 +307,7 @@ public class Mailers {
                 cfg.setHostnameVerificationAlgorithm(configuration.getHostnameVerificationAlgorithm().get());
             }
 
-            SSLOptions sslOptions = configuration.getSSLOptions();
+            SSLOptions sslOptions = configuration.getClientSSLOptions();
             if (sslOptions != null) {
                 cfg.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
                 cfg.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());

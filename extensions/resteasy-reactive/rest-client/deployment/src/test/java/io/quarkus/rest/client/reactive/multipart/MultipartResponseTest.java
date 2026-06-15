@@ -41,6 +41,7 @@ import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyWriter;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.VertxException;
 
 public class MultipartResponseTest {
 
@@ -320,7 +321,7 @@ public class MultipartResponseTest {
         @Produces(MediaType.MULTIPART_FORM_DATA)
         @Path("/error")
         public MultipartData throwError() {
-            throw new RuntimeException("forced error");
+            throw VertxException.noStackTrace("forced error");
         }
 
         private static File createTempFileToDownload() throws IOException {

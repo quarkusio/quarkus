@@ -17,10 +17,10 @@ import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.grpc.Channel;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
-import io.vertx.core.Verticle;
+import io.vertx.core.Deployable;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.Deployment;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.internal.deployment.Deployment;
 
 abstract class HelloWorldNewServiceTestBase {
 
@@ -44,8 +44,8 @@ abstract class HelloWorldNewServiceTestBase {
         Set<String> deploymentIDs = internal.deploymentIDs();
         // should be just one, but in the worst case skip the test if not
         Assumptions.assumeTrue(deploymentIDs.size() == 1);
-        Deployment deployment = internal.getDeployment(deploymentIDs.iterator().next());
-        Set<Verticle> verticles = deployment.getVerticles();
+        Deployment deployment = internal.deploymentManager().deployment(deploymentIDs.iterator().next()).deployment();
+        Set<Deployable> verticles = deployment.instances();
         Assumptions.assumeTrue(verticles.size() > 1);
     }
 

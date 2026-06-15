@@ -212,7 +212,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private static String getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {
-        final Map<String, Cookie> cookies = routingContext.request().cookieMap();
+        final Map<String, Cookie> cookies = OidcUtils.cookieSetToMap(routingContext.request().cookies());
         return OidcUtils.getSessionCookie(routingContext.data(), cookies, oidcConfig, OidcUtils.SESSION_AT_COOKIE_NAME,
                 getAccessTokenCookieName(oidcConfig));
     }

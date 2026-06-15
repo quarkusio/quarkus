@@ -41,7 +41,7 @@ public class HttpCertificateUpdateEventListener {
         }
         CountDownLatch latch = new CountDownLatch(registrations.size());
         for (ServerRegistration server : registrations) {
-            server.server.updateSSLOptions(event.tlsConfiguration().getSSLOptions())
+            server.server.updateSSLOptions(event.tlsConfiguration().getServerSSLOptions())
                     .toCompletionStage().whenComplete(new BiConsumer<Boolean, Throwable>() {
                         @Override
                         public void accept(Boolean v, Throwable t) {

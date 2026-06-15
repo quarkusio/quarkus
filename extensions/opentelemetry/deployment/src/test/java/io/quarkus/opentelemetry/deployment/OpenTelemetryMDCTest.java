@@ -126,6 +126,7 @@ public class OpenTelemetryMDCTest {
         assertThat(testMdcCapturer.getCapturedMdcTracingEntries().size()).isEqualTo(6);
 
         List<MdcTracingEntry> mdcEntries = testMdcCapturer.getCapturedMdcTracingEntries();
+
         // 2 mdcEntries are repeated.
         assertThat(expectedMdcEntriesFromSpans).containsAll(mdcEntries.stream().distinct().toList());
 

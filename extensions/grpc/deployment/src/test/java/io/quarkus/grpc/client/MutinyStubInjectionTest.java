@@ -17,13 +17,14 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
@@ -36,7 +37,7 @@ public class MutinyStubInjectionTest {
                             MutinyGreeterGrpc.class, GreeterGrpc.class,
                             MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class, HelloWorldProto.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -66,7 +67,7 @@ public class MutinyStubInjectionTest {
         public String invoke(String s) {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
-                    .invoke(() -> assertThat(Vertx.currentContext()).isNull())
+                    .invoke(() -> assertThat(Vertx.currentContext()).isNotNull())
                     .map(r -> r + " " + Thread.currentThread().getName())
                     .await().atMost(Duration.ofSeconds(5));
         }

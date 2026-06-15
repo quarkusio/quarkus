@@ -15,8 +15,8 @@ import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MailerName;
 import io.quarkus.qute.CheckedTemplate;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 
 @Path("/mail")
 @Produces(MediaType.TEXT_PLAIN)

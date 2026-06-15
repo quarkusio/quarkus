@@ -31,9 +31,8 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithPemKeyStoreTest {
 
     static String configuration = """
-            quarkus.grpc.server.ssl.certificate=target/certs/grpc.crt
-            quarkus.grpc.server.ssl.key=target/certs/grpc.key
-            quarkus.grpc.server.alpn=true
+            quarkus.http.ssl.certificate.files=target/certs/grpc.crt
+            quarkus.http.ssl.certificate.key-files=target/certs/grpc.key
             """;
 
     @RegisterExtension
@@ -51,7 +50,7 @@ public class TlsWithPemKeyStoreTest {
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(certs)
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .useTransportSecurity()
                 .build();

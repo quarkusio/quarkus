@@ -12,7 +12,7 @@ import io.quarkus.it.hibernate.reactive.oracle.model.FriesianCow;
 import io.quarkus.it.hibernate.reactive.oracle.model.GuineaPig;
 import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.oracleclient.OraclePool;
+import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -27,7 +27,7 @@ public class HibernateReactiveTestEndpoint {
     // Injecting a Vert.x Pool is not required, it's only used to
     // independently validate the contents of the database for the test
     @Inject
-    OraclePool oraclePool;
+    Pool oraclePool;
 
     @GET
     @Path("/reactiveFindNativeQuery")

@@ -1,7 +1,8 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.VertxMetricsFactory;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
@@ -23,24 +24,25 @@ public class OpenTelemetryVertxMetricsFactory implements VertxMetricsFactory {
     public VertxMetrics metrics(final VertxOptions options) {
         return new VertxMetrics() {
             @Override
-            public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(final HttpServerOptions options,
-                    final SocketAddress localAddress) {
+            public HttpServerMetrics<?, ?> createHttpServerMetrics(HttpServerConfig config, SocketAddress tcpLocalAddress,
+                    SocketAddress udpLocalAddress) {
                 return new OpenTelemetryVertxServerMetrics();
             }
         };
     }
 
     public static class OpenTelemetryVertxServerMetrics
-            implements HttpServerMetrics<MetricRequest, Object, Object> {
+            implements HttpServerMetrics<MetricRequest, Object> {
         @Override
-        public MetricRequest requestBegin(final Object socketMetric, final HttpRequest request) {
+        public MetricRequest requestBegin(SocketAddress remoteAddress, HttpRequest request) {
             return MetricRequest.request(request);
         }
 
         @Override
         public void requestRouted(final MetricRequest requestMetric, final String route) {
             if (route != null) {
-                requestMetric.getContext().ifPresent(context -> context.putLocal("VertxRoute", route));
+                requestMetric.getContext()
+                        .ifPresent(context -> context.getLocal(VertxContext.DATA_MAP_LOCAL).put("VertxRoute", route));
             }
         }
     }

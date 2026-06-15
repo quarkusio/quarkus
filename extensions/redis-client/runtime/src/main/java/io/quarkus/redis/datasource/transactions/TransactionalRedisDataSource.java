@@ -21,7 +21,7 @@ import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.smallrye.common.annotation.Experimental;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 /**
  * Redis Data Source object used to execute commands in a Redis transaction ({@code MULTI}).
@@ -519,14 +519,5 @@ public interface TransactionalRedisDataSource {
      * @param args the parameters, encoded as String.
      */
     void execute(Command command, String... args);
-
-    /**
-     * Executes a command.
-     * This method is used to execute commands not offered by the API.
-     *
-     * @param command the command
-     * @param args the parameters, encoded as String.
-     */
-    void execute(io.vertx.redis.client.Command command, String... args);
 
 }

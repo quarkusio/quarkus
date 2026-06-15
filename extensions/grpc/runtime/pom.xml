@@ -82,6 +82,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpcio-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpcio-server</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
@@ -102,7 +112,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
-            <artifactId>smallrye-common-vertx-context</artifactId>
+            <artifactId>smallrye-common-vertx5-context</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

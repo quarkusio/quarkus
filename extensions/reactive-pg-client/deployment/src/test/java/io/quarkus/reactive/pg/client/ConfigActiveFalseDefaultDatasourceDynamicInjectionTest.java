@@ -14,7 +14,6 @@ import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
 
 public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
@@ -29,12 +28,6 @@ public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
     @Inject
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
 
-    @Inject
-    InjectableInstance<PgPool> vendorPool;
-
-    @Inject
-    InjectableInstance<io.vertx.mutiny.pgclient.PgPool> mutinyVendorPool;
-
     @Test
     public void pool() {
         doTest(pool, Pool::getConnection);
@@ -43,16 +36,6 @@ public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, Pool::getConnection);
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

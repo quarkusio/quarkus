@@ -77,7 +77,7 @@ public class VertxOutputStream extends OutputStream {
 
     private void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
-            response.end((Handler<AsyncResult<Void>>) null);
+            response.end();
             return;
         }
         //do all this in the same lock
@@ -86,10 +86,10 @@ public class VertxOutputStream extends OutputStream {
                 awaitWriteable();
                 if (last) {
                     if (!response.ended()) { // can happen when an exception occurs during JSON serialization with Jackson
-                        response.end(createBuffer(data), null);
+                        response.end(createBuffer(data));
                     }
                 } else {
-                    response.write(createBuffer(data), null);
+                    response.write(createBuffer(data));
                 }
             } catch (Exception e) {
                 if (data != null && data.refCnt() > 0) {

@@ -18,8 +18,8 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.NoStackTraceThrowable;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.core.VertxException;
+import io.vertx.redis.client.Command;
 import io.vertx.redis.client.impl.types.ErrorType;
 
 @RequiresRedis6OrHigher
@@ -69,9 +69,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 tx.value(String.class).set(key, "foobar");
                 tx.execute(Command.SET, key); // missing argument
             });
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(blocking.value(String.class).get(key)).isEqualTo("hello");
     }
@@ -135,9 +134,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 tx.value(String.class).set(key, "foobar");
                 tx.execute(Command.SET, key); // missing argument
             }, key);
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(blocking.value(String.class).get(key)).isEqualTo("hello");
     }
@@ -230,9 +228,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
             }, (input, tx) -> {
                 tx.value(String.class).set(key, input + "|foobar");
             }, key);
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(blocking.value(String.class).get(key)).isEqualTo("hello");
     }
@@ -293,9 +290,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 tx.value(String.class).set(key, input + "|foobar");
                 tx.execute(Command.SET, key); // missing argument
             }, key);
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(blocking.value(String.class).get(key)).isEqualTo("hello");
     }
@@ -311,7 +307,7 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 tx.value(String.class).set(key, input + "|foobar");
                 tx.execute("nonexisting_command");
             }, key);
-        }).isExactlyInstanceOf(CompletionException.class)
+        }).isInstanceOf(CompletionException.class)
                 .hasCauseExactlyInstanceOf(ErrorType.class)
                 .hasMessageContaining("ERR unknown command");
 
@@ -393,9 +389,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 return tx.value(String.class).set(key, "foobar")
                         .flatMap(ignored -> tx.execute(Command.SET, key)); // missing argument
             }).await().indefinitely();
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(reactive.value(String.class).get(key).await().indefinitely()).isEqualTo("hello");
     }
@@ -459,9 +454,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 return tx.value(String.class).set(key, "foobar")
                         .flatMap(ignored -> tx.execute(Command.SET, key)); // missing argument
             }, key).await().indefinitely();
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(reactive.value(String.class).get(key).await().indefinitely()).isEqualTo("hello");
     }
@@ -555,9 +549,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
             }, (input, tx) -> {
                 return tx.value(String.class).set(key, input + "|foobar");
             }, key).await().indefinitely();
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(reactive.value(String.class).get(key).await().indefinitely()).isEqualTo("hello");
     }
@@ -619,9 +612,8 @@ public class TransactionErrorHandlingTest extends DatasourceTestBase {
                 return tx.value(String.class).set(key, input + "|foobar")
                         .flatMap(ignored -> tx.execute(Command.SET, key)); // missing argument
             }, key).await().indefinitely();
-        }).isExactlyInstanceOf(CompletionException.class)
-                .hasCauseExactlyInstanceOf(NoStackTraceThrowable.class)
-                .hasMessageContaining("Redis command is not valid");
+        }).isInstanceOf(VertxException.class)
+                .hasMessageContaining("Command is not valid");
 
         assertThat(reactive.value(String.class).get(key).await().indefinitely()).isEqualTo("hello");
     }

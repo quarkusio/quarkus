@@ -4,39 +4,41 @@ permissions:
   contents: read
   actions: write
 
-on:
-  push:
-    branches-ignore:
-      - 'dependabot/**'
-      - '3.0'
-    paths:
-      - 'core/processor/**'
-      - 'devtools/config-doc-maven-plugin/**'
-      - 'docs/**'
-      - 'extensions/**/pom.xml'
-      - 'extensions/**/*Config*.java'
-      - 'extensions/core/runtime/pom.xml'
-      - 'extensions/core/runtime/**/*Config*.java'
-      - 'extensions/core/deployment/pom.xml'
-      - 'extensions/core/deployment/**/*Config*.java'
-      - 'test-framework/jacoco/**/pom.xml'
-      - 'test-framework/jacoco/**/*Config*.java'
-      - '.github/workflows/doc-build.yml'
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'core/processor/**'
-      - 'devtools/config-doc-maven-plugin/**'
-      - 'docs/**'
-      - 'extensions/**/pom.xml'
-      - 'extensions/**/*Config*.java'
-      - 'extensions/core/runtime/pom.xml'
-      - 'extensions/core/runtime/**/*Config*.java'
-      - 'extensions/core/deployment/pom.xml'
-      - 'extensions/core/deployment/**/*Config*.java'
-      - 'test-framework/jacoco/**/pom.xml'
-      - 'test-framework/jacoco/**/*Config*.java'
-      - '.github/workflows/doc-build.yml'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  push:
+#    branches-ignore:
+#      - 'dependabot/**'
+#      - '3.0'
+#    paths:
+#      - 'core/processor/**'
+#      - 'devtools/config-doc-maven-plugin/**'
+#      - 'docs/**'
+#      - 'extensions/**/pom.xml'
+#      - 'extensions/**/*Config*.java'
+#      - 'extensions/core/runtime/pom.xml'
+#      - 'extensions/core/runtime/**/*Config*.java'
+#      - 'extensions/core/deployment/pom.xml'
+#      - 'extensions/core/deployment/**/*Config*.java'
+#      - 'test-framework/jacoco/**/pom.xml'
+#      - 'test-framework/jacoco/**/*Config*.java'
+#      - '.github/workflows/doc-build.yml'
+#  pull_request:
+#    types: [opened, synchronize, reopened]
+#    paths:
+#      - 'core/processor/**'
+#      - 'devtools/config-doc-maven-plugin/**'
+#      - 'docs/**'
+#      - 'extensions/**/pom.xml'
+#      - 'extensions/**/*Config*.java'
+#      - 'extensions/core/runtime/pom.xml'
+#      - 'extensions/core/runtime/**/*Config*.java'
+#      - 'extensions/core/deployment/pom.xml'
+#      - 'extensions/core/deployment/**/*Config*.java'
+#      - 'test-framework/jacoco/**/pom.xml'
+#      - 'test-framework/jacoco/**/*Config*.java'
+#      - '.github/workflows/doc-build.yml'
+on: [workflow_dispatch]
 
 concurrency:
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"

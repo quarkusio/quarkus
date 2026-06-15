@@ -4,17 +4,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.stream.IntStream;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
@@ -35,6 +28,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.PoolOptions;
 
 public class DrainTest {
 
@@ -46,59 +47,79 @@ public class DrainTest {
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
-    HttpClient client;
-
     @Test
     @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    void testAsyncHttp1() {
-        client = createJavaHttpClient();
-        long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                .sum();
-        System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
-        Assertions.assertThat(sum).isEqualTo(1000000000);
+    void testAsyncHttp1() throws Exception {
+        runTest("/test/bytesAsync", createHttp1Options());
     }
 
     @Test
     @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    void testSyncHttp1() {
-        client = createJavaHttpClient();
-        long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .sum();
-        System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
-        Assertions.assertThat(sum).isEqualTo(1000000000);
+    void testSyncHttp1() throws Exception {
+        runTest("/test/bytesSync", createHttp1Options());
     }
 
     @Test
     @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    void testAsyncHttp2() {
-        client = createJavaHttp2Client();
-        long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                //.peek(i -> System.out.println(Instant.now() + " Got response: " + i))
-                .sum();
-        System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
-        Assertions.assertThat(sum).isEqualTo(1000000000);
+    void testAsyncHttp2() throws Exception {
+        runTest("/test/bytesAsync", createHttp2Options());
     }
 
     @Test
     @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    void testSyncHttp2() {
-        client = createJavaHttp2Client();
-        long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .sum();
-        System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
-        Assertions.assertThat(sum).isEqualTo(1000000000);
+    void testSyncHttp2() throws Exception {
+        runTest("/test/bytesSync", createHttp2Options());
+    }
+
+    private void runTest(String path, HttpClientOptions options) throws Exception {
+        int num = 10_000;
+        Vertx vertx = Vertx.vertx();
+        try {
+            HttpClient client = vertx.createHttpClient(options, new PoolOptions().setHttp1MaxSize(64));
+            CountDownLatch latch = new CountDownLatch(num);
+            AtomicLong sum = new AtomicLong();
+            AtomicReference<Throwable> failure = new AtomicReference<>();
+
+            for (int i = 0; i < num; i++) {
+                client.request(HttpMethod.GET, path)
+                        .compose(HttpClientRequest::send)
+                        .compose(HttpClientResponse::body)
+                        .onSuccess(body -> {
+                            sum.addAndGet(body.length());
+                            latch.countDown();
+                        })
+                        .onFailure(err -> {
+                            failure.compareAndSet(null, err);
+                            latch.countDown();
+                        });
+            }
+
+            Assertions.assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+            if (failure.get() != null) {
+                Assertions.fail("Request failed", failure.get());
+            }
+            Assertions.assertThat(sum.get()).isEqualTo(1_000_000_000L);
+        } finally {
+            vertx.close().toCompletionStage().toCompletableFuture().get();
+        }
+    }
+
+    private static HttpClientOptions createHttp1Options() {
+        return new HttpClientOptions()
+                .setDefaultHost("localhost")
+                .setDefaultPort(8444)
+                .setSsl(true)
+                .setTrustAll(true);
+    }
+
+    private static HttpClientOptions createHttp2Options() {
+        return new HttpClientOptions()
+                .setDefaultHost("localhost")
+                .setDefaultPort(8444)
+                .setSsl(true)
+                .setTrustAll(true)
+                .setUseAlpn(true)
+                .setProtocolVersion(HttpVersion.HTTP_2);
     }
 
     public interface Data {
@@ -147,51 +168,6 @@ public class DrainTest {
             entityStream.write(data.bytes());
         }
 
-    }
-
-    int get(String uri) {
-        var request = HttpRequest.newBuilder(URI.create(uri)).GET().build();
-        var response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).join();
-        return response.body().length;
-    }
-
-    private static HttpClient createJavaHttpClient() {
-        try {
-            var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
-            return HttpClient.newBuilder().sslContext(sslContext).build();
-        } catch (Throwable t) {
-            throw new RuntimeException("Unable to create HTTP client");
-        }
-    }
-
-    private static HttpClient createJavaHttp2Client() {
-        try {
-            var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
-            return HttpClient.newBuilder().sslContext(sslContext).version(HttpClient.Version.HTTP_2).build();
-        } catch (Throwable t) {
-            throw new RuntimeException("Unable to create HTTP client");
-        }
-    }
-
-    private enum AllowAllTrustManager implements X509TrustManager {
-        INSTANCE;
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) {
-            // do nothing
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) {
-            // do nothing
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
     }
 
 }

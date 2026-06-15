@@ -3,10 +3,12 @@ name: Sonarcloud Analysis
 permissions:
   contents: read
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '30 5 * * 0'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    - cron: '30 5 * * 0'
+on: [workflow_dispatch]
 env:
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 jobs:

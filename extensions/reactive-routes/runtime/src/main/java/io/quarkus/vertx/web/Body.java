@@ -8,16 +8,16 @@ import java.lang.annotation.Target;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.RequestBody;
 
 /**
  * Identifies a route method parameter that should be injected with a value returned from:
  * <ul>
- * <li>{@link RoutingContext#getBody()} for type {@link Buffer}</li>
- * <li>{@link RoutingContext#getBodyAsString()} for type {@link String}</li>
- * <li>{@link RoutingContext#getBodyAsJson()} for type {@link JsonObject}</li>
- * <li>{@link RoutingContext#getBodyAsJsonArray()} for type {@link JsonArray}</li>
- * <li>{@link RoutingContext#getBodyAsJson()} and {@link JsonObject#mapTo(Class)} for any other type</li>
+ * <li>{@link RequestBody#buffer()} for type {@link Buffer}</li>
+ * <li>{@link RequestBody#asString()} for type {@link String}</li>
+ * <li>{@link RequestBody#asJsonObject()} for type {@link JsonObject}</li>
+ * <li>{@link RequestBody#asJsonArray()} for type {@link JsonArray}</li>
+ * <li>{{@link JsonObject#mapTo(Class)} for any other type</li>
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)

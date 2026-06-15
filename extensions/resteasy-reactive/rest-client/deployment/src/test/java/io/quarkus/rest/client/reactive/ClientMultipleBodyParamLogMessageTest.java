@@ -17,7 +17,10 @@ class ClientMultipleBodyParamLogMessageTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(Client.class));
+                    .addClass(Client.class))
+            .overrideConfigKey(
+                    "quarkus.log.category.\"org.jboss.resteasy.reactive.common.processor.EndpointIndexer\".level",
+                    "OFF");
 
     @Test
     void basicTest() {

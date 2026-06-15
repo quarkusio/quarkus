@@ -56,9 +56,9 @@
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>3.2.1</mutiny.version>
-        <smallrye-mutiny-vertx-core.version>3.22.2</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>4.0.0-beta2</smallrye-mutiny-vertx-core.version>
         <smallrye-common.version>2.19.0</smallrye-common.version>
-        <vertx.version>4.5.28</vertx.version>
+        <vertx.version>5.1.2</vertx.version>
         <rest-assured.version>6.0.0</rest-assured.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.22.0</jackson-bom.version>

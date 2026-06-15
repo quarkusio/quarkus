@@ -9,8 +9,8 @@ import java.util.Map;
 import io.quarkus.redis.datasource.hash.ReactiveHashScanCursor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands implements ReactiveHashScanCursor<F, V> {
 

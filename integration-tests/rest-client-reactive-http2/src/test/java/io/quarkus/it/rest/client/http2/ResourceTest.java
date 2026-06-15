@@ -67,7 +67,7 @@ public class ResourceTest {
     private HttpResponse<?> call(URL url) throws Exception {
         CompletableFuture<HttpResponse<Buffer>> result = new CompletableFuture<>();
         webClient.get(url.getPort(), url.getHost(), url.getPath())
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         result.complete(ar.result());
                     } else {

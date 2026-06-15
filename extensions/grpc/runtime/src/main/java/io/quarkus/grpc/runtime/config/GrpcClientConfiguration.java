@@ -1,13 +1,10 @@
 package io.quarkus.grpc.runtime.config;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -15,31 +12,6 @@ import io.smallrye.config.WithDefault;
 public interface GrpcClientConfiguration {
 
     String DNS = "dns";
-    String XDS = "xds";
-
-    /**
-     * Use new Vert.x gRPC client support.
-     * By default, we still use previous Java gRPC support.
-     */
-    @WithDefault("false")
-    boolean useQuarkusGrpcClient();
-
-    /**
-     * Use Vert.x event loop(s) for gRPC client, if it's using the previous Java gRPC support.
-     */
-    @WithDefault("true")
-    boolean useVertxEventLoop();
-
-    /**
-     * Configure XDS usage, if enabled.
-     */
-    @ConfigDocSection(generated = true)
-    ClientXds xds();
-
-    /**
-     * Configure InProcess usage, if enabled.
-     */
-    InProcess inProcess();
 
     /**
      * Configure Stork usage with new Vert.x gRPC, if enabled.
@@ -49,11 +21,12 @@ public interface GrpcClientConfiguration {
     /**
      * The gRPC service port.
      */
-    @WithDefault("9000")
+    @WithDefault("8080")
     int port();
 
     /**
      * The gRPC service test port.
+     * If not set, uses 8081 for plain text and 8444 when TLS is used.
      */
     OptionalInt testPort();
 
@@ -62,12 +35,6 @@ public interface GrpcClientConfiguration {
      */
     @WithDefault("localhost")
     String host();
-
-    /**
-     * The SSL/TLS config.
-     * Only use this if you want to use the old Java gRPC client.
-     */
-    SslClientConfig ssl();
 
     /**
      * The name of the TLS configuration to use.
@@ -85,7 +52,6 @@ public interface GrpcClientConfiguration {
 
     /**
      * The TLS config.
-     * Only use this if you want to use the Quarkus gRPC client.
      */
     TlsClientConfig tls();
 
@@ -101,16 +67,6 @@ public interface GrpcClientConfiguration {
      * Enabled by default, except if TLS/SSL is configured. In this case, {@code plain-text} is disabled.
      */
     Optional<Boolean> plainText();
-
-    /**
-     * The duration after which a keep alive ping is sent.
-     */
-    Optional<Duration> keepAliveTime();
-
-    /**
-     * The flow control window in bytes. Default is 1MiB.
-     */
-    OptionalInt flowControlWindow();
 
     /**
      * The duration without ongoing RPCs before going to idle mode.
@@ -129,76 +85,10 @@ public interface GrpcClientConfiguration {
     boolean keepAliveWithoutCalls();
 
     /**
-     * The max number of hedged attempts.
-     */
-    @WithDefault("5")
-    int maxHedgedAttempts();
-
-    /**
-     * The max number of retry attempts.
-     * Retry must be explicitly enabled.
-     */
-    @WithDefault("5")
-    int maxRetryAttempts();
-
-    /**
-     * The maximum number of channel trace events to keep in the tracer for each channel or sub-channel.
-     */
-    OptionalInt maxTraceEvents();
-
-    /**
      * The maximum message size allowed for a single gRPC frame (in bytes).
      * Default is 4 MiB.
      */
     OptionalInt maxInboundMessageSize();
-
-    /**
-     * The maximum size of metadata allowed to be received (in bytes).
-     * Default is 8192B.
-     */
-    OptionalInt maxInboundMetadataSize();
-
-    /**
-     * The negotiation type for the HTTP/2 connection.
-     * Accepted values are: {@code TLS}, {@code PLAINTEXT_UPGRADE}, {@code PLAINTEXT}
-     */
-    @WithDefault("TLS")
-    String negotiationType();
-
-    /**
-     * Overrides the authority used with TLS and HTTP virtual hosting.
-     */
-    Optional<String> overrideAuthority();
-
-    /**
-     * The per RPC buffer limit in bytes used for retry.
-     */
-    OptionalLong perRpcBufferLimit();
-
-    /**
-     * Whether retry is enabled.
-     * Note that retry is disabled by default.
-     */
-    @WithDefault("false")
-    boolean retry();
-
-    /**
-     * The retry buffer size in bytes.
-     */
-    OptionalLong retryBufferSize();
-
-    /**
-     * Use a custom user-agent.
-     */
-    Optional<String> userAgent();
-
-    /**
-     * Use a custom load balancing policy.
-     * Accepted values are: {@code pick_first}, {@code round_robin}, {@code grpclb}.
-     * This value is ignored if name-resolver is set to 'stork'.
-     */
-    @WithDefault("pick_first")
-    String loadBalancingPolicy();
 
     /**
      * The compression to use for each call. The accepted values are {@code gzip} and {@code identity}.
@@ -209,31 +99,6 @@ public interface GrpcClientConfiguration {
      * The deadline used for each call.
      */
     Optional<Duration> deadline();
-
-    /**
-     * Shared configuration for setting up client-side SSL.
-     */
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    @ConfigGroup
-    interface SslClientConfig {
-        /**
-         * The classpath path or file path to a server certificate or certificate chain in PEM format.
-         */
-        Optional<Path> certificate();
-
-        /**
-         * The classpath path or file path to the corresponding certificate private key file in PEM format.
-         */
-        Optional<Path> key();
-
-        /**
-         * An optional trust store which holds the certificate information of the certificates to trust
-         *
-         * The trust store can be either on classpath or in an external file.
-         */
-        Optional<Path> trustStore();
-
-    }
 
     @ConfigGroup
     interface TlsClientConfig {
@@ -351,18 +216,6 @@ public interface GrpcClientConfiguration {
 
         }
 
-    }
-
-    /**
-     * Client XDS config
-     * * <a href="https://github.com/grpc/grpc-java/tree/master/examples/example-xds">XDS usage</a>
-     */
-    @ConfigGroup
-    interface ClientXds extends GrpcServerConfiguration.Xds {
-        /**
-         * Optional explicit target.
-         */
-        Optional<String> target();
     }
 
     /**

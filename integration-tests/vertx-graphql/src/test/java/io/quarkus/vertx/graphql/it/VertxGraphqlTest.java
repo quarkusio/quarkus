@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,8 +23,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.graphql.ws.MessageType;
@@ -45,9 +44,7 @@ class VertxGraphqlTest {
 
     @AfterAll
     public static void closeVertx() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        vertx.close((h) -> latch.countDown());
-        latch.await();
+        vertx.close().await();
     }
 
     @Test
@@ -59,13 +56,13 @@ class VertxGraphqlTest {
 
     @Test
     public void testWebSocketSubProtocol() throws Exception {
-        HttpClient httpClient = vertx.createHttpClient();
+        WebSocketClient wsClient = vertx.createWebSocketClient();
         WebSocketConnectOptions options = new WebSocketConnectOptions().setPort(getPortFromConfig())
                 .addSubProtocol("graphql-transport-ws").setURI("/graphql");
         JsonObject init = new JsonObject().put("type", CONNECTION_INIT.getText());
         String graphql = "{\"id\" : \"2\", \"type\" : \"subscribe\", \"payload\" : { \"query\" : \"{ hello }\" } }";
         CompletableFuture<JsonObject> wsFuture = new CompletableFuture<>();
-        wsFuture.whenComplete((r, t) -> httpClient.close());
+        wsFuture.whenComplete((r, t) -> wsClient.close());
 
         /*
          * Protocol:
@@ -76,7 +73,7 @@ class VertxGraphqlTest {
          * <----- data <-------
          */
 
-        httpClient.webSocket(options, ws -> {
+        wsClient.connect(options).onComplete(ws -> {
             AtomicReference<MessageType> lastReceivedType = new AtomicReference<>();
             AtomicReference<JsonObject> result = new AtomicReference<>();
             if (ws.succeeded()) {

@@ -120,7 +120,8 @@ public class GraphQLOpenTelemetryTest {
     }
 
     @Test
-    @Disabled // TODO: flaky test, find out how to fix it
+    @Disabled
+    // TODO: flaky test, find out how to fix it
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
                 "  helloAfterSecond\n" +

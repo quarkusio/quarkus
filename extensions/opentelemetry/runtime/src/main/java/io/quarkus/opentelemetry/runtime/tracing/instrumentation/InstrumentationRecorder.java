@@ -9,6 +9,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.EventBusInstrumenterVertxTracer;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.GrpcHttpInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.HttpInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.InstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.OpenTelemetryVertxHttpMetricsFactory;
@@ -20,9 +21,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.SqlClientI
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.metrics.MetricsOptions;
-import io.vertx.core.tracing.TracingOptions;
+import io.vertx.core.internal.VertxBootstrap;
 
 @Recorder
 public class InstrumentationRecorder {
@@ -41,26 +40,29 @@ public class InstrumentationRecorder {
 
     /* RUNTIME INIT */
     @RuntimeInit
-    public Consumer<VertxOptions> getVertxTracingOptions() {
+    public Consumer<VertxBootstrap> processVertxBootstrap() {
         if (runtimeConfig.getValue().sdkDisabled()) {
-            return vertxOptions -> {
+            return bootstrap -> {
             };
         }
-        TracingOptions tracingOptions = new TracingOptions()
-                .setFactory(FACTORY);
-        return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
+        return bootstrap -> bootstrap.tracerFactory(FACTORY);
     }
 
     /* RUNTIME INIT */
     @RuntimeInit
-    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable, boolean redisClientAvailable) {
+    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable, boolean redisClientAvailable,
+            boolean grpcAvailable) {
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class); // always force initialization of OTel
 
         if (runtimeConfig.getValue().sdkDisabled()) {
             return;
         }
 
-        List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
+        List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(5);
+        if (grpcAvailable && buildConfig.instrument().grpc()
+                && runtimeConfig.getValue().instrument().vertxHttp()) {
+            tracers.add(new GrpcHttpInstrumenterVertxTracer(openTelemetry));
+        }
         if (runtimeConfig.getValue().instrument().vertxHttp()) {
             tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue(), buildConfig));
         }
@@ -78,19 +80,13 @@ public class InstrumentationRecorder {
     }
 
     /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxHttpMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
-                .setFactory(new OpenTelemetryVertxHttpMetricsFactory());
-        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
+    public Consumer<VertxBootstrap> getVertxHttpMetrics() {
+        return bootstrap -> bootstrap.metricsFactory(new OpenTelemetryVertxHttpMetricsFactory());
     }
 
     /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
-                .setFactory(new OpenTelemetryVertxMetricsFactory());
-        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
+    public Consumer<VertxBootstrap> getVertxMetricsOptions() {
+        return bootstrap -> bootstrap.metricsFactory(new OpenTelemetryVertxMetricsFactory());
     }
 
 }

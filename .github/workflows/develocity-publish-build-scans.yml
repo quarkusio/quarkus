@@ -1,9 +1,11 @@
 name: Develocity - Publish Maven Build Scans
 
-on:
-  workflow_run:
-    workflows: [ "Quarkus CI" ]
-    types: [ completed ]
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_run:
+#    workflows: [ "Quarkus CI" ]
+#    types: [ completed ]
+on: [workflow_dispatch]
 
 defaults:
   run:

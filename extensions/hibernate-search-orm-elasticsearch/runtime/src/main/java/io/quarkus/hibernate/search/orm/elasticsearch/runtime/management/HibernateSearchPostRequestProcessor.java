@@ -53,18 +53,18 @@ class HibernateSearchPostRequestProcessor {
             } else {
                 ctx.response()
                         .setChunked(true)
-                        .write(message(202, "Reindexing started"),
-                                ignored -> massIndexerFuture.whenComplete((ignored2, throwable) -> {
-                                    if (throwable == null) {
-                                        ctx.response().end(message(200, "Reindexing succeeded"));
-                                    } else {
-                                        ctx.response().end(message(
-                                                500,
-                                                "Reindexing failed:\n" + Arrays.stream(throwable.getStackTrace())
-                                                        .map(Object::toString)
-                                                        .collect(Collectors.joining("\n"))));
-                                    }
-                                }));
+                        .write(message(202, "Reindexing started"))
+                        .onComplete(ignored -> massIndexerFuture.whenComplete((ignored2, throwable) -> {
+                            if (throwable == null) {
+                                ctx.response().end(message(200, "Reindexing succeeded"));
+                            } else {
+                                ctx.response().end(message(
+                                        500,
+                                        "Reindexing failed:\n" + Arrays.stream(throwable.getStackTrace())
+                                                .map(Object::toString)
+                                                .collect(Collectors.joining("\n"))));
+                            }
+                        }));
             }
         }
     }

@@ -12,7 +12,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
-@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class MultiNdjsonSupport {
 
     private MultiNdjsonSupport() {
@@ -63,7 +62,7 @@ public class MultiNdjsonSupport {
             @Override
             public void onNext(Buffer item) {
                 initialize(response, rc);
-                response.write(item, ar -> onWriteDone(upstream, ar, rc));
+                response.write(item).onComplete(ar -> onWriteDone(upstream, ar, rc));
             }
 
             @Override

@@ -76,17 +76,17 @@ public class ProtocolEnforcementTest {
         server = vertx.createHttpServer(new HttpServerOptions()
                 .setSsl(true)
                 .setKeyCertOptions(serverConfig.getKeyStoreOptions())
-                .setEnabledSecureTransportProtocols(serverConfig.getSSLOptions().getEnabledSecureTransportProtocols()))
+                .setEnabledSecureTransportProtocols(serverConfig.getServerSSLOptions().getEnabledSecureTransportProtocols()))
                 .requestHandler(rc -> rc.response().end("TLSv1.3 OK"))
                 .listen(8081).toCompletionStage().toCompletableFuture().join();
 
         WebClient client = WebClient.create(vertx, new WebClientOptions()
                 .setSsl(true)
                 .setTrustOptions(clientConfig.getTrustStoreOptions())
-                .setEnabledSecureTransportProtocols(clientConfig.getSSLOptions().getEnabledSecureTransportProtocols()));
+                .setEnabledSecureTransportProtocols(clientConfig.getClientSSLOptions().getEnabledSecureTransportProtocols()));
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.get(8081, "localhost", "/").send(ar -> {
+        client.get(8081, "localhost", "/").send().onComplete(ar -> {
             assertThat(ar.succeeded()).isTrue();
             assertThat(ar.result().bodyAsString()).isEqualTo("TLSv1.3 OK");
             latch.countDown();
@@ -103,14 +103,14 @@ public class ProtocolEnforcementTest {
         server = vertx.createHttpServer(new HttpServerOptions()
                 .setSsl(true)
                 .setKeyCertOptions(serverConfig.getKeyStoreOptions())
-                .setEnabledSecureTransportProtocols(serverConfig.getSSLOptions().getEnabledSecureTransportProtocols()))
+                .setEnabledSecureTransportProtocols(serverConfig.getServerSSLOptions().getEnabledSecureTransportProtocols()))
                 .requestHandler(rc -> rc.response().end("Should not reach"))
                 .listen(8081).toCompletionStage().toCompletableFuture().join();
 
         WebClient client = WebClient.create(vertx, new WebClientOptions()
                 .setSsl(true)
                 .setTrustOptions(clientConfig.getTrustStoreOptions())
-                .setEnabledSecureTransportProtocols(clientConfig.getSSLOptions().getEnabledSecureTransportProtocols()));
+                .setEnabledSecureTransportProtocols(clientConfig.getClientSSLOptions().getEnabledSecureTransportProtocols()));
 
         assertThatThrownBy(() -> client.get(8081, "localhost", "/")
                 .send().toCompletionStage().toCompletableFuture().join())

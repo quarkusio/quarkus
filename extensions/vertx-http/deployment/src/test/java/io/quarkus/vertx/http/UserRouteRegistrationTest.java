@@ -66,7 +66,7 @@ public class UserRouteRegistrationTest {
             router.route("/inject").handler(rc -> rc.response().end("inject - ok"));
             router.route().failureHandler(rc -> rc.failure().printStackTrace());
             router.route("/body").consumes("text/plain").handler(BodyHandler.create())
-                    .handler(rc -> rc.response().end(rc.getBodyAsString()));
+                    .handler(rc -> rc.response().end(rc.body().asString()));
         }
 
     }
@@ -80,7 +80,7 @@ public class UserRouteRegistrationTest {
         public void register(@Observes StartupEvent ignored) {
             router.route("/inject-mutiny").handler(rc -> rc.response().endAndForget("inject mutiny - ok"));
             router.route("/body-mutiny").consumes("text/plain").handler(io.vertx.mutiny.ext.web.handler.BodyHandler.create())
-                    .handler(rc -> rc.response().endAndForget(rc.getBodyAsString()));
+                    .handler(rc -> rc.response().endAndForget(rc.body().asString()));
         }
 
     }

@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.deployment.devservices;
 
-import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
+import static io.vertx.core.impl.SysProps.DISABLE_DNS_RESOLVER;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -92,7 +92,7 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
 
     private Vertx createVertx() {
         try (var ignored = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+                DISABLE_DNS_RESOLVER.name, "true")) {
             return Vertx.vertx(
                     new VertxOptions()
                             .setFileSystemOptions(

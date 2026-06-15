@@ -8,8 +8,6 @@ import static io.quarkus.vertx.http.HttpServer.HTTP_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.LOCAL_BASE_URI;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_PORT;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_TEST_PORT;
-import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP;
-import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
@@ -22,6 +20,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -121,16 +120,20 @@ import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
+import io.vertx.core.http.Http1ServerConfig;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.impl.Http1xServerConnection;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.QueryParamDecoderConfig;
+import io.vertx.core.http.WebSocketServerConfig;
+import io.vertx.core.http.impl.http1.Http1ServerConnection;
 import io.vertx.core.impl.Utils;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.net.impl.VertxHandler;
@@ -407,7 +410,8 @@ public class VertxHttpRecorder {
 
     public void mountFrameworkRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
             String frameworkPath) {
-        mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
+        String p = frameworkPath.endsWith("/") ? frameworkPath + "*" : frameworkPath + "/*";
+        mainRouter.getValue().route(p).subRouter(frameworkRouter.getValue());
     }
 
     public void finalizeRouter(
@@ -493,7 +497,8 @@ public class VertxHttpRecorder {
         } else {
             Router mainRouter = mainRouterRuntimeValue.isPresent() ? mainRouterRuntimeValue.get().getValue()
                     : Router.router(vertx.get());
-            mainRouter.mountSubRouter(rootPath, httpRouteRouter);
+            String p = rootPath.endsWith("/") ? rootPath + "*" : rootPath + "/*";
+            mainRouter.route(p).subRouter(httpRouteRouter);
 
             addHotReplacementHandlerIfNeeded(mainRouter);
             root = mainRouter;
@@ -728,7 +733,7 @@ public class VertxHttpRecorder {
         if (domainSocketOptionsForManagement != null) {
             vertx.createHttpServer(domainSocketOptionsForManagement)
                     .requestHandler(managementRouter)
-                    .listen(ar -> {
+                    .listen().onComplete(ar -> {
                         if (ar.failed()) {
                             managementInterfaceDomainSocketFuture.completeExceptionally(
                                     new IllegalStateException(
@@ -769,10 +774,20 @@ public class VertxHttpRecorder {
             httpManagementServerOptions = httpServerOptionsForManagement;
         }
 
+        // In Vert.x 5.1, if the configured port is 0, we need to switch to a socket address.
+        SocketAddress address;
+        if (httpServerOptionsForManagement != null && httpServerOptionsForManagement.getPort() <= 0) {
+            address = SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT,
+                    httpServerOptionsForManagement.getHost());
+        } else {
+            address = SocketAddress.inetSocketAddress(httpServerOptionsForManagement.getPort(),
+                    httpServerOptionsForManagement.getHost());
+        }
+
         if (httpManagementServerOptions != null) {
             vertx.createHttpServer(httpManagementServerOptions)
                     .requestHandler(managementRouter)
-                    .listen(ar -> {
+                    .listen(address).onComplete(ar -> {
                         if (ar.failed()) {
                             managementInterfaceFuture.completeExceptionally(
                                     new IllegalStateException("Unable to start the management interface on "
@@ -889,7 +904,7 @@ public class VertxHttpRecorder {
         AtomicBoolean registerHttpServer = new AtomicBoolean();
         AtomicBoolean registerHttpsServer = new AtomicBoolean();
 
-        vertx.deployVerticle(new Supplier<>() {
+        vertx.deployVerticle(new Supplier<Verticle>() {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(
@@ -897,7 +912,7 @@ public class VertxHttpRecorder {
                         launchMode, insecureRequestStrategy, connectionCount, registry, startEventsFired,
                         httpBuildTimeConfig, httpConfig, registerHttpServer, registerHttpsServer);
             }
-        }, new DeploymentOptions().setInstances(ioThreads), new Handler<>() {
+        }, new DeploymentOptions().setInstances(ioThreads)).onComplete(new Handler<AsyncResult<String>>() {
             @Override
             public void handle(AsyncResult<String> event) {
                 if (event.failed()) {
@@ -979,7 +994,7 @@ public class VertxHttpRecorder {
                         // shutdown main HTTP server
                         if (deploymentIdIfAny != null) {
                             try {
-                                vertx.undeploy(deploymentIdIfAny, handler);
+                                vertx.undeploy(deploymentIdIfAny).onComplete(handler);
                             } catch (Exception e) {
                                 if (e instanceof RejectedExecutionException) {
                                     // Shutting down
@@ -997,10 +1012,10 @@ public class VertxHttpRecorder {
                                 TlsCertificateReloader.unschedule(vertx, id);
                             }
                             if (managementServer != null && !isVertxClose) {
-                                managementServer.close(handler);
+                                managementServer.close().onComplete(handler);
                             }
                             if (managementServerDomainSocket != null && !isVertxClose) {
-                                managementServerDomainSocket.close(handler);
+                                managementServerDomainSocket.close().onComplete(handler);
                             }
                         } catch (Exception e) {
                             LOGGER.warn("Unable to shutdown the management interface quietly", e);
@@ -1092,12 +1107,11 @@ public class VertxHttpRecorder {
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfig.determinePort(launchMode);
-        options.setPort(port == 0 ? RANDOM_PORT_MAIN_HTTP : port);
+        options.setPort(port <= 0
+                ? SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP, httpConfig.host()).port()
+                : port);
 
         HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, websocketSubProtocols);
-
-        httpConfig.websocketServer().maxFrameSize().ifPresent(s -> options.setMaxWebSocketFrameSize(s));
-        httpConfig.websocketServer().maxMessageSize().ifPresent(s -> options.setMaxWebSocketMessageSize(s));
 
         return options;
     }
@@ -1110,7 +1124,10 @@ public class VertxHttpRecorder {
         }
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfig.determinePort(launchMode);
-        options.setPort(port == 0 ? RANDOM_PORT_MANAGEMENT : port);
+        options.setPort(port == 0
+                ? SocketAddress.sharedRandomPort(HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT, httpConfig.host()).port()
+                : port);
+        System.out.println("Port set to " + options.getPort());
 
         HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(options, buildTimeConfig, httpConfig,
                 websocketSubProtocols);
@@ -1337,7 +1354,7 @@ public class VertxHttpRecorder {
         private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options,
                 Promise<Void> startFuture,
                 AtomicInteger remainingCount, ArcContainer container, boolean notifyStartObservers) {
-            httpServer.listen(SocketAddress.domainSocketAddress(options.getHost()), event -> {
+            httpServer.listen(SocketAddress.domainSocketAddress(options.getHost())).onComplete(event -> {
                 if (event.succeeded()) {
                     if (notifyStartObservers) {
                         container.beanManager().getEvent().select(DomainSocketServerStart.class)
@@ -1371,7 +1388,7 @@ public class VertxHttpRecorder {
 
             if (httpConfig.limits().maxConnections().isPresent() && httpConfig.limits().maxConnections().getAsInt() > 0) {
                 var tracker = vertx.isMetricsEnabled()
-                        ? ((ExtendedQuarkusVertxHttpMetrics) ((VertxInternal) vertx).metricsSPI()).getHttpConnectionTracker()
+                        ? ((ExtendedQuarkusVertxHttpMetrics) ((VertxInternal) vertx).metrics()).getHttpConnectionTracker()
                         : ExtendedQuarkusVertxHttpMetrics.NOOP_CONNECTION_TRACKER;
 
                 final int maxConnections = httpConfig.limits().maxConnections().getAsInt();
@@ -1401,7 +1418,10 @@ public class VertxHttpRecorder {
                     }
                 });
             }
-            httpServer.listen(options.getPort(), options.getHost(), new Handler<>() {
+            SocketAddress address = options.getPort() <= 0 ? SocketAddress.sharedRandomPort(
+                    https ? HttpServerOptionsUtils.RANDOM_PORT_MAIN_TLS : HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP,
+                    options.getHost()) : SocketAddress.inetSocketAddress(options.getPort(), options.getHost());
+            httpServer.listen(address).onComplete(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<HttpServer> event) {
                     if (event.cause() != null) {
@@ -1540,13 +1560,13 @@ public class VertxHttpRecorder {
             };
 
             if (httpServer != null) {
-                httpServer.close(handleClose);
+                httpServer.close().onComplete(handleClose);
             }
             if (httpsServer != null) {
-                httpsServer.close(handleClose);
+                httpsServer.close().onComplete(handleClose);
             }
             if (domainSocketServer != null) {
-                domainSocketServer.close(handleClose);
+                domainSocketServer.close().onComplete(handleClose);
             }
         }
 
@@ -1580,7 +1600,7 @@ public class VertxHttpRecorder {
 
         VertxInternal vertx = (VertxInternal) vertxRuntime;
         virtualBootstrap = new ServerBootstrap();
-        virtualBootstrap.group(vertx.getEventLoopGroup())
+        virtualBootstrap.group(vertx.eventLoopGroup())
                 .channel(VirtualServerChannel.class)
                 .handler(new ChannelInitializer<VirtualServerChannel>() {
                     @Override
@@ -1591,21 +1611,38 @@ public class VertxHttpRecorder {
                 .childHandler(new ChannelInitializer<VirtualChannel>() {
                     @Override
                     public void initChannel(VirtualChannel ch) throws Exception {
-                        ContextInternal rootContext = vertx.createEventLoopContext();
-                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
+                        // We are already on a Netty Event loop, just ask Vert.x to create a context from it.
+                        // This is the root context used by the HTTP connection (read and write MUST be done from
+                        // THAT event loop).
+                        ContextInternal rootContext = vertx.getOrCreateContext();
+                        HttpServerOptions options = createVirtualHttpServerOptions();
+                        VertxHandler<Http1ServerConnection> handler = VertxHandler.create(chctx -> {
 
-                            Http1xServerConnection conn = new Http1xServerConnection(
+                            Http1ServerConnection conn = new Http1ServerConnection(
+                                    io.vertx.core.ThreadingModel.EVENT_LOOP,
                                     () -> {
                                         ContextInternal duplicated = (ContextInternal) VertxContext
                                                 .getOrCreateDuplicatedContext(rootContext);
                                         setContextSafe(duplicated, true);
                                         return duplicated;
                                     },
+                                    false,
+                                    options.isHandle100ContinueAutomatically(),
                                     null,
-                                    createVirtualHttpServerOptions(),
+                                    null,
+                                    options.getMaxFormAttributeSize(),
+                                    options.getMaxFormFields(),
+                                    options.getMaxFormBufferedBytes(),
+                                    new QueryParamDecoderConfig(),
+                                    options.getHttp1Config() != null ? options.getHttp1Config() : new Http1ServerConfig(),
+                                    options.isRegisterWebSocketWriteHandlers(),
+                                    options.getWebSocketConfig() != null ? options.getWebSocketConfig()
+                                            : new WebSocketServerConfig(),
                                     chctx,
                                     rootContext,
                                     "localhost",
+                                    options.getTracingPolicy(),
+                                    null,
                                     null);
                             conn.handler(ACTUAL_ROOT);
                             return conn;
@@ -1646,6 +1683,17 @@ public class VertxHttpRecorder {
         return rootHandler;
     }
 
+    private static boolean isGrpc(RoutingContext rc) {
+        HttpServerRequest request = rc.request();
+        HttpVersion version = request.version();
+        if (HttpVersion.HTTP_1_0.equals(version) || HttpVersion.HTTP_1_1.equals(version)) {
+            LOGGER.debugf("Expecting %s, received %s - not a gRPC request", HttpVersion.HTTP_2, version);
+            return false;
+        }
+        String header = request.getHeader("content-type");
+        return header != null && header.toLowerCase(Locale.ROOT).startsWith("application/grpc"); //See https://chromium.googlesource.com/external/github.com/grpc/grpc/+/HEAD/doc/PROTOCOL-HTTP2.md
+    }
+
     private static Handler<RoutingContext> configureAndGetBody(Optional<MemorySize> maxBodySize, BodyConfig bodyConfig) {
         BodyHandler bodyHandler = BodyHandler.create();
         if (maxBodySize.isPresent()) {
@@ -1659,6 +1707,12 @@ public class VertxHttpRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
+                // Skip gRPC content
+                if (isGrpc(event)) {
+                    event.next();
+                    return;
+                }
+
                 if (!Context.isOnEventLoopThread()) {
                     ((ConnectionBase) event.request().connection()).channel().eventLoop().execute(new Runnable() {
                         @Override

@@ -33,11 +33,10 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithP12KeyStoreAndAliasTest {
 
     static String configuration = """
-            quarkus.grpc.server.ssl.key-store=target/certs/grpc-alias-keystore.p12
-            quarkus.grpc.server.ssl.key-store-password=password
-            quarkus.grpc.server.ssl.key-store-alias=alias
-            quarkus.grpc.server.ssl.key-store-alias-password=alias-password
-            quarkus.grpc.server.alpn=true
+            quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-alias-keystore.p12
+            quarkus.http.ssl.certificate.key-store-password=password
+            quarkus.http.ssl.certificate.key-store-alias=alias
+            quarkus.http.ssl.certificate.key-store-alias-password=alias-password
             """;
 
     @RegisterExtension
@@ -55,7 +54,7 @@ public class TlsWithP12KeyStoreAndAliasTest {
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(certs)
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .useTransportSecurity()
                 .build();

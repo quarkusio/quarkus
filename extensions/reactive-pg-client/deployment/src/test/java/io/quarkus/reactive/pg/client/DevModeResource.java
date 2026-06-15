@@ -24,12 +24,11 @@ public class DevModeResource {
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<Response> getErrorMessage() {
         CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1").execute(ar -> {
+        client.query("SELECT 1").execute().onComplete(ar -> {
             Class<?> expectedExceptionClass = ConnectException.class;
             if (ar.succeeded()) {
                 future.complete(Response.serverError().entity("Expected SQL query to fail").build());
             } else if (!expectedExceptionClass.isAssignableFrom(ar.cause().getClass())) {
-                ar.cause().printStackTrace();
                 future.complete(Response.serverError()
                         .entity("Expected " + expectedExceptionClass + ", got " + ar.cause().getClass()).build());
             } else {

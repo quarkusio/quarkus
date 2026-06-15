@@ -31,8 +31,6 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithHttpServerUsingP12AndTlsRegistryTest {
 
     static String configuration = """
-            quarkus.grpc.server.use-separate-server=false
-
             quarkus.tls.key-store.p12.path=target/certs/grpc-keystore.p12
             quarkus.tls.key-store.p12.password=password
 

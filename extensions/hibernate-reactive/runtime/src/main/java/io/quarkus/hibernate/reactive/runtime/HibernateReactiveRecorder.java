@@ -25,6 +25,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.common.vertx.ContextLocals;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -131,11 +132,11 @@ public class HibernateReactiveRecorder {
         // reuse the existing reactive session
         if (openedSession.isPresent()) {
             return openedSession.get().session();
-        } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
+        } else if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
             throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
-            context.putLocal(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
+            ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
 
             return OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
         }
@@ -165,11 +166,11 @@ public class HibernateReactiveRecorder {
         // reuse the existing reactive session
         if (openedSession.isPresent()) {
             return openedSession.get().session();
-        } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
+        } else if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
             throw new IllegalStateException(noSessionFoundErrorMessage());
         } else {
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
-            context.putLocal(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
+            ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
 
             return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
         }

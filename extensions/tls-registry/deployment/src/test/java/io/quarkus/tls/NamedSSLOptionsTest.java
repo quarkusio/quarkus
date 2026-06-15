@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-ssl-options", password = "password", formats = { Format.PKCS12 })
@@ -54,7 +54,7 @@ public class NamedSSLOptionsTest {
         assertThat(named.isTrustAll()).isFalse();
         assertThat(named.getHostnameVerificationAlgorithm()).isEmpty();
 
-        SSLOptions options = named.getSSLOptions();
+        ServerSSLOptions options = named.getServerSSLOptions();
 
         assertThat(options.getKeyCertOptions()).isNotNull();
         assertThat(options.getTrustOptions()).isNotNull();

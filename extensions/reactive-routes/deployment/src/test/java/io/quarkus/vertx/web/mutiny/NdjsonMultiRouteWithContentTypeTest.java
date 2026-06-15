@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
@@ -78,6 +79,8 @@ public class NdjsonMultiRouteWithContentTypeTest {
                 // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE.toString(), JSON_STREAM);
 
+        when().get("/buffers").then().statusCode(500);
+
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
         when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
         when().get("/sync-failure").then().statusCode(500).body(containsString("boom"));
@@ -136,6 +139,11 @@ public class NdjsonMultiRouteWithContentTypeTest {
                     new Person("superman", 1),
                     new Person("batman", 2),
                     new Person("spiderman", 3));
+        }
+
+        @Route(path = "/buffers", produces = ND_JSON)
+        Multi<Buffer> buffers() {
+            return Multi.createFrom().items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"));
         }
 
         @Route(path = "/failure", produces = ND_JSON)

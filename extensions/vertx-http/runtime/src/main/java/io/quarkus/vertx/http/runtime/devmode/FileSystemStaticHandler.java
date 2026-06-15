@@ -20,9 +20,8 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.HttpUtils;
-import io.vertx.core.http.impl.MimeMapping;
-import io.vertx.core.net.impl.URIDecoder;
+import io.vertx.core.http.MimeMapping;
+import io.vertx.core.internal.net.RFC3986;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.Utils;
 
@@ -70,14 +69,14 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
         }
 
         // decode URL path
-        String uriDecodedPath = URIDecoder.decodeURIComponent(context.normalizedPath(), false);
+        String uriDecodedPath = RFC3986.decodeURIComponent(context.normalizedPath(), false);
         // if the normalized path is null it cannot be resolved
         if (uriDecodedPath == null) {
             context.next();
             return;
         }
         // will normalize and handle all paths as UNIX paths
-        String path = HttpUtils.removeDots(uriDecodedPath.replace('\\', '/'));
+        String path = uriDecodedPath.replace('\\', '/');
         path = Utils.pathOffset(path, context);
         if (path.startsWith("/")) {
             path = path.substring(1);
@@ -142,7 +141,7 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
         }
 
         final HttpServerResponse response = context.response();
-        String contentType = MimeMapping.getMimeTypeForFilename(path);
+        String contentType = MimeMapping.mimeTypeForFilename(path);
         if (contentType != null) {
             if (contentType.startsWith("text")) {
                 response.putHeader(HttpHeaders.CONTENT_TYPE, contentType + ";charset=" + DEFAULT_CONTENT_ENCODING);

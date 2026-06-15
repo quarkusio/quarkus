@@ -13,6 +13,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -70,7 +71,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
         public T get() {
             Context context = Vertx.currentContext();
             if (context != null && VertxContext.isDuplicatedContext(context)) {
-                return context.getLocal(key);
+                return ContextLocals.<T> get(key).orElse(null);
             }
             return fallback.get().get();
         }
@@ -82,9 +83,11 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
                 VertxContextSafetyToggle.setContextSafe(context, true);
                 // this is racy but should be fine, because DC should not be shared
                 // and never remove the existing mapping
-                var oldState = context.getLocal(key);
-                if (oldState != state) {
-                    context.putLocal(key, state);
+
+                //TODO add compare and set in ContextLocals
+                T old = ContextLocals.<T> get(key).orElse(null);
+                if (old != state) {
+                    ContextLocals.put(key, state);
                 }
 
             } else {

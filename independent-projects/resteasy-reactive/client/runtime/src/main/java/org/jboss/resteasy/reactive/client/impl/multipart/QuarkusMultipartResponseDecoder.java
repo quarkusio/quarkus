@@ -51,6 +51,7 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.internal.buffer.BufferInternal;
 
 /**
  * This decoder will decode response body.
@@ -344,7 +345,7 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     public QuarkusMultipartResponseDecoder offer(Buffer content) {
-        return offer(new DefaultHttpContent(content.getByteBuf()));
+        return offer(new DefaultHttpContent(((BufferInternal) content).getByteBuf()));
     }
 
     /**

@@ -414,13 +414,13 @@ public class ClientBuilderImpl extends ClientBuilder {
                 JksOptions jks = new JksOptions();
                 jks.setValue(keyStore);
                 jks.setPassword(new String(keystorePassword));
-                options.setKeyStoreOptions(jks);
+                options.setKeyCertOptions(jks);
             }
             if (trustStore != null) {
                 JksOptions jks = new JksOptions();
                 jks.setValue(trustStore);
                 jks.setPassword(new String(effectiveTrustStorePassword));
-                options.setTrustStoreOptions(jks);
+                options.setTrustOptions(jks);
             }
         }
     }

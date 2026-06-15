@@ -162,6 +162,20 @@ public class RegistriesConfigLocatorTest {
     }
 
     @Test
+    void testRegistryOfferingWithoutValueFromYaml() {
+        final RegistriesConfig config = RegistriesConfigLocator.load(new StringReader("""
+                ---
+                registries:
+                - registry.acme.org:
+                    offering:
+                """));
+
+        assertThat(config.getRegistries())
+                .singleElement()
+                .satisfies(registry -> assertThat(registry.getExtra()).containsEntry(Constants.OFFERING, null));
+    }
+
+    @Test
     void testRecommendStreamsFrom() throws Exception {
         final Map<String, String> env = new HashMap<>();
         env.put(RegistriesConfigLocator.QUARKUS_REGISTRIES, "registry.acme.org,registry.other.io");

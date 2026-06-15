@@ -2,8 +2,6 @@ package io.quarkus.vertx.deployment.spi;
 
 import java.util.function.Consumer;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.vertx.core.VertxOptions;
 

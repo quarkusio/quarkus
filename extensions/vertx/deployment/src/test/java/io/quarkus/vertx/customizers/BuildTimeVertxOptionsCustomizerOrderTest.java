@@ -23,11 +23,11 @@ public class BuildTimeVertxOptionsCustomizerOrderTest {
                     .create(JavaArchive.class))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000));
+                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000, "foo"));
                 }).produces(VertxOptionsConsumerBuildItem.class).build();
 
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority2000.INSTANCE, 2000));
+                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority2000.INSTANCE, 2000, "foo"));
                 }).produces(VertxOptionsConsumerBuildItem.class).build();
 
             });

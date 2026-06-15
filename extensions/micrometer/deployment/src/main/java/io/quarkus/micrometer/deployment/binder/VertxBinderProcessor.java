@@ -4,6 +4,8 @@ import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.function.BooleanSupplier;
 
+import jakarta.interceptor.Interceptor;
+
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -55,8 +57,9 @@ public class VertxBinderProcessor {
             BuildProducer<VertxBootstrapConsumerBuildItem> boostrap,
             BuildProducer<VertxOptionsConsumerBuildItem> options) {
         boostrap.produce(new VertxBootstrapConsumerBuildItem(recorder.configureMetricFactory(), LIBRARY_AFTER - 1));
-        options.produce(new VertxOptionsConsumerBuildItem(recorder.configureMetricsOptions(), Interceptor.Priority.LIBRARY_AFTER,
-                "micrometer.vertx.metrics"));
+        options.produce(
+                new VertxOptionsConsumerBuildItem(recorder.configureMetricsOptions(), Interceptor.Priority.LIBRARY_AFTER,
+                        "micrometer.vertx.metrics"));
     }
 
     @BuildStep

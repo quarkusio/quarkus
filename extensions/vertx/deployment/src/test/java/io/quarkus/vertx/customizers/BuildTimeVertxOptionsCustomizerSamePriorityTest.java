@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -24,18 +23,13 @@ public class BuildTimeVertxOptionsCustomizerSamePriorityTest {
                     .create(JavaArchive.class))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000));
+                    context.produce(new VertxOptionsConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000, "foo"));
                 }).produces(VertxOptionsConsumerBuildItem.class).build();
 
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxOptionsConsumerBuildItem(AnotherCustomizerWithPriority1000.INSTANCE, 1000));
+                    context.produce(new VertxOptionsConsumerBuildItem(AnotherCustomizerWithPriority1000.INSTANCE, 1000, "bar"));
                 }).produces(VertxOptionsConsumerBuildItem.class).build();
 
-            })
-            .setLogRecordPredicate(lr -> lr.getLevel().intValue() >= Level.WARNING.intValue())
-            .assertLogRecords(logRecords -> {
-                assertThat(logRecords).anySatisfy(logRecord -> logRecord.getMessage().contains(
-                        "Two VertxOptionsConsumerBuildItems have the same priority (1000)."));
             });
 
     @Test

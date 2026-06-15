@@ -24,7 +24,7 @@ public class BuildTimeVertxOptionsCustomizerTest {
                     .create(JavaArchive.class))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxOptionsConsumerBuildItem(MyVertxOptionCustomizer.INSTANCE, 3000));
+                    context.produce(new VertxOptionsConsumerBuildItem(MyVertxOptionCustomizer.INSTANCE, 3000, "foo"));
                 }).produces(VertxOptionsConsumerBuildItem.class).build();
             });
 

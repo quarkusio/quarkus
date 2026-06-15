@@ -93,6 +93,7 @@ class VertxCoreProcessor {
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.impl.buffer.VertxByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.tcp.VertxHttp2ClientUpgradeCodec")
+                .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.InboundConnection")
                 .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true")
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())

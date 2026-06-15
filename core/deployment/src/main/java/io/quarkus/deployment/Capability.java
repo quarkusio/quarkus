@@ -8,6 +8,13 @@ public interface Capability {
     String QUARKUS_PREFIX = "io.quarkus";
 
     /**
+     * Aesh CLI framework
+     */
+    String AESH = QUARKUS_PREFIX + ".aesh";
+    String AESH_SSH = AESH + ".ssh";
+    String AESH_WEBSOCKET = AESH + ".websocket";
+
+    /**
      * A datasource connection pool implementation
      */
     String AGROAL = QUARKUS_PREFIX + ".agroal";

@@ -37,9 +37,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.aesh.readline.terminal.impl.ExecPty;
-import org.aesh.readline.terminal.impl.Pty;
 import org.aesh.terminal.Attributes;
+import org.aesh.terminal.tty.impl.ExecPty;
+import org.aesh.terminal.tty.impl.Pty;
+import org.aesh.terminal.tty.impl.WinConsoleNative;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
@@ -88,7 +89,6 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.fusesource.jansi.internal.Kernel32;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
@@ -624,14 +624,14 @@ public class DevMojo extends AbstractMojo {
     private void saveTerminalState() {
         try {
             if (windowsAttributes > 0) {
-                long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
-                if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
-                    int[] mode = new int[1];
-                    windowsAttributes = Kernel32.GetConsoleMode(hConsole, mode) == 0 ? -1 : mode[0];
-                    windowsAttributesSet = true;
+                long hConsole = WinConsoleNative.getStdHandle(WinConsoleNative.STD_INPUT_HANDLE);
+                if (hConsole != WinConsoleNative.INVALID_HANDLE) {
+                    windowsAttributes = WinConsoleNative.getConsoleMode(hConsole);
+                    windowsAttributesSet = windowsAttributes != -1;
 
-                    final int VIRTUAL_TERMINAL_PROCESSING = 0x0004; //enable color on the windows console
-                    if (Kernel32.SetConsoleMode(hConsole, windowsAttributes | VIRTUAL_TERMINAL_PROCESSING) != 0) {
+                    if (windowsAttributesSet
+                            && WinConsoleNative.setConsoleMode(hConsole,
+                                    windowsAttributes | WinConsoleNative.ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
                         windowsColorSupport = true;
                     }
                 }
@@ -652,9 +652,9 @@ public class DevMojo extends AbstractMojo {
 
     private void restoreTerminalState() {
         if (windowsAttributesSet) {
-            long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
-            if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
-                Kernel32.SetConsoleMode(hConsole, windowsAttributes);
+            long hConsole = WinConsoleNative.getStdHandle(WinConsoleNative.STD_INPUT_HANDLE);
+            if (hConsole != WinConsoleNative.INVALID_HANDLE) {
+                WinConsoleNative.setConsoleMode(hConsole, windowsAttributes);
             }
         } else {
             if (attributes == null || pty == null) {

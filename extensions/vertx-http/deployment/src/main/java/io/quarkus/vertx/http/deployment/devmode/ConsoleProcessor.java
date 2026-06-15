@@ -13,7 +13,6 @@ import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
 import org.aesh.command.GroupCommand;
-import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
 import org.aesh.command.invocation.CommandInvocation;
@@ -122,7 +121,7 @@ public class ConsoleProcessor {
                 .replace("\n", "<br>");
     }
 
-    @GroupCommandDefinition(name = "config", description = "Config Editing Commands")
+    @CommandDefinition(name = "config", description = "Config Editing Commands")
     public static class ConfigCommandGroup implements GroupCommand {
 
         final ConfigDescriptionsManager configDescriptionsManager;

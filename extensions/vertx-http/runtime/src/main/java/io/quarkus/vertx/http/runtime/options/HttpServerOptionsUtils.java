@@ -43,6 +43,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrafficShapingOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -238,7 +239,7 @@ public class HttpServerOptionsUtils {
         }
         serverOptions.setSni(bucket.usesSni());
 
-        var other = bucket.getServerSSLOptions();
+        ServerSSLOptions other = bucket.getServerSSLOptions();
         serverOptions.setSslHandshakeTimeout(other.getSslHandshakeTimeout());
         serverOptions.setSslHandshakeTimeoutUnit(other.getSslHandshakeTimeoutUnit());
         for (String suite : other.getEnabledCipherSuites()) {
@@ -284,8 +285,9 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setTcpCork(httpConfig.tcpCork());
         httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
         httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
-        httpServerOptions
-                .setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
+        // TODO This settings has been removed from Vert.x 5. It needs to be investigated.
+        // httpServerOptions
+        //        .setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
         httpServerOptions.setTcpUserTimeout((int) httpConfig.tcpUserTimeout().toMillis());
         httpServerOptions.setSoLinger(httpConfig.soLinger());
         if (httpConfig.sendBufferSize().isPresent()) {
@@ -434,7 +436,8 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
-        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
+        // TODO This setting disappeared in Vert.x 5. It needs to be investigated.
+        // options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
 

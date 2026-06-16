@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.logging.ByteBufFormat;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
@@ -47,6 +48,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.LogConfig;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TcpOption;
 import io.vertx.core.net.TrafficShapingOptions;
@@ -78,8 +80,6 @@ public class HttpServerOptionsUtils {
      */
     public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
     }
-
-    // TODO Add setLogActivity, and setActivityLogDataFormat when we know where it is in the new ServerConfig API
 
     /**
      * Create an {@link HttpServerConfig} and {@link ServerSSLOptions} for the HTTPS server,
@@ -344,6 +344,15 @@ public class HttpServerOptionsUtils {
 
         // Compression config
         applyCompressionConfig(config, httpBuildTimeConfig, httpConfig.compressionContentSizeThreshold());
+
+        // Logging
+        if (httpConfig.logActivity()) {
+            var log = new LogConfig();
+            if (httpConfig.activityLogDataFormat() != null) {
+                log.setDataFormat(ByteBufFormat.valueOf(httpConfig.activityLogDataFormat().name()));
+            }
+            config.setLogConfig(log);
+        }
 
         // HTTP/2 config
         if (httpConfig.http2()) {

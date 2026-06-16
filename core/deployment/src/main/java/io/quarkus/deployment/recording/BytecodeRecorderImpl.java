@@ -141,7 +141,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private final Function<ClassOutput, ClassCreator> classCreatorFunction;
     private final Function<ClassCreator, MethodCreator> methodCreatorFunction;
-    private final Function<java.lang.reflect.Type, Object> configCreatorFunction;
 
     private final List<ObjectLoader> loaders = new ArrayList<>();
     private final Map<Class<?>, ConstantHolder<?>> constants = new HashMap<>();
@@ -162,11 +161,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
             boolean useIdentityComparison) {
-        this(staticInit, buildStepName, methodName, uniqueHash, useIdentityComparison, (s) -> null);
-    }
-
-    public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash,
-            boolean useIdentityComparison, Function<java.lang.reflect.Type, Object> configCreatorFunction) {
         this(
                 Thread.currentThread().getContextClassLoader(),
                 staticInit,
@@ -176,7 +170,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 },
                 classCreator -> {
                     return startupMethodCreator(buildStepName, methodName, classCreator);
-                }, useIdentityComparison, configCreatorFunction);
+                }, useIdentityComparison);
     }
 
     // visible for testing
@@ -187,29 +181,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 },
                 classCreator -> {
                     return startupMethodCreator(null, null, classCreator);
-                }, true, s -> {
-                    try {
-                        if (s instanceof Class) {
-                            return ((Class<?>) s).newInstance();
-                        }
-                        throw new RuntimeException("Not implemented for testing");
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                }, true);
     }
 
     private BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className,
             Function<ClassOutput, ClassCreator> classCreatorFunction,
-            Function<ClassCreator, MethodCreator> methodCreatorFunction, boolean useIdentityComparison,
-            Function<java.lang.reflect.Type, Object> configCreatorFunction) {
+            Function<ClassCreator, MethodCreator> methodCreatorFunction, boolean useIdentityComparison) {
         this.classLoader = classLoader;
         this.staticInit = staticInit;
         this.className = className;
         this.classCreatorFunction = classCreatorFunction;
         this.methodCreatorFunction = methodCreatorFunction;
         this.useIdentityComparison = useIdentityComparison;
-        this.configCreatorFunction = configCreatorFunction;
     }
 
     private static MethodCreator startupMethodCreator(String buildStepName, String methodName, ClassCreator classCreator) {
@@ -632,7 +615,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             };
         }
         //check the loaded object support (i.e. config) to see if this is a config item
-        DeferredParameter loadedObject = findLoaded(param);
+        DeferredParameter loadedObject = findLoaded(param, expectedType);
         if (loadedObject != null) {
             return loadedObject;
         }
@@ -1651,13 +1634,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
         return RecordingAnnotationsUtil.isIgnored(field);
     }
 
-    private DeferredParameter findLoaded(final Object param) {
+    private DeferredParameter findLoaded(final Object param, final Class<?> type) {
         for (ObjectLoader loader : loaders) {
-            if (loader.canHandleObject(param, staticInit)) {
-                return new DeferredArrayStoreParameter(param, param.getClass()) {
+            if (loader.canHandleObject(param, type, staticInit)) {
+                return new DeferredArrayStoreParameter(param, type) {
                     @Override
                     ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
-                        return loader.load(method, param, staticInit);
+                        return loader.load(method, param, type, staticInit);
                     }
                 };
             }
@@ -1801,14 +1784,24 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                             .anyMatch(s -> s.annotationType() == RelaxedValidation.class)));
                             continue;
                         }
-                        var obj = configCreatorFunction.apply(param);
-                        if (obj == null) {
-                            // No matching constant nor config.
-                            throw new RuntimeException("Cannot inject type " + param);
-                        }
-                        if (obj instanceof RuntimeValue) {
-                            if (!staticInit) {
-                                var result = findLoaded(((RuntimeValue<?>) obj).getValue());
+
+                        if (param instanceof Class<?>) {
+                            var result = findLoaded(null, (Class<?>) param);
+                            if (result == null) {
+                                throw new RuntimeException("Cannot inject object of type " + param);
+                            }
+                            deferredParameters.add(result);
+                        } else if (param instanceof ParameterizedType paramType
+                                && paramType.getRawType() == RuntimeValue.class) {
+                            if (staticInit) {
+                                deferredParameters.add(new DeferredParameter() {
+                                    @Override
+                                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                                        return method.newInstance(MethodDescriptor.ofConstructor(RuntimeValue.class));
+                                    }
+                                });
+                            } else {
+                                var result = findLoaded(null, (Class<?>) paramType.getActualTypeArguments()[0]);
                                 if (result == null) {
                                     throw new RuntimeException("Cannot inject object of type " + param);
                                 }
@@ -1826,20 +1819,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                                 MethodDescriptor.ofConstructor(RuntimeValue.class, Object.class), r);
                                     }
                                 });
-                            } else {
-                                deferredParameters.add(new DeferredParameter() {
-                                    @Override
-                                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
-                                        return method.newInstance(MethodDescriptor.ofConstructor(RuntimeValue.class));
-                                    }
-                                });
                             }
-                        } else {
-                            var result = findLoaded(obj);
-                            if (result == null) {
-                                throw new RuntimeException("Cannot inject object of type " + param);
-                            }
-                            deferredParameters.add(result);
                         }
                     }
                 } catch (Exception e) {

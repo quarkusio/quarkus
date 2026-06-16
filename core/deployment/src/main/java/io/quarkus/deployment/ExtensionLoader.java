@@ -1,6 +1,5 @@
 package io.quarkus.deployment;
 
-import static io.quarkus.deployment.ExtensionLoaderConfig.ReportRuntimeConfigAtDeployment.warn;
 import static io.quarkus.deployment.util.ReflectUtil.isBuildProducerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isConsumerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isListOf;
@@ -31,8 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,8 +46,6 @@ import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
@@ -79,11 +74,8 @@ import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationProxyBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
-import io.quarkus.deployment.configuration.ConfigMappingUtils;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -97,13 +89,13 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
-import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -161,58 +153,23 @@ public final class ExtensionLoader {
             }
         }).produces(BooleanSupplierFactoryBuildItem.class).build());
 
-        // the proxy objects used for run time config in the recorders
-        Map<Class<?>, Object> proxies = new HashMap<>();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
-                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, proxies, bsf));
+                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, bsf));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
         }
 
-        // this has to be an identity hash map else the recorder will get angry
-        Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
-        for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
-            // ConfigMapping
-            ConfigClass mapping = readResult.getAllMappingsByClass().get(entry.getKey());
-            if (mapping != null) {
-                mappingClasses.put(entry.getValue(), mapping);
-                continue;
-            }
-
-            throw new IllegalStateException("No config found for " + entry.getKey());
-        }
         result = result.andThen(bcb -> bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
 
             @Override
             public void execute(BuildContext bc) {
                 bc.produce(new ConfigurationBuildItem(readResult));
-                bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
 
-                // Load @ConfigMapping in recorded deployment code from Recorder
-                ObjectLoader mappingLoader = new ObjectLoader() {
-                    @Override
-                    public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
-                        ConfigClass mapping = mappingClasses.get(obj);
-                        MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class);
-                        ResultHandle config = body.invokeStaticMethod(getConfig);
-                        MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
-                                Object.class, Class.class, String.class);
-                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getType()),
-                                body.load(mapping.getPrefix()));
-                    }
-
-                    @Override
-                    public boolean canHandleObject(final Object obj, final boolean staticInit) {
-                        return mappingClasses.containsKey(obj);
-                    }
-                };
-
-                proxies.put(ValueRegistry.class, ValueRegistryImpl.builder().build());
                 ObjectLoader valueRegistryLoader = new ObjectLoader() {
                     @Override
-                    public ResultHandle load(BytecodeCreator body, Object obj, boolean staticInit) {
+                    public ResultHandle load(BytecodeCreator body, Object obj, Class<?> type, boolean staticInit) {
                         // What we get here is the body of io.quarkus.runtime.StartupTask.deploy method
                         // with StartupContext, but is it always like this?
                         MethodCreator methodCreator = (MethodCreator) body;
@@ -225,13 +182,54 @@ public final class ExtensionLoader {
                     }
 
                     @Override
-                    public boolean canHandleObject(Object obj, boolean staticInit) {
-                        return obj instanceof ValueRegistry && !staticInit;
+                    public boolean canHandleObject(Object obj, Class<?> type, boolean staticInit) {
+                        return !staticInit && ValueRegistry.class.equals(type);
                     }
                 };
 
-                bc.produce(new BytecodeRecorderObjectLoaderBuildItem(mappingLoader));
+                ObjectLoader configLoader = new ObjectLoader() {
+                    @Override
+                    public ResultHandle load(BytecodeCreator body, Object obj, Class<?> type, boolean staticInit) {
+                        type = getMappingType(obj, type);
+                        ConfigClass mapping;
+                        mapping = readResult.getBuildTimeRuntimeMapping(type);
+                        if (mapping == null) {
+                            // canHandleObject already verified staticInit
+                            mapping = readResult.getRuntimeMapping(type);
+                        }
+                        MethodDescriptor getConfig = MethodDescriptor.ofMethod(Config.class, "get", Config.class);
+                        ResultHandle config = body.invokeStaticInterfaceMethod(getConfig);
+                        MethodDescriptor getMapping = MethodDescriptor.ofMethod(Config.class, "getConfigMapping",
+                                Object.class, Class.class, String.class);
+                        return body.invokeInterfaceMethod(getMapping, config, body.loadClass(mapping.getType()),
+                                body.load(mapping.getPrefix()));
+                    }
+
+                    @Override
+                    public boolean canHandleObject(Object obj, Class<?> type, boolean staticInit) {
+                        type = getMappingType(obj, type);
+                        if (staticInit) {
+                            return readResult.isBuildTimeRuntimeMapping(type);
+                        } else {
+                            return readResult.isBuildTimeRuntimeMapping(type) || readResult.isRuntimeMapping(type);
+                        }
+                    }
+
+                    // type can be a super class, so we need to retrieve the concrete mapped interface
+                    private static Class<?> getMappingType(Object obj, Class<?> type) {
+                        if (obj != null) {
+                            for (Class<?> anInterface : obj.getClass().getInterfaces()) {
+                                if (type.isAssignableFrom(anInterface)) {
+                                    type = anInterface;
+                                }
+                            }
+                        }
+                        return type;
+                    }
+                };
+
                 bc.produce(new BytecodeRecorderObjectLoaderBuildItem(valueRegistryLoader));
+                bc.produce(new BytecodeRecorderObjectLoaderBuildItem(configLoader));
             }
 
             @Override
@@ -240,7 +238,6 @@ public final class ExtensionLoader {
             }
 
         }).produces(ConfigurationBuildItem.class)
-                .produces(RunTimeConfigurationProxyBuildItem.class)
                 .produces(BytecodeRecorderObjectLoaderBuildItem.class)
                 .build());
 
@@ -251,12 +248,10 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class.
      *
      * @param clazz the class to load from (must not be {@code null})
-     * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
      * @return a consumer which adds the steps to the given chain builder
      */
     @SuppressWarnings("unchecked")
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
-            Map<Class<?>, Object> runTimeProxies,
             BooleanSupplierFactoryBuildItem supplierFactory) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
@@ -273,8 +268,7 @@ public final class ExtensionLoader {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
         }
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        ExtensionLoaderConfig extensionLoaderConfig = config.getConfigMapping(ExtensionLoaderConfig.class);
+        Config config = Config.get();
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
@@ -327,15 +321,11 @@ public final class ExtensionLoader {
                 } else if (rawTypeOf(parameterType) == Executor.class) {
                     ctorParamFns.add(BuildContext::getExecutor);
                 } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
-                    final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
-                    final ConfigPhase phase = annotation.phase();
+                    ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
+                    ConfigPhase phase = annotation.phase();
                     consumingConfigPhases.add(phase);
-
                     if (phase.isAvailableAtBuild()) {
                         ctorParamFns.add(buildContext -> config.getConfigMapping(parameterClass));
-                        if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                            runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
-                        }
                     } else if (phase.isReadAtMain()) {
                         throw reportError(parameter, phase + " configuration cannot be consumed here");
                     } else {
@@ -406,17 +396,13 @@ public final class ExtensionLoader {
             } else if (fieldClass == Executor.class) {
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
-                final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
-                final ConfigPhase phase = annotation.phase();
+                ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
+                ConfigPhase phase = annotation.phase();
                 consumingConfigPhases.add(phase);
-
                 if (phase.isAvailableAtBuild()) {
                     stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
                         ReflectUtil.setFieldVal(field, o, config.getConfigMapping(fieldClass));
                     });
-                    if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                        runTimeProxies.computeIfAbsent(fieldClass, config::getConfigMapping);
-                    }
                 } else if (phase.isReadAtMain()) {
                     throw reportError(field, phase + " configuration cannot be consumed here");
                 } else {
@@ -545,38 +531,21 @@ public final class ExtensionLoader {
                             || rawTypeOf(parameterType) == ExecutorService.class) {
                         methodParamFns.add((bc, bri) -> bc.getExecutor());
                     } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
-                        final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
-                        final ConfigPhase phase = annotation.phase();
+                        ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
+                        ConfigPhase phase = annotation.phase();
                         methodConsumingConfigPhases.add(phase);
-
                         if (phase.isAvailableAtBuild()) {
                             methodParamFns.add((bc, bri) -> config.getConfigMapping(parameterClass));
-                            if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                                runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
-                            }
                         } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
-                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
-                                    methodParamFns.add((bc, bri) -> {
-                                        RunTimeConfigurationProxyBuildItem proxies = bc
-                                                .consume(RunTimeConfigurationProxyBuildItem.class);
-                                        return proxies.getProxyObjectFor(parameterClass);
-                                    });
-                                    loadLog.warn(reportError(parameter,
-                                            phase + " configuration should not be consumed in Build Steps, use RuntimeValue<"
-                                                    + parameter.getType().getTypeName()
-                                                    + "> in a @Recorder constructor instead")
-                                            .getMessage());
-                                    runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
-                                } else {
-                                    throw reportError(parameter,
-                                            phase + " configuration cannot be consumed in Build Steps, use RuntimeValue<"
-                                                    + parameter.getType().getTypeName()
-                                                    + "> in a @Recorder constructor instead");
-                                }
+                                throw reportError(parameter,
+                                        phase + " configuration cannot be consumed in Build Steps, use RuntimeValue<"
+                                                + parameter.getType().getTypeName()
+                                                + "> in a @Recorder constructor instead");
                             } else {
                                 throw reportError(parameter,
-                                        phase + " configuration cannot be consumed here unless the method is a @Recorder");
+                                        phase + " configuration cannot be consumed here unless the method is annotated with "
+                                                + Record.class);
                             }
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
@@ -611,30 +580,18 @@ public final class ExtensionLoader {
                                     }
                                     ConfigRoot annotation = theType.getAnnotation(ConfigRoot.class);
                                     if (annotation != null) {
-                                        if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                            // TODO - Check for runtime config is done in another place, we may want to make things more consistent. Rewrite once we disallow the injection of runtime objects in build steps
-                                            methodConsumingConfigPhases.add(ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
-                                        } else {
-                                            methodConsumingConfigPhases.add(annotation.phase());
-                                            if (annotation.phase().isReadAtMain() && !isRuntimeValue) {
-                                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
-                                                    loadLog.warn(reportError(parameter, annotation.phase() + " configuration "
-                                                            + type.getTypeName()
-                                                            + " should be injected in a @Recorder constructor as a RuntimeValue<"
-                                                            + type.getTypeName() + ">").getMessage());
-                                                } else {
-                                                    throw reportError(parameter, annotation.phase() + " configuration "
-                                                            + type.getTypeName()
-                                                            + " can only be injected in a @Recorder constructor as a RuntimeValue<"
-                                                            + type.getTypeName() + ">");
-                                                }
-                                            }
-                                        }
-                                        if (annotation.phase().isReadAtMain()) {
-                                            // TODO - Remove once we disallow the injection of runtime objects in build steps
-                                            runTimeProxies.computeIfAbsent(theType, ConfigMappingUtils::newInstance);
-                                        } else {
-                                            runTimeProxies.computeIfAbsent(theType, config::getConfigMapping);
+                                        methodConsumingConfigPhases.add(recordAnnotation.value() == ExecutionTime.STATIC_INIT
+                                                ? ConfigPhase.BUILD_AND_RUN_TIME_FIXED
+                                                : annotation.phase());
+                                        if (annotation.phase().isAvailableAtBuild() && !annotation.phase().isAvailableAtRun()) {
+                                            throw reportError(parameter, annotation.phase() + " configuration "
+                                                    + type.getTypeName()
+                                                    + " cannot be consumed in a Recorder");
+                                        } else if (annotation.phase().isReadAtMain() && !isRuntimeValue) {
+                                            throw reportError(parameter, annotation.phase() + " configuration "
+                                                    + type.getTypeName()
+                                                    + " can only be injected in a @Recorder constructor as a RuntimeValue<"
+                                                    + type.getTypeName() + ">");
                                         }
                                     }
                                 }
@@ -690,14 +647,6 @@ public final class ExtensionLoader {
                 if (isRecorder && recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
                     throw reportError(method,
                             "Bytecode recorder is static but an injected config object is declared as run time");
-                }
-
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(RunTimeConfigurationProxyBuildItem.class));
-
-                if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
-                    methodStepConfig = methodStepConfig
-                            .andThen(bsb -> bsb.afterProduce(RuntimeConfigSetupCompleteBuildItem.class));
                 }
             }
 
@@ -776,32 +725,7 @@ public final class ExtensionLoader {
                                 BytecodeRecorderImpl bri = isRecorder
                                         ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
                                                 clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(Math.abs(method.toString().hashCode())), identityComparison,
-                                                s -> {
-                                                    if (s instanceof Class) {
-                                                        var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
-                                                        if (cfg == null
-                                                                || (cfg.phase() != ConfigPhase.BUILD_AND_RUN_TIME_FIXED
-                                                                        && recordAnnotation
-                                                                                .value() == ExecutionTime.STATIC_INIT)) {
-                                                            throw new RuntimeException(
-                                                                    "Can only inject BUILD_AND_RUN_TIME_FIXED objects into a constructor, use RuntimeValue to inject runtime config: "
-                                                                            + s);
-                                                        }
-                                                        return runTimeProxies.get(s);
-                                                    }
-                                                    // TODO - Remove once we disallow the injection of runtime objects in build steps
-                                                    if (s instanceof ParameterizedType p) {
-                                                        if (p.getRawType() == RuntimeValue.class) {
-                                                            Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
-                                                            if (object == null) {
-                                                                return new RuntimeValue<>();
-                                                            }
-                                                            return new RuntimeValue<>(object);
-                                                        }
-                                                    }
-                                                    return null;
-                                                })
+                                                Integer.toString(Math.abs(method.toString().hashCode())), identityComparison)
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);

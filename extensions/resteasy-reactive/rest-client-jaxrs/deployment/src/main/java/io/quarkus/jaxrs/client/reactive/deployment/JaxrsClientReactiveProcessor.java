@@ -1809,7 +1809,7 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
                         } else if (param.parameterType == ParameterType.HEADER) {
-                            Type paramType = jandexSubMethod.parameterType(subParamField.paramIndex);
+                            Type paramType = subParamField.type;
                             Type effectiveParamType = paramType;
                             boolean isOptional = isOptional(paramType, index);
                             if (isOptional) {
@@ -3146,7 +3146,7 @@ public class JaxrsClientReactiveProcessor {
         BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
         BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
-            var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
+            var resolvesTypes = resolveMapTypes(type, jandexMethod);
             var keyType = resolvesTypes.getKey();
             if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
                 throw new IllegalArgumentException(
@@ -3287,7 +3287,7 @@ public class JaxrsClientReactiveProcessor {
         return result;
     }
 
-    private Map.Entry<Type, Type> resolveMapTypes(Type type, IndexView index, MethodInfo jandexMethod) {
+    private Map.Entry<Type, Type> resolveMapTypes(Type type, MethodInfo jandexMethod) {
         if (type.name().equals(ResteasyReactiveDotNames.MAP)) {
             if (type.kind() != PARAMETERIZED_TYPE) {
                 throw new IllegalArgumentException(
@@ -3354,7 +3354,7 @@ public class JaxrsClientReactiveProcessor {
         BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerValueHandle).falseBranch();
 
         if (isMap(paramType, index)) {
-            Map.Entry<Type, Type> resolvesTypes = resolveMapTypes(paramType, index, jandexMethod);
+            Map.Entry<Type, Type> resolvesTypes = resolveMapTypes(paramType, jandexMethod);
             Type keyType = resolvesTypes.getKey();
             if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
                 throw new IllegalArgumentException(
@@ -3480,7 +3480,7 @@ public class JaxrsClientReactiveProcessor {
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else if (isMap(parameterType, index)) {
-                var resolvesTypes = resolveMapTypes(parameterType, index, jandexMethod);
+                var resolvesTypes = resolveMapTypes(parameterType, jandexMethod);
                 var keyType = resolvesTypes.getKey();
                 if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
                     throw new IllegalArgumentException(

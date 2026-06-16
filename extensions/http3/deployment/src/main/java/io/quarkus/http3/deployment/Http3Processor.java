@@ -31,6 +31,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.http3.deployment.spi.Http3EnabledBuildItem;
 import io.quarkus.http3.runtime.CertOrigin;
 import io.quarkus.http3.runtime.Http3AltSvcHandler;
@@ -102,6 +103,7 @@ class Http3Processor {
     Http3CertOriginBuildItem autoConfigureTls(
             Http3EnabledBuildItem http3Enabled,
             LaunchModeBuildItem launchMode,
+            OutputTargetBuildItem outputTarget,
             BuildProducer<TlsCertificateBuildItem> tlsCertificateProducer,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
 
@@ -118,8 +120,7 @@ class Http3Processor {
 
         // Dev or test mode: auto-generate a certificate
         CertOrigin certOrigin;
-        // TODO Add Gradle support
-        Path outputDir = Path.of("target", "http3-dev-cert");
+        Path outputDir = outputTarget.getOutputDirectory().resolve("http3-dev-cert");
         try {
             Files.createDirectories(outputDir);
 

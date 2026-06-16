@@ -95,10 +95,42 @@ public class LoggingSetupRecorder {
     }
 
     public static void handleFailedStart(RuntimeValue<Optional<Supplier<String>>> banner) {
+        SmallRyeConfig loggingConfig = buildLoggingConfig();
+        LogBuildTimeConfig logBuildTimeConfig = loggingConfig.getConfigMapping(LogBuildTimeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
+        ConsoleRuntimeConfig consoleRuntimeConfig = loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class);
+        new LoggingSetupRecorder(logBuildTimeConfig, new RuntimeValue<>(logRuntimeConfig),
+                new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
+                        DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
+                        emptyList(),
+                        emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+    }
+
+    /**
+     * Sets up basic logging early in the test lifecycle, before Quarkus starts.
+     * <p>
+     * Unlike {@link #handleFailedStart}, this method uses
+     * {@link #initializeBuildTimeLogging} which installs handlers via
+     * {@code setBuildTimeHandlers()}. This ensures the {@code QuarkusDelayedHandler}
+     * returns to queuing mode after {@code buildTimeComplete()} is called,
+     * so that messages logged before the runtime logging setup can be buffered
+     * and later drained through properly configured handlers (including
+     * {@code LogCleanupFilter}).
+     */
+    public static void initializeEarlyLogging() {
+        SmallRyeConfig loggingConfig = buildLoggingConfig();
+        initializeBuildTimeLogging(
+                loggingConfig.getConfigMapping(LogRuntimeConfig.class),
+                loggingConfig.getConfigMapping(LogBuildTimeConfig.class),
+                loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class),
+                emptyMap(), emptyList(), LaunchMode.DEVELOPMENT);
+    }
+
+    private static SmallRyeConfig buildLoggingConfig() {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         // There may be cases where a Config with the mappings is already available, but we can't be sure, so we wrap
         // the original Config and map the logging classes.
-        SmallRyeConfig loggingConfig = new SmallRyeConfigBuilder()
+        return new SmallRyeConfigBuilder()
                 .withCustomizers(new QuarkusConfigBuilderCustomizer())
                 .withMapping(LogBuildTimeConfig.class)
                 .withMapping(LogRuntimeConfig.class)
@@ -121,14 +153,6 @@ public class LoggingSetupRecorder {
                         return "Logging Config";
                     }
                 }).build();
-        LogBuildTimeConfig logBuildTimeConfig = loggingConfig.getConfigMapping(LogBuildTimeConfig.class);
-        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
-        ConsoleRuntimeConfig consoleRuntimeConfig = loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class);
-        new LoggingSetupRecorder(logBuildTimeConfig, new RuntimeValue<>(logRuntimeConfig),
-                new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
-                        DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
-                        emptyList(),
-                        emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(

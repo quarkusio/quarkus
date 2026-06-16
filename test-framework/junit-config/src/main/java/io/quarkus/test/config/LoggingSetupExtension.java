@@ -12,6 +12,6 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
  */
 public class LoggingSetupExtension implements Extension {
     public LoggingSetupExtension() {
-        LoggingSetupRecorder.handleFailedStart();
+        LoggingSetupRecorder.initializeEarlyLogging();
     }
 }

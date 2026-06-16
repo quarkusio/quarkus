@@ -47,7 +47,6 @@ dependencies {
 {/if}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-aesh')}
     annotationProcessor("org.aesh:aesh-processor")
-    annotationProcessor("org.aesh:aesh")
 {/if}
     testImplementation("io.quarkus:quarkus-junit")
 {#for dep in test-dependencies}

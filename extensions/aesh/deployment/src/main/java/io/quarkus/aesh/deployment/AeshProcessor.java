@@ -32,8 +32,6 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -54,12 +52,7 @@ class AeshProcessor {
     private static final DotName PARENT_COMMAND = DotName.createSimple("org.aesh.command.option.ParentCommand");
 
     @BuildStep
-    FeatureBuildItem feature(Capabilities capabilities) {
-        if (capabilities.isPresent(Capability.PICOCLI)) {
-            throw new IllegalStateException(
-                    "The Aesh and Picocli extensions cannot be used together. "
-                            + "Remove either quarkus-aesh or quarkus-picocli from your dependencies.");
-        }
+    FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.AESH);
     }
 

@@ -187,10 +187,6 @@
                                     <groupId>org.aesh</groupId>
                                     <artifactId>aesh-processor</artifactId>
                                 </annotationProcessorPath>
-                                <annotationProcessorPath>
-                                    <groupId>org.aesh</groupId>
-                                    <artifactId>aesh</artifactId>
-                                </annotationProcessorPath>
                                 {/if}
                             </annotationProcessorPaths>
                         </configuration>

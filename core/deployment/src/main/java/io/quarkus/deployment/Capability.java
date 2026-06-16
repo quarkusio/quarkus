@@ -8,6 +8,13 @@ public interface Capability {
     String QUARKUS_PREFIX = "io.quarkus";
 
     /**
+     * A command-line framework that controls command parsing and the
+     * application entry point. Mutually exclusive -- only one CLI
+     * framework extension (e.g. aesh or picocli) can be active.
+     */
+    String COMMAND_LINE = QUARKUS_PREFIX + ".command-line";
+
+    /**
      * Aesh CLI framework
      */
     String AESH = QUARKUS_PREFIX + ".aesh";

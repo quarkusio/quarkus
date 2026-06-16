@@ -57,17 +57,16 @@ eliminating reflection-based annotation scanning at runtime:
                 <groupId>org.aesh</groupId>
                 <artifactId>aesh-processor</artifactId>
             </path>
-            <path>
-                <groupId>org.aesh</groupId>
-                <artifactId>aesh</artifactId>
-            </path>
         </annotationProcessorPaths>
     </configuration>
 </plugin>
 ----
 
-NOTE: The annotation processor is optional. Without it, Aesh falls back to runtime
+[NOTE]
+====
+The annotation processor is optional. Without it, Aesh falls back to runtime
 reflection for command metadata, which works correctly but is slower at startup.
+====
 
 == Building a command line application
 
@@ -282,9 +281,12 @@ class GreetingService {
 }
 ----
 
-IMPORTANT: Beans annotated with `@CommandDefinition` should not use proxied scopes (e.g. do not use `@ApplicationScoped`)
+[IMPORTANT]
+====
+Beans annotated with `@CommandDefinition` should not use proxied scopes (e.g. do not use `@ApplicationScoped`)
 because Aesh sets field values directly via reflection.
 By default, the Aesh extension registers command classes with the `@Dependent` scope.
+====
 
 ==== Grouped commands with subcommands
 
@@ -639,8 +641,11 @@ quarkus.aesh.websocket.roles-allowed=admin,operator
 
 When `roles-allowed` is set, `authenticated` is ignored since role-based access implies authentication.
 
-NOTE: The extension will log a warning at build time if the WebSocket terminal is enabled
+[NOTE]
+====
+The extension will log a warning at build time if the WebSocket terminal is enabled
 in production without authentication configured.
+====
 
 === SSH terminal
 
@@ -690,8 +695,11 @@ quarkus.aesh.ssh.enabled=true
 Password and public key authentication can be used simultaneously. When both are configured,
 clients can authenticate with either method. If neither is configured, any password is accepted.
 
-NOTE: The extension will log a warning at startup if the SSH server is running without
+[NOTE]
+====
+The extension will log a warning at startup if the SSH server is running without
 any authentication configured (no password, no authorized-keys-file).
+====
 
 === Connection management
 
@@ -807,9 +815,12 @@ In production, always configure authentication:
 Additionally, restrict network access to these endpoints using firewalls or bind addresses.
 Use `idle-timeout` to automatically close abandoned sessions and `max-connections` to limit concurrent sessions and prevent resource exhaustion. Health checks (when `quarkus-smallrye-health` is present) provide visibility into the number of active sessions.
 
-NOTE: WebSocket connections are not protected by the browser's same-origin policy.
+[NOTE]
+====
+WebSocket connections are not protected by the browser's same-origin policy.
 If the WebSocket terminal is exposed on a network, consider configuring CORS via the
 `quarkus.http.cors` settings to restrict which origins can connect.
+====
 
 == Providing your own QuarkusMain
 
@@ -847,8 +858,14 @@ public class CustomMain implements QuarkusApplication {
 
 == Development Mode
 
-In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-n Quarkus'`.
-For Gradle projects, arguments can be passed using `--quarkus-args`.
+In development mode (`mvn quarkus:dev`), the Quarkus dev console takes control of the terminal for its interactive features (live reload, test output, etc.).
+This means the local terminal is not available for aesh CLI interaction.
+
+To test your CLI commands during development, you have the following options:
+
+* **WebSocket terminal**: Add the `quarkus-aesh-websocket` dependency and access the CLI via browser at `http://localhost:8080/aesh/index.html`. The dev console stays on the local terminal while the aesh CLI runs in the browser.
+* **Pass arguments**: Use `mvn quarkus:dev -Dquarkus.args='--help'` or `mvn quarkus:dev -Dquarkus.args='-n Quarkus'` to pass arguments directly. The application is re-executed every time the `Space bar` key is pressed. For Gradle projects, use `--quarkus-args`.
+* **Build and run**: Build the application with `mvn package -DskipTests` and run it directly with `java -jar target/quarkus-app/quarkus-run.jar <command> [options]`.
 
 === Dev UI
 
@@ -856,6 +873,7 @@ The Aesh extension provides Dev UI pages accessible at `http://localhost:8080/q/
 
 ==== Commands page
 
+Always available. Shows a table of all discovered CLI commands with their name, description, type (Group or regular), class name, and sub-commands for group commands. The resolved execution mode (console or runtime) is displayed at the top. A search field allows filtering commands by name, description, or class name.
 
 ==== Sessions page
 

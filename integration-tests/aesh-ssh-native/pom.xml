@@ -69,11 +69,6 @@
                             <artifactId>aesh-processor</artifactId>
                             <version>${aesh.version}</version>
                         </path>
-                        <path>
-                            <groupId>org.aesh</groupId>
-                            <artifactId>aesh</artifactId>
-                            <version>${aesh.version}</version>
-                        </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>

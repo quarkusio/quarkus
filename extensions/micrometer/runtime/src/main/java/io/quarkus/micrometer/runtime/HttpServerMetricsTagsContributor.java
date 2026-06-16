@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.runtime;
 
+import java.util.Optional;
+
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.vertx.core.http.HttpServerRequest;
@@ -20,9 +22,18 @@ public interface HttpServerMetricsTagsContributor {
     Tags contribute(Context context);
 
     interface Context {
+
+        /**
+         * Represents the HTTP requests
+         */
         HttpServerRequest request();
 
-        HttpResponse response();
+        /**
+         * Represents the HTTP response, if one exists.
+         * This is {@link Optional} because {@link HttpServerMetricsTagsContributor#contribute(Context)} is called
+         * in both cases where the HTTP request has been completed and when the request was reset (so no respose exists)
+         */
+        Optional<HttpResponse> response();
 
         /**
          * Gives access to the contextual data that was added while the HTTP request was active.

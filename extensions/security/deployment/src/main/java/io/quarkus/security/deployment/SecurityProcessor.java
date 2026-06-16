@@ -93,7 +93,6 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
@@ -639,7 +638,6 @@ public class SecurityProcessor {
         return providerClasses;
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void recordRuntimeConfigReady(SecurityCheckRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
@@ -974,7 +972,6 @@ public class SecurityProcessor {
                         .done());
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void resolveConfigExpressionRoles(Optional<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpRolesChecks,

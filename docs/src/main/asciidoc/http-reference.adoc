@@ -645,13 +645,12 @@ When no configured DN matches, forwarded headers are ignored and the original co
 
 [source,properties]
 ----
-quarkus.http.proxy.trusted-proxy-dns[0]=CN=my-proxy <1> <2> <3>
-quarkus.http.proxy.trusted-proxy-dns[1]=CN=envoy-client,O=MyOrg <4>
+quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-proxy <1> <2> <3>
+quarkus.http.proxy.trusted-proxy[1].subject-dn=CN=envoy-client,O=MyOrg
 ----
 <1> DNs must be in RFC 2253 format.
 <2> This option cannot be combined with `quarkus.http.proxy.trusted-proxies`.
 <3> TLS client authentication must be enabled via `quarkus.http.ssl.client-auth` set to `request` or `required`.
-<4> Use indexed format to avoid multi-component DNs being split on commas.
 
 NOTE: Configure enough DN components to uniquely identify your proxy. Using only `CN=my-proxy` will match any certificate with that CN, regardless of issuing organization.
 

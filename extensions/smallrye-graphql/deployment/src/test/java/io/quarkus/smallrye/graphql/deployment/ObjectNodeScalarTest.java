@@ -1,0 +1,68 @@
+package io.quarkus.smallrye.graphql.deployment;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+
+import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Query;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+
+/**
+ * Support for the JSON graphql type represented in Java as Jackson ObjectNode
+ */
+public class ObjectNodeScalarTest extends AbstractGraphQLTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(ObjectNodeApi.class)
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.extra-scalars=json\n" +
+                            "quarkus.smallrye-graphql.schema-include-scalars=true"),
+                            "application.properties")
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+
+    @Test
+    public void testObjectNode() {
+        String query = getPayload("{ echo(input: { field1: 1, field2: \"2\"}) }");
+        RestAssured.given()
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql/")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("data.echo.field1", equalTo(1))
+                .body("data.echo.field2", equalTo("2"));
+    }
+
+    @Test
+    public void testObjectNodeSchemaDefinition() {
+        RestAssured.given()
+                .get("/graphql/schema.graphql")
+                .prettyPeek()
+                .then()
+                .assertThat()
+                .body(containsString("scalar JSON"))
+                .body(containsString("echo(input: JSON): JSON"))
+                .statusCode(200);
+    }
+
+    @GraphQLApi
+    public static class ObjectNodeApi {
+
+        @Query
+        public ObjectNode echo(ObjectNode input) {
+            return input;
+        }
+
+    }
+
+}

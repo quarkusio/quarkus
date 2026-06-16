@@ -32,8 +32,9 @@
         <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.60.1-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.5.0</quarkus-http.version>
-        <micrometer.version>1.16.5</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.17.0</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
+        <latencyutils.version>2.0.3</latencyutils.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.1.1-RC1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
@@ -6613,6 +6614,11 @@
                 <groupId>org.hdrhistogram</groupId>
                 <artifactId>HdrHistogram</artifactId>
                 <version>${hdrhistogram.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.latencyutils</groupId>
+                <artifactId>LatencyUtils</artifactId>
+                <version>${latencyutils.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

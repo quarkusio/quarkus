@@ -10,13 +10,13 @@ import java.util.zip.GZIPInputStream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -47,6 +47,9 @@ class Http3CompressionTest {
 
     @TestHTTPResource(value = "/compress", tls = true)
     URL tlsUrl;
+
+    @Inject
+    Vertx vertx;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -89,7 +92,6 @@ class Http3CompressionTest {
 
     @Test
     void testCompressionWorksOverHttp1() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
         ClientSSLOptions sslOptions = new ClientSSLOptions()
                 .setTrustOptions(new JksOptions().setPath("target/certs/http3-test-truststore.jks").setPassword("secret"));
@@ -110,7 +112,6 @@ class Http3CompressionTest {
     void testHttp3ResponseIsCorrectWithoutCompression() throws Exception {
         // Vert.x HTTP/3 (QUIC) does not currently apply server-side compression.
         // This test verifies the response is still correct (uncompressed).
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
         ClientSSLOptions sslOptions = new ClientSSLOptions()
                 .setTrustOptions(new JksOptions().setPath("target/certs/http3-test-truststore.jks").setPassword("secret"));

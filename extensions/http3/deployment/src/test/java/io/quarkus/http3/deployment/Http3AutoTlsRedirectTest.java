@@ -7,13 +7,13 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientConfig;
@@ -36,10 +36,11 @@ class Http3AutoTlsRedirectTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyBean.class));
 
+    @Inject
+    Vertx vertx;
+
     @Test
     void testHttpRedirectsToHttps() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
-
         HttpClientConfig clientConfig = new HttpClientConfig();
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).build();
 

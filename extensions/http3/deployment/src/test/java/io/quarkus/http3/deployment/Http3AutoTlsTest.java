@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.Http3ClientConfig;
 import io.vertx.core.http.HttpClientAgent;
@@ -43,6 +42,9 @@ class Http3AutoTlsTest {
     @Inject
     TlsConfigurationRegistry registry;
 
+    @Inject
+    Vertx vertx;
+
     @Test
     void testAutoTlsCertificateRegistered() {
         assertThat(registry.get("http3-dev")).isPresent();
@@ -51,7 +53,6 @@ class Http3AutoTlsTest {
 
     @Test
     void testHttp3WorksWithAutoTls() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();

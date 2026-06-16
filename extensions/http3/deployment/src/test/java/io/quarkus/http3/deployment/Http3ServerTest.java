@@ -8,13 +8,13 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -45,12 +45,14 @@ class Http3ServerTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "server-keystore.jks")
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret");
 
+    @Inject
+    Vertx vertx;
+
     record ResponseStruct(String version, String body, int status) {
     }
 
     @Test
     void testHttp3Connection() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -77,7 +79,6 @@ class Http3ServerTest {
 
     @Test
     void testHttp3PostWithBody() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -105,7 +106,6 @@ class Http3ServerTest {
 
     @Test
     void testHttp3LargeResponse() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();

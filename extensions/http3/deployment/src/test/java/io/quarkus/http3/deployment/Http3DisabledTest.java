@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.netty.channel.ConnectTimeoutException;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -48,9 +48,11 @@ class Http3DisabledTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret")
             .overrideConfigKey("quarkus.http3.enabled", "false");
 
+    @Inject
+    Vertx vertx;
+
     @Test
     void testHttp3ConnectionFails() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -78,7 +80,6 @@ class Http3DisabledTest {
 
     @Test
     void testHttps1StillWorks() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -102,7 +103,6 @@ class Http3DisabledTest {
 
     @Test
     void testHttps2StillWorks() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();

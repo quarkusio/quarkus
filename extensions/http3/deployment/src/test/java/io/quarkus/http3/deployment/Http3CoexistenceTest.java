@@ -8,13 +8,13 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -45,9 +45,11 @@ class Http3CoexistenceTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "server-keystore.jks")
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret");
 
+    @Inject
+    Vertx vertx;
+
     @Test
     void testHttp1OverTls() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -71,7 +73,6 @@ class Http3CoexistenceTest {
 
     @Test
     void testHttp2OverTls() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
@@ -95,7 +96,6 @@ class Http3CoexistenceTest {
 
     @Test
     void testHttp3OverQuic() throws Exception {
-        Vertx vertx = VertxCoreRecorder.getVertx().get();
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();

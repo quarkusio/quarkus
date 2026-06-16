@@ -118,7 +118,7 @@ class Http3RestTest {
         int port = tlsUrl.getPort();
 
         HttpClientConfig clientConfig = new HttpClientConfig();
-        clientConfig.setVersions(HttpVersion.HTTP_2);
+        clientConfig.setVersions(HttpVersion.HTTP_1_1);
         clientConfig.setSsl(true);
         ClientSSLOptions sslOptions = new ClientSSLOptions()
                 .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
@@ -132,6 +132,23 @@ class Http3RestTest {
         assertThat(altSvc).isNotNull();
         assertThat(altSvc).startsWith("h3=\":");
 
+        resp.body().await(5, TimeUnit.SECONDS);
+
+        client.close().await(5, TimeUnit.SECONDS);
+
+        clientConfig = new HttpClientConfig();
+        clientConfig.setVersions(HttpVersion.HTTP_2);
+        clientConfig.setSsl(true);
+        sslOptions = new ClientSSLOptions()
+                .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
+        client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
+
+        resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                .compose(HttpClientRequest::send)
+                .await(10, TimeUnit.SECONDS);
+
+        altSvc = resp.getHeader("Alt-Svc");
+        assertThat(altSvc).isNull();
         resp.body().await(5, TimeUnit.SECONDS);
         client.close().await(5, TimeUnit.SECONDS);
     }

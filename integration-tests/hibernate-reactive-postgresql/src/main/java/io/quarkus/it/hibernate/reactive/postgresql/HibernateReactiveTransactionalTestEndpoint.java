@@ -50,6 +50,18 @@ public class HibernateReactiveTransactionalTestEndpoint {
         return updatePigRollback(pigId, name);
     }
 
+    @POST
+    @Path("/currentTransaction/{id}")
+    @Transactional(Transactional.TxType.REQUIRED)
+    public Uni<String> currentTransaction(int id) {
+        return session.persist(new GuineaPig(id, "currentTransaction"))
+                .chain(session::flush)
+                .map(v -> {
+                    Mutiny.Transaction tx = session.currentTransaction();
+                    return tx != null ? "active" : "null";
+                });
+    }
+
     @Transactional(Transactional.TxType.REQUIRED)
     public Uni<GuineaPig> transactionalFind(int pigId) {
         return session.find(GuineaPig.class, pigId);

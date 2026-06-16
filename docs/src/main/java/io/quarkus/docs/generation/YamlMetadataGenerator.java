@@ -1,6 +1,7 @@
 package io.quarkus.docs.generation;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +12,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,10 +72,20 @@ public class YamlMetadataGenerator {
                         ? Path.of(args[1])
                         : docsDir().resolve("target"));
 
+        Path categoriesFile = args.length >= 3
+                ? Path.of(args[2])
+                : docsDir().resolve("src/main/resources/categories.yaml");
+
         System.out.println("[INFO] Generating metadata index");
         generator.generateIndex();
         System.out.println("[INFO] Writing metadata index and error files");
         generator.writeYamlFiles();
+
+        if (Files.exists(categoriesFile)) {
+            System.out.println("[INFO] Writing enriched categories to target");
+            generator.writeEnrichedCategories(categoriesFile);
+        }
+
         System.out.println("[INFO] Done");
     }
 
@@ -131,6 +143,87 @@ public class YamlMetadataGenerator {
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
+    }
+
+    @SuppressWarnings("unchecked")
+    public void writeEnrichedCategories(Path categoriesFile) throws IOException {
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder()
+                        .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
+                        .disable(YAMLWriteFeature.SPLIT_LINES)
+                        .build())
+                .build();
+
+        Map<String, Object> root;
+        try (InputStream is = Files.newInputStream(categoriesFile)) {
+            root = om.readValue(is, Map.class);
+        }
+
+        Map<String, DocMetadata> metadataByFile = index.metadataByFile();
+
+        List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
+        if (categories != null) {
+            for (Map<String, Object> category : categories) {
+                enrichGuides(category, metadataByFile);
+            }
+        }
+
+        om.writeValue(targetDir.resolve("categories.yaml").toFile(), root);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enrichGuides(Map<String, Object> node, Map<String, DocMetadata> metadataByFile) {
+        List<String> guides = (List<String>) node.get("guides");
+        if (guides != null) {
+            List<Object> enriched = new ArrayList<>(guides.size());
+            for (String guide : guides) {
+                DocMetadata metadata = metadataByFile.get(guide);
+                if (metadata != null) {
+                    enriched.add(metadataToMap(metadata));
+                } else {
+                    enriched.add(guide);
+                }
+            }
+            node.put("guides", enriched);
+        }
+
+        List<Map<String, Object>> subcategories = (List<Map<String, Object>>) node.get("subcategories");
+        if (subcategories != null) {
+            for (Map<String, Object> sub : subcategories) {
+                enrichGuides(sub, metadataByFile);
+            }
+        }
+    }
+
+    private Map<String, Object> metadataToMap(DocMetadata metadata) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("filename", metadata.filename);
+        if (metadata.id != null) {
+            map.put("id", metadata.id);
+        }
+        map.put("title", metadata.title);
+        if (metadata.summary != null && !metadata.summary.isEmpty()) {
+            map.put("summary", metadata.summary);
+        }
+        map.put("url", metadata.getUrl());
+        map.put("type", metadata.type.id);
+        if (metadata.status != null) {
+            map.put("status", metadata.status.id);
+        }
+        String categories = metadata.getCategories();
+        if (!categories.isEmpty()) {
+            map.put("categories", categories);
+        }
+        if (!metadata.keywords.isEmpty()) {
+            map.put("keywords", metadata.getKeywords());
+        }
+        if (!metadata.topics.isEmpty()) {
+            map.put("topics", new ArrayList<>(metadata.topics));
+        }
+        if (!metadata.extensions.isEmpty()) {
+            map.put("extensions", new ArrayList<>(metadata.extensions));
+        }
+        return map;
     }
 
     public Index generateIndex() throws IOException {

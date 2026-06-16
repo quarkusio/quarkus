@@ -905,9 +905,7 @@ public class VertxHttpRecorder {
         if (container != null) {
             List<InstanceHandle<HttpServerConfigCustomizer>> instances = container
                     .listAll(HttpServerConfigCustomizer.class);
-            System.out.println("Instances: " + instances.size());
             for (InstanceHandle<HttpServerConfigCustomizer> instance : instances) {
-                System.out.println("Found instance: " + instance);
                 HttpServerConfigCustomizer customizer = instance.get();
                 if (httpMainServerConfig != null) {
                     customizer.customizeHttpServer(httpMainServerConfig);

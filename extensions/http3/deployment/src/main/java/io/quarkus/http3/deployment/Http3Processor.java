@@ -118,6 +118,7 @@ class Http3Processor {
 
         // Dev or test mode: auto-generate a certificate
         CertOrigin certOrigin;
+        // TODO Add Gradle support
         Path outputDir = Path.of("target", "http3-dev-cert");
         try {
             Files.createDirectories(outputDir);

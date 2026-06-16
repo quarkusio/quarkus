@@ -44,6 +44,7 @@ import io.vertx.core.http.Http2ServerConfig;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.ServerSSLOptions;
@@ -77,6 +78,8 @@ public class HttpServerOptionsUtils {
      */
     public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
     }
+
+    // TODO Add setLogActivity, and setActivityLogDataFormat when we know where it is in the new ServerConfig API
 
     /**
      * Create an {@link HttpServerConfig} and {@link ServerSSLOptions} for the HTTPS server,
@@ -290,6 +293,7 @@ public class HttpServerOptionsUtils {
         http1.setMaxHeaderSize(httpConfig.limits().maxHeaderSize().asBigInteger().intValueExact());
         http1.setMaxChunkSize(httpConfig.limits().maxChunkSize().asBigInteger().intValueExact());
         http1.setMaxInitialLineLength(httpConfig.limits().maxInitialLineLength());
+        http1.setDecoderInitialBufferSize(httpConfig.decoderInitialBufferSize());
         config.setHttp1Config(http1);
 
         // Form decoder config
@@ -317,19 +321,29 @@ public class HttpServerOptionsUtils {
         transport.setOption(TcpOption.FASTOPEN_CONNECT, httpConfig.tcpFastOpen());
         transport.setOption(TcpOption.USER_TIMEOUT, (int) httpConfig.tcpUserTimeout().toMillis());
         transport.setSoLinger(httpConfig.soLinger());
+        transport.setSoKeepAlive(httpConfig.tcpKeepAlive());
+        transport.setReuseAddress(httpConfig.reuseAddress());
+        if (httpConfig.trafficClass() >= 0) {
+            transport.setTrafficClass(httpConfig.trafficClass());
+        }
         if (httpConfig.sendBufferSize().isPresent()) {
             transport.setSendBufferSize(httpConfig.sendBufferSize().getAsInt());
         }
         if (httpConfig.receiveBufferSize().isPresent()) {
             transport.setReceiveBufferSize(httpConfig.receiveBufferSize().getAsInt());
         }
+        tcpConfig.setProxyProtocolTimeout(httpConfig.proxyProtocolTimeout());
         config.setReadIdleTimeout(Duration.ofMillis(httpConfig.readIdleTimeout().toMillis()));
         config.setWriteIdleTimeout(Duration.ofMillis(httpConfig.writeIdleTimeout().toMillis()));
 
         config.setHandle100ContinueAutomatically(httpConfig.handle100ContinueAutomatically());
 
+        // Query param decoder config
+        config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setUseSemicolonAsDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter()));
+
         // Compression config
-        applyCompressionConfig(config, httpBuildTimeConfig);
+        applyCompressionConfig(config, httpBuildTimeConfig, httpConfig.compressionContentSizeThreshold());
 
         // HTTP/2 config
         if (httpConfig.http2()) {
@@ -362,6 +376,9 @@ public class HttpServerOptionsUtils {
             }
             if (httpConfig.http2ConnectionWindowSize().isPresent()) {
                 http2.setConnectionWindowSize(httpConfig.http2ConnectionWindowSize().getAsInt());
+            }
+            if (httpConfig.http2MaxSmallContinuationFrames().isPresent()) {
+                http2.setMaxSmallContinuationFrames(httpConfig.http2MaxSmallContinuationFrames().getAsInt());
             }
             config.setHttp2Config(http2);
         }
@@ -406,22 +423,42 @@ public class HttpServerOptionsUtils {
         applyWebSocketOptions(wsConfig, managementConfig.websocketServer());
         config.setWebSocketConfig(wsConfig);
 
-        config.getTcpConfig().setAcceptBacklog(managementConfig.acceptBacklog());
+        var tcpConfig = config.getTcpConfig();
+        tcpConfig.setAcceptBacklog(managementConfig.acceptBacklog());
 
         config.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
+
+        // Query param decoder config
+        config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setUseSemicolonAsDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression
         applyCompressionConfig(config, managementBuildTimeConfig.enableCompression(),
                 managementBuildTimeConfig.enableDecompression(), Optional.empty(),
-                managementBuildTimeConfig.compressionLevel());
+                managementBuildTimeConfig.compressionLevel(), managementConfig.compressionContentSizeThreshold());
+
+        // Logging
+        if (managementConfig.logActivity()) {
+            var log = new LogConfig();
+            if (managementConfig.activityLogDataFormat() != null) {
+                log.setDataFormat(ByteBufFormat.valueOf(managementConfig.activityLogDataFormat().name()));
+            }
+            config.setLogConfig(log);
+        }
 
         // Proxy protocol
-        config.getTcpConfig().setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
+        tcpConfig.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
+        tcpConfig.setProxyProtocolTimeout(managementConfig.proxyProtocolTimeout());
 
         // TCP options
-        var transport = config.getTcpConfig().getTransportConfig();
+        var transport = tcpConfig.getTransportConfig();
         transport.setOption(TcpOption.USER_TIMEOUT, (int) managementConfig.tcpUserTimeout().toMillis());
         transport.setSoLinger(managementConfig.soLinger());
+        transport.setSoKeepAlive(managementConfig.tcpKeepAlive());
+        transport.setReuseAddress(managementConfig.reuseAddress());
+        if (managementConfig.trafficClass() >= 0) {
+            transport.setTrafficClass(managementConfig.trafficClass());
+        }
         if (managementConfig.sendBufferSize().isPresent()) {
             transport.setSendBufferSize(managementConfig.sendBufferSize().getAsInt());
         }
@@ -430,317 +467,6 @@ public class HttpServerOptionsUtils {
         }
         config.setReadIdleTimeout(Duration.ofMillis(managementConfig.readIdleTimeout().toMillis()));
         config.setWriteIdleTimeout(Duration.ofMillis(managementConfig.writeIdleTimeout().toMillis()));
-    }
-
-    /**
-     * @deprecated Use {@link #createSslServerConfig} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static HttpServerOptions createSslOptions(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            VertxHttpConfig httpConfig,
-            LaunchMode launchMode,
-            List<String> websocketSubProtocols,
-            TlsConfigurationRegistry registry) throws IOException {
-
-        if (!httpConfig.hostEnabled()) {
-            return null;
-        }
-
-        final HttpServerOptions serverOptions = new HttpServerOptions();
-        int sslPort = httpConfig.determineSslPort(launchMode);
-        serverOptions.setPort(sslPort);
-        serverOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
-
-        if (JdkSSLEngineOptions.isAlpnAvailable()) {
-            serverOptions.setUseAlpn(httpConfig.http2());
-            if (httpConfig.http2()) {
-                serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
-            }
-        }
-        setIdleTimeout(httpConfig, serverOptions);
-
-        Optional<String> tlsConfigurationName = getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode);
-        TlsConfiguration bucket = getTlsConfiguration(tlsConfigurationName, registry);
-        if (bucket != null) {
-            applyTlsConfigurationToHttpServerOptions(bucket, serverOptions);
-            applyCommonOptions(serverOptions, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
-            return serverOptions;
-        }
-
-        // Legacy configuration:
-        applySslConfigToHttpServerOptions(httpConfig.ssl(), serverOptions);
-        applyCommonOptions(serverOptions, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
-
-        return serverOptions;
-    }
-
-    /**
-     * @deprecated Use {@link #createSslServerConfigForManagementInterface} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static HttpServerOptions createSslOptionsForManagementInterface(
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            ManagementConfig managementConfig,
-            LaunchMode launchMode, List<String> websocketSubProtocols, TlsConfigurationRegistry registry)
-            throws IOException {
-        if (!managementConfig.hostEnabled()) {
-            return null;
-        }
-
-        final HttpServerOptions serverOptions = new HttpServerOptions();
-        if (JdkSSLEngineOptions.isAlpnAvailable()) {
-            serverOptions.setUseAlpn(true);
-            serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
-        }
-        int idleTimeout = (int) managementConfig.idleTimeout().toMillis();
-        serverOptions.setIdleTimeout(idleTimeout);
-        serverOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-
-        int sslPort = managementConfig.determinePort(launchMode);
-        serverOptions.setPort(sslPort);
-        serverOptions.setClientAuth(managementBuildTimeConfig.tlsClientAuth());
-
-        TlsConfiguration bucket = getTlsConfiguration(managementConfig.tlsConfigurationName(), registry);
-        if (bucket != null) {
-            applyTlsConfigurationToHttpServerOptions(bucket, serverOptions);
-            applyCommonOptionsForManagementInterface(serverOptions, managementBuildTimeConfig, managementConfig,
-                    websocketSubProtocols);
-            return serverOptions;
-        }
-
-        // Legacy configuration:
-        applySslConfigToHttpServerOptions(managementConfig.ssl(), serverOptions);
-        applyCommonOptionsForManagementInterface(serverOptions, managementBuildTimeConfig, managementConfig,
-                websocketSubProtocols);
-
-        return serverOptions;
-    }
-
-    /**
-     * @deprecated Use {@link #createSslOptionsFromTlsConfiguration} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
-        serverOptions.setSsl(true);
-
-        KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
-        TrustOptions trustStoreOptions = bucket.getTrustStoreOptions();
-        if (keyStoreOptions != null) {
-            serverOptions.setKeyCertOptions(keyStoreOptions);
-        }
-        if (trustStoreOptions != null) {
-            serverOptions.setTrustOptions(trustStoreOptions);
-        }
-        serverOptions.setSni(bucket.usesSni());
-
-        ServerSSLOptions other = bucket.getServerSSLOptions();
-        serverOptions.setSslHandshakeTimeout(other.getSslHandshakeTimeout());
-        serverOptions.setSslHandshakeTimeoutUnit(other.getSslHandshakeTimeoutUnit());
-        for (String suite : other.getEnabledCipherSuites()) {
-            serverOptions.addEnabledCipherSuite(suite);
-        }
-        for (Buffer buffer : other.getCrlValues()) {
-            serverOptions.addCrlValue(buffer);
-        }
-        if (!other.isUseAlpn()) {
-            serverOptions.setUseAlpn(false);
-        }
-        serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
-    }
-
-    /**
-     * @deprecated Use {@link #applyCommonOptions(HttpServerConfig, VertxHttpBuildTimeConfig, VertxHttpConfig, List)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static void applyCommonOptions(
-            HttpServerOptions httpServerOptions,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            VertxHttpConfig httpConfig,
-            List<String> websocketSubProtocols) {
-        httpServerOptions.setHost(httpConfig.host());
-        setIdleTimeout(httpConfig, httpServerOptions);
-        httpServerOptions.setMaxHeaderSize(httpConfig.limits().maxHeaderSize().asIntValue());
-        httpServerOptions.setMaxChunkSize(httpConfig.limits().maxChunkSize().asIntValue());
-        httpServerOptions.setMaxFormAttributeSize(httpConfig.limits().maxFormAttributeSize().asIntValue());
-        httpServerOptions.setMaxFormFields(httpConfig.limits().maxFormFields());
-        httpServerOptions.setMaxFormBufferedBytes(httpConfig.limits().maxFormBufferedBytes().asIntValue());
-        httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
-        httpServerOptions.setReusePort(httpConfig.soReusePort());
-        httpServerOptions.setTcpQuickAck(httpConfig.tcpQuickAck());
-        httpServerOptions.setTcpCork(httpConfig.tcpCork());
-        httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
-        httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
-        httpServerOptions.setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
-        httpServerOptions.setTcpUserTimeout((int) httpConfig.tcpUserTimeout().toMillis());
-        httpServerOptions.setSoLinger(httpConfig.soLinger());
-        if (httpConfig.sendBufferSize().isPresent()) {
-            httpServerOptions.setSendBufferSize(httpConfig.sendBufferSize().getAsInt());
-        }
-        if (httpConfig.receiveBufferSize().isPresent()) {
-            httpServerOptions.setReceiveBufferSize(httpConfig.receiveBufferSize().getAsInt());
-        }
-        httpServerOptions.setReadIdleTimeout((int) httpConfig.readIdleTimeout().toMillis());
-        httpServerOptions.setWriteIdleTimeout((int) httpConfig.writeIdleTimeout().toMillis());
-        httpServerOptions.setCompressionContentSizeThreshold(httpConfig.compressionContentSizeThreshold());
-        httpServerOptions.setCompressionSupported(httpBuildTimeConfig.enableCompression());
-        if (httpBuildTimeConfig.compressionLevel().isPresent()) {
-            httpServerOptions.setCompressionLevel(httpBuildTimeConfig.compressionLevel().getAsInt());
-        }
-        httpServerOptions.setDecompressionSupported(httpBuildTimeConfig.enableDecompression());
-        httpServerOptions.setMaxInitialLineLength(httpConfig.limits().maxInitialLineLength());
-        httpServerOptions.setHandle100ContinueAutomatically(httpConfig.handle100ContinueAutomatically());
-
-        if (httpBuildTimeConfig.compressors().isPresent()) {
-            for (String compressor : httpBuildTimeConfig.compressors().get()) {
-                if ("gzip".equalsIgnoreCase(compressor)) {
-                    final GzipOptions defaultOps = StandardCompressionOptions.gzip();
-                    httpServerOptions.addCompressor(StandardCompressionOptions
-                            .gzip(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
-                } else if ("deflate".equalsIgnoreCase(compressor)) {
-                    final DeflateOptions defaultOps = StandardCompressionOptions.deflate();
-                    httpServerOptions.addCompressor(StandardCompressionOptions
-                            .deflate(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
-                } else if ("br".equalsIgnoreCase(compressor)) {
-                    final BrotliOptions o = StandardCompressionOptions.brotli();
-                    if (httpBuildTimeConfig.compressionLevel().isPresent()) {
-                        o.parameters().setQuality(httpBuildTimeConfig.compressionLevel().getAsInt());
-                    }
-                    httpServerOptions.addCompressor(o);
-                } else {
-                    LOGGER.errorf("Unknown compressor: %s", compressor);
-                }
-            }
-        }
-
-        if (httpConfig.http2()) {
-            var settings = new Http2Settings();
-            if (httpConfig.limits().headerTableSize().isPresent()) {
-                settings.setHeaderTableSize(httpConfig.limits().headerTableSize().getAsLong());
-            }
-            settings.setPushEnabled(httpConfig.http2PushEnabled());
-            if (httpConfig.limits().maxConcurrentStreams().isPresent()) {
-                settings.setMaxConcurrentStreams(httpConfig.limits().maxConcurrentStreams().getAsLong());
-            }
-            if (httpConfig.initialWindowSize().isPresent()) {
-                settings.setInitialWindowSize(httpConfig.initialWindowSize().getAsInt());
-            }
-            if (httpConfig.limits().maxFrameSize().isPresent()) {
-                settings.setMaxFrameSize(httpConfig.limits().maxFrameSize().getAsInt());
-            }
-            if (httpConfig.limits().maxHeaderListSize().isPresent()) {
-                settings.setMaxHeaderListSize(httpConfig.limits().maxHeaderListSize().getAsLong());
-            }
-            httpServerOptions.setInitialSettings(settings);
-
-            // RST attack protection
-            if (httpConfig.limits().rstFloodMaxRstFramePerWindow().isPresent()) {
-                httpServerOptions
-                        .setHttp2RstFloodMaxRstFramePerWindow(httpConfig.limits().rstFloodMaxRstFramePerWindow().getAsInt());
-            }
-            if (httpConfig.limits().rstFloodWindowDuration().isPresent()) {
-                httpServerOptions.setHttp2RstFloodWindowDuration(
-                        (int) httpConfig.limits().rstFloodWindowDuration().get().toSeconds());
-                httpServerOptions.setHttp2RstFloodWindowDurationTimeUnit(TimeUnit.SECONDS);
-            }
-            if (httpConfig.http2ConnectionWindowSize().isPresent()) {
-                httpServerOptions.setHttp2ConnectionWindowSize(httpConfig.http2ConnectionWindowSize().getAsInt());
-            }
-            if (httpConfig.http2MaxSmallContinuationFrames().isPresent()) {
-                httpServerOptions
-                        .setHttp2MaxSmallContinuationFrames(httpConfig.http2MaxSmallContinuationFrames().getAsInt());
-            }
-        } else {
-            httpServerOptions.setHttp2ClearTextEnabled(false);
-        }
-
-        httpServerOptions.setUseProxyProtocol(httpConfig.proxy().useProxyProtocol());
-        httpServerOptions.setProxyProtocolTimeout(httpConfig.proxyProtocolTimeout().toMillis());
-        httpServerOptions.setProxyProtocolTimeoutUnit(TimeUnit.MILLISECONDS);
-        httpServerOptions.setTcpKeepAlive(httpConfig.tcpKeepAlive());
-        httpServerOptions.setLogActivity(httpConfig.logActivity());
-        httpServerOptions.setActivityLogDataFormat(
-                httpConfig.activityLogDataFormat() == VertxHttpConfig.ActivityLogDataFormat.SIMPLE
-                        ? ByteBufFormat.SIMPLE
-                        : ByteBufFormat.HEX_DUMP);
-        httpServerOptions.setReuseAddress(httpConfig.reuseAddress());
-        if (httpConfig.trafficClass() >= 0) {
-            httpServerOptions.setTrafficClass(httpConfig.trafficClass());
-        }
-        httpServerOptions.setDecoderInitialBufferSize(httpConfig.decoderInitialBufferSize());
-        configureTrafficShapingIfEnabled(httpServerOptions, httpConfig);
-
-        // WebSocket options
-        httpConfig.websocketServer().maxFrameSize().ifPresent(httpServerOptions::setMaxWebSocketFrameSize);
-        httpConfig.websocketServer().maxMessageSize().ifPresent(httpServerOptions::setMaxWebSocketMessageSize);
-        applyWebSocketOptions(httpServerOptions, httpConfig.websocketServer());
-    }
-
-    /**
-     * @deprecated Use
-     *             {@link #applyCommonOptionsForManagementInterface(HttpServerConfig, ManagementInterfaceBuildTimeConfig, ManagementConfig, List)}
-     *             instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static void applyCommonOptionsForManagementInterface(
-            HttpServerOptions options,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            ManagementConfig managementConfig,
-            List<String> websocketSubProtocols) {
-        options.setHost(managementConfig.host());
-
-        int idleTimeout = (int) managementConfig.idleTimeout().toMillis();
-        options.setIdleTimeout(idleTimeout);
-        options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-
-        options.setMaxHeaderSize(managementConfig.limits().maxHeaderSize().asIntValue());
-        options.setMaxChunkSize(managementConfig.limits().maxChunkSize().asIntValue());
-        options.setMaxFormAttributeSize(managementConfig.limits().maxFormAttributeSize().asIntValue());
-        options.setMaxFormFields(managementConfig.limits().maxFormFields());
-        options.setMaxFormBufferedBytes(managementConfig.limits().maxFormBufferedBytes().asIntValue());
-        options.setMaxInitialLineLength(managementConfig.limits().maxInitialLineLength());
-        options.setWebSocketSubProtocols(websocketSubProtocols);
-        options.setAcceptBacklog(managementConfig.acceptBacklog());
-        options.setCompressionSupported(managementBuildTimeConfig.enableCompression());
-        if (managementBuildTimeConfig.compressionLevel().isPresent()) {
-            options.setCompressionLevel(managementBuildTimeConfig.compressionLevel().getAsInt());
-        } else {
-            options.setCompressionLevel(HttpServerOptions.DEFAULT_COMPRESSION_LEVEL);
-        }
-        options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
-        options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
-        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
-
-        options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
-        options.setProxyProtocolTimeout(managementConfig.proxyProtocolTimeout().toMillis());
-        options.setProxyProtocolTimeoutUnit(TimeUnit.MILLISECONDS);
-        options.setTcpKeepAlive(managementConfig.tcpKeepAlive());
-        options.setLogActivity(managementConfig.logActivity());
-        options.setActivityLogDataFormat(
-                managementConfig.activityLogDataFormat() == VertxHttpConfig.ActivityLogDataFormat.SIMPLE
-                        ? ByteBufFormat.SIMPLE
-                        : ByteBufFormat.HEX_DUMP);
-        options.setReuseAddress(managementConfig.reuseAddress());
-        if (managementConfig.trafficClass() >= 0) {
-            options.setTrafficClass(managementConfig.trafficClass());
-        }
-
-        options.setTcpUserTimeout((int) managementConfig.tcpUserTimeout().toMillis());
-        options.setSoLinger(managementConfig.soLinger());
-        if (managementConfig.sendBufferSize().isPresent()) {
-            options.setSendBufferSize(managementConfig.sendBufferSize().getAsInt());
-        }
-        if (managementConfig.receiveBufferSize().isPresent()) {
-            options.setReceiveBufferSize(managementConfig.receiveBufferSize().getAsInt());
-        }
-        options.setReadIdleTimeout((int) managementConfig.readIdleTimeout().toMillis());
-        options.setWriteIdleTimeout((int) managementConfig.writeIdleTimeout().toMillis());
-        options.setCompressionContentSizeThreshold(managementConfig.compressionContentSizeThreshold());
-
-        // WebSocket options
-        managementConfig.websocketServer().maxFrameSize().ifPresent(options::setMaxWebSocketFrameSize);
-        managementConfig.websocketServer().maxMessageSize().ifPresent(options::setMaxWebSocketMessageSize);
-        applyWebSocketOptions(options, managementConfig.websocketServer());
     }
 
     public static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,
@@ -876,14 +602,16 @@ public class HttpServerOptionsUtils {
         return sslOptions;
     }
 
-    private static void applyCompressionConfig(HttpServerConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+    private static void applyCompressionConfig(HttpServerConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            int contentSizeThreshold) {
         applyCompressionConfig(config, httpBuildTimeConfig.enableCompression(),
                 httpBuildTimeConfig.enableDecompression(), httpBuildTimeConfig.compressors(),
-                httpBuildTimeConfig.compressionLevel());
+                httpBuildTimeConfig.compressionLevel(), contentSizeThreshold);
     }
 
     private static void applyCompressionConfig(HttpServerConfig config, boolean enableCompression,
-            boolean enableDecompression, Optional<List<String>> compressors, OptionalInt compressionLevel) {
+            boolean enableDecompression, Optional<List<String>> compressors, OptionalInt compressionLevel,
+            int contentSizeThreshold) {
         CompressionConfig compression = new CompressionConfig();
         compression.setCompressionEnabled(enableCompression);
         compression.setDecompressionEnabled(enableDecompression);
@@ -923,6 +651,7 @@ public class HttpServerOptionsUtils {
             }
         }
 
+        compression.setContentSizeThreshold(contentSizeThreshold);
         config.setCompressionConfig(compression);
     }
 

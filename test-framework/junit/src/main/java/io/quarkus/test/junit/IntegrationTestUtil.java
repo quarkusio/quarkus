@@ -120,7 +120,7 @@ public final class IntegrationTestUtil {
             throw new RuntimeException(
                     "An unexpected situation occurred while trying to instantiate the testing infrastructure. Have you perhaps mixed @QuarkusTest and @QuarkusIntegrationTest in the same test run?");
         }
-        ((TestResourceManager) state.getTestResourceManager()).inject(testInstance);
+        ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
     }
 
     static Optional<ListeningAddress> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)

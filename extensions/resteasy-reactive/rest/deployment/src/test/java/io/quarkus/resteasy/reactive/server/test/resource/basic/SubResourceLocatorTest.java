@@ -64,6 +64,7 @@ public class SubResourceLocatorTest {
     public void test657() {
         Client client = ClientBuilder.newClient();
         Assertions.assertNotNull(((WebTargetImpl) client.target(uri)).proxy(SubResourceLocatorPlatformServiceResource.class));
+        Assertions.assertNotNull(((WebTargetImpl) client.target(uri)).proxy(SubResourceLocatorBaseService.class));
         WebTarget base = client.target(UriBuilder.fromUri(uri).path("/platform/users/89080/data/ada/jsanchez110"));
         Response response = base.request().get();
         String s = response.readEntity(String.class);

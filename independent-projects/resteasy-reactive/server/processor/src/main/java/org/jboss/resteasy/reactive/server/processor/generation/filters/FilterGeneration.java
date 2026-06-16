@@ -106,6 +106,11 @@ public class FilterGeneration {
             if (priorityValue != null) {
                 priority = priorityValue.asInt();
             }
+            boolean cancellable = true;
+            AnnotationValue cancellableValue = instance.value("cancellable");
+            if (cancellableValue != null) {
+                cancellable = cancellableValue.asBoolean();
+            }
             List<AnnotationInstance> annotations = methodInfo.annotations();
             for (AnnotationInstance annotation : annotations) {
                 if (SERVER_REQUEST_FILTER.equals(annotation.name())) {
@@ -122,7 +127,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    false, priority, false, false, nameBindingNames, false, methodInfo));
+                    false, priority, false, false, nameBindingNames, false, methodInfo, cancellable));
 
         }
         return ret;
@@ -138,13 +143,22 @@ public class FilterGeneration {
         final boolean nonBlocking;
         final Set<String> nameBindingNames;
         final boolean withFormRead;
-
         final MethodInfo filterSourceMethod;
+        final boolean cancellable;
 
         public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
                 String declaringClassName,
                 boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
                 Set<String> nameBindingNames, boolean withFormRead, MethodInfo filterSourceMethod) {
+            this(generatedClasses, generatedClassName, declaringClassName, requestFilter, priority, preMatching,
+                    nonBlocking, nameBindingNames, withFormRead, filterSourceMethod, true);
+        }
+
+        public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
+                String declaringClassName,
+                boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
+                Set<String> nameBindingNames, boolean withFormRead, MethodInfo filterSourceMethod,
+                boolean cancellable) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;
@@ -155,6 +169,7 @@ public class FilterGeneration {
             this.nameBindingNames = nameBindingNames;
             this.withFormRead = withFormRead;
             this.filterSourceMethod = filterSourceMethod;
+            this.cancellable = cancellable;
         }
 
         public String getGeneratedClassName() {
@@ -195,6 +210,10 @@ public class FilterGeneration {
 
         public MethodInfo getFilterSourceMethod() {
             return filterSourceMethod;
+        }
+
+        public boolean isCancellable() {
+            return cancellable;
         }
     }
 

@@ -34,6 +34,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.server.Cancellable;
 import org.jboss.resteasy.reactive.server.ExceptionUnwrapStrategy;
 import org.jboss.resteasy.reactive.server.UnwrapException;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
@@ -90,6 +91,7 @@ public class ResteasyReactiveScanningProcessor {
     private static final DotName RUNTIME_EXCEPTION = DotName.createSimple(RuntimeException.class);
 
     public static final Set<DotName> CONDITIONAL_BEAN_ANNOTATIONS;
+    private static final DotName CANCELLABLE = DotName.createSimple(Cancellable.class);
 
     static {
         CONDITIONAL_BEAN_ANNOTATIONS = new HashSet<>(BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS);
@@ -119,7 +121,16 @@ public class ResteasyReactiveScanningProcessor {
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForContainerRequestFilters(interceptors,
                         combinedIndexBuildItem.getIndex(),
-                        applicationResultBuildItem.getResult());
+                        applicationResultBuildItem.getResult(),
+                        (filterClass, interceptor) -> {
+                            AnnotationInstance cancellableAnnotation = filterClass.declaredAnnotation(CANCELLABLE);
+                            if (cancellableAnnotation != null) {
+                                AnnotationValue value = cancellableAnnotation.value();
+                                if (value != null) {
+                                    interceptor.setCancellable(value.asBoolean());
+                                }
+                            }
+                        });
             }
         });
     }
@@ -457,6 +468,7 @@ public class ResteasyReactiveScanningProcessor {
                         generated.getGeneratedClassName())
                         .setRegisterAsBean(false)// it has already been made a bean
                         .setPriority(generated.getPriority())
+                        .setCancellable(generated.isCancellable())
                         .setFilterSourceMethod(generated.getFilterSourceMethod());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());

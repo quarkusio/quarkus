@@ -14,13 +14,12 @@ public class ResponseHeaderTag implements HttpServerMetricsTagsContributor {
     @Override
     public Tags contribute(Context context) {
         Optional<HttpResponse> response = context.response();
-        if (response.isEmpty()) {
-            return Tags.empty();
-        }
-        var headerValue = response.get().headers().get("foo-response");
         String value = "UNSET";
-        if ((headerValue != null) && !headerValue.isEmpty()) {
-            value = headerValue;
+        if (response.isPresent()) {
+            var headerValue = response.get().headers().get("foo-response");
+            if ((headerValue != null) && !headerValue.isEmpty()) {
+                value = headerValue;
+            }
         }
         return Tags.of("foo-response", value);
     }

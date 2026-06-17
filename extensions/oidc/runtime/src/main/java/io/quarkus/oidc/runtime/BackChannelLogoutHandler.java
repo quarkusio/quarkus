@@ -195,7 +195,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                                             context.response().setStatusCode(400);
                                         }
                                     } catch (InvalidJwtException e) {
-                                        LOG.debug("Back channel logout token is invalid");
+                                        LOG.warn("Back channel logout token is invalid");
                                         context.response().setStatusCode(400);
 
                                     }

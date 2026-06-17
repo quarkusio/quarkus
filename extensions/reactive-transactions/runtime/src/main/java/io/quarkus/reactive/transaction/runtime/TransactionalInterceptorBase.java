@@ -91,7 +91,11 @@ public abstract class TransactionalInterceptorBase {
                     .onCancellation().call(() -> {
                         return rollbackOnCancel();
                     })
-                    .call(() -> { // Good path - commit
+                    .call(() -> { // Good path - commit or rollback if marked
+                        if (reactiveResource.isMarkedForRollback(context)) {
+                            LOG.tracef("Transaction marked for rollback, rolling back from method %s", method);
+                            return rollbackOnCancel();
+                        }
                         LOG.tracef("Calling commit from method %s", method);
                         return invokeBeforeCommitAndCommit(context);
                     })

@@ -13,6 +13,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
@@ -46,6 +47,7 @@ import io.quarkus.vertx.http.deployment.spi.HttpServerStartedBuildItem;
 import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
+import io.smallrye.common.os.OS;
 
 class Http3Processor {
 
@@ -76,7 +78,7 @@ class Http3Processor {
                     "HTTP/3 is enabled but the native QUIC library is not on the classpath. " +
                             "Add a dependency on io.netty:netty-codec-native-quic with the classifier " +
                             "matching your platform (e.g. linux-x86_64, osx-aarch_64). " +
-                            "Set quarkus.http3.enabled=false to disable HTTP/3.");
+                            "Alternatively, set quarkus.http3.enabled=false to disable HTTP/3.");
         }
 
         LOG.info("HTTP/3 (QUIC) support enabled");
@@ -236,8 +238,38 @@ class Http3Processor {
         }
     }
 
+    private record QuicNativeLibrary(OS os, String arch, String name) {
+        boolean isPresent() {
+            return QuarkusClassLoader.isResourcePresentAtRuntime("META-INF/native/" + name);
+        }
+
+        String getOsAndArch() {
+            String o = os == OS.MAC ? "osx" : os.name().toLowerCase();
+            return o + "-" + arch;
+        }
+    }
+
+    private static final List<QuicNativeLibrary> QUIC_LIBS = List.of(
+            new QuicNativeLibrary(OS.LINUX, "aarch_64", "libnetty_quiche42_linux_aarch_64.so"),
+            new QuicNativeLibrary(OS.LINUX, "x86_64", "libnetty_quiche42_linux_x86_64.so"),
+            new QuicNativeLibrary(OS.MAC, "aarch_64", "libnetty_quiche42_osx_aarch_64.jnilib"),
+            new QuicNativeLibrary(OS.MAC, "x86_64", "libnetty_quiche42_osx_x86_64.jnilib"),
+            new QuicNativeLibrary(OS.WINDOWS, "x86_64", "netty_quiche42_windows_x86_64.dll"));
+
+    /**
+     * Verifies the Quic native libraries present on the runtime classpath, and print in the log the available variants.
+     *
+     * @return whether at least on native library is available.
+     */
     private static boolean isQuicNativeAvailable() {
-        return QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.quic.Quiche");
+        var found = QUIC_LIBS.stream().filter(QuicNativeLibrary::isPresent).toList();
+        if (found.isEmpty()) {
+            return false;
+        } else {
+            String list = found.stream().map(QuicNativeLibrary::getOsAndArch).collect(Collectors.joining(", "));
+            LOG.infof("Found Quic (native) libraries for the following OS/Architecture: %s", list);
+            return true;
+        }
     }
 
 }

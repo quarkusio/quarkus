@@ -38,33 +38,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Native QUIC libraries required at runtime -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-native-quic</artifactId>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-native-quic</artifactId>
-            <classifier>linux-aarch_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-native-quic</artifactId>
-            <classifier>osx-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-native-quic</artifactId>
-            <classifier>osx-aarch_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-native-quic</artifactId>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>

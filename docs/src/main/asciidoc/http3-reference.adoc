@@ -102,6 +102,119 @@ quarkus.http.insecure-requests=enabled
 In **production mode**, no auto-generation occurs.
 If TLS is not configured, the server fails at startup with a clear error message.
 
+== Native QUIC library
+
+HTTP/3 relies on https://github.com/cloudflare/quiche[Quiche], a native QUIC implementation provided through Netty.
+The library is platform-specific: a separate artifact is required for each OS and CPU architecture combination.
+
+The following variants are available:
+
+[cols="2,3",options="header"]
+|===
+|Platform |Classifier
+
+|Linux x86_64
+|`linux-x86_64`
+
+|Linux aarch64
+|`linux-aarch_64`
+
+|macOS x86_64
+|`osx-x86_64`
+
+|macOS aarch64 (Apple Silicon)
+|`osx-aarch_64`
+
+|Windows x86_64
+|`windows-x86_64`
+|===
+
+=== Automatic dependency selection (Maven only)
+
+When you add the `quarkus-http3` extension **with Maven**, the native QUIC library matching your **build-time** OS and architecture is included automatically using Maven profile activation.
+No manual dependency configuration is needed for typical development and single-platform deployments.
+
+NOTE: **Gradle does not support conditional profile activation.** Gradle users must always declare the native QUIC dependency manually — see <<gradle-quic-dependency>>.
+
+=== Adding additional platform dependencies (Maven)
+
+If you build on one platform but deploy to another (for example, building on macOS but deploying to Linux), you need to explicitly add the dependency for the target platform:
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-codec-native-quic</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+----
+
+You can add as many platform variants as needed.
+The extension detects available libraries at build time and logs which variants were found.
+
+=== Excluding the automatic dependency (Maven)
+
+If you want full control over which native library variants are included, you can exclude the automatic selection and list them explicitly:
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-http3</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-native-quic</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<!-- Manually select the platform(s) you need -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-codec-native-quic</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-codec-native-quic</artifactId>
+    <classifier>linux-aarch_64</classifier>
+</dependency>
+----
+
+WARNING: If you exclude the automatic dependency, you **must** provide at least one platform variant manually.
+The server will fail to start if no native QUIC library is found on the classpath.
+
+[[gradle-quic-dependency]]
+=== Adding the native QUIC dependency (Gradle)
+
+Gradle does not support Maven profile activation, so the native QUIC library is **not** selected automatically.
+You must always add the dependency for your target platform(s) explicitly:
+
+[source,gradle]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-http3")
+
+// Add the native QUIC library for your platform(s)
+implementation("io.netty:netty-codec-native-quic::linux-x86_64")
+----
+
+If you build and deploy on the same platform, add only that platform's classifier.
+If you build on one platform but deploy to another, add both:
+
+[source,gradle]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-http3")
+
+// Build platform (e.g., macOS) + deployment platform (e.g., Linux)
+implementation("io.netty:netty-codec-native-quic::osx-aarch_64")
+implementation("io.netty:netty-codec-native-quic::linux-x86_64")
+----
+
 == How it works
 
 === Same port, dual transport

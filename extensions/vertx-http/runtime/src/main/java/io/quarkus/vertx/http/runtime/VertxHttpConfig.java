@@ -366,7 +366,7 @@ public interface VertxHttpConfig {
     int trafficClass();
 
     /**
-     * Path to a unix domain socket
+     * Path to a Unix Domain Socket.
      */
     @WithDefault("/var/run/io.quarkus.app.socket")
     String domainSocket();
@@ -377,7 +377,7 @@ public interface VertxHttpConfig {
     }
 
     /**
-     * Enable listening to host:port
+     * Enable listening on a Unix Domain Socket.
      */
     @WithDefault("false")
     boolean domainSocketEnabled();

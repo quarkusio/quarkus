@@ -1368,7 +1368,7 @@ public class VertxHttpRecorder {
                             && event.cause().getMessage().contains("Permission denied")) {
                         startFuture.fail(new IllegalStateException(
                                 String.format(
-                                        "Unable to bind to Unix domain socket (%s) as the application does not have the permission to write in the directory.",
+                                        "Unable to bind to Unix Domain Socket (%s) as the application does not have the permission to write in the directory.",
                                         domainSocketOptions.getHost())));
                     } else if (event.cause() instanceof IllegalArgumentException) {
                         startFuture.fail(new IllegalArgumentException(

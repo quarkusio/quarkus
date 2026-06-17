@@ -138,7 +138,7 @@ public interface ManagementConfig {
     int acceptBacklog();
 
     /**
-     * Path to a unix domain socket
+     * Path to a Unix Domain Socket.
      */
     @WithDefault("/var/run/io.quarkus.management.socket")
     String domainSocket();

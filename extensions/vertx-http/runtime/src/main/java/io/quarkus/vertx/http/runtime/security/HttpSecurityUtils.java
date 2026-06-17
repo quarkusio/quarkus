@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import javax.naming.InvalidNameException;
@@ -9,6 +10,7 @@ import javax.security.auth.x500.X500Principal;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.vertx.core.http.impl.HttpUtils;
 import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
@@ -56,6 +58,78 @@ public final class HttpSecurityUtils {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Fully normalizes a request path to its canonical form, closing the gap between
+     * the security layer's partial decoding and downstream handlers' full decoding.
+     * <p>
+     * Transformations applied in order:
+     * <ol>
+     * <li>Fully decode percent-encoded characters (loop handles double/triple encoding)</li>
+     * <li>Strip matrix parameters — after decoding so that encoded semicolons ({@code %3B}) are caught</li>
+     * <li>Remove null bytes</li>
+     * <li>Normalize backslashes to forward slashes</li>
+     * <li>Resolve dot segments ({@code .} and {@code ..})</li>
+     * </ol>
+     *
+     * @param path the path from {@link RoutingContext#normalizedPath()}
+     * @return the fully normalized path
+     */
+    public static String normalizePath(String path) {
+        while (path.indexOf('%') >= 0) {
+            String decoded = decodePercent(path);
+            if (decoded.equals(path)) {
+                break;
+            }
+            path = decoded;
+        }
+        path = pathWithoutMatrixParams(path);
+        if (path.indexOf('\0') >= 0) {
+            path = path.replace("\0", "");
+        }
+        if (path.indexOf('\\') >= 0) {
+            path = path.replace('\\', '/');
+        }
+        path = HttpUtils.removeDots(path);
+        return path;
+    }
+
+    /**
+     * RFC 3986 percent-decoding. Malformed sequences are left as-is.
+     */
+    private static String decodePercent(String path) {
+        byte[] buf = path.getBytes(StandardCharsets.UTF_8);
+        int pos = 0;
+        int i = 0;
+        boolean modified = false;
+        while (i < path.length()) {
+            char c = path.charAt(i);
+            if (c == '%' && i + 2 < path.length()) {
+                int hi = hexDigit(path.charAt(i + 1));
+                int lo = hexDigit(path.charAt(i + 2));
+                if (hi >= 0 && lo >= 0) {
+                    buf[pos++] = (byte) ((hi << 4) | lo);
+                    i += 3;
+                    modified = true;
+                    continue;
+                }
+            }
+            buf[pos++] = (byte) c;
+            i++;
+        }
+        return modified ? new String(buf, 0, pos, StandardCharsets.UTF_8) : path;
+    }
+
+    private static int hexDigit(char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
     }
 
     /**

@@ -163,7 +163,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static String getAuthMechanismName(RoutingContext routingContext,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         PathMatch<List<HttpMatcher>> toCheck = pathMatcher
-                .match(HttpSecurityUtils.pathWithoutMatrixParams(routingContext.normalizedPath()));
+                .match(HttpSecurityUtils.normalizePath(routingContext.normalizedPath()));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return null;
         }
@@ -195,7 +195,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                         new HashSet<>(policyMappingConfig.methods().orElse(Collections.emptyList())), checker);
                 List<HttpMatcher> perms = new ArrayList<>();
                 perms.add(m);
-                builder.addPath(path, perms);
+                builder.addPath(HttpSecurityUtils.normalizePath(path), perms);
             }
         }
     }
@@ -205,7 +205,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         var result = new ArrayList<HttpSecurityPolicy>();
 
         String normalizedPath = context.normalizedPath();
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.pathWithoutMatrixParams(normalizedPath));
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.normalizePath(normalizedPath));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return result;
         }

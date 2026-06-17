@@ -9,12 +9,16 @@ import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
@@ -39,6 +43,20 @@ public class ConsoleJsonFormatterDefaultConfigTest {
         assertThat(jsonFormatter.isPrintDetails()).isFalse();
         assertThat(jsonFormatter.getExcludedKeys()).isEmpty();
         assertThat(jsonFormatter.getAdditionalFields().entrySet()).isEmpty();
+    }
+
+    @Test
+    public void exceptionFormattingWorksWithDefaultConfig() throws Exception {
+        JsonFormatter jsonFormatter = getJsonFormatter();
+
+        LogRecord record = new LogRecord(Level.WARNING, "Something went wrong");
+        record.setThrown(new RuntimeException("boom"));
+
+        String line = jsonFormatter.format(record);
+
+        JsonNode node = new ObjectMapper().readTree(line);
+        assertThat(node.has("message")).isTrue();
+        assertThat(node.has("exception")).isTrue();
     }
 
     public static JsonFormatter getJsonFormatter() {

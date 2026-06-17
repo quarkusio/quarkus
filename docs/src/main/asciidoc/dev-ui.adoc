@@ -1015,7 +1015,7 @@ _info(position = null){
 
 You can find all the valid positions https://vaadin.com/docs/latest/components/notification/#position[here].
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
 
 ====== Storage
 
@@ -1458,7 +1458,7 @@ public class JokesJsonRPCService {
 <2> Data can be streamed with Multi
 <3> This example runs nonblocking. We could also return `Uni<Joke>`
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java[Example code]
 
 This code is responsible for making data available to display on the UI.
 
@@ -1574,7 +1574,7 @@ connectedCallback() {
 
 JsonArray (or any Java collection), either blocking or nonblocking, will return an array; otherwise, a JsonObject will be returned.
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-list.js[Example code]
 
 You can also pass in parameters in the method being called, for example:
 (In the Runtime Java code)
@@ -1632,7 +1632,7 @@ public class JokesJsonRPCService {
 ----
 <1> Return the Multi that will stream jokes
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java#L37[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java#L37[Example code]
 
 Javascript side of streaming data:
 
@@ -1650,7 +1650,7 @@ this._observer.cancel(); //<2>
 <1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event.
 <2> Make sure to keep an instance of the observer to cancel later if needed.
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-list.js[Example code]
 
 === Workspace
 

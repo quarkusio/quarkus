@@ -26,8 +26,11 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
 import org.apache.kafka.common.security.authenticator.SaslClientCallbackHandler;
+import org.apache.kafka.common.security.oauthbearer.BrokerJwtValidator;
+import org.apache.kafka.common.security.oauthbearer.ClientJwtValidator;
 import org.apache.kafka.common.security.oauthbearer.DefaultJwtValidator;
 import org.apache.kafka.common.security.oauthbearer.JwtRetriever;
+import org.apache.kafka.common.security.oauthbearer.JwtValidator;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerToken;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefreshingLogin;
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
@@ -38,6 +41,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem.Builder;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -69,7 +73,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -82,6 +85,9 @@ import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaTopicClient;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaUiUtils;
+import io.quarkus.kafka.client.runtime.dev.ui.model.converter.KafkaModelConverter;
+import io.quarkus.kafka.client.runtime.dev.ui.model.decoder.AvroDecoder;
+import io.quarkus.kafka.client.runtime.dev.ui.model.decoder.KafkaMessageDecoderRegistry;
 import io.quarkus.kafka.client.runtime.graal.SnappyFeature;
 import io.quarkus.kafka.client.serialization.BufferDeserializer;
 import io.quarkus.kafka.client.serialization.BufferSerializer;
@@ -236,10 +242,9 @@ public class KafkaProcessor {
             BuildProducer<ConfigDescriptionBuildItem> configDescBuildItems,
             CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
-            BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
             Capabilities capabilities,
             BuildProducer<UnremovableBeanBuildItem> beans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
@@ -265,11 +270,19 @@ public class KafkaProcessor {
                 .reason(getClass().getName() + " OAuthBearerSaslClient classes")
                 .build());
 
-        // Register DefaultJwtValidator only when jose4j is present to avoid NoClassDefFoundError
-        // with GraalVM 25's --future-defaults=complete-reflection-types flag
-        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
-                DefaultJwtValidator.class.getName(),
-                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
+        // Kafka's DefaultJwtValidator delegates to BrokerJwtValidator or ClientJwtValidator.
+        // Both DefaultJwtValidator and BrokerJwtValidator reference jose4j's VerificationKeyResolver
+        // while ClientJwtValidator does not depend on jose4j at all.
+        // When jose4j is absent, we exclude DefaultJwtValidator and BrokerJwtValidator from reflection
+        // and default the validator config to ClientJwtValidator, which covers the common client-side use case.
+        // See https://github.com/quarkusio/quarkus/issues/52662.
+        collectImplementors(toRegister, indexBuildItem, JwtValidator.class);
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("org.jose4j.keys.resolvers.VerificationKeyResolver")) {
+            toRegister.remove(DotName.createSimple(DefaultJwtValidator.class.getName()));
+            toRegister.remove(DotName.createSimple(BrokerJwtValidator.class.getName()));
+            runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem("kafka.sasl.oauthbearer.jwt.validator.class",
+                    ClientJwtValidator.class.getName()));
+        }
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(i.getName())
@@ -557,11 +570,19 @@ public class KafkaProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public AdditionalBeanBuildItem kafkaClientBeans() {
-        return AdditionalBeanBuildItem.builder()
+        Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClass(KafkaTopicClient.class)
                 .addBeanClass(KafkaUiUtils.class)
-                .setUnremovable()
-                .build();
+                .addBeanClass(KafkaModelConverter.class)
+                .addBeanClass(KafkaMessageDecoderRegistry.class)
+                .setUnremovable();
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
+                || QuarkusClassLoader.isClassPresentAtRuntime("io.confluent.kafka.serializers.KafkaAvroDeserializer")) {
+            builder.addBeanClass(AvroDecoder.class);
+        }
+
+        return builder.build();
     }
 
     public static final class HasSnappy implements BooleanSupplier {

@@ -13,11 +13,11 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>25.1.0</vaadin.version>
-        <lit.version>3.3.2</lit.version>
+        <vaadin.version>25.1.4</vaadin.version>
+        <lit.version>3.3.3</lit.version>
         <lit-element.version>4.2.2</lit-element.version>
-        <lit-html.version>3.3.2</lit-html.version>
-        <ssr-dom-shim.version>1.5.1</ssr-dom-shim.version>
+        <lit-html.version>3.3.3</lit-html.version>
+        <ssr-dom-shim.version>1.6.0</ssr-dom-shim.version>
         <lit-localize.version>0.12.2</lit-localize.version>
         <flag-icons.version>7.5.0</flag-icons.version>
         <trusted-types.version>2.0.7</trusted-types.version>
@@ -29,19 +29,19 @@
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <style-observer.version>0.1.2</style-observer.version>
         <marked.version>17.0.5</marked.version>
-        <dompurify.version>3.2.7</dompurify.version>
+        <dompurify.version>3.4.10</dompurify.version>
         <vaadin-router.version>2.0.1</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>6.0.0</echarts.version>
-        <es-module-shims.version>2.0.10</es-module-shims.version>
+        <es-module-shims.version>2.8.1</es-module-shims.version>
         <path-to-regexp.version>6.3.0</path-to-regexp.version>
         <type-fest.version>5.4.4</type-fest.version>
         <tagged-tag.version>1.0.0</tagged-tag.version>
         <codeblock.version>1.1.2</codeblock.version>
         <qomponent.version>1.0.6</qomponent.version>
-        <ldrs.version>1.1.7</ldrs.version>
+        <ldrs.version>1.1.9</ldrs.version>
         <directory-tree.version>1.0.4</directory-tree.version>
-        <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
+        <hpcc-js-wasm.version>2.34.0</hpcc-js-wasm.version>
         <yargs.version>17.7.2</yargs.version>
         <cliui.version>8.0.1</cliui.version>
         <escalade.version>3.1.2</escalade.version>
@@ -59,7 +59,7 @@
         <color-convert.version>2.0.1</color-convert.version>
         <color-name.version>1.1.4</color-name.version>
         <dot.version>0.0.2</dot.version>
-        <viz-js.version>3.24.0</viz-js.version>
+        <viz-js.version>3.27.0</viz-js.version>
         <panzoom.version>4.6.2</panzoom.version>
     </properties>
 
@@ -336,7 +336,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>markdown-it</artifactId>
-                <version>14.1.1</version>
+                <version>14.2.0</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>
@@ -354,7 +354,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>linkify-it</artifactId>
-                <version>5.0.0</version>
+                <version>5.0.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

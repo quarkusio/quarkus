@@ -4,10 +4,12 @@ import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.devtools.commands.ListPlatforms;
 import io.quarkus.registry.Constants;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
 
     private boolean installed = false;

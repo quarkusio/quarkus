@@ -75,6 +75,28 @@ public class SetSectionTest {
     }
 
     @Test
+    public void testCompositeParamsWithLiteralBase() {
+        // https://github.com/quarkusio/quarkus/issues/53959
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        // String literals with single and double quotes
+        assertEquals("barbaz",
+                engine.parse("{#let foo=('bar' + 'baz')}{foo}{/let}").render());
+        assertEquals("barbaz",
+                engine.parse("{#let foo=(\"bar\" + \"baz\")}{foo}{/let}").render());
+        assertEquals("barbaz",
+                engine.parse("{#let foo = ('bar' + 'baz')}{foo}{/let}").render());
+        // Integer literal as base
+        assertEquals("3",
+                engine.parse("{#let foo=(1 + 2)}{foo}{/let}").render());
+        // Chained infix on string literal
+        assertEquals("hello world",
+                engine.parse("{#let foo=('hello' + ' ' + 'world')}{foo}{/let}").render());
+        // Property accessor on string literal
+        assertEquals("3",
+                engine.parse("{#let foo='bar'.length}{foo}{/let}").render());
+    }
+
+    @Test
     public void testOptionalEndTag() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("true",

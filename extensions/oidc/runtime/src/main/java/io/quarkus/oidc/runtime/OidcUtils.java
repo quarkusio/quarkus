@@ -309,6 +309,17 @@ public final class OidcUtils {
         return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
     }
 
+    static String findStringClaimValue(String claimPath, JsonObject json) {
+        Object value = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String) {
+            return (String) value;
+        }
+        throw new OIDCException("Claim value at path '" + claimPath + "' is not a string");
+    }
+
     private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step) {
         Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
@@ -378,7 +389,7 @@ public final class OidcUtils {
         if (codeFlowAccessTokenResult != null) {
             builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
             if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
-                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult);
+                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult());
                 if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
                     builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
                 }

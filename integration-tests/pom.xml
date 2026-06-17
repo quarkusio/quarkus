@@ -61,7 +61,7 @@
                                 <externalRules>
                                     <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                 </externalRules>
-                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                                <requiresMinimalDeploymentDependency/>
                             </rules>
                         </configuration>
                     </execution>
@@ -178,7 +178,6 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
-                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>
@@ -204,10 +203,13 @@
                 <module>jpa-mssql</module>
                 <module>jpa-mysql</module>
                 <module>jpa-oracle</module>
+                <module>hibernate-orm-cache</module>
                 <module>hibernate-orm-compatibility-5.6/mariadb</module>
                 <module>hibernate-orm-compatibility-5.6/postgresql</module>
                 <module>hibernate-orm-panache</module>
+                <module>data-hibernate</module>
                 <module>hibernate-orm-rest-data-panache</module>
+                <module>rest-data-hibernate-json-types</module>
                 <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
@@ -247,7 +249,8 @@
                 <module>spring-boot-properties</module>
                 <module>spring-cloud-config-client</module>
                 <module>spring-data-rest</module>
-                <module>infinispan-cache-jpa</module>
+                <module>spring-tx</module>
+                <module>infinispan-cache</module>
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
                 <module>elytron-resteasy</module>
@@ -363,7 +366,13 @@
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
+                <module>signals</module>
+                <module>signals-command-mode</module>
                 <module>simple with space</module>
+                <module>aesh</module>
+                <module>aesh-native</module>
+                <module>aesh-ssh-native</module>
+                <module>aesh-websocket-native</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
                 <module>web-dependency-locator</module>
@@ -414,8 +423,10 @@
                 <module>grpc-tls-p12</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>
+                <module>grpc-kotlin-coroutine</module>
                 <module>grpc-mutual-auth</module>
                 <module>grpc-streaming</module>
+                <module>grpc-streaming-native</module>
                 <module>grpc-interceptors</module>
                 <module>grpc-proto-v2</module>
                 <module>grpc-health</module>
@@ -423,6 +434,7 @@
                 <module>grpc-hibernate-reactive</module>
                 <module>grpc-external-proto</module>
                 <module>grpc-external-proto-test</module>
+                <module>grpc-stork-recovery</module>
                 <module>grpc-stork-response-time</module>
                 <module>grpc-stork-simple</module>
                 <module>grpc-exceptions</module>

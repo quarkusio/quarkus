@@ -1,8 +1,10 @@
 package io.quarkus.opentelemetry.runtime.config.runtime.exporter;
 
+import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * From <a href=
@@ -27,4 +29,13 @@ public interface OtlpExporterRuntimeConfig extends OtlpExporterConfig {
      * OTLP logs exporter configuration.
      */
     OtlpExporterLogsConfig logs();
+
+    /**
+     * The memory mode of the OTLP exporter.
+     * <p>
+     * When {@code reusable-data}, the exporter will reuse marshaler objects to reduce allocations and GC pressure.
+     * When {@code immutable-data}, the exporter will create new marshaler objects for each export operation.
+     */
+    @WithDefault("immutable-data")
+    MemoryMode memoryMode();
 }

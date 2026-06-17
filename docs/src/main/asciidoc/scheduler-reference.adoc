@@ -220,6 +220,30 @@ Property Expressions. (Note that `"{property.path}"` style expressions are still
 void myMethod() { }
 ----
 
+[[description]]
+=== Description
+
+An optional description can be attached to a scheduled method to document what the job does.
+
+.Description Example
+[source,java]
+----
+@Scheduled(every = "1s", description = "Checks the status of external services")
+void checkStatus() { }
+----
+
+The `description` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
+.Description Config Property Example
+[source,java]
+----
+@Scheduled(every = "1s", description = "${myJob.description}")
+void checkStatus() { }
+----
+
+NOTE: When using the xref:quartz.adoc[Quartz extension] with a JDBC job store, the description is limited to 250 characters due to database column constraints.
+
 [[delayed_start]]
 === Delayed Start of a Trigger
 

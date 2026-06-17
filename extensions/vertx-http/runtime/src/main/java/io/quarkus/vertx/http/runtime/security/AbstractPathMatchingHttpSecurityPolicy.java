@@ -185,6 +185,12 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
 
         for (String path : httpPermission.getPaths()) {
+            if (path.indexOf(';') != -1) {
+                throw new ConfigurationException("""
+                        HttpSecurityPolicy '%s' path contains a semicolon ';' character.
+                        Custom HttpSecurityPolicy bean must be used to check matrix parameters.
+                        """.formatted(path));
+            }
             HttpMatcher m = new HttpMatcher(httpPermission.getAuthMechanisms(), httpPermission.getMethods(), policy);
             List<HttpMatcher> perms = new ArrayList<>();
             perms.add(m);
@@ -203,7 +209,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
     private static List<HttpMatcher> findHttpMatchers(RoutingContext context,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
+        String normalizedPath = context.normalizedPath();
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.pathWithoutMatrixParams(normalizedPath));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return List.of();
         }

@@ -5,6 +5,8 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import io.quarkus.value.registry.ValueRegistry;
+
 /**
  * Manage the lifecycle of a test resource, for instance a H2 test server.
  * <p>
@@ -104,6 +106,12 @@ public interface QuarkusTestResourceLifecycleManager {
      * {@link QuarkusTestResourceLifecycleManager#inject(TestInjector)}
      */
     interface TestInjector {
+        /**
+         * Gets this test {@link ValueRegistry}.
+         *
+         * @return this test {@link ValueRegistry}.
+         */
+        ValueRegistry valueRegistry();
 
         /**
          * @param fieldValue The actual value to inject into a test field

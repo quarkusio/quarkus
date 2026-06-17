@@ -454,7 +454,7 @@ public class JibProcessor {
         List<String> entrypoint;
         if (jibConfig.jvmEntrypoint().isPresent()) {
             entrypoint = Collections.unmodifiableList(jibConfig.jvmEntrypoint().get());
-        } else if (containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
+        } else if (ContainerImages.containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
             // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used because it would lead to using different JVM args
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
@@ -679,14 +679,6 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    // TODO: this needs to be a lot more sophisticated
-    private boolean containsRunJava(String baseJvmImage) {
-        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,

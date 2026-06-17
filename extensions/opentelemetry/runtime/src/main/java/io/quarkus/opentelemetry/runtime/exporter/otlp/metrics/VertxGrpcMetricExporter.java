@@ -3,7 +3,7 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp.metrics;
 import java.util.Collection;
 
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
-import io.opentelemetry.exporter.internal.otlp.metrics.MetricsRequestMarshaler;
+import io.opentelemetry.exporter.internal.otlp.metrics.MetricReusableDataMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.opentelemetry.sdk.metrics.Aggregation;
@@ -17,20 +17,23 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 public class VertxGrpcMetricExporter implements MetricExporter {
 
     private final GrpcExporter delegate;
+    private final MetricReusableDataMarshaler marshaler;
     private final AggregationTemporalitySelector aggregationTemporalitySelector;
     private final DefaultAggregationSelector defaultAggregationSelector;
 
     public VertxGrpcMetricExporter(GrpcExporter grpcExporter,
             AggregationTemporalitySelector aggregationTemporalitySelector,
-            DefaultAggregationSelector defaultAggregationSelector) {
+            DefaultAggregationSelector defaultAggregationSelector,
+            MemoryMode memoryMode) {
         this.delegate = grpcExporter;
+        this.marshaler = new MetricReusableDataMarshaler(memoryMode, grpcExporter::export);
         this.aggregationTemporalitySelector = aggregationTemporalitySelector;
         this.defaultAggregationSelector = defaultAggregationSelector;
     }
 
     @Override
     public CompletableResultCode export(Collection<MetricData> metrics) {
-        return delegate.export(MetricsRequestMarshaler.create(metrics), metrics.size());
+        return marshaler.export(metrics);
     }
 
     @Override
@@ -55,6 +58,6 @@ public class VertxGrpcMetricExporter implements MetricExporter {
 
     @Override
     public MemoryMode getMemoryMode() {
-        return MemoryMode.IMMUTABLE_DATA; // Same as the default in the OTLP exporter
+        return marshaler.getMemoryMode();
     }
 }

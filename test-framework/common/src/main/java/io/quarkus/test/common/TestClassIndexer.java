@@ -3,15 +3,17 @@ package io.quarkus.test.common;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
@@ -57,13 +59,46 @@ public final class TestClassIndexer {
     }
 
     public static void writeIndex(Index index, Path testClassLocation, Class<?> testClass) {
-        try (FileOutputStream fos = new FileOutputStream(indexPath(testClassLocation).toFile(), false)) {
-            IndexWriter indexWriter = new IndexWriter(fos);
-            indexWriter.write(index);
+        // Write to a temp file in a sibling directory, then atomically rename onto the
+        // target. see https://github.com/quarkusio/quarkus/issues/54579).
+        Path target = indexPath(testClassLocation);
+        Path tmp = null;
+        try {
+            Path tmpDir = tempDirFor(testClassLocation);
+            Files.createDirectories(tmpDir);
+            tmp = Files.createTempFile(tmpDir, TEST_CLASSES_IDX + ".", ".tmp");
+            try (OutputStream os = Files.newOutputStream(tmp)) {
+                new IndexWriter(os).write(index);
+            }
+            try {
+                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+            tmp = null;
         } catch (IOException ignored) {
             // don't fail to write the index because this error is recoverable at the read site (by just recreating the index)
             // this is necessary for tests that are not part of the application itself, but instead reside in a jar (like the Quarkus Platform tests)
+        } finally {
+            if (tmp != null) {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (IOException ignore) {
+                    // best effort
+                }
+            }
         }
+    }
+
+    /**
+     * Place the temp file in a SIBLING directory on the same filesystem as the target.
+     * Same filesystem keeps {@link StandardCopyOption#ATOMIC_MOVE} applicable, and being
+     * outside the Quarkus classpath element means {@code PathTreeClassPathElement} walkers
+     * never observe an in-progress temp.
+     */
+    private static Path tempDirFor(Path testClassLocation) {
+        Path parent = testClassLocation.getParent();
+        return parent != null ? parent.resolve(".quarkus-test-classes-idx-tmp") : testClassLocation;
     }
 
     public static Index readIndex(Class<?> testClass) {
@@ -77,8 +112,10 @@ public final class TestClassIndexer {
                 return new IndexReader(fis).read();
             } catch (UnsupportedVersion e) {
                 throw new UnsupportedVersion("Can't read Jandex index from " + path + ": " + e.getMessage());
-            } catch (IOException e) {
-                // be lenient since the error is recoverable
+            } catch (IOException | IllegalArgumentException e) {
+                // be lenient since the error is recoverable; IllegalArgumentException covers
+                // "Not a jandex index" when the file was left corrupt by a JVM crash mid-write,
+                // an external process, or a downgrade (see https://github.com/quarkusio/quarkus/issues/54579)
                 return indexTestClasses(testClass);
             }
         } else {

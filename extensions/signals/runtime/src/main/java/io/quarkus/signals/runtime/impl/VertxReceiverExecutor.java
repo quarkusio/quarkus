@@ -1,0 +1,146 @@
+package io.quarkus.signals.runtime.impl;
+
+import java.util.concurrent.Callable;
+
+import jakarta.inject.Singleton;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.signals.Receivers.ExecutionModel;
+import io.quarkus.signals.SignalContext;
+import io.quarkus.signals.spi.Receiver;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.UniHelper;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+
+@Singleton
+public class VertxReceiverExecutor implements ReceiverExecutor {
+
+    private static final Logger LOG = Logger.getLogger(VertxReceiverExecutor.class);
+
+    private final Vertx vertx;
+
+    private final ConcurrencyLimiter blockingLimiter;
+
+    private final ConcurrencyLimiter virtualThreadLimiter;
+
+    VertxReceiverExecutor(Vertx vertx, SignalsRuntimeConfig config) {
+        this.vertx = vertx;
+        int blockingLimit = config.receivers().blockingConcurrencyLimit().orElse(-1);
+        this.blockingLimiter = blockingLimit > 0 ? new ConcurrencyLimiter(blockingLimit) : null;
+        int vtLimit = config.receivers().virtualThreadConcurrencyLimit().orElse(-1);
+        this.virtualThreadLimiter = vtLimit > 0 ? new ConcurrencyLimiter(vtLimit) : null;
+    }
+
+    @Override
+    public boolean supportsExecutionModel(ExecutionModel val) {
+        return true;
+    }
+
+    @Override
+    public <SIGNAL, RESPONSE> Uni<RESPONSE> execute(Receiver<SIGNAL, RESPONSE> receiver, SignalContext<SIGNAL> signalContext) {
+        LOG.debugf("Notify %s [signal=%s, emission=%s]", receiver, signalContext.signalType(),
+                signalContext.emissionType());
+        Context context = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
+        VertxContextSafetyToggle.setContextSafe(context, true);
+        Promise<RESPONSE> promise = Promise.promise();
+        Future<RESPONSE> future = promise.future();
+        context.runOnContext(new Handler<Void>() {
+            @Override
+            public void handle(Void v) {
+                execute(context, promise, receiver.executionModel(), new Callable<Uni<RESPONSE>>() {
+                    @Override
+                    public Uni<RESPONSE> call() throws Exception {
+                        return receiver.notify(signalContext);
+                    }
+                });
+            }
+        });
+        return UniHelper.toUni(future);
+    }
+
+    protected <RESULT> void execute(Context context, Promise<RESULT> result, ExecutionModel executionModel,
+            Callable<Uni<RESULT>> action) {
+        if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+            ConcurrencyLimiter limiter = virtualThreadLimiter;
+            if (limiter != null) {
+                limiter.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    action.call().eventually(limiter::complete)
+                                            .subscribe().with(result::complete, result::fail);
+                                } catch (Throwable e) {
+                                    limiter.complete();
+                                    result.fail(e);
+                                }
+                            }
+                        });
+                    }
+                }, result::fail);
+            } else {
+                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            action.call().subscribe().with(result::complete, result::fail);
+                        } catch (Throwable e) {
+                            result.fail(e);
+                        }
+                    }
+                });
+            }
+        } else if (executionModel == ExecutionModel.BLOCKING) {
+            ConcurrencyLimiter limiter = blockingLimiter;
+            if (limiter != null) {
+                limiter.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        context.executeBlocking(new Callable<Void>() {
+                            @Override
+                            public Void call() {
+                                try {
+                                    action.call().eventually(limiter::complete)
+                                            .subscribe().with(result::complete, result::fail);
+                                } catch (Throwable e) {
+                                    limiter.complete();
+                                    result.fail(e);
+                                }
+                                return null;
+                            }
+                        }, false);
+                    }
+                }, result::fail);
+            } else {
+                context.executeBlocking(new Callable<Void>() {
+                    @Override
+                    public Void call() {
+                        try {
+                            action.call().subscribe().with(result::complete, result::fail);
+                        } catch (Throwable e) {
+                            result.fail(e);
+                        }
+                        return null;
+                    }
+                }, false);
+            }
+        } else {
+            try {
+                action.call().subscribe().with(result::complete, result::fail);
+            } catch (Throwable e) {
+                result.fail(e);
+            }
+        }
+    }
+
+}

@@ -6,7 +6,7 @@ package io.quarkus.runtime;
 public enum ExecutionMode {
 
     /**
-     * Static initializiation.
+     * Static initialization.
      */
     STATIC_INIT,
 

@@ -47,7 +47,7 @@ public class VertxWorkerPoolShutdownTest {
         public void init(@Observes StartupEvent ev) {
             executorService.shutdownNow();
             ((io.vertx.core.impl.ContextInternal) vertx.getOrCreateContext()).workerPool().executor().shutdownNow();
-            Future<Boolean> ok1 = vertx.executeBlocking(() -> true);
+            Future<Boolean> ok1 = vertx.executeBlocking(() -> true, false);
             ok = ok1.toCompletionStage().toCompletableFuture().join();
         }
     }

@@ -8,6 +8,20 @@ public interface Capability {
     String QUARKUS_PREFIX = "io.quarkus";
 
     /**
+     * A command-line framework that controls command parsing and the
+     * application entry point. Mutually exclusive -- only one CLI
+     * framework extension (e.g. aesh or picocli) can be active.
+     */
+    String COMMAND_LINE = QUARKUS_PREFIX + ".command-line";
+
+    /**
+     * Aesh CLI framework
+     */
+    String AESH = QUARKUS_PREFIX + ".aesh";
+    String AESH_SSH = AESH + ".ssh";
+    String AESH_WEBSOCKET = AESH + ".websocket";
+
+    /**
      * A datasource connection pool implementation
      */
     String AGROAL = QUARKUS_PREFIX + ".agroal";
@@ -77,12 +91,6 @@ public interface Capability {
     String RESTEASY_MULTIPART = RESTEASY + ".multipart";
 
     String JWT = QUARKUS_PREFIX + ".jwt";
-
-    /**
-     * @deprecated Tika has been moved to the Quarkiverse
-     */
-    @Deprecated
-    String TIKA = QUARKUS_PREFIX + ".tika";
 
     String MONGODB_CLIENT = QUARKUS_PREFIX + ".mongodb-client";
     String MONGODB_PANACHE = QUARKUS_PREFIX + ".mongodb.panache";

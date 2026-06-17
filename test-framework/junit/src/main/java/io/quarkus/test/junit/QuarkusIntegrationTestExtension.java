@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
 import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -15,11 +16,13 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
-import static java.util.Optional.empty;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -79,6 +82,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
         BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
 
+    private static final int APP_LOG_TAIL_LINES = 50;
+
     private static boolean failedBoot;
 
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
@@ -135,7 +140,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             listeningAddress.ifPresent(new Consumer<ListeningAddress>() {
                 @Override
                 public void accept(ListeningAddress listeningAddress) {
-                    RestAssuredStateManager.setURL(listeningAddress.isSsl(), listeningAddress.port(),
+                    RestAssuredStateManager.setTestUri(
+                            valueRegistry.get(LOCAL_BASE_URI),
                             QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
                 }
             });
@@ -146,6 +152,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         ensureStarted(context);
+        ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
         invokeBeforeClassCallbacks(context.getRequiredTestClass());
     }
 
@@ -195,6 +202,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     if (appLogFile.exists() && (appLogFile.length() > 0)) {
                         System.err.println("Failed to launch the application. The application logs can be found at: "
                                 + appLogFile.getAbsolutePath());
+                        printApplicationLogTail(appLogFile);
                     }
                 } catch (IllegalStateException ignored) {
 
@@ -205,6 +213,33 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
         }
         return state;
+    }
+
+    // When the application fails to boot, the launcher only reports a generic "Unable to determine the
+    // status of the running process" error; the real cause is in the application log file. Echo the tail of
+    // that file to System.err so the cause is visible directly in the test output (e.g. in CI), not only on disk.
+    private static void printApplicationLogTail(File appLogFile) {
+        try {
+            applicationLogTail(Files.readAllLines(appLogFile.toPath()), APP_LOG_TAIL_LINES, appLogFile.getName())
+                    .forEach(System.err::println);
+        } catch (IOException ignored) {
+            // best-effort; the path to the full log was already printed above
+        }
+    }
+
+    // Formats the last `maxLines` lines of the given log content with a header, or returns an empty list
+    // when there is nothing to show. Kept package-private and pure so it can be unit-tested directly.
+    static List<String> applicationLogTail(List<String> lines, int maxLines, String fileName) {
+        if (lines.isEmpty()) {
+            return List.of();
+        }
+        int from = Math.max(0, lines.size() - maxLines);
+        List<String> tail = new ArrayList<>(lines.size() - from + 1);
+        tail.add("Last " + (lines.size() - from) + " line(s) of " + fileName + ":");
+        for (String line : lines.subList(from, lines.size())) {
+            tail.add("    " + line);
+        }
+        return tail;
     }
 
     private QuarkusTestExtensionState doProcessStart(Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
@@ -259,12 +294,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 }
             }
 
-            // Properties set by @TestProfile
-            additionalProperties.putAll(testProfileAndProperties.properties());
             // Make the dev services config accessible from the test itself
             additionalProperties.putAll(devServicesLaunchResult.properties());
             // Allow override of dev services props by integration test extensions
             additionalProperties.putAll(testResourceManager.start());
+            // Properties set by @TestProfile
+            additionalProperties.putAll(testProfileAndProperties.properties());
 
             // Create the ValueRegistry with the current Config and test config
             ConfigSource integrationTestSource = new PropertiesConfigSource(
@@ -283,6 +318,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     .withSources(integrationTestSource)
                     .build();
             ConfigInjector.set(context, newConfig);
+            // Because Config may be accessed ArtifactLauncherProvider.create
+            ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
 
             ArtifactLauncher<?> launcher;
             Optional<String> testHost = config.getOptionalValue("quarkus.http.test-host", String.class);

@@ -2,15 +2,18 @@ package io.quarkus.it.keycloak;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Map;
 
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.smallrye.certs.chain.CertificateChainGenerator;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class CustomOidcWiremockTestResource extends OidcWiremockTestResource {
@@ -22,7 +25,35 @@ public class CustomOidcWiremockTestResource extends OidcWiremockTestResource {
             throw new RuntimeException(ex);
         }
 
-        return super.start();
+        Map<String, String> conf = super.start();
+        generateClientAssertionTokenFiles(conf);
+        return conf;
+    }
+
+    private void generateClientAssertionTokenFiles(Map<String, String> conf) {
+        String jwtBearerToken = Jwt.preferredUserName("Alice")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .expiresIn(Duration.ofMinutes(30))
+                .signWithSecret("43".repeat(20));
+        var jwtBearerTokenPath = Path.of("target").resolve("bearer-token-client-assertion.json");
+
+        String spiffeSvidToken = Jwt.subject("spiffe://example.org/workload")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .expiresIn(Duration.ofMinutes(30))
+                .signWithSecret("43".repeat(20));
+        var spiffeSvidTokenPath = Path.of("target").resolve("spiffe-svid-client-assertion.json");
+
+        try {
+            Files.writeString(jwtBearerTokenPath, jwtBearerToken);
+            Files.writeString(spiffeSvidTokenPath, spiffeSvidToken);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to prepare client assertion token files", e);
+        }
+
+        conf.put("code-flow-jwt-bearer-token-path", jwtBearerTokenPath.toString());
+        conf.put("code-flow-spiffe-token-path", spiffeSvidTokenPath.toString());
     }
 
     private void generateCertificates() throws Exception {

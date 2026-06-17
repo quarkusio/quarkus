@@ -59,7 +59,7 @@ A second component (`aggregator`) reads from the two Kafka topics and processes 
 * this aggregated data is written out to a third topic (`temperatures-aggregated`)
 
 The data can be examined by inspecting the output topic.
-By exposing a Kafka Streams https://kafka.apache.org/22/documentation/streams/developer-guide/interactive-queries.html[interactive query],
+By exposing a Kafka Streams https://kafka.apache.org/documentation/streams/developer-guide/interactive-queries[interactive query],
 the latest result for each weather station can alternatively be obtained via a simple REST query.
 
 The overall architecture looks like so:
@@ -787,7 +787,7 @@ Date: Tue, 18 Jun 2019 19:29:16 GMT
 A very interesting trait of Kafka Streams applications is that they can be scaled out,
 i.e. the load and state can be distributed amongst multiple application instances running the same pipeline.
 Each node will then contain a subset of the aggregation results,
-but Kafka Streams provides you with https://kafka.apache.org/22/documentation/streams/developer-guide/interactive-queries.html#querying-remote-state-stores-for-the-entire-app[an API] to obtain the information which node is hosting a given key.
+but Kafka Streams provides you with https://kafka.apache.org/documentation/streams/developer-guide/interactive-queries#querying-remote-state-stores-for-the-entire-app[an API] to obtain the information which node is hosting a given key.
 The application can then either fetch the data directly from the other instance, or simply point the client to the location of that other node.
 
 Launching multiple instances of the `aggregator` application will make look the overall architecture like so:

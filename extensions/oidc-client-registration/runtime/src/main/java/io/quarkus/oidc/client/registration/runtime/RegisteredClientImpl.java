@@ -24,13 +24,13 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class RegisteredClientImpl implements RegisteredClient {
     private static final Logger LOG = Logger.getLogger(RegisteredClientImpl.class);
@@ -42,7 +42,7 @@ public class RegisteredClientImpl implements RegisteredClient {
             OidcConstants.CLIENT_METADATA_ID_ISSUED_AT);
     private static final OidcRequestContextProperties DEFAULT_REQUEST_PROPS = new OidcRequestContextProperties();
 
-    private final WebClient client;
+    private final OidcWebClient client;
     private final OidcClientRegistrationConfig oidcConfig;
     private final String registrationClientUri;
     private final String registrationToken;
@@ -51,7 +51,7 @@ public class RegisteredClientImpl implements RegisteredClient {
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private volatile boolean closed;
 
-    public RegisteredClientImpl(WebClient client, OidcClientRegistrationConfig oidcConfig,
+    public RegisteredClientImpl(OidcWebClient client, OidcClientRegistrationConfig oidcConfig,
             Map<Type, List<OidcRequestFilter>> oidcRequestFilters,
             Map<Type, List<OidcResponseFilter>> oidcResponseFilters,
             ClientMetadata registeredMetadata, String registrationClientUri, String registrationToken) {

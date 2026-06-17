@@ -13,6 +13,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -290,12 +292,17 @@ public class ValueResolverGenerator extends AbstractGenerator {
             }
         }
 
-        // Sort methods, getters must come before is/has properties, etc.
+        // Sort methods; the ordering is used to generate deterministic bytecode
+        // Methods are sorted by name, then by descending number of params (more specific methods first),
+        // and finally by param type names
         List<MethodKey> sortedMethods = methods.stream().sorted().toList();
 
         return new ScanResult(fields, sortedMethods);
     }
 
+    /**
+     * The methods list is sorted by {@link MethodKey#compareTo(MethodKey)}.
+     */
     record ScanResult(List<FieldInfo> fields, List<MethodKey> methods) {
 
         boolean isEmpty() {
@@ -308,7 +315,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
 
         // name, number of params -> list of methods; excluding no-args methods
         Map<Match, List<MethodInfo>> argsMatches() {
-            Map<Match, List<MethodInfo>> ret = new HashMap<>();
+            Map<Match, List<MethodInfo>> ret = new LinkedHashMap<>();
             for (MethodKey methodKey : methods) {
                 MethodInfo method = methodKey.method;
                 if (method.parametersCount() != 0) {
@@ -325,7 +332,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         }
 
         Map<Match, List<MethodInfo>> varargsMatches() {
-            Map<Match, List<MethodInfo>> ret = new HashMap<>();
+            Map<Match, List<MethodInfo>> ret = new LinkedHashMap<>();
             for (MethodKey methodKey : methods) {
                 MethodInfo method = methodKey.method;
                 if (method.parametersCount() != 0 && isVarArgs(method)) {
@@ -471,7 +478,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
 
                     // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
                     // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
-                    Set<MethodInfo> methodMatches = new HashSet<>(entry
+                    Set<MethodInfo> methodMatches = new LinkedHashSet<>(entry
                             .getValue());
                     varargsMatches.entrySet().stream()
                             .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -488,7 +495,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 }
 
                 // For varargs methods we also need to match name and any number of params
-                Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+                Map<String, List<MethodInfo>> varargsMap = new LinkedHashMap<>();
                 for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
                     List<MethodInfo> list = varargsMap.get(entry.getKey().name);
                     if (list == null) {
@@ -592,7 +599,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
 
                     // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
                     // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
-                    Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
+                    Set<MethodInfo> methodMatches = new LinkedHashSet<>(entry.getValue());
                     varargsMatches.entrySet().stream()
                             .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
                             .forEach(e -> methodMatches.addAll(e.getValue()));
@@ -609,7 +616,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 }
 
                 // For varargs methods we also need to match name and any number of params
-                Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+                Map<String, List<MethodInfo>> varargsMap = new LinkedHashMap<>();
                 for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
                     List<MethodInfo> list = varargsMap.get(entry.getKey().name);
                     if (list == null) {
@@ -849,16 +856,16 @@ public class ValueResolverGenerator extends AbstractGenerator {
             // Match name
             if (methodParams <= 0 && isGetterName(methodName, returnType)) {
                 // Getter found - match the property name first
-                nested.ifNot(nested.objEquals(name, Const.of(getPropertyName(methodName))), propertyNotMatched -> {
+                nested.ifNot(nested.exprEquals(name, Const.of(getPropertyName(methodName))), propertyNotMatched -> {
                     // If the property does not match then try to use the exact method name
-                    propertyNotMatched.ifNot(propertyNotMatched.objEquals(name, Const.of(methodName)),
+                    propertyNotMatched.ifNot(propertyNotMatched.exprEquals(name, Const.of(methodName)),
                             nameNotMatched -> {
                                 nameNotMatched.break_(nested);
                             });
                 });
             } else {
                 // No getter - only match the exact method name
-                nested.ifNot(nested.objEquals(name, Const.of(methodName)), notMatched -> {
+                nested.ifNot(nested.exprEquals(name, Const.of(methodName)), notMatched -> {
                     notMatched.break_(nested);
                 });
             }
@@ -1171,6 +1178,10 @@ public class ValueResolverGenerator extends AbstractGenerator {
 
     }
 
+    /**
+     * Sorted by name (ascending), then number of params (descending), then param type names (ascending).
+     * Descending param count ensures that more specific methods (e.g. varargs with more fixed params) are matched first.
+     */
     static class MethodKey implements Comparable<MethodKey> {
 
         final String name;
@@ -1191,7 +1202,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
             // compare the name, then number of params and param type names
             int res = name.compareTo(other.name);
             if (res == 0) {
-                res = Integer.compare(params.size(), other.params.size());
+                res = Integer.compare(other.params.size(), params.size());
                 if (res == 0) {
                     for (int i = 0; i < params.size(); i++) {
                         res = params.get(i).compareTo(other.params.get(i));

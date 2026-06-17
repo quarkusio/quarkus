@@ -15,9 +15,9 @@ include::_attributes.adoc[]
 :rm_doc_emitter: https://smallrye.io/smallrye-reactive-messaging/latest/concepts/emitter/
 :mutiny: https://smallrye.io/smallrye-mutiny/latest/
 :eclipse-vertx: https://vertx.io/
-:camel-smallrye-reactive-messaging: https://camel.apache.org/camel-quarkus/3.8.x/reference/extensions/smallrye-reactive-messaging.html
+:camel-smallrye-reactive-messaging: https://camel.apache.org/camel-quarkus/latest/reference/extensions/smallrye-reactive-messaging.html
 :nats-jetstream: https://docs.quarkiverse.io/quarkus-reactive-messaging-nats-jetstream/dev/index.html
-:solace-quarkus: https://solacelabs.github.io/solace-quarkus/
+:solace-quarkus: https://solaceproducts.github.io/solace-quarkus/
 :http-websocket-connector: https://quarkus.io/extensions/io.quarkiverse.reactivemessaging.http/quarkus-reactive-messaging-http/
 
 Event-driven messaging systems have become the backbone of most modern applications,

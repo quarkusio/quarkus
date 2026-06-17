@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment.util;
 
-import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_BYTES_PER_CHARACTER;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_NO_BACKSLASH_ESCAPES;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_APPLICATION_CONTINUITY;
@@ -13,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,7 +40,6 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
@@ -48,6 +47,7 @@ import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
@@ -457,23 +457,33 @@ public final class HibernateProcessorUtil {
 
     private static void configureCaching(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
+        Properties p = descriptor.getProperties();
         if (config.secondLevelCachingEnabled()) {
-            Properties p = descriptor.getProperties();
             p.putIfAbsent(AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.USE_QUERY_CACHE, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
-            Map<String, String> cacheConfigEntries = HibernateConfigUtil.getCacheConfigEntries(config);
-            for (Map.Entry<String, String> entry : cacheConfigEntries.entrySet()) {
-                descriptor.getProperties().setProperty(entry.getKey(), entry.getValue());
-            }
+            p.putIfAbsent(QuarkusPersistenceUnitCacheConfiguration.CONFIG_KEY, toQuarkusCacheConfiguration(config));
         } else {
-            Properties p = descriptor.getProperties();
             p.put(AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.FALSE);
             p.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(AvailableSettings.USE_QUERY_CACHE, Boolean.FALSE);
             p.put(AvailableSettings.JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
+    }
+
+    private static QuarkusPersistenceUnitCacheConfiguration toQuarkusCacheConfiguration(
+            HibernateOrmConfigPersistenceUnit config) {
+        Map<String, QuarkusPersistenceUnitCacheConfiguration.Cache> caches = new HashMap<>();
+        for (var regionEntry : config.cache().entrySet()) {
+            String cacheName = regionEntry.getKey();
+            var cacheConfig = regionEntry.getValue();
+            caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(
+                    cacheConfig.memory().objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),
+                    cacheConfig.expiration().maxIdle()
+                            .orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxIdle())));
+        }
+        return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }
 
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
@@ -564,5 +574,9 @@ public final class HibernateProcessorUtil {
         return jsonMapper.isEmpty() ? JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(false, false)
                 : JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(true,
                         capabilities.isPresent(Capability.JACKSON));
+    }
+
+    private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
+        return first.isPresent() ? first : second;
     }
 }

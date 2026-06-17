@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -364,16 +365,22 @@ public class AggregateSkillsMojo extends AbstractMojo {
         }
 
         // Fall back to on-the-fly indexing
-        Indexer indexer = new Indexer();
+        List<Path> classFilesToIndex = new ArrayList<>();
         try (var stream = Files.walk(classesDir)) {
             stream.filter(p -> p.toString().endsWith(".class"))
-                    .forEach(p -> {
-                        try (InputStream is = Files.newInputStream(p)) {
-                            indexer.index(is);
-                        } catch (IOException e) {
-                            getLog().debug("Failed to index " + p + ": " + e.getMessage());
-                        }
-                    });
+                    .forEach(classFilesToIndex::add);
+        }
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        Indexer indexer = new Indexer();
+        for (Path file : classFilesToIndex) {
+            try (InputStream is = Files.newInputStream(file)) {
+                indexer.index(is);
+            } catch (IOException e) {
+                getLog().debug("Failed to index " + file + ": " + e.getMessage());
+            }
         }
         return indexer.complete();
     }

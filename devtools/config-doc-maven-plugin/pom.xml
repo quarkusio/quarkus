@@ -11,7 +11,7 @@
     <name>Quarkus - Config doc Maven plugin</name>
     <packaging>maven-plugin</packaging>
     <properties>
-        <maven-core.version>3.9.14</maven-core.version>
+        <maven-core.version>3.9.16</maven-core.version>
     </properties>
     <build>
         <pluginManagement>
@@ -74,7 +74,7 @@
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>0.9.0.M3</version>
+                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <id>index-project</id>

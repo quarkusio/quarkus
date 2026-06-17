@@ -3,21 +3,25 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp.logs;
 import java.util.Collection;
 
 import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
-import io.opentelemetry.exporter.internal.otlp.logs.LogsRequestMarshaler;
+import io.opentelemetry.exporter.internal.otlp.logs.LogReusableDataMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 
 public class VertxGrpcLogRecordExporter implements LogRecordExporter {
-    private final GrpcExporter delegate;
 
-    public VertxGrpcLogRecordExporter(GrpcExporter delegate) {
+    private final GrpcExporter delegate;
+    private final LogReusableDataMarshaler marshaler;
+
+    public VertxGrpcLogRecordExporter(GrpcExporter delegate, MemoryMode memoryMode) {
         this.delegate = delegate;
+        this.marshaler = new LogReusableDataMarshaler(memoryMode, delegate::export);
     }
 
     @Override
-    public CompletableResultCode export(Collection<LogRecordData> collection) {
-        return delegate.export(LogsRequestMarshaler.create(collection), collection.size());
+    public CompletableResultCode export(Collection<LogRecordData> logs) {
+        return marshaler.export(logs);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -390,8 +389,8 @@ public class UndertowDeploymentRecorder {
 
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
                 servletRuntimeConfig.getValue().directBuffers().orElse(DEFAULT_DIRECT_BUFFERS),
-                (int) servletRuntimeConfig.getValue().bufferSize()
-                        .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
+                servletRuntimeConfig.getValue().bufferSize()
+                        .orElse(MemorySize.of(DEFAULT_BUFFER_SIZE)).asIntValue());
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -468,7 +469,7 @@ public class YamlMetadataGenerator {
     }
 
     public static class Index {
-        Map<Type, IndexByType> types = new HashMap<>();
+        Map<Type, IndexByType> types = new EnumMap<>(Type.class);
 
         public List<Map<String, String>> getCategories() {
             return Stream.of(Category.values())

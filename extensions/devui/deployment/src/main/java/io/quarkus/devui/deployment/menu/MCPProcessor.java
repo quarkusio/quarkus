@@ -8,6 +8,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.devui.runtime.DevUIRecorder;
 import io.quarkus.devui.runtime.mcp.McpDevUIJsonRpcService;
@@ -78,6 +79,18 @@ public class MCPProcessor {
                         .handler(recorder.mcpStreamableHTTPHandler(Version.getVersion()))
                         .build());
 
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void logDevMcpEndpoint(DevUIRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
+        String path = nonApplicationRootPathBuildItem.resolvePath(DEVMCP);
+        recorder.logDevMcpEndpoint(path);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

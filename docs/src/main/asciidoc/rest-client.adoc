@@ -1065,6 +1065,55 @@ public interface SseClient {
 ----
 ====
 
+==== Accessing response metadata from a stream
+
+When consuming a streaming response (SSE, newline-delimited JSON, or chunked), you may need access to the HTTP status code or response headers alongside the streamed items.
+Using `RestMultiResponse<T>` instead of `Multi<T>` as the return type gives you non-blocking access to this metadata via the `response()` method, which returns a `Uni<BasicRestResponse>`.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.client.BasicRestResponse;
+import org.jboss.resteasy.reactive.client.RestMultiResponse;
+import org.jboss.resteasy.reactive.client.SseEvent;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     RestMultiResponse<SseEvent<Long>> get();
+}
+----
+
+The `BasicRestResponse` is available as soon as the HTTP response headers arrive, before any stream items are emitted:
+
+[source, java]
+----
+RestMultiResponse<SseEvent<Long>> stream = sseClient.get();
+
+// non-blocking access to response metadata
+stream.response().subscribe().with(response -> {
+    int status = response.status();
+    String correlationId = response.headers().getFirst("X-Correlation-Id");
+});
+
+// consume the stream items
+stream.subscribe().with(event -> {
+    // process each event
+});
+----
+
+`RestMultiResponse<T>` extends `Multi<T>`, so it can be used anywhere a `Multi` is expected.
+It works with any streaming media type, not just SSE.
+
 ==== Filtering out events
 
 On occasion, the stream of SSE events may contain some events that should not be returned by the client - an example of this is having the server send heartbeat events in order to keep the underlying TCP connection open.
@@ -1931,7 +1980,9 @@ quarkus.proxy.credentials-provider.password-key=passwordKey
 <2> Configure the Credentials Provider to obtain the username and password for the proxy.
 
 [NOTE]
+====
 The Credentials Provider is not used when `quarkus.proxy.password` (for global) or `quarkus.proxy.<named>.password` (for named) is not set.
+====
 
 === Local proxy for dev mode
 

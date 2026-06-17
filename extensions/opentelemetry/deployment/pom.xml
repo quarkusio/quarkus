@@ -57,6 +57,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-server-spi-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-runtime-telemetry</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>

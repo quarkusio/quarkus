@@ -1,6 +1,6 @@
 package org.acme;
 
-{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-panache-next')}
+{#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
 import io.quarkus.hibernate.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 
@@ -9,7 +9,7 @@ import jakarta.persistence.Entity;
  * Example JPA entity defined as a Panache Entity.
  * An ID field of Long type is provided, if you want to define your own ID field extends <code>WithId</code> instead.
  *
- * Documentation: \{@see https://quarkus.io/guides/hibernate-panache-next}
+ * Documentation: \{@see https://quarkus.io/guides/quarkus-data-hibernate}
  *
  * Usage:
  *

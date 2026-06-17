@@ -1,8 +1,7 @@
 package io.quarkus.restclient.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
@@ -31,9 +30,8 @@ class RestClientRandomPortTest {
     @Test
     void config() {
         RestClientConfig echoClientConfig = restClientsConfig.getClient(EchoClient.class);
-        assertTrue(echoClientConfig.url().isPresent());
-        assertEquals("http://localhost:0", echoClientConfig.url().get());
-        assertNotEquals("http://localhost:0", echoClientConfig.urlReload());
+        assertThat(echoClientConfig.url()).hasValue("http://localhost:0");
+        assertThat(echoClientConfig.urlReload()).hasValueSatisfying(val -> assertThat(val).isNotEqualTo("http://localhost:0"));
     }
 
     @Test

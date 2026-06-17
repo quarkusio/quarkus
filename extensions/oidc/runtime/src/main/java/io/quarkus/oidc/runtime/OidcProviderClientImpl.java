@@ -30,6 +30,7 @@ import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.security.credential.TokenCredential;
@@ -42,7 +43,6 @@ import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
@@ -72,13 +72,13 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString();
     private static final String APPLICATION_JSON = "application/json";
 
-    private final WebClient client;
+    private final OidcWebClient client;
     private final Vertx vertx;
     private final OidcConfigurationMetadata metadata;
     private final OidcTenantConfig oidcConfig;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
-    private final boolean jwtBearerAuthentication;
+    private final boolean jwtAssertionProvided;
     private final ClientAssertionProvider clientAssertionProvider;
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
@@ -90,7 +90,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private OidcProvider oidcProvider;
 
-    private OidcProviderClientImpl(WebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
+    private OidcProviderClientImpl(OidcWebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig, ClientCredentials clientCredentials,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
@@ -99,10 +99,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
-        this.jwtBearerAuthentication = oidcConfig.credentials().jwt()
-                .source() == OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+        this.jwtAssertionProvided = oidcConfig.credentials().jwt()
+                .source() != OidcClientCommonConfig.Credentials.Jwt.Source.CLIENT;
         this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials(), OIDCException::new);
-        this.clientJwtKey = jwtBearerAuthentication ? null : clientCredentials.clientJwtKey;
+        this.clientJwtKey = jwtAssertionProvided ? null : clientCredentials.clientJwtKey;
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
@@ -179,18 +179,18 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                         if (OidcUtils.isApplicationJwtContentType(response.contentType())) {
                             if (oidcConfig.jwks().resolveEarly()) {
                                 try {
-                                    LOG.debugf("Verifying the signed UserInfo with the local JWK keys: %s", response.data());
+                                    LOG.debugf("Verifying the signed UserInfo with the local JWK keys");
                                     return Uni.createFrom().item(
                                             new UserInfo(
                                                     oidcProvider.verifyJwtToken(response.data(), true, false,
-                                                            null).localVerificationResult
+                                                            null).localVerificationResult()
                                                             .encode()));
                                 } catch (Throwable t) {
                                     if (t.getCause() instanceof UnresolvableKeyException) {
                                         LOG.debug(
                                                 "No matching JWK key is found, refreshing and repeating the signed UserInfo verification");
                                         return oidcProvider.refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
-                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult().encode()));
                                     } else {
                                         LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
                                         return Uni.createFrom().failure(t);
@@ -200,7 +200,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                                 return oidcProvider
                                         .getKeyResolverAndVerifyJwtToken(new TokenCredential(response.data(), "userinfo"), true,
                                                 false, null, true)
-                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult().encode()));
                             }
                         } else {
                             return Uni.createFrom().item(new UserInfo(response.data()));
@@ -210,7 +210,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private Uni<UserInfoResponse> doGetUserInfo(OidcRequestContextProperties requestProps, String token, List<String> cookies) {
-        LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
+        LOG.debugf("Get UserInfo on: %s, Authorization: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " ...");
 
         HttpRequest<Buffer> request = client.getAbs(metadata.getUserInfoUri());
         if (!cookies.isEmpty()) {
@@ -247,8 +247,11 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                         .filterHttpResponse(requestProps, resp, responseFilters, PUSHED_AUTHORIZATION_REQUEST)
                         .flatMap(buffer -> {
                             if (resp.statusCode() == 201) {
-                                LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
-                                return Uni.createFrom().item(buffer.toJsonObject());
+                                JsonObject jsonObject = buffer.toJsonObject();
+                                if (LOG.isDebugEnabled()) {
+                                    LOG.debugf("Request succeeded: %s", OidcCommonUtils.maskJsonTokens(jsonObject));
+                                }
+                                return Uni.createFrom().item(jsonObject);
                             }
                             return Uni.createFrom()
                                     .failure(responseException(metadata.getPushedAuthorizationRequestUri(), resp, buffer));
@@ -371,15 +374,16 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 if (hasClientSecretProvider()) {
                     credentialsToRetry = PreparedHttpRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
                 }
-            } else if (jwtBearerAuthentication) {
+            } else if (jwtAssertionProvided) {
                 final String clientAssertion = clientAssertionProvider.getClientAssertion();
                 if (clientAssertion == null) {
                     throw new OIDCException(String.format(
-                            "Cannot get token for tenant '%s' because a JWT bearer client_assertion is not available",
-                            oidcConfig.tenantId().get()));
+                            "Cannot get token for tenant '%s' because a %s client_assertion is not available",
+                            oidcConfig.tenantId().get(),
+                            OidcCommonUtils.getClientAssertionTokenType(oidcConfig.credentials().jwt().source())));
                 }
                 formBody.add(OidcConstants.CLIENT_ASSERTION, clientAssertion);
-                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
             } else if (clientJwtKey != null) {
                 String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
                 if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {
@@ -426,13 +430,12 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             }
         }
         if (LOG.isDebugEnabled()) {
-            if (op == TokenOperation.PAR) {
-                LOG.debugf("%s: url : %s, headers: %s, request params: %s", op.operation(), request.uri(),
-                        request.headers(), formBody);
-            } else {
-                LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(),
-                        request.headers(), formBody);
-            }
+            String logMessage = """
+                    %s %s: url : %s, headers: %s, request params: %s
+                    """.formatted(op.operation(), (op == TokenOperation.PAR ? "" : "token"), request.uri(),
+                    OidcCommonUtils.maskAuthorizationHeader(request.headers()),
+                    OidcCommonUtils.maskFormData(formBody));
+            LOG.debug(logMessage);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
         var preparedResponse = filterHttpRequest(requestProps, endpointType, request, buffer)
@@ -546,8 +549,14 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint)
                 .flatMap(buffer -> {
                     if (resp.statusCode() == 200) {
-                        LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
-                        return Uni.createFrom().item(buffer.toJsonObject());
+                        JsonObject jsonObject = buffer.toJsonObject();
+                        if (LOG.isDebugEnabled()) {
+                            String logMessage = """
+                                    Request succeeded: %s
+                                    """.formatted(OidcCommonUtils.maskJsonTokens(jsonObject));
+                            LOG.debug(logMessage);
+                        }
+                        return Uni.createFrom().item(jsonObject);
                     } else if (resp.statusCode() == 302) {
                         return Uni.createFrom().failure(OidcCommonUtils.createOidcClientRedirectException(resp));
                     } else {
@@ -561,7 +570,11 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint)
                 .flatMap(buffer -> {
                     if (resp.statusCode() == 200) {
-                        LOG.debugf("Request succeeded: %s", resp.bodyAsString());
+                        if (endpoint == OidcEndpoint.Type.USERINFO) {
+                            LOG.debugf("UserInfo request succeeded");
+                        } else {
+                            LOG.debugf("Request succeeded: %s", resp.bodyAsString());
+                        }
                         return Uni.createFrom().item(buffer.toString());
                     } else if (resp.statusCode() == 302) {
                         return Uni.createFrom().failure(OidcCommonUtils.createOidcClientRedirectException(resp));
@@ -635,7 +648,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return vertx;
     }
 
-    public WebClient getWebClient() {
+    public OidcWebClient getWebClient() {
         return client;
     }
 
@@ -646,7 +659,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return op == TokenOperation.INTROSPECT;
     }
 
-    static Uni<OidcProviderClientImpl> of(WebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
+    static Uni<OidcProviderClientImpl> of(OidcWebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {

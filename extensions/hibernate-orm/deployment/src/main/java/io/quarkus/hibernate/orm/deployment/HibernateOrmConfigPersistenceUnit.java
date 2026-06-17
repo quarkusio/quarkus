@@ -91,7 +91,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * `-1` means batch loading is disabled.
      *
-     * @deprecated {@link #fetch} should be used to configure fetching properties.
+     * @deprecated Use {@code quarkus.hibernate-orm.fetch.batch-size} to configure the batch fetch size.
      * @asciidoclet
      */
     @ConfigDocDefault("16")
@@ -103,7 +103,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * A `0` disables default outer join fetching.
      *
-     * @deprecated {@link #fetch} should be used to configure fetching properties.
+     * @deprecated Use {@code quarkus.hibernate-orm.fetch.max-depth} to configure the maximum fetch depth.
      * @asciidoclet
      */
     @Deprecated
@@ -136,7 +136,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * This setting is exposed mainly to allow registration of types, converters and SQL functions.
      * ====
-     * * @deprecated Use TypeContributor, FunctionContributor or AdditionalMappingContributor instead.
+     *
+     * @deprecated Use {@code TypeContributor}, {@code FunctionContributor}, or {@code AdditionalMappingContributor} instead.
      *
      * @asciidoclet
      */
@@ -229,7 +230,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
      * if not set.
      *
-     * @deprecated Use {@link #datasource()} instead.
+     * @deprecated Use {@code quarkus.hibernate-orm.datasource} to configure the datasource for the persistence unit.
      */
     @Deprecated
     Optional<@WithConverter(TrimmedStringConverter.class) String> multitenantSchemaDatasource();
@@ -307,8 +308,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
-         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
-         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         * @deprecated Use {@code quarkus.hibernate-orm.dialect.mysql.storage-engine}
+         *             or {@code quarkus.hibernate-orm.dialect.mariadb.storage-engine} instead.
          *
          * @asciidoclet
          */
@@ -661,7 +662,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Whether Hibernate should quote all identifiers.
          *
-         * @deprecated {@link #quoteIdentifiers} should be used to configure quoting strategy.
+         * @deprecated Use {@code quarkus.hibernate-orm.quote-identifiers.strategy} to configure the quoting strategy.
          */
         @Deprecated
         @WithDefault("false")
@@ -830,7 +831,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Enables the Bean Validation integration.
          *
-         * @deprecated Use {@link #mode()} instead.
+         * @deprecated Use {@code quarkus.hibernate-orm.validation.mode} instead.
          */
         @Deprecated(since = "3.19", forRemoval = true)
         @WithDefault("true")

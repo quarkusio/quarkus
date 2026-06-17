@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -50,6 +51,7 @@ import io.quarkus.platform.tools.ExtensionMetadataValidator;
 /**
  * Task that generates extension descriptor files.
  */
+@DisableCachingByDefault(because = "Not cacheable")
 public class ExtensionDescriptorTask extends DefaultTask {
 
     private final QuarkusExtensionConfiguration quarkusExtensionConfiguration;

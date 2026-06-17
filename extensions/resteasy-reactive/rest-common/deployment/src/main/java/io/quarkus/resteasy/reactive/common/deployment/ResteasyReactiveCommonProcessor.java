@@ -20,6 +20,7 @@ import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -97,7 +98,7 @@ public class ResteasyReactiveCommonProcessor {
             return;
         }
         List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
-                .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
+                .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).toList();
         boolean hasResteasyCoreDep = resteasyClassicDeps.stream()
                 .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CORE_DEP));
         if (!hasResteasyCoreDep) {
@@ -126,7 +127,6 @@ public class ResteasyReactiveCommonProcessor {
             // in this weird case we don't want the providers to be registered automatically as this would lead to multiple bean definitions
             return;
         }
-        // TODO: should we also be looking for the specific provider files?
         producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
@@ -159,7 +159,7 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     public ResourceInterceptorsContributorBuildItem scanForIOInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem) {
-        return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
+        return new ResourceInterceptorsContributorBuildItem(new Consumer<>() {
             @Override
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForIOInterceptors(interceptors,
@@ -214,8 +214,7 @@ public class ResteasyReactiveCommonProcessor {
         if (priority != null) {
             interceptor.setPriority(priority);
         }
-        if (filterItem instanceof ContainerRequestFilterBuildItem) {
-            ContainerRequestFilterBuildItem crfbi = (ContainerRequestFilterBuildItem) filterItem;
+        if (filterItem instanceof ContainerRequestFilterBuildItem crfbi) {
             interceptor.setNonBlockingRequired(crfbi.isNonBlockingRequired());
             interceptor.setWithFormRead(crfbi.isWithFormRead());
             MethodInfo filterSourceMethod = crfbi.getFilterSourceMethod();
@@ -304,9 +303,10 @@ public class ResteasyReactiveCommonProcessor {
             return;
         }
         if (!res.getResourcesThatNeedCustomProducer().isEmpty()) {
+            AnnotationTransformation transformation = new VetoingAnnotationTransformer(
+                    res.getResourcesThatNeedCustomProducer().keySet());
             annotationsTransformerBuildItemBuildProducer
-                    .produce(new AnnotationsTransformerBuildItem(
-                            new VetoingAnnotationTransformer(res.getResourcesThatNeedCustomProducer().keySet())));
+                    .produce(new AnnotationsTransformerBuildItem(transformation));
         }
         resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(res));
     }

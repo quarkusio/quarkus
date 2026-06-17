@@ -39,6 +39,9 @@ public interface DevServicesBuildTimeConfig {
      * * Oracle Express Edition: `{oracle-image}`
      * * PostgreSQL: `{postgres-image}`
      *
+     * For certain databases, the default image may be automatically adjusted based on required database features
+     * (e.g., spatial or vector support). Explicitly setting this property overrides the automatic image selection.
+     *
      * @asciidoclet
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> imageName();

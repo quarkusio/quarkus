@@ -51,7 +51,7 @@ import org.htmlunit.WebRequest;
 import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
 
     @OidcWireMock
@@ -388,6 +388,42 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowJwtBearerAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-jwt-bearer-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowSpiffeAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-spiffe-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
         final String refreshJwtToken = generateAlreadyExpiredRefreshToken();
@@ -520,7 +556,7 @@ public class CodeFlowAuthorizationTest {
                                         StandardCharsets.UTF_8))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
+                                if (line.contains("Verifying the signed UserInfo with the local JWK keys")) {
                                     lineConfirmingVerificationDetected = true;
                                 } else if (line.contains("Response contains signed UserInfo")) {
                                     signedUserInfoResponseFilterMessageDetected = true;
@@ -1074,6 +1110,35 @@ public class CodeFlowAuthorizationTest {
                                         OidcWiremockTestResource.generateJwtToken("bob", Set.of(), "sub", "ID",
                                                 Set.of("quarkus-web-app"))
                                         + "\""
+                                        + "}")));
+    }
+
+    private void defineCodeFlowJwtBearerAndSpiffeTokenStubs() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/spiffe-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-spiffe"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                         + "}")));
     }
 

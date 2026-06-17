@@ -98,6 +98,11 @@ public final class GenerationUtil {
      * dot-name array forms like {@code java.lang.Object[]}.
      */
     static ClassDesc toClassDesc(String typeName) {
+        // Handle type variables (e.g. "T") by erasing to Object
+        // Jandex represents method-level generics as simple identifiers which are not valid class names.
+        if (isTypeVariableName(typeName)) {
+            return ConstantDescs.CD_Object;
+        }
         // Handle JVM internal array descriptors (e.g. "[Ljava.lang.Object;", "[[I")
         if (typeName.startsWith("[")) {
             return ClassDesc.ofDescriptor(typeName.replace('.', '/'));
@@ -118,6 +123,28 @@ public final class GenerationUtil {
             case "double" -> ConstantDescs.CD_double;
             case "char" -> ConstantDescs.CD_char;
             default -> ClassDesc.of(typeName);
+        };
+    }
+
+    private static boolean isTypeVariableName(String typeName) {
+        if (typeName == null || typeName.isEmpty()) {
+            return false;
+        }
+        // If it contains a package separator, it's a normal class name.
+        if (typeName.indexOf('.') != -1) {
+            return false;
+        }
+        // Common Jandex identifier form for type variables: "T", "ID", etc.
+        for (int i = 0; i < typeName.length(); i++) {
+            char c = typeName.charAt(i);
+            if (!(Character.isLetterOrDigit(c) || c == '_' || c == '$')) {
+                return false;
+            }
+        }
+        // Avoid treating primitive names as type variables.
+        return switch (typeName) {
+            case "void", "boolean", "byte", "short", "int", "long", "float", "double", "char" -> false;
+            default -> Character.isUpperCase(typeName.charAt(0));
         };
     }
 

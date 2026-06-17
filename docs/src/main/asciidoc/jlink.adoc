@@ -1,0 +1,71 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="jlink"]
+= JLink packaging
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: packaging
+:extension-status: experimental
+:summary: The jlink extension produces a custom Java runtime image containing only the modules needed to run the application.
+:topics: jlink,packaging,modules,modularity
+:extensions: io.quarkus:quarkus-jlink
+
+The `jlink` extension produces a custom Java runtime image for a Quarkus application.
+The image contains only the JDK modules and application modules that are needed to run the application, resulting in a smaller, faster, and more self-contained distribution.
+This extension depends on the xref:modularity.adoc[Quarkus modularity extension] to compute the application's module graph.
+
+include::{includes}/extension-status.adoc[]
+
+== Prerequisites
+
+The `jlink` extension requires Java 25 or later.
+Earlier JDK versions have compatibility issues with the `jlink` tool that prevent reliable image generation.
+
+== Usage
+
+Add the `quarkus-jlink` extension to your project.
+When the extension is present, a `jlink` image is produced automatically as part of the normal Quarkus build.
+JAR packaging is disabled when `jlink` is active.
+
+:add-extension-extensions: quarkus-jlink
+include::{includes}/devtools/extension-add.adoc[]
+
+After adding the extension, build the project normally:
+
+include::{includes}/devtools/build.adoc[]
+
+The `jlink` image is written to the output directory (by default, `target/jlink-output/image`).
+
+== Running the image
+
+To run the application, execute the launcher script in the image's `bin` directory:
+
+[source,bash]
+----
+./target/jlink-output/image/bin/<launcher-name>
+----
+
+The launcher name currently defaults to `my-app`.
+A future release will derive the default from `quarkus.package.output-name`.
+
+== Image layout
+
+The output directory has the standard `jlink` image structure.
+The `bin/` directory contains the launcher script.
+The `lib/` directory contains the JDK runtime modules.
+Application modules that are not on the boot module path are placed in `lib/quarkus/` and are loaded dynamically on demand after startup by `smallrye-modules`.
+See the xref:modularity.adoc[modularity guide] for an explanation of boot modules and dynamic modules.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-jlink.adoc[opts=optional, leveloffset=+1]
+
+== CDS support
+
+Support for Class Data Sharing (CDS) and AOT precompilation within jlink images is planned for a future release.
+
+CDS currently only applies to modules on the boot module path.
+Dynamic modules loaded by `smallrye-modules` are not eligible for CDS precompilation at this time.

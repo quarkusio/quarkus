@@ -10,6 +10,8 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
+import io.quarkus.liquibase.common.runtime.LogicalPathMappingResourceAccessor;
 import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import io.quarkus.runtime.ImageMode;
@@ -73,7 +75,13 @@ public class LiquibaseFactory {
     }
 
     private ResourceAccessor nativeImageResourceAccessor(CompositeResourceAccessor rootAccessor) {
-        return rootAccessor.addResourceAccessor(new NativeImageResourceAccessor());
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        var nativeAccessor = new NativeImageResourceAccessor();
+        var mapping = LiquibaseLogicalPathMappings.load(cl, LiquibaseLogicalPathMappings.JDBC_MAPPING_RESOURCE);
+        if (mapping.isEmpty()) {
+            return rootAccessor.addResourceAccessor(nativeAccessor);
+        }
+        return rootAccessor.addResourceAccessor(new LogicalPathMappingResourceAccessor(mapping, nativeAccessor));
     }
 
     private String parseChangeLog(String changeLog) {

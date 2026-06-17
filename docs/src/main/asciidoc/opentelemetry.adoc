@@ -245,6 +245,84 @@ public class CustomConfiguration {
 }
 ----
 
+==== Kubernetes
+When running the application in Kubernetes, the https://opentelemetry.io/docs/specs/semconv/resource/k8s/[OpenTelemetry Kubernetes resource attributes] can be populated in a couple of ways.
+
+===== With the Quarkus Kubernetes extension
+
+When the `quarkus-kubernetes` extension is present, Quarkus automatically adds the following environment variables to the generated Kubernetes manifests:
+
+|===
+|Attribute name|Content example|Environment variable|Source
+
+|k8s.namespace.name
+|"my-namespace"
+|`QUARKUS_OTEL_K8S_RESOURCE_NAMESPACE`
+|Kubernetes Downward API: `metadata.namespace`. Falls back to reading the service account namespace file at `/var/run/secrets/kubernetes.io/serviceaccount/namespace`.
+
+|k8s.pod.name
+|"my-app-7d6f8b5c9-x2k4m"
+|`QUARKUS_OTEL_K8S_RESOURCE_POD_NAME`
+|Kubernetes Downward API: `metadata.name`.
+
+|k8s.pod.uid
+|"f4b5c6d7-1234-5678-9abc-def012345678"
+|`QUARKUS_OTEL_K8S_RESOURCE_POD_UID`
+|Kubernetes Downward API: `metadata.uid`.
+
+|k8s.node.name
+|"node-1"
+|`QUARKUS_OTEL_K8S_RESOURCE_NODE_NAME`
+|Kubernetes Downward API: `spec.nodeName`.
+
+|k8s.container.name
+|"my-app"
+|`QUARKUS_OTEL_K8S_RESOURCE_CONTAINER_NAME`
+|Set to the application name at build time.
+
+|k8s.deployment.name
+|"my-app"
+|`QUARKUS_OTEL_K8S_RESOURCE_DEPLOYMENT_NAME`
+|Set to `quarkus.kubernetes.name` (or the application name if not configured) at build time.
+|===
+
+The `k8s.cluster.name` attribute is not set automatically because the cluster name is not available through pod metadata.
+You can set it manually using `quarkus.otel.resource.attributes=k8s.cluster.name=my-cluster` or by setting the `QUARKUS_OTEL_K8S_RESOURCE_CLUSTER_NAME` environment variable.
+
+===== Without the Quarkus Kubernetes extension
+
+If the `quarkus-kubernetes` extension is *not* used, there's the need to manually set the environment variables defined in the previous section. The `quarkus-opentelemetry` extension will then be able to populate the Kubernetes resource attributes. This is a partial sample of a deployment manifest setting up the required env. vars.:
+
+[source,yaml]
+----
+spec:
+  containers:
+    - name: my-app
+      env:
+        - name: QUARKUS_OTEL_K8S_RESOURCE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: QUARKUS_OTEL_K8S_RESOURCE_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: QUARKUS_OTEL_K8S_RESOURCE_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: QUARKUS_OTEL_K8S_RESOURCE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: QUARKUS_OTEL_K8S_RESOURCE_CONTAINER_NAME
+          value: my-app
+        - name: QUARKUS_OTEL_K8S_RESOURCE_DEPLOYMENT_NAME
+          value: my-app
+        - name: QUARKUS_OTEL_K8S_RESOURCE_CLUSTER_NAME
+          value: production
+----
+
 === Semantic conventions
 
 OpenTelemetry provides a set of https://opentelemetry.io/docs/specs/semconv/http/http-spans/[semantic conventions] to standardize the data collected by the instrumentation.
@@ -264,6 +342,10 @@ CDI (Context Dependency Injection) will manage the exporters to use, according t
 The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch the senders and defaults to `grpc` but `http/protobuf` can also be used.
 
 NOTE: If you change the protocol, you also need to change the port in the endpoint. The default port for `grpc` is `4317` and for `http/protobuf` is `4318`.
+
+The `quarkus.otel.exporter.otlp.memory-mode` property configures the memory allocation strategy for OTLP exporters.
+The default value `immutable-data` creates new serialization objects for each export.
+Setting it to `reusable-data` enables object pooling to reduce garbage collection pressure, which can be beneficial in memory-constrained environments.
 
 === Using CDI to produce a test exporter
 

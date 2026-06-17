@@ -1,16 +1,11 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.HashMap;
-import java.util.List;
-
-import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
-import io.fabric8.kubernetes.api.model.batch.v1.JobFluent;
 
-public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<Job, JobBuilder, JobConfig> {
+public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<Job, JobBuilder, PlatformConfiguration> {
 
-    public AddJobResourceDecorator(String name, JobConfig config, DeploymentResourceKind toRemove) {
+    public AddJobResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
         super(name, DeploymentResourceKind.Job, config, toRemove);
     }
 
@@ -20,44 +15,22 @@ public class AddJobResourceDecorator extends BaseAddDeploymentResourceDecorator<
     }
 
     @Override
-    protected void initBuilderWithDefaults(JobBuilder builder, JobConfig config) {
-        JobFluent<?>.SpecNested<JobBuilder> spec = builder.editOrNewSpec();
+    protected void initBuilderWithDefaults(JobBuilder builder) {
+        final var spec = builder.editOrNewSpec();
 
-        spec.editOrNewSelector()
-                .endSelector()
-                .editOrNewTemplate()
-                .editOrNewSpec()
-                .endSpec()
-                .endTemplate();
+        // match labels for selector
+        initSelectorMatchLabels(spec.editOrNewSelector())
+                .endSelector();
 
-        // defaults for:
-        // - match labels
-        if (spec.buildSelector().getMatchLabels() == null) {
-            spec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
-        }
-        // - termination grace period seconds
-        if (spec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {
-            spec.editTemplate().editSpec().withTerminationGracePeriodSeconds(10L).endSpec().endTemplate();
-        }
-        // - container
-        if (!containsContainerWithName(spec)) {
-            spec.editTemplate().editSpec().addNewContainer().withName(name()).endContainer().endSpec().endTemplate();
-        }
+        // configure job pod and container from template
+        configurePodSpec(spec.editOrNewTemplate().editOrNewSpec())
+                .endSpec().endTemplate();
 
+        // initialize from config
+        final var config = config().job();
         spec.withSuspend(config.suspend());
-        spec.withCompletionMode(config.completionMode().name());
-        spec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
-        config.parallelism().ifPresent(spec::withParallelism);
-        config.completions().ifPresent(spec::withCompletions);
-        config.backoffLimit().ifPresent(spec::withBackoffLimit);
-        config.activeDeadlineSeconds().ifPresent(spec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished().ifPresent(spec::withTtlSecondsAfterFinished);
+        initFromConfig(spec, config);
 
         spec.endSpec();
-    }
-
-    private boolean containsContainerWithName(JobFluent<?>.SpecNested<JobBuilder> spec) {
-        List<Container> containers = spec.buildTemplate().getSpec().getContainers();
-        return containers == null || containers.stream().anyMatch(c -> name().equals(c.getName()));
     }
 }

@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Self-contained main class executed in a forked JVM by {@link ClassLoadingChainAnalyzer}.
+ * Self-contained main class executed in a forked JVM by {@link ForkedJvmEnvironment}.
  * <p>
  * Reads entry point class names and known class names from an input file,
  * loads and instantiates each entry point in a recording classloader that captures

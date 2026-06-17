@@ -23,7 +23,7 @@ class BaseAuthRestTest extends HttpsSetup {
                 .body("Bill")
                 .contentType(ContentType.TEXT)
                 .when()
-                .post("/foo/mapped/rest")
+                .post("/mapped/rest")
                 .then()
                 .statusCode(200)
                 .body(is("post success"));
@@ -34,7 +34,7 @@ class BaseAuthRestTest extends HttpsSetup {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/foo/mapped/rest")
+                .get("/mapped/rest")
                 .then()
                 .statusCode(200)
                 .body(is("get success"));

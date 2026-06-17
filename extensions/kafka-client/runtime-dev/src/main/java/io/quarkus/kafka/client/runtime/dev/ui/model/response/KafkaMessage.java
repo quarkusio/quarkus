@@ -8,11 +8,11 @@ public class KafkaMessage {
     private final long offset;
     private final long timestamp;
     private final String key;
-    private final String value;
+    private final KafkaMessageContent value;
     private final Map<String, String> headers;
 
-    public KafkaMessage(String topic, int partition, long offset, long timestamp, String key, String value,
-            Map<String, String> headers) {
+    public KafkaMessage(String topic, int partition, long offset, long timestamp, String key,
+            KafkaMessageContent value, Map<String, String> headers) {
         this.topic = topic;
         this.partition = partition;
         this.offset = offset;
@@ -42,7 +42,7 @@ public class KafkaMessage {
         return key;
     }
 
-    public String getValue() {
+    public KafkaMessageContent getValue() {
         return value;
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,9 @@ import io.quarkus.runtime.LaunchMode;
  */
 public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
+    public record DevServicesStartResult(Map<String, String> configs, Map<String, String> overrideConfigs) {
+    }
+
     private static final Logger log = Logger.getLogger(DevServicesRegistryBuildItem.class);
 
     private final UUID uuid;
@@ -63,8 +67,13 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         RunningDevServicesRegistry.INSTANCE.closeAllRunningServices(owner);
     }
 
-    public void closeAllRunningServices() {
-        RunningDevServicesRegistry.INSTANCE.closeAllRunningServices(launchMode.name());
+    public void closeOwnRunningServices(String featureName, String configName) {
+        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
+        RunningDevServicesRegistry.INSTANCE.closeOwnRunningServices(uuid, owner);
+    }
+
+    public void closeOwnRunningServices() {
+        RunningDevServicesRegistry.INSTANCE.closeOwnRunningServices(uuid, launchMode.name());
     }
 
     public void closeRemainingRunningServices(Collection<DevServicesResultBuildItem> services) {
@@ -82,28 +91,31 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         return config;
     }
 
-    public void startAll(Collection<DevServicesResultBuildItem> services,
+    public DevServicesStartResult startAll(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
             ClassLoader deploymentClassLoader) {
         closeRemainingRunningServices(services);
         Map<String, String> config = new ConcurrentHashMap<>();
+        Map<String, String> overrideConfig = new ConcurrentHashMap<>();
         startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
-                dr -> !dr.hasDependencies(), config);
+                dr -> !dr.hasDependencies(), config, overrideConfig);
 
         // Now start everything with a dependency
         // This won't handle the case where the dependencies also have dependencies, but that can be a follow-on work item if people ask for it
         // I think we could implement it by getting the actual dependencies and seeing if any of them are also in the list of things we're starting, and then recursing
         startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
-                DevServicesResultBuildItem::hasDependencies, config);
+                DevServicesResultBuildItem::hasDependencies, config, overrideConfig);
 
+        return new DevServicesStartResult(Collections.unmodifiableMap(config),
+                Collections.unmodifiableMap(overrideConfig));
     }
 
     private void startSelectedServices(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
             ClassLoader deploymentClassLoader, Predicate<? super DevServicesResultBuildItem> filter,
-            Map<String, String> config) {
+            Map<String, String> config, Map<String, String> overrideConfig) {
         // TODO Note that this does not handle chained dependencies; dependencies can only be one level deep for now
         // It would be easy to fix that, but let's wait until we need to
         CompletableFuture.allOf(services.stream()
@@ -118,7 +130,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                         Thread.currentThread().setContextClassLoader(serv.getClass().getClassLoader());
                     }
                     try {
-                        this.start(serv, customizers, additionalConfigBuildItems, config);
+                        this.start(serv, customizers, additionalConfigBuildItems, config, overrideConfig);
                     } finally {
                         // Err on the side of caution and reset the TCCL to avoid leaks
                         Thread.currentThread().setContextClassLoader(orig);
@@ -128,22 +140,40 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     }
 
     public void start(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
-            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> config) {
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> config,
+            Map<String, String> overrideConfig) {
         // RunningService class is loaded on parent classloader
         RunningService matchedDevService = this.getRunningServices(request.getName(), request.getServiceName(),
                 request.getServiceConfig());
 
         if (matchedDevService == null) {
-            // There isn't a running container that has the right config, we need to do work
-            // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
             closeAllRunningServices(request.getName(), request.getServiceName());
 
-            reallyStart(request, customizers, additionalConfigBuildItems, config);
+            reallyStart(request, customizers, additionalConfigBuildItems, config, overrideConfig);
+        } else {
+            Map<String, String> reusedConfig = new HashMap<>(matchedDevService.configs());
+
+            // Re-evaluate additional config build items on reuse,
+            // because they are contextual to the current augmentation and may produce
+            // different results than the previous run.
+            // For example, Hibernate ORM's drop-and-create strategy should not persist
+            // across restarts when Flyway takes over schema management.
+            for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
+                Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
+                        .provide(reusedConfig);
+                if (!extraFromBuildItem.isEmpty()) {
+                    reusedConfig.putAll(extraFromBuildItem);
+                }
+            }
+
+            config.putAll(reusedConfig);
+            overrideConfig.putAll(matchedDevService.overrideConfigs());
         }
     }
 
     private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
-            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> configs) {
+            List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> allDevServicesConfig,
+            Map<String, String> allDevServicesOverrideConfigs) {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             Supplier<Startable> startableSupplier = request.getStartableSupplier();
@@ -163,7 +193,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             if (dependencies != null && !dependencies.isEmpty()) {
                 for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : dependencies) {
 
-                    var value = configs.get(dependency.requiredConfigKey());
+                    var value = allDevServicesConfig.get(dependency.requiredConfigKey());
                     if (value != null) {
                         ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
                     } else {
@@ -175,7 +205,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             var optionalDependencies = request.getOptionalDependencies();
             if (optionalDependencies != null && !optionalDependencies.isEmpty()) {
                 for (DevServicesResultBuildItem.DevServiceConfigDependency<? extends Startable> dependency : optionalDependencies) {
-                    var value = configs.get(dependency.requiredConfigKey());
+                    var value = allDevServicesConfig.get(dependency.requiredConfigKey());
                     if (value != null) {
                         ((BiConsumer<Startable, String>) dependency.valueInjector()).accept(startable, value);
                     }
@@ -187,23 +217,28 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
                 Map<String, String> config = request.getConfig(startable);
                 Map<String, String> overrideConfig = request.getOverrideConfig(startable);
-                configs.putAll(config);
-                configs.putAll(overrideConfig);
 
-                // We do not "copy" the config map here since it is created within the request.getConfig:
-                // Some extensions may rely on adding/overriding config properties
-                //  depending on the results of the started dev services,
-                //  e.g. Hibernate Search/ORM may change the default schema management
-                //  if it detects that it runs over a dev service datasource/Elasticsearch distribution.
+                // Track this service's own config separately from the shared map,
+                // so that each RunningService only exposes its own keys.
+                // The shared map is used for inter-service dependency resolution
+                // and DevServicesAdditionalConfigBuildItem evaluation.
+                Map<String, String> currentDevServiceConfig = new HashMap<>();
+                currentDevServiceConfig.putAll(config);
+                currentDevServiceConfig.putAll(overrideConfig);
+                allDevServicesOverrideConfigs.putAll(overrideConfig);
+
+                RunningService service = new RunningService(request.getName(), request.getDescription(),
+                        new HashMap<>(currentDevServiceConfig), overrideConfig, startable.getContainerId(), startable);
+
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()
-                            .provide(configs);
+                            .provide(currentDevServiceConfig);
                     if (!extraFromBuildItem.isEmpty()) {
-                        configs.putAll(extraFromBuildItem);
+                        currentDevServiceConfig.putAll(extraFromBuildItem);
                     }
                 }
-                RunningService service = new RunningService(request.getName(), request.getDescription(),
-                        configs, request.getOverrideConfig(startable), startable.getContainerId(), startable);
+
+                allDevServicesConfig.putAll(currentDevServiceConfig);
                 this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
                 compressor.close();
 

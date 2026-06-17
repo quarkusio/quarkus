@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
 
 /**
  * Represents a runnable artifact, such as an uberjar or thin jar.
@@ -18,18 +18,18 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
     private final Path path;
     private final String type;
     private final Map<String, String> metadata;
-    private final ApplicationManifestConfig manifestConfig;
+    private final CoreSbomContributionConfig coreSbomConfig;
 
     public ArtifactResultBuildItem(Path path, String type, Map<String, String> metadata) {
         this(path, type, metadata, null);
     }
 
     public ArtifactResultBuildItem(Path path, String type, Map<String, String> metadata,
-            ApplicationManifestConfig manifestConfig) {
+            CoreSbomContributionConfig manifestConfig) {
         this.path = path;
         this.type = type;
         this.metadata = metadata;
-        this.manifestConfig = manifestConfig;
+        this.coreSbomConfig = manifestConfig;
     }
 
     public Path getPath() {
@@ -40,8 +40,8 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
         return type;
     }
 
-    public ApplicationManifestConfig getManifestConfig() {
-        return manifestConfig;
+    public CoreSbomContributionConfig getCoreSbomConfig() {
+        return coreSbomConfig;
     }
 
     public Map<String, String> getMetadata() {

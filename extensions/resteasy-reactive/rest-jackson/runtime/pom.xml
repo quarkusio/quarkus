@@ -22,6 +22,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-data-hibernate-json-types</artifactId>
+            <optional>true</optional> <!-- conditional dependency -->
+        </dependency>
     </dependencies>
 
     <build>

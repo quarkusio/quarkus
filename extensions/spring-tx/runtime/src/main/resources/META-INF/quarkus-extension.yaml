@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring Transaction API"
+metadata:
+  keywords:
+  - "spring-tx"
+  - "spring"
+  - "transaction"
+  - "transactional"
+  categories:
+  - "compatibility"
+  status: "preview"

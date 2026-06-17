@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
@@ -53,9 +54,7 @@ public class QuarkusServerPathBodyHandler implements ServerMessageBodyReader<Pat
     public Path readFrom(Class<Path> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        // unfortunately we don't do much here to avoid the file leak
-        // however this should never be called in a real world scenario
-        return FileBodyHandler.doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile()).toPath();
+        return FileBodyHandler.doRead(httpHeaders, entityStream, createFile(CurrentRequestManager.get()).toFile()).toPath();
     }
 
     static Path createFile(ServerRequestContext context) throws IOException {

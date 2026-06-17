@@ -299,10 +299,9 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             console.error('Failed to fetch configuration or persistence units:', error);
             this._addErrorMessage(
                 msg(
-                    str`Failed to fetch configuration or persistence units: ${0}`,
+                    str`Failed to fetch configuration or persistence units: ${String(error)}`,
                     {
                         id: 'quarkus-hibernate-orm-failed-fetch-config-or-pu',
-                        args: [String(error)]
                     }
                 )
             );
@@ -523,17 +522,15 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
         const results = message.message
             ? msg(
-                str`Using ${0} result${1}`,
+                str`Using ${message.results} result${pluralSuffix}`,
                 {
                     id: 'quarkus-hibernate-orm-using-results',
-                    args: [message.results, pluralSuffix]
                 }
             )
             : msg(
-                str`${0} result${1}`,
+                str`${message.results} result${pluralSuffix}`,
                 {
                     id: 'quarkus-hibernate-orm-results',
-                    args: [message.results, pluralSuffix]
                 }
             );
 
@@ -571,10 +568,9 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                     </vaadin-button>
                     <span>
                         ${msg(
-                            str`Page ${0} of ${1}`,
+                            str`Page ${message.page} of ${message.totalPages}`,
                             {
                                 id: 'quarkus-hibernate-orm-page-of',
-                                args: [message.page, message.totalPages]
                             }
                         )}
                     </span>
@@ -647,17 +643,15 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
         const isArray = Array.isArray(value);
         const preview = isArray
             ? msg(
-                str`Array[${0}]`,
+                str`Array[${value.length}]`,
                 {
                     id: 'quarkus-hibernate-orm-array-preview',
-                    args: [value.length]
                 }
             )
             : msg(
-                str`Object{${0} properties}`,
+                str`Object{${Object.keys(value).length} properties}`,
                 {
                     id: 'quarkus-hibernate-orm-object-preview',
-                    args: [Object.keys(value).length]
                 }
             );
 
@@ -929,6 +923,8 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
         const query = (input?.value || '').trim();
 
         if (!query) return;
+
+        input.value = '';
 
         const label = this._assistantEnabled
             ? msg('Message', { id: 'quarkus-hibernate-orm-message-label' })

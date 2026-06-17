@@ -1224,7 +1224,7 @@ More details about this connection pool can be found in xref:datasource.adoc[Qua
 
 Second Level Cache::
 As explained earlier in the <<caching,Caching section>>, you don't need to pick an implementation.
-A suitable implementation based on technologies from link:https://infinispan.org/[Infinispan] and link:https://github.com/ben-manes/caffeine[Caffeine] is included as a transitive dependency of the Hibernate ORM extension, and automatically integrated during the build.
+A suitable implementation based on link:https://jcp.org/en/jsr/detail?id=107[JCache] and link:https://github.com/ben-manes/caffeine[Caffeine] is included as a transitive dependency of the Hibernate ORM extension, and automatically integrated during the build.
 
 === Limitations
 

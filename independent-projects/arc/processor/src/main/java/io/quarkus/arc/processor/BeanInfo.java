@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -932,7 +933,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private Map<InterceptionType, InterceptionInfo> initLifecycleInterceptors() {
         if (!isInterceptor() && isClassBean()) {
-            Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new HashMap<>();
+            Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new EnumMap<>(InterceptionType.class);
             Set<AnnotationInstance> classLevelBindings = new HashSet<>();
             Set<AnnotationInstance> constructorLevelBindings = new HashSet<>();
             addClassLevelBindings(target.get().asClass(), classLevelBindings);

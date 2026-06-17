@@ -151,4 +151,37 @@ public class BugResource {
 
         return Response.ok().build();
     }
+
+    @GET
+    @Path("54526")
+    public String testBug54526() {
+        Bug54526Entity entity = new Bug54526Entity();
+        entity.isbn = Isbn.of("978-3-86680-192-9");
+        entity.title = "Test Book";
+        entity.persist();
+
+        try {
+            // shorthand query — this was the original reported bug
+            long shorthand = Bug54526Entity.count("isbn", entity.isbn);
+            if (shorthand != 1) {
+                return "FAIL: shorthand query returned " + shorthand;
+            }
+
+            // PanacheQL query
+            long panacheQl = Bug54526Entity.count("isbn = ?1", entity.isbn);
+            if (panacheQl != 1) {
+                return "FAIL: PanacheQL query returned " + panacheQl;
+            }
+
+            // native query
+            long nativeQuery = Bug54526Entity.count("{'isbn': ?1}", entity.isbn);
+            if (nativeQuery != 1) {
+                return "FAIL: native query returned " + nativeQuery;
+            }
+
+            return "OK";
+        } finally {
+            entity.delete();
+        }
+    }
 }

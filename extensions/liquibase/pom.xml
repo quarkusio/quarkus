@@ -14,9 +14,10 @@
     <packaging>pom</packaging>
 
     <modules>
+        <!-- Build first: liquibase + liquibase-mongodb depend on this artifact. -->
+        <module>liquibase-common</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
-        <module>liquibase-common</module>
     </modules>
 
 </project>

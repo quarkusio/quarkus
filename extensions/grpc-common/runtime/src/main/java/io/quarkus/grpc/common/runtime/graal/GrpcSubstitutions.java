@@ -6,9 +6,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceConfigurationError;
 
+import com.google.common.base.Supplier;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -39,14 +41,14 @@ final class Target_io_grpc_ServiceProviders { // NOSONAR
     @Substitute
     public static <T> List<T> loadAll(
             Class<T> klass,
-            Iterable<Class<?>> hardcoded,
-            ClassLoader cl,
+            Iterator<T> serviceLoader,
+            Supplier<Iterable<Class<?>>> hardcoded,
             final Target_io_grpc_ServiceProviders_PriorityAccessor<T> priorityAccessor) {
 
         // For loading classes directly instead of using SPI.
 
         Iterable<T> candidates;
-        candidates = getCandidatesViaHardCoded(klass, hardcoded);
+        candidates = getCandidatesViaHardCoded(klass, hardcoded.get());
         List<T> list = new ArrayList<>();
         for (T current : candidates) {
             if (!priorityAccessor.isAvailable(current)) {

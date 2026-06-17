@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -67,7 +68,8 @@ public class AugmentActionImpl implements AugmentAction {
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
 
     private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
-            GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
+            GeneratedResourceBuildItem.class, GeneratedServiceProviderBuildItem.class,
+            ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
             TransformedClassesBuildItem.class, ResolvedJVMRequirements.class };
 
@@ -88,16 +90,6 @@ public class AugmentActionImpl implements AugmentAction {
 
     public AugmentActionImpl(CuratedApplication curatedApplication) {
         this(curatedApplication, Collections.emptyList(), Collections.emptyList());
-    }
-
-    /**
-     * Leaving this here for backwards compatibility, even though this is only internal.
-     *
-     * @Deprecated use one of the other constructors
-     */
-    @Deprecated
-    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
-        this(curatedApplication, chainCustomizers, Collections.emptyList());
     }
 
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,

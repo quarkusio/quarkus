@@ -13,9 +13,9 @@ public class PortConverter {
 
     private static PortBuilder convert(PortConfig port) {
         PortBuilder b = new PortBuilder();
-        port.path().ifPresent(v -> b.withPath(v));
-        port.hostPort().ifPresent(v -> b.withHostPort(v));
-        port.containerPort().ifPresent(v -> b.withContainerPort(v));
+        port.path().ifPresent(b::withPath);
+        port.hostPort().ifPresent(b::withHostPort);
+        port.containerPort().ifPresent(b::withContainerPort);
         b.withProtocol(port.protocol());
         return b;
     }

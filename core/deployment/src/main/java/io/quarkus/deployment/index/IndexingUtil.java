@@ -7,14 +7,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassSummary;
@@ -36,16 +37,80 @@ public class IndexingUtil {
 
     private static final Logger log = Logger.getLogger("io.quarkus.deployment.index");
 
+    /**
+     * @deprecated use {@link DotName#OBJECT_NAME}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static final String JANDEX_INDEX = "META-INF/jandex.idx";
 
-    private static final String META_INF_VERSIONS = "META-INF/versions/";
-
-    private static final int JAVA_VERSION = Runtime.version().feature();
-
     // At least Jandex 3.0 is needed
     private static final int REQUIRED_INDEX_VERSION = 11;
+
+    public static Index indexTree(OpenPathTree tree, Set<String> removed) throws IOException {
+        if (removed == null) {
+            Index index = tree.apply(JANDEX_INDEX, new Function<PathVisit, Index>() {
+                @Override
+                public Index apply(PathVisit visit) {
+                    if (visit == null) {
+                        return null;
+                    }
+                    try (InputStream in = Files.newInputStream(visit.getPath())) {
+                        IndexReader reader = new IndexReader(in);
+                        try {
+                            int indexVersion = reader.getIndexVersion();
+                            if (indexVersion < REQUIRED_INDEX_VERSION) {
+                                log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
+                                        + " to index an application dependency (index version is %s)",
+                                        tree.toString(), indexVersion);
+                                return null;
+                            }
+                            return reader.read();
+                        } catch (UnsupportedVersion e) {
+                            log.warnf("Reindexing %s, the index format is too new for the Jandex version"
+                                    + " used by your application. Please report it to the author of this JAR (%s)",
+                                    tree.toString(), e.getMessage());
+                            return null;
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Can't read Jandex index from " + tree, e);
+                    }
+                }
+            });
+            if (index != null) {
+                return index;
+            }
+        }
+
+        List<Path> classFilesToIndex = new ArrayList<>();
+        tree.walk(new PathVisitor() {
+            @Override
+            public void visitPath(PathVisit visit) {
+                Path fileName = visit.getPath().getFileName();
+                if (fileName == null
+                        || !fileName.toString().endsWith(".class")
+                        || Files.isDirectory(visit.getPath())
+                        || removed != null && removed.contains(visit.getRelativePath("/"))) {
+                    return;
+                }
+                classFilesToIndex.add(visit.getPath());
+            }
+        });
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        final Indexer indexer = new Indexer();
+        for (Path classFile : classFilesToIndex) {
+            try (InputStream inputStream = Files.newInputStream(classFile)) {
+                indexer.index(inputStream);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return indexer.complete();
+    }
 
     public static Index indexJar(Path path) throws IOException {
         return indexJar(path.toFile(), Collections.emptySet());
@@ -59,22 +124,9 @@ public class IndexingUtil {
         return indexJar(path.toFile(), removed);
     }
 
-    public static Index indexTree(OpenPathTree tree, Set<String> removed) throws IOException {
-        if (removed == null) {
-            final Index i = tree.apply(JANDEX_INDEX, new MetaInfJandexReader(tree.toString()));
-            if (i != null) {
-                return i;
-            }
-        }
-        final Indexer indexer = new Indexer();
-        final PathTreeIndexer treeIndexer = new PathTreeIndexer(indexer, removed);
-        tree.walk(treeIndexer);
-        return indexer.complete();
-    }
-
     public static Index indexJar(File file, Set<String> removed) throws IOException {
-        try (JarFile jarFile = new JarFile(file)) {
-            ZipEntry existing = jarFile.getEntry(JANDEX_INDEX);
+        try (JarFile jarFile = JarFiles.create(file)) {
+            JarEntry existing = jarFile.getJarEntry(JANDEX_INDEX);
             if (existing != null && removed == null) {
                 try (InputStream in = jarFile.getInputStream(existing)) {
                     IndexReader reader = new IndexReader(in);
@@ -99,45 +151,41 @@ public class IndexingUtil {
     }
 
     private static Index indexJar(JarFile file, Set<String> removed) throws IOException {
-        Indexer indexer = new Indexer();
-        Enumeration<JarEntry> e = file.entries();
-        boolean multiRelease = JarFiles.isMultiRelease(file);
-        while (e.hasMoreElements()) {
-            JarEntry entry = e.nextElement();
-            if (removed != null && removed.contains(entry.getName())) {
+        List<JarEntry> entriesToIndex = new ArrayList<>();
+        for (JarEntry entry : file.versionedStream().toList()) {
+            if (removed != null && removed.contains(entry.getRealName())) {
                 continue;
             }
             if (entry.getName().endsWith(".class")) {
-                if (multiRelease && entry.getName().startsWith(META_INF_VERSIONS)) {
-                    String part = entry.getName().substring(META_INF_VERSIONS.length());
-                    int slash = part.indexOf("/");
-                    if (slash != -1) {
-                        try {
-                            int ver = Integer.parseInt(part.substring(0, slash));
-                            if (ver <= JAVA_VERSION) {
-                                try (InputStream inputStream = file.getInputStream(entry)) {
-                                    indexer.index(inputStream);
-                                }
-                            }
-                        } catch (NumberFormatException ex) {
-                            log.debug("Failed to parse META-INF/versions entry", ex);
-                        }
-                    }
-                } else {
-                    try (InputStream inputStream = file.getInputStream(entry)) {
-                        indexer.index(inputStream);
-                    }
-                }
+                entriesToIndex.add(entry);
+            }
+        }
+
+        // feed classes to the `Indexer` in deterministic order
+        entriesToIndex.sort(Comparator.comparing(JarEntry::getRealName));
+
+        Indexer indexer = new Indexer();
+        for (JarEntry entry : entriesToIndex) {
+            try (InputStream inputStream = file.getInputStream(entry)) {
+                indexer.index(inputStream);
             }
         }
         return indexer.complete();
     }
 
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
     public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
             Set<DotName> additionalIndex, ClassLoader classLoader) {
         indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader);
     }
 
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
     public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
             Set<DotName> additionalIndex, Set<DotName> knownMissingClasses, ClassLoader classLoader) {
         DotName classDotName = DotName.createSimple(className);
@@ -187,16 +235,24 @@ public class IndexingUtil {
                 }
             }
         }
-        if (superclassName != null && !superclassName.equals(OBJECT)) {
+        if (superclassName != null && !superclassName.equals(DotName.OBJECT_NAME)) {
             indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses, classLoader);
         }
     }
 
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
     public static void indexClass(String className, Indexer indexer,
             IndexView quarkusIndex, Set<DotName> additionalIndex, ClassLoader classLoader, byte[] beanData) {
         indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader, beanData);
     }
 
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
     public static void indexClass(String className, Indexer indexer,
             IndexView quarkusIndex, Set<DotName> additionalIndex, Set<DotName> knownMissingClasses,
             ClassLoader classLoader, byte[] beanData) {
@@ -238,68 +294,6 @@ public class IndexingUtil {
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to index: " + className, e);
                 }
-            }
-        }
-    }
-
-    private static class PathTreeIndexer implements PathVisitor {
-
-        final Indexer indexer;
-        final Set<String> removed;
-
-        PathTreeIndexer(Indexer indexer, Set<String> removed) {
-            this.indexer = indexer;
-            this.removed = removed;
-        }
-
-        @Override
-        public void visitPath(PathVisit visit) {
-            final Path fileName = visit.getPath().getFileName();
-            if (fileName == null ||
-                    !fileName.toString().endsWith(".class") ||
-                    Files.isDirectory(visit.getPath()) ||
-                    removed != null && removed.contains(visit.getRelativePath("/"))) {
-                return;
-            }
-            try (InputStream inputStream = Files.newInputStream(visit.getPath())) {
-                indexer.index(inputStream);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-    }
-
-    private static class MetaInfJandexReader implements Function<PathVisit, Index> {
-        private final String treeDescription;
-
-        MetaInfJandexReader(String treeDescription) {
-            this.treeDescription = treeDescription;
-        }
-
-        @Override
-        public Index apply(PathVisit visit) {
-            if (visit == null) {
-                return null;
-            }
-            try (InputStream in = Files.newInputStream(visit.getPath())) {
-                IndexReader reader = new IndexReader(in);
-                try {
-                    int indexVersion = reader.getIndexVersion();
-                    if (indexVersion < REQUIRED_INDEX_VERSION) {
-                        log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
-                                + " to index an application dependency (index version is %s)",
-                                treeDescription, indexVersion);
-                        return null;
-                    }
-                    return reader.read();
-                } catch (UnsupportedVersion e) {
-                    log.warnf("Reindexing %s, the index format is too new for the Jandex version"
-                            + " used by your application. Please report it to the author of this JAR (%s)",
-                            treeDescription, e.getMessage());
-                    return null;
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Can't read Jandex index from " + treeDescription, e);
             }
         }
     }

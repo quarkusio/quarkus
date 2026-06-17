@@ -22,6 +22,7 @@ public final class Constants {
     public static final String JOB_API_VERSION = BATCH_GROUP + "/" + BATCH_VERSION;
     public static final String RBAC_API_GROUP = "rbac.authorization.k8s.io";
     public static final String RBAC_API_VERSION = RBAC_API_GROUP + "/v1";
+    public static final String CORE_API_VERSION = "v1";
 
     static final String DOCKER = "docker";
 

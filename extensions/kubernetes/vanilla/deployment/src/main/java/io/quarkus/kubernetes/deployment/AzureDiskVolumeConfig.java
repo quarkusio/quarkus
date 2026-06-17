@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.smallrye.config.WithDefault;
 
 public interface AzureDiskVolumeConfig {
@@ -43,8 +45,22 @@ public interface AzureDiskVolumeConfig {
     String fsType();
 
     /**
-     * Whether the volumeName is read only or not.
+     * Whether the volume is read only or not.
      */
     @WithDefault("false")
     boolean readOnly();
+
+    default Volume toVolume(String name) {
+        return new VolumeBuilder()
+                .withName(name)
+                .withNewAzureDisk()
+                .withKind(kind().name())
+                .withDiskName(diskName())
+                .withDiskURI(diskURI())
+                .withFsType(fsType())
+                .withCachingMode(cachingMode().name())
+                .withReadOnly(readOnly())
+                .endAzureDisk()
+                .build();
+    }
 }

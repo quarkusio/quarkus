@@ -65,7 +65,6 @@ import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoo
 import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
@@ -396,9 +395,6 @@ public class FastBootMetadataBuilder {
             }
         }
 
-        cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
-                QuarkusInfinispanRegionFactory.class.getName());
-
         for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
             Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
             if (listenerOptional.isPresent()) {
@@ -636,7 +632,7 @@ public class FastBootMetadataBuilder {
 
         metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
         metamodelBuilder.applyScanOptions(new StandardScanOptions(
-                (String) buildTimeSettings.get(org.hibernate.cfg.AvailableSettings.SCANNER_DISCOVERY),
+                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
                 persistenceUnit.isExcludeUnlistedClasses()));
 
         if (cacheRegionDefinitions != null) {

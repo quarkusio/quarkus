@@ -264,8 +264,9 @@ class CacheProcessor {
             CacheManagerRecorder cacheManagerRecorder) {
 
         boolean micrometerSupported = metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER);
+        List<String> sortedCacheNames = cacheNames.getNames().stream().sorted().toList();
         Supplier<CacheManager> cacheManagerSupplier = cacheManagerRecorder.resolveCacheInfo(
-                infos.stream().map(CacheManagerInfoBuildItem::get).collect(toList()), cacheNames.getNames(),
+                infos.stream().map(CacheManagerInfoBuildItem::get).collect(toList()), sortedCacheNames,
                 micrometerSupported);
 
         return SyntheticBeanBuildItem.configure(CacheManager.class)

@@ -10,7 +10,7 @@ import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -105,13 +106,15 @@ class VertxProcessor {
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
             RecorderContext recorderContext) {
         List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProviders,
+                true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             ConsumeEvent annotation = annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
                     .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
@@ -123,7 +126,7 @@ class VertxProcessor {
         }
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
+        Map<Class<?>, Class<?>> codecByClass = new LinkedHashMap<>();
         for (MessageCodecBuildItem messageCodecItem : codecs) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(messageCodecItem.getType()).constructors(false).build());
@@ -236,7 +239,7 @@ class VertxProcessor {
 
                     InvokerInfo invoker = builder.build();
 
-                    messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, consumeEvent,
+                    messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent,
                             method.hasAnnotation(Blocking.class), method.hasAnnotation(RunOnVirtualThread.class),
                             parametersCount == 2, invoker));
                     LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);

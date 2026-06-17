@@ -15,6 +15,7 @@ import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderInde
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.AUTHORIZATION_POLICY;
 import static io.quarkus.security.spi.SecurityTransformer.AuthorizationType.SECURITY_CHECK;
 import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
+import static io.quarkus.security.spi.SecurityTransformerBuildItem.getAllSecurityAnnotations;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -151,6 +152,7 @@ import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
+import io.quarkus.security.spi.SecuredTopLevelInterfaceBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformer.AuthorizationType;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
@@ -175,34 +177,44 @@ public class SecurityProcessor {
     SecurityConfig security;
 
     @BuildStep
-    SecurityTransformerBuildItem createSecurityTransformerBuildItem(
-            List<SecuredInterfaceAnnotationBuildItem> securedInterfacePredicates,
+    AuthorizationTypeToSecurityAnnotationsBuildItem collectSecurityAnnotations(
             List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationBuildItems) {
-        // collect security annotations
         Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations = new EnumMap<>(AuthorizationType.class);
         authorizationTypeToSecurityAnnotations.put(SECURITY_CHECK, new HashSet<>(SECURITY_CHECK_ANNOTATIONS));
         additionalSecurityAnnotationBuildItems.forEach(i -> authorizationTypeToSecurityAnnotations
                 .computeIfAbsent(i.getAuthorizationType(), k -> new HashSet<>()).add(i.getSecurityAnnotationName()));
+        return new AuthorizationTypeToSecurityAnnotationsBuildItem(authorizationTypeToSecurityAnnotations);
+    }
+
+    @BuildStep
+    SecurityTransformerBuildItem createSecurityTransformerBuildItem(
+            AuthorizationTypeToSecurityAnnotationsBuildItem authorizationTypeToSecurityAnnotations,
+            List<SecuredTopLevelInterfaceBuildItem> securedTopLevelInterfaceBuildItems,
+            List<SecuredInterfaceAnnotationBuildItem> securedInterfacePredicates) {
 
         Predicate<ClassInfo> isInterfaceWithTransformations = securedInterfacePredicates.stream()
                 .map(SecuredInterfaceAnnotationBuildItem::getIsInterfaceWithTransformations)
                 .reduce(Predicate::or)
-                .orElse(null);
+                .orElse(ci -> false);
         Set<DotName> securedAnnotations = securedInterfacePredicates.stream()
                 .map(SecuredInterfaceAnnotationBuildItem::getAnnotationName)
                 .collect(Collectors.toSet());
-
-        return new SecurityTransformerBuildItem(authorizationTypeToSecurityAnnotations, isInterfaceWithTransformations,
-                securedAnnotations);
+        Set<DotName> securedTopLevelInterfaces = securedTopLevelInterfaceBuildItems.stream()
+                .map(SecuredTopLevelInterfaceBuildItem::getTopLevelInterfaceName)
+                .collect(Collectors.toSet());
+        boolean interfaceSecurityEnabled = !securedInterfacePredicates.isEmpty() || !securedTopLevelInterfaces.isEmpty();
+        return new SecurityTransformerBuildItem(authorizationTypeToSecurityAnnotations.result, isInterfaceWithTransformations,
+                securedAnnotations, interfaceSecurityEnabled, securedTopLevelInterfaces);
     }
 
     @BuildStep
-    List<AdditionalIndexedClassesBuildItem> registerAdditionalIndexedClassesBuildItem(
-            SecurityTransformerBuildItem securityTransformerBuildItem) {
+    AdditionalIndexedClassesBuildItem registerAdditionalIndexedClassesBuildItem(
+            AuthorizationTypeToSecurityAnnotationsBuildItem authorizationTypeToSecurityAnnotations) {
         // we need the combined index to contain security annotations in order to check for repeatable annotations
         // (we do not hardcode here knowledge which annotation is repeatable and which one isn't, so we check all)
-        return List
-                .of(new AdditionalIndexedClassesBuildItem(securityTransformerBuildItem.getAllSecurityAnnotationNames()));
+        var securityAnnotationsNames = getAllSecurityAnnotations(authorizationTypeToSecurityAnnotations.result)
+                .stream().map(DotName::toString).toArray(String[]::new);
+        return new AdditionalIndexedClassesBuildItem(securityAnnotationsNames);
     }
 
     @BuildStep
@@ -236,8 +248,8 @@ public class SecurityProcessor {
             } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_JSSE_PROVIDER_NAME.equals(providerName)) {
                 bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem(true));
             } else {
-                jcaProviders
-                        .produce(new JCAProviderBuildItem(providerName, security.securityProviderConfig().get(providerName)));
+                List<String> configs = security.securityProviderConfig().getOrDefault(providerName, List.of());
+                jcaProviders.produce(new JCAProviderBuildItem(providerName, configs));
             }
             log.debugf("Added providerName: %s", providerName);
         }
@@ -273,12 +285,21 @@ public class SecurityProcessor {
             List<JCAProviderBuildItem> jcaProviders,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) throws IOException, URISyntaxException {
         for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfig(),
+            List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfigs(),
                     additionalProviders);
             for (String className : providerClasses) {
                 classes.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 log.debugf("Register JCA class: %s", className);
             }
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureJCAProvidersAtRuntime(SecurityProviderRecorder recorder,
+            List<JCAProviderBuildItem> jcaProviders) {
+        for (JCAProviderBuildItem provider : jcaProviders) {
+            recorder.configureProvider(provider.getProviderName(), provider.getProviderConfigs());
         }
     }
 
@@ -587,7 +608,7 @@ public class SecurityProcessor {
      * @return class names that make up the provider and its services
      */
     private static List<String> registerProvider(String providerName,
-            String providerConfig,
+            List<String> providerConfigs,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
         List<String> providerClasses = new ArrayList<>();
         Provider provider = Security.getProvider(providerName);
@@ -602,7 +623,7 @@ public class SecurityProcessor {
                 }
             }
 
-            if (providerConfig != null) {
+            for (String providerConfig : providerConfigs) {
                 Provider configuredProvider = provider.configure(providerConfig);
                 if (configuredProvider != null) {
                     Security.addProvider(configuredProvider);
@@ -1496,4 +1517,13 @@ public class SecurityProcessor {
         }
     }
 
+    private static final class AuthorizationTypeToSecurityAnnotationsBuildItem extends SimpleBuildItem {
+
+        private final Map<AuthorizationType, Set<DotName>> result;
+
+        private AuthorizationTypeToSecurityAnnotationsBuildItem(
+                Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations) {
+            this.result = Collections.unmodifiableMap(authorizationTypeToSecurityAnnotations);
+        }
+    }
 }

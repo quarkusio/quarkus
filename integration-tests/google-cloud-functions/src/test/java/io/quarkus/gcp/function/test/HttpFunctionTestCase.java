@@ -19,7 +19,7 @@ class HttpFunctionTestCase {
                 .get()
                 .then()
                 .statusCode(200)
-                .body(is("Hello World!"));
+                .body(is("Hello Quarkus!"));
     }
 
     // we do twice the test to be sure we can call multiple time the same function
@@ -30,6 +30,6 @@ class HttpFunctionTestCase {
                 .get()
                 .then()
                 .statusCode(200)
-                .body(is("Hello World!"));
+                .body(is("Hello Quarkus!"));
     }
 }

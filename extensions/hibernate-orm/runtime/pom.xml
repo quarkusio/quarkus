@@ -85,14 +85,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.local-cache</groupId>
-            <artifactId>quarkus-local-cache</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-jcache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>jcache</artifactId>
         </dependency>
         <!-- Technically the quarkus-caffeine-runtime belongs as a dependency to the Quarkus Caching layer,
           but since this is currently shaped as a non-quarkus external project I'd rather not have it depend on

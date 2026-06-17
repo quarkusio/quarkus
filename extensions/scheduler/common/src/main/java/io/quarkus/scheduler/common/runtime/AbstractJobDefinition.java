@@ -31,6 +31,7 @@ public abstract class AbstractJobDefinition<THIS extends JobDefinition<THIS>> im
     protected boolean runOnVirtualThread;
     protected String implementation = Scheduled.AUTO;
     protected String executionMaxDelay = "";
+    protected String description = "";
 
     public AbstractJobDefinition(String identity) {
         this.identity = identity;
@@ -103,6 +104,13 @@ public abstract class AbstractJobDefinition<THIS extends JobDefinition<THIS>> im
     public THIS setExecutionMaxDelay(String maxDelay) {
         checkScheduled();
         this.executionMaxDelay = maxDelay;
+        return self();
+    }
+
+    @Override
+    public THIS setDescription(String description) {
+        checkScheduled();
+        this.description = Objects.requireNonNull(description);
         return self();
     }
 

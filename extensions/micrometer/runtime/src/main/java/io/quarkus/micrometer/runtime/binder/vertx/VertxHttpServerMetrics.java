@@ -8,11 +8,9 @@ import java.util.concurrent.atomic.LongAdder;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
@@ -22,6 +20,7 @@ import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
@@ -56,21 +55,18 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
-            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions) {
-        super(registry, "http.server", commonTags(httpServerOptions));
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions,
+            Gauges<LongAdder> gauges) {
+        super(registry, "http.server", commonTags(httpServerOptions), gauges);
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
-        activeRequests = new LongAdder();
 
         Tags commonTags = commonTags(httpServerOptions);
 
-        Gauge.Builder<LongAdder> activeRequestsBuilder = Gauge
-                .builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
-                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http");
-        for (Tag commonTag : commonTags) {
-            activeRequestsBuilder.tag(commonTag.getKey(), commonTag.getValue());
-        }
-        activeRequestsBuilder.register(registry);
+        activeRequests = gauges.builder(config.getHttpServerActiveRequestsName(), LongAdder::doubleValue)
+                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
+                .tags(commonTags)
+                .register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
 
@@ -95,6 +91,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         // not the public one which we can't know easily) only if it's not random
         if (httpServerOptions.getPort() > 0) {
             result = result.and("server.port", "" + httpServerOptions.getPort());
+        } else {
+            result = result.and("server.port", "UNSET");
         }
         return result;
     }

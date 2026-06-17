@@ -77,7 +77,7 @@ final class ExpressionImpl implements Expression {
 
     @Override
     public boolean isLiteral() {
-        return literal != null;
+        return literal != null && parts.size() <= 1;
     }
 
     public CompletableFuture<Object> getLiteralValue() {

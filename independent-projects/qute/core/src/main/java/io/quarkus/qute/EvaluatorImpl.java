@@ -81,6 +81,9 @@ class EvaluatorImpl implements Evaluator {
                 // Multiple namespace resolvers match
                 return resolveNamespace(context, resolutionContext, parts, matching, 0, expression);
             }
+        } else if (expression.getLiteralValue() != null) {
+            // Literal with chaining parts - use the literal value as the base for subsequent parts
+            return resolveReference(false, expression.getLiteral(), expression.getParts(), resolutionContext, expression, 1);
         } else {
             return resolveReference(true, resolutionContext.getData(), expression.getParts(), resolutionContext, expression,
                     0);

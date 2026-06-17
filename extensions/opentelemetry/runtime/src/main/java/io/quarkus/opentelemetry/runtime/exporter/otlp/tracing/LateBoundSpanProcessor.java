@@ -12,7 +12,10 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
  * Class to facilitate a delay in when the worker thread inside {@link SpanProcessor}
  * is started, enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
  * during static initialization and set a {@link SpanProcessor} delegate during runtime initialization.
+ *
+ * Deprecated for removal. Check: https://github.com/quarkusio/quarkus/pull/52752
  */
+@Deprecated(forRemoval = true)
 public class LateBoundSpanProcessor implements SpanProcessor {
     private static final Logger log = Logger.getLogger(LateBoundSpanProcessor.class);
 

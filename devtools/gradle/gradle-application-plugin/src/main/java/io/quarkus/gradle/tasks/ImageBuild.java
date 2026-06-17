@@ -13,7 +13,9 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class ImageBuild extends ImageTask {
 
     @Inject

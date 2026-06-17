@@ -1,8 +1,13 @@
 package io.quarkus.oidc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.logging.LogRecord;
+import java.util.stream.Collectors;
 
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebClient;
@@ -22,7 +27,9 @@ public class CodeFlowVerifyInjectedAccessTokenDisabledTest {
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProtectedResourceWithJwtAccessToken.class)
-                    .addAsResource("application-verify-injected-access-token-disabled.properties", "application.properties"));
+                    .addAsResource("application-verify-injected-access-token-disabled.properties", "application.properties"))
+            .setLogRecordPredicate(r -> true)
+            .assertLogRecords(r -> assertLogRecord(r));
 
     @Test
     public void testVerifyAccessTokenDisabled() throws IOException, InterruptedException {
@@ -43,6 +50,30 @@ public class CodeFlowVerifyInjectedAccessTokenDisabledTest {
 
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private static void assertLogRecord(List<LogRecord> records) {
+        List<LogRecord> authorizationRecords = records.stream()
+                .filter(r -> (r.getMessage().contains("\"access_token\":")
+                        || r.getMessage().contains("\"refresh_token\":")
+                        || r.getMessage().contains("\"id_token\":")))
+                .collect(Collectors.toList());
+        assertFalse(authorizationRecords.isEmpty());
+
+        List<LogRecord> accessTokenRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("\"access_token\":")).collect(Collectors.toList());
+        assertFalse(accessTokenRecords.isEmpty());
+        assertTrue(accessTokenRecords.stream().allMatch(r -> r.getMessage().contains("\"access_token\":\"...\"")));
+
+        List<LogRecord> refreshTokenRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("\"refresh_token\":")).collect(Collectors.toList());
+        assertFalse(refreshTokenRecords.isEmpty());
+        assertTrue(refreshTokenRecords.stream().allMatch(r -> r.getMessage().contains("\"refresh_token\":\"...\"")));
+
+        List<LogRecord> idTokenRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("\"id_token\":")).collect(Collectors.toList());
+        assertFalse(idTokenRecords.isEmpty());
+        assertTrue(idTokenRecords.stream().allMatch(r -> r.getMessage().contains("\"id_token\":\"...\"")));
     }
 
     private WebClient createWebClient() {

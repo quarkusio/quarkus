@@ -198,6 +198,18 @@ public class DataSources {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
                     dataSourceJdbcRuntimeConfig.additionalJdbcProperties());
         }
+
+        if (dataSourceJdbcRuntimeConfig.enableKeepAlive().isPresent()) {
+            agroalConnectionConfigurer.setKeepAlive(resolvedDbKind, dataSourceConfiguration,
+                    dataSourceJdbcRuntimeConfig.additionalJdbcProperties(),
+                    dataSourceJdbcRuntimeConfig.enableKeepAlive().get());
+        }
+
+        if (dataSourceJdbcRuntimeConfig.readTimeout().isPresent()) {
+            agroalConnectionConfigurer.setReadTimeout(resolvedDbKind, dataSourceConfiguration,
+                    dataSourceJdbcRuntimeConfig.additionalJdbcProperties(), dataSourceJdbcRuntimeConfig.readTimeout().get());
+        }
+
         //we use a custom cache for two reasons:
         //fast thread local cache should be faster
         //and it prevents a thread local leak
@@ -305,6 +317,12 @@ public class DataSources {
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
         }
 
+        // Set the network timeout configuration if available
+        if (dataSourceJdbcRuntimeConfig.networkTimeout().isPresent()) {
+            Duration networkTimeout = dataSourceJdbcRuntimeConfig.networkTimeout().get();
+            connectionFactoryConfiguration.networkTimeout(networkTimeout);
+        }
+
         // Additional JDBC properties from build time config
         for (Map.Entry<String, String> entry : buildTimeJdbcProperties.entrySet()) {
             connectionFactoryConfiguration.jdbcProperty(entry.getKey(), entry.getValue());
@@ -341,8 +359,11 @@ public class DataSources {
         }
         if (dataSourceJdbcRuntimeConfig.validationQuerySql().isPresent()) {
             String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql().get();
-            int timeout = (int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().orElse(Duration.ZERO).toSeconds();
-            poolConfiguration.connectionValidator(ConnectionValidator.sqlValidator(validationQuery, timeout));
+            Duration timeout = dataSourceJdbcRuntimeConfig.validationQueryTimeout().orElse(Duration.ZERO);
+            // Network timeout must exceed query timeout so the JDBC driver can handle the query timeout gracefully
+            // before the network layer forcibly closes the connection
+            poolConfiguration.connectionValidator(ConnectionValidator.sqlValidator(validationQuery, timeout,
+                    timeout.isZero() ? null : timeout.plusSeconds(5L)));
         }
         poolConfiguration.validateOnBorrow(dataSourceJdbcRuntimeConfig.validateOnBorrow());
         poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval());
@@ -355,6 +376,7 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.transactionRequirement().isPresent()) {
             poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement().get());
         }
+        poolConfiguration.multipleAcquisition(dataSourceJdbcRuntimeConfig.multipleAcquisition());
         poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport());
         poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose());
         poolConfiguration.recoveryEnable(dataSourceJdbcRuntimeConfig.enableRecovery());

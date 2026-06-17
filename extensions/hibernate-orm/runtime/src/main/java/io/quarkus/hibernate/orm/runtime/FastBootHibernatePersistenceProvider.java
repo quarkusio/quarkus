@@ -20,6 +20,7 @@ import jakarta.persistence.spi.PersistenceUnitInfo;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
+import org.hibernate.cache.jcache.ConfigSettings;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.cfg.QuerySettings;
@@ -38,6 +39,8 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCaffeineCacheManager;
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -283,6 +286,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         // but now the dialect is there, and we'll reuse it.
         // Keeping this information would prevent us from getting the actual information from the database on start.
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
+
+        var cacheConfiguration = (QuarkusPersistenceUnitCacheConfiguration) buildTimeSettings.getAllSettings()
+                .get(QuarkusPersistenceUnitCacheConfiguration.CONFIG_KEY);
+        if (cacheConfiguration != null) { // Equivalent to "caching is enabled"
+            var cacheManager = new QuarkusPersistenceUnitCaffeineCacheManager(persistenceUnitName, false, cacheConfiguration);
+            runtimeSettingsBuilder.put(ConfigSettings.CACHE_MANAGER, cacheManager);
+        }
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

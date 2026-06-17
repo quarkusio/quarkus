@@ -35,6 +35,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
@@ -213,6 +214,7 @@ public class InfoProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void buildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem,
             InfoBuildTimeConfig config,
+            PackageConfig packageConfig,
             BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
             BuildProducer<SyntheticBeanBuildItem> beanProducer,
             ApplicationInfoBuildItem infoApplication,
@@ -228,7 +230,10 @@ public class InfoProcessor {
         buildData.put("artifact", artifact);
         String version = appArtifact.getVersion();
         buildData.put("version", version);
-        String time = ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now());
+        OffsetDateTime dateTime = packageConfig.outputTimestamp()
+                .map(i -> i.atZone(ZoneId.systemDefault()).toOffsetDateTime())
+                .orElseGet(() -> OffsetDateTime.now());
+        String time = ISO_OFFSET_DATE_TIME.format(dateTime);
         buildData.put("time", time); // TODO: what is the proper notion of build time?
         String quarkusVersion = Version.getVersion();
         buildData.put("quarkusVersion", quarkusVersion);

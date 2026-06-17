@@ -45,17 +45,18 @@
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.10.1</version.gizmo>
-        <version.jandex>3.5.3</version.jandex>
+        <version.jandex>3.6.0</version.jandex>
         <version.gizmo2>2.1.1</version.gizmo2>
         <version.jboss-logging>3.6.3.Final</version.jboss-logging>
-        <version.mutiny>3.1.1</version.mutiny>
+        <version.mutiny>3.2.1</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
-        <version.smallrye-common>2.17.0</version.smallrye-common>
+        <version.smallrye-common>2.19.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.7</version.assertj>
-        <version.junit>6.0.3</version.junit>
-        <version.kotlin>2.3.21</version.kotlin>
-        <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>
+        <version.vineflower>1.12.0</version.vineflower>
+        <version.junit>6.1.0</version.junit>
+        <version.kotlin>2.4.0</version.kotlin>
+        <version.kotlin-coroutines>1.11.0</version.kotlin-coroutines>
         <version.mockito>5.21.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
@@ -211,6 +212,13 @@
                 <artifactId>gizmo</artifactId>
                 <version>${version.gizmo}</version>
                 <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.vineflower</groupId>
+                <artifactId>vineflower</artifactId>
+                <version>${version.vineflower}</version>
                 <scope>test</scope>
             </dependency>
 

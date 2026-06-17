@@ -85,6 +85,15 @@ public class OidcClientTest {
                 .body(equalTo("access_token_jwt_bearer"));
     }
 
+    @Order(17)
+    @Test
+    public void testEchoTokensSpiffeAuthentication() {
+        RestAssured.when().get("/frontend/echoTokenSpiffeAuthentication")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_spiffe"));
+    }
+
     @Order(7)
     @Test
     public void testGetAccessTokenWithConfiguredExpiresIn() {

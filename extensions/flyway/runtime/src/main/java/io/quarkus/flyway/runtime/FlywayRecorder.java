@@ -3,6 +3,7 @@ package io.quarkus.flyway.runtime;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -84,14 +85,16 @@ public class FlywayRecorder {
 
     public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(String dataSourceName,
             boolean hasMigrations,
-            boolean createPossible) {
+            boolean createPossible,
+            Set<String> ressourcesLocations) {
         return new Function<>() {
             @Override
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource = context.getInjectedReference(DataSource.class,
                         AgroalDataSourceUtil.qualifier(dataSourceName));
                 FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
-                return flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations, createPossible);
+                return flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations, createPossible,
+                        ressourcesLocations);
             }
         };
     }

@@ -2,15 +2,10 @@ package io.quarkus.devservice.runtime.config;
 
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.DEV_SERVICES_OVERRIDE;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-
-import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
-import io.quarkus.devservices.crossclassloader.runtime.RunningService;
-import io.quarkus.runtime.LaunchMode;
 
 /**
  * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
@@ -18,40 +13,20 @@ import io.quarkus.runtime.LaunchMode;
 @Deprecated(forRemoval = true)
 public class DevServicesOverrideConfigSource implements ConfigSource {
 
-    private final LaunchMode launchMode;
+    private static volatile Map<String, String> config = Map.of();
 
-    public DevServicesOverrideConfigSource(LaunchMode launchMode) {
-        this.launchMode = launchMode;
+    public static void setConfig(Map<String, String> config) {
+        DevServicesOverrideConfigSource.config = config;
     }
 
     @Override
     public Set<String> getPropertyNames() {
-        // We could make this more efficient by not invoking the supplier on the other end, but it would need a more complex interface
-        Set<String> names = new HashSet<>();
-
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
-        if (allConfig != null) {
-            for (RunningService service : allConfig) {
-                Map<String, String> config = service.overrideConfigs();
-                names.addAll(config.keySet());
-            }
-        }
-        return names;
+        return config.keySet();
     }
 
     @Override
     public String getValue(String propertyName) {
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
-        if (allConfig != null) {
-            for (RunningService service : allConfig) {
-                Map<String, String> config = service.overrideConfigs();
-                String answer = config.get(propertyName);
-                if (answer != null) {
-                    return answer;
-                }
-            }
-        }
-        return null;
+        return config.get(propertyName);
     }
 
     @Override

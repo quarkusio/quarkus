@@ -82,6 +82,6 @@ public class ResteasyJaxbProcessor {
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
             String... className) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods(methods).fields(fields).build());
     }
 }

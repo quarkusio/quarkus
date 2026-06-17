@@ -640,11 +640,12 @@ public class HttpServerOptionsUtils {
                         compression.addDeflate();
                     }
                 } else if ("br".equalsIgnoreCase(compressor)) {
-                    if (compressionLevel.isPresent()) {
-                        compression.addBrotli(compressionLevel.getAsInt());
-                    } else {
-                        compression.addBrotli();
-                    }
+                    // For now, do not configure the quality level for Brotli - See https://github.com/eclipse-vertx/vert.x/issues/6201
+                    //                    if (compressionLevel.isPresent()) {
+                    //                        compression.addBrotli(compressionLevel.getAsInt());
+                    //                    } else {
+                    compression.addBrotli();
+                    //                    }
                 } else {
                     LOGGER.errorf("Unknown compressor: %s", compressor);
                 }

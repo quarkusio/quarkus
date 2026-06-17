@@ -17,6 +17,48 @@ This guide covers:
 
 This guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
+== Comparing JVM, Leyden AOT, and native modes
+
+Native is one of three runtime options Quarkus supports. JVM fast-jar, JVM with xref:aot.adoc[Project Leyden AOT caching] (JDK 24+), and native (Mandrel) each trade cold-start speed, peak throughput, memory footprint, and build cost differently. The table below compares them. Pick the mode that matches your workload's most important constraint.
+
+[cols="1,1,1,1,1,1,1,2",options="header"]
+|===
+| Mode | Cold start | Time to first request | Peak throughput | Memory (RSS) | Container image size | Build cost | When to choose
+
+| JVM fast-jar
+| ~0.4 s (small REST) to ~3 s (large CRUD)
+| 4,417 ms
+| 13,265 tps (baseline)
+| 304 MiB
+| 517 MB
+| ~30 s build; no special workflow
+| Long-running services, throughput-critical workloads; teams on pre-JDK-24 runtimes
+
+| xref:aot.adoc[JVM + Leyden AOT cache]
+| ~80 ms (small) to ~900 ms (large)
+| 1,859 ms
+| 12,389 tps (~7% below JVM)
+| 240 MiB
+| 715 MB (AOT cache adds ~198 MB)
+| Standard build plus a training run on a representative workload
+| Cold-start-sensitive but not millisecond-critical; requires JDK 24+; keeps full JVM tooling (debuggers, profilers, JFR)
+
+| Native (Mandrel)
+| ~17 ms (small) to ~240 ms (large)
+| 581 ms
+| 5,411 tps (~59% below JVM)
+| 95 MiB
+| 244 MB
+| 3-10 min build; 4-8 GB build-host RAM
+| Extreme cold start (serverless, scale-to-zero); edge deployments; high-density container hosts where memory is the binding constraint
+|===
+
+image::https://raw.githubusercontent.com/quarkusio/benchmarks/main/images/spring-quarkus-perf-comparison/2026-04-21_09-26-13/metrics-tuned-boot-and-first-response-time-for-quarkus-java-and-native-and-leyden-frameworks-dark.svg[alt="Boot and first-response time chart comparing JVM, Native, and Leyden modes",width=988]
+
+Time to first request, peak throughput, and memory (RSS) come from the https://raw.githubusercontent.com/quarkusio/benchmarks/main/images/spring-quarkus-perf-comparison/2026-04-21_09-26-13/metrics-tuned-composite-for-quarkus-light.svg[2026-04-21 perf-lab tuned benchmark] (Quarkus 3.34.3, JDK 25.0.2, GraalVM 25.0.2-graalce, 4 CPUs, `-Xmx512m`). Cold-start ranges and container image sizes come from the https://quarkus.io/blog/leyden-2/[Leyden integration benchmarks] and the https://quarkus.io/blog/new-benchmarks/[Mar 2026 performance post]. For the latest chart and other variants, see the https://github.com/quarkusio/benchmarks#chart-reference[Quarkus benchmarks chart reference].
+
+For the Leyden AOT cache path, see xref:aot.adoc[the AOT caching guide]. For the native path, continue below.
+
 == Prerequisites
 
 :prerequisites-docker:
@@ -401,6 +443,14 @@ To this end, Quarkus provides a very convenient way of creating a native Linux e
 The easiest way of accomplishing this task is to execute:
 
 include::{includes}/devtools/build-native-container.adoc[]
+
+.What to expect
+[NOTE]
+====
+Your first container-based native build typically takes 3-10 minutes and uses 4-8 GB of RAM on the build host. Fan spin-up is normal; the build is still running, just working hard. A build that runs past 15 minutes without output usually means the container runtime is short on memory; raise its CPU and memory allocation and retry.
+
+The output is a Linux binary produced inside the builder image. Its architecture matches the builder image you pulled: typically `x86_64` unless you explicitly selected an `arm64` variant or are running on an `arm64` host. Run the binary in a Linux container that matches that architecture, not directly on your host OS.
+====
 
 [TIP]
 ====

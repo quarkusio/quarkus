@@ -82,25 +82,27 @@ public class ForwardingProxyOptions {
 
     private static List<List<Rdn>> collectAndValidateTrustedProxyDns(ProxyConfig proxyConfig, ClientAuth clientAuth,
             List<TrustedProxyCheckPart> parts, boolean allowXForwarded, boolean allowForwarded) {
-        final List<String> dnStrings = proxyConfig.trustedProxyDns().orElse(List.of());
+        final List<String> dnStrings = proxyConfig.trustedProxy().stream()
+                .map(ProxyConfig.TrustedProxyConfig::subjectDn)
+                .toList();
         if (dnStrings.isEmpty()) {
             return null;
         }
 
         if (!parts.isEmpty()) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxies' and 'quarkus.http.proxy.trusted-proxy-dns' are mutually exclusive");
+                    "'quarkus.http.proxy.trusted-proxies' and 'quarkus.http.proxy.trusted-proxy[*].subject-dn' are mutually exclusive");
         }
 
         if (clientAuth == ClientAuth.NONE) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxy-dns' requires 'quarkus.http.ssl.client-auth' to be set "
+                    "'quarkus.http.proxy.trusted-proxy[*].subject-dn' requires 'quarkus.http.ssl.client-auth' to be set "
                             + "to 'request' or 'required'");
         }
 
         if (!allowXForwarded && !allowForwarded) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxy-dns' requires 'quarkus.http.proxy.allow-forwarded' "
+                    "'quarkus.http.proxy.trusted-proxy[*].subject-dn' requires 'quarkus.http.proxy.allow-forwarded' "
                             + "or 'quarkus.http.proxy.allow-x-forwarded' to be enabled");
         }
 
@@ -109,7 +111,7 @@ public class ForwardingProxyOptions {
                 var x500PrincipalName = new X500Principal(dn).getName(); // force DN validation
                 return List.copyOf(new LdapName(x500PrincipalName).getRdns());
             } catch (IllegalArgumentException | InvalidNameException e) {
-                throw new ConfigurationException("Invalid 'quarkus.http.proxy.trusted-proxy-dns' value '" + dn
+                throw new ConfigurationException("Invalid 'quarkus.http.proxy.trusted-proxy[*].subject-dn' value '" + dn
                         + "': not a valid RFC 2253 Distinguished Name", e);
             }
         }).toList();

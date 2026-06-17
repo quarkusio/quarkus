@@ -180,7 +180,7 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
 <1> The method returns a `@Singleton`.
 <2> The method returns the specific type of `MeterRegistry`
 
-This example corresponds to the following instructions in the Micrometer documentation: link:https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink[Micrometer StatsD: Customizing the Metrics Sink]
+This example corresponds to the following instructions in the Micrometer documentation: link:https://docs.micrometer.io/micrometer/reference/implementations/statsD.html#_customizing_the_metrics_sink[Micrometer StatsD: Customizing the Metrics Sink]
 
 Use MicroProfile Config to inject any configuration attributes you need to configure the registry.
 Most Micrometer registry extensions, like `quarkus-micrometer-registry-statsd`, provide registry-specific configuration objects that are integrated with the Quarkus configuration model.
@@ -788,7 +788,7 @@ Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifi
 to all `MeterRegistry` instances.
 An application configuration property is also injected and used as a tag value.
 Additional examples of MeterFilters can be found in the
-link:https://micrometer.io/docs/concepts[official documentation].
+link:https://docs.micrometer.io/micrometer/reference/concepts.html[official documentation].
 
 === Use `HttpServerMetricsTagsContributor` for server HTTP requests
 

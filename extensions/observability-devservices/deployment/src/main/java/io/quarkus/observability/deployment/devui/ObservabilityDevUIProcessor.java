@@ -1,5 +1,7 @@
 package io.quarkus.observability.deployment.devui;
 
+import java.util.function.BooleanSupplier;
+
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
@@ -14,12 +16,23 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.observability.runtime.ObservabilityJsonRPCService;
+import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 
 /**
  * Dev UI card for displaying important details such LGTM embedded UI.
  */
-@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class,
+        ObservabilityDevUIProcessor.IsLgtmDevUiEnabled.class })
 public class ObservabilityDevUIProcessor {
+
+    public static class IsLgtmDevUiEnabled implements BooleanSupplier {
+        ObservabilityConfiguration config;
+
+        @Override
+        public boolean getAsBoolean() {
+            return config.enabled() && !config.devResources() && config.lgtm().enabled();
+        }
+    }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void createVersion(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer,

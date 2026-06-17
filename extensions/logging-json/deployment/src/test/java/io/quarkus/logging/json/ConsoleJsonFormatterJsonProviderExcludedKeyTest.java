@@ -88,6 +88,18 @@ public class ConsoleJsonFormatterJsonProviderExcludedKeyTest {
         assertThat(node.has("customfield")).isTrue();
     }
 
+    @Test
+    public void exceptionFormattingWorksWithExcludedKeys() throws Exception {
+        LogRecord record = new LogRecord(Level.WARNING, "Something went wrong");
+        record.setThrown(new RuntimeException("boom"));
+
+        String line = getJsonFormatter().format(record);
+
+        JsonNode node = new ObjectMapper().readTree(line);
+        assertThat(node.has("message")).isTrue();
+        assertThat(node.has("exception")).isTrue();
+    }
+
     @ApplicationScoped
     public static class NestedObjectProvider implements JsonProvider {
 

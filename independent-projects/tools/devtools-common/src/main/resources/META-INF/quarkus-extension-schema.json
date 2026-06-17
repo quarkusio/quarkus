@@ -1,13 +1,60 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://quarkus.io/schemas/quarkus-extension-schema.json",
-  "title": "Quarkus Extension Descriptor (minimal)",
-  "description": "Minimal schema for META-INF/quarkus-extension.yaml focusing on validated core metadata fields.",
+  "title": "Quarkus Extension Descriptor",
+  "description": "Canonical schema for META-INF/quarkus-extension.yaml. Field descriptions in this file are the single source of truth; the extension metadata guide is generated from it at documentation build time.",
   "type": "object",
   "properties": {
+    "name": {
+      "type": "string",
+      "description": "Extension name displayed to users.",
+      "x-doc-group": "template"
+    },
+    "artifact": {
+      "type": "string",
+      "description": "Extension runtime artifact coordinates. In the author template this may use Maven expressions such as ${project.groupId}:${project.artifactId}:${project.version}; the build replaces them with resolved coordinates. This field may be omitted from the template.",
+      "x-doc-group": "template"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description displayed to users. It may be provided in the template or copied from the extension module POM during the build.",
+      "x-doc-group": "template"
+    },
+    "scm-url": {
+      "type": "string",
+      "description": "Source code repository URL. Optional in the template; often set automatically from POM SCM information or the CI environment (for example GITHUB_REPOSITORY on GitHub Actions).",
+      "x-doc-group": "build"
+    },
+    "sponsor": {
+      "type": "string",
+      "description": "Sponsor of this extension. Optional; may be determined automatically from commit history.",
+      "x-doc-group": "build"
+    },
     "metadata": {
       "type": "object",
+      "description": "Extension catalog metadata used by Quarkus dev tools.",
       "properties": {
+        "short-name": {
+          "type": "string",
+          "description": "Short name used to quickly locate an extension in the dev tools extension catalog.",
+          "x-doc-group": "template"
+        },
+        "keywords": {
+          "type": "array",
+          "description": "Keywords used to search for extensions in the extension catalog.",
+          "items": {
+            "type": "string"
+          },
+          "x-doc-group": "template"
+        },
+        "categories": {
+          "type": "array",
+          "description": "Categories under which the extension appears on https://code.quarkus.io. May be omitted; the extension is still listed but not categorized.",
+          "items": {
+            "type": "string"
+          },
+          "x-doc-group": "template"
+        },
         "status": {
           "type": "string",
           "enum": [
@@ -16,7 +63,88 @@
             "experimental",
             "deprecated"
           ],
-          "description": "Maturity status. Must be a single string (not an array)."
+          "description": "Maturity status. Must be a single string value, not an array. Use deprecated when the extension is likely to be replaced or removed. Evaluated by extension maintainers.",
+          "x-doc-group": "template"
+        },
+        "guide": {
+          "type": "string",
+          "description": "Link to the extension guide or documentation page.",
+          "x-doc-group": "template"
+        },
+        "icon-url": {
+          "type": "string",
+          "description": "URL of a square icon (greater than 220 pixels). Supported formats: png, jpeg, tiff, webp, svg. Alternatively, set the social media preview on the extension source repository.",
+          "x-doc-group": "template"
+        },
+        "config": {
+          "type": "array",
+          "description": "Configuration property prefixes exposed by this extension.",
+          "items": {
+            "type": "string"
+          },
+          "x-doc-group": "template"
+        },
+        "codestart": {
+          "type": "object",
+          "description": "Codestart information. See https://quarkus.io/guides/extension-codestart.",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Codestart name."
+            },
+            "languages": {
+              "type": "array",
+              "description": "Languages supported by the codestart.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "artifact": {
+              "type": "string",
+              "description": "Maven coordinates of the codestart artifact."
+            }
+          },
+          "additionalProperties": true,
+          "x-doc-group": "template"
+        },
+        "built-with-quarkus-core": {
+          "type": "string",
+          "description": "Quarkus version the extension was built with. Added by the extension build plugin.",
+          "x-doc-group": "build"
+        },
+        "requires-quarkus-core": {
+          "type": "string",
+          "description": "Quarkus version range required by this extension. Optional; defaults from built-with-quarkus-core. Added by the extension build plugin.",
+          "x-doc-group": "build"
+        },
+        "minimum-java-version": {
+          "type": "string",
+          "description": "Minimum Java version required to run this extension. Generated from maven.compiler.release. Added by the extension build plugin.",
+          "x-doc-group": "build"
+        },
+        "capabilities": {
+          "type": "object",
+          "description": "Capabilities this extension provides. See https://quarkus.io/guides/capabilities. Added by the extension build plugin.",
+          "additionalProperties": true,
+          "x-doc-group": "build"
+        },
+        "extension-dependencies": {
+          "type": "array",
+          "description": "Direct dependencies on other extensions. Added by the extension build plugin.",
+          "items": {
+            "type": "string"
+          },
+          "x-doc-group": "build"
+        }
+      },
+      "patternProperties": {
+        ".+-support$": {
+          "type": "array",
+          "description": "Associates the extension with an offering (introduced in Quarkus 3.26). The property name is <offering-id>-support; the value is a list of support scopes such as supported or tech-preview.",
+          "items": {
+            "type": "string"
+          },
+          "x-doc-group": "offering"
         }
       },
       "additionalProperties": true

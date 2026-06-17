@@ -3,11 +3,15 @@ package io.quarkus.resteasy.reactive.server.test;
 import static io.restassured.RestAssured.when;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -15,18 +19,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.server.Cancellable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
-public class CancelableUniTest {
+public class CancellableCompletionStageTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -45,35 +47,17 @@ public class CancelableUniTest {
 
     @Test
     public void testNormal() {
-        doTestNormal("1");
-    }
-
-    @Test
-    public void testDefaultCancellable() {
-        doTestCancel("1", Resource.COUNT, 1);
-    }
-
-    @Test
-    public void testUnCancellable() {
-        doTestCancel("2", Resource.COUNT, 2);
-    }
-
-    @Test
-    public void testCancellable() {
-        doTestCancel("3", Resource.COUNT, 1);
-    }
-
-    private void doTestNormal(String path) {
-        when().get("test/" + path)
+        when().get("test")
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello, world"));
     }
 
-    private void doTestCancel(String path, AtomicInteger count, int expected) {
+    @Test
+    public void testCancel() {
         WebClient client = WebClient.create(vertx);
 
-        client.get(url.getPort(), url.getHost(), "/test/" + path).send();
+        client.get(url.getPort(), url.getHost(), "/test").send();
 
         try {
             // make sure we did make the proper request
@@ -86,7 +70,7 @@ public class CancelableUniTest {
             Thread.sleep(7_000);
 
             // if the count did not increase, it means that Uni was cancelled
-            assertEquals(expected, count.get());
+            assertEquals(1, Resource.COUNT.get());
         } catch (InterruptedException ignored) {
 
         } finally {
@@ -96,6 +80,7 @@ public class CancelableUniTest {
 
             }
         }
+
     }
 
     @Path("test")
@@ -105,31 +90,17 @@ public class CancelableUniTest {
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
-        @Path("1")
-        public Uni<String> defaultCancelableHello() {
+        public CompletionStage<String> hello() {
             COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
-        }
-
-        @GET
-        @Produces(MediaType.TEXT_PLAIN)
-        @Cancellable(false)
-        @Path("2")
-        public Uni<String> uncancellableHello() {
-            COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
-        }
-
-        @GET
-        @Produces(MediaType.TEXT_PLAIN)
-        @Cancellable
-        @Path("3")
-        public Uni<String> cancellableHello() {
-            COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
+            return CompletableFuture.supplyAsync(
+                    new Supplier<>() {
+                        @Override
+                        public String get() {
+                            COUNT.incrementAndGet();
+                            return "Hello, world";
+                        }
+                    },
+                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
         }
     }
 }

@@ -1,11 +1,14 @@
 package io.quarkus.oidc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
+import java.util.logging.LogRecord;
+import java.util.stream.Collectors;
 
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -35,7 +38,9 @@ public class CodeTenantReauthenticateTestCase {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
-                    .addAsResource("application-tenant-reauthenticate.properties", "application.properties"));
+                    .addAsResource("application-tenant-reauthenticate.properties", "application.properties"))
+            .setLogRecordPredicate(r -> true)
+            .assertLogRecords(r -> assertLogRecord(r));
 
     @Test
     public void testDefaultTenant() throws Exception {
@@ -190,5 +195,11 @@ public class CodeTenantReauthenticateTestCase {
         return sessionCookieChunk1 != null && sessionCookieChunk2 != null
                 ? List.of(sessionCookieChunk1, sessionCookieChunk2)
                 : null;
+    }
+
+    private static void assertLogRecord(List<LogRecord> records) {
+        List<LogRecord> userInfoRecords = records.stream()
+                .filter(r -> r.getMessage().contains("UserInfo request succeeded")).collect(Collectors.toList());
+        assertFalse(userInfoRecords.isEmpty());
     }
 }

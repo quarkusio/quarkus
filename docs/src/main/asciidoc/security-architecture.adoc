@@ -15,7 +15,7 @@ The primary mechanism for securing HTTP applications in Quarkus is the `HttpAuth
 
 == Overview of the Quarkus Security architecture
 
-When a client sends a HTTP request, Quarkus Security orchestrates security authentication and authorization by interacting with several built-in core components, including `HttpAuthenticationMechanism`, `IdentityProvider`, and `SecurityIdentityAugmentor`.
+When a client sends an HTTP request, Quarkus Security orchestrates security authentication and authorization by interacting with several built-in core components, including `HttpAuthenticationMechanism`, `IdentityProvider`, and `SecurityIdentityAugmentor`.
 
 The sequential security validation process results in one of three outcomes:
 
@@ -37,7 +37,7 @@ For example, the credentials can come from the `Authorization` header, client HT
 
 When Quarkus Security rejects an authentication request, `HttpAuthenticationMechanism` returns an authentication challenge to the client.
 The type of challenge depends on the authentication mechanism.
-For example, with the OIDC OpenID Connect (OIDC) Authorization Code Flow mechanism, a redirect URL gets generated, and the client is returned to the OpenID Connect provider to authenticate.
+For example, with the OpenID Connect (OIDC) Authorization Code Flow mechanism, a redirect URL gets generated, and the client is returned to the OpenID Connect provider to authenticate.
 
 === `IdentityProvider`
 `IdentityProvider` verifies the authentication credentials and maps them to `SecurityIdentity`, which has the username, roles, original authentication credentials, and other attributes.
@@ -49,7 +49,7 @@ In other contexts, it is possible to have other parallel representations of the 
 For more information, see the Quarkus xref:security-identity-providers.adoc[Identity providers] guide.
 
 === `SecurityIdentityAugmentor`
-Because Quarkus Security is customizable, you can, for example, add authorization roles to `SecurityIdentity` and register and prioritize one or more `SecurityAugmentor` implementations.
+Because Quarkus Security is customizable, you can, for example, add authorization roles to `SecurityIdentity` and register and prioritize one or more `SecurityIdentityAugmentor` implementations.
 
 Registered instances of `SecurityIdentityAugmentor` are invoked during the final stage of the security authentication process.
 For more information, see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
@@ -75,7 +75,7 @@ You can customize the following core security components of Quarkus:
 
 * `HttpAuthenticationMechanism`
 * `IdentityProvider`
-* `SecurityidentityAugmentor`
+* `SecurityIdentityAugmentor`
 
 For more information about customizing Quarkus Security, including reactive security and how to register a security provider, see the Quarkus xref:security-customization.adoc[Security tips and tricks] guide.
 

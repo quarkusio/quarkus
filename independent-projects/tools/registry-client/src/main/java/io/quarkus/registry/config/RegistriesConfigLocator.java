@@ -67,7 +67,7 @@ public class RegistriesConfigLocator {
             if (config == null) { // empty file
                 config = new RegistriesConfigImpl.Builder();
             }
-            return config.setSource(new ConfigSource.FileConfigSource(configYaml)).build();
+            return validate(config.setSource(new ConfigSource.FileConfigSource(configYaml)).build());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
@@ -83,7 +83,7 @@ public class RegistriesConfigLocator {
         try {
             RegistriesConfigImpl.Builder instance = RegistriesConfigMapperHelper.deserializeYaml(configYaml,
                     RegistriesConfigImpl.Builder.class);
-            return instance == null ? null : instance.build();
+            return instance == null ? null : validate(instance.build());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
@@ -99,10 +99,23 @@ public class RegistriesConfigLocator {
         try {
             RegistriesConfigImpl.Builder instance = RegistriesConfigMapperHelper.deserializeYaml(configYaml,
                     RegistriesConfigImpl.Builder.class);
-            return instance == null ? null : instance.build();
+            return instance == null ? null : validate(instance.build());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse config file " + configYaml, e);
         }
+    }
+
+    private static RegistriesConfig validate(RegistriesConfig config) {
+        for (RegistryConfig registry : config.getRegistries()) {
+            Object offering = registry.getExtra().get(Constants.OFFERING);
+            if (offering == null && registry.getExtra().containsKey(Constants.OFFERING)
+                    || offering instanceof String offeringValue && offeringValue.isBlank()) {
+                throw new IllegalStateException(
+                        "Registry '" + registry.getId() + "' config option '" + Constants.OFFERING
+                                + "' must not be empty");
+            }
+        }
+        return config;
     }
 
     /**

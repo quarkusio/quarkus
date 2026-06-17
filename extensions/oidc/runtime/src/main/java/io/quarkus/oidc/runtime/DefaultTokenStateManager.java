@@ -131,7 +131,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 }
             } catch (ArrayIndexOutOfBoundsException ex) {
                 final String error = "Session cookie is malformed";
-                LOG.debug(ex);
+                LOG.error(error);
                 return Uni.createFrom().failure(new AuthenticationFailedException(error));
             } catch (AuthenticationFailedException ex) {
                 return Uni.createFrom().failure(ex);
@@ -156,7 +156,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
                         }
                     } catch (ArrayIndexOutOfBoundsException ex) {
                         final String error = "Session cookie is malformed";
-                        LOG.debug(ex);
+                        LOG.error(error);
                         // Make this error message visible in the dev mode
                         return Uni.createFrom().failure(new AuthenticationFailedException(error));
                     } catch (AuthenticationFailedException ex) {
@@ -202,10 +202,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
         try {
             return Long.valueOf(accessTokenExpiresInString);
         } catch (NumberFormatException ex) {
-            final String error = """
-                    Access token expires_in property in the session cookie must be a number, found %s
-                    """.formatted(accessTokenExpiresInString);
-            LOG.debug(ex);
+            final String error = "Access token expires_in property in the session cookie must be a number, found %s"
+                    .formatted(accessTokenExpiresInString);
+            LOG.error(error);
             // Make this error message visible in the dev mode
             throw new AuthenticationFailedException(error);
         }

@@ -85,6 +85,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- SmallRye OpenTelemetry -->
+        <dependency>
+            <groupId>io.smallrye.opentelemetry</groupId>
+            <artifactId>smallrye-opentelemetry-senders</artifactId>
+        </dependency>
+
         <!-- OpenTelemetry Dependencies -->
         <dependency>
             <groupId>io.opentelemetry</groupId>

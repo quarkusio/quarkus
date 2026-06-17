@@ -20,13 +20,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.OpenedSessionsState;
-import io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.sqlclient.SqlConnection;
 
 /**
  * Static util methods for {@link Mutiny.Session}.
@@ -375,29 +372,6 @@ public final class SessionOperations {
             context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
         }
         onDemandSessionsCreated.add(persistenceUnitName);
-    }
-
-    /**
-     *
-     * @return the current vertx duplicated context
-     * @throws IllegalStateException If no vertx context is found or is not a safe context as mandated by the
-     *         {@link VertxContextSafetyToggle}
-     */
-    public static Uni<Mutiny.Transaction> currentTransaction() {
-        return getSession().map(session -> {
-            Mutiny.Transaction tx = session.currentTransaction();
-            if (tx != null) {
-                return tx;
-            }
-            Future<? extends SqlConnection> connectionFuture = TransactionalContextPool.getCurrentConnectionFromVertxContext();
-            if (connectionFuture != null && connectionFuture.succeeded()) {
-                io.vertx.sqlclient.Transaction vertxTx = connectionFuture.result().transaction();
-                if (vertxTx != null) {
-                    return new VertxTransactionWrapper(vertxTx);
-                }
-            }
-            return null;
-        });
     }
 
     public static Context vertxContext() {

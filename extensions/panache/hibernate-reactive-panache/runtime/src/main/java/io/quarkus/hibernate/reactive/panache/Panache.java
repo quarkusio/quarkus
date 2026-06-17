@@ -135,6 +135,6 @@ public class Panache {
      * @see Panache#withTransaction(Supplier)
      */
     public static Uni<Mutiny.Transaction> currentTransaction() {
-        return SessionOperations.currentTransaction();
+        return getSession().map(session -> session.currentTransaction());
     }
 }

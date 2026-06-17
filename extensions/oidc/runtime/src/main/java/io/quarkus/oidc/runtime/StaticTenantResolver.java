@@ -94,7 +94,7 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String[] pathSegments = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath())
+            String[] pathSegments = HttpSecurityUtils.normalizePath(context.normalizedPath())
                     .split(PATH_SEPARATOR);
             for (String canonicalSegment : pathSegments) {
                 if (tenantConfigBean.getStaticTenant(canonicalSegment) != null) {
@@ -127,7 +127,7 @@ final class StaticTenantResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String canonicalPath = HttpSecurityUtils.pathWithoutMatrixParams(context.normalizedPath());
+            String canonicalPath = HttpSecurityUtils.normalizePath(context.normalizedPath());
             String tenantId = staticTenantPaths.match(canonicalPath).getValue();
             if (tenantId != null) {
                 LOG.debugf(

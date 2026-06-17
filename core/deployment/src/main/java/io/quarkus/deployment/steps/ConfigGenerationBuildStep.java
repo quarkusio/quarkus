@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
+import io.quarkus.deployment.builditem.ReproducibilityCheckBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -229,6 +230,7 @@ public class ConfigGenerationBuildStep {
             CombinedIndexBuildItem combinedIndex,
             List<ConfigMappingBuildItem> configMappings,
             List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
+            Optional<ReproducibilityCheckBuildItem> reproducibilityCheck,
             List<StaticInitConfigBuilderBuildItem> staticInitConfigBuilders,
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
@@ -237,6 +239,9 @@ public class ConfigGenerationBuildStep {
         // we make sure all entries to the config generation are properly sorted to make sure the build is reproducible
         Map<String, String> defaultValues = new TreeMap<>();
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
+            if (reproducibilityCheck.isPresent() && !e.isIncludedInReproducibilityCheck()) {
+                continue;
+            }
             defaultValues.put(e.getKey(), e.getValue());
         }
 

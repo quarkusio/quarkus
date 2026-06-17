@@ -65,6 +65,7 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.ReproducibilityCheckBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
@@ -868,6 +869,11 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         String testName = extensionContext.getRequiredTestClass().getSimpleName();
         System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check (%d runs) for %s%n",
                 reproducibilityRuns, testName);
+        List<Consumer<BuildChainBuilder>> reproducibilityCustomizers = new ArrayList<>(customizers);
+        reproducibilityCustomizers.add(
+                buildChainBuilder -> buildChainBuilder
+                        .addBuildStep(context -> context.produce(new ReproducibilityCheckBuildItem()))
+                        .produces(ReproducibilityCheckBuildItem.class).build());
         Map<String, byte[]> referenceInMemoryClasses = null;
         ApplicationModel cachedApplicationModel = null;
         for (int run = 1; run <= reproducibilityRuns; run++) {
@@ -881,7 +887,8 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                     // Reuse the resolved model so this check focuses on repeated augmentation bytecode.
                     cachedApplicationModel = currentCuratedApplication.getApplicationModel();
                 }
-                currentStartupAction = new AugmentActionImpl(currentCuratedApplication, customizers, classLoadListeners)
+                currentStartupAction = new AugmentActionImpl(currentCuratedApplication, reproducibilityCustomizers,
+                        classLoadListeners)
                         .createInitialRuntimeApplication();
 
                 Map<String, byte[]> currentInMemoryClasses = currentStartupAction.getClassLoader().getInMemoryClassBytes();

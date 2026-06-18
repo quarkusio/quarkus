@@ -12,19 +12,21 @@ package io.quarkus.vertx.runtime.jackson;
 
 import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_ENCODER;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.ByteArraySerializer} as that class is package private
  */
-public class ByteArraySerializer extends JsonSerializer<byte[]> {
+public class ByteArraySerializer extends StdSerializer<byte[]> {
+
+    ByteArraySerializer() {
+        super(byte[].class);
+    }
 
     @Override
-    public void serialize(byte[] value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(byte[] value, JsonGenerator jgen, SerializationContext provider) {
         jgen.writeString(BASE64_ENCODER.encodeToString(value));
     }
 }

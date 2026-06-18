@@ -8,9 +8,10 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Test the Quarkus copies of Vert.x's package-private serializers using ISO_INSTANT format
@@ -22,11 +23,12 @@ public class InstantSerializerDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new ObjectMapper();
+        JsonMapper.Builder builder = JsonMapper.builder();
         SimpleModule module = new SimpleModule("test-module");
         module.addSerializer(Instant.class, new InstantSerializer());
         module.addDeserializer(Instant.class, new InstantDeserializer());
-        mapper.registerModule(module);
+        builder.addModule(module);
+        mapper = builder.build();
     }
 
     @Test

@@ -12,19 +12,23 @@ package io.quarkus.vertx.runtime.jackson;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
-import java.io.IOException;
 import java.time.Instant;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.InstantSerializer} as that class is package private
  */
-public class InstantSerializer extends JsonSerializer<Instant> {
+public class InstantSerializer extends StdSerializer<Instant> {
+
+    InstantSerializer() {
+        super(Instant.class);
+    }
+
     @Override
-    public void serialize(Instant value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(Instant value, JsonGenerator jgen, SerializationContext provider) {
         jgen.writeString(ISO_INSTANT.format(value));
     }
 }

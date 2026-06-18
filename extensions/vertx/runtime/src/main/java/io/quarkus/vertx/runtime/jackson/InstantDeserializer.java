@@ -12,23 +12,26 @@ package io.quarkus.vertx.runtime.jackson;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
-import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.Instant;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.InstantDeserializer} as that class is package private
  */
-public class InstantDeserializer extends JsonDeserializer<Instant> {
+public class InstantDeserializer extends StdDeserializer<Instant> {
+
+    InstantDeserializer() {
+        super(Instant.class);
+    }
+
     @Override
-    public Instant deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        String text = p.getText();
+    public Instant deserialize(JsonParser p, DeserializationContext ctxt) {
+        String text = p.getString();
         try {
             return Instant.from(ISO_INSTANT.parse(text));
         } catch (DateTimeException e) {

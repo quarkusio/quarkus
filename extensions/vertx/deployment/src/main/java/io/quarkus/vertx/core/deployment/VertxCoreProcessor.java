@@ -94,6 +94,9 @@ class VertxCoreProcessor {
                 ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(LateBoundMDCProvider.class.getName()).methods().fields().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("io.vertx.core.json.jackson.v3.JacksonCodec").methods(false).fields(false)
+                        .constructors(true).build());
         nativeImageResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.logmanager.MDCProvider"));
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.impl.buffer.VertxByteBufAllocator")

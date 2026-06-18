@@ -12,22 +12,23 @@ package io.quarkus.vertx.runtime.jackson;
 
 import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.ByteArrayDeserializer} as that class is package private
  */
-public class ByteArrayDeserializer extends JsonDeserializer<byte[]> {
+public class ByteArrayDeserializer extends StdDeserializer<byte[]> {
+
+    ByteArrayDeserializer() {
+        super(byte[].class);
+    }
 
     @Override
-    public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        String text = p.getText();
+    public byte[] deserialize(JsonParser p, DeserializationContext ctxt) {
+        String text = p.getString();
         try {
             return BASE64_DECODER.decode(text);
         } catch (IllegalArgumentException e) {

@@ -3,7 +3,6 @@ package io.quarkus.hibernate.reactive.runtime.transaction;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
-import java.util.Objects;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -58,14 +57,10 @@ public class HibernateActionsStrategy implements ReactiveResource {
     @Override
     public boolean isMarkedForRollback(Context context) {
         Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
-        if (optPersistenceUnitName.isEmpty()) {
-            return false;
-        }
-        return HibernateReactiveRecorder.OPENED_SESSIONS_STATE
-                .getOpenedSession(context, optPersistenceUnitName.get())
-                .map(opened -> opened.session().currentTransaction())
-                .filter(Objects::nonNull)
-                .map(Mutiny.Transaction::isMarkedForRollback)
+        return optPersistenceUnitName.flatMap(s -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE
+                .currentTransaction(context, s)
+                .or(() -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.currentTransaction(context, s))
+                .map(Mutiny.Transaction::isMarkedForRollback))
                 .orElse(false);
     }
 }

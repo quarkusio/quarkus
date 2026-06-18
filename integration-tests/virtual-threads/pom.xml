@@ -202,9 +202,11 @@
 
     <profiles>
         <profile>
-            <id>skip-test-on-jdk-17</id>
+            <id>skip-test-on-windows</id>
             <activation>
-                <jdk>[, 20)</jdk>
+                <os>
+                    <family>Windows</family>
+                </os>
             </activation>
             <properties>
                 <skipTests>true</skipTests>

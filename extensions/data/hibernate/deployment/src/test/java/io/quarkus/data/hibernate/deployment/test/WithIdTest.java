@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.panache.deployment.test;
+package io.quarkus.data.hibernate.deployment.test;
 
 import jakarta.persistence.Entity;
 import jakarta.transaction.Transactional;
@@ -8,29 +8,29 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.panache.PanacheEntity;
-import io.quarkus.hibernate.panache.WithId;
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.WithId;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class WithIdTest {
 
     @Entity
-    public static class CustomIdEntity extends WithId<Long> implements PanacheEntity.Managed {
+    public static class CustomIdEntity extends WithId<Long> implements ManagedEntity.CustomId {
         public String name;
     }
 
     @Entity
-    public static class AutoLongEntity extends WithId.AutoLong implements PanacheEntity.Managed {
+    public static class AutoLongEntity extends WithId.AutoLong implements ManagedEntity.CustomId {
         public String name;
     }
 
     @Entity
-    public static class AutoStringEntity extends WithId.AutoString implements PanacheEntity.Managed {
+    public static class AutoStringEntity extends WithId.AutoString implements ManagedEntity.CustomId {
         public String name;
     }
 
     @Entity
-    public static class AutoUUIDEntity extends WithId.AutoUUID implements PanacheEntity.Managed {
+    public static class AutoUUIDEntity extends WithId.AutoUUID implements ManagedEntity.CustomId {
         public String name;
     }
 

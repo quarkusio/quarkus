@@ -69,7 +69,14 @@ When enabled and the native QUIC library is on the classpath, HTTP/3 is added to
 |boolean
 |`true`
 |Whether to add the `Alt-Svc` response header to HTTP/1.1 and HTTP/2 responses on the HTTPS server, advertising HTTP/3 availability.
-The header value follows the format `h3=":PORT"; ma=86400`.
+The header value follows the format `h3=":PORT"; ma=MAX_AGE`.
+
+|`quarkus.http3.alt-svc-max-age`
+|Duration
+|`24H`
+|The `max-age` value included in the `Alt-Svc` header.
+Tells clients how long to cache the HTTP/3 advertisement before re-checking via HTTP/1.1 or HTTP/2.
+Only effective when `quarkus.http3.alt-svc` is `true`.
 |===
 
 [[auto-tls]]

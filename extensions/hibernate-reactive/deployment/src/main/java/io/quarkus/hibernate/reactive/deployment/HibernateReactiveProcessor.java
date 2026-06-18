@@ -22,11 +22,16 @@ import java.util.logging.Level;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -56,6 +61,7 @@ import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
@@ -117,10 +123,24 @@ public final class HibernateReactiveProcessor {
         HibernateProcessorUtil.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.REACTIVE, config,
                 jpaModelPerPersistenceUnit, lookupBuildItem, puRequests);
 
-        // We don't derive requests from injection points of persistence unit related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/hibernate-orm#persistence-unit-active
-        // TODO find a way to collect injection points for a given PU that have no matching user-defined producer?
+    }
+
+    @BuildStep
+    void collectReactivePersistenceUnitRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery,
+                HibernateReactiveCdiProcessor.ALL_REACTIVE_INJECTABLE_TYPES,
+                List.of(io.quarkus.hibernate.orm.deployment.ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
+                PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+                },
+                (name, reason) -> puRequests
+                        .produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
     }
 
     @BuildStep

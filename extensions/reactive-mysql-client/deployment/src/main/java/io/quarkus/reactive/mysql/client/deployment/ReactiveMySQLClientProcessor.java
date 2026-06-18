@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
+import io.quarkus.reactive.datasource.spi.ReactiveDataSourceInjectableTypeBuildItem;
 import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolSupport;
@@ -120,6 +121,13 @@ class ReactiveMySQLClientProcessor {
     List<DevServicesDatasourceConfigurationHandlerBuildItem> devDbHandler() {
         return List.of(DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MYSQL),
                 DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MARIADB));
+    }
+
+    @BuildStep
+    void registerInjectableTypes(BuildProducer<ReactiveDataSourceInjectableTypeBuildItem> producer) {
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(VERTX_MYSQL_POOL));
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(
+                DotName.createSimple(io.vertx.mutiny.mysqlclient.MySQLPool.class)));
     }
 
     @BuildStep

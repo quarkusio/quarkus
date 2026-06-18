@@ -60,6 +60,7 @@ import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableIn
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -73,6 +74,8 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -453,10 +456,24 @@ public final class HibernateOrmProcessor {
         HibernateProcessorUtil.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.BLOCKING, config,
                 jpaModelPerPersistenceUnit, lookupBuildItem, puRequests);
 
-        // We don't derive requests from injection points of persistence unit related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/hibernate-orm#persistence-unit-active
-        // TODO find a way to collect injection points for a given PU that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
+    }
+
+    @BuildStep
+    void collectBlockingPersistenceUnitRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery,
+                HibernateOrmCdiProcessor.ALL_INJECTABLE_TYPES,
+                List.of(ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
+                PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+                },
+                (name, reason) -> puRequests
+                        .produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason)));
     }
 
     @BuildStep
@@ -745,7 +762,6 @@ public final class HibernateOrmProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
-            BuildProducer<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver,
             LaunchModeBuildItem launchMode) throws Exception {
         validateHibernatePropertiesNotUsed();
 
@@ -803,6 +819,17 @@ public final class HibernateOrmProcessor {
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
+    }
+
+    // Separate from HibernateOrmProcessor#build to avoid a cycle:
+    // BeanDiscoveryFinished -> DataSourceRequest -> JdbcDataSource -> PersistenceUnitDescriptor
+    // -> BeanValidationTraversableResolver -> HibernateValidator -> AnnotationsTransformer -> Arc
+    @BuildStep
+    @Record(STATIC_INIT)
+    void produceBeanValidationTraversableResolver(HibernateOrmRecorder recorder,
+            HibernateOrmConfig hibernateOrmConfig,
+            Capabilities capabilities,
+            BuildProducer<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR) && hibernateOrmConfig.enabled()) {
             beanValidationTraversableResolver
                     .produce(new BeanValidationTraversableResolverBuildItem(recorder.attributeLoadedPredicate()));
@@ -1485,8 +1512,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
         Set<String> puNames = puDefinitions.stream()
                 .map(PersistenceUnitDefinitionBuildItem::getPersistenceUnitName).collect(Collectors.toSet());
-        boolean hasNamedPUs = (puNames.size() > 1
-                || !puNames.contains(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME));
+        boolean hasNamedPUs = puNames.size() > 1
+                || (puNames.size() == 1 && !puNames.contains(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME));
         if (!hasNamedPUs) {
             return;
         }

@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
+import io.quarkus.reactive.datasource.spi.ReactiveDataSourceInjectableTypeBuildItem;
 import io.quarkus.reactive.oracle.client.OraclePoolCreator;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolSupport;
@@ -118,6 +119,13 @@ class ReactiveOracleClientProcessor {
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
         return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.ORACLE);
+    }
+
+    @BuildStep
+    void registerInjectableTypes(BuildProducer<ReactiveDataSourceInjectableTypeBuildItem> producer) {
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(VERTX_ORACLE_POOL));
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(
+                DotName.createSimple(io.vertx.mutiny.oracleclient.OraclePool.class)));
     }
 
     @BuildStep

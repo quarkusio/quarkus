@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
+import io.quarkus.reactive.datasource.spi.ReactiveDataSourceInjectableTypeBuildItem;
 import io.quarkus.reactive.mssql.client.MSSQLPoolCreator;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolSupport;
@@ -118,6 +119,13 @@ class ReactiveMSSQLClientProcessor {
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
         return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MSSQL);
+    }
+
+    @BuildStep
+    void registerInjectableTypes(BuildProducer<ReactiveDataSourceInjectableTypeBuildItem> producer) {
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(VERTX_MSSQL_POOL));
+        producer.produce(new ReactiveDataSourceInjectableTypeBuildItem(
+                DotName.createSimple(io.vertx.mutiny.mssqlclient.MSSQLPool.class)));
     }
 
     @BuildStep

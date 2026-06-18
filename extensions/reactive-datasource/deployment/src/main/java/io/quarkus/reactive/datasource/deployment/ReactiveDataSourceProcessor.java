@@ -1,15 +1,21 @@
 package io.quarkus.reactive.datasource.deployment;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.DataSourceProcessorUtil;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
@@ -22,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
+import io.quarkus.reactive.datasource.spi.ReactiveDataSourceInjectableTypeBuildItem;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
@@ -63,10 +70,34 @@ class ReactiveDataSourceProcessor {
                 ProgrammingParadigm.REACTIVE, config, reactiveConfig.dataSources().keySet(), enabled,
                 "reactive.*", dataSourceRequests);
 
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO find a way to collect injection points for a given DS that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
+    }
+
+    private static final DotName REACTIVE_DATASOURCE_QUALIFIER = DotName.createSimple(ReactiveDataSource.class);
+
+    @BuildStep
+    void collectReactiveDataSourceRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            List<ReactiveDataSourceInjectableTypeBuildItem> injectableTypes,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        Set<DotName> reactiveTypes = new HashSet<>();
+        // Always include the generic Pool type
+        reactiveTypes.add(ReactiveDataSourceDotNames.VERTX_POOL);
+        for (ReactiveDataSourceInjectableTypeBuildItem item : injectableTypes) {
+            reactiveTypes.add(item.getTypeName());
+        }
+
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery,
+                reactiveTypes,
+                List.of(REACTIVE_DATASOURCE_QUALIFIER, DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                (name, reason) -> dataSourceRequests
+                        .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
     }
 
     @BuildStep

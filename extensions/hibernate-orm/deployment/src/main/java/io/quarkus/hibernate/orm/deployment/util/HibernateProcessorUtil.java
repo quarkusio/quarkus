@@ -728,4 +728,5 @@ public final class HibernateProcessorUtil {
     private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
         return first.isPresent() ? first : second;
     }
+
 }

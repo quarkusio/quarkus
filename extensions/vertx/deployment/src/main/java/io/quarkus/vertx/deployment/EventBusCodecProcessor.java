@@ -63,8 +63,6 @@ public class EventBusCodecProcessor {
             if (typeTarget.kind() != AnnotationTarget.Kind.METHOD) {
                 throw new IllegalStateException("@ConsumeEvent annotation must target a method");
             }
-            AnnotationValue local = consumeEventAnnotationInstance.value("local");
-            boolean isLocal = local == null || local.asBoolean();
             MethodInfo method = typeTarget.asMethod();
 
             Type codecTargetFromParameter = extractPayloadTypeFromParameter(method);
@@ -77,13 +75,7 @@ public class EventBusCodecProcessor {
                 codecByTypes.put(codecTargetFromParameter.name(), codec.asClass().asClassType().name());
             } else if (codecTargetFromParameter != null && !hasBuiltInCodec(codecTargetFromParameter)) {
                 // Codec is not set and built-in codecs cannot be used
-                if (!isLocal) {
-                    throw new IllegalStateException(
-                            "The Local Message Codec can only be used for local delivery,"
-                                    + " you will need to implement a message codec for " + codecTargetFromParameter.name()
-                                            .toString()
-                                    + " and make use of @ConsumeEvent#codec()");
-                } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
+                if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
                     if (isConcreteClass(codecTargetFromParameter, index)) {
                         // The default codec makes only sense for concrete classes
                         LOGGER.debugf("Local Message Codec registered for type %s",
@@ -98,14 +90,7 @@ public class EventBusCodecProcessor {
 
             Type codecTargetFromReturnType = extractPayloadTypeFromReturn(method);
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)) {
-                if (!isLocal) {
-                    throw new IllegalStateException(
-                            "The Local Message Codec can only be used for local delivery,"
-                                    + " you will need to modify the method to consume io.vertx.core.eventbus.Message, implement a message codec for "
-                                    + codecTargetFromReturnType.name()
-                                            .toString()
-                                    + " and make use of io.vertx.core.eventbus.DeliveryOptions");
-                } else if (!codecByTypes.containsKey(codecTargetFromReturnType.name())) {
+                if (!codecByTypes.containsKey(codecTargetFromReturnType.name())) {
                     if (isConcreteClass(codecTargetFromReturnType, index)) {
                         // The default codec makes only sense for concrete classes
                         LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType);

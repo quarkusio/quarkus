@@ -99,7 +99,6 @@ public class VertxEventBusConsumerRecorder {
             for (EventConsumerInfo info : messageConsumerConfigurations) {
                 EventConsumerInvoker invoker = new EventConsumerInvoker(info.invoker.getValue(), info.splitHeadersBodyParams);
                 String address = lookUpPropertyValue(info.annotation.value());
-                boolean local = info.annotation.local();
                 boolean blocking = info.annotation.blocking() || info.blockingAnnotation || info.runOnVirtualThreadAnnotation;
                 boolean runOnVirtualThread = info.runOnVirtualThreadAnnotation;
                 boolean ordered = info.annotation.ordered();
@@ -110,12 +109,7 @@ public class VertxEventBusConsumerRecorder {
                 context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void x) {
-                        MessageConsumer<Object> consumer;
-                        if (local) {
-                            consumer = eventBus.localConsumer(address);
-                        } else {
-                            consumer = eventBus.consumer(address);
-                        }
+                        MessageConsumer<Object> consumer = eventBus.localConsumer(address);
 
                         consumer.handler(new Handler<Message<Object>>() {
                             @Override

@@ -245,43 +245,47 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             this.excludedKeys = excludedKeys;
         }
 
+        private boolean isExcluded(final String key) {
+            return key != null && excludedKeys.contains(key);
+        }
+
         public JsonLogGenerator add(final String key, final boolean value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, String.valueOf(value));
             }
             return this;
         }
 
         public JsonLogGenerator add(final String key, final int value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
         }
 
         public JsonLogGenerator add(final String key, final long value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
         }
 
         public JsonLogGenerator add(final String key, final Map<String, ?> value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
         }
 
         public JsonLogGenerator add(final String key, final String value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
         }
 
         public JsonLogGenerator startObject(final String key) throws Exception {
-            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+            if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
             } else {
                 delegate.startObject(key);
@@ -299,7 +303,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
 
         public JsonLogGenerator startArray(final String key) throws Exception {
-            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+            if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
             } else {
                 delegate.startArray(key);
@@ -346,6 +350,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             this.flatMdc = flatMdc;
         }
 
+        private boolean isExcluded(final String key) {
+            return key != null && excludedKeys.contains(key);
+        }
+
         @Override
         public Generator begin() throws Exception {
             delegate.begin();
@@ -354,7 +362,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final int value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
@@ -362,7 +370,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final long value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 delegate.add(key, value);
             }
             return this;
@@ -370,7 +378,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 if (flatMdc && value != null && !value.isEmpty()) {
                     for (Map.Entry<String, ?> entry : value.entrySet()) {
                         Object v = entry.getValue();
@@ -387,7 +395,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator add(final String key, final String value) throws Exception {
-            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+            if (skippedDepth == 0 && !isExcluded(key)) {
                 String actual = value;
                 // Strip the leading ": " that jboss's StackTraceFormatter prepends to the rendered
                 // stack trace string. Only applied to the specific key configured for this purpose.
@@ -407,7 +415,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+            if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
             } else {
                 delegate.startObject(key);
@@ -427,7 +435,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+            if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
             } else {
                 delegate.startArray(key);

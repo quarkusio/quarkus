@@ -213,17 +213,6 @@
             </properties>
         </profile>
         <profile>
-            <id>run-virtual-thread-tests</id>
-            <activation>
-                <jdk>[20,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>20</maven.compiler.release>
-                <impsort.skip>true</impsort.skip> <!-- impsort does not handle java 20 -->
-            </properties>
-        </profile>
-
-        <profile>
             <id>native</id>
             <activation>
                 <property>

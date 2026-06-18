@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.JacksonMixin;
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JacksonMixinsWithCustomizerTest {
 
@@ -26,17 +26,17 @@ public class JacksonMixinsWithCustomizerTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void test() throws JsonProcessingException {
+    public void test() {
         assertThat(objectMapper.writeValueAsString(new Fruit("test"))).isEqualTo("{\"manual\":\"test\"}");
         assertThat(objectMapper.writeValueAsString(new Message("hello"))).isEqualTo("{}");
     }
 
     @Singleton
-    static class TestCustomizer implements ObjectMapperCustomizer {
+    static class TestCustomizer implements JsonMapperBuilderCustomizer {
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
-            objectMapper.addMixIn(Fruit.class, ManualFruitMixin.class);
+        public void customize(JsonMapper.Builder builder) {
+            builder.addMixIn(Fruit.class, ManualFruitMixin.class);
         }
     }
 

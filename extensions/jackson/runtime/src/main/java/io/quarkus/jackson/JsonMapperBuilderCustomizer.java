@@ -1,8 +1,8 @@
 package io.quarkus.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Meant to be implemented by a CDI bean that provides arbitrary customization for the default {@link ObjectMapper}.
@@ -12,7 +12,7 @@ import io.quarkus.jackson.runtime.ObjectMapperProducer;
  * <p>
  * See also {@link ObjectMapperProducer#objectMapper}.
  */
-public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomizer> {
+public interface JsonMapperBuilderCustomizer extends Comparable<JsonMapperBuilderCustomizer> {
 
     int MINIMUM_PRIORITY = Integer.MIN_VALUE;
     int MAXIMUM_PRIORITY = Integer.MAX_VALUE;
@@ -23,7 +23,7 @@ public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomize
     int QUARKUS_CUSTOMIZER_PRIORITY = MINIMUM_PRIORITY + 100;
     int DEFAULT_PRIORITY = 0;
 
-    void customize(ObjectMapper objectMapper);
+    void customize(JsonMapper.Builder builder);
 
     /**
      * Defines the priority that the customizers are applied.
@@ -33,7 +33,7 @@ public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomize
         return DEFAULT_PRIORITY;
     }
 
-    default int compareTo(ObjectMapperCustomizer o) {
+    default int compareTo(JsonMapperBuilderCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }
 }

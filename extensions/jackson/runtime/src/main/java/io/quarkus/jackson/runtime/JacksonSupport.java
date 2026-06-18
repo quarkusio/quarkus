@@ -2,7 +2,7 @@ package io.quarkus.jackson.runtime;
 
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.PropertyNamingStrategies;
 
 public interface JacksonSupport {
 

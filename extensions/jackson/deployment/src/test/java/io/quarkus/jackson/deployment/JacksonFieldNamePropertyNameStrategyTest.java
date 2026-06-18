@@ -6,10 +6,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
 
 public class JacksonFieldNamePropertyNameStrategyTest {
 
@@ -22,7 +20,7 @@ public class JacksonFieldNamePropertyNameStrategyTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void test() throws JsonProcessingException {
+    public void test() {
         Assertions.assertThat(objectMapper.writeValueAsString(new Pojo("test"))).isEqualTo("{\"test-property\":\"test\"}");
     }
 

@@ -4,15 +4,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 @Recorder
 public class JacksonRecorder {
@@ -46,13 +42,13 @@ public class JacksonRecorder {
     }
 
     @StaticInit
-    public Supplier<ObjectMapperCustomizer> customizerSupplier(Map<Class<?>, Class<?>> mixinsMap) {
+    public Supplier<JsonMapperBuilderCustomizer> customizerSupplier(Map<Class<?>, Class<?>> mixinsMap) {
         return new Supplier<>() {
             @Override
-            public ObjectMapperCustomizer get() {
-                return new ObjectMapperCustomizer() {
+            public JsonMapperBuilderCustomizer get() {
+                return new JsonMapperBuilderCustomizer() {
                     @Override
-                    public void customize(ObjectMapper objectMapper) {
+                    public void customize(JsonMapper.Builder objectMapper) {
                         for (var entry : mixinsMap.entrySet()) {
                             objectMapper.addMixIn(entry.getKey(), entry.getValue());
                         }
@@ -67,13 +63,4 @@ public class JacksonRecorder {
         };
     }
 
-    @RuntimeInit
-    public void clearCachesOnShutdown(ShutdownContext shutdownContext) {
-        shutdownContext.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                TypeFactory.defaultInstance().clearCache();
-            }
-        });
-    }
 }

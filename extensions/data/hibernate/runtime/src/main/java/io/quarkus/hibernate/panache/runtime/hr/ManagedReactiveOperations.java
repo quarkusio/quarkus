@@ -7,8 +7,6 @@ import java.util.stream.Stream;
 import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
-import org.hibernate.Session;
-import org.hibernate.StatelessSession;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;

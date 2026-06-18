@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
 import static io.quarkus.bootstrap.util.DependencyUtils.toAppArtifact;
 
 import java.nio.file.Files;

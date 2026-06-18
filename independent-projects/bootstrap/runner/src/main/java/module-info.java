@@ -16,7 +16,7 @@ module io.quarkus.bootstrap.runner {
     requires static org.crac;
 
     provides org.jboss.logmanager.ConfiguratorFactory with
-        io.quarkus.bootstrap.logging.EmptyLogConfiguratorFactory;
+            io.quarkus.bootstrap.logging.EmptyLogConfiguratorFactory;
     provides org.jboss.logmanager.LogContextInitializer with
-        io.quarkus.bootstrap.logging.InitialConfigurator;
+            io.quarkus.bootstrap.logging.InitialConfigurator;
 }

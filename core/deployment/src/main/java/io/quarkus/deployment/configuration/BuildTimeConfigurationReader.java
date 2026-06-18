@@ -1,7 +1,7 @@
 package io.quarkus.deployment.configuration;
 
-import static io.smallrye.config.ConfigMappings.propertyNamesMatcher;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
+import static io.smallrye.config.ConfigMappings.propertyNamesMatcher;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;

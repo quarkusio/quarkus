@@ -21,7 +21,7 @@ public class TestMultipleCommandsCalc {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("multi-cmd-calc-app",
             AppCommand.class, GreetCommand.class, CalcCommand.class, InfoCommand.class)
-            .setCommandLineParameters("calc", "-a", "5", "-b", "3");
+            .setCommandLineParameters("tmcc-calc", "-a", "5", "-b", "3");
 
     @Test
     public void testCalcCommand() {
@@ -29,18 +29,18 @@ public class TestMultipleCommandsCalc {
         Assertions.assertThat(config.getExitCode()).isZero();
     }
 
-    @CommandDefinition(name = "app", description = "Multi-command application", groupCommands = { GreetCommand.class,
+    @CommandDefinition(name = "tmcc-app", description = "Multi-command application", groupCommands = { GreetCommand.class,
             CalcCommand.class, InfoCommand.class })
     public static class AppCommand implements Command<CommandInvocation> {
 
         @Override
         public CommandResult execute(CommandInvocation invocation) {
-            invocation.println("Use a subcommand: greet, calc, info");
+            invocation.println("Use a subcommand: tmcc-greet, tmcc-calc, tmcc-info");
             return CommandResult.SUCCESS;
         }
     }
 
-    @CommandDefinition(name = "greet", description = "Greet someone")
+    @CommandDefinition(name = "tmcc-greet", description = "Greet someone")
     public static class GreetCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'n', name = "name", description = "Name to greet", defaultValue = "Stranger")
@@ -53,7 +53,7 @@ public class TestMultipleCommandsCalc {
         }
     }
 
-    @CommandDefinition(name = "calc", description = "Calculate sum of two numbers")
+    @CommandDefinition(name = "tmcc-calc", description = "Calculate sum of two numbers")
     public static class CalcCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'a', name = "a", description = "First number", defaultValue = "0")
@@ -69,7 +69,7 @@ public class TestMultipleCommandsCalc {
         }
     }
 
-    @CommandDefinition(name = "info", description = "Show application info")
+    @CommandDefinition(name = "tmcc-info", description = "Show application info")
     public static class InfoCommand implements Command<CommandInvocation> {
 
         @Override

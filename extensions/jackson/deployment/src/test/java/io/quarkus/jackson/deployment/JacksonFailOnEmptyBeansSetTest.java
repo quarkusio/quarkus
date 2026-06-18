@@ -6,10 +6,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
 
 public class JacksonFailOnEmptyBeansSetTest {
 
@@ -21,7 +19,7 @@ public class JacksonFailOnEmptyBeansSetTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void testFailOnEmptyBeans() throws JsonProcessingException {
+    public void testFailOnEmptyBeans() {
         Assertions.assertEquals("{}", objectMapper.writeValueAsString(new Pojo("dummy")));
     }
 

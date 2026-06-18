@@ -7,7 +7,6 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -30,17 +29,6 @@ import org.jboss.jandex.Type;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.SimpleObjectIdResolver;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -48,7 +36,6 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.impl.Reflections;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -57,7 +44,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -72,16 +58,28 @@ import io.quarkus.gizmo2.Reflection2Gizmo;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.jackson.JacksonMixin;
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.jackson.runtime.ConfigurationCustomizer;
 import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
 import io.quarkus.jackson.runtime.JacksonRecorder;
 import io.quarkus.jackson.runtime.JacksonSupport;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
-import io.quarkus.jackson.runtime.VertxHybridPoolObjectMapperCustomizer;
+import io.quarkus.jackson.runtime.VertxHybridPoolJsonFactoryBuilderCustomizer;
 import io.quarkus.jackson.runtime.graal.JacksonSerializerRegistrationFeature;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonNaming;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 public class JacksonProcessor {
 
@@ -102,19 +100,11 @@ public class JacksonProcessor {
 
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
 
-    private static final String TIME_MODULE = "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
-
-    private static final String JDK8_MODULE = "com.fasterxml.jackson.datatype.jdk8.Jdk8Module";
-
-    private static final String PARAMETER_NAMES_MODULE = "com.fasterxml.jackson.module.paramnames.ParameterNamesModule";
     private static final DotName JACKSON_MIXIN = DotName.createSimple(JacksonMixin.class.getName());
 
-    private static final MethodDesc OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC = MethodDesc.of(ObjectMapper.class,
-            "registerModule", ObjectMapper.class, Module.class);
+    private static final MethodDesc JSON_MAPPER_BUILDER_ADD_MODULE_METHOD_DESC = MethodDesc.of(JsonMapper.Builder.class,
+            "addModule", MapperBuilder.class, tools.jackson.databind.JacksonModule.class);
 
-    // this list can probably be enriched with more modules
-    private static final List<String> MODULES_NAMES_TO_AUTO_REGISTER = Arrays.asList(TIME_MODULE, JDK8_MODULE,
-            PARAMETER_NAMES_MODULE);
     private static final String[] EMPTY_STRING = new String[0];
 
     @Inject
@@ -125,12 +115,17 @@ public class JacksonProcessor {
 
     @BuildStep
     void unremovable(Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> producer,
-            BuildProducer<AdditionalBeanBuildItem> additionalProducer) {
+            BuildProducer<AdditionalBeanBuildItem> additionalProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         additionalProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConfigurationCustomizer.class));
 
         if (capabilities.isPresent(Capability.VERTX_CORE)) {
             producer.produce(UnremovableBeanBuildItem.beanTypes(ObjectMapper.class));
-            additionalProducer.produce(AdditionalBeanBuildItem.unremovableOf(VertxHybridPoolObjectMapperCustomizer.class));
+            additionalProducer
+                    .produce(AdditionalBeanBuildItem.unremovableOf(VertxHybridPoolJsonFactoryBuilderCustomizer.class));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder("io.vertx.core.json.jackson.v3.HybridJacksonPool")
+                            .methods().build());
         }
     }
 
@@ -363,20 +358,6 @@ public class JacksonProcessor {
                 .build());
     }
 
-    @BuildStep
-    void autoRegisterModules(BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
-        for (String module : MODULES_NAMES_TO_AUTO_REGISTER) {
-            registerModuleIfOnClassPath(module, classPathJacksonModules);
-        }
-    }
-
-    private void registerModuleIfOnClassPath(String moduleClassName,
-            BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
-        if (QuarkusClassLoader.isClassPresentAtRuntime(moduleClassName)) {
-            classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(moduleClassName));
-        }
-    }
-
     // Generate a ObjectMapperCustomizer bean that registers each serializer / deserializer as well as detected modules with the ObjectMapper
     @BuildStep
     void generateCustomizer(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
@@ -391,11 +372,11 @@ public class JacksonProcessor {
                 .withDebugInfo(false)
                 .withParameters(false);
         g.class_("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {
-            cc.implements_(ObjectMapperCustomizer.class);
+            cc.implements_(JsonMapperBuilderCustomizer.class);
             cc.defaultConstructor();
             cc.addAnnotation(Singleton.class);
             cc.method("customize", mc -> {
-                ParamVar objectMapperParam = mc.parameter("objectMapper", ObjectMapper.class);
+                ParamVar builderParam = mc.parameter("objectMapper", JsonMapper.Builder.class);
                 mc.returning(void.class);
                 mc.body(bc -> {
                     ClassDesc simpleModuleClassDesc = Reflection2Gizmo.classDescOf(SimpleModule.class);
@@ -410,7 +391,7 @@ public class JacksonProcessor {
                          * SimpleModule module = new SimpleModule("somename");
                          * module.addSerializer(Foo.class, new FooSerializer());
                          * module.addDeserializer(Foo.class, new FooDeserializer());
-                         * objectMapper.registerModule(module);
+                         * builder.addModule(module);
                          */
 
                         LocalVar simpleModuleInstance = bc.localVar("simpleModule",
@@ -429,7 +410,7 @@ public class JacksonProcessor {
                                         ClassMethodDesc.of(simpleModuleClassDesc, "addSerializer",
                                                 MethodTypeDesc.of(simpleModuleClassDesc,
                                                         ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
-                                                                JsonSerializer.class))),
+                                                                ValueSerializer.class))),
                                         simpleModuleInstance, targetClass, serializerInstance);
 
                             }
@@ -443,22 +424,22 @@ public class JacksonProcessor {
                                         ClassMethodDesc.of(simpleModuleClassDesc, "addDeserializer",
                                                 MethodTypeDesc.of(simpleModuleClassDesc,
                                                         ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
-                                                                JsonDeserializer.class))),
+                                                                ValueDeserializer.class))),
                                         simpleModuleInstance, targetClass, deserializerInstance);
 
                             }
                         }
 
                         bc.invokeVirtual(
-                                OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC,
-                                objectMapperParam, simpleModuleInstance);
+                                JSON_MAPPER_BUILDER_ADD_MODULE_METHOD_DESC,
+                                builderParam, simpleModuleInstance);
 
                     }
 
                     for (ClassPathJacksonModuleBuildItem classPathJacksonModule : classPathJacksonModules) {
                         bc.invokeVirtual(
-                                OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC,
-                                objectMapperParam, bc.new_(ClassDesc.of(classPathJacksonModule.getModuleClassName())));
+                                JSON_MAPPER_BUILDER_ADD_MODULE_METHOD_DESC,
+                                builderParam, bc.new_(ClassDesc.of(classPathJacksonModule.getModuleClassName())));
                     }
 
                     bc.return_();
@@ -466,7 +447,7 @@ public class JacksonProcessor {
             });
             cc.method("priority", mc -> {
                 mc.returning(int.class);
-                mc.body(bc -> bc.return_(ObjectMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
+                mc.body(bc -> bc.return_(JsonMapperBuilderCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
             });
         });
     }
@@ -514,7 +495,7 @@ public class JacksonProcessor {
         if (mixinsMap.isEmpty()) {
             return;
         }
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(ObjectMapperCustomizer.class)
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(JsonMapperBuilderCustomizer.class)
                 .scope(Singleton.class)
                 .supplier(recorder.customizerSupplier(mixinsMap))
                 .done());
@@ -529,12 +510,6 @@ public class JacksonProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.supplier(determinePropertyNamingStrategyClassName(jacksonBuildTimeConfig)))
                 .done();
-    }
-
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    public void clearCachesOnShutdown(JacksonRecorder recorder, ShutdownContextBuildItem shutdown) {
-        recorder.clearCachesOnShutdown(shutdown);
     }
 
     private Optional<String> determinePropertyNamingStrategyClassName(JacksonBuildTimeConfig jacksonBuildTimeConfig) {

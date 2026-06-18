@@ -9,32 +9,50 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonFactoryBuilderCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonFactoryBuilder;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @ApplicationScoped
 public class ObjectMapperProducer {
+
     @DefaultBean
     @Singleton
     @Produces
-    public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
-        for (ObjectMapperCustomizer customizer : sortedCustomizers) {
-            customizer.customize(objectMapper);
+    public ObjectMapper objectMapper(Instance<JsonMapperBuilderCustomizer> customizers,
+            Instance<JsonFactoryBuilderCustomizer> factoryCustomizers) {
+        JsonMapper.Builder builder = JsonMapper.builder(createJsonFactory(factoryCustomizers));
+        List<JsonMapperBuilderCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
+        for (JsonMapperBuilderCustomizer customizer : sortedCustomizers) {
+            customizer.customize(builder);
         }
-        return objectMapper;
+        return builder.build();
     }
 
-    private List<ObjectMapperCustomizer> sortCustomizersInDescendingPriorityOrder(
-            Iterable<ObjectMapperCustomizer> customizers) {
-        List<ObjectMapperCustomizer> sortedCustomizers = new ArrayList<>();
-        for (ObjectMapperCustomizer customizer : customizers) {
+    private List<JsonMapperBuilderCustomizer> sortCustomizersInDescendingPriorityOrder(
+            Iterable<JsonMapperBuilderCustomizer> customizers) {
+        List<JsonMapperBuilderCustomizer> sortedCustomizers = new ArrayList<>();
+        for (JsonMapperBuilderCustomizer customizer : customizers) {
             sortedCustomizers.add(customizer);
         }
         Collections.sort(sortedCustomizers);
         return sortedCustomizers;
+    }
+
+    private static JsonFactory createJsonFactory(Iterable<JsonFactoryBuilderCustomizer> customizers) {
+        JsonFactoryBuilder factoryBuilder = JsonFactory.builder();
+        List<JsonFactoryBuilderCustomizer> sortedCustomizers = new ArrayList<>();
+        for (JsonFactoryBuilderCustomizer customizer : customizers) {
+            sortedCustomizers.add(customizer);
+        }
+        Collections.sort(sortedCustomizers);
+        for (JsonFactoryBuilderCustomizer customizer : sortedCustomizers) {
+            customizer.customize(factoryBuilder);
+        }
+        return factoryBuilder.build();
     }
 }

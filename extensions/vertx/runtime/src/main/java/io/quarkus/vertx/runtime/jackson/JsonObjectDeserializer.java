@@ -1,30 +1,37 @@
+/*
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+ */
 package io.quarkus.vertx.runtime.jackson;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDelegatingDeserializer;
-import com.fasterxml.jackson.databind.util.Converter;
-import com.fasterxml.jackson.databind.util.StdConverter;
-
 import io.vertx.core.json.JsonObject;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
-public class JsonObjectDeserializer extends StdDelegatingDeserializer<JsonObject> {
+/**
+ * Copied from {@code io.vertx.core.json.jackson.JsonObjectDeserializer} as that class is package private
+ */
+public class JsonObjectDeserializer extends StdDeserializer<JsonObject> {
+
+    private static final TypeReference<Map<String, Object>> TYPE_REF = new TypeReference<>() {
+    };
 
     public JsonObjectDeserializer() {
-        super(new StdConverter<Map<?, ?>, JsonObject>() {
-            @Override
-            public JsonObject convert(Map map) {
-                return new JsonObject(map);
-            }
-        });
+        super(JsonObject.class);
     }
 
     @Override
-    protected StdDelegatingDeserializer<JsonObject> withDelegate(Converter<Object, JsonObject> converter,
-            JavaType delegateType,
-            JsonDeserializer<?> delegateDeserializer) {
-        return new StdDelegatingDeserializer<>(converter, delegateType, delegateDeserializer);
+    public JsonObject deserialize(JsonParser p, DeserializationContext ctxt) {
+        return new JsonObject(p.<Map<String, Object>> readValueAs(TYPE_REF));
     }
 }

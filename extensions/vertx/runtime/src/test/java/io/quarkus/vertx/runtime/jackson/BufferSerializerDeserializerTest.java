@@ -6,11 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
 import io.vertx.core.buffer.Buffer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Buffers should be serialized as Base64 URL-encoded strings.
@@ -21,11 +20,12 @@ public class BufferSerializerDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new ObjectMapper();
+        JsonMapper.Builder builder = JsonMapper.builder();
         SimpleModule module = new SimpleModule("test-module");
         module.addSerializer(Buffer.class, new BufferSerializer());
         module.addDeserializer(Buffer.class, new BufferDeserializer());
-        mapper.registerModule(module);
+        builder.addModule(module);
+        mapper = builder.build();
     }
 
     @Test
@@ -72,7 +72,7 @@ public class BufferSerializerDeserializerTest {
     @Test
     public void deserializeInvalidBase64() {
         assertThatThrownBy(() -> mapper.readValue("\"not!valid!base64!!!\"", Buffer.class))
-                .isInstanceOf(InvalidFormatException.class)
+                .isInstanceOf(tools.jackson.databind.exc.InvalidFormatException.class)
                 .hasMessageContaining("Expected a base64 encoded byte array");
     }
 

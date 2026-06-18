@@ -6,9 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Byte arrays are serialized as Base64 URL-encoded strings (RFC-7493 compliant, not standard Base64).
@@ -19,11 +20,12 @@ public class ByteArraySerializerDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new ObjectMapper();
+        JsonMapper.Builder builder = JsonMapper.builder();
         SimpleModule module = new SimpleModule("test-module");
         module.addSerializer(byte[].class, new ByteArraySerializer());
         module.addDeserializer(byte[].class, new ByteArrayDeserializer());
-        mapper.registerModule(module);
+        builder.addModule(module);
+        mapper = builder.build();
     }
 
     @Test

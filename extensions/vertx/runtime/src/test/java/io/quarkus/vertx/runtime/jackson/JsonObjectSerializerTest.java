@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 public class JsonObjectSerializerTest {
 
@@ -17,11 +17,12 @@ public class JsonObjectSerializerTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new ObjectMapper();
+        JsonMapper.Builder builder = JsonMapper.builder();
         SimpleModule module = new SimpleModule("test-module");
         module.addSerializer(JsonObject.class, new JsonObjectSerializer());
         module.addSerializer(JsonArray.class, new JsonArraySerializer());
-        mapper.registerModule(module);
+        builder.addModule(module);
+        mapper = builder.build();
     }
 
     @Test

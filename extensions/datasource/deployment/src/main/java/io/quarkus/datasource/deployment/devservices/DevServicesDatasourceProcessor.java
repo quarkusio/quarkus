@@ -3,6 +3,7 @@ package io.quarkus.datasource.deployment.devservices;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceFeatureRequirementBuildItem;
 import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
@@ -61,6 +63,7 @@ public class DevServicesDatasourceProcessor {
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            List<DataSourceDefinedBuildItem> definedDatasources,
             LaunchModeBuildItem launchMode,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
             List<DataSourceFeatureRequirementBuildItem> featureRequirements,
@@ -102,12 +105,18 @@ public class DevServicesDatasourceProcessor {
 
         Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
 
-        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
+        Set<String> processedDatasources = new HashSet<>();
+        for (DataSourceDefinedBuildItem definedDatasource : definedDatasources) {
+            if (!processedDatasources.add(definedDatasource.getName())) {
+                continue;
+            }
+            String name = definedDatasource.getName();
+            DataSourceBuildTimeConfig config = dataSourcesBuildTimeConfig.dataSources().get(name);
             Set<DatabaseFeature> features = featuresByDatasource
-                    .getOrDefault(entry.getKey(), Collections.emptySet());
-            DevServicesResultBuildItem devService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
-                    installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
-                    devDBProviderMap, entry.getValue(), configHandlersByDbType,
+                    .getOrDefault(name, Collections.emptySet());
+            DevServicesResultBuildItem devService = startDevDb(name, capabilities,
+                    definedDatasource,
+                    devDBProviderMap, config, configHandlersByDbType,
                     dockerStatusBuildItem, composeProjectBuildItem,
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
                     devServicesConfig, useSharedNetwork, newDatasourceConfigs, features);
@@ -156,9 +165,7 @@ public class DevServicesDatasourceProcessor {
     private DevServicesResultBuildItem startDevDb(
             String dbName,
             Capabilities capabilities,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DefaultDataSourceDbKindBuildItem> installedDrivers,
-            boolean hasNamedDatasources,
+            DataSourceDefinedBuildItem definition,
             Map<String, DevServicesDatasourceProvider> devDBProviders,
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
@@ -175,17 +182,7 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
-        Optional<String> maybeDefaultDbKind = getDefaultDbKind(dbName, curateOutcomeBuildItem, installedDrivers,
-                hasNamedDatasources,
-                dataSourceBuildTimeConfig);
-
-        if (maybeDefaultDbKind.isEmpty()) {
-            //nothing we can do
-            log.warn("Unable to determine a database type for " + dataSourcePrettyName);
-            return null;
-        }
-
-        String defaultDbKind = maybeDefaultDbKind.get();
+        String defaultDbKind = definition.getDbKind();
 
         DevServicesDatasourceProvider devDbProvider = devDBProviders.get(defaultDbKind);
         List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers = configurationHandlerBuildItems
@@ -281,18 +278,6 @@ public class DevServicesDatasourceProcessor {
                         + " (" + defaultDbKind + ") starting:",
                 consoleInstalledBuildItem,
                 loggingSetupBuildItem);
-    }
-
-    private static Optional<String> getDefaultDbKind(String dbName, CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DefaultDataSourceDbKindBuildItem> installedDrivers, boolean hasNamedDatasources,
-            DataSourceBuildTimeConfig dataSourceBuildTimeConfig) {
-        Boolean enabled = dataSourceBuildTimeConfig.devservices().enabled().orElse(!hasNamedDatasources);
-
-        return DefaultDataSourceDbKindBuildItem.resolve(
-                dataSourceBuildTimeConfig.dbKind(),
-                installedDrivers,
-                (!DataSourceUtil.isDefault(dbName)) || enabled,
-                curateOutcomeBuildItem);
     }
 
     private static String getDataSourcePrettyName(String dbName) {

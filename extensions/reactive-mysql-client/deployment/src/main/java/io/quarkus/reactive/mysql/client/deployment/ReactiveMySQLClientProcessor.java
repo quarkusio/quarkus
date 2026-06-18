@@ -8,7 +8,6 @@ import static java.util.stream.Collectors.toSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -32,11 +31,10 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -50,14 +48,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolSupport;
 import io.quarkus.reactive.mysql.client.runtime.MySQLServiceBindingConverter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -85,20 +81,18 @@ class ReactiveMySQLClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<DataSourceDefinedBuildItem> definedDataSources) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
         Stream.Builder<String> mySQLPoolNamesBuilder = Stream.builder();
-        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-
-            if (!isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+        for (DataSourceDefinedBuildItem dataSource : definedDataSources) {
+            if (dataSource.getParadigm() != ProgrammingParadigm.REACTIVE
+                    || (!DatabaseKind.isMySQL(dataSource.getDbKind())
+                            && !DatabaseKind.isMariaDB(dataSource.getDbKind()))) {
                 continue;
             }
+            String dataSourceName = dataSource.getName();
 
             createPool(recorder, vertx, eventLoopCount, shutdown, mySQLPool, syntheticBeans, dataSourceName);
 
@@ -181,15 +175,12 @@ class ReactiveMySQLClientProcessor {
             Capabilities capabilities,
             BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<DataSourceDefinedBuildItem> definedDataSources) {
         if (!capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
             return;
         }
 
-        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, defaultDataSourceDbKindBuildItems,
-                curateOutcomeBuildItem)) {
+        if (!hasPools(definedDataSources)) {
             return;
         }
 
@@ -240,50 +231,11 @@ class ReactiveMySQLClientProcessor {
         syntheticBeans.produce(mutinyMySQLPoolConfigurator.done());
     }
 
-    private static boolean isReactiveMySQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
-        DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                .dataSources().get(dataSourceName).reactive();
-
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
-                defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
-                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
-                curateOutcomeBuildItem);
-        if (!dbKind.isPresent()) {
-            return false;
-        }
-
-        if ((!DatabaseKind.isMySQL(dbKind.get())
-                && !DatabaseKind.isMariaDB(dbKind.get()))
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean hasPools(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        if (isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                DataSourceUtil.DEFAULT_DATASOURCE_NAME, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
-            return true;
-        }
-
-        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            if (isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
-                return true;
-            }
-        }
-
-        return false;
+    private static boolean hasPools(List<DataSourceDefinedBuildItem> definedDataSources) {
+        return definedDataSources.stream()
+                .anyMatch(ds -> ds.getParadigm() == ProgrammingParadigm.REACTIVE
+                        && (DatabaseKind.isMySQL(ds.getDbKind())
+                                || DatabaseKind.isMariaDB(ds.getDbKind())));
     }
 
     private static class MySQLPoolCreatorBeanClassPredicate implements Predicate<Set<Type>> {

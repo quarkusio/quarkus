@@ -37,6 +37,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -67,10 +68,12 @@ import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
+import io.quarkus.liquibase.runtime.LiquibaseFactoryUtil;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.PathFilter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.changelog.ChangeLogParameters;
@@ -96,6 +99,26 @@ class LiquibaseProcessor {
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
     private static final DotName DATA_TYPE_INFO_ANNOTATION = DotName.createSimple(DataTypeInfo.class.getName());
+
+    @BuildStep
+    void collectImplicitDataSourceRequestsFromConfiguration(
+            LiquibaseBuildTimeConfig liquibaseBuildTimeConfig,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        for (String dsName : liquibaseBuildTimeConfig.datasources().keySet()) {
+            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
+            //   For now, since we can't trust keySet for the default datasource, we'll ignore it.
+            if (DataSourceUtil.isDefault(dsName)) {
+                continue;
+            }
+            dataSourceRequests.produce(new DataSourceRequestBuildItem(dsName, ProgrammingParadigm.BLOCKING,
+                    String.format("Configuration '%s'", LiquibaseFactoryUtil.liquibasePropertyKey(dsName, "*"))));
+        }
+
+        // We don't derive requests from injection points of datasource related beans,
+        // because those could just be referencing custom beans,
+        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
+        // TODO find a way to collect injection points for a given DS that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
+    }
 
     @BuildStep
     FeatureBuildItem feature() {

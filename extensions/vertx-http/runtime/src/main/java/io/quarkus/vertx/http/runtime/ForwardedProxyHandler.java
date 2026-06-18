@@ -188,7 +188,7 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
     }
 
     private void handleForwardedServerRequest(HttpServerRequest event, TrustedProxyCheck proxyCheck) {
-        delegate.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions, proxyCheck));
+        ForwardedServerRequestWrapper.handleOrReject(event, forwardingProxyOptions, proxyCheck, delegate);
     }
 
     private static void logInvalidIpAddress(String hostName) {

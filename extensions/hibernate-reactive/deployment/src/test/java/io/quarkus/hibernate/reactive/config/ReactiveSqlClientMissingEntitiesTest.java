@@ -27,7 +27,11 @@ public class ReactiveSqlClientMissingEntitiesTest {
             .setExcludedDependencies(Set.of(
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client"),
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client-deployment")))
-            .overrideConfigKey("quarkus.devservices.enabled", "false");
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            .assertException(t -> assertThat(t)
+                    .hasMessageContainingAll(
+                            "persistence unit '<default>' cannot be created",
+                            "Cannot infer the database kind", "no reactive SQL client extension"));
 
     @Test
     public void test() {

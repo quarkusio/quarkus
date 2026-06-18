@@ -30,7 +30,7 @@ jobs:
       uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
       with:
         distribution: temurin
-        java-version: 17
+        java-version: 21
 
     - name: Generate cache key
       id: cache-key

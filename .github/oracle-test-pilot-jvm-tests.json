@@ -6,7 +6,7 @@
             "db-version": "19",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
-            "java-version": 17
+            "java-version": 21
         },
         {
             "category": "19c-atps",
@@ -14,7 +14,7 @@
             "db-version": "19",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
-            "java-version": 17
+            "java-version": 21
         },
         {
             "category": "21c",
@@ -22,7 +22,7 @@
             "db-version": "21",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
-            "java-version": 17
+            "java-version": 21
         },
         {
             "category": "26ai",
@@ -30,7 +30,7 @@
             "db-version": "23.26",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
-            "java-version": 17
+            "java-version": 21
         },
         {
             "category": "26ai-atps",
@@ -38,7 +38,7 @@
             "db-version": "23.26",
             "timeout": 20,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle",
-            "java-version": 17
+            "java-version": 21
         }
     ]
 }

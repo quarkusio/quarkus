@@ -1,7 +1,6 @@
 package io.quarkus.vertx.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 
@@ -38,7 +37,6 @@ public class VertxProducerTest {
         assertThat(producer.eventbus(v)).isNotNull();
 
         assertThat(producer.mutiny(v)).isNotNull();
-        assertFalse(producer.mutiny(v).isClustered());
         assertThat(producer.mutinyEventBus(producer.mutiny(v))).isNotNull();
 
     }

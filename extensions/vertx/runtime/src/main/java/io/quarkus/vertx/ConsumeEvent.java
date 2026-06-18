@@ -105,14 +105,6 @@ public @interface ConsumeEvent {
     String value() default "";
 
     /**
-     *
-     * @return {@code true} if the address should not be propagated across the cluster
-     * @see io.vertx.core.eventbus.EventBus#localConsumer(String)
-     */
-    boolean local() default true;
-
-    /**
-     *
      * @return {@code true} if the consumer should be invoked as a blocking operation using a worker thread
      * @see io.vertx.core.Vertx#executeBlocking(Callable, boolean)
      */

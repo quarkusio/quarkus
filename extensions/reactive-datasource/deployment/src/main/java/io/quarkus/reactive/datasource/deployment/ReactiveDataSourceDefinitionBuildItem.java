@@ -1,40 +1,36 @@
-package io.quarkus.agroal.deployment;
+package io.quarkus.reactive.datasource.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 
 /**
- * An aggregated build item holding the build time configuration for a given datasource,
- * including both the build and the runtime datasource config.
+ * The first build item created after the decision was taken to define a datasource.
+ * <p>
+ * It holds build-time configuration and various datasource-related information that is resolved early.
  */
-public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
+final class ReactiveDataSourceDefinitionBuildItem extends MultiBuildItem {
 
     private final String name;
 
     private final DataSourceBuildTimeConfig dataSourceConfig;
 
-    private final DataSourceJdbcBuildTimeConfig jdbcConfig;
+    private final DataSourceReactiveBuildTimeConfig reactiveConfig;
 
     private final String dbKind;
-
-    private final String resolvedDriverClass;
-
     private final Optional<String> dbVersion;
 
-    AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
-            DataSourceJdbcBuildTimeConfig jdbcConfig,
+    ReactiveDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+            DataSourceReactiveBuildTimeConfig reactiveConfig,
             String dbKind,
-            String resolvedDriverClass,
             Optional<String> dbVersion) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
-        this.jdbcConfig = jdbcConfig;
+        this.reactiveConfig = reactiveConfig;
         this.dbKind = dbKind;
-        this.resolvedDriverClass = resolvedDriverClass;
         this.dbVersion = dbVersion;
     }
 
@@ -46,8 +42,8 @@ public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBui
         return dataSourceConfig;
     }
 
-    public DataSourceJdbcBuildTimeConfig getJdbcConfig() {
-        return jdbcConfig;
+    public DataSourceReactiveBuildTimeConfig getReactiveConfig() {
+        return reactiveConfig;
     }
 
     public boolean isDefault() {
@@ -56,10 +52,6 @@ public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBui
 
     public String getDbKind() {
         return dbKind;
-    }
-
-    public String getResolvedDriverClass() {
-        return resolvedDriverClass;
     }
 
     public Optional<String> getDbVersion() {

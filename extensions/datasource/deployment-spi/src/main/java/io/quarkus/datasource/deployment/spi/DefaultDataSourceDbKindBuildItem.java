@@ -17,13 +17,17 @@ import io.quarkus.maven.dependency.ResolvedDependency;
  */
 public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
 
+    /**
+     * @deprecated Use {@link DataSourceDbKindResolverBuildItem}
+     */
+    @Deprecated(since = "3.38", forRemoval = true)
     public static final String TEST = "test";
     private final String dbKind;
     private final Class<?> callerClass;
     private volatile String scope;
 
     public DefaultDataSourceDbKindBuildItem(String dbKind) {
-        this.dbKind = dbKind;
+        this.dbKind = DatabaseKind.normalize(dbKind);
         String callerClassName = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass()
                 .getCanonicalName();
         try {
@@ -54,6 +58,11 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
         return scope;
     }
 
+    /**
+     * @deprecated Use {@link DataSourceDbKindResolverBuildItem}, or retrieve the db-kind
+     *             from {@link DataSourceDefinedBuildItem} directly.
+     */
+    @Deprecated(since = "3.38", forRemoval = true)
     public static Optional<String> resolve(Optional<String> configured,
             List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
             boolean enableImplicitResolution,

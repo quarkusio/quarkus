@@ -6,10 +6,11 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 
 /**
- * An aggregated build item holding the build time configuration for a given datasource,
- * including both the build and the runtime datasource config.
+ * The first build item created after the decision was taken to define a datasource.
+ * <p>
+ * It holds build-time configuration and various datasource-related information that is resolved early.
  */
-public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
+public final class JdbcDataSourceDefinitionBuildItem extends MultiBuildItem {
 
     private final String name;
 
@@ -21,7 +22,7 @@ public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBui
 
     private final String resolvedDriverClass;
 
-    AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+    JdbcDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceJdbcBuildTimeConfig jdbcConfig,
             String dbKind,
             String resolvedDriverClass) {

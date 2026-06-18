@@ -21,7 +21,7 @@ import com.mysql.cj.jdbc.ha.ReplicationConnection;
 import com.mysql.cj.jdbc.result.ResultSetInternalMethods;
 import com.mysql.cj.protocol.Resultset;
 
-import io.quarkus.agroal.deployment.AggregatedDataSourceBuildTimeConfigBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceDefinitionBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.agroal.spi.JdbcPropertyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -140,14 +140,14 @@ public class JDBCMySQLProcessor {
      */
     @BuildStep
     void disableBuiltInOpenTelemetry(BuildProducer<JdbcPropertyBuildItem> properties,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> datasources,
+            List<JdbcDataSourceDefinitionBuildItem> datasources,
             Capabilities capabilities) {
         // If OpenTelemetry Tracer or Agroal capabilities are missing, skip this step
         if (capabilities.isMissing(Capability.OPENTELEMETRY_TRACER) ||
                 capabilities.isMissing(Capability.AGROAL)) {
             return;
         }
-        for (AggregatedDataSourceBuildTimeConfigBuildItem ds : datasources) {
+        for (JdbcDataSourceDefinitionBuildItem ds : datasources) {
             if (ds.getDbKind().equals(DatabaseKind.MYSQL)) {
                 // NOTE: Checking if the "quarkus.datasource.jdbc.telemetry=true" property is set doesn't work because
                 // the driver checks for the OpenTelemetry classes in the classpath

@@ -5,7 +5,12 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 
-final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
+/**
+ * The first build item created after the decision was taken to define a datasource.
+ * <p>
+ * It holds build-time configuration and various datasource-related information that is resolved early.
+ */
+final class ReactiveDataSourceDefinitionBuildItem extends MultiBuildItem {
 
     private final String name;
 
@@ -15,7 +20,7 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     private final String dbKind;
 
-    AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+    ReactiveDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceReactiveBuildTimeConfig reactiveConfig,
             String dbKind) {
         this.name = name;

@@ -5,12 +5,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -23,12 +21,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
 import io.quarkus.reactive.oracle.client.runtime.OracleServiceBindingConverter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -50,18 +46,16 @@ class ReactiveOracleClientProcessor {
             ShutdownContextBuildItem shutdown,
             Optional<TlsRegistryBuildItem> tlsRegistryBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<DataSourceDefinedBuildItem> definedDataSources) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_ORACLE_CLIENT));
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            if (!isReactiveOraclePoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+        for (DataSourceDefinedBuildItem dataSource : definedDataSources) {
+            if (!dataSource.getParadigms().contains(ProgrammingParadigm.REACTIVE)
+                    || !DatabaseKind.isOracle(dataSource.getDbKind())) {
                 continue;
             }
+            String dataSourceName = dataSource.getName();
 
             Function<SyntheticCreationalContext<Pool>, Pool> poolFunction = recorder.configureOraclePool(vertx.getVertx(),
                     eventLoopCount.getEventLoopCount(), dataSourceName, shutdown,
@@ -94,31 +88,5 @@ class ReactiveOracleClientProcessor {
                             OracleServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.ORACLE));
-    }
-
-    private static boolean isReactiveOraclePoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
-        DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                .dataSources().get(dataSourceName).reactive();
-
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
-                defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
-                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
-                curateOutcomeBuildItem);
-        if (!dbKind.isPresent()) {
-            return false;
-        }
-
-        if (!DatabaseKind.isOracle(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
-            return false;
-        }
-
-        return true;
     }
 }

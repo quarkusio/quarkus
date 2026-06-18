@@ -47,6 +47,7 @@ import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -68,9 +69,11 @@ import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
+import io.quarkus.flyway.runtime.FlywayContainerUtil;
 import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 
 @BuildSteps(onlyIf = FlywayEnabled.class)
 class FlywayProcessor {
@@ -108,6 +111,27 @@ class FlywayProcessor {
                     .build();
             reflectiveHierarchyProducer.produce(reflectiveHierarchyItem);
         }
+    }
+
+    @BuildStep
+    void collectImplicitDataSourceRequestsFromConfiguration(
+            FlywayBuildTimeConfig flywayBuildTimeConfig,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        for (String dsName : flywayBuildTimeConfig.datasources().keySet()) {
+            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
+            //   For now, since we can't trust keySet for the default datasource, we're ignoring it.
+            if (DataSourceUtil.isDefault(dsName)) {
+                continue;
+            }
+            dataSourceRequests.produce(new DataSourceRequestBuildItem(dsName,
+                    ProgrammingParadigm.BLOCKING,
+                    String.format("Configuration '%s'", FlywayContainerUtil.flywayPropertyKey(dsName, "*"))));
+        }
+
+        // We don't derive requests from injection points of datasource related beans,
+        // because those could just be referencing custom beans,
+        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
+        // TODO find a way to collect injection points for a given DS that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
     }
 
     @Record(STATIC_INIT)

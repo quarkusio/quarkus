@@ -102,20 +102,10 @@ public class ContainerImages {
     private static final Pattern RUN_JAVA_IMAGE_MATCHER = Pattern
             .compile("^registry\\.access\\.redhat\\.com/ubi\\d+/openjdk-\\d+-runtime(?::[\\w.\\-]+)?$");
 
-    // UBI 8 OpenJDK 17 Runtime - https://catalog.redhat.com/software/containers/ubi8/openjdk-17-runtime/618bdc5f843af1624c4e4ba8
-    public static final String UBI8_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi8/openjdk-17-runtime";
-    public static final String UBI8_JAVA_17_VERSION = UBI8_JAVA_VERSION;
-    public static final String UBI8_JAVA_17 = UBI8_JAVA_17_IMAGE_NAME + ":" + UBI8_JAVA_17_VERSION;
-
     // UBI 8 OpenJDK 21 Runtime - https://catalog.redhat.com/software/containers/ubi8/openjdk-21-runtime/653fd184292263c0a2f14d69
     public static final String UBI8_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi8/openjdk-21-runtime";
     public static final String UBI8_JAVA_21_VERSION = UBI8_JAVA_VERSION;
     public static final String UBI8_JAVA_21 = UBI8_JAVA_21_IMAGE_NAME + ":" + UBI8_JAVA_21_VERSION;
-
-    // UBI 9 OpenJDK 17 Runtime - https://catalog.redhat.com/software/containers/ubi9/openjdk-17-runtime/61ee7d45384a3eb331996bee
-    public static final String UBI9_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17-runtime";
-    public static final String UBI9_JAVA_17_VERSION = UBI9_JAVA_VERSION;
-    public static final String UBI9_JAVA_17 = UBI9_JAVA_17_IMAGE_NAME + ":" + UBI9_JAVA_17_VERSION;
 
     // UBI 9 OpenJDK 21 Runtime - https://catalog.redhat.com/software/containers/ubi9/openjdk-21-runtime/6501ce769a0d86945c422d5f
     public static final String UBI9_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-21-runtime";
@@ -161,11 +151,6 @@ public class ContainerImages {
     public static final String QUARKUS_BINARY_S2I_IMAGE_NAME = UBI10_QUARKUS_BINARY_S2I_IMAGE_NAME;
     public static final String QUARKUS_BINARY_S2I_VERSION = UBI10_QUARKUS_BINARY_S2I_VERSION;
     public static final String QUARKUS_BINARY_S2I = UBI10_QUARKUS_BINARY_S2I;
-
-    // Java 17 Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-17/61ee7c26ed74b2ffb22b07f6
-    public static final String S2I_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17";
-    public static final String S2I_JAVA_17_VERSION = UBI9_JAVA_VERSION;
-    public static final String S2I_JAVA_17 = S2I_JAVA_17_IMAGE_NAME + ":" + S2I_JAVA_17_VERSION;
 
     // Java Source To Image - https://catalog.redhat.com/en/software/containers/ubi10/openjdk-21/690ca3318f730aed0b1497fd
     public static final String S2I_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi10/openjdk-21";
@@ -214,11 +199,7 @@ public class ContainerImages {
             return UBI10_JAVA_25;
         }
 
-        if (version.isJava21OrHigher() == Status.TRUE) {
-            return UBI10_JAVA_21;
-        }
-
-        return UBI9_JAVA_17;
+        return UBI10_JAVA_21;
     }
 
     public static boolean containsRunJava(String baseJvmImage) {

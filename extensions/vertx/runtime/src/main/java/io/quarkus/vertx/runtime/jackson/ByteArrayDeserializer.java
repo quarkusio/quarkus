@@ -22,7 +22,7 @@ import tools.jackson.databind.exc.InvalidFormatException;
  */
 public class ByteArrayDeserializer extends StdDeserializer<byte[]> {
 
-    ByteArrayDeserializer() {
+    public ByteArrayDeserializer() {
         super(byte[].class);
     }
 

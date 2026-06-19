@@ -14,19 +14,15 @@ import java.util.Scanner;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public abstract class DevUIBuildTimeDataTest {
     private static final Logger log = Logger.getLogger(DevUIBuildTimeDataTest.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final JsonFactory factory = mapper.getFactory();
     private final String namespace;
 
     private URI uri;
@@ -75,12 +71,7 @@ public abstract class DevUIBuildTimeDataTest {
     }
 
     protected JsonNode toJsonNode(String json) {
-        try {
-            JsonParser parser = factory.createParser(json);
-            return mapper.readTree(parser);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        return mapper.readTree(json);
     }
 
     private String readDataFromUrl() throws IOException {

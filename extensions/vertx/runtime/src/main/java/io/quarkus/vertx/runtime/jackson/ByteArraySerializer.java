@@ -21,7 +21,7 @@ import tools.jackson.databind.ser.std.StdSerializer;
  */
 public class ByteArraySerializer extends StdSerializer<byte[]> {
 
-    ByteArraySerializer() {
+    public ByteArraySerializer() {
         super(byte[].class);
     }
 

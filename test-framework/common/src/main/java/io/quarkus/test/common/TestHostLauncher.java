@@ -18,7 +18,7 @@ public class TestHostLauncher implements ArtifactLauncher {
     private String previousHost;
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         Config config = ConfigProvider.getConfig();
         // set 'quarkus.http.host' to ensure that RestAssured targets the proper host
         previousHost = System.setProperty("quarkus.http.host", config.getValue("quarkus.http.test-host", String.class));
@@ -34,7 +34,7 @@ public class TestHostLauncher implements ArtifactLauncher {
             port = config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
             protocol = "http";
         }
-        return Optional.of(new ListeningAddress(port, protocol));
+        return new ListeningAddresses(Optional.of(new ListeningAddress(port, protocol)), Optional.empty());
     }
 
     @Override

@@ -90,19 +90,28 @@ public final class LauncherUtil {
      * listening on.
      * If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
-    static Optional<ListeningAddress> waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+    static ListeningAddresses waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
         ensureProcessIsAlive(quarkusProcess);
 
         CountDownLatch signal = new CountDownLatch(1);
         AtomicReference<ListeningAddress> resultReference = new AtomicReference<>();
+        AtomicReference<ListeningAddress> managementResultReference = new AtomicReference<>();
         CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
-                Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
+                Duration.ofSeconds(waitTimeSeconds), signal, resultReference, managementResultReference);
         new Thread(captureListeningDataReader, "capture-listening-data").start();
         try {
             signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
             ListeningAddress result = resultReference.get();
             if (result != null) {
-                return result.port() != null && result.protocol() != null ? Optional.of(result) : Optional.empty();
+                Optional<ListeningAddress> address = result.port() != null && result.protocol() != null
+                        ? Optional.of(result)
+                        : Optional.empty();
+                ListeningAddress managementResult = managementResultReference.get();
+                Optional<ListeningAddress> managementAddress = managementResult != null
+                        && managementResult.port() != null && managementResult.protocol() != null
+                                ? Optional.of(managementResult)
+                                : Optional.empty();
+                return new ListeningAddresses(address, managementAddress);
             }
             // a null result means that we could not determine the status of the process so we need to abort testing
             destroyProcess(quarkusProcess);
@@ -245,15 +254,20 @@ public final class LauncherUtil {
         private final Duration waitTime;
         private final CountDownLatch signal;
         private final AtomicReference<ListeningAddress> resultReference;
+        private final AtomicReference<ListeningAddress> managementResultReference;
         private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
+        private final Pattern managementListeningRegex = Pattern
+                .compile("Management interface listening on (https?)://[^:]*:(\\d+)");
         private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
-                AtomicReference<ListeningAddress> resultReference) {
+                AtomicReference<ListeningAddress> resultReference,
+                AtomicReference<ListeningAddress> managementResultReference) {
             this.processOutput = processOutput;
             this.waitTime = waitTime;
             this.signal = signal;
             this.resultReference = resultReference;
+            this.managementResultReference = managementResultReference;
         }
 
         @Override
@@ -277,6 +291,13 @@ public final class LauncherUtil {
                         if (startedRegex.matcher(line).matches()) {
                             timeStarted = System.currentTimeMillis();
                             started = true;
+                        }
+
+                        Matcher managementMatcher = managementListeningRegex.matcher(line);
+                        if (managementMatcher.find()) {
+                            managementResultReference.set(
+                                    new ListeningAddress(Integer.valueOf(managementMatcher.group(2)),
+                                            managementMatcher.group(1)));
                         }
 
                         Matcher regexMatcher = listeningRegex.matcher(line);

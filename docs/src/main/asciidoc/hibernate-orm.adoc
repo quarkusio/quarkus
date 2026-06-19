@@ -83,14 +83,12 @@ then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 .Example `{config-file}`
 ----
-quarkus.datasource.db-kind = postgresql <1>
-
-%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.username = hibernate <1>
 %prod.quarkus.datasource.password = hibernate
 %prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 %prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
-<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode. Setting `db-kind` is only required if there is more than one database extension on the classpath.
 <2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on <<dev-mode,convenient defaults in tests / dev mode>>.
 
 Note that configuration properties for the Hibernate ORM Quarkus extension are not the same ones as in your typical Hibernate ORM configuration file.
@@ -100,7 +98,15 @@ Also, Quarkus will set many Hibernate ORM configuration settings automatically, 
 
 For a list of the items that you can set in `{config-file}`, see <<configuration-reference>>.
 
-An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
+A persistence unit (and its `EntityManagerFactory`) will be created when Quarkus detects that one is needed.
+This happens when any of the following conditions is met:
+
+* JPA entities are detected in the application (the default persistence unit is created automatically).
+* Hibernate ORM configuration properties are set (e.g. `quarkus.hibernate-orm.schema-management.strategy`).
+* A Hibernate ORM bean is injected (e.g. `EntityManager`, `Session`, `SessionFactory`).
+
+Similarly, the datasource that the persistence unit points to is created automatically when it is referenced.
+See xref:datasource.adoc#datasource-detection[Datasource detection] for details.
 
 The dialect will be selected and configured automatically based on your datasource;
 you may want to <<hibernate-dialect,configure it to more precisely match your database>>.
@@ -318,29 +324,27 @@ quarkus.hibernate-orm.persistence-xml.ignore=true
 It is possible to define multiple persistence units using the Quarkus configuration properties.
 
 The properties at the root of the `quarkus.hibernate-orm.` namespace define the default persistence unit.
-For instance, the following snippet defines a default datasource and a default persistence unit:
+For instance, the following snippet configures the `schema-management.strategy` property for the default persistence unit:
 
 [source,properties]
 ----
-quarkus.datasource.db-kind=h2
-quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
-
-quarkus.hibernate-orm.schema-management.strategy=validate
+quarkus.hibernate-orm.schema-management.strategy=create
 ----
 
 Using a map based approach, it is possible to define named persistence units:
 
 [source,properties]
 ----
-quarkus.datasource."users".db-kind=h2 <1>
-quarkus.datasource."users".jdbc.url=jdbc:h2:mem:users;DB_CLOSE_DELAY=-1
+%prod.quarkus.datasource."users".username = hibernate <1>
+%prod.quarkus.datasource."users".password = hibernate
+%prod.quarkus.datasource."users".jdbc.url = jdbc:postgresql://localhost:26257/users_db
 
-quarkus.datasource."inventory".db-kind=h2 <2>
-quarkus.datasource."inventory".jdbc.url=jdbc:h2:mem:inventory;DB_CLOSE_DELAY=-1
+%prod.quarkus.datasource."inventory".username = hibernate <2>
+%prod.quarkus.datasource."inventory".password = hibernate
+%prod.quarkus.datasource."inventory".jdbc.url = jdbc:postgresql://localhost:26257/inventory_db
 
 quarkus.hibernate-orm."users".datasource=users <3>
 quarkus.hibernate-orm."users".packages=org.acme.model.user <4>
-
 quarkus.hibernate-orm."inventory".datasource=inventory <5>
 quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 ----
@@ -440,6 +444,22 @@ using the `@PersistenceUnit` annotation at the class level is not supported in t
 ====
 
 Note that, similarly to what we do with the configuration property, we take into account the annotated package but also all its subpackages.
+
+[[persistence-unit-detection]]
+=== Conditions for persistence unit configuration
+
+Quarkus creates a persistence unit when it detects that one is needed, i.e. when any of the following conditions is met:
+
+* It is requested by another extension (e.g. Hibernate Search, Envers)
+* OR it is injected statically in application code (e.g. `@Inject Session` or `@Inject @PersistenceUnit("users") SessionFactory`)
+* OR at least one build-time property is set for it (e.g. `quarkus.hibernate-orm."users".schema-management.strategy`)
+* OR at least one entity is attached to it (see <<multiple-persistence-units-attaching-model-classes,below>>).
+
+This applies equally to the default persistence unit and to named persistence units.
+You can mix the default persistence unit and named persistence units, or only have a default persistence unit, or only have named persistence units.
+
+xref:datasource.adoc#datasource-detection[Datasources follow similar rules], making most configuration optional <<dev-mode,while developing>>:
+for each persistence unit, you mainly need to select a datasource and attach entities.
 
 === CDI integration
 

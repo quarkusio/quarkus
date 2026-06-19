@@ -29,6 +29,14 @@ public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
         if (jacksonBuildTimeConfig.failOnUnknownProperties()) {
             builder.enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         }
+        if (jacksonBuildTimeConfig.failOnNullForPrimitives()) {
+            builder.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+        } else {
+            builder.disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+        }
+        if (jacksonBuildTimeConfig.defaultViewInclusion()) {
+            builder.enable(MapperFeature.DEFAULT_VIEW_INCLUSION);
+        }
         if (jacksonBuildTimeConfig.failOnEmptyBeans()) {
             builder.enable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         }

@@ -23,6 +23,21 @@ public interface JacksonBuildTimeConfig {
     boolean failOnUnknownProperties();
 
     /**
+     * If enabled, Jackson will fail when a JSON null is encountered for a primitive type.
+     * Note that Jackson 2 defaulted to {@code false}.
+     */
+    @WithDefault("true")
+    boolean failOnNullForPrimitives();
+
+    /**
+     * If enabled, properties without an explicit {@code @JsonView} annotation are included
+     * when a view is active during serialization/deserialization.
+     * Note that Jackson 2 defaulted to {@code true}.
+     */
+    @WithDefault("false")
+    boolean defaultViewInclusion();
+
+    /**
      * If enabled, Jackson will fail when no accessors are found for a type.
      * This is enabled by default to match the default Jackson 2 behavior.
      * Note that Jackson 3 defaults to {@code false}.

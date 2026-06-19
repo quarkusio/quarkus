@@ -72,6 +72,12 @@ Thankfully, when using the `kubernetes-config` extension along with the xref:dep
 By default, the xref:deploying-to-kubernetes.adoc[Kubernetes] extension doesn't generate the necessary resources to allow accessing secrets.
 Set `quarkus.kubernetes-config.secrets.enabled=true` to generate the necessary role and corresponding role binding.
 
+The generated `Role` automatically restricts read access to the secrets listed in `quarkus.kubernetes-config.secrets`, following the principle of least privilege.
+If no secrets are specified, the role grants access to all secrets in the namespace.
+
+Additionally, setting  the `quarkus.kubernetes-config.secrets-role-config.prefix-name` property to `true` will instruct the extension to prefix the role name with the application name (e.g. `my-app-view-secrets`).
+This is useful when multiple applications share the same namespace, avoiding conflicts over the default `view-secrets` role name.
+
 == Example configuration
 
 A very common use case is to deploy a Quarkus application that needs to access a relational database which has itself already been deployed on Kubernetes. Using the `quarkus-kubernetes-config` extension makes this use case very simple to handle.

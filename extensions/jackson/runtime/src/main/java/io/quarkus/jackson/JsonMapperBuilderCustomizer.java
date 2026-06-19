@@ -1,6 +1,6 @@
 package io.quarkus.jackson;
 
-import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.JsonMapperProducer;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
  * All implementations (that are registered as CDI beans) are taken into account when producing the default
  * {@link ObjectMapper}.
  * <p>
- * See also {@link ObjectMapperProducer#objectMapper}.
+ * See also {@link JsonMapperProducer#jsonMapper}.
  */
 public interface JsonMapperBuilderCustomizer extends Comparable<JsonMapperBuilderCustomizer> {
 

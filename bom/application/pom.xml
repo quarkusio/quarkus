@@ -384,6 +384,7 @@
             </dependency>
 
             <!-- Jackson dependencies, imported as a BOM -->
+            <!-- TODO: remove -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>

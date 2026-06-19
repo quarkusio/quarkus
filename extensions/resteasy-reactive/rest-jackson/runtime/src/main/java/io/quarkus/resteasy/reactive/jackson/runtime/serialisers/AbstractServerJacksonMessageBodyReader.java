@@ -14,10 +14,9 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
 import io.quarkus.arc.impl.LazyValue;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 public abstract class AbstractServerJacksonMessageBodyReader extends AbstractJsonMessageBodyReader {
 

@@ -55,8 +55,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -70,6 +68,8 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
+import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.annotation.JsonNaming;
 
 public abstract class JacksonCodeGenerator {
 
@@ -232,7 +232,8 @@ public abstract class JacksonCodeGenerator {
     private static boolean vetoedClassName(String className) {
         return className.startsWith("java.") || className.startsWith("jakarta.")
                 || className.startsWith("io.vertx.core.json.")
-                || className.startsWith("com.fasterxml.jackson.databind.");
+                || className.startsWith("com.fasterxml.jackson.databind.")
+                || className.startsWith("tools.jackson.databind.");
     }
 
     private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {

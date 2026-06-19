@@ -18,14 +18,13 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 @CustomSerialization(CustomSerializationResource.UnquotedFieldsPersonSerialization.class)
 @CustomDeserialization(CustomSerializationResource.UnquotedFieldsPersonDeserialization.class)
@@ -97,7 +96,7 @@ public class CustomSerializationResource {
             if (!type.getTypeName().equals(Person.class.getName())) {
                 throw new IllegalArgumentException("Only Person type can be handled");
             }
-            return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+            return objectMapper.writer().without(JsonWriteFeature.QUOTE_PROPERTY_NAMES);
         }
     }
 
@@ -117,7 +116,7 @@ public class CustomSerializationResource {
             if (!type.getTypeName().equals(Person.class.getName())) {
                 throw new IllegalArgumentException("Only Person type can be handled");
             }
-            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES);
         }
     }
 

@@ -1,8 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static io.restassured.RestAssured.with;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static tools.jackson.databind.cfg.EnumFeature.WRITE_ENUMS_USING_INDEX;
 
 import java.util.function.Supplier;
 
@@ -16,10 +16,10 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.http.ContentType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class ContextResolverTest {
 
@@ -94,9 +94,9 @@ public class ContextResolverTest {
             if (!type.isAssignableFrom(Type.class)) {
                 return null;
             }
-            ObjectMapper result = new ObjectMapper();
-            result.enable(WRITE_ENUMS_USING_INDEX);
-            return result;
+            return JsonMapper.builder()
+                    .enable(WRITE_ENUMS_USING_INDEX)
+                    .build();
         }
     }
 }

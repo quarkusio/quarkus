@@ -28,7 +28,7 @@ public interface HttpServerOptionsCustomizer {
     }
 
     /**
-     * Allows customizing the server listening on a domain socket if any.
+     * Allows customizing the server listening on a Unix Domain Socket if any.
      */
     default void customizeDomainSocketServer(HttpServerOptions options) {
         // NO-OP

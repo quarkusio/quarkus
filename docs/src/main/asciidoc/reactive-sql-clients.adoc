@@ -690,13 +690,13 @@ Pool additional2Client;
 <1> Injecting the client for the default datasource does not require anything special.
 <2> For a named datasource, you use the `@ReactiveDataSource` CDI qualifier with the datasource name as its value.
 
-== UNIX Domain Socket connections
+== Unix Domain Socket connections
 
-The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
+The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a Unix Domain Socket.
 
-First make sure that xref:vertx-reference.adoc#native-transport[native transport support] is enabled.
+Unix Domain Sockets are supported in both JVM and native modes.
 
-Then configure the database connection url.
+Configure the database connection url as described below.
 This step depends on the database type.
 
 === PostgreSQL

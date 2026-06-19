@@ -467,9 +467,11 @@ quarkus.otel.traces.exporter=logging <3>
 
 == Visualizing the data
 
-We recommend the xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
+A Dev Service can receive your app's telemetry.
 
-This provides a Quarkus Dev service using an "all-in-one" https://github.com/grafana/docker-otel-lgtm[Grafana OTel LGTM].
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
+
+* Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
 Grafana is used to visualize data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
 

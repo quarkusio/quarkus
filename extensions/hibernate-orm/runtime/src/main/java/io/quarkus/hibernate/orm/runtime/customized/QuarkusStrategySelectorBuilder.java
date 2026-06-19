@@ -37,8 +37,8 @@ import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLoca
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
 import org.hibernate.type.format.FormatMapper;
-import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
-import org.hibernate.type.format.jackson.JacksonXmlFormatMapper;
+import org.hibernate.type.format.jackson.Jackson3JsonFormatMapper;
+import org.hibernate.type.format.jackson.Jackson3XmlFormatMapper;
 import org.hibernate.type.format.jakartajson.JsonBJsonFormatMapper;
 import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
 
@@ -214,8 +214,8 @@ public final class QuarkusStrategySelectorBuilder {
     private static void addJsonFormatMappers(StrategySelectorImpl strategySelector) {
         strategySelector.registerStrategyImplementor(
                 FormatMapper.class,
-                JacksonJsonFormatMapper.SHORT_NAME,
-                JacksonJsonFormatMapper.class);
+                Jackson3JsonFormatMapper.SHORT_NAME,
+                Jackson3JsonFormatMapper.class);
         strategySelector.registerStrategyImplementor(
                 FormatMapper.class,
                 JsonBJsonFormatMapper.SHORT_NAME,
@@ -225,8 +225,8 @@ public final class QuarkusStrategySelectorBuilder {
     private static void addXmlFormatMappers(StrategySelectorImpl strategySelector) {
         strategySelector.registerStrategyImplementor(
                 FormatMapper.class,
-                JacksonXmlFormatMapper.SHORT_NAME,
-                JacksonXmlFormatMapper.class);
+                Jackson3XmlFormatMapper.SHORT_NAME,
+                Jackson3XmlFormatMapper.class);
         strategySelector.registerStrategyImplementor(
                 FormatMapper.class,
                 JaxbXmlFormatMapper.SHORT_NAME,

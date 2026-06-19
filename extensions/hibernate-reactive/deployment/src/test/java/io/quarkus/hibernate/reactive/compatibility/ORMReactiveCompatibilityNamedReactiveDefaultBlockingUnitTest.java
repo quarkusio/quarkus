@@ -30,7 +30,6 @@ public class ORMReactiveCompatibilityNamedReactiveDefaultBlockingUnitTest extend
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".datasource", "named-datasource")
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".packages", "io.quarkus.hibernate.reactive.entities")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD)
 
@@ -42,7 +41,6 @@ public class ORMReactiveCompatibilityNamedReactiveDefaultBlockingUnitTest extend
             .overrideConfigKey("quarkus.hibernate-orm.database.generation", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD)
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.hibernate\".level", "DEBUG");
 
     @PersistenceUnit("named-pu")

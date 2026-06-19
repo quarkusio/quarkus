@@ -201,7 +201,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
 
@@ -315,11 +315,11 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         if (startedFunction != null) {
             waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
-            return Optional.empty();
+            return ListeningAddresses.EMPTY;
         } else {
             log.info("Wait for server to start by capturing listening data...");
-            Optional<ListeningAddress> result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
-            result.ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
+            ListeningAddresses result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
+            result.address().ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
             return result;
         }
     }

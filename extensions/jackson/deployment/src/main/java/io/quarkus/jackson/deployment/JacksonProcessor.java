@@ -63,7 +63,7 @@ import io.quarkus.jackson.runtime.ConfigurationCustomizer;
 import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
 import io.quarkus.jackson.runtime.JacksonRecorder;
 import io.quarkus.jackson.runtime.JacksonSupport;
-import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.JsonMapperProducer;
 import io.quarkus.jackson.runtime.VertxHybridPoolJsonFactoryBuilderCustomizer;
 import io.quarkus.jackson.runtime.graal.JacksonSerializerRegistrationFeature;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
@@ -348,7 +348,7 @@ public class JacksonProcessor {
         }
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
-        additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(JsonMapperProducer.class));
     }
 
     private void addReflectiveHierarchyClass(String reason, DotName className,

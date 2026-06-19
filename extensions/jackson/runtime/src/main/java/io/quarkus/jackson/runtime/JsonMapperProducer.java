@@ -14,16 +14,15 @@ import io.quarkus.jackson.JsonFactoryBuilderCustomizer;
 import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.core.json.JsonFactoryBuilder;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 @ApplicationScoped
-public class ObjectMapperProducer {
+public class JsonMapperProducer {
 
     @DefaultBean
     @Singleton
     @Produces
-    public ObjectMapper objectMapper(Instance<JsonMapperBuilderCustomizer> customizers,
+    public JsonMapper jsonMapper(Instance<JsonMapperBuilderCustomizer> customizers,
             Instance<JsonFactoryBuilderCustomizer> factoryCustomizers) {
         JsonMapper.Builder builder = JsonMapper.builder(createJsonFactory(factoryCustomizers));
         List<JsonMapperBuilderCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);

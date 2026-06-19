@@ -19,7 +19,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
-import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.JsonMapperProducer;
 import io.quarkus.runtime.LaunchMode;
 
 public final class AmazonLambdaCommonProcessor {
@@ -50,7 +50,7 @@ public final class AmazonLambdaCommonProcessor {
         unremovable.produce(new UnremovableBeanBuildItem(
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapper.class.getName())));
         unremovable.produce(new UnremovableBeanBuildItem(
-                new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapperProducer.class.getName())));
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(JsonMapperProducer.class.getName())));
     }
 
     @BuildStep()

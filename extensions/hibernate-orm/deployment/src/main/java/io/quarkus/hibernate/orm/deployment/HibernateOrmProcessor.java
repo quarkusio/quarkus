@@ -52,6 +52,7 @@ import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.MappingSettings;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
@@ -65,8 +66,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
-
-import com.fasterxml.jackson.databind.Module;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
@@ -167,6 +166,7 @@ import net.bytebuddy.pool.TypePool;
 import net.bytebuddy.pool.TypePool.CacheProvider;
 import net.bytebuddy.pool.TypePool.Default.ReaderMode;
 import net.bytebuddy.utility.GraalImageCode;
+import tools.jackson.databind.JacksonModule;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -192,6 +192,7 @@ public final class HibernateOrmProcessor {
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
     private static final String JAKARTA_DATA_REPOSITORY_ANNOTATION = "jakarta.data.repository.Repository";
+    private static final String JACKSON_3_JSON_FORMAT_MAPPER = "org.hibernate.type.format.jackson.Jackson3JsonFormatMapper";
 
     static {
         // configure ByteBuddy for build reproducibility
@@ -393,6 +394,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void allowJacksonModuleDiscovery(Capabilities capabilities,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnits,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         if (capabilities.isMissing(Capability.JACKSON) || persistenceUnits.isEmpty()) {
             // We won't be using Hibernate's default FormatMapper relying on Jackson for sure
@@ -400,7 +402,10 @@ public final class HibernateOrmProcessor {
         }
         // Hibernate's default FormatMapper relying on Jackson requires
         // service loading to discover modules in the classpath.
-        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(Module.class.getName()));
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JacksonModule.class.getName()));
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(JACKSON_3_JSON_FORMAT_MAPPER).fields(false).methods(false)
+                .constructors().reason("Hibernate instantiates the class reflectively").build());
     }
 
     @BuildStep
@@ -554,6 +559,10 @@ public final class HibernateOrmProcessor {
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(
                     "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
                     true, "org.postgresql.jdbc.PgConnection", "getSchema"));
+        }
+
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            descriptor.getProperties().setProperty(MappingSettings.JSON_FORMAT_MAPPER, JACKSON_3_JSON_FORMAT_MAPPER);
         }
 
         persistenceUnitDescriptors.produce(
@@ -1307,6 +1316,11 @@ public final class HibernateOrmProcessor {
                 reflectiveMethods, descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
+
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            descriptor.getProperties().setProperty(MappingSettings.JSON_FORMAT_MAPPER,
+                    JACKSON_3_JSON_FORMAT_MAPPER);
+        }
 
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                 additionalSqlLoadScriptDefaults,

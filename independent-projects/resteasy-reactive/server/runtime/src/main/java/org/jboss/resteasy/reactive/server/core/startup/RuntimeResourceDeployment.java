@@ -301,7 +301,7 @@ public class RuntimeResourceDeployment {
                 if (serverRestHandler instanceof ResourceRequestFilterHandler) {
                     ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
                     if (resourceRequestFilterHandler.isWithFormRead()) {
-                        readBodyRequestFilters.add(handlers.remove(i));
+                        readBodyRequestFilters.add(0, handlers.remove(i));
                     }
                 }
             }

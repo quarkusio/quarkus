@@ -13,7 +13,8 @@ import jakarta.ws.rs.ext.Providers;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.ObjectMapper;
 
 final class JacksonUtil {
 

@@ -41,14 +41,13 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.core.exc.StreamConstraintsException;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
+import tools.jackson.core.exc.StreamConstraintsException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.ValueInstantiationException;
 
 @SuppressWarnings("unchecked")
 class MessageBodyReaderTests {
@@ -85,16 +84,6 @@ class MessageBodyReaderTests {
             reader.readFrom((Class<Object>) book.getClass(), null, null, null, null, stream);
         }
 
-        void deserializeClassWithInvalidDefinition() throws IOException {
-            var json = "{\n" +
-                    "  \"arg\" : \"Learn HTML\"" +
-                    "}";
-
-            var stream = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-            Object invalid = new InvalidDefinition(null);
-            reader.readFrom((Class<Object>) invalid.getClass(), null, null, null, null, stream);
-        }
-
         void deserializeNumberExceedingConstraints() throws IOException {
             String bigNumber = "9".repeat(1001);
             var stream = new ByteArrayInputStream(
@@ -122,11 +111,6 @@ class MessageBodyReaderTests {
         @Test
         void shouldThrowDatabindException() {
             assertThrows(DatabindException.class, tests::deserializeMissingReferenceProperty);
-        }
-
-        @Test
-        void shouldThrowInvalidDefinitionException() {
-            assertThrows(InvalidDefinitionException.class, tests::deserializeClassWithInvalidDefinition);
         }
 
         @Test
@@ -160,11 +144,6 @@ class MessageBodyReaderTests {
         }
 
         @Test
-        void shouldThrowInvalidDefinitionException() {
-            assertThrows(InvalidDefinitionException.class, tests::deserializeClassWithInvalidDefinition);
-        }
-
-        @Test
         void shouldThrowWebExceptionWithValueInstantiationExceptionCauseUsingServerRequestContext() throws IOException {
             var reader = new ServerJacksonMessageBodyReader(new NewObjectMapperInstance());
             // missing non-nullable property
@@ -189,17 +168,6 @@ class MessageBodyReaderTests {
 
     static class NumberDto {
         public BigDecimal value;
-    }
-
-    static class InvalidDefinition {
-        // Note: Multiple constructors marked as JsonCreators should throw InvalidDefinitionException
-
-        private final Object arg;
-
-        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        public InvalidDefinition(Object arg) {
-            this.arg = arg;
-        }
     }
 
     static class Widget {

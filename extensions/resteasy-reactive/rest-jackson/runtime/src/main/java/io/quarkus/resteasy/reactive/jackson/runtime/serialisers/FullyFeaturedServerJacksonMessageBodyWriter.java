@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.createDefaultWriter;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.doLegacyWrite;
-import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryWriteConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,13 +28,12 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
@@ -198,8 +197,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             try {
                 BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
                 ObjectWriter objectWriter = biFunctionInstance.apply(originalMapper, genericType);
-                setNecessaryJsonFactoryConfig(objectWriter.getFactory());
-                return objectWriter;
+                return setNecessaryWriteConfig(objectWriter);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

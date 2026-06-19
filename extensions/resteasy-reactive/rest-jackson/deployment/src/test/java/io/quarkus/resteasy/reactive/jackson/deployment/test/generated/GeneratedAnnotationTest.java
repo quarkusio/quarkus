@@ -68,6 +68,7 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     UnwrappedWithPrefixBean.Address.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
+                                            "quarkus.jackson.default-view-inclusion=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
                                     "application.properties");
                 }

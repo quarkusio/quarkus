@@ -43,8 +43,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
@@ -98,6 +96,8 @@ import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class ResteasyReactiveJacksonProcessor {
 

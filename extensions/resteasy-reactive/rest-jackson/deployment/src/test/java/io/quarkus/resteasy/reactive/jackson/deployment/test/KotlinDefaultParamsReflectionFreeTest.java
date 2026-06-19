@@ -13,10 +13,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.kotlin.KotlinModule;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
@@ -70,10 +67,10 @@ public class KotlinDefaultParamsReflectionFreeTest {
     }
 
     @Singleton
-    public static class KotlinModuleCustomizer implements ObjectMapperCustomizer {
+    public static class KotlinModuleCustomizer implements JsonMapperBuilderCustomizer {
         @Override
-        public void customize(ObjectMapper mapper) {
-            mapper.registerModule(new KotlinModule.Builder().build());
+        public void customize(tools.jackson.databind.json.JsonMapper.Builder builder) {
+            builder.addModule(new tools.jackson.module.kotlin.KotlinModule.Builder().build());
         }
     }
 }

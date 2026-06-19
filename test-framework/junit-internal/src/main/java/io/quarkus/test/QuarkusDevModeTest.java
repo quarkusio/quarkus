@@ -314,6 +314,10 @@ public class QuarkusDevModeTest
             // Capture the listening port if available and register it in ValueRegistry
             Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
             listeningAddress.ifPresent(address -> address.register(valueRegistry, newConfig));
+            Optional<ListeningAddress> managementListeningAddress = managementListeningAddress(
+                    startupLogHandler.getRecords());
+            managementListeningAddress.ifPresent(address -> address.registerManagement(valueRegistry, newConfig));
+            valueRegistry.register(ListeningAddress.MANAGEMENT_LISTENING_ADDRESS, managementListeningAddress);
 
             // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);
@@ -335,6 +339,8 @@ public class QuarkusDevModeTest
     }
 
     private static final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
+    private static final Pattern managementListeningRegex = Pattern
+            .compile("Management interface listening on (https?)://[^:]*:(\\d+)");
 
     private static Optional<ListeningAddress> listeningAddress(List<LogRecord> records) {
         if (records.size() == 1) {
@@ -344,6 +350,17 @@ public class QuarkusDevModeTest
                 ListeningAddress listeningAddress = new ListeningAddress(Integer.parseInt(regexMatcher.group(2)),
                         regexMatcher.group(1));
                 return Optional.of(listeningAddress);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<ListeningAddress> managementListeningAddress(List<LogRecord> records) {
+        if (records.size() == 1) {
+            LogRecord logRecord = records.get(0);
+            Matcher regexMatcher = managementListeningRegex.matcher((String) logRecord.getParameters()[4]);
+            if (regexMatcher.find()) {
+                return Optional.of(new ListeningAddress(Integer.parseInt(regexMatcher.group(2)), regexMatcher.group(1)));
             }
         }
         return Optional.empty();

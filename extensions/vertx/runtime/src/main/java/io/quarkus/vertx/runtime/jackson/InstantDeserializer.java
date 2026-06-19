@@ -25,7 +25,7 @@ import tools.jackson.databind.exc.InvalidFormatException;
  */
 public class InstantDeserializer extends StdDeserializer<Instant> {
 
-    InstantDeserializer() {
+    public InstantDeserializer() {
         super(Instant.class);
     }
 

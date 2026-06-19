@@ -23,7 +23,7 @@ import tools.jackson.databind.ser.std.StdSerializer;
  */
 public class InstantSerializer extends StdSerializer<Instant> {
 
-    InstantSerializer() {
+    public InstantSerializer() {
         super(Instant.class);
     }
 

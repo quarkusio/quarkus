@@ -29,6 +29,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.util.GradleVersion;
 import org.gradle.work.DisableCachingByDefault;
@@ -60,9 +61,15 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     private final Provider<Boolean> preservesJarTimestamps;
 
+    // Captured at configuration time so that abort() does not have to call Task.getProject() at execution time,
+    // which is deprecated and scheduled for removal in Gradle 10. Transient: never serialized into the configuration
+    // cache (abort() is only reachable from the non-cacheable Deploy task).
+    private final transient TaskContainer taskContainer;
+
     QuarkusBuildTask(String description, boolean compatible) {
         super(description, compatible);
 
+        this.taskContainer = getProject().getTasks();
         this.preservesJarTimestamps = getProject().getTasks()
                 .named(JavaPlugin.JAR_TASK_NAME, Jar.class)
                 .map(Jar::isPreserveFileTimestamps)
@@ -347,7 +354,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     void abort(String message, Object... args) {
         getLogger().warn(message, args);
-        getProject().getTasks().stream()
+        taskContainer.stream()
                 .filter(t -> t != this)
                 .filter(t -> !t.getState().getExecuted()).forEach(t -> {
                     t.setEnabled(false);

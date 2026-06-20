@@ -1085,14 +1085,15 @@ import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 
-public class PersonEndpoint {
+public class ProductEndpoint {
 
     @GET
     @Transactional
-    public Person findByIdForUpdate(Long id){
-        Person p = Person.findById(id, LockModeType.PESSIMISTIC_WRITE);
-        //do something useful, the lock will be released when the transaction ends.
-        return person;
+    public Product findByIdForUpdate(Long id){
+        Product product = Product.findById(id, LockModeType.PESSIMISTIC_WRITE);
+        product.stock--;
+        // the lock will be released when the transaction ends
+        return product;
     }
 
 }
@@ -1106,14 +1107,15 @@ import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 
-public class PersonEndpoint {
+public class ProductEndpoint {
 
     @GET
     @Transactional
-    public Person findByNameForUpdate(String name){
-        Person p = Person.find("name", name).withLock(LockModeType.PESSIMISTIC_WRITE).findOne();
-        //do something useful, the lock will be released when the transaction ends.
-        return person;
+    public Product findBySkuForUpdate(String sku){
+        Product product = Product.find("sku", sku).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
+        product.stock--;
+        // the lock will be released when the transaction ends
+        return product;
     }
 
 }

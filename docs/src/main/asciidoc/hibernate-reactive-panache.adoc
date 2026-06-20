@@ -777,68 +777,99 @@ When using multiple persistence units, Panache automatically uses the correct pe
 For configuration details on setting up multiple persistence units, refer to the xref:hibernate-orm.adoc#multiple-persistence-units[Multiple Persistence Units] section in the Hibernate ORM guide.
 
 [[transactions]]
-== Sessions and Transactions
+== Transactions
 
-First of all, most of the methods of a Panache entity must be invoked within the scope of a reactive `Mutiny.Session`.
-In some cases, the session is opened automatically on demand.
-For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-rest` extension.
-For other cases, there are two declarative ways and a programmatic way to ensure a session is available:
+Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction.
+Marking a CDI bean method `@Transactional` will do that for you and make that method a transaction boundary.
+We recommend doing so at your application entry point boundaries like your REST endpoint controllers.
 
-* The first method is to use a method annotated with `@Transactional`.
-* Alternatively, you can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
-If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithSession("my-persistence-unit")`. If not specified, the default persistence unit is used.
-* The programmatic way to achieve the same effect is to use the `Panache.withSession()` method.
+Here is a typical Jakarta REST resource using Panache with `@Transactional`:
 
-NOTE: Note that a Panache entity may not be used from a blocking thread. See also xref:getting-started-reactive.adoc[Getting Started With Reactive] guide that explains the basics of reactive principles in Quarkus.
+[source,java]
+----
+@Path("/persons")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class PersonResource {
 
-Also make sure to wrap methods that modify the database or involve multiple queries (e.g. `entity.persist()`) within a transaction.
+    @GET
+    public Uni<List<Person>> list() {
+        return Person.listAll();
+    }
 
-You can annotate the method with `@jakarta.transaction.Transactional` as you would in Hibernate ORM to specify declarative transaction management.
+    @GET
+    @Path("/{id}")
+    public Uni<Person> get(Long id) {
+        return Person.findById(id);
+    }
 
-You can also annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
-The method will be intercepted and the returned `Uni` is triggered within a transaction boundary.
-If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithTransaction("my-persistence-unit")`. If not specified, the default persistence unit is used.
-Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
+    @POST
+    @Transactional
+    public Uni<Response> create(Person person) {
+        return person.persist()
+                .replaceWith(() -> Response.created(URI.create("/persons/" + person.id)).build());
+    }
 
-[NOTE]
-====
-You should not mix `@Transactional` with Panache transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in the same application. Choose one approach and use it consistently throughout your application. Mixing these annotations in a single reactive pipeline will result in an `UnsupportedOperationException`.
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    public Uni<Person> update(Long id, Person person) {
+        return Person.<Person>findById(id)
+                .onItem().ifNull().failWith(NotFoundException::new)
+                .invoke(entity -> entity.name = person.name);
+    }
 
-See the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more details on using `@Transactional` with Hibernate Reactive.
-====
-[WARNING]
-====
-There are some limitations when using different pipelines with `@Transactional`, refer to xref:hibernate-reactive.adoc#transactional-different-pipelines[the limitations section in the Hibernate Reactive guide]
-====
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public Uni<Void> delete(Long id) {
+        return Person.<Person>findById(id)
+                .onItem().ifNull().failWith(NotFoundException::new)
+                .chain(Person::delete);
+    }
+}
+----
+
+When a method is annotated with `@Transactional` and returns a `Uni`, the interceptor automatically opens a Hibernate Reactive session, begins a transaction, commits when the `Uni` completes successfully, and rolls back on failure.
+See xref:hibernate-reactive.adoc#hr-getting-started[Using Hibernate Reactive] for more details.
+
+In Jakarta REST endpoints with the `quarkus-rest` extension, a session may also be opened automatically for read-only Panache calls.
+For writes and for other entry points (schedulers, message consumers, etc.), use `@Transactional` to ensure both a session and a transaction are available.
 
 Hibernate Reactive batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
 This is usually a good thing as it is more efficient.
-But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when Hibernate Reactive send those changes to the database.
+But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call.
+This will allow you to catch any `PersistenceException` that could occur when Hibernate Reactive sends those changes to the database.
 Remember, this is less efficient so don't abuse it.
 And your transaction still has to be committed.
 
 Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
+
 [source,java]
 ----
-@WithTransaction
-public Uni<Void> create(Person person){
-    // Here we use the persistAndFlush() shorthand method on a Panache repository to persist to database then flush the changes.
+@Transactional
+public Uni<Void> create(Person person) {
     return person.persistAndFlush()
             .onFailure(PersistenceException.class)
-            .recoverWithItem(() -> {
-                LOG.error("Unable to create the parameter", pe);
-                //in case of error, I save it to disk
+            .recoverWithItem(t -> {
+                LOG.error("Unable to create the person", t);
+                // in case of error, save it to disk
                 diskPersister.save(person);
                 return null;
             });
 }
 ----
 
-The `@WithTransaction` annotation will also work for testing.
-This means that changes done during the test will be propagated to the database.
-If you want any changes made to be rolled back at the end of
-the test you can use the `io.quarkus.test.TestReactiveTransaction` annotation.
-This will run the test method in a transaction, but roll it back once the test method is complete to revert any database changes.
+=== Other session APIs
+
+If you only need a session without a transaction (for example, read-only operations outside Jakarta REST), you can use `@WithSession` or the programmatic `Panache.withSession()` method.
+Use `@Transactional` for operations that modify the database.
+
+[NOTE]
+====
+Do not mix `@Transactional` with `@WithSession` or `@WithSessionOnDemand` in the same application.
+Some advanced reactive patterns such as `Uni.combine()` and `Uni.join()` do not work well with declarative transaction management — see xref:hibernate-reactive.adoc#transactional-different-pipelines[Using Declarative Transaction Management in different reactive pipelines] in the Hibernate Reactive guide.
+====
 
 == Lock management
 
@@ -850,16 +881,16 @@ The following examples are for the active record pattern, but the same can be us
 
 [source,java]
 ----
-public class PersonEndpoint {
+public class ProductEndpoint {
 
     @GET
-    public Uni<Person> findByIdForUpdate(Long id){
-        return Panache.withTransaction(() -> {
-            return Person.<Person>findById(id, LockModeType.PESSIMISTIC_WRITE)
-                    .invoke(person -> {
-                        //do something useful, the lock will be released when the transaction ends.
-                    });
-        });
+    @Transactional
+    public Uni<Product> findByIdForUpdate(Long id) {
+        return Product.<Product>findById(id, LockModeType.PESSIMISTIC_WRITE)
+                .invoke(product -> {
+                    product.stock--;
+                    // the lock will be released when the transaction ends
+                });
     }
 }
 ----
@@ -868,22 +899,22 @@ public class PersonEndpoint {
 
 [source,java]
 ----
-public class PersonEndpoint {
+public class ProductEndpoint {
 
     @GET
-    public Uni<Person> findByNameForUpdate(String name){
-        return Panache.withTransaction(() -> {
-            return Person.<Person>find("name", name).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult()
-                    .invoke(person -> {
-                        //do something useful, the lock will be released when the transaction ends.
-                    });
-        });
+    @Transactional
+    public Uni<Product> findBySkuForUpdate(String sku) {
+        return Product.<Product>find("sku", sku).withLock(LockModeType.PESSIMISTIC_WRITE).firstResult()
+                .invoke(product -> {
+                    product.stock--;
+                    // the lock will be released when the transaction ends
+                });
     }
 
 }
 ----
 
-Be careful that locks are released when the transaction ends, so the method that invokes the lock query must be called within a transaction.
+Be careful that locks are released when the transaction ends, so the method that invokes the lock query must be annotated with `@Transactional`.
 
 == Custom IDs
 
@@ -922,12 +953,15 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 }
 ----
 
+[[testing]]
 == Testing
 
 Testing reactive Panache entities in a `@QuarkusTest` is slightly more complicated than testing regular Panache entities due to the asynchronous nature of the APIs and the fact that all operations need to run on a Vert.x event loop.
 
 The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation and the `io.quarkus.test.vertx.UniAsserter` class which are intended precisely for this purpose.
 The usage is described in the xref:hibernate-reactive.adoc#testing[Hibernate Reactive] guide.
+
+To run a test in a transaction and roll back any database changes when the test completes, annotate the test class or method with `io.quarkus.test.TestReactiveTransaction` instead of `@RunOnVertxContext`.
 
 Moreover, the `quarkus-test-hibernate-reactive-panache` dependency provides the `io.quarkus.test.hibernate.reactive.panache.TransactionalUniAsserter` that can be injected as a method parameter of a test method annotated with `@RunOnVertxContext`.
 The `TransactionalUniAsserter` is a `io.quarkus.test.vertx.UniAsserterInterceptor` that wraps each assert method within a separate reactive transaction.

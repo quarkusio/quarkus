@@ -45,4 +45,9 @@ public interface DataSourceRuntimeConfig {
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
+
+    /**
+     * Health check configuration.
+     */
+    DataSourceHealthRuntimeConfig health();
 }

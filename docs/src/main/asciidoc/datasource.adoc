@@ -638,6 +638,25 @@ To exclude only a particular datasource from the health check:
 quarkus.datasource."datasource-name".health-exclude=true
 ----
 
+==== Health check result caching
+
+By default, health check results are cached for 10 seconds to avoid performing a JDBC validation query on every probe request.
+This is especially important in Kubernetes deployments where liveness and readiness probes can trigger frequent health checks.
+
+You can configure the cache duration per datasource:
+
+[source,properties]
+----
+# Set the TTL for the default datasource
+quarkus.datasource.health.ttl=30s
+
+# Set the TTL for a named datasource
+quarkus.datasource."datasource-name".health.ttl=5s
+
+# Disable caching (validate on every probe)
+quarkus.datasource.health.ttl=0
+----
+
 === Datasource metrics
 
 When you add the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension, `quarkus-agroal` can publish datasource metrics to the metrics registry.

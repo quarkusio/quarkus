@@ -24,6 +24,7 @@ import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceSupport;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 
 @Readiness
 @ApplicationScoped
@@ -35,7 +36,10 @@ public class DataSourceHealthCheck implements HealthCheck {
     @Inject
     Instance<AgroalDataSourceSupport> agroalDataSourceSupport;
 
-    private final Map<String, DataSource> checkedDataSources = new HashMap<>();
+    @Inject
+    DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
+
+    private final Map<String, CheckedDataSource> checkedDataSources = new HashMap<>();
 
     @PostConstruct
     protected void init() {
@@ -51,7 +55,8 @@ public class DataSourceHealthCheck implements HealthCheck {
             }
             Optional<AgroalDataSource> dataSource = AgroalDataSourceUtil.dataSourceIfActive(name);
             if (dataSource.isPresent()) {
-                checkedDataSources.put(name, dataSource.get());
+                long ttlNanos = dataSourcesRuntimeConfig.dataSources().get(name).health().ttl().toNanos();
+                checkedDataSources.put(name, new CheckedDataSource(dataSource.get(), ttlNanos));
             }
         }
     }
@@ -59,30 +64,74 @@ public class DataSourceHealthCheck implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Database connections health check").up();
-        for (Map.Entry<String, DataSource> dataSource : checkedDataSources.entrySet()) {
-            boolean isDefault = DataSourceUtil.isDefault(dataSource.getKey());
-            AgroalDataSource ads = (AgroalDataSource) dataSource.getValue();
-            String dsName = dataSource.getKey();
+        for (Map.Entry<String, CheckedDataSource> entry : checkedDataSources.entrySet()) {
+            String dsName = entry.getKey();
+            CheckedDataSource cds = entry.getValue();
+            boolean isDefault = DataSourceUtil.isDefault(dsName);
+
+            CachedResult cached = cds.cachedResult;
+            if (cached != null && cds.ttlNanos > 0 && (System.nanoTime() - cached.checkedAt()) < cds.ttlNanos) {
+                if (cached.healthy()) {
+                    builder.withData(dsName, "UP");
+                } else {
+                    builder.down().withData(dsName, cached.detail());
+                }
+                continue;
+            }
 
             try {
-                boolean valid = ads.isHealthy(false);
+                boolean valid = cds.dataSource.isHealthy(false);
                 if (!valid) {
                     String data = isDefault ? "validation check failed for the default DataSource"
-                            : "validation check failed for DataSource '" + dataSource.getKey() + "'";
+                            : "validation check failed for DataSource '" + dsName + "'";
                     builder.down().withData(dsName, data);
+                    if (cds.ttlNanos > 0) {
+                        cds.cachedResult = new CachedResult(false, data, System.nanoTime());
+                    }
                 } else {
                     builder.withData(dsName, "UP");
+                    if (cds.ttlNanos > 0) {
+                        cds.cachedResult = new CachedResult(true, null, System.nanoTime());
+                    }
                 }
             } catch (SQLException e) {
                 String data = isDefault ? "Unable to execute the validation check for the default DataSource: "
-                        : "Unable to execute the validation check for DataSource '" + dataSource.getKey() + "': ";
+                        : "Unable to execute the validation check for DataSource '" + dsName + "': ";
                 builder.down().withData(dsName, data + e.getMessage());
+                if (cds.ttlNanos > 0) {
+                    cds.cachedResult = new CachedResult(false, data + e.getMessage(), System.nanoTime());
+                }
             }
         }
         return builder.build();
     }
 
     protected Map<String, DataSource> getCheckedDataSources() {
-        return Collections.unmodifiableMap(checkedDataSources);
+        Map<String, DataSource> result = new HashMap<>();
+        for (Map.Entry<String, CheckedDataSource> entry : checkedDataSources.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().dataSource);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Immutable snapshot of a single datasource health check result.
+     * Swapped atomically via a volatile reference in {@link CheckedDataSource}.
+     */
+    record CachedResult(boolean healthy, String detail, long checkedAt) {
+    }
+
+    /**
+     * Groups a datasource with its per-datasource health check TTL and the most recent cached result.
+     */
+    static final class CheckedDataSource {
+        final AgroalDataSource dataSource;
+        final long ttlNanos;
+        volatile CachedResult cachedResult;
+
+        CheckedDataSource(AgroalDataSource dataSource, long ttlNanos) {
+            this.dataSource = dataSource;
+            this.ttlNanos = ttlNanos;
+        }
     }
 }

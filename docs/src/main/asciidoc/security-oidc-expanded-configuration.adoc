@@ -187,6 +187,7 @@ Have a look at the complete overview of the authentication properties below and 
 |====
 |Property name |Default |Description
 
+|quarkus.oidc.credentials.for-all-endpoints |false|Send credentials to all OIDC endpoints including the discovery and JWKS endpoints.
 |quarkus.oidc.credentials.secret ||Client secret - use it if the HTTP `Authorization: Basic` client id and secret pair is expected
 |quarkus.oidc.credentials.client-secret.value ||Client secret value
 |quarkus.oidc.credentials.client-secret.method |Basic|How client secret should be submitted or used
@@ -290,6 +291,7 @@ By default, when a client JWT authentication token must be produced, it is gener
 |====
 
 Set `quarkus.oidc.credentials.jwt.source=bearer` if the client authentication token is provided by Kubernetes, and use `quarkus.oidc.credentials.jwt.token-path` to point to the file resource containing this token.
+Set `quarkus.oidc.credentials.for-all-endpoints=true` when the OIDC provider enforces authenticated access to the discovery and JWKS endpoints. See xref:security-oidc-code-flow-authentication.adoc#authenticated-access-to-all-oidc-endpoints[Authenticated access to all OIDC endpoints] for more information.
 
 === Mutual TLS
 

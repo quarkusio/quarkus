@@ -458,6 +458,21 @@ public class OidcCommonUtils {
         return clientSecretMethod(creds) == Secret.Method.POST_JWT;
     }
 
+    public static void validateCredentialsForAllEndpoints(Credentials creds) {
+        if (!creds.forAllEndpoints()) {
+            return;
+        }
+        if (isClientSecretBasicAuthRequired(creds)) {
+            return;
+        }
+        if (creds.jwt().source() == Source.BEARER && creds.jwt().tokenPath().isPresent()) {
+            return;
+        }
+        throw new ConfigurationException(
+                "Client credentials cannot be sent to all OIDC endpoints because only "
+                        + "'client_secret_basic' or JWT bearer ('jwt.source=bearer') authentication methods are supported");
+    }
+
     public static boolean isJwtAssertion(Credentials creds) {
         return creds.jwt().assertion();
     }

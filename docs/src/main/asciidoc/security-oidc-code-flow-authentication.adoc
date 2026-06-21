@@ -220,6 +220,7 @@ quarkus.oidc.credentials.jwt.key-id=mykeyAlias
 
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that a client secret is not sent to the OIDC provider, thereby avoiding the risk of interception by a 'man-in-the-middle' attack.
 
+[[jwt-bearer-client-authentication]]
 .Example: Using a JWT Bearer token to authenticate a client
 
 [source,properties]
@@ -355,6 +356,17 @@ If the tokens have to be introspected and the introspection endpoint-specific au
 quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
+
+[[authenticated-access-to-all-oidc-endpoints]]
+==== Authenticated access to all OIDC endpoints
+
+OIDC discovery and JWKS are typically public endpoints.
+Some OIDC providers may enforce authenticated access to these endpoints.
+For example, the Kubernetes API server acts as an OIDC provider for service account tokens and requires a bearer access token to access its discovery and JWKS endpoints.
+
+To send client credentials to these endpoints, set `quarkus.oidc.credentials.for-all-endpoints=true`.
+Since the discovery and JWKS endpoints are accessed with HTTP GET requests, only authentication methods that use the HTTP `Authorization` header are effective, such as `client_secret_basic` and <<jwt-bearer-client-authentication,JWT bearer>>.
+Alternatively, you can use <<code-flow-oidc-request-filters,OidcRequestFilter>> to customize the authentication.
 
 [[code-flow-oidc-request-filters]]
 === OIDC request filters

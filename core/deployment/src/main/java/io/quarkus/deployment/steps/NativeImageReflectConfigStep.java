@@ -150,7 +150,6 @@ public class NativeImageReflectConfigStep {
         if (!methodsArray.isEmpty()) {
             json.put("methods", methodsArray);
         }
-        // reachability-metadata-schema-v1.2.0 delegates fields to DCE
         if (fields) {
             json.put("allDeclaredFields", true);
         } else if (!fieldSet.isEmpty()) {

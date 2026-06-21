@@ -58,10 +58,9 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
             this._persistenceUnits = [];
             notifier.showErrorMessage(
                 msg(
-                    str`Failed to fetch persistence units: ${0}`,
+                    str`Failed to fetch persistence units: ${String(error)}`,
                     {
                         id: 'quarkus-hibernate-orm-failed-to-fetch',
-                        args: [String(error)]
                     }
                 ),
                 'bottom-start',
@@ -200,10 +199,9 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
 
         notifier.showInfoMessage(
             msg(
-                str`Copied "${0}" to clipboard.`,
+                str`Copied "${what}" to clipboard.`,
                 {
                     id: 'quarkus-hibernate-orm-copied-to-clipboard',
-                    args: [what]
                 }
             )
         );

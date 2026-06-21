@@ -20,7 +20,7 @@ import io.smallrye.config.WithDefault;
  */
 @ConfigMapping(prefix = "quarkus.openshift")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface OpenShiftConfig extends PlatformConfiguration {
+public interface OpenShiftConfig extends PlatformConfiguration, ReplicasAware {
 
     @Override
     default String targetPlatformName() {
@@ -49,12 +49,6 @@ public interface OpenShiftConfig extends PlatformConfiguration {
     Optional<DeploymentResourceKind> deploymentKind();
 
     /**
-     * The number of desired pods
-     */
-    @WithDefault("1")
-    Integer replicas();
-
-    /**
      * The nodePort to set when serviceType is set to nodePort
      */
     OptionalInt nodePort();
@@ -63,12 +57,6 @@ public interface OpenShiftConfig extends PlatformConfiguration {
      * OpenShift route configuration
      */
     RouteConfig route();
-
-    /**
-     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
-     */
-    @WithDefault("false")
-    boolean deploy();
 
     static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
         boolean implicitlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)

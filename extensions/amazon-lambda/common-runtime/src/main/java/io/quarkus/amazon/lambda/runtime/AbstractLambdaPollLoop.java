@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 
 public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
@@ -51,13 +54,17 @@ public abstract class AbstractLambdaPollLoop {
 
     protected HttpURLConnection requestConnection = null;
 
-    public void startPollLoop(ShutdownContext context) {
+    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+
+    public void startPollLoop(ValueRegistry valueRegistry, ShutdownContext context) {
         final AtomicBoolean running = new AtomicBoolean(true);
         // flag to check whether to interrupt.
         final AtomicBoolean shouldInterrupt = new AtomicBoolean(true);
         String baseUrl = AmazonLambdaApi.baseUrl();
+        URI lambdaBase = URI.create(AmazonLambdaApi.baseUrl());
+        valueRegistry.register(LOCAL_BASE_URI,
+                URI.create(lambdaBase.getScheme() + "://" + lambdaBase.getHost() + ":" + lambdaBase.getPort()));
         final Thread pollingThread = new Thread(new Runnable() {
-            @SuppressWarnings("unchecked")
             @Override
             public void run() {
                 try {

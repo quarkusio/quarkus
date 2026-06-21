@@ -9,6 +9,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
  */
 public enum Feature {
 
+    AESH,
+    AESH_SSH,
+    AESH_WEBSOCKET,
     AGROAL,
     AMAZON_LAMBDA,
     AZURE_FUNCTIONS,
@@ -34,6 +37,7 @@ public enum Feature {
     HIBERNATE_VECTOR,
     HIBERNATE_ORM_PANACHE,
     HIBERNATE_ORM_PANACHE_KOTLIN,
+    QUARKUS_DATA_HIBERNATE,
     HIBERNATE_ORM_REST_DATA_PANACHE,
     HIBERNATE_REACTIVE,
     HIBERNATE_REACTIVE_PANACHE,
@@ -155,6 +159,7 @@ public enum Feature {
     SPRING_CACHE,
     SPRING_CLOUD_CONFIG_CLIENT,
     SPRING_SCHEDULED,
+    SPRING_TX,
     SWAGGER_UI,
     WEBSOCKETS,
     WEBSOCKETS_CLIENT,

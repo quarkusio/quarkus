@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
@@ -274,7 +275,7 @@ public class CsrfRequestResponseReactiveFilter {
 
     private static boolean isCsrfTokenRequired(RoutingContext routing, RestCsrfConfig config) {
         return config.createTokenPath()
-                .map(value -> value.contains(routing.normalizedPath())).orElse(true);
+                .map(value -> value.contains(HttpSecurityUtils.pathWithoutMatrixParams(routing.normalizedPath()))).orElse(true);
     }
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {

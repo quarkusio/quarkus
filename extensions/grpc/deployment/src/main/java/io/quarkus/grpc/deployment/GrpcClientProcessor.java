@@ -413,13 +413,15 @@ public class GrpcClientProcessor {
         }
 
         Set<Class<?>> perClientInterceptors = new LinkedHashSet<>();
-        for (String perClientInterceptor : interceptors.nonGlobalInterceptors) {
+        var sortedNonGlobalInterceptors = interceptors.nonGlobalInterceptors.stream().sorted().toList();
+        for (String perClientInterceptor : sortedNonGlobalInterceptors) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(perClientInterceptor).constructors(false).build());
             perClientInterceptors.add(recorderContext.classProxy(perClientInterceptor));
         }
         Set<Class<?>> globalInterceptors = new LinkedHashSet<>();
-        for (String globalInterceptor : interceptors.globalInterceptors) {
+        var sortedGlobalInterceptors = interceptors.globalInterceptors.stream().sorted().toList();
+        for (String globalInterceptor : sortedGlobalInterceptors) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(globalInterceptor).constructors(false).build());
             globalInterceptors.add(recorderContext.classProxy(globalInterceptor));

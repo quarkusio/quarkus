@@ -241,7 +241,7 @@ class ClassLoadingChainAnalyzerTest {
      */
     private void assertSeedPropagation(Class<?> utilClass) {
         Map<String, Supplier<byte[]>> allBytecode = bytecodeMapOf(utilClass, Target.class);
-        Map<String, Set<String>> callerIndex = buildCallerIndex(allBytecode);
+        var callerIndex = buildCallerIndex(allBytecode);
         ClassLoadingChainAnalyzer analyzer = new ClassLoadingChainAnalyzer(callerIndex, allBytecode.keySet());
         Set<String> entryPoints = analyzer.findEntryPoints();
         assertTrue(entryPoints.contains(utilClass.getName()),
@@ -279,11 +279,13 @@ class ClassLoadingChainAnalyzerTest {
     }
 
     /**
-     * Builds a reverse caller index from bytecode, using
-     * {@link ClassLoadingChainAnalyzer#shouldRecordCall} for filtering.
+     * Builds a reverse caller index from bytecode using {@link MethodKey},
+     * applying the same owner-prefix filtering as the production code in
+     * {@link JarTreeShaker#scanBytecode}.
      */
-    private static Map<String, Set<String>> buildCallerIndex(Map<String, Supplier<byte[]>> allBytecode) {
-        Map<String, Set<String>> callerIndex = new HashMap<>();
+    private static Map<MethodKey, Set<MethodKey>> buildCallerIndex(
+            Map<String, Supplier<byte[]>> allBytecode) {
+        Map<MethodKey, Set<MethodKey>> callerIndex = new HashMap<>();
         for (var entry : allBytecode.entrySet()) {
             String internalOwner = entry.getKey().replace('.', '/');
             ClassReader reader = new ClassReader(entry.getValue().get());
@@ -291,14 +293,19 @@ class ClassLoadingChainAnalyzerTest {
                 @Override
                 public MethodVisitor visitMethod(int access, String name, String descriptor,
                         String signature, String[] exceptions) {
-                    String callerKey = internalOwner + "." + name + descriptor;
+                    var callerKey = new MethodKey(internalOwner, name, descriptor);
                     return new MethodVisitor(Opcodes.ASM9) {
                         @Override
                         public void visitMethodInsn(int opcode, String owner, String mname,
                                 String mdescriptor, boolean isInterface) {
-                            String calleeKey = owner + "." + mname + mdescriptor;
-                            if (ClassLoadingChainAnalyzer.shouldRecordCall(calleeKey)) {
+                            if (!MethodKey.isJdkOrInfraClass(owner)) {
+                                var calleeKey = new MethodKey(owner, mname, mdescriptor);
                                 callerIndex.computeIfAbsent(calleeKey, k -> new HashSet<>()).add(callerKey);
+                            } else if (MethodKey.isSeedMethodOwner(owner)) {
+                                var calleeKey = new MethodKey(owner, mname, mdescriptor);
+                                if (MethodKey.SEED_METHOD_KEYS.contains(calleeKey)) {
+                                    callerIndex.computeIfAbsent(calleeKey, k -> new HashSet<>()).add(callerKey);
+                                }
                             }
                         }
                     };
@@ -315,12 +322,14 @@ class ClassLoadingChainAnalyzerTest {
     private static Set<String> analyzeInForkedJvm(Set<String> reachable,
             Map<String, Supplier<byte[]>> allBytecode) {
         Set<String> allKnown = allBytecode.keySet();
-        Set<String> discovered = ClassLoadingChainAnalyzer.executeEntryPoints(
-                reachable, allBytecode, Map.of(),
-                allKnown, List.of(), List.of());
-        discovered.retainAll(allKnown);
-        discovered.removeAll(reachable);
-        return discovered;
+        try (var env = ForkedJvmEnvironment.create(
+                allBytecode, Map.of(), List.of(), List.of())) {
+            Set<String> discovered = env.executeEntryPoints(reachable, allKnown);
+            discovered.removeAll(reachable);
+            return discovered;
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to run forked JVM analysis", e);
+        }
     }
 
     // ---- ASM generators (only used for transformed bytecode tests) ----

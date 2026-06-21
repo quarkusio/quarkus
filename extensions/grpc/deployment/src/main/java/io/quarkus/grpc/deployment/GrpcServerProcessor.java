@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -233,12 +234,20 @@ public class GrpcServerProcessor {
         }
     }
 
+    private static final DotName ABSTRACT_COROUTINE_SERVER_IMPL = DotName
+            .createSimple("io.grpc.kotlin.AbstractCoroutineServerImpl");
+
     @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
-        Collection<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
+        // TODO: this can be reverted once Jandex outputs stably ordered collections
+        List<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE)
+                .stream()
+                .sorted(Comparator.comparing(ClassInfo::name))
+                .toList();
 
+        Set<DotName> registered = new HashSet<>();
         for (ClassInfo service : bindableServices) {
             if (service.interfaceNames().contains(GrpcDotNames.MUTINY_BEAN)) {
                 // Ignore the generated beans
@@ -247,6 +256,7 @@ public class GrpcServerProcessor {
             if (Modifier.isAbstract(service.flags())) {
                 continue;
             }
+            registered.add(service.name());
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
             Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(service, index, false);
             Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(service, index, true);
@@ -257,6 +267,200 @@ public class GrpcServerProcessor {
                 item.registerVirtualMethod(method);
             }
             bindables.produce(item);
+        }
+
+        // Discover Kotlin coroutine gRPC services that extend AbstractCoroutineServerImpl.
+        // grpc-kotlin-stub may not be Jandex-indexed, so the BindableService hierarchy isn't visible.
+        // Fall back to walking the superclass chain by name for @GrpcService-annotated classes.
+        for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.GRPC_SERVICE)) {
+            if (annotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+            ClassInfo service = annotation.target().asClass();
+            if (registered.contains(service.name()) || Modifier.isAbstract(service.flags())) {
+                continue;
+            }
+            if (extendsCoroutineServerImpl(service, index)) {
+                log.debugf("Discovered Kotlin coroutine gRPC service '%s'", service.name());
+                BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
+                item.isCoroutineService = true;
+                bindables.produce(item);
+            }
+        }
+    }
+
+    private static boolean extendsCoroutineServerImpl(ClassInfo service, IndexView index) {
+        DotName superName = service.superName();
+        while (superName != null) {
+            if (superName.equals(ABSTRACT_COROUTINE_SERVER_IMPL)) {
+                return true;
+            }
+            ClassInfo superClass = index.getClassByName(superName);
+            if (superClass == null) {
+                break;
+            }
+            superName = superClass.superName();
+        }
+        return false;
+    }
+
+    private static final String ABSTRACT_COROUTINE_SERVER_IMPL_INTERNAL = "io/grpc/kotlin/AbstractCoroutineServerImpl";
+    private static final String ARC_INTERNAL = "io/quarkus/arc/Arc";
+    private static final String ARC_CONTAINER_INTERNAL = "io/quarkus/arc/ArcContainer";
+    private static final String INSTANCE_HANDLE_INTERNAL = "io/quarkus/arc/InstanceHandle";
+    private static final String CONTEXT_PRESERVING_DISPATCHER_INTERNAL = "io/quarkus/vertx/kotlin/runtime/ContextPreservingCoroutineDispatcher";
+    private static final String COROUTINE_CONTEXT_INTERNAL = "kotlin/coroutines/CoroutineContext";
+
+    /**
+     * Ensures Vert.x context propagation in Kotlin coroutine gRPC services.
+     *
+     * <h2>Problem</h2>
+     * grpc-kotlin's {@code AbstractCoroutineServerImpl} has an immutable {@code context} val
+     * that defaults to {@code EmptyCoroutineContext}. The generated {@code bindService()} passes
+     * {@code this.context} to {@code ServerCalls.unaryServerMethodDefinition(...)}, which then
+     * launches coroutines on {@code Dispatchers.Default} — losing the Vert.x duplicated context
+     * that was set up by {@code GrpcDuplicatedContextGrpcInterceptor}.
+     *
+     * <h2>Transformation</h2>
+     * For each {@code @GrpcService} extending {@code AbstractCoroutineServerImpl}, this step
+     * locates the class defining {@code bindService()} (typically the generated
+     * {@code *CoroutineImplBase}) and uses ASM to replace every {@code this.getContext()} call
+     * inside {@code bindService()} with a CDI lookup of
+     * {@code ContextPreservingCoroutineDispatcher} — a Vert.x-aware {@code CoroutineDispatcher}
+     * that dispatches via {@code runOnContext}, preserving the duplicated context.
+     *
+     * <h2>Example</h2>
+     *
+     * <pre>{@code
+     * // Before (what the user/codegen writes in bindService()):
+     * unaryServerMethodDefinition(
+     *     context = this.context,  // EmptyCoroutineContext → Dispatchers.Default
+     *     descriptor = GreeterGrpc.getSayHelloMethod(),
+     *     implementation = ::sayHello,
+     * )
+     *
+     * // After transformation (effective behavior):
+     * unaryServerMethodDefinition(
+     *     context = Arc.container().instance(ContextPreservingCoroutineDispatcher.class).get(),
+     *     descriptor = GreeterGrpc.getSayHelloMethod(),
+     *     implementation = ::sayHello,
+     * )
+     * }</pre>
+     */
+    @BuildStep
+    void transformCoroutineServices(
+            List<BindableServiceBuildItem> bindables,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        IndexView index = combinedIndex.getIndex();
+        boolean hasCoroutineServices = false;
+
+        for (BindableServiceBuildItem bindable : bindables) {
+            if (!bindable.isCoroutineService) {
+                continue;
+            }
+
+            ClassInfo classInfo = index.getClassByName(bindable.serviceClass);
+            if (classInfo == null) {
+                continue;
+            }
+            String classWithBindService = findClassDefiningBindService(classInfo, index);
+            if (classWithBindService == null) {
+                continue;
+            }
+
+            hasCoroutineServices = true;
+            log.debugf("Transforming coroutine gRPC service '%s' to propagate Vert.x context", classWithBindService);
+
+            transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(classWithBindService)
+                    .setVisitorFunction(new CoroutineBindServiceTransformer())
+                    .build());
+        }
+
+        if (hasCoroutineServices) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CONTEXT_PRESERVING_DISPATCHER_INTERNAL
+                    .replace('/', '.')));
+        }
+    }
+
+    private static String findClassDefiningBindService(ClassInfo classInfo, IndexView index) {
+        ClassInfo current = classInfo;
+        while (current != null) {
+            for (MethodInfo method : current.methods()) {
+                if (method.name().equals("bindService") && method.parametersCount() == 0) {
+                    return current.name().toString();
+                }
+            }
+            DotName superName = current.superName();
+            if (superName == null || superName.equals(ABSTRACT_COROUTINE_SERVER_IMPL)) {
+                break;
+            }
+            current = index.getClassByName(superName);
+        }
+        return null;
+    }
+
+    /**
+     * Replaces the {@code this.getContext()} call in {@code bindService()} with a lookup
+     * of {@code ContextPreservingCoroutineDispatcher} from Arc, so that grpc-kotlin launches coroutines
+     * with a Vert.x-aware dispatcher instead of {@code EmptyCoroutineContext}.
+     */
+    static class CoroutineBindServiceTransformer
+            implements BiFunction<String, org.objectweb.asm.ClassVisitor, org.objectweb.asm.ClassVisitor> {
+
+        @Override
+        public org.objectweb.asm.ClassVisitor apply(String className,
+                org.objectweb.asm.ClassVisitor outputClassVisitor) {
+            return new org.objectweb.asm.ClassVisitor(io.quarkus.gizmo.Gizmo.ASM_API_VERSION, outputClassVisitor) {
+
+                @Override
+                public org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor,
+                        String signature, String[] exceptions) {
+                    org.objectweb.asm.MethodVisitor mv = super.visitMethod(access, name, descriptor, signature,
+                            exceptions);
+                    if (!"bindService".equals(name)) {
+                        return mv;
+                    }
+                    return new org.objectweb.asm.MethodVisitor(io.quarkus.gizmo.Gizmo.ASM_API_VERSION, mv) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                                boolean isInterface) {
+                            if ("getContext".equals(name)
+                                    && "()Lkotlin/coroutines/CoroutineContext;".equals(descriptor)) {
+                                // Drop the 'this' that was pushed for the getContext() call
+                                super.visitInsn(org.objectweb.asm.Opcodes.POP);
+                                // Arc.container()
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKESTATIC,
+                                        ARC_INTERNAL, "container",
+                                        "()L" + ARC_CONTAINER_INTERNAL + ";", false);
+                                // .instance(ContextPreservingCoroutineDispatcher.class)
+                                super.visitLdcInsn(
+                                        org.objectweb.asm.Type.getObjectType(CONTEXT_PRESERVING_DISPATCHER_INTERNAL));
+                                super.visitInsn(org.objectweb.asm.Opcodes.ICONST_0);
+                                super.visitTypeInsn(org.objectweb.asm.Opcodes.ANEWARRAY,
+                                        "java/lang/annotation/Annotation");
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKEINTERFACE,
+                                        ARC_CONTAINER_INTERNAL, "instance",
+                                        "(Ljava/lang/Class;[Ljava/lang/annotation/Annotation;)L"
+                                                + INSTANCE_HANDLE_INTERNAL + ";",
+                                        true);
+                                // .get()
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKEINTERFACE,
+                                        INSTANCE_HANDLE_INTERNAL, "get",
+                                        "()Ljava/lang/Object;", true);
+                                // cast to CoroutineContext
+                                super.visitTypeInsn(org.objectweb.asm.Opcodes.CHECKCAST,
+                                        COROUTINE_CONTEXT_INTERNAL);
+                            } else {
+                                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                            }
+                        }
+                    };
+                }
+            };
         }
     }
 
@@ -679,7 +883,7 @@ public class GrpcServerProcessor {
 
         Map<String, Set<Class<?>>> perClientInterceptors = new LinkedHashMap<>();
         for (Entry<String, Set<String>> entry : registeredInterceptors.entrySet()) {
-            Set<Class<?>> interceptorClasses = new HashSet<>();
+            Set<Class<?>> interceptorClasses = new LinkedHashSet<>();
             for (String interceptorClass : entry.getValue()) {
                 interceptorClasses.add(recorderContext.classProxy(interceptorClass));
             }
@@ -833,7 +1037,7 @@ public class GrpcServerProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
 
             // Grpc service to blocking method
-            Map<String, List<String>> blocking = new HashMap<>();
+            Map<String, List<String>> blocking = new LinkedHashMap<>();
             for (BindableServiceBuildItem bindable : bindables) {
                 if (bindable.hasBlockingMethods()) {
                     blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);

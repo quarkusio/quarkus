@@ -1,29 +1,31 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.Map;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 
-import io.smallrye.config.WithDefault;
-
-public interface SecretVolumeConfig {
+public interface SecretVolumeConfig extends VolumeConfig {
     /**
      * The name of the secret to mount.
      */
     String secretName();
 
-    /**
-     * Default mode. When specifying an octal number, leading zero must be present.
-     */
-    @WithDefault("0600")
-    String defaultMode();
+    default Volume toVolume(String name) {
+        final var volume = new VolumeBuilder()
+                .withName(name)
+                .withNewSecret();
+        items().forEach((k, v) -> {
+            final var item = volume.addNewItem().withKey(k).withPath(v.path());
+            if (v.hasExplicitMode()) {
+                item.withMode(v.mode());
+            }
+            item.endItem();
+        });
 
-    /**
-     * The list of files to be mounted.
-     */
-    Map<String, VolumeItemConfig> items();
-
-    /**
-     * Optional
-     */
-    @WithDefault("false")
-    boolean optional();
+        return volume
+                .withSecretName(secretName())
+                .withDefaultMode(FilePermissionUtil.parseInt(defaultMode()))
+                .withOptional(optional())
+                .endSecret()
+                .build();
+    }
 }

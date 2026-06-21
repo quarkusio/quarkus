@@ -43,15 +43,15 @@ triage:
     monitoredCategories: [33575230]
   guardedBranches:
     - ref: '3.33'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.27'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.20'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.15'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.8'
-      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
   rules:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
@@ -153,7 +153,7 @@ triage:
         - integration-tests/jpa
         - integration-tests/hibernate-envers
         - integration-tests/hibernate-orm-tenancy
-        - integration-tests/infinispan-cache-jpa
+        - integration-tests/hibernate-orm-cache
     - id: hibernate-search
       labels: [area/hibernate-search]
       expression: |
@@ -295,6 +295,14 @@ triage:
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
+    - id: data
+      labels: [area/data]
+      title: "(quarkus.data(?!source)|jakarta data)"
+      notify: [FroMage]  # yrodiere/lucamolteni use the lottery instead
+      directories:
+        - extensions/data/
+        - integration-tests/data/
+        - integration-tests/data-
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
@@ -341,11 +349,10 @@ triage:
     - id: m1
       labels: [env/m1]
       titleBody: "\\bm1\\b"
-      notify: [gastaldi]
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand]
+      notify: [geoand, metacosm]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -354,15 +361,15 @@ triage:
     - id: minikube
       labels: [area/kubernetes]
       titleBody: "minikube"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: openshift
       labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: knative
       labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand]
+      notify: [geoand, metacosm]
     - id: container-image
       labels: [area/container-image]
       expression: |
@@ -394,7 +401,7 @@ triage:
       notify: [karesti, wburns]
       directories:
         - extensions/infinispan-client/
-        - integration-tests/infinispan-cache-jpa/
+        - integration-tests/infinispan-cache/
         - integration-tests/infinispan-client/
     - id: grpc
       labels: [area/grpc]
@@ -745,7 +752,7 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro]
+      notify: [barreiro, gastaldi]
       directories:
         - extensions/agroal/
     - id: continuous-testing

@@ -163,6 +163,11 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
     }
 
+    @Test
+    public void testCaseInsensitiveSorting() {
+        RestAssured.when().get("/test/testCaseInsensitiveSorting").then().body(is("OK"));
+    }
+
     @DisabledOnIntegrationTest
     @RunOnVertxContext
     @Test
@@ -305,6 +310,18 @@ public class PanacheFunctionalityTest {
         // If you're wondering why we're testing this:
         // apparently we're actually testing UniAsserter here, see https://github.com/quarkusio/quarkus/pull/18794
         asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), IllegalArgumentException.class);
+    }
+
+    /**
+     * Verifies that both {@code session.currentTransaction()} and
+     * {@code Panache.currentTransaction()} return non-null inside a
+     * {@code @Transactional} method after a DB operation.
+     *
+     * @see <a href="https://github.com/hibernate/hibernate-reactive/issues/2852">HR #2852</a>
+     */
+    @Test
+    public void testCurrentTransactionWithJakartaTransactional() {
+        RestAssured.when().get("/test-transactional/current-transaction").then().body(is("OK"));
     }
 
     @Test

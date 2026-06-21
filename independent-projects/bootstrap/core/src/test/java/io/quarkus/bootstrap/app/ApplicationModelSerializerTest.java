@@ -8,13 +8,18 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.model.ExtensionDevModeConfig;
+import io.quarkus.bootstrap.model.JvmOption;
 import io.quarkus.bootstrap.model.PlatformImports;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyBuilder;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -164,6 +169,115 @@ class ApplicationModelSerializerTest {
                                 assertThat(directDep.getScope()).isEqualTo("test");
                             });
                 });
+    }
+
+    @Test
+    void testSerializationWithExtensionDevModeConfig() throws IOException {
+        ApplicationModelBuilder builder = createBasicApplicationModelBuilder();
+        Properties props = new Properties();
+        props.setProperty("dev-mode.jvm-option.std.enable-preview", "");
+        props.setProperty("dev-mode.jvm-option.std.add-modules", "java.compiler");
+        props.setProperty("dev-mode.jvm-option.xx.MaxDirectMemorySize", "256m");
+        props.setProperty(BootstrapConstants.EXT_DEV_MODE_LOCK_JVM_OPTIONS, "MaxDirectMemorySize");
+        builder.handleExtensionProperties(props, ArtifactKey.ga("io.quarkus", "quarkus-vertx"));
+
+        ApplicationModel originalModel = builder.build();
+
+        Path serializedFile = tempDir.resolve("app-model-ext-dev.json");
+        ApplicationModelSerializer.serialize(originalModel, serializedFile);
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(serializedFile);
+
+        Collection<ExtensionDevModeConfig> configs = deserialized.getExtensionDevModeConfig();
+        assertThat(configs).hasSize(1);
+
+        ExtensionDevModeConfig config = configs.iterator().next();
+        assertThat(config.getExtensionKey().getGroupId()).isEqualTo("io.quarkus");
+        assertThat(config.getExtensionKey().getArtifactId()).isEqualTo("quarkus-vertx");
+
+        assertThat(config.getJvmOptions().asCollection()).hasSize(3);
+        assertJvmOption(config, "enable-preview", false);
+        assertJvmOption(config, "add-modules", true, "java.compiler");
+        assertJvmOption(config, "MaxDirectMemorySize", true, "256m");
+
+        assertThat(config.getLockJvmOptions()).containsExactly("MaxDirectMemorySize");
+    }
+
+    @Test
+    void testSerializationWithMultipleExtensionDevModeConfigs() throws IOException {
+        ApplicationModelBuilder builder = createBasicApplicationModelBuilder();
+
+        Properties vertxProps = new Properties();
+        vertxProps.setProperty("dev-mode.jvm-option.std.enable-preview", "");
+        builder.handleExtensionProperties(vertxProps, ArtifactKey.ga("io.quarkus", "quarkus-vertx"));
+
+        Properties nettyProps = new Properties();
+        nettyProps.setProperty("dev-mode.jvm-option.xx.MaxDirectMemorySize", "512m");
+        nettyProps.setProperty(BootstrapConstants.EXT_DEV_MODE_LOCK_JVM_OPTIONS, "MaxDirectMemorySize,enable-preview");
+        builder.handleExtensionProperties(nettyProps, ArtifactKey.ga("io.quarkus", "quarkus-netty"));
+
+        ApplicationModel originalModel = builder.build();
+
+        Path serializedFile = tempDir.resolve("app-model-multi-ext-dev.json");
+        ApplicationModelSerializer.serialize(originalModel, serializedFile);
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(serializedFile);
+
+        Collection<ExtensionDevModeConfig> configs = deserialized.getExtensionDevModeConfig();
+        assertThat(configs).hasSize(2);
+
+        assertThat(configs).anySatisfy(c -> {
+            assertThat(c.getExtensionKey().getArtifactId()).isEqualTo("quarkus-vertx");
+            assertJvmOption(c, "enable-preview", false);
+            assertThat(c.getLockJvmOptions()).isEmpty();
+        });
+        assertThat(configs).anySatisfy(c -> {
+            assertThat(c.getExtensionKey().getArtifactId()).isEqualTo("quarkus-netty");
+            assertJvmOption(c, "MaxDirectMemorySize", true, "512m");
+            assertThat(c.getLockJvmOptions()).containsExactlyInAnyOrder("MaxDirectMemorySize", "enable-preview");
+        });
+    }
+
+    @Test
+    void testSerializationWithExtensionDevModeConfigLockOnly() throws IOException {
+        ApplicationModelBuilder builder = createBasicApplicationModelBuilder();
+        Properties props = new Properties();
+        props.setProperty(BootstrapConstants.EXT_DEV_MODE_LOCK_JVM_OPTIONS, "enable-preview");
+        builder.handleExtensionProperties(props, ArtifactKey.ga("io.quarkus", "quarkus-vertx"));
+
+        ApplicationModel originalModel = builder.build();
+
+        Path serializedFile = tempDir.resolve("app-model-ext-dev-lock-only.json");
+        ApplicationModelSerializer.serialize(originalModel, serializedFile);
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(serializedFile);
+
+        Collection<ExtensionDevModeConfig> configs = deserialized.getExtensionDevModeConfig();
+        assertThat(configs).hasSize(1);
+
+        ExtensionDevModeConfig config = configs.iterator().next();
+        assertThat(config.getExtensionKey().getArtifactId()).isEqualTo("quarkus-vertx");
+        assertThat(config.getJvmOptions()).isNull();
+        assertThat(config.getLockJvmOptions()).containsExactly("enable-preview");
+    }
+
+    private static void assertJvmOption(ExtensionDevModeConfig config, String name, boolean hasValue, String... values) {
+        JvmOption option = config.getJvmOptions().asCollection().stream()
+                .filter(o -> o.getName().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("JVM option '" + name + "' not found"));
+        assertThat(option.hasValue()).isEqualTo(hasValue);
+        if (hasValue) {
+            assertThat(option.getValues()).containsExactlyInAnyOrder(values);
+        }
+    }
+
+    private ApplicationModelBuilder createBasicApplicationModelBuilder() {
+        ResolvedDependencyBuilder appArtifact = ResolvedDependencyBuilder.newInstance()
+                .setGroupId("com.example")
+                .setArtifactId("my-app")
+                .setVersion("1.0.0")
+                .setResolvedPath(tempDir.resolve("my-app-1.0.0.jar"));
+        return new ApplicationModelBuilder()
+                .setAppArtifact(appArtifact)
+                .setPlatformImports(PlatformImports.fromMap(Collections.emptyMap()));
     }
 
     private ApplicationModel createBasicApplicationModel() {

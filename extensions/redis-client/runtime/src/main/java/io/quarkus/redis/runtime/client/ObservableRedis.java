@@ -2,7 +2,6 @@ package io.quarkus.redis.runtime.client;
 
 import java.util.List;
 
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -47,7 +46,7 @@ public class ObservableRedis implements Redis {
     }
 
     @Override
-    public Redis send(Request command, Handler<AsyncResult<@Nullable Response>> onSend) {
+    public Redis send(Request command, Handler<AsyncResult<Response>> onSend) {
         long begin = System.nanoTime();
         redis.send(command, ar -> {
             report(System.nanoTime() - begin, ar.succeeded());
@@ -57,7 +56,7 @@ public class ObservableRedis implements Redis {
     }
 
     @Override
-    public Redis batch(List<Request> commands, Handler<AsyncResult<List<@Nullable Response>>> onSend) {
+    public Redis batch(List<Request> commands, Handler<AsyncResult<List<Response>>> onSend) {
         long begin = System.nanoTime();
         redis.batch(commands, ar -> {
             report(System.nanoTime() - begin, ar.succeeded());
@@ -106,7 +105,7 @@ public class ObservableRedis implements Redis {
         }
 
         @Override
-        public RedisConnection handler(@Nullable Handler<Response> handler) {
+        public RedisConnection handler(Handler<Response> handler) {
             delegate.handler(handler);
             return this;
         }
@@ -130,7 +129,7 @@ public class ObservableRedis implements Redis {
         }
 
         @Override
-        public RedisConnection endHandler(@Nullable Handler<Void> endHandler) {
+        public RedisConnection endHandler(Handler<Void> endHandler) {
             delegate.endHandler(endHandler);
             return this;
         }

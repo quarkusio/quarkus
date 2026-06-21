@@ -1,0 +1,59 @@
+name: "CodeQL Security Scan"
+
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+    timeout-minutes: 120
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Reclaim Disk Space
+      run: .github/ci-prerequisites.sh
+    - name: Setup Java JDK
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: temurin
+        java-version: 17
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+        CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+        CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+        echo "m2-monthly-cache-key=m2-cache-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+        echo "m2-monthly-branch-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+        echo "m2-cache-key=m2-cache-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+    - name: Restore Maven Repository
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ steps.cache-key.outputs.m2-cache-key }}
+        restore-keys: |
+          ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+          ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+      with:
+        languages: java
+        queries: security-extended
+
+    - name: Build
+      run: |
+        ./mvnw -T1C -e -B --settings .github/mvn-settings.xml --fail-at-end -DskipTests -DskipITs -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-test-modules install
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0

@@ -47,6 +47,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     private static final Logger LOG = Logger.getLogger(ParallelCommonsCompressArchiveCreator.class);
 
+    private static final String META_INF = "META-INF/";
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
     private static final Set<String> VERSIONS = Set.of("META-INF/versions/", "META-INF\\versions\\");
 
@@ -107,7 +108,8 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         if (!directory.endsWith("/")) {
             directory += "/";
         }
-        if (addedFiles.putIfAbsent(directory, source) != null) {
+        if (addedFiles.putIfAbsent(directory, source) != null || META_INF.equals(directory)) {
+            // we only add a directory entry once and we ignore the META-INF/ directory as it will be forcefully added as the first entry of the Zip file
             return;
         }
         addDirectoryEntry(new ZipArchiveEntry(directory));
@@ -281,13 +283,17 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     @Override
     public void close() {
         try (archive) {
-            if (manifest != null) {
-                // we add the manifest directly to the final archive to make sure it is the first element added
-                ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry("META-INF/");
+            if (manifest != null || addedFiles.containsKey(META_INF)) {
+                // we always add the META-INF/ entry first
+                ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry(META_INF);
                 normalizeTimestampsAndPermissions(metaInfArchiveEntry);
                 archive.putArchiveEntry(metaInfArchiveEntry);
                 archive.closeArchiveEntry();
+            }
 
+            if (manifest != null) {
+                // we add the manifest directly to the final archive to make sure it is the first element added
+                // (except for the META-INF/ directory that is allowed first)
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 manifest.write(baos);
                 byte[] manifestBytes = baos.toByteArray();

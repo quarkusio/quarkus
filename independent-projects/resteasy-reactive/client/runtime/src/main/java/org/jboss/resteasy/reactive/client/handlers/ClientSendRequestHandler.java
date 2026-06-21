@@ -116,11 +116,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     return;
                 }
 
-                for (int i = 0; i < clientRequestCustomizers.size(); i++) {
-                    clientRequestCustomizers.get(i).accept(httpClientRequest);
-                }
-
-                requestContext.setHttpClientRequest(httpClientRequest);
+                customizeRequest(httpClientRequest, requestContext);
 
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection
                 ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
@@ -254,6 +250,71 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     reportFinish(event, requestContext);
                 }
             }
+        });
+    }
+
+    private void customizeRequest(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext) {
+        installRedirectRequestCustomizer(httpClientRequest, requestContext);
+        for (int i = 0; i < clientRequestCustomizers.size(); i++) {
+            clientRequestCustomizers.get(i).accept(httpClientRequest);
+        }
+
+        requestContext.setHttpClientRequest(httpClientRequest);
+    }
+
+    /*
+     * If the request leads to a new request because of redirect then this method will install the original request's
+     * customizers to the new redirect request.
+     */
+    private void installRedirectRequestCustomizer(HttpClientRequest httpClientRequest,
+            RestClientRequestContext requestContext) {
+        if (!followRedirects || clientRequestCustomizers.isEmpty()) {
+            return;
+        }
+        httpClientRequest.redirectHandler(response -> {
+            /*
+             * The docs for `redirectHandler()` make no statement about whether the returned result is nullable.
+             * We'll guard against null here and assume there's no redirect taking place.
+             */
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
+                    // For Vert.x 5 we'll have to cast the `HttpClient` to `HttpClientInternal` in order to access
+                    // this method
+                    .redirectHandler();
+            if (redirectHandler == null) {
+                return Future.succeededFuture(null);
+            }
+
+            /*
+             * @see HttpClient#redirectHandler(Function)
+             * According to the docs the `redirectHandler` function returns null if there is no redirect taking place.
+             *
+             * But it doesn't return `HttpClientRequest`, it returns a `Future<RequestOptions>`.
+             * Vert.x 3 exposed redirect handling in terms of HttpClientRequest, while Vert.x 4
+             * changed the client-level redirect handler to Future<RequestOptions>. The current
+             * docs still describe the old null semantics, so they are likely stale.
+             *
+             * In practice, we defensively accept both interpretations of "no redirect":
+             * - the handler returns a null Future<RequestOptions>
+             * - the handler returns a Future completing with null RequestOptions
+             */
+            Future<RequestOptions> redirectOptions = redirectHandler.apply(response);
+            if (redirectOptions == null) {
+                return Future.succeededFuture(null);
+            }
+            return redirectOptions.compose(options -> {
+                if (options == null) {
+                    return Future.succeededFuture(null);
+                }
+                /*
+                 * If there is a redirect taking place install the original request's customizers to the redirect
+                 * request.
+                 */
+                return requestContext.getHttpClient().request(options)
+                        .map(nextRequest -> {
+                            customizeRequest(nextRequest, requestContext);
+                            return nextRequest;
+                        });
+            });
         });
     }
 

@@ -220,6 +220,7 @@ quarkus.oidc.credentials.jwt.key-id=mykeyAlias
 
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that a client secret is not sent to the OIDC provider, thereby avoiding the risk of interception by a 'man-in-the-middle' attack.
 
+[[jwt-bearer-client-authentication]]
 .Example: Using a JWT Bearer token to authenticate a client
 
 [source,properties]
@@ -231,8 +232,25 @@ quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
 ----
 <1> Use a JWT bearer token to authenticate the OIDC provider client.
 For more information, see the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.2[Using JWTs for Client Authentication] section.
-<2> Path to a JWT bearer token. 
+<2> Path to a JWT bearer token.
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
+
+.Example: Using a SPIFFE JWT-SVID token to authenticate a client
+
+link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
+When the JWT source is set to `spiffe-jwt`, the `client_assertion_type` parameter is set to `urn:ietf:params:oauth:client-assertion-type:jwt-spiffe` and the token's `sub` claim must contain a valid SPIFFE ID starting with `spiffe://`.
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.source=spiffe-jwt <1>
+quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
+----
+<1> Use a SPIFFE JWT-SVID token to authenticate the OIDC provider client.
+<2> Path to a SPIFFE JWT-SVID token.
+Quarkus loads a new token from the filesystem and reloads it when the token expires.
+The token's `sub` claim is verified to start with the `spiffe://` scheme.
 
 ==== Additional JWT authentication options
 
@@ -339,6 +357,17 @@ quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
+[[authenticated-access-to-all-oidc-endpoints]]
+==== Authenticated access to all OIDC endpoints
+
+OIDC discovery and JWKS are typically public endpoints.
+Some OIDC providers may enforce authenticated access to these endpoints.
+For example, the Kubernetes API server acts as an OIDC provider for service account tokens and requires a bearer access token to access its discovery and JWKS endpoints.
+
+To send client credentials to these endpoints, set `quarkus.oidc.credentials.for-all-endpoints=true`.
+Since the discovery and JWKS endpoints are accessed with HTTP GET requests, only authentication methods that use the HTTP `Authorization` header are effective, such as `client_secret_basic` and <<jwt-bearer-client-authentication,JWT bearer>>.
+Alternatively, you can use <<code-flow-oidc-request-filters,OidcRequestFilter>> to customize the authentication.
+
 [[code-flow-oidc-request-filters]]
 === OIDC request filters
 
@@ -408,7 +437,7 @@ public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
 `OidcRequestContextProperties` can be used to access request properties.
 Currently, you can use a `tenand_id` key to access the OIDC tenant ID and a `grant_type` key to access the grant type that the OIDC provider uses to acquire tokens.
-The `grant_type` can only be set to either an `authorization_code` or `refresh_token` grant type when requests are made to the token endpoint. 
+The `grant_type` can only be set to either an `authorization_code` or `refresh_token` grant type when requests are made to the token endpoint.
 It is `null` in all other cases.
 
 `OidcRequestFilter` can customize a request body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
@@ -971,7 +1000,7 @@ quarkus.oidc.authentication.pkce-required=true
 quarkus.oidc.authentication.state-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-If you already have a 32-character client secret, you do not need to set the  `quarkus.oidc.authentication.pkce-secret` property unless you prefer to use a different secret key.
+If you already have a 32-character client secret, you do not need to set the `quarkus.oidc.authentication.state-secret` property unless you prefer to use a different secret key.
 This secret will be auto-generated if it is not configured, and if fallback to the client secret is not possible when the client secret is less than 16 characters.
 
 The secret key is required to encrypt a randomly generated PKCE `code_verifier` while the user is redirected to an OIDC provider with the `code_challenge` query parameter to authenticate.
@@ -1112,10 +1141,10 @@ When the user is redirected back to Quarkus to complete the authorization code f
 
 The default state cookie age is 5 minutes, and you can change it with a `quarkus.oidc.authentication.state-cookie-age` Duration property.
 
-Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication. 
+Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication.
 Many concurrent authentication requests on behalf of the same user can cause multiple state cookies to be created.
 
-If you do not want to allow your users to use multiple browser tabs to authenticate, disable this by specifying `quarkus.oidc.authentication.allow-multiple-code-flows=false`. 
+If you do not want to allow your users to use multiple browser tabs to authenticate, disable this by specifying `quarkus.oidc.authentication.allow-multiple-code-flows=false`.
 This action also ensures that the same state cookie name is created for every new user authentication.
 
 [[token-state-manager]]
@@ -1645,6 +1674,48 @@ See also the <<oidc-redirect-filters>> section explaining how a custom `OidcRedi
 You cannot extend the user session indefinitely.
 The returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token expires.
 ====
+
+[[code-flow-step-up-authentication]]
+=== Step Up Authentication
+
+The `io.quarkus.oidc.AuthenticationContext` annotation can be used to list one or more Authentication Context Class Reference (ACR) values to enforce a required authentication level for the Jakarta REST resource classes and methods.
+Consider the following example:
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.oidc.AuthenticationContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/transfer")
+public class TransferResource {
+
+    @GET
+    @AuthenticationContext("gold") <1>
+    public String transfer() {
+        return "transferred";
+    }
+}
+----
+<1> The ID token of the current session must have an `acr` claim with the `gold` ACR value.
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false <1>
+----
+<1> Disable proactive authentication so that the `@AuthenticationContext` annotation can be matched with the endpoint before Quarkus authenticates incoming requests.
+
+The authorization request to the OIDC provider includes the `acr_values` parameter listing the required ACR values, and the `max_age` parameter when the annotation's `maxAge` attribute is set.
+
+When the current session does not provide the required authentication level, for example, because the ID token `acr` claim does not list the required ACR values, the user is redirected to the OIDC provider to re-authenticate.
+This redirect also includes the `acr_values` parameter, so the provider can request a stronger authentication method, for example, a multi-factor authentication, before issuing new tokens.
+
+How the requested ACR values are enforced is specific to each OIDC provider.
+For example, see the link:https://www.keycloak.org/docs/latest/server_admin/index.html#_step-up-flow[Keycloak Step-up Authentication] documentation describing how Keycloak maps ACR values to Levels of Authentication (LoA) in browser authentication flows.
+
+For information about how a required authentication level is enforced in a Bearer token authentication flow, see the xref:security-oidc-bearer-token-authentication.adoc#step-up-authentication[Step Up Authentication] section of the Quarkus OIDC Bearer token authentication guide.
 
 [[oauth2]]
 === Integration with GitHub and non-OIDC OAuth2 providers

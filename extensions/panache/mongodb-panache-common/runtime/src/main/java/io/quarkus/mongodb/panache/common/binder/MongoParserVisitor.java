@@ -1,6 +1,12 @@
 package io.quarkus.mongodb.panache.common.binder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import org.bson.conversions.Bson;
+
+import com.mongodb.client.model.Filters;
 
 import io.quarkus.panacheql.internal.HqlParser;
 import io.quarkus.panacheql.internal.HqlParser.ComparisonPredicateContext;
@@ -12,7 +18,7 @@ import io.quarkus.panacheql.internal.HqlParser.PositionalParameterContext;
 import io.quarkus.panacheql.internal.HqlParser.StandardFunctionContext;
 import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 
-class MongoParserVisitor extends HqlParserBaseVisitor<String> {
+class MongoParserVisitor extends HqlParserBaseVisitor<Object> {
     private Map<String, String> replacementMap;
     private Map<String, Object> parameterMaps;
 
@@ -22,110 +28,112 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitAndPredicate(HqlParser.AndPredicateContext ctx) {
-        StringBuilder sb = new StringBuilder();
+    public Object visitAndPredicate(HqlParser.AndPredicateContext ctx) {
+        List<Bson> filters = new ArrayList<>();
         for (HqlParser.PredicateContext predicate : ctx.predicate()) {
-            if (sb.length() > 0)
-                sb.append(",");
-            sb.append(predicate.accept(this));
+            filters.add((Bson) predicate.accept(this));
         }
-        return sb.toString();
+        return Filters.and(filters);
     }
 
     @Override
-    public String visitOrPredicate(HqlParser.OrPredicateContext ctx) {
-        StringBuilder sb = new StringBuilder("'$or':[");
+    public Object visitOrPredicate(HqlParser.OrPredicateContext ctx) {
+        List<Bson> filters = new ArrayList<>();
         for (HqlParser.PredicateContext predicate : ctx.predicate()) {
-            if (sb.length() > 7)
-                sb.append(",");
-            sb.append('{').append(predicate.accept(this)).append('}');
+            filters.add((Bson) predicate.accept(this));
         }
-        sb.append("]");
-        return sb.toString();
+        return Filters.or(filters);
     }
 
     @Override
-    public String visitComparisonPredicate(ComparisonPredicateContext ctx) {
-        String lhs = ctx.expression(0).accept(this);
-        String rhs = ctx.expression(1).accept(this);
+    public Object visitComparisonPredicate(ComparisonPredicateContext ctx) {
+        String field = (String) ctx.expression(0).accept(this);
+        Object value = ctx.expression(1).accept(this);
         if (ctx.comparisonOperator().EQUAL() != null) {
-            return lhs + ":" + rhs;
+            return Filters.eq(field, value);
         }
         if (ctx.comparisonOperator().NOT_EQUAL() != null) {
-            return lhs + ":{'$ne':" + rhs + "}";
+            return Filters.ne(field, value);
         }
         if (ctx.comparisonOperator().GREATER() != null) {
-            return lhs + ":{'$gt':" + rhs + "}";
+            return Filters.gt(field, value);
         }
         if (ctx.comparisonOperator().GREATER_EQUAL() != null) {
-            return lhs + ":{'$gte':" + rhs + "}";
+            return Filters.gte(field, value);
         }
         if (ctx.comparisonOperator().LESS() != null) {
-            return lhs + ":{'$lt':" + rhs + "}";
+            return Filters.lt(field, value);
         }
         if (ctx.comparisonOperator().LESS_EQUAL() != null) {
-            return lhs + ":{'$lte':" + rhs + "}";
+            return Filters.lte(field, value);
         }
         return super.visitComparisonPredicate(ctx);
     }
 
     @Override
-    public String visitLikePredicate(HqlParser.LikePredicateContext ctx) {
-        String parameter = ctx.expression(1).accept(this);
-        if (parameter.indexOf('/') == 1 && parameter.lastIndexOf('/') > 1) {
-            // In case we have something like '/.*/.*' we are in a JavaScript regex, so we must unescape the parameter.
-            // We do this here instead of inside visitParameterExpression to avoid unescaping for non-regex parameters.
-            parameter = parameter.substring(1, parameter.length() - 1);
+    public Object visitLikePredicate(HqlParser.LikePredicateContext ctx) {
+        String field = (String) ctx.expression(0).accept(this);
+        Object parameter = ctx.expression(1).accept(this);
+        String pattern = parameter.toString();
+        // In case we have something like '/.*/.*' we are in a JavaScript regex, so we must unescape the parameter.
+        // We do this here instead of inside visitParameterExpression to avoid unescaping for non-regex parameters.
+        if (pattern.startsWith("/") && pattern.lastIndexOf('/') > 0) {
+            int lastSlash = pattern.lastIndexOf('/');
+            String options = pattern.substring(lastSlash + 1);
+            pattern = pattern.substring(1, lastSlash);
+            if (!options.isEmpty()) {
+                return Filters.regex(field, pattern, options);
+            }
         }
-        return ctx.expression(0).accept(this) + ":{'$regex':" + parameter + "}";
+        return Filters.regex(field, pattern);
     }
 
     @Override
-    public String visitIsNullPredicate(HqlParser.IsNullPredicateContext ctx) {
+    public Object visitIsNullPredicate(HqlParser.IsNullPredicateContext ctx) {
+        String field = (String) ctx.expression().accept(this);
         boolean exists = ctx.NOT() != null;
-        return ctx.expression().accept(this) + ":{'$exists':" + exists + "}";
+        return Filters.exists(field, exists);
     }
 
     @Override
-    public String visitLiteralExpression(HqlParser.LiteralExpressionContext ctx) {
-        String text = ctx.getText();
+    public Object visitLiteralExpression(HqlParser.LiteralExpressionContext ctx) {
         // FIXME: this only really supports text literals
+        String text = ctx.getText();
         if (ctx.literal().STRING_LITERAL() != null) {
             text = text.substring(1, text.length() - 1);
         }
-        return CommonQueryBinder.escape(text);
+        return text;
     }
 
     @Override
-    public String visitNamedParameter(NamedParameterContext ctx) {
+    public Object visitNamedParameter(NamedParameterContext ctx) {
         return visitParameter(ctx);
     }
 
     @Override
-    public String visitPositionalParameter(PositionalParameterContext ctx) {
+    public Object visitPositionalParameter(PositionalParameterContext ctx) {
         return visitParameter(ctx);
     }
 
     @Override
-    public String visitParameterExpression(HqlParser.ParameterExpressionContext ctx) {
+    public Object visitParameterExpression(HqlParser.ParameterExpressionContext ctx) {
         return visitParameter(ctx.parameter());
     }
 
     @Override
-    public String visitGroupedExpression(GroupedExpressionContext ctx) {
+    public Object visitGroupedExpression(GroupedExpressionContext ctx) {
         return ctx.expression().accept(this);
     }
 
     @Override
-    public String visitGroupedPredicate(GroupedPredicateContext ctx) {
+    public Object visitGroupedPredicate(GroupedPredicateContext ctx) {
         return ctx.predicate().accept(this);
     }
 
-    private String visitParameter(ParameterContext ctx) {
+    private Object visitParameter(ParameterContext ctx) {
         // this will match parameters used by PanacheQL : '?1' for index based or ':key' for named one.
         if (parameterMaps.containsKey(ctx.getText())) {
-            Object value = parameterMaps.get(ctx.getText());
-            return CommonQueryBinder.escape(value);
+            return CommonQueryBinder.paramValue(parameterMaps.get(ctx.getText()));
         } else {
             // we return the parameter to avoid an exception but the query will be invalid
             return ctx.getText();
@@ -133,10 +141,10 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitGeneralPathExpression(HqlParser.GeneralPathExpressionContext ctx) {
+    public Object visitGeneralPathExpression(HqlParser.GeneralPathExpressionContext ctx) {
+        // this is the name of the field, we apply replacement
         String identifier = unquote(ctx.getText());
-        // this is the name of the field, we apply replacement and escape with '
-        return "'" + replacementMap.getOrDefault(identifier, identifier) + "'";
+        return replacementMap.getOrDefault(identifier, identifier);
     }
 
     /**
@@ -150,17 +158,20 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitInPredicate(HqlParser.InPredicateContext ctx) {
-        StringBuilder sb = new StringBuilder(ctx.expression().accept(this))
-                .append(":{'$in':")
-                .append(ctx.inList().accept(this))
-                .append("}");
-        return sb.toString();
+    public Object visitInPredicate(HqlParser.InPredicateContext ctx) {
+        String field = (String) ctx.expression().accept(this);
+        Object inValue = ctx.inList().accept(this);
+        if (inValue instanceof Iterable) {
+            return Filters.in(field, (Iterable<?>) inValue);
+        } else if (inValue != null && inValue.getClass().isArray()) {
+            return Filters.in(field, (Object[]) inValue);
+        }
+        return Filters.in(field, inValue);
     }
 
     // Turn new date functions such as instant into regular fields, to not break existing queries
     @Override
-    public String visitStandardFunction(StandardFunctionContext ctx) {
-        return "'" + ctx.getText() + "'";
+    public Object visitStandardFunction(StandardFunctionContext ctx) {
+        return ctx.getText();
     }
 }

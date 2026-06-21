@@ -566,6 +566,8 @@ public class BearerGlobalTokenChainValidator implements TokenCertificateValidato
 If introspection of the Bearer token is necessary, then `OidcProviderClient` must authenticate to the OIDC provider.
 For more information about supported authentication options, see the  xref:security-oidc-code-flow-authentication.adoc#oidc-provider-client-authentication[OIDC provider client authentication] section in the Quarkus "OpenID Connect authorization code flow mechanism for protecting web applications" guide.
 
+Set `quarkus.oidc.credentials.for-all-endpoints=true` when the OIDC provider also enforces authenticated access to the discovery and JWKS endpoints, see xref:security-oidc-code-flow-authentication.adoc#authenticated-access-to-all-oidc-endpoints[Authenticated access to all OIDC endpoints].
+
 [[bearer-token-integration-testing]]
 === Testing
 
@@ -1638,6 +1640,7 @@ public class OidcStartup {
 For more complex setup involving multiple tenants please see the xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
 section of the OpenID Connect Multi-Tenancy guide.
 
+[[step-up-authentication]]
 == Step Up Authentication
 
 The `io.quarkus.oidc.AuthenticationContext` annotation can be used to list one or more Authentication Context Class Reference (ACR) values to enforce a required authentication level for the Jakarta REST resource classes and methods.

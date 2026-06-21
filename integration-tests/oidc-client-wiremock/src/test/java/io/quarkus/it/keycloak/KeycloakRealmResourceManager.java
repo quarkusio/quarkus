@@ -101,6 +101,26 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_jwt_bearer\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
+        String spiffeSvidToken = Jwt.subject("spiffe://example.org/workload")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .expiresIn(Duration.ofMinutes(30))
+                .signWithSecret("43".repeat(20));
+        var spiffeSvidTokenPath = Path.of("target").resolve("spiffe-svid-client-assertion.json");
+        try {
+            Files.writeString(spiffeSvidTokenPath, spiffeSvidToken);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to prepare file with a SPIFFE SVID client assertion", e);
+        }
+        server.stubFor(WireMock.post("/tokens-spiffe")
+                .withRequestBody(matching("grant_type=client_credentials&"
+                        + "client_assertion=" + spiffeSvidToken
+                        + "&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-spiffe"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_spiffe\", \"expires_in\":20}")));
         server.stubFor(WireMock.post("/tokens_public_client")
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
                 .willReturn(WireMock
@@ -257,6 +277,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", server.baseUrl());
         conf.put("token-path", jwtBearerTokenPath.toString());
+        conf.put("spiffe-token-path", spiffeSvidTokenPath.toString());
         return conf;
     }
 

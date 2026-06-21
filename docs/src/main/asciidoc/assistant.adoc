@@ -42,13 +42,14 @@ To enable the Dev Assistant in your Quarkus project, add the `quarkus-chappie` e
     <version>${chappie-extension-version}</version> // <1>
 </dependency>
 ----
-<1> Replace `${chappie-extension-version}` with the latest available version. You can find the latest version on https://search.maven.org/artifact/io.quarkiverse.chappie/quarkus-chappie[search.maven.org].
+<1> Replace `${chappie-extension-version}` with the latest available version. You can find the latest version on https://quarkus.io/extensions/io.quarkiverse.chappie/quarkus-chappie/[extensions.quarkus.io].
 
 Once added, open the Dev UI to start using the assistant.
 
 [NOTE]
-
+====
 The assistant interfaces are defined in Quarkus "core", but their implementation are located in Quarkiverse (Chappie). You can, if needed, provide an alternative implementation of the assistant.
+====
 
 === Configuration and Providers
 

@@ -15,6 +15,7 @@ import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -237,6 +238,51 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.transformedClasses = new MemoryClassPathElement(transformedClasses, true);
             resettableElement.reset(generatedResources);
             classPathResourceIndex = null;
+        }
+    }
+
+    /**
+     * Returns all in-memory generated and transformed class bytes, keyed by
+     * resource path (e.g. {@code io/quarkus/runner/Foo.class}).
+     * <p>
+     * Classes are collected in classloader priority order: transformed classes
+     * first, then resettable element, then normal priority elements, then
+     * lesser priority elements. Only {@link MemoryClassPathElement} instances
+     * are included. Uses {@code putIfAbsent} so higher-priority entries win.
+     * <p>
+     * Intended for reproducibility testing infrastructure.
+     */
+    public Map<String, byte[]> getInMemoryClassBytes() {
+        ensureOpen();
+        synchronized (this) {
+            Map<String, byte[]> result = new HashMap<>();
+            collectClassBytes(result, transformedClasses);
+            collectClassBytes(result, resettableElement);
+            for (ClassPathElement element : normalPriorityElements) {
+                if (element instanceof MemoryClassPathElement memoryElement) {
+                    collectClassBytes(result, memoryElement);
+                }
+            }
+            for (ClassPathElement element : lesserPriorityElements) {
+                if (element instanceof MemoryClassPathElement memoryElement) {
+                    collectClassBytes(result, memoryElement);
+                }
+            }
+            return result;
+        }
+    }
+
+    private static void collectClassBytes(Map<String, byte[]> destination, MemoryClassPathElement element) {
+        if (element == null) {
+            return;
+        }
+        for (String resource : element.getProvidedResources()) {
+            if (resource.endsWith(".class")) {
+                ClassPathResource classPathResource = element.getResource(resource);
+                if (classPathResource != null) {
+                    destination.putIfAbsent(resource, classPathResource.getData());
+                }
+            }
         }
     }
 

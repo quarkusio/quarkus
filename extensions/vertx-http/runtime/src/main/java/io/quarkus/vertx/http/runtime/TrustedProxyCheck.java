@@ -1,17 +1,33 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.net.InetAddress;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+import javax.security.auth.x500.X500Principal;
+
+import org.jboss.logging.Logger;
+
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.SocketAddress;
 
 public interface TrustedProxyCheck {
+
+    Logger LOGGER = Logger.getLogger(TrustedProxyCheck.class.getName());
 
     static TrustedProxyCheck allowAll() {
         return new TrustedProxyCheck() {
@@ -38,6 +54,52 @@ public interface TrustedProxyCheck {
      * @return true if `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers were sent by trusted {@link SocketAddress}
      */
     boolean isProxyAllowed();
+
+    static TrustedProxyCheck createTrustedProxyDnCheck(HttpServerRequest event, List<List<Rdn>> trustedDns) {
+        final SSLSession sslSession = event.sslSession();
+        if (sslSession == null) {
+            LOGGER.debug("No SSL session, proxy DN check cannot be performed");
+            return denyAll();
+        }
+
+        final Certificate[] peerCertificates;
+        try {
+            peerCertificates = sslSession.getPeerCertificates();
+        } catch (SSLPeerUnverifiedException e) {
+            LOGGER.debug("Peer certificate not available, proxy DN check cannot be performed");
+            return denyAll();
+        }
+
+        if (peerCertificates == null || peerCertificates.length == 0
+                || !(peerCertificates[0] instanceof X509Certificate peerCert)) {
+            LOGGER.debug("No X509 peer certificate, proxy DN check cannot be performed");
+            return denyAll();
+        }
+
+        final X500Principal peerDn = peerCert.getSubjectX500Principal();
+        if (matchesAnyTrustedDn(peerDn, trustedDns)) {
+            LOGGER.debugf("Proxy DN '%s' matches trusted DN", peerDn);
+            return allowAll();
+        }
+
+        LOGGER.debugf("Proxy DN '%s' does not match any trusted DN", peerDn);
+        return denyAll();
+    }
+
+    static boolean matchesAnyTrustedDn(X500Principal peerDn, List<List<Rdn>> trustedDns) {
+        final Set<Rdn> peerRdns;
+        try {
+            peerRdns = new HashSet<>(new LdapName(peerDn.getName()).getRdns());
+        } catch (InvalidNameException e) {
+            return false;
+        }
+        for (List<Rdn> requiredRdns : trustedDns) {
+            if (peerRdns.containsAll(requiredRdns)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     final class TrustedProxyCheckBuilder {
 

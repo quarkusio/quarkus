@@ -3,11 +3,14 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import io.quarkus.smallrye.graphql.runtime.RequestScopedTaskQueue;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.graphql.schema.model.Execute;
 import io.smallrye.graphql.schema.model.Operation;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.TaskQueue;
 
 public final class BlockingHelper {
 
@@ -21,7 +24,7 @@ public final class BlockingHelper {
 
     public static boolean nonBlockingShouldExecuteBlocking(Operation operation, Context vc) {
         // Rule is that by default this should execute non-blocking except if marked as blocking
-        return operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
+        return vc != null && operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
     }
 
     public static boolean shouldUseVirtualThread(Operation operation, Context vc) {
@@ -42,9 +45,24 @@ public final class BlockingHelper {
                     result.fail(t);
                 }
             });
+        } else if (vc != null) {
+            // Prefer the request-scoped TaskQueue installed by the GraphQL HTTP handler
+            // This allows us to preserve ordering and scope it to the request so resolvers
+            // from different requests can run in parallel
+            TaskQueue queue = RequestScopedTaskQueue.get(vc);
+            if (queue != null) {
+                ((ContextInternal) vc).executeBlocking(contextualCallable, queue).onComplete(result);
+            } else {
+                vc.executeBlocking(contextualCallable, false).onComplete(result);
+            }
         } else {
-            // use regular blocking execution
-            vc.executeBlocking(contextualCallable).onComplete(result);
+            // No Vert.x context (e.g. ForkJoinPool thread after CompletableFuture.supplyAsync) —
+            // already off the event loop, safe to execute directly
+            try {
+                result.complete(contextualCallable.call());
+            } catch (Throwable t) {
+                result.fail(t);
+            }
         }
     }
 }

@@ -2,9 +2,7 @@ package io.quarkus.deployment.execannotations;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.StringJoiner;
-import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -84,26 +82,6 @@ public class ExecutionModelAnnotationsProcessor {
                 message.append("\t- ").append(method).append("\n");
             }
         }
-    }
-
-    /**
-     * @deprecated this method will be removed in Quarkus 3.24, which gives extensions 2 releases
-     *             to start producing {@code JsonRPCProvidersBuildItem} always, not just in dev mode
-     */
-    @Deprecated(since = "3.22", forRemoval = true)
-    @BuildStep
-    ExecutionModelAnnotationsAllowedBuildItem devuiJsonRpcServices() {
-        return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {
-            @Override
-            public boolean test(MethodInfo method) {
-                // gross hack to allow methods declared in Dev UI JSON RPC service classes,
-                // as the proper way (consuming `JsonRPCProvidersBuildItem`) only works in dev mode
-                String clazz = method.declaringClass().name().toString().toLowerCase(Locale.ROOT);
-                return clazz.startsWith("io.quarkus.")
-                        || clazz.startsWith("io.quarkiverse.")
-                        || clazz.endsWith("jsonrpcservice");
-            }
-        });
     }
 
     @SuppressForbidden(reason = "Using Type.toString() to build an informative message")

@@ -531,7 +531,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public interface CreateGeneration {
         /**
-         * {@return the generated class of the synthetic bean}
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
          * This class contains the generated {@code create} method.
          *
          * @see #createMethod()
@@ -562,7 +562,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public interface DestroyGeneration {
         /**
-         * {@return the generated class of the synthetic bean}
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
          * This class contains the generated {@code destroy} method.
          *
          * @see #destroyMethod()
@@ -600,7 +600,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public interface CheckActiveGeneration {
         /**
-         * {@return the generated class of the synthetic bean}
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
          * This class contains the generated {@code checkActive} method.
          *
          * @see #checkActiveMethod()

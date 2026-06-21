@@ -273,7 +273,7 @@ Outside of this use-case, just use `@Identifier`.
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[Reflection, window="_blank"].
 Reflective operations are supported, but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 

@@ -33,7 +33,7 @@ import org.htmlunit.WebRequest;
 import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -170,6 +170,22 @@ public class BearerTokenAuthorizationTest {
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(499, ex.getStatusCode());
                 assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testJavaScriptRequestCustomResponse() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("HX-Problem-Request", "true");
+                webClient.getPage("http://localhost:8081/tenant/tenant-web-app-javascript/api/user/webapp");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertEquals("OIDC-SPA", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
             }
 
             webClient.getCookieManager().clearCookies();

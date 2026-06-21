@@ -48,6 +48,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
         private Optional<List<String>> methods;
         private Optional<List<String>> origins;
         private boolean returnExactOrigins;
+        private boolean varyOrigin;
 
         public Builder() {
             this(HttpSecurityUtils.getDefaultAuthConfig().cors());
@@ -61,6 +62,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
             this.methods = corsConfig.methods();
             this.origins = corsConfig.origins();
             this.returnExactOrigins = corsConfig.returnExactOrigins();
+            this.varyOrigin = corsConfig.varyOrigin();
         }
 
         /**
@@ -191,7 +193,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
          */
         public CORS build() {
             return new CORSImpl(accessControlAllowCredentials, accessControlMaxAge, exposedHeaders, headers, methods, origins,
-                    returnExactOrigins);
+                    returnExactOrigins, varyOrigin);
         }
 
         private static Optional<List<String>> merge(Optional<List<String>> optionalOriginalList, Set<String> newSet,
@@ -214,7 +216,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
         record CORSImpl(Optional<Boolean> accessControlAllowCredentials, Optional<Duration> accessControlMaxAge,
                 Optional<List<String>> exposedHeaders, Optional<List<String>> headers,
                 Optional<List<String>> methods, Optional<List<String>> origins,
-                boolean returnExactOrigins) implements CORS, CORSConfig {
+                boolean returnExactOrigins, boolean varyOrigin) implements CORS, CORSConfig {
             @Override
             public boolean enabled() {
                 return true;

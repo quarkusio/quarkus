@@ -7,11 +7,16 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
@@ -47,6 +52,46 @@ class HttpClientOptionsConsumerTest {
         assertThat(httpClientOptions.getProxyOptions().getPort(), is(9999));
         assertThat(httpClientOptions.getProxyOptions().getUsername(), is("proxy-username"));
         assertThat(httpClientOptions.getProxyOptions().getPassword(), is("proxy-password"));
+    }
+
+    @Test
+    void testTrustAllLogsWarning() {
+        Logger logger = Logger.getLogger(OTelExporterRecorder.class.getName());
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                records.add(record);
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        logger.addHandler(handler);
+        try {
+            OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
+                    createExporterConfig(false),
+                    URI.create("https://localhost:4317"),
+                    createTrustAllRegistry());
+
+            HttpClientOptions httpClientOptions = new HttpClientOptions();
+            consumer.accept(httpClientOptions);
+
+            assertThat(httpClientOptions.isTrustAll(), is(true));
+            assertThat(httpClientOptions.isVerifyHost(), is(false));
+            assertThat(records.stream()
+                    .anyMatch(r -> r.getMessage().contains("trustAll=true") &&
+                            r.getMessage().contains("This should not be used in production.") &&
+                            r.getLevel().equals(java.util.logging.Level.WARNING)),
+                    is(true));
+        } finally {
+            logger.removeHandler(handler);
+        }
     }
 
     private OtlpExporterTracesConfig createExporterConfig(final boolean isEnabled) {
@@ -153,5 +198,15 @@ class HttpClientOptionsConsumerTest {
         public void register(String name, TlsConfiguration configuration) {
 
         }
+    }
+
+    private static TlsConfigurationRegistry createTrustAllRegistry() {
+        TlsConfiguration tlsConfig = Mockito.mock(TlsConfiguration.class);
+        Mockito.when(tlsConfig.isTrustAll()).thenReturn(true);
+
+        TlsConfigurationRegistry registry = Mockito.mock(TlsConfigurationRegistry.class);
+        Mockito.when(registry.getDefault()).thenReturn(Optional.of(tlsConfig));
+        Mockito.when(registry.get(Mockito.anyString())).thenReturn(Optional.empty());
+        return registry;
     }
 }

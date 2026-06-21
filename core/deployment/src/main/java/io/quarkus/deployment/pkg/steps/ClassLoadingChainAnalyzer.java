@@ -1,23 +1,10 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Supplier;
-
-import org.jboss.logging.Logger;
 
 /**
  * Discovers classes that are loaded dynamically via {@code ClassLoader.loadClass()} or
@@ -62,10 +49,10 @@ import org.jboss.logging.Logger;
  * <h3>Phase 3 -- Dynamic execution in a forked JVM</h3>
  * <p>
  * Each entry point class is loaded and instantiated inside a forked JVM process
- * (see {@link ClassLoadingRecorder}) to dynamically capture all class load attempts that
- * occur during its initialization and construction. Running in a separate process
- * ensures complete isolation of global JVM state and that Metaspace is reclaimed
- * when the process exits.
+ * managed by {@link ForkedJvmEnvironment} (which launches {@link ClassLoadingRecorder})
+ * to dynamically capture all class load attempts that occur during its initialization
+ * and construction. Running in a separate process ensures complete isolation of global
+ * JVM state and that Metaspace is reclaimed when the process exits.
  *
  * <h2>RecordingClassLoader</h2>
  * <p>
@@ -101,22 +88,20 @@ import org.jboss.logging.Logger;
  */
 class ClassLoadingChainAnalyzer {
 
-    private static final Logger log = Logger.getLogger(ClassLoadingChainAnalyzer.class.getName());
-
-    /** JDK methods that load classes by name — the seeds for call chain propagation. */
-    static final Set<String> SEED_METHODS = Set.of(
-            "java/lang/ClassLoader.loadClass(Ljava/lang/String;)Ljava/lang/Class;",
-            "java/lang/ClassLoader.loadClass(Ljava/lang/String;Z)Ljava/lang/Class;",
-            "java/lang/ClassLoader.findClass(Ljava/lang/String;)Ljava/lang/Class;",
-            "java/lang/Class.forName(Ljava/lang/String;)Ljava/lang/Class;",
-            "java/lang/Class.forName(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;",
-            "java/lang/Class.forName(Ljava/lang/Module;Ljava/lang/String;)Ljava/lang/Class;",
-            "java/lang/invoke/MethodHandles$Lookup.findClass(Ljava/lang/String;)Ljava/lang/Class;");
-
     private final Set<String> depClassNames;
-    /** Reverse call index: callee method → set of caller methods. Built externally during BFS. */
-    private final Map<String, Set<String>> callerIndex;
-    private final Set<String> classLoadingMethods = new HashSet<>(SEED_METHODS);
+
+    /**
+     * Reverse call index: callee method → set of caller methods.
+     * Built externally by {@link JarTreeShaker#scanBytecode} during BFS reachability
+     * analysis. For each method invocation encountered in bytecode, the invoked method
+     * (callee) is mapped to the set of methods that invoke it (callers). This enables
+     * backward propagation from class-loading seed methods to discover all application
+     * methods that transitively trigger dynamic class loading.
+     */
+    private final Map<MethodKey, Set<MethodKey>> callerIndex;
+
+    private final Set<MethodKey> classLoadingMethods = new HashSet<>(MethodKey.SEED_METHOD_KEYS);
+
     /** Entry points already returned by previous {@link #findEntryPoints()} calls. */
     private final Set<String> previousEntryPoints = new HashSet<>();
     private boolean seedsPropagated = false;
@@ -125,7 +110,7 @@ class ClassLoadingChainAnalyzer {
      * @param callerIndex pre-built reverse call index (callee → callers), populated during BFS
      * @param depClassNames dependency class names (dot-separated) for entry point filtering
      */
-    ClassLoadingChainAnalyzer(Map<String, Set<String>> callerIndex, Set<String> depClassNames) {
+    ClassLoadingChainAnalyzer(Map<MethodKey, Set<MethodKey>> callerIndex, Set<String> depClassNames) {
         this.callerIndex = callerIndex;
         this.depClassNames = depClassNames;
     }
@@ -139,7 +124,7 @@ class ClassLoadingChainAnalyzer {
      * @return newly discovered entry point class names, or empty set if none found
      */
     Set<String> findEntryPoints() {
-        Set<String> newMethods = propagateFromSeeds();
+        Set<MethodKey> newMethods = propagateFromSeeds();
         if (newMethods.isEmpty()) {
             return Set.of();
         }
@@ -148,17 +133,18 @@ class ClassLoadingChainAnalyzer {
 
     /**
      * Propagates from seed methods through the caller index using a worklist algorithm.
-     * On first call, walks from all seeds. On subsequent calls, checks new edges.
+     * On first call, walks from all seeds. On subsequent calls, checks new edges added
+     * by a prior BFS iteration.
      *
      * @return methods newly added to {@link #classLoadingMethods} in this invocation
      */
-    private Set<String> propagateFromSeeds() {
-        Set<String> newMethods = new HashSet<>();
-        Queue<String> callerQueue = new ArrayDeque<>();
+    private Set<MethodKey> propagateFromSeeds() {
+        Set<MethodKey> newMethods = new HashSet<>();
+        Queue<MethodKey> callerQueue = new ArrayDeque<>();
         if (!seedsPropagated) {
             seedsPropagated = true;
-            for (String seed : SEED_METHODS) {
-                Set<String> callers = callerIndex.get(seed);
+            for (MethodKey seed : MethodKey.SEED_METHOD_KEYS) {
+                Set<MethodKey> callers = callerIndex.get(seed);
                 if (callers != null) {
                     collectAndEnqueueCallers(callers, callerQueue, newMethods);
                 }
@@ -171,8 +157,8 @@ class ClassLoadingChainAnalyzer {
             }
         }
         while (!callerQueue.isEmpty()) {
-            String method = callerQueue.poll();
-            Set<String> callers = callerIndex.get(method);
+            MethodKey method = callerQueue.poll();
+            Set<MethodKey> callers = callerIndex.get(method);
             if (callers != null) {
                 collectAndEnqueueCallers(callers, callerQueue, newMethods);
             }
@@ -180,9 +166,13 @@ class ClassLoadingChainAnalyzer {
         return newMethods;
     }
 
-    private void collectAndEnqueueCallers(Set<String> callers, Queue<String> callerQueue, Set<String> newMethods) {
-        for (String caller : callers) {
-            if (!isJdkOrInfraClass(caller) && classLoadingMethods.add(caller)) {
+    /**
+     * Adds non-JDK/infra callers to the worklist queue and marks them as class-loading methods.
+     */
+    private void collectAndEnqueueCallers(Set<MethodKey> callers, Queue<MethodKey> callerQueue,
+            Set<MethodKey> newMethods) {
+        for (MethodKey caller : callers) {
+            if (!MethodKey.isJdkOrInfraClass(caller.owner) && classLoadingMethods.add(caller)) {
                 callerQueue.add(caller);
                 newMethods.add(caller);
             }
@@ -195,33 +185,28 @@ class ClassLoadingChainAnalyzer {
      * because {@link #propagateFromSeeds()} already computed the full transitive closure
      * of callers.
      */
-    private Set<String> extractNewEntryPoints(Set<String> newMethods) {
-        Set<String> entryPointClasses = new HashSet<>();
-        for (String method : newMethods) {
+    private Set<String> extractNewEntryPoints(Set<MethodKey> newMethods) {
+        Set<String> entryPointClasses = null;
+        for (MethodKey method : newMethods) {
             String entryPoint = getEntryPointOrNull(method);
             if (entryPoint != null && previousEntryPoints.add(entryPoint)) {
+                if (entryPointClasses == null) {
+                    entryPointClasses = new HashSet<>();
+                }
                 entryPointClasses.add(entryPoint);
             }
         }
-        return entryPointClasses;
+        return entryPointClasses == null ? Set.of() : entryPointClasses;
     }
 
     /**
      * Returns the dot-separated class name if the method key is an {@code <init>} or
      * {@code <clinit>} of a known dependency class, or {@code null} otherwise.
+     * Uses {@link MethodKey#name} directly instead of parsing a concatenated string.
      */
-    private String getEntryPointOrNull(String methodKey) {
-        int parenIdx = methodKey.indexOf('(');
-        if (parenIdx < 0) {
-            return null;
-        }
-        int dotIdx = methodKey.lastIndexOf('.', parenIdx);
-        if (dotIdx < 0) {
-            return null;
-        }
-        String methodName = methodKey.substring(dotIdx + 1, parenIdx);
-        if ("<init>".equals(methodName) || "<clinit>".equals(methodName)) {
-            String dotName = methodKey.substring(0, dotIdx).replace('/', '.');
+    private String getEntryPointOrNull(MethodKey key) {
+        if (key.isInitOrClinit()) {
+            String dotName = key.ownerAsDotName();
             if (depClassNames.contains(dotName)) {
                 return dotName;
             }
@@ -236,192 +221,5 @@ class ClassLoadingChainAnalyzer {
     void release() {
         classLoadingMethods.clear();
         previousEntryPoints.clear();
-    }
-
-    /**
-     * Phase 3: Execute entry point classes in a forked JVM to capture which classes
-     * get loaded during static initialization and construction.
-     * <p>
-     * Running in a separate process ensures complete isolation of global JVM state
-     * (System.out/err, security providers, system properties, TCCL) and that all
-     * Metaspace consumed by {@code defineClass} is reclaimed when the process exits.
-     * This is critical because multiple tree-shaker instances may run in parallel
-     * during CI builds with {@code -T2C}.
-     * <p>
-     * Only generated and transformed bytecode is written to a temp directory.
-     * Dependency JARs and the app artifact are included on the classpath by path,
-     * with the temp dir first so transformed classes override originals.
-     *
-     * @param entryPointClasses classes whose init/clinit triggers dynamic class loading
-     * @param generatedBytecode generated classes (in-memory only, must be written to disk)
-     * @param transformedBytecode transformed classes that override originals in dep JARs
-     * @param allKnownClasses all known class names for Map value extraction
-     * @param depJarPaths file system paths to dependency JARs
-     * @param appPaths file system paths to the application artifact
-     */
-    static Set<String> executeEntryPoints(
-            Set<String> entryPointClasses,
-            Map<String, Supplier<byte[]>> generatedBytecode,
-            Map<String, Supplier<byte[]>> transformedBytecode,
-            Set<String> allKnownClasses,
-            List<Path> depJarPaths,
-            List<Path> appPaths) {
-
-        Path tempDir = null;
-        try {
-            tempDir = Files.createTempDirectory("tree-shake-recording");
-
-            // Write only generated and transformed bytecode to temp dir
-            writeBytecodeToDir(tempDir, generatedBytecode);
-            writeBytecodeToDir(tempDir, transformedBytecode);
-
-            // Write input file: entry points, then separator, then allKnownClasses
-            Path inputFile = tempDir.resolve("_input.txt");
-            List<String> inputLines = new ArrayList<>(entryPointClasses.size() + allKnownClasses.size() + 1);
-            inputLines.addAll(entryPointClasses);
-            inputLines.add("---");
-            inputLines.addAll(allKnownClasses);
-            Files.write(inputFile, inputLines, StandardCharsets.UTF_8);
-
-            // Copy ClassLoadingRecorder class to the temp dir
-            writeRecorderClass(tempDir);
-
-            // Build classpath: temp dir first (overrides), then dep JARs, then app
-            StringBuilder cpBuilder = new StringBuilder();
-            cpBuilder.append(tempDir);
-            for (Path p : depJarPaths) {
-                cpBuilder.append(File.pathSeparator).append(p);
-            }
-            for (Path p : appPaths) {
-                cpBuilder.append(File.pathSeparator).append(p);
-            }
-
-            // Write @argfile to avoid command-line length limits (Windows)
-            Path argFile = tempDir.resolve("_jvm.args");
-            Files.writeString(argFile,
-                    "-cp\n" + cpBuilder + "\n-XX:MaxMetaspaceSize=256m",
-                    StandardCharsets.UTF_8);
-
-            // Fork JVM
-            String javaCmd = ProcessHandle.current().info().command()
-                    .orElse(Path.of(System.getProperty("java.home"), "bin", "java").toString());
-
-            ProcessBuilder pb = new ProcessBuilder(
-                    javaCmd,
-                    "@" + argFile,
-                    ClassLoadingRecorder.class.getName(),
-                    inputFile.toString());
-            pb.redirectErrorStream(false);
-
-            Process proc = pb.start();
-
-            // Drain stderr in background to avoid blocking
-            Thread stderrDrainer = new Thread(() -> {
-                try {
-                    proc.getErrorStream().transferTo(OutputStream.nullOutputStream());
-                } catch (IOException ignored) {
-                }
-            }, "tree-shake-stderr-drainer");
-            stderrDrainer.setDaemon(true);
-            stderrDrainer.start();
-
-            // Read discovered class names from stdout
-            Set<String> discovered = new HashSet<>();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!line.isEmpty()) {
-                        discovered.add(line);
-                    }
-                }
-            }
-
-            int exitCode = proc.waitFor();
-            if (exitCode != 0) {
-                log.warnf("Class-loading chain analysis forked JVM exited with code %d", exitCode);
-            }
-            stderrDrainer.join(5000);
-
-            return discovered;
-
-        } catch (IOException | InterruptedException e) {
-            log.warnf(e, "Failed to run class-loading chain analysis in forked JVM, skipping Phase 3");
-            return Set.of();
-        } finally {
-            if (tempDir != null) {
-                deleteRecursive(tempDir);
-            }
-        }
-    }
-
-    private static void writeBytecodeToDir(Path dir, Map<String, Supplier<byte[]>> bytecodeMap) throws IOException {
-        for (var entry : bytecodeMap.entrySet()) {
-            byte[] bytes;
-            try {
-                bytes = entry.getValue().get();
-            } catch (Exception e) {
-                continue;
-            }
-            String classFile = entry.getKey().replace('.', '/') + ".class";
-            Path target = dir.resolve(classFile);
-            Files.createDirectories(target.getParent());
-            Files.write(target, bytes);
-        }
-    }
-
-    /**
-     * Writes the {@link ClassLoadingRecorder} class files to the temp directory.
-     */
-    private static void writeRecorderClass(Path tempDir) throws IOException {
-        String baseName = ClassLoadingRecorder.class.getName().replace('.', '/');
-        for (String suffix : new String[] { ".class", "$RecordingClassLoader.class" }) {
-            String resourcePath = baseName + suffix;
-            try (var is = ClassLoadingChainAnalyzer.class.getClassLoader().getResourceAsStream(resourcePath)) {
-                if (is == null) {
-                    if (suffix.equals(".class")) {
-                        throw new IOException("Cannot find ClassLoadingRecorder.class on classpath");
-                    }
-                    continue;
-                }
-                Path target = tempDir.resolve(resourcePath);
-                Files.createDirectories(target.getParent());
-                Files.write(target, is.readAllBytes());
-            }
-        }
-    }
-
-    private static void deleteRecursive(Path path) {
-        try {
-            Files.walk(path)
-                    .sorted(java.util.Comparator.reverseOrder())
-                    .forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException ignored) {
-                        }
-                    });
-        } catch (IOException ignored) {
-        }
-    }
-
-    /**
-     * Checks whether a method key belongs to a JDK or infrastructure class that should not
-     * be considered as a class-loading method for propagation purposes.
-     */
-    static boolean isJdkOrInfraClass(String methodKey) {
-        return methodKey.startsWith("java/")
-                || methodKey.startsWith("javax/")
-                || methodKey.startsWith("jakarta/")
-                || methodKey.startsWith("org/objectweb/")
-                || methodKey.startsWith("sun/");
-    }
-
-    /**
-     * Returns {@code true} if a method call to {@code calleeKey} should be recorded
-     * in the caller index. Records calls to seed methods and calls to non-JDK/infra methods.
-     */
-    static boolean shouldRecordCall(String calleeKey) {
-        return SEED_METHODS.contains(calleeKey) || !isJdkOrInfraClass(calleeKey);
     }
 }

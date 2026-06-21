@@ -4,6 +4,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.Internal;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeCommandLineBuilder;
@@ -12,6 +13,7 @@ import io.quarkus.deployment.dev.IsolatedTestModeMain;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusTest extends QuarkusDev {
 
     @Inject

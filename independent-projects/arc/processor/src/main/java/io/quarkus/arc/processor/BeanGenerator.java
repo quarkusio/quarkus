@@ -110,13 +110,13 @@ public class BeanGenerator extends AbstractGenerator {
     protected final Map<BeanInfo, String> beanToGeneratedName;
     protected final Map<BeanInfo, String> beanToGeneratedBaseName;
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
-    protected final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
+    protected final List<Consumer<SuppressConditionGeneration>> suppressConditionGenerators;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate,
-            List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators) {
+            List<Consumer<SuppressConditionGeneration>> suppressConditionGenerators) {
         super(generateSources, reflectionRegistration);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -1950,11 +1950,24 @@ public class BeanGenerator extends AbstractGenerator {
         cc.method("isSuppressed", mc -> {
             mc.returning(boolean.class);
             mc.body(bc -> {
-                for (Function<BeanInfo, Consumer<BlockCreator>> generator : suppressConditionGenerators) {
-                    Consumer<BlockCreator> condition = generator.apply(bean);
-                    if (condition != null) {
-                        condition.accept(bc);
+                SuppressConditionGeneration generation = new SuppressConditionGeneration() {
+                    @Override
+                    public BeanInfo bean() {
+                        return bean;
                     }
+
+                    @Override
+                    public ClassCreator beanClass() {
+                        return cc;
+                    }
+
+                    @Override
+                    public BlockCreator method() {
+                        return bc;
+                    }
+                };
+                for (Consumer<SuppressConditionGeneration> generator : suppressConditionGenerators) {
+                    generator.accept(generation);
                 }
                 bc.returnFalse();
             });
@@ -2244,5 +2257,26 @@ public class BeanGenerator extends AbstractGenerator {
         String className() {
             return className;
         }
+    }
+
+    public interface SuppressConditionGeneration {
+        /**
+         * {@return the bean}
+         */
+        BeanInfo bean();
+
+        /**
+         * {@return the generated implementation of {@link InjectableBean} for the bean}
+         * This class contains the generated {@code isSuppressed} method.
+         *
+         * @see #method()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the {@code isSuppressed} method}
+         * This method is supposed to determine whether the bean is suppressed.
+         */
+        BlockCreator method();
     }
 }

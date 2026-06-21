@@ -16,9 +16,15 @@ import org.hibernate.annotations.GenericGenerator;
 @NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
 public class Person {
 
+    public enum Status {
+        LIVING,
+        DECEASED
+    }
+
     private UUID id;
     private String name;
     private SequencedAddress address;
+    private Status status;
 
     public Person() {
     }
@@ -55,6 +61,14 @@ public class Person {
 
     public void setAddress(SequencedAddress address) {
         this.address = address;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public void describeFully(StringBuilder sb) {

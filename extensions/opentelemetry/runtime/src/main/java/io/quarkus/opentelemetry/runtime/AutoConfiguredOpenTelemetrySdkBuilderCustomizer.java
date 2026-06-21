@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -36,13 +37,15 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
+import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
@@ -96,18 +99,15 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
-        private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
         public ResourceCustomizer(ApplicationConfig appConfig,
-                OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
                 @All List<Resource> resources) {
             this.appConfig = appConfig;
-            this.oTelBuildConfig = oTelBuildConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
             this.delayedAttributes = delayedAttributes;
             this.resources = resources;
@@ -215,6 +215,40 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
+    final class SpanProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private final OTelBuildConfig oTelBuildConfig;
+        private final List<SpanProcessor> spanProcessors;
+
+        public SpanProcessorCustomizer(OTelBuildConfig oTelBuildConfig,
+                @All List<SpanProcessor> spanProcessors) {
+            this.oTelBuildConfig = oTelBuildConfig;
+            this.spanProcessors = spanProcessors;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            builder.addSpanProcessorCustomizer(new BiFunction<SpanProcessor, ConfigProperties, SpanProcessor>() {
+                @Override
+                public SpanProcessor apply(SpanProcessor spanProcessor, ConfigProperties configProperties) {
+                    if (spanProcessors.isEmpty()) {
+                        if (spanProcessor instanceof BatchSpanProcessor batchSpanProcessor) {
+                            SpanExporter spanExporter = batchSpanProcessor.getSpanExporter();
+                            if (oTelBuildConfig.simple()) {
+                                return new SimpleSpanProcessorWithBatchShutdown(spanExporter, spanProcessor);
+                            }
+                            // NoopSpanExporter is package friendly
+                            if ("NoopSpanExporter".equals(spanExporter.getClass().getSimpleName())) {
+                                return SpanProcessor.composite();
+                            }
+                        }
+                    }
+                    return spanProcessor;
+                }
+            });
+        }
+    }
+
+    @Singleton
     final class TracerProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final OTelBuildConfig oTelBuildConfig;
@@ -238,13 +272,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 ConfigProperties configProperties) {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                 idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
-                                spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
-                                    @Override
-                                    public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
-                                    }
-                                })
-                                        .forEach(tracerProviderBuilder::addSpanProcessor);
+                                spanProcessors.forEach(tracerProviderBuilder::addSpanProcessor);
                             }
                             return tracerProviderBuilder;
                         }
@@ -257,23 +285,21 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<Clock> clock;
-        private final Instance<MetricExporter> metricExporter;
         private final Instance<ScheduledExecutorService> managedExecutor;
 
         public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig runtimeConfig,
                 final Instance<Clock> clock,
-                final Instance<MetricExporter> metricExporter,
                 final Instance<ScheduledExecutorService> managedExecutor) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.clock = clock;
-            this.metricExporter = metricExporter;
             this.managedExecutor = managedExecutor;
             this.oTelRuntimeConfig = runtimeConfig;
         }
 
         @Override
         public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            AtomicReference<MetricExporter> metricExporterRef = new AtomicReference<>();
             builder.addMeterProviderCustomizer(
                     new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
                         @Override
@@ -303,15 +329,20 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             return meterProviderBuilder;
                         }
                     })
+                    .addMetricExporterCustomizer(new BiFunction<MetricExporter, ConfigProperties, MetricExporter>() {
+                        @Override
+                        public MetricExporter apply(MetricExporter metricExporter, ConfigProperties configProperties) {
+                            metricExporterRef.set(metricExporter);
+                            return metricExporter;
+                        }
+                    })
                     .addMetricReaderCustomizer(new BiFunction<MetricReader, ConfigProperties, MetricReader>() {
                         @Override
                         public MetricReader apply(MetricReader metricReader, ConfigProperties configProperties) {
                             // Replace the provided metric reader because it uses an unmanaged executor
                             // with a null classloader
-                            if (metricReader instanceof PeriodicMetricReader &&
-                                    metricExporter.isResolvable() &&
-                                    managedExecutor.isResolvable()) {
-                                return PeriodicMetricReader.builder(metricExporter.get())
+                            if (metricReader instanceof PeriodicMetricReader && managedExecutor.isResolvable()) {
+                                return PeriodicMetricReader.builder(metricExporterRef.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
                                         .setExecutor(managedExecutor.get())
                                         .build();

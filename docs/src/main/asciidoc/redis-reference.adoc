@@ -57,7 +57,9 @@ import io.quarkus.redis.datasource.RedisDataSource;
 More details about the various APIs offered by the quarkus-redis extension are available in the <<apis>> section.
 
 [NOTE]
+====
 To use Redis as a cache backend, refer to the xref:cache-redis-reference.adoc[Redis Cache Backend reference].
+====
 
 [[apis]]
 == One extension, multiple APIs
@@ -456,17 +458,17 @@ As mentioned above, the API is divided into groups:
 - string - `.value(valueType)`
 - stream - `.stream(`valueType`)
 - transactions - `withTransaction`
-- json - `.json()` (requires the https://redis.com/modules/redis-json/[RedisJSON] module on the server side)
-- bloom - `.bloom()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side)
-- cuckoo - `.cuckoo()` (requires the https://redis.com/modules/redis-bloom/[rRedisBloom] module on the server side, which also provides the cuckoo filter commands)
-- count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the count-min filter commands)
-- top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the top-k filter commands)
-- graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[RedisGraph] module on the server side).
+- json - `.json()` (requires the https://redis.io/docs/latest/develop/data-types/json/[RedisJSON] module on the server side)
+- bloom - `.bloom()` (requires the https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/[RedisBloom] module on the server side)
+- cuckoo - `.cuckoo()` (requires the https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/[RedisBloom] module on the server side, which also provides the cuckoo filter commands)
+- count-min - `.countmin()` (requires the https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/[RedisBloom] module on the server side, which also provides the count-min filter commands)
+- top-k - `.topk()` (requires the https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/[RedisBloom] module on the server side, which also provides the top-k filter commands)
+- graph - `.graph()` (requires the https://redis.io/docs/latest/operate/oss_and_stack/stack-with-enterprise/deprecated-features/graph/[RedisGraph] module on the server side).
 These commands are marked as experimental.
-Also the module has been declared _end of life_ by https://redis.com/blog/redisgraph-eol/[Redis].
-- search - `.search()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
-- auto-suggest - `.autosuggest()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
-- time-series - `.timeseries()` (requires the https://redis.com/modules/redis-timeseries/[Redis Time Series] module on the server side).
+Also the module has been declared _end of life_ by https://redis.io/blog/redisgraph-eol/[Redis].
+- search - `.search()` (requires the https://redis.io/docs/latest/develop/interact/search-and-query/[RedisSearch] module on the server side).
+- auto-suggest - `.autosuggest()` (requires the https://redis.io/docs/latest/develop/interact/search-and-query/[RedisSearch] module on the server side).
+- time-series - `.timeseries()` (requires the https://redis.io/docs/latest/develop/data-types/timeseries/[Redis Time Series] module on the server side).
 
 These commands are marked as experimental, as we would need feedback before making them stable.
 

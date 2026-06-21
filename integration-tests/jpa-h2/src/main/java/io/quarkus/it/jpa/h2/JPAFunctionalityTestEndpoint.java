@@ -78,6 +78,21 @@ public class JPAFunctionalityTestEndpoint {
         QuarkusTransaction.requiringNew()
                 .run(() -> em.createQuery("from Person p left join fetch p.address a").getResultList());
 
+        //Verify enum fields are persisted and retrieved correctly:
+        QuarkusTransaction.requiringNew().run(() -> {
+            Person person = persistNewPerson("EnumTest");
+            person.setStatus(Person.Status.LIVING);
+            em.flush();
+            em.clear();
+
+            Person retrieved = em
+                    .createQuery("from Person p where p.name = 'EnumTest'", Person.class)
+                    .getSingleResult();
+            if (retrieved.getStatus() != Person.Status.LIVING) {
+                throw new RuntimeException("Enum field not correctly persisted/retrieved: " + retrieved.getStatus());
+            }
+        });
+
         cleanUpData();
 
         return "OK";
@@ -88,11 +103,12 @@ public class JPAFunctionalityTestEndpoint {
                 .run(() -> em.createNativeQuery("Delete from Person").executeUpdate());
     }
 
-    private void persistNewPerson(String name) {
+    private Person persistNewPerson(String name) {
         Person person = new Person();
         person.setName(name);
         person.setAddress(new SequencedAddress("Street " + randomName()));
         em.persist(person);
+        return person;
     }
 
     private static String randomName() {

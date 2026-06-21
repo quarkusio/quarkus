@@ -9,7 +9,8 @@ import io.quarkus.deployment.pkg.NativeConfig;
 
 public enum NativeImageFutureDefault {
     RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS,
-    RUN_TIME_INITIALIZE_SECURITY_PROVIDERS;
+    RUN_TIME_INITIALIZE_SECURITY_PROVIDERS,
+    RUN_TIME_INITIALIZE_RESOURCE_BUNDLES;
 
     private static final String FUTURE_DEFAULTS_MARKER = "--future-defaults=";
 
@@ -28,6 +29,7 @@ public enum NativeImageFutureDefault {
                             switch (this) {
                                 case RUN_TIME_INITIALIZE_SECURITY_PROVIDERS:
                                 case RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS:
+                                case RUN_TIME_INITIALIZE_RESOURCE_BUNDLES:
                                     return true;
                             }
                             break;
@@ -70,6 +72,17 @@ public enum NativeImageFutureDefault {
         @Override
         public boolean getAsBoolean() {
             return RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(nativeConfig);
+        }
+    }
+
+    public static final class RunTimeInitializeResourceBundles extends AbstractNativeImageFutureDefaultBooleanSupplier {
+        public RunTimeInitializeResourceBundles(NativeConfig nativeConfig) {
+            super(nativeConfig);
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(nativeConfig);
         }
     }
 }

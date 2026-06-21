@@ -43,8 +43,7 @@ class ForwardedServerRequestWrapperTest {
         when(mockRequest.remoteAddress()).thenReturn(SocketAddress.inetSocketAddress(8080, "127.0.0.1"));
         when(mockRequest.authority()).thenReturn(HostAndPort.create("localhost", 8080));
 
-        ForwardingProxyOptions options = new ForwardingProxyOptions(
-                false, false, false, false, false, null, false, false, null, null, null);
+        ForwardingProxyOptions options = ForwardingProxyOptions.builder().build();
 
         TrustedProxyCheck trustedProxyCheck = TrustedProxyCheck.allowAll();
         wrapper = new ForwardedServerRequestWrapper(mockRequest, options, trustedProxyCheck);

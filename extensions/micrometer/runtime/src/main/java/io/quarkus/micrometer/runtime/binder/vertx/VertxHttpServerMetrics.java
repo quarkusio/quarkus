@@ -3,16 +3,15 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
@@ -22,6 +21,7 @@ import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
@@ -56,21 +56,18 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
-            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions) {
-        super(registry, "http.server", commonTags(httpServerOptions));
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions,
+            Gauges<LongAdder> gauges) {
+        super(registry, "http.server", commonTags(httpServerOptions), gauges);
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
-        activeRequests = new LongAdder();
 
         Tags commonTags = commonTags(httpServerOptions);
 
-        Gauge.Builder<LongAdder> activeRequestsBuilder = Gauge
-                .builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
-                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http");
-        for (Tag commonTag : commonTags) {
-            activeRequestsBuilder.tag(commonTag.getKey(), commonTag.getValue());
-        }
-        activeRequestsBuilder.register(registry);
+        activeRequests = gauges.builder(config.getHttpServerActiveRequestsName(), LongAdder::doubleValue)
+                .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http")
+                .tags(commonTags)
+                .register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
 
@@ -95,6 +92,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         // not the public one which we can't know easily) only if it's not random
         if (httpServerOptions.getPort() > 0) {
             result = result.and("server.port", "" + httpServerOptions.getPort());
+        } else {
+            result = result.and("server.port", "UNSET");
         }
         return result;
     }
@@ -190,16 +189,37 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
 
+            Tags originalTags = Tags.of(
+                    VertxMetricsTags.method(requestMetric.request().method()),
+                    HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
+                    Outcome.CLIENT_ERROR.asTag(),
+                    HttpCommonTags.STATUS_RESET);
+            Tags effectiveTags = effectiveTags(requestMetric, Optional.empty(), originalTags);
+
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
-                    requestsTimer.withTags(Tags.of(
-                            VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
-                            Outcome.CLIENT_ERROR.asTag(),
-                            HttpCommonTags.STATUS_RESET)),
+                    requestsTimer.withTags(effectiveTags),
                     requestMetric.request().context());
         }
         requestMetric.requestEnded();
+    }
+
+    private Tags effectiveTags(HttpRequestMetric requestMetric, Optional<HttpResponse> httpResponse, Tags originalTags) {
+        if (!httpServerMetricsTagsContributors.isEmpty()) {
+            HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(),
+                    httpResponse);
+            Tags allTags = originalTags;
+            for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
+                try {
+                    Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
+                    allTags = allTags.and(additionalTags);
+                } catch (Exception e) {
+                    log.debug("Unable to obtain additional tags", e);
+                }
+            }
+            return allTags;
+        }
+        return originalTags;
     }
 
     /**
@@ -218,27 +238,17 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
-            Tags allTags = Tags.of(
+            Tags originalTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
-            if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(), response);
-                for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
-                    try {
-                        Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
-                        allTags = allTags.and(additionalTags);
-                    } catch (Exception e) {
-                        log.debug("Unable to obtain additional tags", e);
-                    }
-                }
-            }
+            Tags effectiveTags = effectiveTags(requestMetric, Optional.of(response), originalTags);
 
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
-                    requestsTimer.withTags(allTags),
+                    requestsTimer.withTags(effectiveTags),
                     requestMetric.request().context());
         }
         requestMetric.requestEnded();
@@ -279,7 +289,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     }
 
     private record DefaultContext(HttpServerRequest request,
-            HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
+            Optional<HttpResponse> response) implements HttpServerMetricsTagsContributor.Context {
         @Override
         public <T> T requestContextLocalData(Object key) {
             return ((HttpServerRequestInternal) request).context().getLocal(key);

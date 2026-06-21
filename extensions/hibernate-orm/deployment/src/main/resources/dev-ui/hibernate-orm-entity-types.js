@@ -6,7 +6,7 @@ import '@vaadin/combo-box';
 import '@vaadin/grid';
 import '@vaadin/progress-bar';
 import { notifier } from 'notifier';
-import { msg, updateWhenLocaleChanges } from 'localization';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
 
@@ -49,7 +49,12 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
             console.error("Failed to fetch persistence units:", error);
             this._persistenceUnits = [];
             notifier.showErrorMessage(
-                msg('quarkus-hibernate-orm-failed-to-fetch', { args: [String(error)] }),
+                msg(
+                    str`Failed to fetch persistence units: ${String(error)}`,
+                    {
+                        id: 'quarkus-hibernate-orm-failed-to-fetch',
+                    }
+                ),
                 "bottom-start",
                 30
             );

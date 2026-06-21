@@ -121,7 +121,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "<li>2</li>\n" +
                 "</ul>" +
                 "";
-        String expectedOutput = "List:\n\n - 1\n - 2";
+        String expectedOutput = "List:\n\n * 1\n * 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
@@ -137,6 +137,84 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "</ol>" +
                 "";
         String expectedOutput = "List:\n\n . 1\n . 2";
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+
+        assertEquals(expectedOutput, description);
+    }
+
+    @Test
+    public void parseJavaDocWithNestedUnorderedList() {
+        String javaDoc = "List:" +
+                "<ul>\n" +
+                "<li>First sentence. Second sentence.</li>\n" +
+                "<li>\n" +
+                "And some nested bullet list:\n" +
+                "<ul>\n" +
+                "<li>Element 1 with one sentence. And another sentence.</li>\n" +
+                "<li>Element 2 with sentence 2. And yet another sentence.</li>\n" +
+                "</ul>\n" +
+                "</li>\n" +
+                "</ul>";
+        String expectedOutput = "List:\n\n * First sentence. Second sentence.\n * And some nested bullet list:\n ** Element 1 with one sentence. And another sentence.\n ** Element 2 with sentence 2. And yet another sentence.";
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+
+        assertEquals(expectedOutput, description);
+    }
+
+    @Test
+    public void parseJavaDocWithNestedOrderedList() {
+        String javaDoc = "List:" +
+                "<ol>\n" +
+                "<li>Item 1</li>\n" +
+                "<li>\n" +
+                "Item 2 with nested list:\n" +
+                "<ol>\n" +
+                "<li>Sub 1</li>\n" +
+                "<li>Sub 2</li>\n" +
+                "</ol>\n" +
+                "</li>\n" +
+                "</ol>";
+        String expectedOutput = "List:\n\n . Item 1\n . Item 2 with nested list:\n .. Sub 1\n .. Sub 2";
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+
+        assertEquals(expectedOutput, description);
+    }
+
+    @Test
+    public void parseJavaDocWithDeeplyNestedLists() {
+        String javaDoc = "List:" +
+                "<ul>\n" +
+                "<li>Level 1\n" +
+                "<ul>\n" +
+                "<li>Level 2\n" +
+                "<ul>\n" +
+                "<li>Level 3</li>\n" +
+                "</ul>\n" +
+                "</li>\n" +
+                "</ul>\n" +
+                "</li>\n" +
+                "</ul>";
+        String expectedOutput = "List:\n\n * Level 1\n ** Level 2\n *** Level 3";
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+
+        assertEquals(expectedOutput, description);
+    }
+
+    @Test
+    public void parseJavaDocWithMixedNestedLists() {
+        String javaDoc = "List:" +
+                "<ul>\n" +
+                "<li>Unordered item\n" +
+                "<ol>\n" +
+                "<li>Ordered sub-item</li>\n" +
+                "</ol>\n" +
+                "</li>\n" +
+                "</ul>";
+        String expectedOutput = "List:\n\n * Unordered item\n .. Ordered sub-item";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 

@@ -7,6 +7,8 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.DecoderResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -31,6 +33,9 @@ import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
 public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
+
+    private static final Logger LOG = Logger.getLogger(ForwardedServerRequestWrapper.class);
+
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -41,10 +46,26 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     private String uri;
     private String absoluteURI;
 
-    public ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
+    ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
             TrustedProxyCheck trustedProxyCheck) {
         super((HttpServerRequestInternal) request);
         forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions, trustedProxyCheck);
+    }
+
+    public static void handleOrReject(HttpServerRequest event, ForwardingProxyOptions options,
+            TrustedProxyCheck proxyCheck, Handler<HttpServerRequest> delegate) {
+        ForwardedServerRequestWrapper wrapper = new ForwardedServerRequestWrapper(event, options, proxyCheck);
+        try {
+            if (wrapper.forwardedParser.isRejected()) {
+                event.response().setStatusCode(400).end();
+                return;
+            }
+        } catch (IllegalArgumentException e) {
+            LOG.debugf("Rejected request due to invalid forwarded header: %s", e.getMessage());
+            event.response().setStatusCode(400).end();
+            return;
+        }
+        delegate.handle(wrapper);
     }
 
     void changeTo(HttpMethod method, String uri) {

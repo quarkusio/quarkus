@@ -137,6 +137,9 @@ Each card may include the following elements:
 | *Underlying Library* _(optional)_
 | Shows the version of the main library powering the extension (if any).
 
+| *Text* _(optional)_
+| Displays informational text values (such as versions, counts, or status) as badge-style elements. Can show static, dynamic (fetched once), or streaming (continuously updated) values.
+
 | *More Details*
 | Opens a dialog with all information
 |===
@@ -349,6 +352,59 @@ cardPageBuildItem.addAction(CardAction.actionBuilder()
         .jsonRpcMethodName("cleanAll")
         .build());
 ----
+
+===== Optional: Card Texts
+
+You can display text values directly on your extension's card. Unlike page links (which navigate to a page) or actions (which trigger behavior), card texts show informational data — such as versions, counts, or status indicators — as badge-style elements on the card itself.
+
+Card texts support three modes:
+
+- **Static** — a fixed value known at build time.
+- **Dynamic** — a value fetched once at runtime via a JsonRPC method call.
+- **Streaming** — a value continuously updated at runtime via a streaming JsonRPC method.
+
+To add a text, use the `addText` method on `CardPageBuildItem`:
+
+[source,java]
+----
+cardPageBuildItem.addText(CardText.textBuilder() // <1>
+        .title("Version") // <2>
+        .icon("font-awesome-solid:tag") // <3>
+        .staticText("2.1.0") // <4>
+        .build());
+----
+<1> Create a card text using the `CardText.textBuilder()` factory.
+<2> An optional label displayed next to the value.
+<3> A Font Awesome icon displayed next to the label (optional).
+<4> A static text value known at build time.
+
+For runtime values fetched once, use `dynamicText` with a JsonRPC method name:
+
+[source,java]
+----
+cardPageBuildItem.addText(CardText.textBuilder()
+        .title("Status")
+        .icon("font-awesome-solid:circle-info")
+        .dynamicText("getStatus") // <1>
+        .build());
+----
+<1> The JsonRPC method to call once to fetch the current value.
+
+For continuously updated values, use `streamingText`:
+
+[source,java]
+----
+cardPageBuildItem.addText(CardText.textBuilder()
+        .title("Connections")
+        .icon("font-awesome-solid:link")
+        .streamingText("streamConnectionCount") // <1>
+        .streamingTextParams("param1", "param2") // <2>
+        .build());
+----
+<1> The streaming JsonRPC method that pushes updated values.
+<2> Optional parameters to pass to the streaming method. These are resolved from the extension's local storage.
+
+You can add multiple card texts, and combine them with page links and actions on the same card.
 
 ==== Footer
 
@@ -1015,7 +1071,7 @@ _info(position = null){
 
 You can find all the valid positions https://vaadin.com/docs/latest/components/notification/#position[here].
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
 
 ====== Storage
 
@@ -1306,8 +1362,7 @@ For example, the following Page definition will call the `devui-dev-services:dev
 cardPageBuildItem.addPage(Page.externalPageBuilder("External Page")
                 .dynamicUrlJsonRPCMethodName("devui-dev-services:devServicesConfig", // <1>
                     Map.of("name", "my-dev-service", // <2>
-                            "configKey", "url-config-key"))
-                .isHtmlContent());
+                            "configKey", "url-config-key")));
 ----
 <1> Use the `devServicesConfig` RPC method from the namespace `devui-dev-services`.
 <2> Set the parameters needed by the RPC method, `name` and `configKey`.
@@ -1459,7 +1514,7 @@ public class JokesJsonRPCService {
 <2> Data can be streamed with Multi
 <3> This example runs nonblocking. We could also return `Uni<Joke>`
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java[Example code]
 
 This code is responsible for making data available to display on the UI.
 
@@ -1575,7 +1630,7 @@ connectedCallback() {
 
 JsonArray (or any Java collection), either blocking or nonblocking, will return an array; otherwise, a JsonObject will be returned.
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-list.js[Example code]
 
 You can also pass in parameters in the method being called, for example:
 (In the Runtime Java code)
@@ -1633,7 +1688,7 @@ public class JokesJsonRPCService {
 ----
 <1> Return the Multi that will stream jokes
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java#L37[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/runtime/src/main/java/io/quarkus/jokes/runtime/JokesJsonRPCService.java#L37[Example code]
 
 Javascript side of streaming data:
 
@@ -1651,7 +1706,7 @@ this._observer.cancel(); //<2>
 <1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event.
 <2> Make sure to keep an instance of the observer to cancel later if needed.
 
-https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
+https://github.com/quarkiverse/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-list.js[Example code]
 
 === Workspace
 

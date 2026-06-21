@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
+import io.smallrye.config.Config;
 
 /**
  * Test resource that starts a Google Cloud Function invoker at the beginning of the test and stops it at the end.
@@ -35,8 +35,10 @@ public class CloudFunctionTestResource implements QuarkusTestResourceConfigurabl
         if (started.compareAndSet(false, true)) {
             // This is a hack, we cannot start the invoker in the start() method as Quarkus is not yet initialized,
             // so we start it here as this method is called later (the same for reading the test port).
-            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
+            Config config = Config.get();
+            int port = config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081);
             this.invoker = new CloudFunctionsInvoker(functionType, port);
+            new ListeningAddress(this.invoker.actualPort(), "http").register(testInjector.valueRegistry(), config);
             try {
                 this.invoker.start();
             } catch (Exception e) {

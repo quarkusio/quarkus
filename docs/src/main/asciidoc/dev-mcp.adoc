@@ -17,137 +17,42 @@ This feature is currently experimental.
 
 == Overview
 
-When you run a Quarkus application in dev mode, you can expose a Model Context Protocol (MCP) server. 
-It presents the methods used by the DevUI *MCP tools* (methods you can call) and the data exposed by *MCP resources*. 
+When you run a Quarkus application in dev mode, you can expose a Model Context Protocol (MCP) server.
+It presents the methods used by the DevUI *MCP tools* (methods you can call) and the data exposed by *MCP resources*.
 
-=== Connecting an MCP client
+[TIP]
+====
+The **recommended** way to connect AI coding agents to Quarkus is through the xref:agent-mcp.adoc[Quarkus Agent MCP server], which provides project scaffolding, application lifecycle management, documentation search, and extension skills.
+This guide covers the underlying Dev MCP protocol used for direct connections and extension development.
+====
 
-Open the **Dev UI** settings dialog and select the Dev MCP tab.
-There you can enable Dev MCP, get the connection details (Default `http://localhost:8080/q/dev-mcp`) and see what clients are connected.
+== Connecting MCP clients
 
-Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL. 
-After a client connects, it will appears on the tab:
+=== Using the Quarkus Agent MCP server (Recommended)
 
-image::dev_mcp_settings.png[Dev MCP Settings]
+For AI coding agent integration, use the xref:agent-mcp.adoc[Quarkus Agent MCP server].
+It provides a complete development experience with application lifecycle management, documentation search, and extension skills, while proxying all Dev MCP tools from your running application.
+
+See the xref:agent-mcp.adoc[Agent MCP guide] for setup instructions.
+
+=== Direct connection (Advanced)
+
+For advanced use cases or custom MCP clients, you can connect directly to the Dev MCP endpoint.
+Open the **Dev UI** settings dialog, select the Dev MCP tab, and enable Dev MCP.
+The connection details (default `http://localhost:8080/q/dev-mcp`) and per-agent configuration snippets are available under the **Direct connection** section.
+
+Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL.
+After a client connects, it will appear on the tab.
+
+NOTE: Direct connection does not provide application lifecycle management, documentation search, or extension skills. For full Quarkus development support, use the xref:agent-mcp.adoc[Quarkus Agent MCP server].
 
 == Guide for extension developers
 
-Extensions can contribute additional tools and resources to the Dev MCP server. The integration is similar to contributing to the xref:dev-ui.adoc[Dev UI], but descriptions are mandatory. 
+Extensions can contribute additional tools and resources to the Dev MCP server.
+The integration is similar to contributing to the xref:dev-ui.adoc[Dev UI], but descriptions are mandatory.
 A single JSON‑RPC service can be used for both Dev UI and Dev MCP; methods without a description only show up in Dev UI, while methods with a description appear in both.
 
-=== Extension skills
-
-Extensions can ship a `quarkus-skill.md` file to provide AI coding agents with extension-specific coding guidelines, testing patterns, and common pitfalls. During the Quarkus build, all skill files are automatically discovered, composed with extension metadata (name, description, guide URL), and aggregated into a single `io.quarkus:quarkus-extension-skills` JAR following the https://agentskills.io/specification[Agent Skills specification]. This JAR is published to Maven Central with each Quarkus release and is compatible with https://www.skillsjars.com[SkillsJars].
-
-==== Adding a skill file to your extension
-
-Place a `quarkus-skill.md` file in your extension's deployment module at:
-
-[source]
-----
-my-extension/deployment/src/main/resources/META-INF/quarkus-skill.md
-----
-
-That's it. No pom.xml changes are needed. The Quarkus build automatically discovers all `quarkus-skill.md` files across all extensions and aggregates them into the `quarkus-extension-skills` artifact.
-
-If your extension's runtime module has a `description` field in `META-INF/quarkus-extension.yaml`, it will be included in the composed skill's YAML frontmatter to help AI agents discover and understand your extension. While optional, providing a description is recommended:
-
-[source,yaml]
-----
-name: "My Extension"
-description: "A concise description of what this extension does"
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-metadata:
-  guide: "https://quarkus.io/guides/my-extension"
-----
-
-The file should contain concise, actionable Markdown content. Focus on what an AI agent needs to know to use your extension correctly:
-
-- **Key patterns** — how to use the main APIs, annotations, and CDI beans.
-- **Testing** — how to write tests using `@QuarkusTest`, Dev Services, and extension-specific test utilities.
-- **Common pitfalls** — mistakes that agents (and developers) frequently make.
-
-Example for a hypothetical extension:
-
-[source,markdown]
-----
-### Data Access
-
-- Inject `MyClient` with `@Inject` — it is an `@ApplicationScoped` CDI bean.
-- Use `client.query("...")` for read operations.
-- Always wrap write operations in `@Transactional`.
-
-### Testing
-
-- Use `@QuarkusTest` — Dev Services starts a backing service automatically.
-- Inject `MyClient` in tests for direct assertions.
-
-### Common Pitfalls
-
-- Do NOT create `MyClient` manually with `new` — always let CDI inject it.
-- Do NOT set the connection URL without a `%prod.` profile prefix — this disables Dev Services.
-----
-
-==== What gets composed
-
-The skill file content is **not** shipped as-is. During the Quarkus build, the `aggregate-skills` goal scans the source tree for all `quarkus-skill.md` files and composes each one with extension metadata to produce a `SKILL.md` file at `META-INF/skills/{extension-name}/SKILL.md` inside the aggregated JAR. The composed document follows the https://agentskills.io/specification[Agent Skills specification] and includes:
-
-1. **YAML frontmatter** — the skill name, extension description from `quarkus-extension.yaml`, license, and guide URL as structured metadata for agent discovery.
-2. **Skill body** — the patterns, testing guidelines, and pitfalls authored by the extension developer.
-3. **Dev MCP tools** — the skill is automatically enriched with an "Available Dev MCP Tools" section listing each MCP tool the extension enables by default, including tool names, descriptions, and parameters. Tools are discovered from runtime methods annotated with both `@JsonRpcDescription` and `@DevMCPEnableByDefault`, and from deployment processor classes annotated with `@DevMcpBuildTimeTool`.
-
-Example of a composed `SKILL.md`:
-
-[source,markdown]
-----
----
-name: quarkus-my-extension
-description: "A brief description of the extension from quarkus-extension.yaml"
-license: Apache-2.0
-metadata:
-  guide: https://quarkus.io/guides/my-extension
----
-
-### Data Access
-...
-
-### Available Dev MCP Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `quarkus-my-extension_getData` | Get current status | — |
-| `quarkus-my-extension_updateValue` | Update a value | `name` (required): The name, `value` (required): The new value |
-----
-
-The Dev MCP tools section is appended during the Quarkus build by the `aggregate-skills` Maven goal. Only tools that are enabled by default are included. All modules are scanned via Jandex on compiled classes. The enriched skills are baked into the `quarkus-extension-skills` JAR published with each Quarkus release.
-
-For **runtime methods**, add both `@JsonRpcDescription` and `@DevMCPEnableByDefault` annotations on the method (see <<MCP Tools against the Runtime classpath>>).
-
-For **deployment build-time actions**, annotate the processor class with `@DevMcpBuildTimeTool`:
-
-[source,java]
-----
-@DevMcpBuildTimeTool(name = "updateProperty", // <1>
-    description = "Update a configuration property", // <2>
-    params = {
-        @DevMcpParam(name = "name", description = "The property name"), // <3>
-        @DevMcpParam(name = "value", description = "The new value")
-    })
-public class ConfigurationProcessor {
-    // ...
-}
-----
-<1> The tool name, matching the `methodName` in the builder chain.
-<2> A human-readable description of what this tool does.
-<3> Parameter descriptions. Use `required = false` for optional parameters.
-
-The annotation is repeatable — add one per tool on the same class. This is the deployment-classpath counterpart of `@JsonRpcDescription` + `@DevMCPEnableByDefault` used on runtime methods.
-
-==== What NOT to put in the skill file
-
-- **Extension description or guide links** — these are automatically added from `quarkus-extension.yaml`.
-- **Configuration properties** — reference the guide instead. A link is auto-generated.
-- **Obvious instructions** — focus on Quarkus-specific patterns and gotchas, not generic advice.
+NOTE: Extension developers can also provide AI coding agents with extension-specific coding guidelines by shipping a `quarkus-skill.md` file. See the xref:agent-mcp.adoc#extension-skills[Agent MCP guide] for details on extension skills.
 
 === MCP tools
 

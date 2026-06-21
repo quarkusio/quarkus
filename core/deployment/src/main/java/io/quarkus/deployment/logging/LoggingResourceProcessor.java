@@ -75,6 +75,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
@@ -413,7 +414,7 @@ public final class LoggingResourceProcessor {
             LogBuildTimeConfig logBuildTimeConfig,
             BuildProducer<LoggingDecorateBuildItem> loggingDecorateProducer) {
         List<IndexView> indexList = new ArrayList<>();
-        for (ApplicationArchive i : item.getAllApplicationArchives()) {
+        for (ApplicationArchive i : item.getAllArchives()) {
             if (i.getResolvedPaths().isSinglePath() && Files.isDirectory(i.getResolvedPaths().getSinglePath())) {
                 indexList.add(i.getIndex());
             }
@@ -542,8 +543,9 @@ public final class LoggingResourceProcessor {
     void setUpMinLevelLogging(LogBuildTimeConfig log,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final BuildProducer<GeneratedClassBuildItem> gcProducer,
-            final BuildProducer<GeneratedResourceBuildItem> grProducer) {
-        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, false);
+            final BuildProducer<GeneratedResourceBuildItem> grProducer,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
+        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, generatedServiceProviders, false);
         generateDefaultLoggerNode(output);
         if (allRootMinLevelOrHigher(log.minLevel().intValue(), log.categories(), categoryMinLevelDefaults.content)) {
             Level minLevel = log.minLevel();
@@ -611,7 +613,7 @@ public final class LoggingResourceProcessor {
                                         categoryMinLevelDefaults,
                                         rootMinLevel)
                                 .intValue();
-                        b0.if_(b0.objEquals(name, Const.of(category)), BlockCreator::returnTrue);
+                        b0.if_(b0.exprEquals(name, Const.of(category)), BlockCreator::returnTrue);
                         b0.if_(b0.invokeVirtual(
                                 MethodDesc.of(String.class, "startsWith", boolean.class, String.class),
                                 name, Const.of(category + ".")),

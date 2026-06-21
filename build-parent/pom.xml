@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.3.10</kotlin.version>
+        <kotlin.version>2.4.0</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.2.0</dokka.version>
         <scala.version>2.13.12</scala.version>
@@ -30,19 +30,19 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.5.3</jandex.version>
+        <jandex.version>3.6.0</jandex.version>
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>4.21.0</htmlunit.version>
-        <javaparser-core.version>3.28.0</javaparser-core.version>
+        <htmlunit.version>5.1.0</htmlunit.version>
+        <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.27.1</commonmark.version>
-        <jgit.version>7.6.0.202603022253-r</jgit.version>
+        <commonmark.version>0.28.0</commonmark.version>
+        <jgit.version>7.7.0.202606012155-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -61,9 +61,9 @@
         <supported-maven-versions>[3.9.0,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.14</proposed-maven-version>
+        <proposed-maven-version>3.9.16</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.3.1</gradle-wrapper.version>
+        <gradle-wrapper.version>9.5.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -74,12 +74,12 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>9.3.2</elasticsearch-server.version>
+        <elasticsearch-server.version>9.4.1</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>3.5.0</opensearch-server.version>
+        <opensearch-server.version>3.6.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
@@ -100,18 +100,20 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.6.1</keycloak.server.version>
+        <keycloak.server.version>26.6.2</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 
         <assertj.version>3.27.7</assertj.version>
+        <!-- Keep in sync with VineflowerDecompiler.DEFAULT_VINEFLOWER_VERSION -->
+        <vineflower.version>1.12.0</vineflower.version>
 
         <wiremock.version>3.13.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.44.0</artemis.version>
+        <artemis.version>2.54.0</artemis.version>
 
         <!-- Dev Services Images -->
         <!-- TODO switch to apache/activemq-artemis to match the artemis version-->
@@ -122,13 +124,14 @@
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
         <redis.image>docker.io/library/redis:7</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
+        <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
@@ -302,6 +305,11 @@
                 <artifactId>junit-pioneer</artifactId>
                 <version>${junit-pioneer.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.vineflower</groupId>
+                <artifactId>vineflower</artifactId>
+                <version>${vineflower.version}</version>
             </dependency>
 
             <dependency>
@@ -615,7 +623,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.28</version>
+                            <version>5.0.6</version>
                         </dependency>
                     </dependencies>
                 </plugin>

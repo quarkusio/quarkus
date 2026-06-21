@@ -1,7 +1,11 @@
 package io.quarkus.spring.data.deployment.generate;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.jboss.jandex.ClassInfo;
@@ -9,11 +13,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class FragmentMethodsAdder {
 
@@ -26,7 +31,8 @@ public class FragmentMethodsAdder {
     }
 
     public void add(ClassCreator classCreator, String generatedClassName,
-            List<DotName> customInterfaceNamesToImplement, Map<String, FieldDescriptor> customImplNameToHandle) {
+            List<DotName> customInterfaceNamesToImplement, Map<String, FieldDesc> customImplNameToHandle,
+            Set<String> existingMethods) {
         for (DotName customInterfaceToImplement : customInterfaceNamesToImplement) {
             String customImplementationClassName = FragmentMethodsUtil
                     .getImplementationDotName(customInterfaceToImplement, index).toString();
@@ -41,38 +47,53 @@ public class FragmentMethodsAdder {
             for (MethodInfo methodToImplement : customInterfaceToImplementClassInfo.methods()) {
                 // methods defined on the interface are implemented by forwarding them to the bean that implements them
 
-                Object[] methodParameterTypes = new Object[methodToImplement.parametersCount()];
+                String[] methodParameterTypes = new String[methodToImplement.parametersCount()];
                 for (int i = 0; i < methodToImplement.parametersCount(); i++) {
                     methodParameterTypes[i] = methodToImplement.parameterType(i).name().toString();
                 }
 
                 String methodReturnType = methodToImplement.returnType().name().toString();
+                String methodKey = GenerationUtil.methodKey(methodToImplement.name(), methodReturnType,
+                        methodParameterTypes);
 
-                MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(generatedClassName, methodToImplement.name(),
-                        methodReturnType, methodParameterTypes);
+                if (!existingMethods.contains(methodKey)) {
+                    // Build the MethodTypeDesc
+                    MethodTypeDesc mtd = GenerationUtil.toMethodTypeDesc(methodReturnType, methodParameterTypes);
 
-                if (!classCreator.getExistingMethods().contains(methodDescriptor)) {
-                    try (MethodCreator methodCreator = classCreator.getMethodCreator(methodDescriptor)) {
-                        // obtain the bean from Arc
-                        ResultHandle bean = methodCreator.readInstanceField(
-                                customImplNameToHandle.get(customImplementationClassName), methodCreator.getThis());
-
-                        ResultHandle[] methodParameterHandles = new ResultHandle[methodToImplement.parametersCount()];
+                    classCreator.method(methodToImplement.name(), mc -> {
+                        mc.setType(mtd);
+                        // Declare parameters
+                        ParamVar[] params = new ParamVar[methodToImplement.parametersCount()];
                         for (int i = 0; i < methodToImplement.parametersCount(); i++) {
-                            methodParameterHandles[i] = methodCreator.getMethodParam(i);
+                            params[i] = mc.parameter("p" + i);
                         }
 
-                        // delegate call to bean
-                        ResultHandle result = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(customImplementationClassName, methodToImplement.name(),
-                                        methodReturnType, methodParameterTypes),
-                                bean, methodParameterHandles);
-                        if (void.class.getName().equals(methodReturnType)) {
-                            methodCreator.returnValue(null);
-                        } else {
-                            methodCreator.returnValue(result);
-                        }
-                    }
+                        mc.body(bc -> {
+                            // obtain the bean from the field
+                            Expr bean = bc.get(mc.this_().field(
+                                    customImplNameToHandle.get(customImplementationClassName)));
+
+                            // Build args list
+                            List<Expr> args = new ArrayList<>();
+                            for (ParamVar param : params) {
+                                args.add(param);
+                            }
+
+                            // Build the target MethodDesc for invokeVirtual
+                            MethodDesc targetMethod = ClassMethodDesc.of(
+                                    ClassDesc.of(customImplementationClassName),
+                                    methodToImplement.name(), mtd);
+
+                            // delegate call to bean
+                            Expr result = bc.invokeVirtual(targetMethod, bean, args);
+                            if (void.class.getName().equals(methodReturnType)) {
+                                bc.return_();
+                            } else {
+                                bc.return_(result);
+                            }
+                        });
+                    });
+                    existingMethods.add(methodKey);
                 }
             }
         }

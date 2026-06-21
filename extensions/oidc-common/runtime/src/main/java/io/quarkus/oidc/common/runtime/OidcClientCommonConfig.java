@@ -118,6 +118,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          */
         public Jwt jwt = new Jwt();
 
+        private boolean forAllEndpoints = false;
+
         public Optional<String> getSecret() {
             return secret;
         }
@@ -146,6 +148,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             secret = mapping.secret();
             clientSecret.addConfigMappingValues(mapping.clientSecret());
             jwt.addConfigMappingValues(mapping.jwt());
+            forAllEndpoints = mapping.forAllEndpoints();
         }
 
         @Override
@@ -161,6 +164,11 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         @Override
         public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt jwt() {
             return jwt;
+        }
+
+        @Override
+        public boolean forAllEndpoints() {
+            return forAllEndpoints;
         }
 
         /**
@@ -378,7 +386,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 CLIENT,
                 // JWT bearer token as used as a client assertion: https://www.rfc-editor.org/rfc/rfc7523#section-2.2
                 // This option is only supported by the OIDC client extension.
-                BEARER
+                BEARER,
+                // SPIFFE SVID token is used as a client assertion
+                SPIFFE_JWT
             }
 
             /**

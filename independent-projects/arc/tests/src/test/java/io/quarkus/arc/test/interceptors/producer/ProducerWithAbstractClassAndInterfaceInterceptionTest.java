@@ -33,7 +33,7 @@ public class ProducerWithAbstractClassAndInterfaceInterceptionTest {
         MyNonbeanBase nonbean = Arc.container().instance(MyNonbeanBase.class).get();
         assertEquals("intercepted1: hello1_foobar", nonbean.hello1());
         assertEquals("intercepted1: hello2_foobar", nonbean.hello2());
-        assertEquals("hello3", nonbean.hello3());
+        assertEquals("intercepted2: hello3", nonbean.hello3());
         assertEquals("hello4_foobar", nonbean.hello4());
         assertEquals("hello5", nonbean.hello5());
     }
@@ -73,10 +73,10 @@ public class ProducerWithAbstractClassAndInterfaceInterceptionTest {
     interface MyNonbean {
         String hello1();
 
-        @MyBinding2 // this should be ignored, because interceptor bindings are ignored on interfaces
+        @MyBinding2 // ignored on abstract interface methods
         String hello2();
 
-        @MyBinding2 // this should be ignored, because interceptor bindings are ignored on interfaces
+        @MyBinding2
         @NoClassInterceptors
         default String hello3() {
             return "hello3";

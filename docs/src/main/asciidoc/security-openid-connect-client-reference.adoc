@@ -53,7 +53,9 @@ quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
 
 `OidcClient` will discover that the token endpoint URL is `http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens`.
 
-Alternatively, if the discovery endpoint is unavailable or you want to avoid an extra round-trip to it, you can disable discovery and configure the token endpoint address with a relative path.
+If the OIDC provider requires authentication to access the discovery endpoint, you can configure `OidcClient` to send credentials with the discovery request, as described in <<oidc-client-authenticated-discovery-endpoint>>.
+
+If the discovery endpoint is unavailable or you want to avoid an extra round-trip to it, you can disable discovery and configure the token endpoint address with a relative path.
 
 For example:
 
@@ -1022,6 +1024,7 @@ quarkus.oidc-client.credentials.jwt.subject=custom-subject
 quarkus.oidc-client.credentials.jwt.issuer=custom-issuer
 ----
 
+[[oidc-client-jwt-bearer]]
 ==== JWT Bearer
 
 link:https://www.rfc-editor.org/rfc/rfc7523[RFC7523] explains how JWT Bearer tokens can be used to authenticate clients.
@@ -1099,6 +1102,31 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilt
 }
 ----
 
+==== SPIFFE JWT-SVID
+
+link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
+When the JWT source is set to `spiffe`, the `client_assertion_type` parameter is set to `urn:ietf:params:oauth:client-assertion-type:jwt-spiffe` instead of the JWT bearer `urn:ietf:params:oauth:client-assertion-type:jwt-bearer` value.
+
+Enable it as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${auth-server-url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.jwt.source=spiffe-jwt
+----
+
+Quarkus can load the SPIFFE JWT-SVID token from the file system.
+Configure the token path as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.credentials.jwt.token-path=/var/run/secrets/tokens <1>
+----
+<1> Path to a SPIFFE JWT-SVID token.
+Quarkus loads a new token from the file system and reloads it when the token expires.
+The token's `sub` claim is verified to start with the `spiffe://` scheme.
+
 ==== Apple POST JWT
 
 Apple OpenID Connect provider uses the `client_secret_post` method, where the secret is a JWT produced with the `private_key_jwt` authentication method, but with Apple account-specific issuer and subject properties.
@@ -1144,6 +1172,17 @@ quarkus.tls.oidc-client.trust-store.p12.password=${trust-store-password}
 # Add more truststore properties if needed:
 #quarkus.tls.oidc-client.trust-store.p12.alias=certAlias
 ----
+
+[[oidc-client-authenticated-discovery-endpoint]]
+==== Authenticated access to the discovery endpoint
+
+The OIDC discovery endpoint is typically public.
+Some OIDC providers may enforce authenticated access to this endpoint.
+For example, the Kubernetes API server acts as an OIDC provider for service account tokens and requires a bearer access token to access its discovery endpoint.
+
+To send client credentials to the discovery endpoint, set `quarkus.oidc-client.credentials.for-all-endpoints=true`.
+Since the discovery endpoint is accessed with an HTTP GET request, only authentication methods that use the HTTP `Authorization` header are effective, such as `client_secret_basic` and <<oidc-client-jwt-bearer,JWT bearer>>.
+Alternatively, you can use <<oidc-client-ref-oidc-request-filters,OidcRequestFilter>> to customize the authentication.
 
 === OIDC Client SPI
 

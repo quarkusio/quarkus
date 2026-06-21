@@ -38,6 +38,11 @@
             <artifactId>vertx-core</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -223,6 +223,7 @@ public class GrpcServerRecorder {
                     globalInterceptors, service,
                     launchMode == LaunchMode.DEVELOPMENT);
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
+
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
             definitions.add(service.definition);
@@ -796,7 +797,7 @@ public class GrpcServerRecorder {
                         startPromise.fail(e);
                     }
                     return null;
-                });
+                }, false);
             }
         }
 

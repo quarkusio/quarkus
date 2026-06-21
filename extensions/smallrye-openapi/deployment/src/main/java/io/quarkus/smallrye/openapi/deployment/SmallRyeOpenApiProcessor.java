@@ -907,8 +907,11 @@ public class SmallRyeOpenApiProcessor {
         if (annotation.target().kind() == Kind.METHOD) {
             MethodInfo method = annotation.target().asMethod();
 
-            if (isValidOpenAPIMethodForAutoAdd(method)) {
-                return Stream.of(Map.entry(new ClassAndMethod(method.declaringClass(), method), annotation));
+            // Check if this method or a parent method has an HTTP annotation
+            MethodInfo httpMethod = findHttpAnnotatedMethod(method, index);
+            if (httpMethod != null && !method.hasAnnotation(OPENAPI_SECURITY_REQUIREMENT)
+                    && method.declaringClass().declaredAnnotation(OPENAPI_SECURITY_REQUIREMENT) == null) {
+                return Stream.of(Map.entry(new ClassAndMethod(method.declaringClass(), httpMethod), annotation));
             }
         } else if (annotation.target().kind() == Kind.CLASS) {
             ClassInfo classInfo = annotation.target().asClass();
@@ -917,7 +920,7 @@ public class SmallRyeOpenApiProcessor {
                     .stream()
                     // drop methods that specify the annotation directly
                     .filter(method -> !method.hasDeclaredAnnotation(annotation.name()))
-                    .filter(SmallRyeOpenApiProcessor::isValidOpenAPIMethodForAutoAdd)
+                    .filter(method -> isValidOpenAPIMethodForAutoAdd(method, index))
                     .map(method -> {
                         final ClassInfo resourceClass;
 
@@ -991,9 +994,58 @@ public class SmallRyeOpenApiProcessor {
         return "m" + classInfo.hashCode() + "_" + methodInfo.hashCode();
     }
 
-    private static boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method) {
-        return isOpenAPIEndpoint(method) && !method.hasAnnotation(OPENAPI_SECURITY_REQUIREMENT)
+    private static boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, IndexView index) {
+        return isOpenAPIEndpointInHierarchy(method, index) && !method.hasAnnotation(OPENAPI_SECURITY_REQUIREMENT)
                 && method.declaringClass().declaredAnnotation(OPENAPI_SECURITY_REQUIREMENT) == null;
+    }
+
+    private static boolean isOpenAPIEndpointInHierarchy(MethodInfo method, IndexView index) {
+        return findHttpAnnotatedMethod(method, index) != null;
+    }
+
+    private static MethodInfo findHttpAnnotatedMethod(MethodInfo method, IndexView index) {
+        if (isOpenAPIEndpoint(method)) {
+            return method;
+        }
+
+        ClassInfo declaringClass = method.declaringClass();
+        String methodName = method.name();
+        int parameterCount = method.parametersCount();
+
+        // Check parent classes
+        DotName superClassName = declaringClass.superName();
+        while (superClassName != null && !superClassName.toString().equals("java.lang.Object")) {
+            ClassInfo superClass = index.getClassByName(superClassName);
+            if (superClass != null) {
+                // Check all methods with the same name and parameter count
+                for (MethodInfo superMethod : superClass.methods()) {
+                    if (superMethod.name().equals(methodName) &&
+                            superMethod.parametersCount() == parameterCount &&
+                            isOpenAPIEndpoint(superMethod)) {
+                        return superMethod;
+                    }
+                }
+                superClassName = superClass.superName();
+            } else {
+                break;
+            }
+        }
+
+        // Check interfaces
+        for (Type interfaceType : declaringClass.interfaceTypes()) {
+            ClassInfo interfaceClass = index.getClassByName(interfaceType.name());
+            if (interfaceClass != null) {
+                for (MethodInfo interfaceMethod : interfaceClass.methods()) {
+                    if (interfaceMethod.name().equals(methodName) &&
+                            interfaceMethod.parametersCount() == parameterCount &&
+                            isOpenAPIEndpoint(interfaceMethod)) {
+                        return interfaceMethod;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     @BuildStep
@@ -1260,7 +1312,10 @@ public class SmallRyeOpenApiProcessor {
                 .withOperationHandler(operationHandler)
                 .enableUnannotatedPathParameters(capabilities.isPresent(Capability.RESTEASY_REACTIVE))
                 .enableStandardFilter(false)
-                .withFilters(oasFilters);
+                .withFilters(oasFilters)
+                // Mark the model as intermediate so that private extensions remain
+                // available for filters running at startup.
+                .withIntermediateModel(true);
 
         getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.BUILD).forEach(builder::addFilterName);
 

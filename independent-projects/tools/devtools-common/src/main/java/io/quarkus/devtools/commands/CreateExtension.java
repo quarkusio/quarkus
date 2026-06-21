@@ -9,6 +9,7 @@ import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestart
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_DOCS_MODULE;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_INTEGRATION_TESTS_MODULE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IN_QUARKUS_CORE;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_ARTIFACT_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_RELATIVE_PATH;
@@ -87,7 +88,7 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "20";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "22";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
     public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://docs.quarkiverse.io/%s/dev/";
 
@@ -289,6 +290,9 @@ public class CreateExtension {
             case OTHER_PLATFORM:
                 defaultVersion = DEFAULT_VERSION;
                 extensionDirName = extensionId;
+                if (layoutType == LayoutType.QUARKUS_CORE) {
+                    data.put(IN_QUARKUS_CORE, true);
+                }
                 final Model extensionsParentModel = readPom(workingDir.resolve(extensionsRelativeDir));
                 data.putIfAbsent(PROPERTIES_FROM_PARENT, true);
                 ensureRequiredStringData(PARENT_GROUP_ID, resolveGroupId(extensionsParentModel));

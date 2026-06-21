@@ -6,6 +6,7 @@ import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_NOT_AVAILABLE;
 import static io.quarkus.oidc.runtime.OidcRecorder.LOG;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.LaunchMode;
@@ -39,8 +41,6 @@ import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 final class TenantContextFactory {
 
@@ -451,19 +451,34 @@ final class TenantContextFactory {
 
     private Uni<OidcProviderClientImpl> createOidcClientUni(OidcTenantConfig oidcConfig) {
 
-        String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
+        try {
+            OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
+        } catch (ConfigurationException e) {
+            return Uni.createFrom().failure(e);
+        }
 
-        WebClientOptions options = new WebClientOptions();
-        options.setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls()),
-                proxyConfigurationRegistry);
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
-        WebClient client = WebClient.create(mutinyVertx, options);
+        OidcWebClient client = OidcWebClient.create(oidcConfig, tlsSupport, mutinyVertx, proxyConfigurationRegistry,
+                "OIDC tenant `" + oidcConfig.tenantId().get() + "`");
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcUtils.getOidcRequestFilters(oidcConfig);
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcUtils.getOidcResponseFilters(oidcConfig);
 
-        Uni<OidcConfigurationMetadata> metadataUni = null;
+        return OidcProviderClientImpl.of(client, vertx,
+                clientCredentials -> createOidcConfigurationMetadata(oidcConfig, client, oidcRequestFilters,
+                        oidcResponseFilters, clientCredentials, mutinyVertx),
+                oidcConfig, oidcRequestFilters, oidcResponseFilters);
+    }
+
+    private Uni<OidcConfigurationMetadata> createOidcConfigurationMetadata(OidcTenantConfig oidcConfig, OidcWebClient client,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
+            OidcProviderClientImpl.ClientCredentials clientCredentials,
+            io.vertx.mutiny.core.Vertx mutinyVertx) {
+
+        String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
+
+        final Uni<OidcConfigurationMetadata> metadataUni;
         if (!oidcConfig.discoveryEnabled().orElse(true)) {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
@@ -471,8 +486,23 @@ final class TenantContextFactory {
             final String discoveryUri = OidcCommonUtils.getDiscoveryUri(authServerUriString, oidcConfig.discoveryPath());
             OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                     Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
+            final Map<OidcEndpoint.Type, List<OidcRequestFilter>> discoveryFilters;
+            if (oidcConfig.credentials().forAllEndpoints()) {
+                discoveryFilters = new HashMap<>(oidcRequestFilters);
+                OidcRequestFilter authFilter = new OidcRequestFilter() {
+                    @Override
+                    public Uni<Void> filter(OidcRequestFilterContext context) {
+                        OidcProviderClientImpl.setHttpAuthorizationForDiscovery(context.request(),
+                                clientCredentials, oidcConfig);
+                        return Uni.createFrom().voidItem();
+                    }
+                };
+                discoveryFilters.computeIfAbsent(OidcEndpoint.Type.DISCOVERY, k -> new ArrayList<>()).add(authFilter);
+            } else {
+                discoveryFilters = oidcRequestFilters;
+            }
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, discoveryUri,
+                    .discoverMetadata(client, discoveryFilters, contextProps, oidcResponseFilters, discoveryUri,
                             connectionDelayInMillisecs,
                             mutinyVertx,
                             oidcConfig.useBlockingDnsLookup())
@@ -486,70 +516,68 @@ final class TenantContextFactory {
                     });
         }
         return metadataUni.onItemOrFailure()
-                .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClientImpl>>() {
+                .transformToUni(
+                        new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcConfigurationMetadata>>() {
 
-                    @Override
-                    public Uni<OidcProviderClientImpl> apply(OidcConfigurationMetadata metadata, Throwable t) {
-                        String tenantId = oidcConfig.tenantId().orElse(DEFAULT_TENANT_ID);
-                        if (t != null) {
-                            client.close();
-                            return Uni.createFrom().failure(toOidcException(t, authServerUriString, tenantId));
-                        }
-                        if (shouldFireOidcServerAvailableEvent(tenantId)) {
-                            fireOidcServerAvailableEvent(authServerUriString, tenantId);
-                        }
-                        if (metadata == null) {
-                            client.close();
-                            return Uni.createFrom().failure(new ConfigurationException(
-                                    "OpenId Connect Provider configuration metadata is not configured and can not be discovered"));
-                        }
-                        if (oidcConfig.logout().path().isPresent()) {
-                            if (oidcConfig.endSessionPath().isEmpty() && metadata.getEndSessionUri() == null) {
-                                client.close();
-                                return Uni.createFrom().failure(new ConfigurationException(
-                                        "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
-                            }
-                        }
-                        if (userInfoInjectionPointDetected && metadata.getUserInfoUri() != null) {
-                            enableUserInfo(oidcConfig);
-                        }
-                        if (oidcConfig.authentication().userInfoRequired().orElse(false) && metadata.getUserInfoUri() == null) {
-                            client.close();
-                            return Uni.createFrom().failure(new ConfigurationException(
-                                    "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
-                                            + " Use '%s' if the discovery is disabled."
-                                                    .formatted(getConfigPropertyForTenant(tenantId, "user-info-path"))));
-                        }
-                        if (OidcUtils.isParEnabled(oidcConfig.authentication(), metadata)) {
-                            if (metadata.getPushedAuthorizationRequestUri() == null) {
-                                String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, but "
-                                        + "the OpenID Provider PAR endpoint is not configured. Use '%s' if the discovery is disabled.")
-                                        .formatted(tenantId,
-                                                getConfigPropertyForTenant(tenantId, "authentication.par.path"));
-                                return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
-                            }
-                            if (!LaunchMode.current().isDevOrTest()
-                                    && !"https".startsWith(metadata.getPushedAuthorizationRequestUri().toLowerCase())) {
-                                LOG.debugf("OIDC tenant '%s' has the OpenID Provider PAR endpoint '%s', " +
-                                        "however the HTTPS scheme is required by the specification. Proceeding" +
-                                        " with HTTP assuming a secure internal network or proxy.", tenantId,
-                                        metadata.getPushedAuthorizationRequestUri());
+                            @Override
+                            public Uni<OidcConfigurationMetadata> apply(OidcConfigurationMetadata metadata, Throwable t) {
+                                String tenantId = oidcConfig.tenantId().orElse(DEFAULT_TENANT_ID);
+                                if (t != null) {
+                                    return Uni.createFrom().failure(toOidcException(t, authServerUriString, tenantId));
+                                }
+                                if (shouldFireOidcServerAvailableEvent(tenantId)) {
+                                    fireOidcServerAvailableEvent(authServerUriString, tenantId);
+                                }
+                                if (metadata == null) {
+                                    return Uni.createFrom().failure(new ConfigurationException(
+                                            "OpenId Connect Provider configuration metadata is not configured and can not be discovered"));
+                                }
+                                if (oidcConfig.logout().path().isPresent()) {
+                                    if (oidcConfig.endSessionPath().isEmpty() && metadata.getEndSessionUri() == null) {
+                                        return Uni.createFrom().failure(new ConfigurationException(
+                                                "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
+                                    }
+                                }
+                                if (userInfoInjectionPointDetected && metadata.getUserInfoUri() != null) {
+                                    enableUserInfo(oidcConfig);
+                                }
+                                if (oidcConfig.authentication().userInfoRequired().orElse(false)
+                                        && metadata.getUserInfoUri() == null) {
+                                    return Uni.createFrom().failure(new ConfigurationException(
+                                            "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
+                                                    + " Use '%s' if the discovery is disabled."
+                                                            .formatted(
+                                                                    getConfigPropertyForTenant(tenantId, "user-info-path"))));
+                                }
+                                if (OidcUtils.isParEnabled(oidcConfig.authentication(), metadata)) {
+                                    if (metadata.getPushedAuthorizationRequestUri() == null) {
+                                        String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, but "
+                                                + "the OpenID Provider PAR endpoint is not configured. Use '%s' if the discovery is disabled.")
+                                                .formatted(tenantId,
+                                                        getConfigPropertyForTenant(tenantId, "authentication.par.path"));
+                                        return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
+                                    }
+                                    if (!LaunchMode.current().isDevOrTest()
+                                            && !"https".startsWith(metadata.getPushedAuthorizationRequestUri().toLowerCase())) {
+                                        LOG.debugf("OIDC tenant '%s' has the OpenID Provider PAR endpoint '%s', " +
+                                                "however the HTTPS scheme is required by the specification. Proceeding" +
+                                                " with HTTP assuming a secure internal network or proxy.", tenantId,
+                                                metadata.getPushedAuthorizationRequestUri());
+                                    }
+
+                                    boolean clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method()
+                                            .orElse(null) == OidcClientCommonConfig.Credentials.Secret.Method.QUERY;
+                                    if (clientSecretQueryAuthentication) {
+                                        String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, "
+                                                + "and uses the client authentication method 'query'. Please set different"
+                                                + " client authentication method").formatted(tenantId);
+                                        return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
+                                    }
+                                }
+                                return Uni.createFrom().item(metadata);
                             }
 
-                            boolean clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method()
-                                    .orElse(null) == OidcClientCommonConfig.Credentials.Secret.Method.QUERY;
-                            if (clientSecretQueryAuthentication) {
-                                String exceptionMessage = ("OIDC tenant '%s' has enabled the pushed authorization requests, "
-                                        + "and uses the client authentication method 'query'. Please set different"
-                                        + " client authentication method").formatted(tenantId);
-                                return Uni.createFrom().failure(new ConfigurationException(exceptionMessage));
-                            }
-                        }
-                        return OidcProviderClientImpl.of(client, vertx, metadata, oidcConfig, oidcRequestFilters,
-                                oidcResponseFilters);
-                    }
-
-                });
+                        });
     }
 
     private OidcConfigurationMetadata createLocalMetadata(OidcTenantConfig oidcConfig, String authServerUriString) {

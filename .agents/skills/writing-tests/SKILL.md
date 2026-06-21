@@ -36,14 +36,15 @@ mandatory for contributions.
 @RegisterExtension
 static final QuarkusExtensionTest config = new QuarkusExtensionTest()
     .withApplicationRoot((jar) -> jar
-        .addClasses(MyResource.class, MyService.class)
-        .addAsResource("application.properties"));
+        .addClasses(MyResource.class, MyService.class));
 
 @Test
 void testFeature() {
     // test with RestAssured or similar
 }
 ```
+
+If the tests have to set Quarkus configuration, then using `QuarkusExtensionTest#overrideConfigKey` for build time configuration and `QuarkusExtensionTest#overrideRuntimeConfigKey` for runtime configuration is preferable. 
 
 ## Running Tests
 
@@ -87,6 +88,13 @@ run the TCKs:
 ./mvnw verify -f tcks/<area>/ -Ptcks
 ```
 
+## Assertions
+
+- **Prefer AssertJ** (`org.assertj.core.api.Assertions.assertThat`) over JUnit 5
+  assertions (`org.junit.jupiter.api.Assertions`). AssertJ provides fluent,
+  readable assertions and better failure messages.
+- Use RestAssured for HTTP endpoint testing.
+
 ## Key Rules
 
 - Do NOT use `@QuarkusTest` in deployment module tests — use `QuarkusExtensionTest`
@@ -97,3 +105,4 @@ run the TCKs:
 - Verify that build-time errors produce clear, actionable error messages
 - Container engine (Docker/Podman) is needed for dev-services tests
 - Parallel test execution is not supported
+- When writing a test that verifies a bug has been fixed, ensure that the test has run against the code that does not contain the fix and verify this test fails. This provides some confidence that the test does actually verify the fix; in other words, this addresses the `never trust a test you haven't seen fail` adage

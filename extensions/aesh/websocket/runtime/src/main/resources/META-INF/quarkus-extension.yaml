@@ -1,0 +1,14 @@
+name: "Aesh WebSocket"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "aesh"
+  - "websocket"
+  - "terminal"
+  - "cli"
+  categories:
+  - "miscellaneous"
+  status: "preview"
+  guide: "https://quarkus.io/guides/aesh"
+  config:
+  - "quarkus.aesh.websocket."

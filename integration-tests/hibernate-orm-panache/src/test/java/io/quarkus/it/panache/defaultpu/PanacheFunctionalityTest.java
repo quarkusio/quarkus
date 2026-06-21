@@ -99,6 +99,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testCaseInsensitiveSorting() {
+        RestAssured.when().get("/test/testCaseInsensitiveSorting").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")

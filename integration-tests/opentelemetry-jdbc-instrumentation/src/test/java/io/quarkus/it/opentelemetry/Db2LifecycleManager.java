@@ -7,12 +7,13 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.Db2Container;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class Db2LifecycleManager implements QuarkusTestResourceLifecycleManager {
     private static final Logger LOGGER = Logger.getLogger(Db2LifecycleManager.class);
     private static final String QUARKUS = "quarkus";
-    private static final String DB2_IMAGE = System.getProperty("db2.image");
+    private static final String DB2_IMAGE = DockerImageNames.getImage("db2.image");
     private StartedDb2Container db2Container;
 
     @Override

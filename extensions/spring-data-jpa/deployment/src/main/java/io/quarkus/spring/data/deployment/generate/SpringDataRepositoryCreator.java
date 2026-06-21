@@ -1,6 +1,6 @@
 package io.quarkus.spring.data.deployment.generate;
 
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,12 +21,11 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
@@ -40,7 +39,8 @@ public class SpringDataRepositoryCreator {
     private final DerivedMethodsAdder derivedMethodsAdder;
     private final CustomQueryMethodsAdder customQueryMethodsAdder;
 
-    public SpringDataRepositoryCreator(ClassOutput classOutput, ClassOutput otherClassOutput, IndexView index,
+    public SpringDataRepositoryCreator(ClassOutput classOutput,
+            ClassOutput otherClassOutput, IndexView index,
             Consumer<String> fragmentImplClassResolvedCallback,
             Consumer<String> customClassCreatedCallback, TypeBundle typeBundle) {
         this.classOutput = classOutput;
@@ -81,44 +81,55 @@ public class SpringDataRepositoryCreator {
             }
         }
 
-        Map<String, FieldDescriptor> fragmentImplNameToFieldDescriptor = new HashMap<>();
+        Map<String, FieldDesc> fragmentImplNameToFieldDescriptor = new HashMap<>();
         String repositoryToImplementStr = repositoryToImplement.name().toString();
         String generatedClassName = repositoryToImplementStr + "_" + HashUtil.sha1(repositoryToImplementStr) + "Impl";
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .interfaces(repositoryToImplementStr)
-                .build()) {
+
+        // Track existing methods across all adders
+        Set<String> existingMethods = new HashSet<>();
+
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(generatedClassName, classCreator -> {
+            classCreator.implements_(ClassDesc.of(repositoryToImplementStr));
             classCreator.addAnnotation(ApplicationScoped.class);
 
-            FieldCreator entityClassFieldCreator = classCreator.getFieldCreator("entityClass", Class.class.getName())
-                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL);
+            // Create the entityClass field
+            FieldDesc entityClassFieldDesc = classCreator.field("entityClass", ifc -> {
+                ifc.setType(Class.class);
+                ifc.private_();
+                ifc.final_();
+            });
 
             // create an instance field of type Class for each one of the implementations of the custom interfaces
             createCustomImplFields(classCreator, fragmentNamesToImplement, index, fragmentImplNameToFieldDescriptor);
 
             // initialize all class fields in the constructor
-            try (MethodCreator ctor = classCreator.getMethodCreator("<init>", "V")) {
-                ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, "<init>", void.class), ctor.getThis());
-                // initialize the entityClass field
-                ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(),
-                        ctor.loadClassFromTCCL(entityTypeStr));
-                ctor.returnValue(null);
-            }
+            classCreator.constructor(ctor -> {
+                ctor.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(Object.class), ctor.this_());
+                    // initialize the entityClass field
+                    bc.set(ctor.this_().field(entityClassFieldDesc),
+                            Const.of(ClassDesc.of(entityTypeStr)));
+                    bc.return_();
+                });
+            });
 
             // for every method we add we need to make sure that we only haven't added it before
             // we first add custom methods (as per Spring Data implementation) thus ensuring that user provided methods
             // always override stock methods from the Spring Data repository interfaces
 
             fragmentMethodsAdder.add(classCreator, generatedClassName, fragmentNamesToImplement,
-                    fragmentImplNameToFieldDescriptor);
+                    fragmentImplNameToFieldDescriptor, existingMethods);
 
-            stockMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(), generatedClassName,
-                    repositoryToImplement, entityDotName, idTypeStr);
-            derivedMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(), generatedClassName,
-                    repositoryToImplement, entityClassInfo);
-            customQueryMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(),
-                    repositoryToImplement, entityClassInfo, idTypeStr);
-        }
+            stockMethodsAdder.add(classCreator, entityClassFieldDesc, generatedClassName,
+                    repositoryToImplement, entityDotName, idTypeStr, existingMethods);
+            derivedMethodsAdder.add(classCreator, entityClassFieldDesc, generatedClassName,
+                    repositoryToImplement, entityClassInfo, existingMethods);
+            customQueryMethodsAdder.add(classCreator, entityClassFieldDesc,
+                    repositoryToImplement, entityClassInfo, idTypeStr, existingMethods);
+        });
 
         return new Result(entityDotName, idTypeDotName, generatedClassName);
     }
@@ -164,8 +175,9 @@ public class SpringDataRepositoryCreator {
         return new AbstractMap.SimpleEntry<>(idDotName, entityDotName);
     }
 
-    private void createCustomImplFields(ClassCreator repositoryImpl, List<DotName> customInterfaceNamesToImplement,
-            IndexView index, Map<String, FieldDescriptor> customImplNameToFieldDescriptor) {
+    private void createCustomImplFields(io.quarkus.gizmo2.creator.ClassCreator repositoryImpl,
+            List<DotName> customInterfaceNamesToImplement,
+            IndexView index, Map<String, FieldDesc> customImplNameToFieldDescriptor) {
         Set<String> customImplClassNames = new HashSet<>(customInterfaceNamesToImplement.size());
 
         // go through the interfaces and collect the implementing classes in a Set
@@ -178,13 +190,14 @@ public class SpringDataRepositoryCreator {
         // do the actual field creation and book-keeping of them in the customImplNameToFieldDescriptor Map
         int i = 0;
         for (String customImplClassName : customImplClassNames) {
-            FieldCreator customClassField = repositoryImpl
-                    .getFieldCreator("customImplClass" + (i + 1), customImplClassName)
-                    .setModifiers(Modifier.PROTECTED); // done to prevent warning during the build
-            customClassField.addAnnotation(Inject.class);
+            final int fieldIndex = i;
+            FieldDesc customClassField = repositoryImpl.field("customImplClass" + (fieldIndex + 1), ifc -> {
+                ifc.setType(ClassDesc.of(customImplClassName));
+                ifc.protected_(); // done to prevent warning during the build
+                ifc.addAnnotation(Inject.class);
+            });
 
-            customImplNameToFieldDescriptor.put(customImplClassName,
-                    customClassField.getFieldDescriptor());
+            customImplNameToFieldDescriptor.put(customImplClassName, customClassField);
             i++;
         }
     }

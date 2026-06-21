@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem.TransformedClass;
@@ -58,8 +60,9 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.ComponentDescriptor;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.Purl;
 
 abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
@@ -79,13 +82,15 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
+                jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
         this.treeShakeResult = treeShakeResult;
@@ -102,7 +107,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             buildDir = outputTarget.getOutputDirectory().resolve(FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME);
         }
 
-        final ApplicationManifestConfig.Builder manifestConfig = ApplicationManifestConfig.builder()
+        final CoreSbomContributionConfig manifestConfig = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcome.getApplicationModel())
                 .setDistributionDirectory(buildDir);
         //unmodified 3rd party dependencies
@@ -201,6 +206,20 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 archiveCreator.addFileIfNotExists(i.getData(), i.getName());
             }
+
+            if (!generatedServiceProviders.isEmpty()) {
+                Map<String, List<byte[]>> serviceProviderEntries = new HashMap<>();
+                for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
+                    serviceProviderEntries
+                            .computeIfAbsent("META-INF/services/" + item.getServiceInterfaceName(),
+                                    k -> new ArrayList<>())
+                            .add((item.getImplementationClassName() + System.lineSeparator())
+                                    .getBytes(StandardCharsets.UTF_8));
+                }
+                for (Map.Entry<String, List<byte[]>> entry : serviceProviderEntries.entrySet()) {
+                    archiveCreator.addFile(entry.getValue(), entry.getKey());
+                }
+            }
         }
         if (decompiler != null) {
             wasDecompiledSuccessfully &= decompiler.decompile(generatedZip);
@@ -216,9 +235,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         fastJarJarsBuilder.setRunnerJar(runnerJar);
 
         if (!rebuild) {
-            manifestConfig.addComponent(ApplicationComponent.builder()
-                    .setResolvedDependency(appArtifact)
-                    .setPath(runnerJar));
+            manifestConfig.addComponent(appArtifact, runnerJar);
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
                     packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
@@ -231,12 +248,13 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
+        Set<PosixFilePermission> newFilePermissions = probeNewFilePermissions(baseLib);
         for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
                 copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDependency, fastJarJarsBuilder::addParentFirstDependency, true,
                         appDep, transformedClasses, removedArtifactKeys, packageConfig, manifestConfig,
-                        executorService, treeShakeResult);
+                        executorService, treeShakeResult, newFilePermissions);
             } else if (includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDependency);
             }
@@ -274,11 +292,9 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(FastJarFormat.QUARKUS_RUN_JAR);
-        manifestConfig.setMainComponent(ApplicationComponent.builder()
-                .setVersion(appArtifact.getVersion())
-                .setPath(initJar)
-                .setDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact())))
-                .setRunnerPath(initJar);
+        manifestConfig.setMainPurl(Purl.generic(initJar.getFileName().toString(), appArtifact.getVersion()))
+                .setMainDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact()))
+                .setMainPath(initJar);
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -290,8 +306,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<String> lines = Arrays.stream(out.toString(StandardCharsets.UTF_8).split("\n"))
                     .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
             Path buildSystemProps = quarkus.resolve(FastJarFormat.BUILD_SYSTEM_PROPERTIES);
-            manifestConfig.addComponent(ApplicationComponent.builder()
-                    .setVersion(appArtifact.getVersion())
+            manifestConfig.addComponent(ComponentDescriptor.builder()
+                    .setPurl(Purl.generic(buildSystemProps.getFileName().toString(), appArtifact.getVersion()))
                     .setPath(buildSystemProps)
                     .setDevelopmentScope());
             try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
@@ -315,7 +331,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, deploymentLib, baseLib, p -> {
                     }, p -> {
                     }, false, appDep, new TransformedClassesBuildItem(Map.of()), removedArtifactKeys, packageConfig,
-                            manifestConfig, executorService, null); //we don't care about transformation or tree shaking here
+                            manifestConfig, executorService, null, newFilePermissions); //we don't care about transformation or tree shaking here
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -331,8 +347,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         curateOutcome.getApplicationModel(),
                         packageConfig.jar().userProvidersDirectory().orElse(null), buildDir.relativize(runnerJar).toString());
                 Path appmodelDat = deploymentLib.resolve(FastJarFormat.APPMODEL_DAT);
-                manifestConfig.addComponent(ApplicationComponent.builder()
-                        .setVersion(appArtifact.getVersion())
+                manifestConfig.addComponent(ComponentDescriptor.builder()
+                        .setPurl(Purl.generic(appmodelDat.getFileName().toString(), appArtifact.getVersion()))
                         .setPath(appmodelDat)
                         .setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(appmodelDat)) {
@@ -345,8 +361,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 //as we don't really have a resolved bootstrap CP
                 //once we have the app model it will all be done in QuarkusClassLoader anyway
                 Path deploymentCp = deploymentLib.resolve(FastJarFormat.DEPLOYMENT_CLASS_PATH_DAT);
-                manifestConfig.addComponent(ApplicationComponent.builder()
-                        .setVersion(appArtifact.getVersion())
+                manifestConfig.addComponent(ComponentDescriptor.builder()
+                        .setPurl(Purl.generic(deploymentCp.getFileName().toString(), appArtifact.getVersion()))
                         .setPath(deploymentCp)
                         .setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(deploymentCp)) {
@@ -384,7 +400,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null, manifestConfig.build());
+        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null, manifestConfig);
     }
 
     protected abstract void writeSerializedApplication(OutputStream out, Path buildDir, List<Path> allJars,
@@ -402,8 +418,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> dependenciesConsumer,
             Consumer<Path> parentFirstDependenciesConsumer, boolean allowParentFirst, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
-            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig, ExecutorService executorService,
-            JarTreeShakeBuildItem treeShakeResult)
+            PackageConfig packageConfig, CoreSbomContributionConfig manifestConfig, ExecutorService executorService,
+            JarTreeShakeBuildItem treeShakeResult, Set<PosixFilePermission> newFilePermissions)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -489,24 +505,38 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         });
                     }
                 }
-                var appComponent = ApplicationComponent.builder()
-                        .setPath(targetPath)
-                        .setResolvedDependency(appDep);
                 if (removedFromThisArchive.isEmpty()) {
-                    // let's not use COPY_ATTRIBUTES to make sure we respect the system umask
-                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    // COPY_ATTRIBUTES triggers clonefile(2) on JDK 20+/macOS APFS, enabling
+                    // instant copy-on-write clones with no data duplication (JDK-8293122).
+                    // COPY_ATTRIBUTES preserves source permissions verbatim and ignores the umask,
+                    // so we explicitly restore the default new-file permissions afterwards.
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.COPY_ATTRIBUTES);
                     Files.setLastModifiedTime(targetPath, Files.getLastModifiedTime(resolvedDep));
+                    if (newFilePermissions != null) {
+                        Files.setPosixFilePermissions(targetPath, newFilePermissions);
+                    }
                 } else {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me
                     JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(removedFromThisArchive::contains));
                 }
-                String pedigree = treeShakeResult != null ? treeShakeResult.computePedigree(appDep.getKey()) : null;
-                if (pedigree != null) {
-                    appComponent.setPedigree(pedigree);
-                }
-                manifestConfig.addComponent(appComponent);
+                manifestConfig.addComponent(appDep, targetPath,
+                        treeShakeResult != null ? treeShakeResult.computePedigree(appDep.getKey()) : null);
             }
+        }
+    }
+
+    private static Set<PosixFilePermission> probeNewFilePermissions(Path dir) {
+        try {
+            Path probe = Files.createTempFile(dir, ".permissions-probe", null);
+            try {
+                return Files.getPosixFilePermissions(probe);
+            } finally {
+                Files.deleteIfExists(probe);
+            }
+        } catch (IOException | UnsupportedOperationException e) {
+            return null;
         }
     }
 

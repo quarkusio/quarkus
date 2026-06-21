@@ -288,6 +288,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(jars).hasSize(1);
         File uberJar = jars.get(0);
         assertMultiReleaseJar(uberJar);
+        assertNoDuplicateEntries(uberJar);
         ensureManifestOfJarIsReadableByJarInputStream(uberJar);
     }
 
@@ -317,6 +318,22 @@ public class PackageIT extends MojoTestBase {
             Assertions.assertTrue(jarFile.isMultiRelease(), "uber-jar " + uberJar
                     + " was expected to be a multi-release jar but wasn't");
         }
+    }
+
+    private void assertNoDuplicateEntries(File jar) throws IOException {
+        Set<String> entries = new HashSet<>();
+        List<String> duplicates = new ArrayList<>();
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(jar))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (!entries.add(entry.getName())) {
+                    duplicates.add(entry.getName());
+                }
+            }
+        }
+        assertThat(duplicates)
+                .as("uber-jar " + jar + " should not contain duplicate entries")
+                .isEmpty();
     }
 
     @Test

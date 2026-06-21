@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.enterprise.inject.spi.CDI;
+
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -26,6 +28,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
 import io.quarkus.devui.runtime.mcp.McpHttpHandler;
+import io.quarkus.devui.runtime.spi.McpServerConfiguration;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
@@ -80,6 +83,13 @@ public class DevUIRecorder {
 
     public Handler<RoutingContext> devUIWebSocketHandler() {
         return new DevUIWebSocketHandler();
+    }
+
+    public void logDevMcpEndpoint(String path) {
+        McpServerConfiguration config = CDI.current().select(McpServerConfiguration.class).get();
+        if (config.isEnabled()) {
+            LOG.infof("Dev MCP available at: %s", path);
+        }
     }
 
     public Handler<RoutingContext> mcpStreamableHTTPHandler(String quarkusVersion) {

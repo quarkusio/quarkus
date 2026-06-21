@@ -170,11 +170,22 @@ public class PanacheJpaUtil {
             Sort.Column column = sort.getColumns().get(i);
             if (i > 0)
                 sb.append(" , ");
+
+            // Get the column name (escaped or not)
+            String columnRef;
             if (sort.isEscapingEnabled()) {
-                sb.append(escapeColumnName(column.getName()));
+                columnRef = escapeColumnName(column.getName()).toString();
             } else {
-                sb.append(column.getName());
+                columnRef = column.getName();
             }
+
+            // Wrap in LOWER() if case-insensitive
+            if (column.isIgnoreCase()) {
+                sb.append("LOWER(").append(columnRef).append(")");
+            } else {
+                sb.append(columnRef);
+            }
+
             if (column.getDirection() != Sort.Direction.Ascending) {
                 sb.append(" DESC");
             }
@@ -189,6 +200,43 @@ public class PanacheJpaUtil {
 
         }
         return sb.toString();
+    }
+
+    /**
+     * Convert Jakarta Data Order to Panache Sort.
+     *
+     * @param order the Jakarta Data order, may be null
+     * @return the Panache Sort, or null if order is null
+     */
+    public static Sort toSort(jakarta.data.Order<?> order) {
+        if (order == null) {
+            return null;
+        }
+
+        if (order.sorts().isEmpty()) {
+            return Sort.empty();
+        }
+
+        Sort result = null;
+        for (jakarta.data.Sort<?> jdSort : order.sorts()) {
+            String property = jdSort.property();
+            Sort.Direction direction = jdSort.isAscending()
+                    ? Sort.Direction.Ascending
+                    : Sort.Direction.Descending;
+
+            if (result == null) {
+                result = Sort.by(property, direction);
+            } else {
+                result = result.and(property, direction);
+            }
+
+            // Preserve ignoreCase flag from Jakarta Data
+            if (jdSort.ignoreCase()) {
+                result.getColumns().get(result.getColumns().size() - 1).setIgnoreCase();
+            }
+        }
+
+        return result;
     }
 
     private static StringBuilder escapeColumnName(String columnName) {

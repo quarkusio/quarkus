@@ -26,8 +26,8 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.tool</groupId>
-            <artifactId>hibernate-tools-language</artifactId>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-assistant</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -122,7 +122,7 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                                     public V call() throws Exception {
                                         return valueLoader.apply(key);
                                     }
-                                }).toCompletionStage()
+                                }, false).toCompletionStage()
                                         .thenComposeAsync(newValue -> {
                                             InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue, resultAsync,
                                                     executor);

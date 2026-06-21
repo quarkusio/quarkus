@@ -12,6 +12,7 @@ import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDO
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
 
 import java.io.File;
 import java.io.IOException;
@@ -499,7 +500,8 @@ public class VertxHttpRecorder {
         }
 
         warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfig.proxy());
-        root = HttpServerCommonHandlers.applyProxy(httpConfig.proxy(), root, vertx);
+        root = HttpServerCommonHandlers.applyProxy(httpConfig.proxy(), root, vertx,
+                getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
 
         boolean quarkusWrapperNeeded = false;
 
@@ -604,7 +606,8 @@ public class VertxHttpRecorder {
             applyCompression(managementBuildTimeConfig.enableCompression(), mr);
 
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr, mustResumeRequest);
-            handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx);
+            handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx,
+                    managementBuildTimeConfig.tlsClientAuth());
 
             int routesBeforeMiEvent = mr.getRoutes().size();
             event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));
@@ -650,10 +653,21 @@ public class VertxHttpRecorder {
         } else if (nonRootPath.startsWith(rootPath)) {
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
         } else if (rootPath.startsWith(nonRootPath)) {
-            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            // The framework (non-application) routes live on a dedicated router mounted above the
+            // application router. If that router was never created (e.g. all non-application routes
+            // moved to the management interface, or none were classified as framework routes), fall
+            // back to the application router so application routes are still logged.
+            if (frameworkRouter != null) {
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            } else {
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            }
         } else {
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            // Only attach to the framework router when it exists; see comment above.
+            if (frameworkRouter != null) {
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            }
         }
     }
 
@@ -1301,8 +1315,8 @@ public class VertxHttpRecorder {
                         }
                     });
                 }
-                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount,
-                        container, notifyStartObservers);
+                setupTcpHttpServer(httpServer, httpOptions, false, insecureRequests, startFuture, remainingCount,
+                        connectionCount, container, notifyStartObservers);
             }
 
             if (domainSocketOptions != null) {
@@ -1315,8 +1329,8 @@ public class VertxHttpRecorder {
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(ACTUAL_ROOT);
-                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount,
-                        container, notifyStartObservers);
+                setupTcpHttpServer(httpsServer, httpsOptions, true, insecureRequests, startFuture, remainingCount,
+                        connectionCount, container, notifyStartObservers);
             }
         }
 
@@ -1352,8 +1366,8 @@ public class VertxHttpRecorder {
         }
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
-                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount,
-                ArcContainer container, boolean notifyStartObservers) {
+                InsecureRequests insecureRequests, Promise<Void> startFuture, AtomicInteger remainingCount,
+                AtomicInteger currentConnectionCount, ArcContainer container, boolean notifyStartObservers) {
 
             if (httpConfig.limits().maxConnections().isPresent() && httpConfig.limits().maxConnections().getAsInt() > 0) {
                 var tracker = vertx.isMetricsEnabled()
@@ -1407,6 +1421,13 @@ public class VertxHttpRecorder {
                                 actualHttpsPort = actualPort;
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTPS_PORT, actualPort);
+                                URI localBaseUri = localBaseUri("https", actualPort);
+                                // Someone else may register the local base uri first (lambda extension)
+                                // The implemented behaviour is that lambda has priority, but we may want to review that
+                                if (!insecureRequests.equals(InsecureRequests.ENABLED)
+                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                }
                                 if (launchMode.isDevOrTest()) {
                                     valueRegistry.register(HTTPS_TEST_PORT, actualPort);
                                     // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
@@ -1420,7 +1441,12 @@ public class VertxHttpRecorder {
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTP_PORT, actualPort);
                                 URI localBaseUri = localBaseUri("http", actualPort);
-                                valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                // Someone else may register the local base uri first (lambda extension)
+                                // The implemented behaviour is that lambda has priority, but we may want to review that
+                                if (insecureRequests.equals(InsecureRequests.ENABLED)
+                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                }
                                 if (launchMode.isDevOrTest()) {
                                     valueRegistry.register(HTTP_TEST_PORT, actualPort);
                                     // Compatibility with test.url
@@ -1605,7 +1631,7 @@ public class VertxHttpRecorder {
                         Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
                                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
                         if (maybeMaxHeadersSize.isPresent()) {
-                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
                         }
                         return result;
                     }

@@ -9,10 +9,13 @@ import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SPAN_I
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -22,7 +25,9 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.PropertyValues;
+import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.formatters.StructuredFormatter.Key;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig.Type;
@@ -34,8 +39,12 @@ import io.quarkus.runtime.logging.NamedHandlerType;
 
 @Recorder
 public class LoggingJsonRecorder {
+
+    private static final Logger LOG = Logger.getLogger(LoggingJsonRecorder.class);
+
     private final RuntimeValue<JsonLogConfig> runtimeConfig;
     private final RuntimeValue<ApplicationConfig> applicationConfig;
+    private List<JsonProvider> jsonProviders = Collections.emptyList();
 
     public LoggingJsonRecorder(final RuntimeValue<JsonLogConfig> runtimeConfig,
             final RuntimeValue<ApplicationConfig> applicationConfig) {
@@ -44,43 +53,60 @@ public class LoggingJsonRecorder {
     }
 
     public RuntimeValue<Optional<Formatter>> initializeConsoleJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().consoleJson());
+        return getFormatter(runtimeConfig.getValue().consoleJson(), jsonProviders);
     }
 
     public RuntimeValue<Optional<Formatter>> initializeFileJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().fileJson());
+        return getFormatter(runtimeConfig.getValue().fileJson(), jsonProviders);
     }
 
     public RuntimeValue<Optional<Formatter>> initializeSyslogJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().syslogJson());
+        return getFormatter(runtimeConfig.getValue().syslogJson(), jsonProviders);
     }
 
     public RuntimeValue<Optional<Formatter>> initializeSocketJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().socketJson());
+        return getFormatter(runtimeConfig.getValue().socketJson(), jsonProviders);
     }
 
     public RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>> initializeNamedJsonLogging() {
         JsonLogConfig config = runtimeConfig.getValue();
         Map<NamedHandlerType, Map<String, Optional<Formatter>>> result = new EnumMap<>(NamedHandlerType.class);
-        result.put(NamedHandlerType.CONSOLE, collectFormatters(config.jsonConsoleHandlers()));
-        result.put(NamedHandlerType.FILE, collectFormatters(config.jsonFileHandlers()));
-        result.put(NamedHandlerType.SYSLOG, collectFormatters(config.jsonSyslogHandlers()));
-        result.put(NamedHandlerType.SOCKET, collectFormatters(config.jsonSocketHandlers()));
+        result.put(NamedHandlerType.CONSOLE, collectFormatters(config.jsonConsoleHandlers(), jsonProviders));
+        result.put(NamedHandlerType.FILE, collectFormatters(config.jsonFileHandlers(), jsonProviders));
+        result.put(NamedHandlerType.SYSLOG, collectFormatters(config.jsonSyslogHandlers(), jsonProviders));
+        result.put(NamedHandlerType.SOCKET, collectFormatters(config.jsonSocketHandlers(), jsonProviders));
         return new RuntimeValue<>(result);
     }
 
+    public void initializeJsonProviders(List<String> classNames) {
+        jsonProviders = instantiateProviders(classNames);
+    }
+
+    private List<JsonProvider> instantiateProviders(List<String> classNames) {
+        List<JsonProvider> providers = new ArrayList<>(classNames.size());
+        for (String className : classNames) {
+            try {
+                providers.add((JsonProvider) Class.forName(className, true,
+                        Thread.currentThread().getContextClassLoader()).getDeclaredConstructor().newInstance());
+            } catch (Exception e) {
+                LOG.warnf(e, "Failed to instantiate JsonProvider: %s", className);
+            }
+        }
+        return providers;
+    }
+
     private Map<String, Optional<Formatter>> collectFormatters(
-            Map<String, ? extends JsonLogConfig.JsonHandlerConfig> handlers) {
+            Map<String, ? extends JsonLogConfig.JsonHandlerConfig> handlers, List<JsonProvider> providers) {
         Map<String, Optional<Formatter>> formatters = new HashMap<>();
         handlers.forEach((name, config) -> {
             if (config.json().enabled().isPresent()) {
-                formatters.put(name, getFormatter(config.json()).getValue());
+                formatters.put(name, getFormatter(config.json(), providers).getValue());
             }
         });
         return formatters;
     }
 
-    private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config) {
+    private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config, List<JsonProvider> providers) {
         String keyOverrides = config.keyOverrides().orElse(null);
         Set<String> excludedKeys = config.excludedKeys().orElse(Set.of());
         Map<String, AdditionalField> additionalFields = config.additionalField().entrySet().stream()
@@ -95,11 +121,11 @@ public class LoggingJsonRecorder {
             overridableJsonConfig = addGCPFieldOverrides(overridableJsonConfig);
         }
 
-        return getDefaultFormatter(config, overridableJsonConfig);
+        return getDefaultFormatter(config, overridableJsonConfig, providers);
     }
 
     private RuntimeValue<Optional<Formatter>> getDefaultFormatter(JsonConfig config,
-            OverridableJsonConfig overridableJsonConfig) {
+            OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers) {
         if (!config.enabled().orElse(config.enable())) {
             return new RuntimeValue<>(Optional.empty());
         }
@@ -114,14 +140,24 @@ public class LoggingJsonRecorder {
         if (JsonConfig.LogFormat.GCP == config.logFormat()) {
             formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
+        formatter.setFlatMdc(config.mdcFlatFields());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
+        formatter.setDiscoveredProviders(providers);
         formatter.setPrettyPrint(config.prettyPrint());
         final String dateFormat = config.dateFormat();
         if (!dateFormat.equals("default")) {
             formatter.setDateFormat(dateFormat);
         }
-        formatter.setExceptionOutputType(config.exceptionOutputType());
+        // ECS requires a flat rendered stack trace string in error.stack_trace.
+        // The FORMATTED output type writes the stack trace via Key.STACK_TRACE (mapped
+        // to "error.stack_trace" by addEcsFieldOverrides) and suppresses the structured
+        // "exception" object that DETAILED would produce.
+        if (JsonConfig.LogFormat.ECS == config.logFormat()) {
+            formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.FORMATTED);
+        } else {
+            formatter.setExceptionOutputType(config.exceptionOutputType());
+        }
         formatter.setPrintDetails(config.printDetails());
         config.recordDelimiter().ifPresent(formatter::setRecordDelimiter);
         final String zoneId = config.zoneId();
@@ -143,11 +179,15 @@ public class LoggingJsonRecorder {
         keyOverrides.putIfAbsent(Key.HOST_NAME, "host.hostname");
         keyOverrides.putIfAbsent(Key.SEQUENCE, "event.sequence");
         keyOverrides.putIfAbsent(Key.EXCEPTION_MESSAGE, "error.message");
+        keyOverrides.putIfAbsent(Key.EXCEPTION_TYPE, "error.type");
         keyOverrides.putIfAbsent(Key.STACK_TRACE, "error.stack_trace");
 
         Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
         excludedKeys.add(Key.LOGGER_CLASS_NAME.getKey());
         excludedKeys.add(Key.RECORD.getKey());
+        // mdc and ndc are not ECS fields; exclude them from ECS output.
+        excludedKeys.add(Key.MDC.getKey());
+        excludedKeys.add(Key.NDC.getKey());
 
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());
         additionalFields.computeIfAbsent(ECS_VERSION.getKey(), k -> new AdditionalField("1.12.2", Type.STRING));

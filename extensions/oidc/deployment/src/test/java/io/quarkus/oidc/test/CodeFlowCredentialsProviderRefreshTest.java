@@ -59,10 +59,7 @@ public class CodeFlowCredentialsProviderRefreshTest {
                                             quarkus.oidc.named.logout.path=${quarkus.oidc.logout.path}
                                             quarkus.oidc.named.authentication.pkce-required=${quarkus.oidc.authentication.pkce-required}
                                             quarkus.oidc.named.credentials.client-secret.method=post
-
-                                            quarkus.log.category."org.htmlunit.javascript.host.css.CSSStyleSheet".level=FATAL
-                                            quarkus.log.category."org.htmlunit.css".level=FATAL
-                                            quarkus.log.file.enabled=true
+                                            quarkus.log.category."org.htmlunit".level=ERROR
                                             """),
                             "application.properties"));
 

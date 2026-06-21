@@ -1,23 +1,37 @@
 package io.quarkus.vertx.deployment;
 
+import static io.quarkus.arc.processor.Reproducibility.BEAN_COMPARATOR;
+import static io.quarkus.arc.processor.Reproducibility.METHOD_COMPARATOR;
+
+import java.util.Comparator;
+
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
+public final class EventConsumerBusinessMethodItem extends MultiBuildItem
+        implements Comparable<EventConsumerBusinessMethodItem> {
+
+    private static final Comparator<EventConsumerBusinessMethodItem> COMPARATOR = Comparator
+            .comparing(EventConsumerBusinessMethodItem::getBean, BEAN_COMPARATOR)
+            .thenComparing(EventConsumerBusinessMethodItem::getMethod, METHOD_COMPARATOR);
 
     private final BeanInfo bean;
+    private final MethodInfo method;
     private final AnnotationInstance consumeEvent;
     private final boolean blockingAnnotation;
     private final boolean runOnVirtualThreadAnnotation;
     private final boolean splitHeadersBodyParams;
     private final InvokerInfo invoker;
 
-    public EventConsumerBusinessMethodItem(BeanInfo bean, AnnotationInstance consumeEvent, boolean blockingAnnotation,
-            boolean runOnVirtualThreadAnnotation, boolean splitHeadersBodyParams, InvokerInfo invoker) {
+    public EventConsumerBusinessMethodItem(BeanInfo bean, MethodInfo method, AnnotationInstance consumeEvent,
+            boolean blockingAnnotation, boolean runOnVirtualThreadAnnotation,
+            boolean splitHeadersBodyParams, InvokerInfo invoker) {
         this.bean = bean;
+        this.method = method;
         this.consumeEvent = consumeEvent;
         this.blockingAnnotation = blockingAnnotation;
         this.runOnVirtualThreadAnnotation = runOnVirtualThreadAnnotation;
@@ -38,6 +52,13 @@ public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
      */
     public AnnotationInstance getConsumeEvent() {
         return consumeEvent;
+    }
+
+    /**
+     * Returns the event consumer method.
+     */
+    public MethodInfo getMethod() {
+        return method;
     }
 
     /**
@@ -71,6 +92,11 @@ public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
      */
     public InvokerInfo getInvoker() {
         return invoker;
+    }
+
+    @Override
+    public int compareTo(EventConsumerBusinessMethodItem o) {
+        return COMPARATOR.compare(this, o);
     }
 
 }

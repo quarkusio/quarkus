@@ -9,12 +9,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractCollection;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -121,27 +122,20 @@ class FlywayProcessor {
             FlywayBuildTimeConfig flywayBuildTimeConfig) throws Exception {
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
-        Map<String, Collection<String>> applicationMigrationsToDs = new HashMap<>();
+        Map<String, MigrationState> migrationState = new TreeMap<>();
         for (var dataSourceName : dataSourceNames) {
             FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
                     .datasources().get(dataSourceName);
-
-            Collection<String> migrationLocations = discoverApplicationMigrations(
-                    flywayDataSourceBuildTimeConfig.locations());
-            applicationMigrationsToDs.put(dataSourceName, migrationLocations);
-        }
-        Set<String> datasourcesWithMigrations = new HashSet<>();
-        Set<String> datasourcesWithoutMigrations = new HashSet<>();
-        for (var e : applicationMigrationsToDs.entrySet()) {
-            if (e.getValue().isEmpty()) {
-                datasourcesWithoutMigrations.add(e.getKey());
-            } else {
-                datasourcesWithMigrations.add(e.getKey());
-            }
+            Set<String> resourcesLocations = new LinkedHashSet<>();
+            Set<String> migrations = new LinkedHashSet<>();
+            discoverApplicationMigrations(flywayDataSourceBuildTimeConfig.locations(), hotDeploymentProducer,
+                    resourcesLocations, migrations);
+            migrationState.put(dataSourceName, new MigrationState(resourcesLocations, migrations));
         }
 
-        Collection<String> applicationMigrations = applicationMigrationsToDs.values().stream().collect(HashSet::new,
-                AbstractCollection::addAll, HashSet::addAll);
+        Collection<String> applicationMigrations = migrationState.values().stream()
+                .map(MigrationState::migrations)
+                .collect(LinkedHashSet::new, AbstractCollection::addAll, LinkedHashSet::addAll);
         for (String applicationMigration : applicationMigrations) {
             Location applicationMigrationLocation = new Location(applicationMigration);
             String applicationMigrationPath = applicationMigrationLocation.getPath();
@@ -154,8 +148,13 @@ class FlywayProcessor {
         }
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
-        Set<Class<? extends JavaMigration>> javaMigrationClasses = new HashSet<>();
-        addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
+        Set<Class<? extends JavaMigration>> javaMigrationClasses = new LinkedHashSet<>();
+        // TODO: this can be reverted once Jandex outputs stably ordered collections
+        List<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION)
+                .stream()
+                .sorted(Comparator.comparing(ClassInfo::name))
+                .toList();
+        addJavaMigrations(allKnownImplementors, context,
                 reflectiveClassProducer, javaMigrationClasses);
         recorder.setApplicationMigrationClasses(javaMigrationClasses);
 
@@ -167,11 +166,11 @@ class FlywayProcessor {
         recorder.setApplicationCallbackClasses(callbacks);
 
         resourceProducer.produce(new NativeImageResourceBuildItem(applicationMigrations.toArray(new String[0])));
-        return new MigrationStateBuildItem(datasourcesWithMigrations, datasourcesWithoutMigrations);
+        return new MigrationStateBuildItem(migrationState);
     }
 
     @SuppressWarnings("unchecked")
-    private void addJavaMigrations(Collection<ClassInfo> candidates, RecorderContext context,
+    private void addJavaMigrations(List<ClassInfo> candidates, RecorderContext context,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             Set<Class<? extends JavaMigration>> javaMigrationClasses) {
         for (ClassInfo javaMigration : candidates) {
@@ -203,11 +202,11 @@ class FlywayProcessor {
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
         for (String dataSourceName : dataSourceNames) {
-            boolean hasMigrations = migrationsBuildItem.hasMigrations.contains(dataSourceName);
-            boolean createPossible = false;
-            if (!hasMigrations) {
-                createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
-            }
+            var state = migrationsBuildItem.state.get(dataSourceName);
+            boolean hasMigrations = !state.migrations.isEmpty();
+            boolean createPossible = !hasMigrations
+                    && sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
+            var ressourcesLocations = state.resourcesLocations;
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayContainerConfigurator = SyntheticBeanBuildItem
                     .configure(FlywayContainer.class)
@@ -219,7 +218,8 @@ class FlywayProcessor {
                             AgroalDataSourceBuildUtil.qualifier(dataSourceName))
                     .startup()
                     .checkActive(recorder.flywayCheckActiveSupplier(dataSourceName))
-                    .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
+                    .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible,
+                            ressourcesLocations));
 
             AnnotationInstance flywayContainerQualifier;
 
@@ -289,7 +289,10 @@ class FlywayProcessor {
 
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.state.entrySet().stream()
+                .filter(e -> !e.getValue().migrations.isEmpty())
+                .map(Map.Entry::getKey)
+                .toList()));
         initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("flyway"));
         return new ServiceStartBuildItem("flyway");
     }
@@ -305,16 +308,18 @@ class FlywayProcessor {
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
-        Set<String> result = new HashSet<>(jdbcDataSourceBuildItems.size());
+        Set<String> result = new LinkedHashSet<>(jdbcDataSourceBuildItems.size());
         for (JdbcDataSourceBuildItem item : jdbcDataSourceBuildItems) {
             result.add(item.getName());
         }
         return result;
     }
 
-    private Collection<String> discoverApplicationMigrations(Collection<String> locations)
+    private void discoverApplicationMigrations(Collection<String> locations,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentProducer,
+            Set<String> resourcesLocations,
+            Set<String> applicationMigrationResources)
             throws IOException {
-        LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
         // Locations can be a comma separated list
         for (String location : locations) {
             location = normalizeLocation(location);
@@ -323,7 +328,13 @@ class FlywayProcessor {
                 continue;
             }
 
+            resourcesLocations.add(location);
             String finalLocation = location;
+            // We need to restart/reprocess this if new migration files are added
+            hotDeploymentProducer.produce(HotDeploymentWatchedFileBuildItem.builder()
+                    .setRestartNeeded(true)
+                    .setLocationPredicate(l -> l.startsWith(finalLocation))
+                    .build());
             ClassPathUtils.consumeAsPaths(Thread.currentThread().getContextClassLoader(), location, path -> {
                 Set<String> applicationMigrations = null;
                 try {
@@ -337,7 +348,6 @@ class FlywayProcessor {
                 }
             });
         }
-        return applicationMigrationResources;
     }
 
     private String normalizeLocation(String location) {
@@ -375,12 +385,13 @@ class FlywayProcessor {
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {
 
-        final Set<String> hasMigrations;
-        final Set<String> missingMigrations;
+        final Map<String, MigrationState> state;
 
-        MigrationStateBuildItem(Set<String> hasMigrations, Set<String> missingMigrations) {
-            this.hasMigrations = hasMigrations;
-            this.missingMigrations = missingMigrations;
+        MigrationStateBuildItem(Map<String, MigrationState> state) {
+            this.state = Collections.unmodifiableMap(state);
         }
+    }
+
+    public record MigrationState(Set<String> resourcesLocations, Set<String> migrations) {
     }
 }

@@ -90,14 +90,59 @@ public class SkillComposerTest {
     }
 
     @Test
-    public void composeWithoutGuideOmitsMetadataBlock() throws IOException {
+    public void composeWithoutGuideOrCategoriesOmitsMetadataBlock() throws IOException {
         String yaml = "name: \"No Guide\"\ndescription: \"Something\"\n";
         ObjectNode meta = parseYaml(yaml);
 
         String result = SkillComposer.compose(meta, "body", "quarkus-noguide");
 
-        assertTrue(!result.contains("metadata:"));
-        assertTrue(!result.contains("guide:"));
+        assertFalse(result.contains("metadata:"));
+        assertFalse(result.contains("guide:"));
+        assertFalse(result.contains("categories:"));
+    }
+
+    @Test
+    public void composeWithCategoriesIncludesThem() throws IOException {
+        String yaml = "name: \"REST\"\n"
+                + "description: \"Build RESTful APIs\"\n"
+                + "metadata:\n"
+                + "  guide: https://quarkus.io/guides/rest\n"
+                + "  categories:\n"
+                + "  - \"web\"\n"
+                + "  - \"reactive\"\n";
+        ObjectNode meta = parseYaml(yaml);
+
+        String result = SkillComposer.compose(meta, "body", "quarkus-rest");
+
+        assertTrue(result.contains("metadata:\n"));
+        assertTrue(result.contains("  guide: \"https://quarkus.io/guides/rest\"\n"));
+        assertTrue(result.contains("  categories: \"web, reactive\"\n"));
+    }
+
+    @Test
+    public void composeWithCategoriesOnlyNoGuide() throws IOException {
+        String yaml = "name: \"Ext\"\n"
+                + "description: \"desc\"\n"
+                + "metadata:\n"
+                + "  categories:\n"
+                + "  - \"data\"\n";
+        ObjectNode meta = parseYaml(yaml);
+
+        String result = SkillComposer.compose(meta, "body", "quarkus-ext");
+
+        assertTrue(result.contains("metadata:\n"));
+        assertFalse(result.contains("guide:"));
+        assertTrue(result.contains("  categories: \"data\"\n"));
+    }
+
+    @Test
+    public void composeWithoutCategoriesOmitsThem() throws IOException {
+        String yaml = "name: \"No Cat\"\ndescription: \"Something\"\n";
+        ObjectNode meta = parseYaml(yaml);
+
+        String result = SkillComposer.compose(meta, "body", "quarkus-nocat");
+
+        assertFalse(result.contains("categories:"));
     }
 
     @Test

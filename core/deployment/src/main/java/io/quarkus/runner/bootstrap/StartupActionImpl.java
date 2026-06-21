@@ -13,12 +13,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +48,7 @@ import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -336,10 +339,33 @@ public class StartupActionImpl implements StartupAction {
             if (deploymentClassLoader == null) {
                 throw new IllegalStateException("Dev services cannot be started without a deployment class loader.");
             }
-            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, additionalConfigBuildItems,
-                    deploymentClassLoader);
+            DevServicesRegistryBuildItem.DevServicesStartResult startResult = devServicesRegistry.startAll(
+                    devServicesResults, devServicesCustomizers, additionalConfigBuildItems, deploymentClassLoader);
 
-            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
+            devServicesProperties.putAll(startResult.configs());
+            setDevServicesConfigSourceValues(startResult);
+        }
+    }
+
+    private void setDevServicesConfigSourceValues(DevServicesRegistryBuildItem.DevServicesStartResult startResult) {
+        try {
+            Class<?> configSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesConfigSource");
+            configSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.configs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services config", e);
+        }
+
+        try {
+            Class<?> overrideConfigSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigSource");
+            overrideConfigSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.overrideConfigs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services override config", e);
         }
     }
 
@@ -525,6 +551,17 @@ public class StartupActionImpl implements StartupAction {
                     continue;
                 }
                 data.put(i.getName(), i.getData());
+            }
+            Map<String, StringBuilder> serviceProviders = new LinkedHashMap<>();
+            for (GeneratedServiceProviderBuildItem i : buildResult
+                    .consumeMulti(GeneratedServiceProviderBuildItem.class)) {
+                serviceProviders.computeIfAbsent("META-INF/services/" + i.getServiceInterfaceName(),
+                        k -> new StringBuilder())
+                        .append(i.getImplementationClassName())
+                        .append(System.lineSeparator());
+            }
+            for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
+                data.put(entry.getKey(), entry.getValue().toString().getBytes(StandardCharsets.UTF_8));
             }
         }
         return data;

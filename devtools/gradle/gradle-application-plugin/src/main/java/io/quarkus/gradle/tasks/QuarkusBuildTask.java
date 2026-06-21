@@ -31,6 +31,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.util.GradleVersion;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkQueue;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -45,6 +46,7 @@ import io.smallrye.common.expression.Expression;
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
  */
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
     private static final String QUARKUS_BUILD_DIR = "quarkus-build";
     private static final String QUARKUS_BUILD_GEN_DIR = QUARKUS_BUILD_DIR + "/gen";
@@ -297,6 +299,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties().putAll(buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
+            params.getForkedSystemProperties().putAll(quarkusProperties);
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);

@@ -15,9 +15,6 @@ env:
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
-  DB_USER: hibernate_orm_test
-  DB_PASSWORD: hibernate_orm_test
-  DB_NAME: hibernate_orm_test
   IS_PODMAN: "true"
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
@@ -43,10 +40,10 @@ jobs:
            ) \
          )"
     outputs:
-      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
-      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+      scalpel_args: ${{ steps.get-scalpel-args.outputs.scalpel_args }}
+      scalpel_impacted: ${{ steps.get-scalpel-impacted.outputs.impacted_modules }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -79,6 +76,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
           sudo bash -c "echo -e '[engine]\nservice_timeout=0' >> /etc/containers/containers.conf"
+          systemctl --user start podman.socket
       # Runs a single command using the runners shell
       - name: Check podman
         run: docker version
@@ -96,7 +94,7 @@ jobs:
           echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
           echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ~/.m2/repository
           key: ${{ steps.cache-key.outputs.m2-cache-key }}
@@ -105,49 +103,49 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Initial build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-      - name: Get GIB arguments
-        id: get-gib-args
+      - name: Get Scalpel arguments
+        id: get-scalpel-args
         env:
           PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
         run: |
-          # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
-          # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
-          # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
-          # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
-          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+          # See also: https://github.com/maveniverse/scalpel#configuration
+          # Scalpel is configured as a Maven core extension in .mvn/extensions.xml
+          # Default Scalpel settings are in .mvn/maven.config
+          # It auto-detects GITHUB_BASE_REF on GitHub Actions
+          SCALPEL_ARGS="-Dincremental"
           if [ -n "$PULL_REQUEST_BASE" ]
           then
             # The PR defines a clear merge target so just use that branch for reference, *unless*:
             # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
+            SCALPEL_ARGS+=" -Dscalpel.baseBranch=origin/$PULL_REQUEST_BASE -Dscalpel.disableOnBaseBranch='\d+\.\d+'"
           else
             # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
             # - the current branch is main or some released branch like 1.10
             # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+            SCALPEL_ARGS+=" -Dscalpel.baseBranch=refs/remotes/quarkusio/main -Dscalpel.fetchBaseBranch=true -Dscalpel.disableOnBranch='main|\d+\.\d+|.*backport.*'"
           fi
-          echo "GIB_ARGS: $GIB_ARGS"
-          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
-      - name: Get GIB impacted modules
-        id: get-gib-impacted
-        # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
+          echo "SCALPEL_ARGS: $SCALPEL_ARGS"
+          echo "scalpel_args=${SCALPEL_ARGS}" >> $GITHUB_OUTPUT
+      - name: Get Scalpel impacted modules
+        id: get-scalpel-impacted
+        # mvnw just for creating scalpel-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          if [ -s gib-impacted.log ]
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-scalpel-args.outputs.scalpel_args }} -Dscalpel.impactedLog=scalpel-impacted.log validate
+          if [ -s scalpel-impacted.log ]
           then
-            GIB_IMPACTED=$(cat gib-impacted.log)
+            SCALPEL_IMPACTED=$(cat scalpel-impacted.log)
           else
-            GIB_IMPACTED=''
+            SCALPEL_IMPACTED=''
           fi
-          echo "GIB_IMPACTED: ${GIB_IMPACTED}"
+          echo "SCALPEL_IMPACTED: ${SCALPEL_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
-          echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo "${SCALPEL_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
@@ -164,8 +162,8 @@ jobs:
         run: sudo apt-get clean
       - name: Build
         shell: bash
-        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs $JVM_TEST_MAVEN_ARGS ${{ steps.get-gib-args.outputs.gib_args }}
+        # Despite the pre-calculated run_jvm flag, Scalpel has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs $JVM_TEST_MAVEN_ARGS ${{ steps.get-scalpel-args.outputs.scalpel_args }}
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
@@ -178,14 +176,14 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -195,7 +193,7 @@ jobs:
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
           path: |
@@ -203,7 +201,7 @@ jobs:
             !**/build/tmp/**
           retention-days: 5
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"

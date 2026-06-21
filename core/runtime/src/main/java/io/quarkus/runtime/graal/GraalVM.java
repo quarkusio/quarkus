@@ -98,6 +98,7 @@ public final class GraalVM {
         public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
         public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
+        public static final Version VERSION_25_1_0 = new Version("GraalVM 25.1.0", "25.1.0", "25", Distribution.GRAALVM);
 
         // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
         // till we have a consensus on how to move forward in
@@ -120,8 +121,10 @@ public final class GraalVM {
         }
 
         /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
+         * The minimum version of GraalVM known to work with Quarkus (even with some issues).
+         * Versions prior to this are expected to cause major issues and are thus not allowed.
+         *
+         * See {@link #MINIMUM_SUPPORTED} for the minimum fully supported version.
          */
         public static final Version MINIMUM = VERSION_23_1_0;
         /**
@@ -133,7 +136,7 @@ public final class GraalVM {
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
          */
-        public static final Version MINIMUM_SUPPORTED = MINIMUM;
+        public static final Version MINIMUM_SUPPORTED = VERSION_25_0_0;
 
         private static final String DEFAULT_JDK_VERSION = "25";
         protected final String fullVersion;

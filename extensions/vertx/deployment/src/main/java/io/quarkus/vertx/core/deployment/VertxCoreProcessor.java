@@ -248,16 +248,15 @@ class VertxCoreProcessor {
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
         List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
-                .sorted()
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
-        // resolve the services at build time
-        List<VertxServiceProvider> vertxServiceProviders = loadServices(VertxServiceProvider.class);
-        List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
+        // resolve the service class names at build time, they will be instantiated at runtime
+        List<String> vertxServiceProviderClassNames = loadServiceClassNames(VertxServiceProvider.class);
+        List<String> verticleFactoryClassNames = loadServiceClassNames(VerticleFactory.class);
 
         Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
-                vertxServiceProviders, verticleFactories, executorBuildItem.getExecutorProxy());
+                vertxServiceProviderClassNames, verticleFactoryClassNames, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -460,22 +459,15 @@ class VertxCoreProcessor {
         }
     }
 
-    private <T> List<T> loadServices(Class<T> serviceClass) throws IOException, ClassNotFoundException {
-        List<T> services = new ArrayList<>();
+    private List<String> loadServiceClassNames(Class<?> serviceClass) throws IOException, ClassNotFoundException {
+        List<String> serviceClassNames = new ArrayList<>();
         for (Class<?> serviceImplClass : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + serviceClass.getName())) {
             if (!QuarkusClassLoader.isClassPresentAtRuntime(serviceImplClass.getName())) {
                 continue;
             }
-            try {
-                services.add(serviceClass.cast(serviceImplClass.getDeclaredConstructor().newInstance()));
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "Failed to instantiate declared " + serviceClass.getSimpleName() + " class: "
-                                + serviceImplClass.getName(),
-                        e);
-            }
+            serviceClassNames.add(serviceImplClass.getName());
         }
-        return services;
+        return serviceClassNames;
     }
 }

@@ -34,6 +34,7 @@ import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.cpu.CPU;
 
 public class PostgresqlDevServicesProcessor {
 
@@ -71,7 +72,10 @@ public class PostgresqlDevServicesProcessor {
                 String effectiveDbName = containerConfig.getDbName().orElse(
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
-                QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
+                String selectedImage = PostgresImageSelector.selectImage(containerConfig.getImageName(),
+                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName(),
+                        CPU.host());
+                QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(Optional.of(selectedImage),
                         containerConfig.getFixedExposedPort(),
                         composeProjectBuildItem.getDefaultNetworkId(),
                         useSharedNetwork);
@@ -110,9 +114,11 @@ public class PostgresqlDevServicesProcessor {
                     LaunchMode launchMode,
                     boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
                     DevServicesComposeProjectBuildItem composeProjectBuildItem) {
-                List<String> images = List.of(
-                        containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")),
-                        "postgres");
+
+                String selectedImage = PostgresImageSelector.selectImage(containerConfig.getImageName(),
+                        containerConfig.getRequiredFeatures(), containerConfig.getDatasourceName(),
+                        CPU.host());
+                List<String> images = List.of(selectedImage, "postgres");
                 return ComposeLocator
                         .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));

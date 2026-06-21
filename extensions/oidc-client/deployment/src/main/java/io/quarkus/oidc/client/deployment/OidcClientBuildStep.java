@@ -86,7 +86,7 @@ public class OidcClientBuildStep {
     }
 
     private Set<String> oidcClientNamesOf(ApplicationArchivesBuildItem beanArchiveIndex) {
-        return beanArchiveIndex.getAllApplicationArchives().stream()
+        return beanArchiveIndex.getAllArchives().stream()
                 .map(ApplicationArchive::getIndex)
                 .flatMap(archive -> archive.getAnnotations(DotName.createSimple(NamedOidcClient.class.getName())).stream())
                 .map(annotation -> annotation.value().asString())

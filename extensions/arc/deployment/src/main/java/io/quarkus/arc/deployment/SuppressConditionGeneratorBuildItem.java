@@ -1,25 +1,25 @@
 package io.quarkus.arc.deployment;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.gizmo2.creator.BlockCreator;
 
 /**
  * This build item can be used to contribute logic to the generated method body of {@link InjectableBean#isSuppressed()}.
+ *
+ * @see BeanGenerator.SuppressConditionGeneration
  */
 final class SuppressConditionGeneratorBuildItem extends MultiBuildItem {
 
-    private final Function<BeanInfo, Consumer<BlockCreator>> generator;
+    private final Consumer<BeanGenerator.SuppressConditionGeneration> generator;
 
-    public SuppressConditionGeneratorBuildItem(Function<BeanInfo, Consumer<BlockCreator>> generator) {
+    public SuppressConditionGeneratorBuildItem(Consumer<BeanGenerator.SuppressConditionGeneration> generator) {
         this.generator = generator;
     }
 
-    public Function<BeanInfo, Consumer<BlockCreator>> getGenerator() {
+    public Consumer<BeanGenerator.SuppressConditionGeneration> getGenerator() {
         return generator;
     }
 

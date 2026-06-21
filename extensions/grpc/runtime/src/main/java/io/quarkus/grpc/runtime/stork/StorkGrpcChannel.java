@@ -85,7 +85,13 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
         context.measureTime = measureTime != null && measureTime;
         context.ref = STORK_SERVICE_INSTANCE.get();
 
-        DelayedClientCall<RequestT, ResponseT> delayed = new StorkDelayedClientCall<>(executor, scheduler,
+        // The DelayedClientCall must deliver its listener callbacks on the call's
+        // own executor. Blocking stubs pass a per-call ThreadlessExecutor through
+        // CallOptions and park the calling thread draining it; if the callbacks
+        // (e.g. the close after a failed Stork resolution) are delivered on a
+        // different executor, that thread is never woken and the call hangs.
+        Executor callExecutor = callOptions.getExecutor() != null ? callOptions.getExecutor() : executor;
+        DelayedClientCall<RequestT, ResponseT> delayed = new StorkDelayedClientCall<>(callExecutor, scheduler,
                 Deadline.after(stork.deadline(), TimeUnit.MILLISECONDS));
 
         asyncCall(methodDescriptor, callOptions, context)

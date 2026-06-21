@@ -28,6 +28,43 @@ public final class HttpSecurityUtils {
     }
 
     /**
+     * Removes matrix parameters from the path.
+     * <p>
+     * The path may contain one or more path segments separated by a forward slash `/`.
+     * Each path segment may contain matrix parameters that are separated from the path value
+     * by a semicolon ';' character.
+     * <p>
+     * When the current path segment contains a semicolon ';', it has all its data
+     * removed starting from this semicolon character.
+     * <p>
+     * For example, passing both `/a;/b;` and `/a;a1=1;a2=2/b;b1=1;b2=2` paths to this function
+     * produces the `/a/b` path.
+     * <p>
+     *
+     * @param path the path that may contain matrix parameters.
+     * @return the path without the matrix parameters.
+     */
+    public static String pathWithoutMatrixParams(String path) {
+        if (path.indexOf(';') == -1) {
+            return path;
+        }
+        StringBuilder sb = new StringBuilder(path.length());
+        boolean inMatrix = false;
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if (c == ';') {
+                inMatrix = true;
+            } else if (c == '/') {
+                inMatrix = false;
+                sb.append(c);
+            } else if (!inMatrix) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * Provides all the {@link SecurityIdentity} created by the inclusive authentication.
      *
      * @return null if {@link RoutingContext} is not available or {@link #getSecurityIdentities(RoutingContext)}

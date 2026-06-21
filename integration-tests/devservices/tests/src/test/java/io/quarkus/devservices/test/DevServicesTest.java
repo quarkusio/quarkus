@@ -1,6 +1,7 @@
 package io.quarkus.devservices.test;
 
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_BASE_URL;
+import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_CONFIG_CONTAMINATED;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_DEPENDENT_EXTENSION_SEES_DEPENDENCY;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL;
 import static io.quarkus.tests.dependentextension.Constants.QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY;
@@ -56,6 +57,9 @@ public class DevServicesTest {
 
     @ConfigProperty(name = SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START, defaultValue = UNSET)
     String classloaderOnServiceStart;
+
+    @ConfigProperty(name = QUARKUS_DEPENDENT_EXTENSION_CONFIG_CONTAMINATED, defaultValue = "false")
+    String dependentExtensionConfigContaminated;
 
     @Test
     public void testTheLazyDevServicesConfigIsAvailable() {
@@ -113,6 +117,11 @@ public class DevServicesTest {
     public void testOptionalDependentServiceWithUnsatisfiedDependencyIsStarted() {
         assertIsSet(unsatisfiedOptionalDependentExtensionBaseUrl);
         assertFalse(unsatisfiedOptionalDependentExtensionSeesDependencyService);
+    }
+
+    @Test
+    public void testDevServiceConfigIsNotContaminatedByOtherDevServices() {
+        assertEquals("false", dependentExtensionConfigContaminated);
     }
 
     @Test

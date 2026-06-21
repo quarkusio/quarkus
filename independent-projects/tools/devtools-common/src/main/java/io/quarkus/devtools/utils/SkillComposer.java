@@ -85,9 +85,15 @@ public final class SkillComposer {
         }
 
         final String guide = getNestedTextValue(extMeta, "metadata", "guide");
-        if (guide != null && !guide.isBlank()) {
+        final String categories = getNestedArrayAsString(extMeta, "metadata", "categories");
+        if ((guide != null && !guide.isBlank()) || (categories != null && !categories.isBlank())) {
             sb.append("metadata:\n");
-            sb.append("  guide: \"").append(escapeYamlString(guide)).append("\"\n");
+            if (guide != null && !guide.isBlank()) {
+                sb.append("  guide: \"").append(escapeYamlString(guide)).append("\"\n");
+            }
+            if (categories != null && !categories.isBlank()) {
+                sb.append("  categories: \"").append(escapeYamlString(categories)).append("\"\n");
+            }
         }
 
         sb.append("---\n\n");
@@ -235,6 +241,29 @@ public final class SkillComposer {
             return null;
         }
         return getTextValue((ObjectNode) parentNode, field);
+    }
+
+    /**
+     * Extracts a nested array (e.g. {@code metadata.categories}) and joins its text
+     * elements with {@code ", "}, returning {@code null} if the path is missing or empty.
+     */
+    private static String getNestedArrayAsString(ObjectNode node, String parent, String field) {
+        var parentNode = node.get(parent);
+        if (parentNode == null || parentNode.isNull() || !parentNode.isObject()) {
+            return null;
+        }
+        var arrayNode = parentNode.get(field);
+        if (arrayNode == null || arrayNode.isNull() || !arrayNode.isArray() || arrayNode.isEmpty()) {
+            return null;
+        }
+        StringJoiner joiner = new StringJoiner(", ");
+        for (var element : arrayNode) {
+            if (element.isTextual()) {
+                joiner.add(element.asText());
+            }
+        }
+        String result = joiner.toString();
+        return result.isEmpty() ? null : result;
     }
 
     private static String escapeMarkdownTable(String text) {

@@ -1,8 +1,10 @@
 package io.quarkus.deployment.builditem;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.DotName;
@@ -10,21 +12,21 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 
-//temp class
 public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
 
     private final ApplicationArchive root;
-    private final Collection<ApplicationArchive> applicationArchives;
-    private final Set<ApplicationArchive> allArchives;
+    private final List<ApplicationArchive> applicationArchives;
+    private final List<ApplicationArchive> allArchives;
 
-    public ApplicationArchivesBuildItem(ApplicationArchive root, Collection<ApplicationArchive> applicationArchives) {
+    public ApplicationArchivesBuildItem(ApplicationArchive root, List<ApplicationArchive> applicationArchives) {
         this.root = root;
-        this.applicationArchives = applicationArchives;
+        this.applicationArchives = Collections.unmodifiableList(applicationArchives);
 
-        HashSet<ApplicationArchive> ret = new HashSet<>(applicationArchives);
-        ret.add(root);
+        List<ApplicationArchive> all = new ArrayList<>(applicationArchives.size() + 1);
+        all.add(root);
+        all.addAll(applicationArchives);
 
-        this.allArchives = Collections.unmodifiableSet(ret);
+        this.allArchives = Collections.unmodifiableList(all);
     }
 
     /**
@@ -38,17 +40,35 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
     }
 
     /**
+     * Returns a list of all application archives, excluding the root archive.
+     */
+    public List<ApplicationArchive> getArchives() {
+        return applicationArchives;
+    }
+
+    /**
+     * Returns a list of all application archives, including the root archive.
+     */
+    public List<ApplicationArchive> getAllArchives() {
+        return allArchives;
+    }
+
+    /**
+     * @deprecated use {@link #getArchives()}
      * @return A set of all application archives, excluding the root archive
      */
+    @Deprecated(since = "3.37", forRemoval = true)
     public Collection<ApplicationArchive> getApplicationArchives() {
         return applicationArchives;
     }
 
     /**
+     * @deprecated use {@link #getAllArchives()}
      * @return A set of all application archives, including the root archive
      */
+    @Deprecated(since = "3.37", forRemoval = true)
     public Set<ApplicationArchive> getAllApplicationArchives() {
-        return allArchives;
+        return new HashSet<>(allArchives);
     }
 
     /**

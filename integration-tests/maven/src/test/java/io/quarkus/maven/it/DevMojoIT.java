@@ -714,6 +714,19 @@ public class DevMojoIT extends LaunchMojoTestBase {
         Assertions.assertEquals(9, results.getTotalTestsPassed(), results.toString());
     }
 
+    @Test
+    void testQuarkusTestMetaAnnotationDiscovery()
+            throws MavenInvocationException, IOException {
+        testDir = initProject("projects/test-meta-annotation");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
+        Assertions.assertEquals(1, results.getTestsPassed(), results.toString());
+    }
+
     @Disabled("Not currently working, see https://github.com/quarkusio/quarkus/issues/46362")
     @Test
     void testTestProfilesWhichRunMainAreHandled()

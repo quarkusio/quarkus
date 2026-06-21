@@ -167,12 +167,12 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                     }
                 }
 
-                // Properties set by @TestProfile
-                additionalProperties.putAll(testProfileAndProperties.properties());
                 // Make the dev services config accessible from the test itself
                 additionalProperties.putAll(devServicesLaunchResult.properties());
                 // Allow override of dev services props by integration test extensions
                 additionalProperties.putAll(testResourceManager.start());
+                // Properties set by @TestProfile
+                additionalProperties.putAll(testProfileAndProperties.properties());
 
                 // Create the ValueRegistry with the current Config and test config
                 ConfigSource integrationTestSource = new PropertiesConfigSource(
@@ -208,7 +208,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                             "Artifact type + '" + artifactType + "' is not supported by @QuarkusMainIntegrationTest");
                 }
 
-                testResourceManager.inject(context.getRequiredTestInstance());
+                testResourceManager.inject(valueRegistry, context.getRequiredTestInstance());
 
                 activateLogging();
 

@@ -29,7 +29,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                                <requiresMinimalDeploymentDependency/>
                             </rules>
                         </configuration>
                     </execution>

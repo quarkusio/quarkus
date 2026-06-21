@@ -2094,6 +2094,50 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("testCaseInsensitiveSorting")
+    @Transactional
+    public String testCaseInsensitiveSorting() {
+        Person.deleteAll();
+
+        Person apple = new Person();
+        apple.name = "apple";
+        apple.persist();
+
+        Person BANANA = new Person();
+        BANANA.name = "BANANA";
+        BANANA.persist();
+
+        Person cherry = new Person();
+        cherry.name = "cherry";
+        cherry.persist();
+
+        // Test case-insensitive ascending sort
+        List<Person> persons = Person.findAll(Sort.ascendingIgnoreCase("name")).list();
+        assertEquals(3, persons.size());
+        assertEquals("apple", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("cherry", persons.get(2).name);
+
+        // Test case-insensitive descending sort
+        persons = Person.findAll(Sort.descendingIgnoreCase("name")).list();
+        assertEquals(3, persons.size());
+        assertEquals("cherry", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("apple", persons.get(2).name);
+
+        // Test fluent API
+        persons = Person.findAll(Sort.by("name").ignoreCase()).list();
+        assertEquals(3, persons.size());
+        assertEquals("apple", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("cherry", persons.get(2).name);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
     @Path("testEnhancement27184DeleteDetached")
     // NOT @Transactional
     public String testEnhancement27184DeleteDetached() {

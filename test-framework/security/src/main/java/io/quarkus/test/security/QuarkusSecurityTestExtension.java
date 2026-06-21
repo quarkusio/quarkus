@@ -77,6 +77,13 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                 if (testSecurity.permissions().length != 0) {
                     throw new RuntimeException("Cannot specify permissions without a username in @TestSecurity");
                 }
+
+                if (testSecurity.authorizationEnabled()) {
+                    // test is annotated with @TestSecurity()
+                    var anonymousUser = QuarkusSecurityIdentity.builder().setAnonymous(true)
+                            .setPrincipal(new QuarkusPrincipal(""));
+                    setSecurityIdentity(context, testSecurity, anonymousUser, allAnnotations, container);
+                }
             } else {
                 QuarkusSecurityIdentity.Builder user = QuarkusSecurityIdentity.builder()
                         .setPrincipal(new QuarkusPrincipal(testSecurity.user()))
@@ -86,49 +93,54 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                     user.addPermissionChecker(createPermissionChecker(testSecurity.permissions()));
                 }
 
-                if (testSecurity.attributes() != null) {
-                    user.addAttributes(Arrays.stream(testSecurity.attributes())
-                            .collect(Collectors.toMap(s -> s.key(), s -> s.type().convert(s.value()))));
-                }
-
-                SecurityIdentity userIdentity = augment(user.build(), allAnnotations, container);
-                container.select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
-                if (!testSecurity.authMechanism().isEmpty()) {
-                    for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
-                        testMechanism.setAuthMechanism(testSecurity.authMechanism());
-                    }
-                    container.select(TestIdentityAssociation.class).get().setPathBasedIdentity(true);
-                }
-
-                // run SecurityIdentityAugmentors when:
-                List<Instance<? extends SecurityIdentityAugmentor>> augmentors = new ArrayList<>();
-                // 1. user opted-in with @TestSecurity#augmentors, run augmentors listed by user
-                for (Class<? extends SecurityIdentityAugmentor> augmentorClass : testSecurity.augmentors()) {
-                    var augmentorInstance = container.select(augmentorClass);
-                    if (!augmentorInstance.isResolvable()) {
-                        var testMethodName = context.getTestMethod() == null ? "" : context.getTestMethod().getName();
-                        throw new RuntimeException("""
-                                SecurityIdentityAugmentor class '%s' specified with '@TestSecurity#augmentors' annotation
-                                attribute on method '%s' is not available as a CDI bean.
-                                """.formatted(augmentorClass, testMethodName));
-                    }
-                    augmentors.add(augmentorInstance);
-                }
-                // 2. @PermissionChecker is used, run the augmentor that enables this functionality
-                var quarkusPermissionAugmentor = container.select(QuarkusPermissionSecurityIdentityAugmentor.class);
-                if (quarkusPermissionAugmentor.isResolvable()) {
-                    augmentors.add(quarkusPermissionAugmentor);
-                }
-                if (!augmentors.isEmpty()) {
-                    for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
-                        testMechanism.setSecurityIdentityAugmentors(augmentors);
-                    }
-                }
+                setSecurityIdentity(context, testSecurity, user, allAnnotations, container);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to setup @TestSecurity", e);
         }
 
+    }
+
+    private void setSecurityIdentity(QuarkusTestMethodContext context, TestSecurity testSecurity,
+            QuarkusSecurityIdentity.Builder user, Annotation[] allAnnotations, ArcContainer container) {
+        if (testSecurity.attributes() != null) {
+            user.addAttributes(Arrays.stream(testSecurity.attributes())
+                    .collect(Collectors.toMap(s -> s.key(), s -> s.type().convert(s.value()))));
+        }
+
+        SecurityIdentity userIdentity = augment(user.build(), allAnnotations, container);
+        container.select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
+        if (!testSecurity.authMechanism().isEmpty()) {
+            for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
+                testMechanism.setAuthMechanism(testSecurity.authMechanism());
+            }
+            container.select(TestIdentityAssociation.class).get().setPathBasedIdentity(true);
+        }
+
+        // run SecurityIdentityAugmentors when:
+        List<Instance<? extends SecurityIdentityAugmentor>> augmentors = new ArrayList<>();
+        // 1. user opted-in with @TestSecurity#augmentors, run augmentors listed by user
+        for (Class<? extends SecurityIdentityAugmentor> augmentorClass : testSecurity.augmentors()) {
+            var augmentorInstance = container.select(augmentorClass);
+            if (!augmentorInstance.isResolvable()) {
+                var testMethodName = context.getTestMethod() == null ? "" : context.getTestMethod().getName();
+                throw new RuntimeException("""
+                        SecurityIdentityAugmentor class '%s' specified with '@TestSecurity#augmentors' annotation
+                        attribute on method '%s' is not available as a CDI bean.
+                        """.formatted(augmentorClass, testMethodName));
+            }
+            augmentors.add(augmentorInstance);
+        }
+        // 2. @PermissionChecker is used, run the augmentor that enables this functionality
+        var quarkusPermissionAugmentor = container.select(QuarkusPermissionSecurityIdentityAugmentor.class);
+        if (quarkusPermissionAugmentor.isResolvable()) {
+            augmentors.add(quarkusPermissionAugmentor);
+        }
+        if (!augmentors.isEmpty()) {
+            for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
+                testMechanism.setSecurityIdentityAugmentors(augmentors);
+            }
+        }
     }
 
     private static Function<Permission, Uni<Boolean>> createPermissionChecker(String[] permissions) {

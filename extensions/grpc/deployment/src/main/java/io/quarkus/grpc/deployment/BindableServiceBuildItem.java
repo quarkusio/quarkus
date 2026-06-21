@@ -12,6 +12,7 @@ public final class BindableServiceBuildItem extends MultiBuildItem {
     final DotName serviceClass;
     final List<String> blockingMethods = new ArrayList<>();
     final List<String> virtualMethods = new ArrayList<>();
+    boolean isCoroutineService;
 
     public BindableServiceBuildItem(DotName serviceClass) {
         this.serviceClass = serviceClass;

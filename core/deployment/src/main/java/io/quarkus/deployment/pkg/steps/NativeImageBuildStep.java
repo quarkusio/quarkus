@@ -50,7 +50,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarFormat;
 import io.quarkus.deployment.steps.LocaleProcessor;
@@ -61,8 +60,8 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.graal.GraalVM.Distribution;
 import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.Purl;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
@@ -108,14 +107,12 @@ public class NativeImageBuildStep {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         return new ArtifactResultBuildItem(image.getPath(), ARTIFACT_RESULT_TYPE,
                 graalVMVersion.toMap(),
-                ApplicationManifestConfig.builder()
+                new CoreSbomContributionConfig()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder()
-                                .setVersion(curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion())
-                                .setPath(image.getPath())
-                                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
-                        .setRunnerPath(image.getPath())
-                        .build());
+                        .setMainPurl(Purl.generic(image.getPath().getFileName().toString(),
+                                curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
+                        .setMainDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                        .setMainPath(image.getPath()));
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
@@ -189,14 +186,9 @@ public class NativeImageBuildStep {
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
                 "native-sources",
                 Collections.emptyMap(),
-                ApplicationManifestConfig.builder()
+                new CoreSbomContributionConfig()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder()
-                                .setVersion(curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion())
-                                .setPath(nativeImageSourceJarBuildItem.getPath())
-                                .setResolvedDependency(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
-                        .setRunnerPath(nativeImageSourceJarBuildItem.getPath())
-                        .build());
+                        .setMainPath(nativeImageSourceJarBuildItem.getPath()));
     }
 
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeFileSystemProvider.class)
@@ -218,7 +210,6 @@ public class NativeImageBuildStep {
             List<NativeImageEnableModule> enableModules,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
@@ -259,7 +250,7 @@ public class NativeImageBuildStep {
 
         NativeImageBuildRunner buildRunner = nativeImageRunner.getBuildRunner();
 
-        buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+        buildRunner.setup(processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
         checkGraalVMVersion(graalVMVersion);
 
@@ -305,7 +296,7 @@ public class NativeImageBuildStep {
                         nativeImageName,
                         resultingExecutableName, outputDir,
                         graalVMVersion, nativeConfig.debug().enabled(),
-                        processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+                        processInheritIODisabledBuildItem.isPresent());
             } catch (Throwable t) {
                 throw imageGenerationFailed(t, isContainerBuild);
             }
@@ -1174,6 +1165,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add(excludeConfig.getResourceName());
                 }
 
+                nativeImageArgs.add("-o");
                 nativeImageArgs.add(nativeImageName);
 
                 //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"

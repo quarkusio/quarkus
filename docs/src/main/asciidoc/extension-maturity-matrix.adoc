@@ -102,6 +102,12 @@ For some inspiration in this area, have a look at xref:logging.adoc#simplified-l
 Codestarts are templates which can be used to generate applications for users.
 Extensions can xref:extension-codestart.adoc[provide their own codestart templates].
 
+=== AI coding skill
+
+Extensions can provide AI coding agents with extension-specific patterns, testing guidelines, and common pitfalls by shipping a `quarkus-skill.md` file.
+This is a simple markdown file placed in the deployment module at `META-INF/quarkus-skill.md` — no build configuration is needed.
+See xref:agent-mcp.adoc#extension-skills[the Agent MCP guide] for what to include and how skill files are composed with extension metadata.
+
 == Supersonic subatomic performance
 
 Extensions should use build-time application knowledge to eliminate wasteful runtime code paths. We call this supersonic subatomic performance.
@@ -141,7 +147,7 @@ Quarkus's reactive core is a key contributor to its excellent throughput and sca
 === Add Mutiny-based APIs
 
 For maximum scalability, go beyond the reactive core and enable fully reactive programming, using Mutiny. Most projects that support a reactive programming model offer two distinct extensions, a `-reactive` and a plain one.
-See, for example, https://quarkus.io/extensions/io.quarkiverse.quarkus-elasticsearch/quarkus-elasticsearch/[ElasticSearch] and https://quarkus.io/extensions/io.quarkiverse.quarkus-elasticsearch-reactive/quarkus-elasticsearch-reactive/[ElasticSearch Reactive] extensions.
+See, for example, the https://quarkus.io/extensions/io.quarkus/quarkus-hibernate-orm/[Hibernate ORM] and https://quarkus.io/extensions/io.quarkus/quarkus-hibernate-reactive/[Hibernate Reactive] extensions.
 
 == Operations
 

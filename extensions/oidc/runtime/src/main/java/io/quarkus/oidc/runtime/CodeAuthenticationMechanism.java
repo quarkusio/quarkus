@@ -210,7 +210,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String error = requestParams.get(OidcConstants.CODE_FLOW_ERROR);
             String errorDescription = requestParams.get(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
 
-            LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
+            LOG.warnf("Authentication has failed, error: %s, description: %s", error, errorDescription);
 
             if (oidcTenantConfig.authentication().errorPath().isPresent()) {
                 Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
@@ -404,7 +404,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                                 boolean unresolvedKey = t.getCause() instanceof InvalidJwtException
                                                         && (t.getCause().getCause() instanceof UnresolvableKeyException);
-                                                if (unresolvedKey
+                                                if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(t)) {
+                                                    // Session does not have the required authentication level,
+                                                    // redirect the user to the OIDC provider to re-authenticate
+                                                    LOG.debug(
+                                                            "Session does not have the required authentication level, reauthentication is required");
+                                                    failure = t;
+                                                } else if (unresolvedKey
                                                         && !configContext.oidcConfig().authentication().failOnUnresolvedKid()
                                                         && OidcUtils.isJwtTokenExpired(currentIdToken)) {
                                                     // It can happen in multi-tab applications where a user login causes a JWK set refresh
@@ -564,19 +570,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
 
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
-            String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.iss.name());
+            String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.iss.name());
             if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
                 LOG.debugf("Logout token issuer does not match the ID token issuer");
                 return false;
             }
             String idTokenSub = idTokenJson.getString(Claims.sub.name());
-            String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.sub.name());
+            String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.sub.name());
             if (logoutTokenSub != null && idTokenSub != null && !logoutTokenSub.equals(idTokenSub)) {
                 LOG.debugf("Logout token subject does not match the ID token subject");
                 return false;
             }
             String idTokenSid = idTokenJson.getString(OidcConstants.ID_TOKEN_SID_CLAIM);
-            String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult
+            String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult()
                     .getString(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM);
             if (logoutTokenSid != null && idTokenSid != null && !logoutTokenSid.equals(idTokenSid)) {
                 LOG.debugf("Logout token session id does not match the ID token session id");
@@ -695,7 +701,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         if (!shouldAutoRedirect(configContext, context)) {
                             // If the client (usually an SPA) wants to handle the redirect manually, then
                             // return status code 499 and WWW-Authenticate header with the 'OIDC' value.
-                            return Uni.createFrom().item(new ChallengeData(499, "WWW-Authenticate", "OIDC"));
+                            ChallengeData challenge = null;
+                            JavaScriptRequestChecker checker = resolver.getJavaScriptRequestChecker();
+                            if (checker != null) {
+                                challenge = checker.getChallenge(context);
+                            }
+                            if (challenge == null) {
+                                challenge = new ChallengeData(499, "WWW-Authenticate", "OIDC");
+                            }
+                            return Uni.createFrom().item(challenge);
                         }
 
                         StringBuilder codeFlowParams = new StringBuilder(168); // experimentally determined to be a good size for preventing resizing and not wasting space
@@ -798,6 +812,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
                         addExtraParamsToUri(codeFlowParams, authenticationConfig.extraParams());
+
+                        // acr_values and max_age, set when the requested endpoint requires
+                        // a specific authentication level
+                        StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRoutingContext(context);
+                        if (stepUpAuthPolicy != null) {
+                            codeFlowParams.append(AMP).append(OidcConstants.ACR_VALUES).append(EQ)
+                                    .append(OidcCommonUtils
+                                            .urlEncode(String.join(" ", stepUpAuthPolicy.expectedAcrValues())));
+                            if (stepUpAuthPolicy.maxAge() != null) {
+                                codeFlowParams.append(AMP).append(OidcConstants.MAX_AGE).append(EQ)
+                                        .append(stepUpAuthPolicy.maxAge());
+                            }
+                        }
 
                         if (pushedAuthorizationRequest) {
                             return configContext.getOidcProviderClient()
@@ -1482,7 +1509,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.debugf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
+                                            LOG.warnf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
                                             return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });

@@ -65,7 +65,7 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
         if (this._persistenceUnits === null) {
             return html`
                 <div style="color: var(--lumo-secondary-text-color);width: 95%;">
-                    <div>${msg('quarkus-hibernate-orm-fetching-persistence-units')}</div>
+                    <div>${msg('Fetching persistence units…', { id: 'quarkus-hibernate-orm-fetching-persistence-units' })}</div>
                     <vaadin-progress-bar indeterminate></vaadin-progress-bar>
                 </div>`;
         }
@@ -76,9 +76,9 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
         if (this._persistenceUnits.length === 0) {
             return html`
                 <p>
-                    ${msg('quarkus-hibernate-orm-no-persistence-units')}
+                    ${msg('No persistence units found', { id: 'quarkus-hibernate-orm-no-persistence-units' })}
                     <vaadin-button @click="${this.hotReload}" theme="small">
-                        ${msg('quarkus-hibernate-orm-check-again')}
+                        ${msg('Check again', { id: 'quarkus-hibernate-orm-check-again' })}
                     </vaadin-button>
                 </p>`;
         }
@@ -86,7 +86,7 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
             <div class="full-height">
                 ${this._persistenceUnits.length > 1 ? html`
                     <vaadin-combo-box
-                        label="${msg('quarkus-hibernate-orm-persistence-unit')}"
+                        label="${msg('Persistence Unit', { id: 'quarkus-hibernate-orm-persistence-unit' })}"
                         item-label-path="name"
                         item-value-path="name"
                         .items="${this._persistenceUnits}"
@@ -110,21 +110,21 @@ export class HibernateOrmEntityTypesComponent extends QwcHotReloadElement {
     _renderEntityTypesTable(pu) {
         if (pu.managedEntities.length === 0) {
             return html`
-                <p>${msg('quarkus-hibernate-orm-no-managed-entities')}</p>
+                <p>${msg('No managed entities', { id: 'quarkus-hibernate-orm-no-managed-entities' })}</p>
             `;
         }
         return html`
             <vaadin-grid .items="${pu.managedEntities}" class="datatable" theme="no-border row-stripes">
                 <vaadin-grid-column auto-width
-                    header="${msg('quarkus-hibernate-orm-jpa-entity-name')}"
+                    header="${msg('JPA Entity Name', { id: 'quarkus-hibernate-orm-jpa-entity-name' })}"
                     path="name">
                 </vaadin-grid-column>
                 <vaadin-grid-column auto-width
-                    header="${msg('quarkus-hibernate-orm-class-name')}"
+                    header="${msg('Class Name', { id: 'quarkus-hibernate-orm-class-name' })}"
                     path="className">
                 </vaadin-grid-column>
                 <vaadin-grid-column auto-width
-                    header="${msg('quarkus-hibernate-orm-table-name')}"
+                    header="${msg('Table Name', { id: 'quarkus-hibernate-orm-table-name' })}"
                     path="tableName">
                 </vaadin-grid-column>
             </vaadin-grid>`;

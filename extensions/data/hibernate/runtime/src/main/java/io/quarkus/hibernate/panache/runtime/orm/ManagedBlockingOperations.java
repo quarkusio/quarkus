@@ -75,7 +75,11 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
 
     @Override
     public Void flush(Object entity) {
-        DELEGATE.flush(entity);
+        if (entity instanceof Class<?> clazz) {
+            DELEGATE.flush(clazz);
+        } else {
+            DELEGATE.flush(entity);
+        }
         return null;
     }
 

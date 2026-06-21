@@ -72,6 +72,9 @@ public class ManagedReactiveOperations implements PanacheReactiveOperations {
 
     @Override
     public Uni<Void> flush(Object entity) {
+        if (entity instanceof Class<?> clazz) {
+            return DELEGATE.flush(clazz);
+        }
         return DELEGATE.flush(entity);
     }
 

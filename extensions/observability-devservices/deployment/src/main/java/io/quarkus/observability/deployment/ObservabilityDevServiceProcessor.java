@@ -10,6 +10,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -52,6 +54,13 @@ class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
 
     private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
+    private static final String OTEL_EXPORTER_OTLP_ENDPOINT = "quarkus.otel.exporter.otlp.endpoint";
+    private static final String OTEL_EXPORTER_OTLP_PROTOCOL = "quarkus.otel.exporter.otlp.protocol";
+    private static final List<String> OTEL_EXPORTER_OTLP_ENDPOINT_CONFIG_KEYS = List.of(
+            OTEL_EXPORTER_OTLP_ENDPOINT,
+            "quarkus.otel.exporter.otlp.traces.endpoint",
+            "quarkus.otel.exporter.otlp.metrics.endpoint",
+            "quarkus.otel.exporter.otlp.logs.endpoint");
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
@@ -64,6 +73,38 @@ class ObservabilityDevServiceProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.OBSERVABILITY);
+    }
+
+    static Map<String, Function<ObservabilityStartable, String>> openTelemetryConfigProvider() {
+        return openTelemetryConfigProvider(ConfigProvider.getConfig());
+    }
+
+    static Map<String, Function<ObservabilityStartable, String>> openTelemetryConfigProvider(Config config) {
+        // The LGTM endpoint is exposed as a generic OTLP exporter configuration. Do not publish it when a user
+        // has already configured a generic or signal-specific endpoint, otherwise the higher priority dev services
+        // config source can route that signal to LGTM instead of the configured collector.
+        if (hasUserDefinedOtlpEndpoint(config)) {
+            return Map.of();
+        }
+
+        Map<String, Function<ObservabilityStartable, String>> configProvider = new LinkedHashMap<>();
+        configProvider.put(OTEL_EXPORTER_OTLP_ENDPOINT,
+                s -> s.getDevServiceConfig().get(OTEL_EXPORTER_OTLP_ENDPOINT));
+        configProvider.put(OTEL_EXPORTER_OTLP_PROTOCOL,
+                s -> s.getDevServiceConfig().get(OTEL_EXPORTER_OTLP_PROTOCOL));
+        return configProvider;
+    }
+
+    static boolean hasUserDefinedOtlpEndpoint() {
+        return hasUserDefinedOtlpEndpoint(ConfigProvider.getConfig());
+    }
+
+    static boolean hasUserDefinedOtlpEndpoint(Config config) {
+        return hasConfiguredValue(config, OTEL_EXPORTER_OTLP_ENDPOINT_CONFIG_KEYS);
+    }
+
+    static boolean hasConfiguredValue(Config config, List<String> propertyNames) {
+        return propertyNames.stream().anyMatch(propertyName -> config.getOptionalValue(propertyName, String.class).isPresent());
     }
 
     private String devId(DevResourceLifecycleManager<?> dev) {
@@ -141,10 +182,7 @@ class ObservabilityDevServiceProcessor {
                             s -> s.getDevServiceConfig().get("quarkus.micrometer.export.otlp.url"));
                 }
                 if (catalog.hasOpenTelemetry()) {
-                    configProvider.put("quarkus.otel.exporter.otlp.endpoint",
-                            s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.endpoint"));
-                    configProvider.put("quarkus.otel.exporter.otlp.protocol",
-                            s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.protocol"));
+                    configProvider.putAll(openTelemetryConfigProvider());
                 }
 
                 services.produce(

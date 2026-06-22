@@ -440,6 +440,7 @@
                 <module>grpc-stork-recovery</module>
                 <module>grpc-stork-response-time</module>
                 <module>grpc-stork-simple</module>
+                <module>grpc-stork-metrics</module>
                 <module>grpc-exceptions</module>
                 <module>grpc-test-random-port</module>
                 <module>grpc-proto3</module>

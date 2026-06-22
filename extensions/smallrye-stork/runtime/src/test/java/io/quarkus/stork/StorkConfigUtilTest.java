@@ -318,6 +318,20 @@ public class StorkConfigUtilTest {
         assertThat(svc.serviceRegistrar().type()).isEqualTo("consul");
     }
 
+    @Test
+    public void shouldResolveObservationTypesFromConfiguration() {
+        StorkConfiguration storkConfiguration = buildStorkConfiguration(
+                Map.entry("hello-service", buildServiceConfig(
+                        buildDiscoveryConfig("static", Map.of("address-list", "localhost:8081")),
+                        buildLoadBalancerConfig("round-robin", Map.of()),
+                        null)));
+
+        assertThat(StorkConfigUtil.serviceDiscoveryType(storkConfiguration, "hello-service")).isEqualTo("static");
+        assertThat(StorkConfigUtil.serviceSelectionType(storkConfiguration, "hello-service")).isEqualTo("round-robin");
+        assertThat(StorkConfigUtil.serviceDiscoveryType(storkConfiguration, "missing")).isEqualTo("unknown");
+        assertThat(StorkConfigUtil.serviceSelectionType(storkConfiguration, "missing")).isEqualTo("round-robin");
+    }
+
     // --- Helper methods to build test configurations ---
 
     @SafeVarargs

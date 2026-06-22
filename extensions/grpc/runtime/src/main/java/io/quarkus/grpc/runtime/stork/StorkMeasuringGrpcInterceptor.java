@@ -1,5 +1,8 @@
 package io.quarkus.grpc.runtime.stork;
 
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_MEASURE_TIME;
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_SERVICE_INSTANCE;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,7 +24,9 @@ public class StorkMeasuringGrpcInterceptor implements ClientInterceptor, Priorit
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions,
             Channel next) {
-        return new StorkMeasuringCall<>(next.newCall(method, callOptions), method.getType());
+        boolean recordTime = method.getType() == MethodDescriptor.MethodType.UNARY;
+        AtomicReference<ServiceInstance> serviceInstanceRef = new AtomicReference<>();
+        return new StorkMeasuringCall<>(next.newCall(method, callOptions), recordTime, serviceInstanceRef);
     }
 
     @Override
@@ -30,28 +35,24 @@ public class StorkMeasuringGrpcInterceptor implements ClientInterceptor, Priorit
     }
 
     private static class StorkMeasuringCall<ReqT, RespT> extends AbstractStorkMeasuringCall<ReqT, RespT> {
-        ServiceInstance serviceInstance;
 
-        protected StorkMeasuringCall(ClientCall<ReqT, RespT> delegate, MethodDescriptor.MethodType type) {
-            super(delegate, type == MethodDescriptor.MethodType.UNARY);
-        }
-
-        @Override
-        protected ServiceInstance serviceInstance() {
-            return serviceInstance;
+        protected StorkMeasuringCall(ClientCall<ReqT, RespT> delegate, boolean recordTime,
+                AtomicReference<ServiceInstance> serviceInstanceRef) {
+            super(delegate, recordTime, serviceInstanceRef);
         }
 
         @Override
         public void start(final ClientCall.Listener<RespT> responseListener, final Metadata metadata) {
-            Context context = Context.current().withValues(
-                    STORK_SERVICE_INSTANCE, new AtomicReference<>(),
+            // Attach only while start()/pickSubchannel can read the Context keys. The same
+            // AtomicReference is held on this call for recordReply/recordEnd afterwards.
+            Context storkContext = Context.current().withValues(
+                    STORK_SERVICE_INSTANCE, serviceInstanceRef,
                     STORK_MEASURE_TIME, recordTime);
-            Context oldContext = context.attach();
+            Context previous = storkContext.attach();
             try {
                 super.start(new StorkMeasuringCallListener<>(responseListener, this), metadata);
-                serviceInstance = STORK_SERVICE_INSTANCE.get().get();
             } finally {
-                context.detach(oldContext);
+                storkContext.detach(previous);
             }
         }
     }

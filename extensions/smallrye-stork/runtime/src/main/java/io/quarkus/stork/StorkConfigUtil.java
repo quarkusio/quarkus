@@ -58,6 +58,22 @@ public class StorkConfigUtil {
         return storkServicesConfigs;
     }
 
+    public static String serviceDiscoveryType(StorkConfiguration configuration, String serviceName) {
+        ServiceConfiguration serviceConfiguration = configuration.serviceConfiguration().get(serviceName);
+        if (serviceConfiguration != null && serviceConfiguration.serviceDiscovery().isPresent()) {
+            return serviceConfiguration.serviceDiscovery().get().type();
+        }
+        return "unknown";
+    }
+
+    public static String serviceSelectionType(StorkConfiguration configuration, String serviceName) {
+        ServiceConfiguration serviceConfiguration = configuration.serviceConfiguration().get(serviceName);
+        if (serviceConfiguration != null) {
+            return serviceConfiguration.loadBalancer().type();
+        }
+        return "round-robin";
+    }
+
     /**
      * Builds a default {@link ServiceConfiguration} for a Quarkus application
      * when no explicit service registrar configuration is defined by the developer.

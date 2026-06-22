@@ -66,7 +66,7 @@ public class TestReactiveTransactionalInterceptor {
             execute.invoke(uniAsserter, new Function<Uni<?>, Uni<?>>() {
                 @Override
                 public Uni<?> apply(Uni<?> t) {
-                    return SessionOperations.withTransaction(tx -> {
+                    return SessionOperationsDelegate.withTransaction(tx -> {
                         tx.markForRollback();
                         return t;
                     });

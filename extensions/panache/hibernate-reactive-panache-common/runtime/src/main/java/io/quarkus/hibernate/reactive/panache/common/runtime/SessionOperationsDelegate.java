@@ -31,9 +31,9 @@ import io.vertx.core.Vertx;
 /**
  * Static util methods for {@link Mutiny.Session}.
  */
-public final class SessionOperations {
+public final class SessionOperationsDelegate {
 
-    private static final Logger LOG = Logger.getLogger(SessionOperations.class);
+    private static final Logger LOG = Logger.getLogger(SessionOperationsDelegate.class);
 
     private static final String ERROR_MSG = "Hibernate Reactive Panache requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
 

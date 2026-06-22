@@ -39,10 +39,10 @@ public class DefaultTextCodecTest {
         items.add(new JsonObject().put("name", "foo").put("count", 10));
         items.add(new JsonObject().put("name", "bar").put("count", 1));
         items.add(new JsonObject().put("name", "baz").put("count", 100));
-        assertCodec(findUri, items.encode(), new JsonObject().put("name", "bar").put("count", 1).encode());
+        assertCodec(findUri, items.encode(), new JsonObject().put("name", "bar").put("count", 1));
     }
 
-    public void assertCodec(URI testUri, String payload, String expected)
+    public void assertCodec(URI testUri, String requestBody, JsonObject expectedResponseBody)
             throws Exception {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
@@ -55,12 +55,12 @@ public class DefaultTextCodecTest {
                             ws.textMessageHandler(msg -> {
                                 message.add(msg);
                             });
-                            ws.writeTextMessage(payload);
+                            ws.writeTextMessage(requestBody);
                         } else {
                             throw new IllegalStateException(r.cause());
                         }
                     });
-            assertEquals(expected, message.poll(10, TimeUnit.SECONDS));
+            assertEquals(expectedResponseBody, new JsonObject(message.poll(10, TimeUnit.SECONDS)));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();
         }

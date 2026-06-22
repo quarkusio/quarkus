@@ -57,6 +57,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -248,6 +249,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
+        Path bootstrapRunnerPath = null;
+        List<ArtifactCoords> bootArtifacts = new ArrayList<>();
         Set<PosixFilePermission> newFilePermissions = probeNewFilePermissions(baseLib);
         for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
@@ -260,6 +263,13 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
             if (parentFirstArtifactKeys.contains(appDep.getKey())) {
                 appDep.getResolvedPaths().forEach(parentFirst::add);
+                bootArtifacts.add(appDep);
+                if ("quarkus-bootstrap-runner".equals(appDep.getArtifactId())) {
+                    List<Path> paths = copiedArtifacts.get(appDep.getKey());
+                    if (paths != null && !paths.isEmpty()) {
+                        bootstrapRunnerPath = paths.get(0);
+                    }
+                }
             }
         }
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
@@ -292,9 +302,20 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(FastJarFormat.QUARKUS_RUN_JAR);
+        List<ArtifactCoords> mainDeps = new ArrayList<>(bootArtifacts);
         manifestConfig.setMainPurl(Purl.generic(initJar.getFileName().toString(), appArtifact.getVersion()))
-                .setMainDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact()))
+                .setMainDependencies(mainDeps)
                 .setMainPath(initJar);
+
+        if (bootstrapRunnerPath != null) {
+            manifestConfig.addFileDependency(bootstrapRunnerPath, runnerJar);
+            manifestConfig.addFileDependency(bootstrapRunnerPath, generatedZip);
+            manifestConfig.addFileDependency(bootstrapRunnerPath, appInfo);
+            if (fastJarJars.transformedJar != null) {
+                manifestConfig.addFileDependency(bootstrapRunnerPath, fastJarJars.transformedJar);
+            }
+        }
+
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -388,6 +409,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
                 lines.sort(Comparator.naturalOrder());
                 Files.write(deplist, lines);
+                manifestConfig.addFileDependency(initJar, deplist);
             }
         } else {
             //if it is a rebuild we might have classes

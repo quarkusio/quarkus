@@ -63,6 +63,10 @@ If you are using the Maven command, the following table lists the attributes you
 | The version currently recommended by the xref:extension-registry-user.adoc[Quarkus Extension Registry]
 | The version of the platform you want the project to use. It can also accept a version range, in which case the latest from the specified range will be used.
 
+| `stream`
+| _Not set_
+| A target platform stream, for example `3.15` or `io.quarkus.platform:3.15`. When specified, the extension registry client will be used to resolve the platform BOM corresponding to the given stream. Cannot be combined with `platformGroupId`, `platformArtifactId`, or `platformVersion`.
+
 | `javaVersion`
 | 17
 | The version of Java you want the project to use.

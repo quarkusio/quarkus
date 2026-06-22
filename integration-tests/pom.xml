@@ -318,7 +318,7 @@
                 <module>virtual-http-resteasy</module>
                 <module>command-mode</module>
                 <module>maven</module>
-                <module>scala</module>
+
                 <module>kotlin</module>
                 <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>

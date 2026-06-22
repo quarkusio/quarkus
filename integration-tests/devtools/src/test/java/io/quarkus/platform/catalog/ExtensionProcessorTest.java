@@ -32,7 +32,7 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         assertThat(extensionProcessor.getCodestartName()).isEqualTo("resteasy");
         assertThat(extensionProcessor.getCodestartArtifact())
                 .isEqualTo("io.quarkus:quarkus-project-core-extension-codestarts::jar:" + getQuarkusCoreVersion());
-        assertThat(extensionProcessor.getCodestartLanguages()).contains("java", "kotlin", "scala");
+        assertThat(extensionProcessor.getCodestartLanguages()).contains("java", "kotlin");
         assertThat(extensionProcessor.getKeywords()).contains("resteasy", "jaxrs", "web", "rest");
         assertThat(extensionProcessor.getExtendedKeywords()).contains("resteasy", "jaxrs", "web", "rest");
         assertThat(extensionProcessor.getGuide()).isEqualTo("https://quarkus.io/guides/resteasy");

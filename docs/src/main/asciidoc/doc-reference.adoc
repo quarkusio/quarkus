@@ -419,7 +419,7 @@ Quarkus documentation is grouped into the following categories.
 [cols="<m,<2",options="header"]
 |===
 |Category | Description
-| alt-languages | Support for other languages, namely Kotlin and Scala
+| alt-languages | Support for Kotlin
 | architecture | Quarkus runtime and ecosystem architecture
 | business-automation | Business automation integrations
 | cloud | Integrations and support for cloud services

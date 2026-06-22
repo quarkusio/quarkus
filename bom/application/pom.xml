@@ -3340,16 +3340,7 @@
                 <artifactId>quarkus-openshift-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-scala</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-scala-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-narayana-stm</artifactId>
@@ -4243,11 +4234,6 @@
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-compiler</artifactId>
                 <version>${scala.version}</version>
             </dependency>
             <dependency>
@@ -6148,11 +6134,6 @@
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility-kotlin</artifactId>
-                <version>${awaitility.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.awaitility</groupId>
-                <artifactId>awaitility-scala</artifactId>
                 <version>${awaitility.version}</version>
             </dependency>
             <dependency>

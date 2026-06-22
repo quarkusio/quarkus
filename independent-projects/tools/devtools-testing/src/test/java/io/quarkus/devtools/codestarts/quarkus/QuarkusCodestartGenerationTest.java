@@ -170,39 +170,6 @@ class QuarkusCodestartGenerationTest {
     }
 
     @Test
-    void generateRESTEasyScalaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = newInputBuilder()
-                .addData(getGenerationTestInputData())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
-                .putData(RESTEASY_CODESTART_RESOURCE_CLASS_NAME.key(), "BonjourResource")
-                .putData(RESTEASY_CODESTART_RESOURCE_PATH.key(), "/bonjour")
-                .build();
-        final Path projectDir = testDirPath.resolve("resteasy-scala-custom");
-        getCatalog().createProject(input).generate(projectDir);
-
-        checkMaven(projectDir);
-        checkReadme(projectDir);
-        checkDockerfiles(projectDir, BuildTool.MAVEN);
-        checkConfigProperties(projectDir);
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/scala/com/andy/BonjourResource.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResource"))
-                .satisfies(checkContains("@Path(\"/bonjour\")"));
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceTest.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResourceTest"))
-                .satisfies(checkContains("\"/bonjour\""));
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceIT.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResourceIT extends BonjourResourceTest"));
-    }
-
-    @Test
     void generateMavenDefaultJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())

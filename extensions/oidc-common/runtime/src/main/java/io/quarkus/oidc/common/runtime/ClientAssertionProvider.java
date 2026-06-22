@@ -1,17 +1,18 @@
 package io.quarkus.oidc.common.runtime;
 
+import io.smallrye.mutiny.Uni;
+
 /**
  * Client assertion provider.
  */
 public sealed interface ClientAssertionProvider permits KubernetesServiceClientAssertionProvider {
 
     /**
-     * Gets current client assertion. This method should not block. If the client assertion is retrieved with blocking
-     * IO operation, we recommend to keep the assertion up to date using a periodic scheduled task.
+     * Gets current client assertion.
      *
-     * @return client assertion
+     * @return {@link Uni} which resolves to a client assertion
      */
-    String getClientAssertion();
+    Uni<String> getClientAssertion();
 
     /**
      * Gets the client assertion type.

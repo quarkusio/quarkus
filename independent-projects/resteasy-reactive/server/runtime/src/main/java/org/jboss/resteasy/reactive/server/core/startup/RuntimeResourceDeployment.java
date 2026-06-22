@@ -296,14 +296,16 @@ public class RuntimeResourceDeployment {
         if (checkWithFormReadRequestFilters && hasWithFormReadRequestFilters) {
             // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
-            for (int i = handlers.size() - 2; i >= 0; i--) {
+            for (int i = 0; i < handlers.size() - 1;) {
                 var serverRestHandler = handlers.get(i);
                 if (serverRestHandler instanceof ResourceRequestFilterHandler) {
                     ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
                     if (resourceRequestFilterHandler.isWithFormRead()) {
-                        readBodyRequestFilters.add(0, handlers.remove(i));
+                        readBodyRequestFilters.add(handlers.remove(i));
+                        continue;
                     }
                 }
+                i++;
             }
             handlers.addAll(readBodyRequestFilters);
         }

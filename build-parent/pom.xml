@@ -41,7 +41,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.28.0</commonmark.version>
+        <commonmark.version>0.29.0</commonmark.version>
         <jgit.version>7.7.0.202606012155-r</jgit.version>
 
         <!-- Arquillian BOM -->

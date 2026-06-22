@@ -22,7 +22,7 @@ env:
 
 jobs:
   jvm-tests:
-    name: JVM Tests
+    name: Deployment JVM Tests
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     timeout-minutes: 360
@@ -40,7 +40,15 @@ jobs:
       - name: Build Quarkus
         run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
       - name: Run reproducibility check
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl '!docs' -Dno-test-modules -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean install
+        run: |
+          deployment_modules=()
+          while IFS= read -r pom; do
+            deployment_modules+=("${pom%/pom.xml}")
+          done < <(git ls-files 'core/deployment/pom.xml' 'core/**/deployment/pom.xml' 'extensions/**/deployment/pom.xml')
+          printf 'Running reproducibility check for %d deployment modules:\n' "${#deployment_modules[@]}"
+          printf '%s\n' "${deployment_modules[@]}"
+          deployment_module_list=$(IFS=,; printf '%s' "${deployment_modules[*]}")
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean install
       - name: Print disk usage after build
         if: always()
         run: .github/ci-disk-usage.sh
@@ -66,14 +74,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: build-reports-${{ github.run_attempt }}-JVM Reproducibility Check
+          name: build-reports-${{ github.run_attempt }}-Deployment JVM Reproducibility Check
           path: build-reports.zip
           retention-days: 7
       - name: Upload reproducibility debug dumps
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: debug-${{ github.run_attempt }}-JVM Reproducibility Check
+          name: debug-${{ github.run_attempt }}-Deployment JVM Reproducibility Check
           path: '**/target/debug/**'
           if-no-files-found: ignore
           retention-days: 28
@@ -81,12 +89,12 @@ jobs:
         if: failure() || cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: build-logs-JVM Reproducibility Check
+          name: build-logs-Deployment JVM Reproducibility Check
           path: '**/build.log'
           retention-days: 7
 
-  tcks-tests:
-    name: MicroProfile TCKs Tests
+  resteasy-reactive-tck-tests:
+    name: RESTEasy Reactive TCK Tests
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     timeout-minutes: 360
@@ -103,8 +111,8 @@ jobs:
         run: .github/ci-disk-usage.sh
       - name: Build Quarkus
         run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
-      - name: Run TCKs reproducibility check
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks -amd clean install
+      - name: Run RESTEasy Reactive TCK reproducibility check
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks/resteasy-reactive -amd clean install
       - name: Print disk usage after build
         if: always()
         run: .github/ci-disk-usage.sh
@@ -115,7 +123,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-reports-tcks-reproducibility
+          name: test-reports-resteasy-reactive-tck-reproducibility
           path: test-reports.tgz
           retention-days: 7
       - name: Prepare build reports archive
@@ -131,14 +139,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: build-reports-${{ github.run_attempt }}-TCKs Reproducibility Check
+          name: build-reports-${{ github.run_attempt }}-RESTEasy Reactive TCK Reproducibility Check
           path: build-reports.zip
           retention-days: 7
       - name: Upload reproducibility debug dumps
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: debug-${{ github.run_attempt }}-TCKs Reproducibility Check
+          name: debug-${{ github.run_attempt }}-RESTEasy Reactive TCK Reproducibility Check
           path: '**/target/debug/**'
           if-no-files-found: ignore
           retention-days: 28
@@ -146,6 +154,6 @@ jobs:
         if: failure() || cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: build-logs-TCKs Reproducibility Check
+          name: build-logs-RESTEasy Reactive TCK Reproducibility Check
           path: '**/build.log'
           retention-days: 7

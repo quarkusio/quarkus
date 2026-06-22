@@ -258,6 +258,11 @@ public class CycloneDxSbomGenerator {
             addTopLevelDependencies(allDescriptors, dependencyMap);
         }
 
+        // Ensure every component has a dependency entry, even leaf nodes with no dependencies
+        for (ComponentDescriptor descriptor : allDescriptors) {
+            dependencyMap.computeIfAbsent(descriptor.getBomRef(), Dependency::new);
+        }
+
         for (Dependency d : dependencyMap.values()) {
             bom.addDependency(d);
         }

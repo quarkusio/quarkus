@@ -8,11 +8,10 @@ import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.websockets.next.TextMessageCodec;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 @Singleton
 @Priority(0)
@@ -27,7 +26,7 @@ public class JsonTextMessageCodec implements TextMessageCodec<Object> {
     public String encode(Object value) {
         try {
             return mapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -36,7 +35,7 @@ public class JsonTextMessageCodec implements TextMessageCodec<Object> {
     public Object decode(Type type, String value) {
         try {
             return mapper.readValue(value, types.computeIfAbsent(type, this::computeJavaType));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException(e);
         }
     }

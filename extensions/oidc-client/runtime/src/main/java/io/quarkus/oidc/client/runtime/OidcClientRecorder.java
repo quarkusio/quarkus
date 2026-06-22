@@ -247,13 +247,12 @@ public class OidcClientRecorder {
                     } else if (clientCredentials.jwtAssertionProvided()
                             && clientCredentials.clientAssertionProvider() != null
                             && oidcConfig.credentials().jwt().source() == Credentials.Jwt.Source.BEARER) {
-                        String assertion = clientCredentials.clientAssertionProvider().getClientAssertion();
-                        if (assertion == null) {
-                            throw new OidcClientException(
-                                    "Cannot access discovery endpoint because a JWT bearer client_assertion is not available");
-                        }
-                        context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
-                                OidcConstants.BEARER_SCHEME + " " + assertion);
+                        return clientCredentials.clientAssertionProvider().getClientAssertion()
+                                .onItem().ifNull().failWith(() -> new OidcClientException(
+                                        "Cannot access discovery endpoint because a JWT bearer client_assertion is not available"))
+                                .invoke(assertion -> context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
+                                        OidcConstants.BEARER_SCHEME + " " + assertion))
+                                .replaceWithVoid();
                     }
                     return Uni.createFrom().voidItem();
                 }

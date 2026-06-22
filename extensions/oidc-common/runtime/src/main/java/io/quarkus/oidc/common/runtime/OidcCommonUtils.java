@@ -999,7 +999,7 @@ public class OidcCommonUtils {
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
                     jwtConfig.source());
-            if (clientAssertionProvider.getClientAssertion() == null) {
+            if (clientAssertionProvider.getAvailableClientAssertion() == null) {
                 throw exceptionCreator
                         .apply("Cannot find a valid "
                                 + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")

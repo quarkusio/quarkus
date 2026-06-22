@@ -9,6 +9,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -46,7 +47,11 @@ final class KubernetesServiceClientAssertionProvider implements ClientAssertionP
     }
 
     @Override
-    public String getClientAssertion() {
+    public Uni<String> getClientAssertion() {
+        return Uni.createFrom().item(this::getAvailableClientAssertion);
+    }
+
+    String getAvailableClientAssertion() {
         ClientAssertion clientAssertion = this.clientAssertion;
         if (isInvalid(clientAssertion)) {
             clientAssertion = loadClientAssertion();

@@ -492,9 +492,11 @@ final class TenantContextFactory {
                 OidcRequestFilter authFilter = new OidcRequestFilter() {
                     @Override
                     public Uni<Void> filter(OidcRequestFilterContext context) {
-                        OidcProviderClientImpl.setHttpAuthorizationForDiscovery(context.request(),
-                                clientCredentials, oidcConfig);
-                        return Uni.createFrom().voidItem();
+                        return OidcProviderClientImpl.withAsyncCredentials(clientCredentials.clientAssertionProvider())
+                                .invoke(asyncCredentials -> OidcProviderClientImpl.setHttpAuthorizationForDiscovery(
+                                        context.request(),
+                                        clientCredentials, oidcConfig, asyncCredentials))
+                                .replaceWithVoid();
                     }
                 };
                 discoveryFilters.computeIfAbsent(OidcEndpoint.Type.DISCOVERY, k -> new ArrayList<>()).add(authFilter);

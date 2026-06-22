@@ -31,10 +31,12 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.KnownCompatibleBeanArchiveBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -207,6 +209,63 @@ public class SmallRyeGraphQLProcessor {
         // Make ArC discover the beans marked with the @GraphQLApi qualifier
         beanDefiningAnnotationProducer
                 .produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API, BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    void autoTransactional(Capabilities capabilities,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+        if (!capabilities.isPresent(Capability.TRANSACTIONS)) {
+            return;
+        }
+
+        DotName transactional = DotName.createSimple("jakarta.transaction.Transactional");
+
+        Set<DotName> reactiveTypes = Set.of(
+                DotName.createSimple("io.smallrye.mutiny.Uni"),
+                DotName.createSimple("io.smallrye.mutiny.Multi"),
+                DotName.createSimple("java.util.concurrent.CompletionStage"),
+                DotName.createSimple("java.util.concurrent.CompletableFuture"),
+                DotName.createSimple("org.reactivestreams.Publisher"));
+
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                var method = ctx.getTarget().asMethod();
+
+                if (!method.declaringClass().hasAnnotation(Annotations.GRAPHQL_API)) {
+                    return;
+                }
+
+                boolean isGraphQLMethod = method.hasAnnotation(Annotations.QUERY)
+                        || method.hasAnnotation(Annotations.MUTATION)
+                        || method.hasAnnotation(Annotations.SUBCRIPTION)
+                        || method.hasAnnotation(Annotations.NAME)
+                        || method.hasAnnotation(Annotations.RESOLVER)
+                        || method.hasAnnotation(Annotations.SOURCE);
+                if (!isGraphQLMethod) {
+                    return;
+                }
+
+                if (reactiveTypes.contains(method.returnType().name())) {
+                    return;
+                }
+
+                if (method.hasAnnotation(transactional)) {
+                    return;
+                }
+
+                if (method.hasAnnotation(Annotations.NON_BLOCKING)) {
+                    return;
+                }
+
+                ctx.transform().add(transactional).done();
+            }
+        }));
     }
 
     @BuildStep

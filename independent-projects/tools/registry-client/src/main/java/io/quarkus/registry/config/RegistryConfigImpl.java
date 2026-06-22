@@ -1,6 +1,5 @@
 package io.quarkus.registry.config;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,21 +12,21 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.json.JsonBooleanTrueFilter;
 import io.quarkus.registry.json.JsonBuilder;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.TokenStreamContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Asymmetric data manipulation:
@@ -351,10 +350,10 @@ public class RegistryConfigImpl implements RegistryConfig {
      * Serializer for RegistryConfig objects. Deals set entries that could
      * be a single string, or a string key for an object.
      */
-    static class Serializer extends JsonSerializer<RegistryConfig> {
+    static class Serializer extends ValueSerializer<RegistryConfig> {
         @Override
-        public void serialize(RegistryConfig value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            JsonStreamContext ctx = gen.getOutputContext();
+        public void serialize(RegistryConfig value, JsonGenerator gen, SerializationContext ctxt) {
+            TokenStreamContext ctx = gen.streamWriteContext();
             if (ctx.getParent() == null || ctx.getParent().inRoot()) {
                 gen.writeStartObject();
                 writeContents(value, gen);
@@ -364,7 +363,7 @@ public class RegistryConfigImpl implements RegistryConfig {
                     gen.writeNumber(value.getId());
                 } else {
                     gen.writeStartObject();
-                    gen.writeObjectFieldStart(value.getId());
+                    gen.writeObjectPropertyStart(value.getId());
                     writeContents(value, gen);
                     gen.writeEndObject();
                     gen.writeEndObject();
@@ -372,9 +371,9 @@ public class RegistryConfigImpl implements RegistryConfig {
             }
         }
 
-        static void writeContents(RegistryConfig value, JsonGenerator gen) throws IOException {
+        static void writeContents(RegistryConfig value, JsonGenerator gen) {
             if (!value.isEnabled()) {
-                gen.writeObjectField("enabled", value.isEnabled());
+                gen.writePOJOProperty("enabled", value.isEnabled());
             }
             writeUnlessNull(gen, "update-policy", value.getUpdatePolicy());
             writeUnlessNullOrTest(gen, "descriptor", value.getDescriptor(),
@@ -384,44 +383,41 @@ public class RegistryConfigImpl implements RegistryConfig {
             writeUnlessNull(gen, "maven", value.getMaven());
             writeUnlessNull(gen, "quarkus-versions", value.getQuarkusVersions());
 
-            // Include any extra fields if there are any
             Map<String, Object> extra = value.getExtra();
             if (extra != null && !extra.isEmpty()) {
                 for (Map.Entry<?, ?> entry : extra.entrySet()) {
-                    gen.writeObjectField(entry.getKey().toString(), entry.getValue());
+                    gen.writePOJOProperty(entry.getKey().toString(), entry.getValue());
                 }
             }
         }
 
-        static <T> void writeUnlessNullOrTest(JsonGenerator gen, String fieldName, T obj, Function<T, Boolean> test)
-                throws IOException {
+        static <T> void writeUnlessNullOrTest(JsonGenerator gen, String fieldName, T obj, Function<T, Boolean> test) {
             if (obj == null || test.apply(obj)) {
                 return;
             }
-            gen.writeObjectField(fieldName, obj);
+            gen.writePOJOProperty(fieldName, obj);
         }
 
-        static void writeUnlessNull(JsonGenerator gen, String fieldName, Object obj) throws IOException {
+        static void writeUnlessNull(JsonGenerator gen, String fieldName, Object obj) {
             if (obj != null) {
-                gen.writeObjectField(fieldName, obj);
+                gen.writePOJOProperty(fieldName, obj);
             }
         }
     }
 
-    static class BuilderDeserializer extends JsonDeserializer<RegistryConfigImpl.Builder> {
+    static class BuilderDeserializer extends ValueDeserializer<RegistryConfigImpl.Builder> {
         @Override
-        public RegistryConfigImpl.Builder deserialize(JsonParser p, DeserializationContext dctx)
-                throws IOException {
-            if (p.getCurrentToken() == JsonToken.VALUE_STRING) {
+        public RegistryConfigImpl.Builder deserialize(JsonParser p, DeserializationContext dctx) {
+            if (p.currentToken() == JsonToken.VALUE_STRING) {
                 return new Builder().setId(p.getText());
-            } else if (p.getCurrentToken() == JsonToken.START_OBJECT) {
-                JsonStreamContext ctx = p.getParsingContext();
+            } else if (p.currentToken() == JsonToken.START_OBJECT) {
+                TokenStreamContext ctx = p.streamReadContext();
                 final RegistryConfigImpl.Builder builder;
                 if (ctx.getParent() == null || ctx.getParent().inRoot()) {
                     builder = p.readValueAs(RegistryConfigImpl.Builder.class);
                 } else {
-                    JsonBuilder.ensureNextToken(p, JsonToken.FIELD_NAME, dctx);
-                    final String qerId = p.getCurrentName();
+                    JsonBuilder.ensureNextToken(p, JsonToken.PROPERTY_NAME, dctx);
+                    final String qerId = p.currentName();
                     JsonBuilder.ensureNextToken(p, JsonToken.START_OBJECT, dctx);
                     builder = p.readValueAs(RegistryConfigImpl.Builder.class);
                     builder.setId(qerId);

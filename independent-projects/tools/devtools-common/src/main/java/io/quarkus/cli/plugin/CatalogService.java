@@ -8,10 +8,10 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class CatalogService<T extends Catalog<T>> {
 
@@ -26,10 +26,10 @@ public class CatalogService<T extends Catalog<T>> {
 
     protected static final Predicate<Path> GIT_ROOT = p -> p != null && p.resolve(".git").toFile().exists();
 
-    protected final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    protected final ObjectMapper objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .enable(SerializationFeature.INDENT_OUTPUT)
-            .registerModule(new Jdk8Module());
+            .build();
 
     protected final Class<T> catalogType;
     protected final Predicate<Path> projectRoot;

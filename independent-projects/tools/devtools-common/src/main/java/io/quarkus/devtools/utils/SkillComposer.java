@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Shared utility for composing skill files with extension metadata,
@@ -24,8 +24,9 @@ public final class SkillComposer {
 
     public static final String EXTENSION_METADATA_PATH = "META-INF/quarkus-extension.yaml";
 
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
-            .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+    private static final ObjectMapper YAML_MAPPER = YAMLMapper.builder()
+            .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+            .build();
 
     private SkillComposer() {
     }

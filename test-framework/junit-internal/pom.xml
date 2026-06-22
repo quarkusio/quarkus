@@ -40,6 +40,11 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-config</artifactId>
         </dependency>
@@ -71,6 +76,10 @@
         <dependency>
             <groupId>org.vineflower</groupId>
             <artifactId>vineflower</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-process</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

@@ -57,7 +57,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
+        workingDirectory.convention(projectDir);
 
         jvmArgs = objectFactory.listProperty(String.class);
     }
@@ -82,7 +82,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
      */
     @Deprecated
     public void setWorkingDir(String workingDir) {
-        workingDirectory.set(getProject().file(workingDir));
+        workingDirectory.set(projectDir.toPath().resolve(workingDir).toFile());
     }
 
     @Input
@@ -109,7 +109,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getLayout().getBuildDirectory().getAsFile().get().toPath())
+                .setTargetDirectory(buildDir.toPath())
                 .setBaseName(getExtensionView().getFinalName().get())
                 .setBuildSystemProperties(sysProps)
                 .setAppArtifact(appModel.getAppArtifact())
@@ -152,7 +152,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                         args.addAll(1, getJvmArgs());
                     }
 
-                    getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
+                    getLogger().info("Executing \"" + String.join(" ", args) + "\"");
                     Path wd = (Path) cmd.get(1);
                     File wdir = wd != null ? wd.toFile() : workingDirectory.get();
 
@@ -194,13 +194,13 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
             },
                     RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
-                getProject().getLogger().error("quarkus.run.target " + target + " is not found");
+                getLogger().error("quarkus.run.target " + target + " is not found");
                 return;
             }
             if (tooMany.get() != null) {
-                getProject().getLogger().error(
+                getLogger().error(
                         "Too many installed extensions support quarkus:run.  Use -Dquarkus.run.target=<target> to choose");
-                getProject().getLogger().error("Extensions: " + tooMany.get());
+                getLogger().error("Extensions: " + tooMany.get());
             }
         } catch (BootstrapException e) {
             throw new GradleException("Failed to run application", e);

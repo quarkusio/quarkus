@@ -309,6 +309,7 @@ class InfinispanClientProcessor {
                 "org.wildfly.security.sasl.digest.DigestClientFactory",
                 "org.wildfly.security.sasl.external.ExternalSaslClientFactory",
                 "org.wildfly.security.sasl.oauth2.OAuth2SaslClientFactory",
+                "org.wildfly.security.sasl.gs2.Gs2SaslClientFactory",
                 "org.wildfly.security.credential.BearerTokenCredential",
                 "org.wildfly.security.credential.GSSKerberosCredential",
                 "org.wildfly.security.credential.KeyPairCredential",

@@ -17,8 +17,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.pubsub.RedisPubSubMessage;
@@ -28,6 +26,7 @@ import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 public class PubSubCommandsTest extends DatasourceTestBase {
 

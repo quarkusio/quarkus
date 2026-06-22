@@ -193,7 +193,7 @@ triage:
     - id: jaeger
       labels: [area/jaeger]
       title: "jaeger"
-      notify: [radcortez, brunobat]
+      notify: [jamezp, brunobat]
       directories:
         - extensions/jaeger/
     - id: jackson
@@ -239,7 +239,7 @@ triage:
     - id: opentelemetry
       labels: [area/tracing]
       title: "(trace|opentelemetry)"
-      notify: [radcortez, brunobat]
+      notify: [jamezp, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/opentelemetry/
@@ -263,7 +263,7 @@ triage:
     - id: micrometer
       labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, brunobat]
+      notify: [jamezp, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer

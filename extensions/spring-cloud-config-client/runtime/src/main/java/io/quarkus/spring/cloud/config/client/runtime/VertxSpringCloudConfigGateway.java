@@ -14,10 +14,6 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.spring.cloud.config.client.runtime.eureka.DiscoveryService;
@@ -35,13 +31,17 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGateway {
 
     private static final Logger log = Logger.getLogger(VertxSpringCloudConfigGateway.class);
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build();
 
     private static final String PKS_12 = "PKS12";
     private static final String JKS = "JKS";
@@ -225,7 +225,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 try {
                     log.debug("Attempting to deserialize response");
                     return OBJECT_MAPPER.readValue(bodyAsString, Response.class);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     throw new RuntimeException("Got unexpected error " + e.getOriginalMessage());
                 }
             }

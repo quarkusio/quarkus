@@ -16,11 +16,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 public class BitMapCommandsTest extends DatasourceTestBase {
 

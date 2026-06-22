@@ -6,8 +6,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
@@ -35,6 +33,7 @@ import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.common.annotation.Experimental;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Synchronous / Blocking Redis Data Source.

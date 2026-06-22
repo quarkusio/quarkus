@@ -165,7 +165,12 @@ First we need to start a system to visualise the OpenTelemetry data.
 === See the data
 
 ==== Grafana-OTel-LGTM Dev Service
-You can use the xref:observability-devservices-lgtm.adoc[Grafana-OTel-LGTM] devservice.
+
+A Dev Service will receive your app's telemetry.
+
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
+
+* Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
 This Dev service includes a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics.
 Also provides and OTel collector to receive the data.

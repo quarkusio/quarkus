@@ -157,6 +157,10 @@ We have 2 options:
 
 ==== Grafana OTel LGTM option
 
+A Dev Service will receive your app's telemetry.
+
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
+
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
 This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.

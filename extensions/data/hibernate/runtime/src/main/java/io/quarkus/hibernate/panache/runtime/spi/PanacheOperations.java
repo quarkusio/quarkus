@@ -47,6 +47,8 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
 
     Completion flush(Object entity);
 
+    Completion flush(Class<?> entityClass);
+
     Completion persist(Iterable<?> entities);
 
     Completion persist(Stream<?> entities);

@@ -80,6 +80,12 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
+    public Void flush(Class<?> entityClass) {
+        DELEGATE.flush(entityClass);
+        return null;
+    }
+
+    @Override
     public Void persist(Iterable<?> entities) {
         DELEGATE.persist(entities);
         return null;

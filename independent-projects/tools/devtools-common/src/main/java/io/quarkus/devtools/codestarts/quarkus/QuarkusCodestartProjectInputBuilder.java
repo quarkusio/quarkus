@@ -139,6 +139,16 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
         return this;
     }
 
+    // Generate config in config/ instead of src/main/resources/ (used by code.quarkus.io and Roq CLI)
+    public QuarkusCodestartProjectInputBuilder useConfigDir() {
+        return this.useConfigDir(true);
+    }
+
+    public QuarkusCodestartProjectInputBuilder useConfigDir(boolean useConfigDir) {
+        putData("use-config-dir", useConfigDir);
+        return this;
+    }
+
     public QuarkusCodestartProjectInputBuilder buildTool(BuildTool buildTool) {
         if (buildTool == null) {
             return this;

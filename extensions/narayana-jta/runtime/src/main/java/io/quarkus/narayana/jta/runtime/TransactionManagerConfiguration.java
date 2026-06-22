@@ -3,6 +3,7 @@ package io.quarkus.narayana.jta.runtime;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -71,9 +72,62 @@ public interface TransactionManagerConfiguration {
     List<String> xaResourceOrphanFilters();
 
     /**
+     * The transaction reaper configuration.
+     * <p>
+     * The transaction reaper is a background thread that monitors running transactions and cancels
+     * those that exceed their timeout. These settings control how aggressively it acts.
+     */
+    ReaperConfig reaper();
+
+    /**
      * The object store configuration.
      */
     ObjectStoreConfig objectStore();
+
+    @ConfigGroup
+    interface ReaperConfig {
+        /**
+         * The interval at which the reaper checks for timed-out transactions.
+         * <p>
+         * If not set, the Narayana default of 120 seconds is used.
+         */
+        Optional<Duration> checkPeriod();
+
+        /**
+         * The time the reaper waits before interrupting a cancel worker that is rolling back
+         * a timed-out transaction.
+         * <p>
+         * When a transaction exceeds its timeout, the reaper schedules a cancel and waits this period before
+         * interrupting the cancel worker. In CPU-constrained environments (e.g., containers with strict CPU limits),
+         * the default of 500ms may be too aggressive, causing premature zombie transaction declarations.
+         * <p>
+         * If not set, the Narayana default of 500ms is used.
+         */
+        Optional<Duration> cancelWaitPeriod();
+
+        /**
+         * The time the reaper waits after interrupting a cancel worker before declaring the
+         * transaction a zombie.
+         * <p>
+         * After interrupting a cancel worker, the reaper waits this period. If the worker has not completed
+         * by then, the transaction is marked as a zombie. In CPU-constrained environments, increasing this
+         * value gives the application thread more time to respond to the cancellation.
+         * <p>
+         * If not set, the Narayana default of 500ms is used.
+         */
+        Optional<Duration> cancelFailWaitPeriod();
+
+        /**
+         * The maximum number of zombie transactions before the reaper escalates to ERROR-level logging.
+         * <p>
+         * A zombie transaction is one where the cancel worker was unable to roll it back within the
+         * configured wait periods. Once this threshold is reached, subsequent zombies are logged at
+         * ERROR level instead of WARN.
+         * <p>
+         * If not set, the Narayana default of 8 is used.
+         */
+        OptionalInt zombieMax();
+    }
 
     @ConfigGroup
     public interface ObjectStoreConfig {

@@ -102,6 +102,23 @@ public class NarayanaJtaRecorder {
         TxControl.setDefaultTimeout((int) transactions.getValue().defaultTransactionTimeout().getSeconds());
     }
 
+    public void setReaperConfig() {
+        var coordinatorBean = arjPropertyManager.getCoordinatorEnvironmentBean();
+        var reaper = transactions.getValue().reaper();
+        if (reaper.checkPeriod().isPresent()) {
+            coordinatorBean.setTxReaperTimeout(reaper.checkPeriod().get().toMillis());
+        }
+        if (reaper.cancelWaitPeriod().isPresent()) {
+            coordinatorBean.setTxReaperCancelWaitPeriod(reaper.cancelWaitPeriod().get().toMillis());
+        }
+        if (reaper.cancelFailWaitPeriod().isPresent()) {
+            coordinatorBean.setTxReaperCancelFailWaitPeriod(reaper.cancelFailWaitPeriod().get().toMillis());
+        }
+        if (reaper.zombieMax().isPresent()) {
+            coordinatorBean.setTxReaperZombieMax(reaper.zombieMax().getAsInt());
+        }
+    }
+
     public static Properties getDefaultProperties() {
         return defaultProperties;
     }

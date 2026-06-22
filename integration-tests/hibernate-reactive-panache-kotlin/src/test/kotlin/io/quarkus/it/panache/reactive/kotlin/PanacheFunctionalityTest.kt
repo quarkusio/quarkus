@@ -14,6 +14,7 @@ import io.restassured.RestAssured.`when`
 import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
 import jakarta.json.bind.JsonbBuilder
+import jakarta.transaction.Transactional
 import java.util.function.Supplier
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
@@ -142,6 +143,11 @@ open class PanacheFunctionalityTest {
     }
 
     @Test
+    fun testWithTransactionSmoke() {
+        `when`()["/test/with-transaction-smoke"].then().statusCode(`is`(200)).body(`is`("OK"))
+    }
+
+    @Test
     @RunOnVertxContext
     @DisabledOnIntegrationTest
     fun testTransaction(asserter: UniAsserter) {
@@ -177,14 +183,14 @@ open class PanacheFunctionalityTest {
         }
     }
 
-    @WithTransaction
+    @Transactional
     fun createBug7102(): Uni<Person> {
         val person = Person()
         person.name = "pero"
         return person.persistAndFlush()
     }
 
-    @WithTransaction
+    @Transactional
     fun updateBug7102(id: Long): Uni<Void> {
         return Person.findById(id).map { person: Person? ->
             person?.name = "jozo"
@@ -226,14 +232,16 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ reactiveTransactional() }, 1L)
     }
 
-    @WithTransaction
+    @Transactional
     fun reactiveTransactional(): Uni<Long> {
         return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain { tx -> Person.count() }
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             .invoke { count -> assertEquals(0L, count) }
+            .chain { _ -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
             .call(Supplier { Person().persist<Person>() })
-            .chain { tx -> Person.count() }
+            .chain { _ -> Person.count() }
     }
 
     @Test
@@ -244,12 +252,14 @@ open class PanacheFunctionalityTest {
         asserter.assertTrue { reactiveTransactional2() }
     }
 
-    @WithTransaction
+    @Transactional
     fun reactiveTransactional2(): Uni<Boolean> {
         return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain(Supplier { Person.count() })
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             .invoke { count -> assertEquals(1L, count) }
+            .chain { _ -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
             .chain(Supplier { Person.deleteAll() })
             .invoke { count -> assertEquals(1L, count) }
             .chain(Supplier { Panache.currentTransaction() })
@@ -265,14 +275,31 @@ open class PanacheFunctionalityTest {
         asserter.assertEquals({ testReactiveTransactional3() }, 1L)
     }
 
-    @WithTransaction
+    @Transactional
     fun testReactiveTransactional3(): Uni<Long> {
         return Panache.currentTransaction()
-            .invoke { tx -> Assertions.assertNotNull(tx) }
-            .chain { tx -> Person.count() }
+            .invoke { tx -> Assertions.assertNull(tx) } // tx is created lazily
+            .chain { _ -> Person.count() }
             // make sure it was rolled back
             .invoke { count -> assertEquals(1L, count) }
-            .call(Supplier { Person.deleteAll() })
+            .chain { _ -> Panache.currentTransaction() }
+            .invoke { tx -> Assertions.assertNotNull(tx) }
+            .chain { _ -> Person.deleteAll() }
+    }
+
+    @Test
+    @Order(203)
+    @RunOnVertxContext
+    @DisabledOnIntegrationTest
+    fun testWithTransactionEagerTx(asserter: UniAsserter) {
+        asserter.assertNotNull { withTransactionEagerTx() }
+    }
+
+    @WithTransaction
+    fun withTransactionEagerTx(): Uni<Any> {
+        return Panache.currentTransaction()
+            .invoke { tx -> Assertions.assertNotNull(tx) } // tx is eager with @WithTransaction
+            .map { it as Any }
     }
 
     @Test

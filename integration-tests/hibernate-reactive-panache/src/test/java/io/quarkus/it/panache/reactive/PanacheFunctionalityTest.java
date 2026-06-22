@@ -3,10 +3,13 @@ package io.quarkus.it.panache.reactive;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.transaction.Transactional;
 
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -20,6 +23,7 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
+import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
@@ -201,14 +205,14 @@ public class PanacheFunctionalityTest {
                 }).flatMap(v -> Panache.withTransaction(() -> Person.deleteAll())));
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Person> createBug7102() {
         Person personPanache = new Person();
         personPanache.name = "pero";
         return personPanache.persistAndFlush().map(v -> personPanache);
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Void> updateBug7102(Long id) {
         return Person.<Person> findById(id)
                 .map(person -> {
@@ -251,12 +255,14 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> reactiveTransactional(), 1l);
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Long> reactiveTransactional() {
         return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
+                .invoke(tx -> assertNull(tx)) // tx is created lazily
+                .chain(() -> Person.count())
                 .invoke(count -> assertEquals(0l, count))
+                .chain(c -> Panache.currentTransaction())
+                .invoke(tx -> assertNotNull(tx))
                 .call(() -> new Person().persist())
                 .chain(tx -> Person.count());
     }
@@ -269,12 +275,14 @@ public class PanacheFunctionalityTest {
         asserter.assertTrue(() -> reactiveTransactional2());
     }
 
-    @WithTransaction
+    @Transactional
     Uni<Boolean> reactiveTransactional2() {
         return Panache.currentTransaction()
-                .invoke(tx -> assertNotNull(tx))
-                .chain(tx -> Person.count())
+                .invoke(tx -> assertNull(tx)) // tx is created lazily
+                .chain(() -> Person.count())
                 .invoke(count -> assertEquals(1l, count))
+                .chain(c -> Panache.currentTransaction())
+                .invoke(tx -> assertNotNull(tx))
                 .chain(() -> Person.deleteAll())
                 .invoke(count -> assertEquals(1l, count))
                 .chain(() -> Panache.currentTransaction())
@@ -298,6 +306,42 @@ public class PanacheFunctionalityTest {
                 // make sure it was rolled back
                 .invoke(count -> assertEquals(1l, count))
                 .call(() -> Person.deleteAll());
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(203)
+    public void testStatelessTransactionalMarkForRollback(UniAsserter asserter) {
+        asserter.assertTrue(() -> statelessTransactionalMarkForRollback());
+        // insert should have been rolled back, so count should still be 0
+        asserter.assertEquals(() -> Panache.withTransaction(() -> Person.count()), 0l);
+    }
+
+    @Transactional
+    Uni<Boolean> statelessTransactionalMarkForRollback() {
+        Person p = new Person();
+        p.name = "stateless-test";
+        return SessionOperations.getStatelessSession()
+                .call(session -> session.insert(p))
+                .chain(session -> Uni.createFrom().item(session.currentTransaction()))
+                .invoke(tx -> assertNotNull(tx))
+                .invoke(tx -> tx.markForRollback())
+                .map(tx -> true);
+    }
+
+    @DisabledOnIntegrationTest
+    @RunOnVertxContext
+    @Test
+    @Order(204)
+    public void testWithTransactionEagerTx(UniAsserter asserter) {
+        asserter.assertNotNull(() -> withTransactionEagerTx());
+    }
+
+    @WithTransaction
+    Uni<Mutiny.Transaction> withTransactionEagerTx() {
+        return Panache.currentTransaction()
+                .invoke(tx -> assertNotNull(tx)); // tx is eager with @WithTransaction
     }
 
     @DisabledOnIntegrationTest
@@ -342,5 +386,10 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug40962() {
         RestAssured.when().get("/test/40962").then().body(is("OK"));
+    }
+
+    @Test
+    public void testWithTransactionSmoke() {
+        RestAssured.when().get("/test/with-transaction-smoke").then().body(is("OK"));
     }
 }

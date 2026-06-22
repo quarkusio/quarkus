@@ -7,6 +7,8 @@ import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.reactive.transaction.runtime.ReactiveResource;
 import io.smallrye.mutiny.Uni;
@@ -50,5 +52,15 @@ public class HibernateActionsStrategy implements ReactiveResource {
                     context.removeLocal(PERSISTENCE_UNIT_NAME_KEY);
                 });
 
+    }
+
+    @Override
+    public boolean isMarkedForRollback(Context context) {
+        Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
+        return optPersistenceUnitName.flatMap(s -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE
+                .currentTransaction(context, s)
+                .or(() -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.currentTransaction(context, s))
+                .map(Mutiny.Transaction::isMarkedForRollback))
+                .orElse(false);
     }
 }

@@ -6,6 +6,7 @@ import '@vaadin/combo-box';
 import '@vaadin/progress-bar';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
+import { hibernateOrmState, restoreSelectedPU, saveSelectedPU } from './hibernate-orm-state.js';
 import { themeState } from 'theme-state';
 import '@quarkus-webcomponents/codeblock';
 import { msg, str, updateWhenLocaleChanges } from 'localization';
@@ -33,15 +34,13 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
     jsonRpc = new JsonRpc(this);
 
     static properties = {
-        _persistenceUnits: { state: true, type: Array },
-        _selectedPersistenceUnit: { state: true }
+        _persistenceUnits: { state: true, type: Array }
     }
 
     constructor() {
         super();
         updateWhenLocaleChanges(this);
         this._persistenceUnits = null;
-        this._selectedPersistenceUnit = null;
     }
 
     connectedCallback() {
@@ -51,8 +50,11 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
 
     hotReload() {
         this.jsonRpc.getInfo().then(response => {
-            this._persistenceUnits = response.result.persistenceUnits;
-            this._selectedPersistenceUnit = this._persistenceUnits[0] ?? null;
+            this._persistenceUnits = response.result.persistenceUnits.map(pu => ({
+                ...pu,
+                label: pu.name + (pu.reactive ? ' (reactive)' : '')
+            }));
+            restoreSelectedPU(this._persistenceUnits);
         }).catch(error => {
             console.error("Failed to fetch persistence units:", error);
             this._persistenceUnits = [];
@@ -95,15 +97,15 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
                 ${this._persistenceUnits.length > 1 ? html`
                     <vaadin-combo-box
                         label="${msg('Persistence Unit', { id: 'quarkus-hibernate-orm-persistence-unit' })}"
-                        item-label-path="name"
+                        item-label-path="label"
                         item-value-path="name"
                         .items="${this._persistenceUnits}"
-                        .value="${this._selectedPersistenceUnit?.name || ''}"
+                        .value="${hibernateOrmState.selectedPersistenceUnit?.name ?? ''}"
                         @value-changed="${this._onPersistenceUnitChanged}"
                         .allowCustomValue="${false}">
                     </vaadin-combo-box>` : ''}
-                ${this._selectedPersistenceUnit
-                    ? this._renderPersistenceUnit(this._selectedPersistenceUnit)
+                ${hibernateOrmState.selectedPersistenceUnit
+                    ? this._renderPersistenceUnit(hibernateOrmState.selectedPersistenceUnit)
                     : html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`}
             </div>`;
     }
@@ -111,7 +113,7 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
     _onPersistenceUnitChanged(event) {
         const selected = this._persistenceUnits.find(pu => pu.name === event.detail.value);
         if (selected) {
-            this._selectedPersistenceUnit = selected;
+            saveSelectedPU(selected);
         }
     }
 

@@ -7,8 +7,10 @@ import '@vaadin/grid';
 import '@vaadin/progress-bar';
 import { notifier } from 'notifier';
 import { msg, str, updateWhenLocaleChanges } from 'localization';
+import { observeState } from 'lit-element-state';
+import { hibernateOrmState, restoreSelectedPU, saveSelectedPU } from './hibernate-orm-state.js';
 
-export class HibernateOrmNamedQueriesComponent extends QwcHotReloadElement {
+export class HibernateOrmNamedQueriesComponent extends observeState(QwcHotReloadElement) {
 
     static styles = css`
         :host {
@@ -25,15 +27,13 @@ export class HibernateOrmNamedQueriesComponent extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this);
 
     static properties = {
-        _persistenceUnits: { state: true, type: Array },
-        _selectedPersistenceUnit: { state: true }
+        _persistenceUnits: { state: true, type: Array }
     }
 
     constructor() {
         super();
         updateWhenLocaleChanges(this);
         this._persistenceUnits = null;
-        this._selectedPersistenceUnit = null;
     }
 
     connectedCallback() {
@@ -43,8 +43,11 @@ export class HibernateOrmNamedQueriesComponent extends QwcHotReloadElement {
 
     hotReload() {
         this.jsonRpc.getInfo().then(response => {
-            this._persistenceUnits = response.result.persistenceUnits;
-            this._selectedPersistenceUnit = this._persistenceUnits[0] ?? null;
+            this._persistenceUnits = response.result.persistenceUnits.map(pu => ({
+                ...pu,
+                label: pu.name + (pu.reactive ? ' (reactive)' : '')
+            }));
+            restoreSelectedPU(this._persistenceUnits);
         }).catch(error => {
             console.error('Failed to fetch persistence units:', error);
             this._persistenceUnits = [];
@@ -95,15 +98,15 @@ export class HibernateOrmNamedQueriesComponent extends QwcHotReloadElement {
                 ${this._persistenceUnits.length > 1 ? html`
                     <vaadin-combo-box
                         label="${msg('Persistence Unit', { id: 'quarkus-hibernate-orm-persistence-unit' })}"
-                        item-label-path="name"
+                        item-label-path="label"
                         item-value-path="name"
                         .items="${this._persistenceUnits}"
-                        .value="${this._selectedPersistenceUnit?.name || ''}"
+                        .value="${hibernateOrmState.selectedPersistenceUnit?.name ?? ''}"
                         @value-changed="${this._onPersistenceUnitChanged}"
                         .allowCustomValue="${false}">
                     </vaadin-combo-box>` : ''}
-                ${this._selectedPersistenceUnit
-                    ? this._renderNamedQueriesTable(this._selectedPersistenceUnit)
+                ${hibernateOrmState.selectedPersistenceUnit
+                    ? this._renderNamedQueriesTable(hibernateOrmState.selectedPersistenceUnit)
                     : html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`}
             </div>`;
     }
@@ -111,7 +114,7 @@ export class HibernateOrmNamedQueriesComponent extends QwcHotReloadElement {
     _onPersistenceUnitChanged(event) {
         const selected = this._persistenceUnits.find(pu => pu.name === event.detail.value);
         if (selected) {
-            this._selectedPersistenceUnit = selected;
+            saveSelectedPU(selected);
         }
     }
 

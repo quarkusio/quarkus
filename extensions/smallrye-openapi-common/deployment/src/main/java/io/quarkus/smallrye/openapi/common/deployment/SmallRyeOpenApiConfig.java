@@ -474,6 +474,12 @@ public interface SmallRyeOpenApiConfig {
     }
 
     /**
+     * Configuration properties for the JavaScript client proxy generation
+     */
+    @WithName("js-client")
+    SmallRyeOpenApiJsClientConfig jsClient();
+
+    /**
      * OpenAPI documents
      */
     @ConfigDocMapKey("document-name")

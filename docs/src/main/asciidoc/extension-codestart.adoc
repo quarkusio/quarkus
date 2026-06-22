@@ -238,6 +238,19 @@ metadata:
     - "java"
     artifact: "io.quarkiverse.aloha:quarkus-aloha:codestarts:jar:${project.version}"
 ----
++
+If your extension provides a base codestart but also needs to activate additional codestarts (e.g., for shared configuration or common setup provided by other codestarts in the same artifact), you can use the `extra-names` property alongside `name`:
++
+[source,yaml]
+----
+  codestart:
+    name: "aloha"
+    extra-names:
+    - "aloha-extra"
+    languages:
+    - "java"
+    artifact: "io.quarkiverse.aloha:quarkus-aloha:codestarts:jar:${project.version}"
+----
 
 * Add the readme <<readme-md>> section template in `base/README.tpl.qute.md`:
 +

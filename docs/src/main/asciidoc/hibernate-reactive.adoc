@@ -96,18 +96,16 @@ then add the relevant configuration properties in `{config-file}`:
 [source,properties]
 .Example `{config-file}`
 ----
-# datasource configuration
-quarkus.datasource.db-kind = postgresql
-quarkus.datasource.username = quarkus_test
-quarkus.datasource.password = quarkus_test
+quarkus.datasource.db-kind = postgresql <1>
 
-quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <2>
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <3>
 ----
-
-<1> The only different property from a Hibernate ORM configuration
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> The only different property from a Hibernate ORM configuration
+<3> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 Note that these configuration properties are not the same ones as in your typical Hibernate Reactive configuration file.
 They will often map to Hibernate Reactive configuration properties but could have different names and don't necessarily map 1:1 to each other.

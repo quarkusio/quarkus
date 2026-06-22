@@ -9,20 +9,18 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import io.quarkus.registry.json.JsonBuilder;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.dataformat.yaml.YAMLGenerator;
 
 /**
  * Top of the config hierarchy. Holder of the rest of the things.
@@ -229,10 +227,9 @@ public class RegistriesConfigImpl implements RegistriesConfig {
         config.persist(targetFile);
     }
 
-    static class Serializer extends JsonSerializer<RegistriesConfigImpl> {
+    static class Serializer extends ValueSerializer<RegistriesConfigImpl> {
         @Override
-        public void serialize(RegistriesConfigImpl value, JsonGenerator gen, SerializerProvider serializers)
-                throws IOException {
+        public void serialize(RegistriesConfigImpl value, JsonGenerator gen, SerializationContext ctxt) {
             boolean isDefaultDebug = !value.debug;
             boolean isDefaultList = RegistryConfigImpl.isDefaultList(value.registries);
 
@@ -242,14 +239,14 @@ public class RegistriesConfigImpl implements RegistriesConfig {
                 gen.writeStartObject();
                 if (gen instanceof YAMLGenerator) {
                     if (!isDefaultDebug) {
-                        gen.writeObjectField("debug", true);
+                        gen.writePOJOProperty("debug", true);
                     }
                     if (!isDefaultList) {
-                        gen.writeObjectField("registries", value.registries);
+                        gen.writePOJOProperty("registries", value.registries);
                     }
                 } else {
                     for (RegistryConfig x : value.registries) {
-                        gen.writeObjectFieldStart(x.getId());
+                        gen.writeObjectPropertyStart(x.getId());
                         RegistryConfigImpl.Serializer.writeContents(x, gen);
                         gen.writeEndObject();
                     }
@@ -259,19 +256,17 @@ public class RegistriesConfigImpl implements RegistriesConfig {
         }
     }
 
-    static class Deserializer extends JsonDeserializer<RegistriesConfigImpl.Builder> {
+    static class Deserializer extends ValueDeserializer<RegistriesConfigImpl.Builder> {
         final static RegistryConfigImpl.BuilderDeserializer DESERIALIZER = new RegistryConfigImpl.BuilderDeserializer();
 
         @Override
-        public RegistriesConfigImpl.Builder deserialize(JsonParser p, DeserializationContext ctxt)
-                throws IOException, JsonProcessingException {
-            JsonStreamContext ctx = p.getParsingContext();
+        public RegistriesConfigImpl.Builder deserialize(JsonParser p, DeserializationContext ctxt) {
             final RegistriesConfigImpl.Builder builder = new Builder();
 
             while (p.nextValue() != null) {
-                if ("debug".equals(p.getCurrentName())) {
+                if ("debug".equals(p.currentName())) {
                     builder.setDebug(p.getBooleanValue());
-                } else if ("registries".equals(p.getCurrentName())) {
+                } else if ("registries".equals(p.currentName())) {
                     while (p.nextValue() != JsonToken.END_ARRAY) {
                         RegistryConfigImpl.Builder config = DESERIALIZER.deserialize(p, ctxt);
                         if (config != null) {

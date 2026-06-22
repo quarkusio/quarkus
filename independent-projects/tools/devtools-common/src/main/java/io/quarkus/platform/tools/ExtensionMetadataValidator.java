@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.networknt.schema.InputFormat;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Validates extension metadata ({@value BootstrapConstants#QUARKUS_EXTENSION_FILE_NAME}) against the
@@ -29,9 +25,9 @@ public final class ExtensionMetadataValidator {
     }
 
     /**
-     * Validates the given extension descriptor object against the bundled JSON schema.
+     * Validates the given extension descriptor against the bundled JSON schema.
      *
-     * @param extObject the parsed extension descriptor
+     * @param extObject the extension descriptor
      * @throws IOException if the schema cannot be loaded or the descriptor is invalid
      */
     public static void validate(ObjectNode extObject) throws IOException {
@@ -41,19 +37,13 @@ public final class ExtensionMetadataValidator {
                 throw new IOException(
                         "Failed to load extension metadata schema from " + ToolsConstants.EXTENSION_SCHEMA_RESOURCE);
             }
-            final ObjectMapper jsonMapper = JsonMapper.builder()
-                    .enable(SerializationFeature.INDENT_OUTPUT)
-                    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
-                    .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS)
-                    .build();
-            final JsonNode schemaNode = jsonMapper.readTree(is);
 
             final SchemaRegistry schemaRegistry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
-            schema = schemaRegistry.getSchema(schemaNode);
+            schema = schemaRegistry.getSchema(is, InputFormat.JSON);
             schema.initializeValidators();
         }
 
-        final List<com.networknt.schema.Error> errors = schema.validate(extObject);
+        final List<com.networknt.schema.Error> errors = schema.validate(extObject.toString(), InputFormat.JSON);
         if (!errors.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
             sb.append("Invalid ").append(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME).append(" metadata:");

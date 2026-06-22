@@ -11,16 +11,17 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonArtifactCoordsMixin;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 public class CatalogMapperHelper {
 
@@ -28,29 +29,29 @@ public class CatalogMapperHelper {
     private static ObjectMapper yamlMapper;
 
     public static ObjectMapper mapper() {
-        return mapper == null ? mapper = initMapper(new ObjectMapper()) : mapper;
+        return mapper == null ? mapper = initMapper(JsonMapper.builder()
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)) : mapper;
     }
 
     private static ObjectMapper yamlMapper() {
-        return yamlMapper == null ? yamlMapper = initMapper(new ObjectMapper(new YAMLFactory())) : yamlMapper;
+        return yamlMapper == null ? yamlMapper = initMapper(YAMLMapper.builder()) : yamlMapper;
     }
 
     private static ObjectMapper mapperForPath(Path p) {
         return p.getFileName().toString().endsWith("json") ? mapper() : yamlMapper();
     }
 
-    public static ObjectMapper initMapper(ObjectMapper mapper) {
-        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        mapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        mapper.setLocale(Locale.US);
-        mapper.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return mapper;
+    public static ObjectMapper initMapper(MapperBuilder<?, ?> builder) {
+        builder.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class);
+        builder.enable(SerializationFeature.INDENT_OUTPUT);
+        builder.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        builder.propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        builder.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
+        builder.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+        builder.defaultLocale(Locale.US);
+        builder.defaultTimeZone(TimeZone.getTimeZone("UTC"));
+        return builder.build();
     }
 
     public static void serialize(Object catalog, Path p) throws IOException {

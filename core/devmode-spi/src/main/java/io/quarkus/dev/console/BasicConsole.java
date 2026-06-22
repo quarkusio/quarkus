@@ -101,6 +101,13 @@ public class BasicConsole extends QuarkusConsole {
         output.accept(">");
     }
 
+    @Override
+    public void doReadLineWithPrompt(String prompt) {
+        setPromptMessage(prompt);
+        readingLine = true;
+        output.accept(">");
+    }
+
     public StatusLine registerStatusLine(int priority) {
         return new StatusLine() {
 

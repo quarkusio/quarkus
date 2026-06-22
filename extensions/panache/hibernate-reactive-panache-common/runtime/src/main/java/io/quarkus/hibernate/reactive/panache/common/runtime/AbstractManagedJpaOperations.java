@@ -80,7 +80,7 @@ public abstract class AbstractManagedJpaOperations<PanacheQueryType>
 
     public Mutiny.Session getCurrentSession(Class<?> entityClass) {
         String persistenceUnitName = entityToPersistenceUnit.get(entityClass.getName());
-        return SessionOperationsDelegate.getCurrentSession(persistenceUnitName);
+        return SessionOperations.getCurrentSession(persistenceUnitName);
     }
 
     public Uni<Void> flush(Object entity) {

@@ -367,8 +367,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
 
     public Uni<SessionType> getSession(String persistenceUnitName) {
         return sessionType == Mutiny.Session.class
-                ? (Uni<SessionType>) SessionOperationsDelegate.getSession(persistenceUnitName)
-                : (Uni<SessionType>) SessionOperationsDelegate.getStatelessSession(persistenceUnitName);
+                ? (Uni<SessionType>) SessionOperations.getSession(persistenceUnitName)
+                : (Uni<SessionType>) SessionOperations.getStatelessSession(persistenceUnitName);
     }
 
     public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Object[] params) {

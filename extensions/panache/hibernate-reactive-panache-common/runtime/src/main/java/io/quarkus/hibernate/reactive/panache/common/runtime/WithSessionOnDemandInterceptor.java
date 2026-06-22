@@ -21,7 +21,7 @@ public class WithSessionOnDemandInterceptor {
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (reactiveInterceptorShouldRun()) {
 
-            return SessionOperationsDelegate.withSessionOnDemand(() -> proceedUni(context));
+            return SessionOperations.withSessionOnDemand(() -> proceedUni(context));
         }
         return context.proceed();
     }

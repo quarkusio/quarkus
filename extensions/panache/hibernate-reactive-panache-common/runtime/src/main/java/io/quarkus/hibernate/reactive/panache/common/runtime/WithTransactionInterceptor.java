@@ -22,7 +22,7 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
-            Context vertxContext = SessionOperationsDelegate.vertxContext();
+            Context vertxContext = SessionOperations.vertxContext();
             if (vertxContext.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
                 return Uni.createFrom().failure(
                         new UnsupportedOperationException(
@@ -37,10 +37,10 @@ public class WithTransactionInterceptor extends AbstractUniInterceptor {
             WithTransaction withTransaction = getAnnotation(context);
             String persistenceUnitName = withTransaction.value();
             if (withTransaction.stateless()) {
-                return SessionOperationsDelegate.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context))
+                return SessionOperations.withStatelessTransaction(persistenceUnitName, () -> proceedUni(context))
                         .eventually(() -> clearWithTransactionMethod(vertxContext));
             } else {
-                return SessionOperationsDelegate.withTransaction(persistenceUnitName, () -> proceedUni(context))
+                return SessionOperations.withTransaction(persistenceUnitName, () -> proceedUni(context))
                         .eventually(() -> clearWithTransactionMethod(vertxContext));
             }
         }

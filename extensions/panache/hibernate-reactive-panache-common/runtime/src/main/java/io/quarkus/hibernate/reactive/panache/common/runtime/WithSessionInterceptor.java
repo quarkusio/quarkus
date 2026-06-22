@@ -20,9 +20,9 @@ public class WithSessionInterceptor extends AbstractUniInterceptor {
             WithSession withSession = getAnnotation(context);
             String persistenceUnitName = withSession.value();
             if (withSession.stateless()) {
-                return SessionOperationsDelegate.withStatelessSession(persistenceUnitName, s -> proceedUni(context));
+                return SessionOperations.withStatelessSession(persistenceUnitName, s -> proceedUni(context));
             } else {
-                return SessionOperationsDelegate.withSession(persistenceUnitName, s -> proceedUni(context));
+                return SessionOperations.withSession(persistenceUnitName, s -> proceedUni(context));
             }
         }
         return context.proceed();

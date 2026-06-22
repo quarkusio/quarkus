@@ -21,7 +21,7 @@ public class ReactiveTransactionalInterceptor {
     public Object intercept(InvocationContext context) throws Exception {
         // Note that intercepted methods annotated with @ReactiveTransactional are validated at build time
         // The build fails if the method does not return Uni
-        Context vertxContext = SessionOperationsDelegate.vertxContext();
+        Context vertxContext = SessionOperations.vertxContext();
         if (vertxContext.getLocal(TRANSACTIONAL_METHOD_KEY) != null) {
             return Uni.createFrom().failure(
                     new UnsupportedOperationException(
@@ -33,7 +33,7 @@ public class ReactiveTransactionalInterceptor {
         // Annotate current method so that we can validate mixing of @ReactiveTransactional with @Transactional
         vertxContext.putLocal(REACTIVE_TRANSACTIONAL_METHOD_KEY, true);
 
-        return SessionOperationsDelegate.withTransaction(() -> proceedUni(context));
+        return SessionOperations.withTransaction(() -> proceedUni(context));
     }
 
 }

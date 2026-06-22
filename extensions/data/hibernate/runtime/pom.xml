@@ -22,6 +22,20 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache-session</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.reactive</groupId>
+            <artifactId>hibernate-reactive-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>mutiny</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
             <optional>true</optional>
         </dependency>

@@ -15,7 +15,7 @@ public class PanacheHibernateRecorder {
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
             public void run() {
-                SessionOperations.clear();
+                SessionOperationsDelegate.clear();
             }
         });
     }

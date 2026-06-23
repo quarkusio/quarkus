@@ -1,11 +1,48 @@
 package io.quarkus.micrometer.runtime.binder;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
 
 public class HttpCommonTags {
+    private static final Logger log = Logger.getLogger(HttpCommonTags.class);
+    private static final int MAX_HTTP_METHODS = 32;
+
+    // Standard RFC 9110/5789/9512 methods
+    private static final Set<String> allowedHttpMethods = new HashSet<>(10);
+
+    static {
+        allowedHttpMethods.add("GET");
+        allowedHttpMethods.add("HEAD");
+        allowedHttpMethods.add("POST");
+        allowedHttpMethods.add("PUT");
+        allowedHttpMethods.add("DELETE");
+        allowedHttpMethods.add("CONNECT");
+        allowedHttpMethods.add("OPTIONS");
+        allowedHttpMethods.add("TRACE");
+        allowedHttpMethods.add("PATCH");
+        allowedHttpMethods.add("QUERY");
+    }
+
+    public static void setAdditionalHttpMethods(List<String> additionalMethods) {
+        if (additionalMethods != null) {
+            for (String method : additionalMethods) {
+                if (allowedHttpMethods.size() >= MAX_HTTP_METHODS) {
+                    log.warnf("Maximum number of allowed HTTP methods (%d) reached. Ignoring remaining entries.",
+                            MAX_HTTP_METHODS);
+                    break;
+                }
+                allowedHttpMethods.add(method.toUpperCase());
+            }
+        }
+    }
+
     public static final Tag URI_NOT_FOUND = Tag.of("uri", "NOT_FOUND");
     public static final Tag URI_REDIRECTION = Tag.of("uri", "REDIRECTION");
     public static final Tag URI_ROOT = Tag.of("uri", "root");
@@ -23,7 +60,10 @@ public class HttpCommonTags {
      * @return the method tag
      */
     public static Tag method(String method) {
-        return method == null ? METHOD_UNKNOWN : Tag.of("method", method);
+        if (method == null || !allowedHttpMethods.contains(method)) {
+            return METHOD_UNKNOWN;
+        }
+        return Tag.of("method", method);
     }
 
     /**

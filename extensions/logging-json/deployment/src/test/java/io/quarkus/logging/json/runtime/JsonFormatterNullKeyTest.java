@@ -2,8 +2,6 @@ package io.quarkus.logging.json.runtime;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -14,8 +12,8 @@ import org.junit.jupiter.api.Test;
 class JsonFormatterNullKeyTest {
 
     @Test
-    void jsonLogGeneratorAcceptsNullKeysWhenExclusionsAreConfigured() throws Exception {
-        JsonFormatter.JsonLogGenerator generator = newJsonLogGenerator(Set.of("timestamp", "sequence"));
+    void jsonLogGeneratorAcceptsNullKeysWhenExclusionsAreConfigured() {
+        JsonFormatter.JsonLogGenerator generator = new TestFormatter().newJsonLogGenerator(Set.of("timestamp", "sequence"));
 
         assertThatCode(() -> {
             generator.add(null, true);
@@ -38,23 +36,39 @@ class JsonFormatterNullKeyTest {
         assertThatCode(() -> formatter.format(record)).doesNotThrowAnyException();
     }
 
-    private static JsonFormatter.JsonLogGenerator newJsonLogGenerator(Set<String> excludedKeys) throws Exception {
-        Class<?> generatorClass = Class.forName("org.jboss.logmanager.formatters.StructuredFormatter$Generator");
-        Object delegate = Proxy.newProxyInstance(
-                generatorClass.getClassLoader(),
-                new Class<?>[] { generatorClass },
-                (proxy, method, args) -> {
-                    if (method.getReturnType().equals(generatorClass)) {
-                        return proxy;
-                    }
-                    if (method.getReturnType().equals(boolean.class)) {
-                        return false;
-                    }
-                    return null;
-                });
-        Constructor<JsonFormatter.JsonLogGenerator> constructor = JsonFormatter.JsonLogGenerator.class
-                .getDeclaredConstructor(generatorClass, Set.class);
-        constructor.setAccessible(true);
-        return constructor.newInstance(delegate, excludedKeys);
+    private static final class TestFormatter extends JsonFormatter {
+
+        JsonLogGenerator newJsonLogGenerator(Set<String> excludedKeys) {
+            return new JsonLogGenerator(new TestGenerator(), excludedKeys);
+        }
+
+        private static final class TestGenerator implements Generator {
+
+            @Override
+            public Generator add(String key, Map<String, ?> value) {
+                return this;
+            }
+
+            @Override
+            public Generator add(String key, String value) {
+                return this;
+            }
+
+            @Override
+            public Generator startObject(String key) {
+                return this;
+            }
+
+            @Override
+            public Generator endObject() {
+                return this;
+            }
+
+            @Override
+            public Generator end() {
+                return this;
+            }
+        }
     }
+
 }

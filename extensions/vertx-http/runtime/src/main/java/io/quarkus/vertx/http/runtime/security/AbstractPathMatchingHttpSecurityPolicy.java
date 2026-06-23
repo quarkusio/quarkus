@@ -207,7 +207,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             HttpMatcher m = new HttpMatcher(httpPermission.getAuthMechanism(), httpPermission.getMethods(), policy);
             List<HttpMatcher> perms = new ArrayList<>();
             perms.add(m);
-            builder.addPath(path, perms);
+            builder.addPath(HttpSecurityUtils.normalizePath(path), perms);
         }
     }
 
@@ -223,7 +223,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static List<HttpMatcher> findHttpMatchers(RoutingContext context,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         String normalizedPath = context.normalizedPath();
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.pathWithoutMatrixParams(normalizedPath));
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.normalizePath(normalizedPath));
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return List.of();
         }

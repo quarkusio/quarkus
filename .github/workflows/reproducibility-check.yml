@@ -18,7 +18,7 @@ env:
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
   QUICK_INSTALL_MAVEN_ARGS: "-Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dno-build-cache -Dno-test-modules -Prelocations"
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
-  REPRODUCIBILITY_MAVEN_ARGS: "-Dno-build-cache -Dquarkus-internal.test.reproducibility-check=5"
+  REPRODUCIBILITY_MAVEN_ARGS: "-Dno-build-cache -Dquarkus-internal.test.reproducibility-check=5 -Djunit.jupiter.extensions.autodetection.enabled=true"
 
 jobs:
   jvm-tests:

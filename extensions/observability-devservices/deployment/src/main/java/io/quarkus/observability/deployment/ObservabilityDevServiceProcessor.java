@@ -2,6 +2,7 @@ package io.quarkus.observability.deployment;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -52,6 +54,9 @@ class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
 
     private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
+
+    private static final String OTEL_OTLP_ENDPOINT = "quarkus.otel.exporter.otlp.endpoint";
+    private static final String MICROMETER_OTLP_URL = "quarkus.micrometer.export.otlp.url";
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
@@ -113,6 +118,19 @@ class ObservabilityDevServiceProcessor {
                         capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
                 hasMicrometerOtlp(metricsConfiguration));
 
+        String explicitEndpoint = findExplicitlyConfiguredOtlpEndpoint(catalog);
+        if (explicitEndpoint != null) {
+            List<String> configuredPorts = configuredLgtmPorts(configuration);
+            if (!configuredPorts.isEmpty()) {
+                log.warnf(
+                        "Not starting LGTM Dev Services because '%s' is explicitly configured, but %s (is/are) also set and will have no effect.",
+                        explicitEndpoint, configuredPorts);
+            } else {
+                log.infof("Not starting LGTM Dev Services: '%s' is explicitly configured.", explicitEndpoint);
+            }
+            return;
+        }
+
         for (DevResourceLifecycleManager<ContainerConfig> dev : resources) {
             String devId = devId(dev);
 
@@ -143,12 +161,12 @@ class ObservabilityDevServiceProcessor {
                 configProvider.put("tempo-mcp.endpoint", s -> s.getDevServiceConfig().get("tempo-mcp.endpoint"));
                 configProvider.put("otel-collector.url", s -> s.getDevServiceConfig().get("otel-collector.url"));
                 if (catalog.hasMicrometerOtlp()) {
-                    configProvider.put("quarkus.micrometer.export.otlp.url",
-                            s -> s.getDevServiceConfig().get("quarkus.micrometer.export.otlp.url"));
+                    configProvider.put(MICROMETER_OTLP_URL,
+                            s -> s.getDevServiceConfig().get(MICROMETER_OTLP_URL));
                 }
                 if (catalog.hasOpenTelemetry()) {
-                    configProvider.put("quarkus.otel.exporter.otlp.endpoint",
-                            s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.endpoint"));
+                    configProvider.put(OTEL_OTLP_ENDPOINT,
+                            s -> s.getDevServiceConfig().get(OTEL_OTLP_ENDPOINT));
                     configProvider.put("quarkus.otel.exporter.otlp.protocol",
                             s -> s.getDevServiceConfig().get("quarkus.otel.exporter.otlp.protocol"));
                 }
@@ -210,6 +228,41 @@ class ObservabilityDevServiceProcessor {
         }
 
         return null;
+    }
+
+    private static String findExplicitlyConfiguredOtlpEndpoint(ExtensionsCatalog catalog) {
+        var config = ConfigProvider.getConfig();
+        if (catalog.hasOpenTelemetry()) {
+            for (String key : List.of(
+                    OTEL_OTLP_ENDPOINT,
+                    "quarkus.otel.exporter.otlp.traces.endpoint",
+                    "quarkus.otel.exporter.otlp.metrics.endpoint",
+                    "quarkus.otel.exporter.otlp.logs.endpoint")) {
+                if (config.getOptionalValue(key, String.class).isPresent()) {
+                    return key;
+                }
+            }
+        }
+        if (catalog.hasMicrometerOtlp()) {
+            if (config.getOptionalValue(MICROMETER_OTLP_URL, String.class).isPresent()) {
+                return MICROMETER_OTLP_URL;
+            }
+        }
+        return null;
+    }
+
+    private static List<String> configuredLgtmPorts(ObservabilityConfiguration configuration) {
+        List<String> configured = new ArrayList<>();
+        if (configuration.lgtm().grafanaPort().isPresent()) {
+            configured.add("quarkus.observability.lgtm.grafana-port");
+        }
+        if (configuration.lgtm().otelGrpcPort().isPresent()) {
+            configured.add("quarkus.observability.lgtm.otel-grpc-port");
+        }
+        if (configuration.lgtm().otelHttpPort().isPresent()) {
+            configured.add("quarkus.observability.lgtm.otel-http-port");
+        }
+        return configured;
     }
 
     private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration) {

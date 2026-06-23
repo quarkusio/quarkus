@@ -7,9 +7,8 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Utilities for testing the test runner itself
@@ -77,7 +76,7 @@ public class ContinuousTestingMavenTestUtils {
         DevUIJsonRPCTest devUIJsonRPCTest = new DevUIJsonRPCTest("devui-continuous-testing", this.host);
         try {
 
-            TypeReference<Map<String, Long>> typeRef = new TypeReference<Map<String, Long>>() {
+            TypeReference<Map<String, Long>> typeRef = new TypeReference<>() {
             };
             Map<String, Long> testStatus = devUIJsonRPCTest.executeJsonRPCMethod(typeRef, "getStatus");
 

@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -111,6 +112,13 @@ class NativeImageConfigBuildStep {
         // runtime
         runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
         runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("io.smallrye.common.net.HostName"));
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    RuntimeInitializedPackageBuildItem jlineNativRuntimeInit() {
+        // org.jline.nativ classes use JNI native methods for terminal interaction;
+        // their static initializers load native libraries which aren't available at build time
+        return new RuntimeInitializedPackageBuildItem("org.jline.nativ");
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

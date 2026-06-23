@@ -144,7 +144,22 @@ public class VirtualThreadsRecorder {
         if (config.enabled()) {
             try {
                 String prefix = config.namePrefix().orElse(null);
-                return new ContextPreservingExecutorService(newVirtualThreadPerTaskExecutorWithName(prefix));
+                ExecutorService executor = new ContextPreservingExecutorService(
+                        newVirtualThreadPerTaskExecutorWithName(prefix));
+                if (config.maxConcurrency().isPresent()) {
+                    int max = config.maxConcurrency().getAsInt();
+                    if (max <= 0) {
+                        throw new IllegalArgumentException(
+                                "quarkus.virtual-threads.max-concurrency must be a positive integer, got: " + max);
+                    }
+                    if (max < 2) {
+                        logger.warnf("quarkus.virtual-threads.max-concurrency is set to %d, which will serialize" +
+                                " all virtual thread execution. Consider a higher value.", max);
+                    }
+                    logger.infof("Virtual thread concurrency limited to %d", max);
+                    executor = new BoundedExecutorService(executor, max);
+                }
+                return executor;
             } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
                 logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
                 //quite ugly but works

@@ -460,6 +460,31 @@ quarkus.virtual-threads.name-prefix=
 
 ----
 
+== Limiting virtual thread concurrency
+
+By default, a new virtual thread is created for every task with no concurrency limit.
+While virtual threads are cheap to create and park, the resources they access (such as database connection pools) are not unbounded.
+Under high load or in CPU-constrained environments (e.g., containers with strict CPU limits), unbounded virtual thread concurrency can exhaust downstream resources faster than they can be replenished, leading to connection pool starvation and transaction timeouts.
+
+To prevent this, you can set a concurrency limit that caps the number of virtual threads executing their payload simultaneously:
+
+[source, properties]
+----
+quarkus.virtual-threads.max-concurrency=16
+----
+
+The value must be a positive integer greater than or equal to 2.
+Setting it to 1 would serialize all virtual thread execution and is almost certainly a misconfiguration — a warning is logged if this happens.
+
+When set, a fair `Semaphore` is used to limit execution.
+Virtual threads are still created per-request (so the caller is never blocked), but only the configured number run their workload concurrently.
+Excess virtual threads park cheaply at the semaphore until a permit is released.
+Fair ordering ensures that threads waiting for a permit are served in FIFO order, preventing starvation under sustained load.
+
+A good starting value is the size of your most constrained resource — typically the database connection pool (`quarkus.datasource.jdbc.max-size`, which defaults to 20).
+
+NOTE: If not set, concurrency is unbounded, preserving the default behavior.
+
 == Inject the virtual thread executor
 
 In order to run tasks on virtual threads Quarkus manages an internal `ThreadPerTaskExecutor`.

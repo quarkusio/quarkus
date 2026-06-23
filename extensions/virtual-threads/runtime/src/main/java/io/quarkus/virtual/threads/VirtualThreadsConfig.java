@@ -2,6 +2,7 @@ package io.quarkus.virtual.threads;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -41,4 +42,15 @@ public interface VirtualThreadsConfig {
      */
     @WithDefault("true")
     boolean enabled();
+
+    /**
+     * The maximum number of virtual threads that are allowed to run concurrently.
+     * <p>
+     * When set, a semaphore is used to limit the number of tasks executing simultaneously.
+     * This is useful to prevent overwhelming fixed-size resources like database connection pools
+     * under high load or CPU-constrained environments.
+     * <p>
+     * If not set, concurrency is unbounded (a new virtual thread is created per task with no limit).
+     */
+    OptionalInt maxConcurrency();
 }

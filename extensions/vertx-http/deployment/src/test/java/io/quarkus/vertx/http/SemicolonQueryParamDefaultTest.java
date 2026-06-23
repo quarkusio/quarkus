@@ -6,14 +6,12 @@ import static org.hamcrest.Matchers.is;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.ext.web.Router;
 
-@Disabled("Settings not present in Vert.x 5, need to be investigated")
 public class SemicolonQueryParamDefaultTest {
 
     @RegisterExtension

@@ -27,11 +27,18 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
     private static final Logger LOG = Logger.getLogger(JsonFormatter.class);
 
+    /**
+     * MDC key prefix written by {@code JBossLoggingAccessLogReceiver} for each structured
+     * access-log field. Kept in sync with the constant of the same name in that class.
+     */
+    static final String ACCESS_LOG_MDC_PREFIX = "__access__";
+
     private Set<String> excludedKeys;
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
     private boolean flatMdc = false;
+    private boolean structuredAccessLog = false;
     private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
 
@@ -136,6 +143,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.flatMdc = flatMdc;
     }
 
+    public boolean isStructuredAccessLog() {
+        return structuredAccessLog;
+    }
+
+    public void setStructuredAccessLog(boolean structuredAccessLog) {
+        this.structuredAccessLog = structuredAccessLog;
+    }
+
     @Override
     protected Generator createGenerator(final Writer writer) {
         Generator superGenerator = super.createGenerator(writer);
@@ -146,7 +161,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
         String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
-        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc);
+        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc,
+                this.structuredAccessLog);
     }
 
     @Override
@@ -193,10 +209,54 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             addToGenerator(additionalFields, generator);
         }
 
+        if (structuredAccessLog && isAccessLogRecord(record)) {
+            writeAccessLogObject(generator, record);
+        }
+
         JsonLogGenerator jsonLogGenerator = new JsonLogGenerator(generator, this.excludedKeys);
         for (JsonProvider provider : getJsonProviders()) {
             provider.writeTo(jsonLogGenerator, record);
         }
+    }
+
+    private static boolean isAccessLogRecord(final ExtLogRecord record) {
+        final String loggerName = record.getLoggerName();
+        return loggerName != null && loggerName.startsWith("io.quarkus.http.access-log");
+    }
+
+    private void writeAccessLogObject(final Generator generator, final ExtLogRecord record) throws Exception {
+        final Map<String, String> mdc = record.getMdcCopy();
+        if (mdc == null || mdc.isEmpty()) {
+            return;
+        }
+        boolean started = false;
+        for (Map.Entry<String, String> entry : mdc.entrySet()) {
+            if (entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                if (!started) {
+                    generator.startObject("accessLog");
+                    started = true;
+                }
+                final String fieldName = entry.getKey().substring(ACCESS_LOG_MDC_PREFIX.length());
+                final String value = entry.getValue();
+                if (value != null) {
+                    if (isNumericAccessField(fieldName)) {
+                        try {
+                            generator.add(fieldName, Long.parseLong(value));
+                            continue;
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                    generator.add(fieldName, value);
+                }
+            }
+        }
+        if (started) {
+            generator.endObject();
+        }
+    }
+
+    private static boolean isNumericAccessField(final String fieldName) {
+        return "status".equals(fieldName) || "responseTimeMs".equals(fieldName) || "bytesSent".equals(fieldName);
     }
 
     private List<JsonProvider> getJsonProviders() {
@@ -335,15 +395,18 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
          */
         private final String processNameKey;
         private final boolean flatMdc;
+        private final boolean structuredAccessLog;
         private int skippedDepth = 0;
 
         private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
-                final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc) {
+                final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc,
+                final boolean structuredAccessLog) {
             this.delegate = delegate;
             this.excludedKeys = excludedKeys;
             this.stackTraceKeyToTrim = stackTraceKeyToTrim;
             this.processNameKey = processNameKey;
             this.flatMdc = flatMdc;
+            this.structuredAccessLog = structuredAccessLog;
         }
 
         @Override
@@ -373,13 +436,32 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             if (skippedDepth == 0 && !excludedKeys.contains(key)) {
                 if (flatMdc && value != null && !value.isEmpty()) {
                     for (Map.Entry<String, ?> entry : value.entrySet()) {
+                        // When structured-access-log is enabled, the __access__-prefixed MDC entries
+                        // are written as the nested "accessLog" object in JsonFormatter.after();
+                        // skip them here to avoid duplication.
+                        if (structuredAccessLog && entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                            continue;
+                        }
                         Object v = entry.getValue();
                         if (v != null) {
                             delegate.add(entry.getKey(), v.toString());
                         }
                     }
                 } else if (!flatMdc) {
-                    delegate.add(key, value);
+                    if (structuredAccessLog && value != null && !value.isEmpty()) {
+                        // Filter out __access__ keys from the nested "mdc" object as well.
+                        Map<String, Object> filtered = new java.util.LinkedHashMap<>();
+                        for (Map.Entry<String, ?> entry : value.entrySet()) {
+                            if (!entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                                filtered.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        if (!filtered.isEmpty()) {
+                            delegate.add(key, filtered);
+                        }
+                    } else {
+                        delegate.add(key, value);
+                    }
                 }
             }
             return this;

@@ -117,6 +117,8 @@
                 <exclude>io.github.dmlloyd:jdk-classfile-backport</exclude>
                 <!-- org.lz4:lz4-java is abandoned and has a CVE -->
                 <exclude>org.lz4:lz4-java</exclude>
+                <!-- org.fusesource.jansi:jansi is abandoned and has a CVE -->
+                <exclude>org.fusesource.jansi:jansi</exclude>		
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

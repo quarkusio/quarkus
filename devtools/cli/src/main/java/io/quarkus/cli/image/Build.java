@@ -5,9 +5,9 @@ import java.util.Optional;
 
 import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
 
-@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image.", description = "%n"
+@Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image.", description = "%n"
         + "This command will build a container image for the project.", subcommands = { Docker.class,
                 Podman.class,
                 Buildpack.class,

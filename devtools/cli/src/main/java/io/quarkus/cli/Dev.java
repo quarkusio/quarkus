@@ -11,16 +11,19 @@ import io.quarkus.cli.common.DebugOptions;
 import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
-import picocli.CommandLine.Parameters;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "dev", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in dev (live coding) mode.")
+@Command(name = "dev", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in dev (live coding) mode.")
 public class Dev extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nDev Mode options:%n")
+    @ArgGroup(order = 1, exclusive = false, heading = "%nDev Mode options:%n")
     DevOptions devOptions = new DevOptions();
 
-    @CommandLine.ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
+    @ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
     DebugOptions debugOptions = new DebugOptions();
 
     @Parameters(description = "Parameters passed to the application.")
@@ -38,7 +41,7 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
 
             if (devOptions.isDryRun()) {
                 dryRunDev(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
             Integer ret = 1;
             for (Supplier<BuildSystemRunner.BuildCommandArgs> i : commandArgs) {
@@ -54,7 +57,7 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
         }
     }
 
-    void dryRunDev(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
+    void dryRunDev(Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
         output.printText(new String[] {
                 "\nRun current project in dev mode\n",
                 "\t" + projectRoot().toString()

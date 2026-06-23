@@ -14,19 +14,23 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
 import io.quarkus.registry.RegistryResolutionException;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "categories", aliases = "cat", header = "List extension categories.")
+@Command(name = "categories", aliases = "cat", header = "List extension categories.")
 public class ProjectExtensionsCategories extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.ArgGroup(heading = "%nOutput format:%n")
+    @ArgGroup(heading = "%nOutput format:%n")
     CategoryListFormatOptions format = new CategoryListFormatOptions();
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
+    @ArgGroup(order = 2, heading = "%nQuarkus version:%n")
     TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @Override
@@ -62,7 +66,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         }
     }
 
-    Integer dryRunList(CommandLine.Help help, BuildTool buildTool) {
+    Integer dryRunList(Help help, BuildTool buildTool) {
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         if (buildTool == null) {
@@ -82,7 +86,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         dryRunOutput.put("List format", format.getFormatString());
 
         output.info(help.createTextTable(dryRunOutput).toString());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     Integer listPlatformCategories() throws QuarkusCommandException, RegistryResolutionException {
@@ -95,7 +99,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
                 .batchMode(runMode.isBatchMode())
                 .execute();
 
-        return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
+        return outcome.isSuccess() ? ExitCode.OK : ExitCode.SOFTWARE;
     }
 
     private void printHints(boolean formatHint, boolean extensionListHint) {

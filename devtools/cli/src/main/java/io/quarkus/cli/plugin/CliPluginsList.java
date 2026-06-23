@@ -13,24 +13,28 @@ import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
 import io.quarkus.runtime.util.StringUtil;
-import picocli.CommandLine;
 
-@CommandLine.Command(name = "list", aliases = "ls", header = "List CLI plugins. ")
+@Command(name = "list", aliases = "ls", header = "List CLI plugins. ")
 public class CliPluginsList extends CliPluginsBase implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.Option(names = { "-i",
+    @Option(names = { "-i",
             "--installable" }, defaultValue = "false", order = 4, description = "List plugins that can be installed")
     boolean installable = false;
 
-    @CommandLine.Option(names = { "-s",
+    @Option(names = { "-s",
             "--search" }, defaultValue = "*", order = 5, paramLabel = "PATTERN", description = "Search for matching plugins (simple glob using '*' and '?').")
     String searchPattern;
 
-    @CommandLine.Option(names = { "-c",
+    @Option(names = { "-c",
             "--show-command" }, defaultValue = "false", order = 6, description = "Show the command that corresponds to the plugin")
     boolean showCommand = false;
 
@@ -54,7 +58,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
         }
     }
 
-    Integer dryRunList(CommandLine.Help help, BuildTool buildTool) {
+    Integer dryRunList(Help help, BuildTool buildTool) {
         Map<String, String> dryRunOutput = new TreeMap<>();
         output.printText(new String[] { "\nList plugins\n" });
         dryRunOutput.put("Search pattern", searchPattern);
@@ -63,7 +67,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
         dryRunOutput.put("Only user", String.valueOf(catalogOptions.user));
 
         output.info(help.createTextTable(dryRunOutput).toString());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     Integer listPluigns() {
@@ -95,7 +99,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
                     items.values().stream().filter(this::filter).collect(Collectors.toList()), showCommand);
             output.info(table.getContent());
         }
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     private void printHints(boolean installableHint, boolean remoteHint) {

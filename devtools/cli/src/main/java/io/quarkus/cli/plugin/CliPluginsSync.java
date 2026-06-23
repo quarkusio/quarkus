@@ -7,12 +7,15 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.RunModeOption;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
 
-@CommandLine.Command(name = "sync", header = "Sync (discover / purge) CLI Plugins.")
+@Command(name = "sync", header = "Sync (discover / purge) CLI Plugins.")
 public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
     @Override
@@ -21,7 +24,7 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
 
         if (runMode.isDryRun()) {
             dryRunAdd(spec.commandLine().getHelp());
-            return CommandLine.ExitCode.OK;
+            return ExitCode.OK;
         }
 
         PluginManager pluginManager = pluginManager();
@@ -43,10 +46,10 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
         } else {
             output.info("Nothing to sync (no plugins were added or removed).");
         }
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
-    void dryRunAdd(CommandLine.Help help) {
+    void dryRunAdd(Help help) {
         output.printText(new String[] {
                 "\tSync plugin to the CLI\n",
                 "\t" + projectRoot().toString()

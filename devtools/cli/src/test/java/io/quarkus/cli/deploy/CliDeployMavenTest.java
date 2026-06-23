@@ -14,14 +14,17 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.CliDriver;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
  * Similar to CliProjecMavenTest ..
  */
+@QuarkusMainTest
 public class CliDeployMavenTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/CliDeployMavenTest");
+            .resolve("target/test-project/CliDeployMavenTest");
     Path project;
 
     @BeforeAll
@@ -41,13 +44,14 @@ public class CliDeployMavenTest {
     }
 
     @Test
-    public void testUsage() throws Exception {
+    public void testUsage(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         // 1 deploy --dry-run
         result = CliDriver.execute(project, "deploy", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         testDeployer("kubernetes", "kubernetes", "docker");
         testDeployer("minikube", "kubernetes", "docker");
@@ -58,14 +62,14 @@ public class CliDeployMavenTest {
 
     protected void testDeployer(String deployer, String configGroup, String defaultImageBuilder) throws Exception {
         CliDriver.Result result = CliDriver.execute(project, "deploy", deployer, "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("quarkus:deploy"));
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=false"));
         assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-build", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("quarkus:deploy"));
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.builder=" + defaultImageBuilder));
@@ -73,7 +77,7 @@ public class CliDeployMavenTest {
         assertFalse(result.getStdout().contains("-Dquarkus." + configGroup + ".deployment-kind"));
 
         result = CliDriver.execute(project, "deploy", deployer, "--image-builder=jib", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("quarkus:deploy"));
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.builder=jib"));
@@ -84,7 +88,7 @@ public class CliDeployMavenTest {
             return;
         }
         result = CliDriver.execute(project, "deploy", deployer, "--deployment-kind", "Deployment", "--dry-run");
-        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("quarkus:deploy"));
         assertTrue(result.getStdout().contains("-Dquarkus." + deployer + ".deploy=true"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=false"));

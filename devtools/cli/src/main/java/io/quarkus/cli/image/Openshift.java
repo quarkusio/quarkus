@@ -8,9 +8,10 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildToolContext;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Option;
 
-@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using OpenShift.", description = "%n"
+@Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using OpenShift.", description = "%n"
         + "This command will build or push a container image for the project, using Openshift.", footer = "%n"
                 + "For example (using default values), it will create a container image in OpenShift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Openshift extends BaseImageSubCommand implements Callable<Integer> {
@@ -32,27 +33,27 @@ public class Openshift extends BaseImageSubCommand implements Callable<Integer> 
     private static final String BUILD_STRATEGY = "build-strategy";
     private static final String BUILD_TIMEOUT = "build-timeout";
 
-    @CommandLine.Option(order = 7, names = { "--build-strategy" }, description = "The build strategy to use (docker or s2i).")
+    @Option(order = 7, names = { "--build-strategy" }, description = "The build strategy to use (docker or s2i).")
     public Optional<String> buildStrategy;
 
-    @CommandLine.Option(order = 8, names = { "--base-image" }, description = "The base image to use.")
+    @Option(order = 8, names = { "--base-image" }, description = "The base image to use.")
     public Optional<String> baseImage = Optional.empty();
 
-    @CommandLine.Option(order = 9, names = {
+    @Option(order = 9, names = {
             "--arg" }, description = "Additional argument to pass when starting the application.")
     public List<String> arguments = new ArrayList<>();
 
-    @CommandLine.Option(order = 10, names = { "--dockerfile" }, description = "The dockerfile of the container image.")
+    @Option(order = 10, names = { "--dockerfile" }, description = "The dockerfile of the container image.")
     public String dockerfile;
 
-    @CommandLine.Option(order = 11, names = {
+    @Option(order = 11, names = {
             "--artifact-directory" }, description = "The directory where the jar/native binary is added during the assemble phase.")
     public String artifactDirectory;
 
-    @CommandLine.Option(order = 12, names = { "--artifact-filename" }, description = "The filename of the jar/native binary.")
+    @Option(order = 12, names = { "--artifact-filename" }, description = "The filename of the jar/native binary.")
     public String artifactFilename;
 
-    @CommandLine.Option(order = 13, names = { "--build-timeout" }, description = "The build timeout.")
+    @Option(order = 13, names = { "--build-timeout" }, description = "The build timeout.")
     public String buildTimeout;
 
     @Override

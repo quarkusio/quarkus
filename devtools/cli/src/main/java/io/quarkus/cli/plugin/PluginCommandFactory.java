@@ -1,7 +1,6 @@
 package io.quarkus.cli.plugin;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -11,11 +10,9 @@ import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.quickcli.CommandLine;
+import io.quarkus.quickcli.CommandSpec;
 import io.quarkus.runtime.util.StringUtil;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Model.ISetter;
-import picocli.CommandLine.Model.PositionalParamSpec;
 
 public class PluginCommandFactory {
 
@@ -60,26 +57,12 @@ public class PluginCommandFactory {
 
     public Function<PluginCommand, CommandSpec> createCommandSpec(String description) {
         return command -> {
-            CommandSpec spec = CommandSpec.wrapWithoutInspection(command);
+            CommandSpec spec = CommandSpec.create("plugin-cmd", command.getClass());
+            spec.setCommandInstance(command);
+            spec.setHasUnmatchedField(true);
             if (!StringUtil.isNullOrEmpty(description)) {
                 spec.usageMessage().description(description);
             }
-            spec.parser().unmatchedArgumentsAllowed(true);
-            spec.parser().unmatchedOptionsArePositionalParams(true);
-            spec.add(PositionalParamSpec.builder().type(String[].class).arity("0..*").description("Positional arguments")
-                    .setter(new ISetter() {
-                        @Override
-                        public <T> T set(T value) throws Exception {
-                            if (value == null) {
-                                return value;
-                            }
-                            if (value instanceof String[]) {
-                                String[] array = (String[]) value;
-                                command.useArguments(Arrays.asList(array));
-                            }
-                            return value;
-                        }
-                    }).build());
             return spec;
         };
     }

@@ -13,11 +13,14 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
+@QuarkusMainTest
 public class CliProjectJBangTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
-            .resolve("target/test-classes/test-project/CliProjectJBangTest");
+            .resolve("target/test-project/CliProjectJBangTest");
 
     Path project;
 
@@ -38,9 +41,10 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateAppDefaults() throws Exception {
+    public void testCreateAppDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "--verbose", "-e", "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -65,7 +69,8 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateAppOverrides() throws Exception {
+    public void testCreateAppOverrides(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
@@ -79,7 +84,7 @@ public class CliProjectJBangTest {
                 "-x reactive-routes",
                 "silly:my-project:0.1.0");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -99,9 +104,10 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateCliDefaults() throws Exception {
+    public void testCreateCliDefaults(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "cli", "--jbang", "--verbose", "-e", "-B");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
@@ -124,20 +130,21 @@ public class CliProjectJBangTest {
 
         result = CliDriver.execute(project, "build", "-e", "-B", "--clean", "--verbose",
                 "-Dproperty=value1", "-Dproperty2=value2");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
     }
 
     @Test
-    public void testBuildOptions() throws Exception {
+    public void testBuildOptions(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --native --offline
         result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
                 "--clean", "--tests", "--native", "--offline");
 
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+        Assertions.assertEquals(ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("--fresh"),
@@ -168,13 +175,14 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateArgJava17() throws Exception {
+    public void testCreateArgJava17(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
                 "-e", "-B", "--verbose",
                 "--java", "17");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path javaMain = validateJBangSourcePackage(project, ""); // no package name
         String source = CliDriver.readFileAsString(javaMain);
@@ -183,13 +191,14 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateArgJava21() throws Exception {
+    public void testCreateArgJava21(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
                 "-e", "-B", "--verbose",
                 "--java", "21");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path javaMain = validateJBangSourcePackage(project, ""); // no package name
         String source = CliDriver.readFileAsString(javaMain);
@@ -198,13 +207,14 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateArgJava25() throws Exception {
+    public void testCreateArgJava25(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
                 "-e", "-B", "--verbose",
                 "--java", "25");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertEquals(ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path javaMain = validateJBangSourcePackage(project, ""); // no package name
         String source = CliDriver.readFileAsString(javaMain);

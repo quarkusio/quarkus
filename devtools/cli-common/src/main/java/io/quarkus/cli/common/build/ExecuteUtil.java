@@ -1,7 +1,7 @@
 package io.quarkus.cli.common.build;
 
-import static picocli.CommandLine.ExitCode.OK;
-import static picocli.CommandLine.ExitCode.SOFTWARE;
+import static io.quarkus.quickcli.ExitCode.OK;
+import static io.quarkus.quickcli.ExitCode.SOFTWARE;
 
 import java.io.File;
 import java.io.IOException;

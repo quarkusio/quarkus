@@ -23,7 +23,7 @@ import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.common.registry.RegistryClientMixin;
 import io.quarkus.cli.common.update.RewriteGroup;
 import io.quarkus.devtools.project.BuildTool;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
 
 public interface BuildSystemRunner {
 
@@ -51,7 +51,7 @@ public interface BuildSystemRunner {
         } catch (IOException | InterruptedException e) {
             getOutput().error("Command failed. " + e.getMessage());
             getOutput().printStackTrace(e);
-            return CommandLine.ExitCode.SOFTWARE;
+            return ExitCode.SOFTWARE;
         }
     }
 

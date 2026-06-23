@@ -10,22 +10,25 @@ import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.cli.common.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import picocli.CommandLine;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Spec;
 
 public class BaseBuildCommand {
-    @CommandLine.Spec
-    protected CommandLine.Model.CommandSpec spec;
+    @Spec
+    protected CommandSpec spec;
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     protected ToggleRegistryClientMixin registryClient;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.ArgGroup(exclusive = false, validate = false)
+    @ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     Path projectRoot;

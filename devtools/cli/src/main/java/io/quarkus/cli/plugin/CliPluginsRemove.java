@@ -8,15 +8,19 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.RunModeOption;
-import picocli.CommandLine;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Command;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Parameters;
 
-@CommandLine.Command(name = "remove", header = "Remove plugin(s) to the Quarkus CLI.")
+@Command(name = "remove", header = "Remove plugin(s) to the Quarkus CLI.")
 public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer> {
 
-    @CommandLine.Mixin
+    @Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = "Plugin name to remove from the CLI")
+    @Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = "Plugin name to remove from the CLI")
     String name;
 
     @Override
@@ -27,7 +31,7 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
 
             if (runMode.isDryRun()) {
                 dryRunRemove(spec.commandLine().getHelp());
-                return CommandLine.ExitCode.OK;
+                return ExitCode.OK;
             }
 
             return removePlugin();
@@ -55,14 +59,14 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
                             "The removed plugin was available both in user and project scopes. It was removed from the user but will remain available in the project scope!");
                 }
             }
-            return CommandLine.ExitCode.OK;
+            return ExitCode.OK;
         }).orElseGet(() -> {
             output.error("Plugin: " + name + " not found in catalog!");
-            return CommandLine.ExitCode.USAGE;
+            return ExitCode.USAGE;
         });
     }
 
-    void dryRunRemove(CommandLine.Help help) {
+    void dryRunRemove(Help help) {
         output.printText(new String[] {
                 "\nRemove plugin from the CLI\n",
                 "\t" + projectRoot().toString()

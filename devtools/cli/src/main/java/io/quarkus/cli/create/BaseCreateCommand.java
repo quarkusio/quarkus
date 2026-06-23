@@ -21,27 +21,31 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.SourceType;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.ExitCode;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Mixin;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Spec;
 import io.quarkus.registry.RegistryResolutionException;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
 
 public class BaseCreateCommand implements Callable<Integer> {
-    @CommandLine.Mixin
+    @Mixin
     protected RunModeOption runMode;
 
-    @CommandLine.Mixin(name = "output")
+    @Mixin(name = "output")
     protected OutputOptionMixin output;
 
-    @CommandLine.Mixin
+    @Mixin
     ToggleRegistryClientMixin registryClient;
 
-    @CommandLine.Mixin
+    @Mixin
     protected HelpOption helpOption;
 
-    @CommandLine.Spec
+    @Spec
     protected CommandSpec spec;
 
-    @CommandLine.Option(paramLabel = "OUTPUT-DIR", names = { "-o",
+    @Option(paramLabel = "OUTPUT-DIR", names = { "-o",
             "--output-directory" }, description = "The directory to create the new project in.")
     String targetDirectory;
 
@@ -239,7 +243,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         spec.commandLine().usage(output.out());
-        return CommandLine.ExitCode.OK;
+        return ExitCode.OK;
     }
 
     public String toString() {
@@ -253,7 +257,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     public void dryRun(BuildTool buildTool, QuarkusCommandInvocation invocation, OutputOptionMixin output) {
-        CommandLine.Help help = spec.commandLine().getHelp();
+        Help help = spec.commandLine().getHelp();
         output.printText(new String[] {
                 "\nA new project would have been created in",
                 "\t" + projectRoot().toString(),

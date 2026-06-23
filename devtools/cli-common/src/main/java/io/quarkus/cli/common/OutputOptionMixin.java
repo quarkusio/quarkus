@@ -9,50 +9,50 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import picocli.CommandLine;
-import picocli.CommandLine.Help.ColorScheme;
-import picocli.CommandLine.Model.CommandSpec;
+import io.quarkus.quickcli.Ansi;
+import io.quarkus.quickcli.CommandLine;
+import io.quarkus.quickcli.CommandSpec;
+import io.quarkus.quickcli.Help;
+import io.quarkus.quickcli.annotations.Option;
+import io.quarkus.quickcli.annotations.Spec;
 
 public class OutputOptionMixin implements MessageWriter {
 
-    static final boolean picocliDebugEnabled = "DEBUG".equalsIgnoreCase(System.getProperty("picocli.trace"));
+    static final boolean quickcliDebugEnabled = "DEBUG".equalsIgnoreCase(System.getProperty("quickcli.trace"));
 
     boolean verbose = false;
 
-    @CommandLine.Option(names = { "-e", "--errors" }, description = "Print more context on errors and exceptions.")
+    @Option(names = { "-e", "--errors" }, description = "Print more context on errors and exceptions.")
     boolean showErrors;
 
-    @CommandLine.Option(names = {
+    @Option(names = {
             "--cli-test" }, hidden = true, description = "Manually set output streams for unit test purposes.")
     boolean cliTestMode;
 
     Path testProjectRoot;
 
-    @CommandLine.Option(names = { "--cli-test-dir" }, hidden = true)
+    @Option(names = { "--cli-test-dir" }, hidden = true)
     void setTestProjectRoot(String path) {
         // Allow the starting/project directory to be specified. Used during test.
         testProjectRoot = Paths.get(path).toAbsolutePath();
     }
 
-    @CommandLine.Spec(CommandLine.Spec.Target.MIXEE)
+    @Spec(Spec.Target.MIXEE)
     CommandSpec mixee;
 
-    ColorScheme scheme;
     PrintWriter out;
     PrintWriter err;
 
-    ColorScheme colorScheme() {
-        ColorScheme colors = scheme;
-        if (colors == null) {
-            colors = scheme = mixee.commandLine().getColorScheme();
-        }
-        return colors;
+    Help.ColorScheme colorScheme() {
+        return Help.ColorScheme.DEFAULT;
     }
 
     public PrintWriter out() {
         PrintWriter o = out;
         if (o == null) {
-            o = out = mixee.commandLine().getOut();
+            o = out = (mixee != null && mixee.commandLine() != null)
+                    ? mixee.commandLine().getOut()
+                    : new PrintWriter(System.out, true);
         }
         return o;
     }
@@ -60,21 +60,23 @@ public class OutputOptionMixin implements MessageWriter {
     public PrintWriter err() {
         PrintWriter e = err;
         if (e == null) {
-            e = err = mixee.commandLine().getErr();
+            e = err = (mixee != null && mixee.commandLine() != null)
+                    ? mixee.commandLine().getErr()
+                    : new PrintWriter(System.err, true);
         }
         return e;
     }
 
     public boolean isShowErrors() {
-        return showErrors || picocliDebugEnabled;
+        return showErrors || quickcliDebugEnabled;
     }
 
     private static OutputOptionMixin getOutput(CommandSpec commandSpec) {
         return ((OutputProvider) commandSpec.root().userObject()).getOutput();
     }
 
-    @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")
-    public void setVerbose(boolean verbose) {
+    @Option(names = { "--verbose" }, description = "Verbose mode.")
+    void setVerbose(boolean verbose) {
         getOutput(mixee).verbose = verbose;
     }
 
@@ -83,7 +85,7 @@ public class OutputOptionMixin implements MessageWriter {
     }
 
     public boolean isVerbose() {
-        return getVerbose() || picocliDebugEnabled;
+        return getVerbose() || quickcliDebugEnabled;
     }
 
     public boolean isCliTest() {
@@ -91,12 +93,12 @@ public class OutputOptionMixin implements MessageWriter {
     }
 
     public boolean isAnsiEnabled() {
-        return CommandLine.Help.Ansi.AUTO.enabled();
+        return Ansi.AUTO.enabled();
     }
 
     public void printText(String... text) {
         for (String line : text) {
-            out().println(colorScheme().ansi().new Text(line, colorScheme()));
+            out().println(new Ansi.Text(line, null));
         }
     }
 
@@ -121,7 +123,7 @@ public class OutputOptionMixin implements MessageWriter {
 
     @Override
     public void info(String msg) {
-        out().println(colorScheme().ansi().new Text(msg, colorScheme()));
+        out().println(new Ansi.Text(msg, null));
     }
 
     @Override
@@ -137,20 +139,20 @@ public class OutputOptionMixin implements MessageWriter {
     @Override
     public void debug(String msg) {
         if (isVerbose()) {
-            out().println(colorScheme().ansi().new Text("@|faint [DEBUG] " + msg + "|@", colorScheme()));
+            out().println(new Ansi.Text("@|faint [DEBUG] " + msg + "|@", null));
         }
     }
 
     @Override
     public void warn(String msg) {
-        out().println(colorScheme().ansi().new Text("@|yellow " + WARN_ICON + " " + msg + "|@", colorScheme()));
+        out().println(new Ansi.Text("@|yellow " + WARN_ICON + " " + msg + "|@", null));
     }
 
     // CommandLine must be passed in (forwarded commands)
     public void throwIfUnmatchedArguments(CommandLine cmd) {
         List<String> unmatchedArguments = cmd.getUnmatchedArguments();
         if (!unmatchedArguments.isEmpty()) {
-            throw new CommandLine.UnmatchedArgumentException(cmd, unmatchedArguments);
+            throw new CommandLine.UnmatchedArgumentException("Unmatched arguments: " + unmatchedArguments);
         }
     }
 
@@ -158,7 +160,7 @@ public class OutputOptionMixin implements MessageWriter {
         CommandLine cmd = mixee.commandLine();
         printStackTrace(ex);
         if (ex instanceof CommandLine.ParameterException) {
-            CommandLine.UnmatchedArgumentException.printSuggestions((CommandLine.ParameterException) ex, out());
+            // suggestion printing not supported
         }
         error(message);
 

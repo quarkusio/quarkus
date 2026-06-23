@@ -11,14 +11,18 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Parsing the stdout is not working on Github Windows, maybe because of the console formatting. I did try it in a Windows box and it works fine.")
+@QuarkusMainTest
 public class DecryptTest {
     @TempDir
     Path tempDir;
 
     @Test
-    void decryptPlain() throws Exception {
+    void decryptPlain(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "decrypt",
                 "DPZqAC4GZNAXi6_43A4O2SBmaQssGkq6PS7rz8tzHDt1", "somearbitrarycrazystringthatdoesnotmatter", "-f=plain");
         Scanner scanner = new Scanner(result.getStdout());
@@ -28,7 +32,8 @@ public class DecryptTest {
     }
 
     @Test
-    void decryptBase64() throws Exception {
+    void decryptBase64(QuarkusMainLauncher launcher) throws Exception {
+        CliDriver.setLauncher(launcher);
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "decrypt",
                 "DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg", "c29tZWFyYml0cmFyeWNyYXp5c3RyaW5ndGhhdGRvZXNub3RtYXR0ZXI");
         Scanner scanner = new Scanner(result.getStdout());

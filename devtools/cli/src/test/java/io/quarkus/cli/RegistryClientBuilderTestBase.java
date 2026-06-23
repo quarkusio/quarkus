@@ -22,8 +22,11 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.test.junit.main.QuarkusMainLauncher;
 
 public abstract class RegistryClientBuilderTestBase {
+
+    protected QuarkusMainLauncher currentLauncher;
 
     private static Path workDir;
     private static Path settingsXml;
@@ -33,7 +36,7 @@ public abstract class RegistryClientBuilderTestBase {
 
     static Path workDir() {
         if (workDir == null) {
-            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-classes").resolve("test-work-dir");
+            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-work-dir");
             try {
                 Files.createDirectories(p);
             } catch (IOException e) {
@@ -132,11 +135,15 @@ public abstract class RegistryClientBuilderTestBase {
     }
 
     protected CliDriver.Result run(Path dir, String... args) throws Exception {
-        return CliDriver.builder()
+        CliDriver.CliDriverBuilder b = CliDriver.builder()
                 .setStartingDir(dir)
                 .setMavenRepoLocal(testRepo.toString())
                 .setMavenSettings(settingsXml.toString())
-                .addArgs(args)
-                .execute();
+                .addArgs(args);
+        QuarkusMainLauncher launcher = currentLauncher;
+        if (launcher != null) {
+            b.setLauncher(launcher);
+        }
+        return b.execute();
     }
 }

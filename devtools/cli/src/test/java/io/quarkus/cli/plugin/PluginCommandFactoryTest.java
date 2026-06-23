@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import picocli.CommandLine;
+import io.quarkus.quickcli.CommandLine;
 
 public class PluginCommandFactoryTest {
 

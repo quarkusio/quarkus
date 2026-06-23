@@ -7,18 +7,19 @@ import java.util.function.Predicate;
 import io.quarkus.cli.BaseBuildCommand;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.project.QuarkusProject;
-import picocli.CommandLine;
+import io.quarkus.quickcli.annotations.ArgGroup;
+import io.quarkus.quickcli.annotations.Option;
 
 public class CliPluginsBase extends BaseBuildCommand {
 
-    @CommandLine.Option(names = { "-t",
+    @Option(names = { "-t",
             "--type" }, paramLabel = "PLUGIN_TYPE", order = 3, description = "Only list plugins from the specified type.")
     Optional<PluginType> type = Optional.empty();
 
-    @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
+    @ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
     TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
-    @CommandLine.ArgGroup(order = 3, heading = "%nCatalog:%n")
+    @ArgGroup(order = 3, heading = "%nCatalog:%n")
     PluginCatalogOptions catalogOptions = new PluginCatalogOptions();
 
     public Optional<QuarkusProject> quarkusProject() {

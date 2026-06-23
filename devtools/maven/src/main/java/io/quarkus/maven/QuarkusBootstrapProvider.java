@@ -295,6 +295,35 @@ public class QuarkusBootstrapProvider implements Closeable {
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,
                 Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
 
+            final ApplicationModel appModel = resolveApplicationModel(mojo, mode);
+            final List<Dependency> forcedDependencies = mojo.forcedDependencies(mode);
+            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                    .setAppArtifact(appModel.getAppArtifact())
+                    .setExistingModel(appModel)
+                    .setIsolateDeployment(true)
+                    .setBaseClassLoader(getClass().getClassLoader())
+                    .setBuildSystemProperties(getBuildSystemProperties(mojo, true))
+                    .setProjectRoot(mojo.baseDir().toPath())
+                    .setBaseName(mojo.finalName())
+                    .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
+                    .setTargetDirectory(mojo.buildDir().toPath())
+                    .setForcedDependencies(forcedDependencies)
+                    .setDependencyInfoProvider(() -> DependencyInfoProvider.builder()
+                            .setMavenModelResolver(EffectiveModelResolver.of(artifactResolver(mojo, mode)))
+                            .build());
+
+            try {
+                if (builderCustomizer != null) {
+                    builderCustomizer.accept(builder);
+                }
+                return builder.build().bootstrap();
+            } catch (BootstrapException e) {
+                throw new MojoExecutionException("Failed to bootstrap the application", e);
+            }
+        }
+
+        public ApplicationModel resolveApplicationModel(QuarkusBootstrapMojo mojo, LaunchMode mode)
+                throws MojoExecutionException {
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setLegacyModelResolver(
                             BootstrapAppModelResolver.isLegacyModelResolver(mojo.mavenProject().getProperties()))
@@ -322,35 +351,11 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
 
             final List<Dependency> forcedDependencies = mojo.forcedDependencies(mode);
-            final ApplicationModel appModel;
             try {
-                appModel = modelResolver.resolveManagedModel(appArtifact, forcedDependencies, managingProject(mojo),
+                return modelResolver.resolveManagedModel(appArtifact, forcedDependencies, managingProject(mojo),
                         reloadableModules);
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);
-            }
-            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                    .setAppArtifact(appModel.getAppArtifact())
-                    .setExistingModel(appModel)
-                    .setIsolateDeployment(true)
-                    .setBaseClassLoader(getClass().getClassLoader())
-                    .setBuildSystemProperties(getBuildSystemProperties(mojo, true))
-                    .setProjectRoot(mojo.baseDir().toPath())
-                    .setBaseName(mojo.finalName())
-                    .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
-                    .setTargetDirectory(mojo.buildDir().toPath())
-                    .setForcedDependencies(forcedDependencies)
-                    .setDependencyInfoProvider(() -> DependencyInfoProvider.builder()
-                            .setMavenModelResolver(EffectiveModelResolver.of(artifactResolver(mojo, mode)))
-                            .build());
-
-            try {
-                if (builderCustomizer != null) {
-                    builderCustomizer.accept(builder);
-                }
-                return builder.build().bootstrap();
-            } catch (BootstrapException e) {
-                throw new MojoExecutionException("Failed to bootstrap the application", e);
             }
         }
 

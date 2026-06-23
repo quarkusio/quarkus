@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -86,20 +87,29 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
         CuratedApplication curatedApplication = null;
         QuarkusClassLoader deploymentClassLoader = null;
         try {
-            curatedApplication = bootstrapApplication(launchMode);
-            deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
-            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
+            if (MavenForkedAugmentRunner.shouldFork(this)) {
+                ApplicationModel applicationModel = resolveApplicationModel(launchMode);
+                Path generatedSources = generatedSourcesDir(test);
+                List<Path> sourceParentPaths = sourceParents.stream().collect(Collectors.toList());
+                MavenForkedAugmentRunner.runCodegen(this, applicationModel, getBuildSystemProperties(false),
+                        generatedSources, launchMode.name(), test, sourceParentPaths, getLog());
+                sourceRegistrar.accept(generatedSources);
+            } else {
+                curatedApplication = bootstrapApplication(launchMode);
+                deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+                Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
-            final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method initAndRun = codeGenerator.getMethod("initAndRun", QuarkusClassLoader.class, PathCollection.class,
-                    Path.class, Path.class,
-                    Consumer.class, ApplicationModel.class, Properties.class, String.class,
-                    boolean.class);
-            initAndRun.invoke(null, deploymentClassLoader, sourceParents,
-                    generatedSourcesDir(test), buildDir().toPath(),
-                    sourceRegistrar, curatedApplication.getApplicationModel(), getBuildSystemProperties(false),
-                    launchMode.name(),
-                    test);
+                final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
+                final Method initAndRun = codeGenerator.getMethod("initAndRun", QuarkusClassLoader.class, PathCollection.class,
+                        Path.class, Path.class,
+                        Consumer.class, ApplicationModel.class, Properties.class, String.class,
+                        boolean.class);
+                initAndRun.invoke(null, deploymentClassLoader, sourceParents,
+                        generatedSourcesDir(test), buildDir().toPath(),
+                        sourceRegistrar, curatedApplication.getApplicationModel(), getBuildSystemProperties(false),
+                        launchMode.name(),
+                        test);
+            }
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {

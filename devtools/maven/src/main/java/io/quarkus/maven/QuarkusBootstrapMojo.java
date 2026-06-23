@@ -22,6 +22,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -29,6 +30,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -46,6 +48,9 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
+
+    @Component
+    private ToolchainManager toolchainManager;
 
     @Component(hint = "quarkus-bootstrap", role = AbstractMavenLifecycleParticipant.class)
     private BootstrapSessionListener bootstrapSessionListener;
@@ -347,6 +352,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {
         return bootstrapProvider.bootstrapper(this).getBuildSystemProperties(this, quarkusOnly);
+    }
+
+    protected ApplicationModel resolveApplicationModel(LaunchMode mode) throws MojoExecutionException {
+        return bootstrapProvider.bootstrapper(this).resolveApplicationModel(this, mode);
+    }
+
+    protected ToolchainManager toolchainManager() {
+        return toolchainManager;
     }
 
     /**

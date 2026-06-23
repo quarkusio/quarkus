@@ -20,7 +20,10 @@ public class VertxMetricsTags {
      * @return the method tag whose value is a capitalized method (e.g. GET).
      */
     public static Tag method(HttpMethod method) {
-        return (method != null) ? Tag.of("method", method.toString()) : HttpCommonTags.METHOD_UNKNOWN;
+        if (method == null) {
+            return HttpCommonTags.METHOD_UNKNOWN;
+        }
+        return HttpCommonTags.method(method.toString());
     }
 
     /**

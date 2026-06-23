@@ -29,6 +29,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.InjectionPointScanningUtil;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -128,9 +129,10 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     void collectReactivePersistenceUnitRequestsFromInjection(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 HibernateReactiveCdiProcessor.ALL_REACTIVE_INJECTABLE_TYPES,
                 List.of(io.quarkus.hibernate.orm.deployment.ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
                 PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,

@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -77,6 +78,7 @@ class ReactiveDataSourceProcessor {
     @BuildStep
     void collectReactiveDataSourceRequestsFromInjection(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             List<ReactiveDataSourceInjectableTypeBuildItem> injectableTypes,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         Set<DotName> reactiveTypes = new HashSet<>();
@@ -87,7 +89,7 @@ class ReactiveDataSourceProcessor {
         }
 
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 reactiveTypes,
                 List.of(REACTIVE_DATASOURCE_QUALIFIER, DotNames.NAMED),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,

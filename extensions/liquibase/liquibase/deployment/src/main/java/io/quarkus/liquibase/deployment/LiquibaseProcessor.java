@@ -36,6 +36,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -123,11 +124,12 @@ class LiquibaseProcessor {
     @BuildStep
     void collectDatasourceRequestsFromInjection(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         BiConsumer<String, Reason> requestProducer = (name, reason) -> dataSourceRequests
                 .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason));
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 Set.of(LIQUIBASE_FACTORY),
                 List.of(LIQUIBASE_DATASOURCE_QUALIFIER),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,
@@ -138,7 +140,7 @@ class LiquibaseProcessor {
                 },
                 requestProducer);
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 Set.of(LIQUIBASE_FACTORY),
                 List.of(DotNames.NAMED),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,

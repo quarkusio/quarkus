@@ -39,7 +39,8 @@ public final class InjectionPointScanningUtil {
      * extracts the component name from the qualifier and invokes the {@code requestConsumer}.
      * Injection points that are already satisfied by a user-defined bean are ignored.
      *
-     * @param beanDiscovery the bean discovery build item (produced before synthetic beans)
+     * @param beanDiscovery the bean discovery build item (for the bean resolver)
+     * @param injectionPointIndex the injection points indexed by required type
      * @param injectableTypes the set of DotNames of injectable types to look for
      * @param qualifierNames the DotNames of qualifier annotations that carry the component name;
      *        checked in order, the first match is used
@@ -50,6 +51,7 @@ public final class InjectionPointScanningUtil {
      */
     public static void collectUnsatisfiedInjectionPoints(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             Set<DotName> injectableTypes,
             List<DotName> qualifierNames,
             String defaultName,
@@ -61,7 +63,7 @@ public final class InjectionPointScanningUtil {
         Map<String, Map<String, List<String>>> injectionPointsByNameAndType = new LinkedHashMap<>();
 
         for (DotName injectableType : injectableTypes) {
-            for (InjectionPointInfo ip : beanDiscovery.getInjectionPointsByRequiredType(injectableType)) {
+            for (InjectionPointInfo ip : injectionPointIndex.getInjectionPointsByRequiredType(injectableType)) {
                 // Skip if a user-defined (non-synthetic) bean satisfies this injection point.
                 // At BeanDiscoveryFinished time, only discovered beans exist — no synthetic beans.
                 if (!beanResolver.resolveBeans(ip.getRequiredType(), ip.getRequiredQualifiers()).isEmpty()) {

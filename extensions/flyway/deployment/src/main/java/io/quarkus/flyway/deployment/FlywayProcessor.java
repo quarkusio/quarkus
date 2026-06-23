@@ -45,6 +45,7 @@ import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
@@ -138,11 +139,12 @@ class FlywayProcessor {
     @BuildStep
     void collectDatasourceRequestsFromInjection(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         BiConsumer<String, Reason> requestProducer = (name, reason) -> dataSourceRequests
                 .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason));
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 Set.of(FLYWAY),
                 List.of(FLYWAY_DATASOURCE_QUALIFIER),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,
@@ -153,7 +155,7 @@ class FlywayProcessor {
                 },
                 requestProducer);
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 Set.of(FLYWAY),
                 List.of(DotNames.NAMED),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,

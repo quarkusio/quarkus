@@ -47,6 +47,7 @@ import io.quarkus.agroal.spi.JdbcPropertyBuildItem;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -146,9 +147,10 @@ class AgroalProcessor {
     @BuildStep
     void collectJdbcDataSourceRequestsFromInjection(
             BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
-                beanDiscovery,
+                beanDiscovery, injectionPointIndex,
                 AGROAL_INJECTABLE_TYPES,
                 List.of(DATASOURCE_QUALIFIER, DotNames.NAMED),
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME,

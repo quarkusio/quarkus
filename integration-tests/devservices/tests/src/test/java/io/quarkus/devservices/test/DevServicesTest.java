@@ -17,7 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +64,9 @@ public class DevServicesTest {
 
     @ConfigProperty(name = QUARKUS_DEPENDENT_EXTENSION_CONFIG_CONTAMINATED, defaultValue = "false")
     String dependentExtensionConfigContaminated;
+
+    @Inject
+    Config config;
 
     @Test
     public void testTheLazyDevServicesConfigIsAvailable() {
@@ -122,6 +129,21 @@ public class DevServicesTest {
     @Test
     public void testDevServiceConfigIsNotContaminatedByOtherDevServices() {
         assertEquals("false", dependentExtensionConfigContaminated);
+    }
+
+    @Test
+    public void testStaticConfigIsVisibleInDevServicesConfigSource() {
+        ConfigSource devServicesConfigSource = null;
+        for (ConfigSource source : config.getConfigSources()) {
+            if ("DevServicesConfigSource".equals(source.getName())) {
+                devServicesConfigSource = source;
+                break;
+            }
+        }
+        Assertions.assertNotNull(devServicesConfigSource, "DevServicesConfigSource should be present");
+        assertTrue(devServicesConfigSource.getPropertyNames().contains(QUARKUS_SIMPLE_EXTENSION_STATIC_THING),
+                "DevServicesConfigSource should contain " + QUARKUS_SIMPLE_EXTENSION_STATIC_THING);
+        assertEquals("some value", devServicesConfigSource.getValue(QUARKUS_SIMPLE_EXTENSION_STATIC_THING));
     }
 
     @Test

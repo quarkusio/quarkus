@@ -240,7 +240,7 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>org.fusesource.jansi:jansi</include>
+                                    <include>org.jline:jansi</include>
                                 </includes>
                             </artifactSet>
                         </configuration>

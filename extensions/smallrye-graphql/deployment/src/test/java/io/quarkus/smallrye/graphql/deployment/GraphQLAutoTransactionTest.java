@@ -1,5 +1,9 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import jakarta.inject.Inject;
 import jakarta.transaction.TransactionManager;
 
@@ -125,6 +129,49 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
                 .body("data.greeting.inTransaction", Matchers.is(true));
     }
 
+    @Test
+    void concurrentSourceResolversShouldEachHaveTransaction() {
+        TransactionCheckApi.sourceTransactionResults.clear();
+
+        String request = getPayload("{ greetings { message inTransaction } }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.greetings[0].inTransaction", Matchers.is(true))
+                .body("data.greetings[1].inTransaction", Matchers.is(true))
+                .body("data.greetings[2].inTransaction", Matchers.is(true));
+
+        org.junit.jupiter.api.Assertions.assertFalse(TransactionCheckApi.sourceTransactionResults.isEmpty(),
+                "Source resolvers should have recorded transaction results");
+        org.junit.jupiter.api.Assertions.assertTrue(
+                TransactionCheckApi.sourceTransactionResults.stream().allMatch(b -> b),
+                "All concurrent source resolvers should have had an active transaction");
+    }
+
+    @Test
+    void multipleBlockingFieldsShouldEachHaveTransaction() {
+        String request = getPayload("{ blockingQuery blockingQuery2 }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.blockingQuery", Matchers.is(true))
+                .body("data.blockingQuery2", Matchers.is(true));
+    }
+
     public static class Greeting {
         private String message;
 
@@ -147,11 +194,18 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
     @GraphQLApi
     public static class TransactionCheckApi {
 
+        static final Set<Boolean> sourceTransactionResults = ConcurrentHashMap.newKeySet();
+
         @Inject
         TransactionManager tm;
 
         @Query
         public boolean blockingQuery() {
+            return isTransactionActive();
+        }
+
+        @Query
+        public boolean blockingQuery2() {
             return isTransactionActive();
         }
 
@@ -182,8 +236,15 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
             return new Greeting("hello");
         }
 
+        @Query
+        public List<Greeting> greetings() {
+            return List.of(new Greeting("hello"), new Greeting("world"), new Greeting("test"));
+        }
+
         public boolean inTransaction(@Source Greeting greeting) {
-            return isTransactionActive();
+            boolean active = isTransactionActive();
+            sourceTransactionResults.add(active);
+            return active;
         }
 
         private boolean isTransactionActive() {

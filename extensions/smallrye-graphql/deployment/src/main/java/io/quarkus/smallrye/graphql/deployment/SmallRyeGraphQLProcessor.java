@@ -218,6 +218,12 @@ public class SmallRyeGraphQLProcessor {
             return;
         }
 
+        // Don't add @Transactional when Hibernate Reactive is present — it would
+        // interfere with reactive session management
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            return;
+        }
+
         DotName transactional = DotName.createSimple("jakarta.transaction.Transactional");
 
         Set<DotName> reactiveTypes = Set.of(

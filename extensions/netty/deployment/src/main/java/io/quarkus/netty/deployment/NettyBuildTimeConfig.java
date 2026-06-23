@@ -21,4 +21,22 @@ public interface NettyBuildTimeConfig {
      * More details on https://programmer.group/pool-area-of-netty-memory-pool.html.
      */
     OptionalInt allocatorMaxOrder();
+
+    /**
+     * The number of heap arenas used by the Netty allocator.
+     * <p>
+     * When not configured, the default value is computed at runtime based on the number of available processors,
+     * capped to avoid excessive memory usage on machines with many cores:
+     * {@code 2 * min(available processors, 16)}.
+     */
+    OptionalInt allocatorNumHeapArenas();
+
+    /**
+     * The number of direct arenas used by the Netty allocator.
+     * <p>
+     * When not configured, the default value is computed at runtime based on the number of available processors,
+     * capped to avoid excessive memory usage on machines with many cores:
+     * {@code 2 * min(available processors, 16)}.
+     */
+    OptionalInt allocatorNumDirectArenas();
 }

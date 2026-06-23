@@ -371,4 +371,68 @@ class BlockingServerInterceptorEventOrderingTest {
             }
         }
     }
+
+    /**
+     * {@code onHalfClose} alone is queued before the deferred executor runs; {@code onMessage} arrives only
+     * after {@code setDelegate}.
+     */
+    @Test
+    @Timeout(10)
+    void virtualThreadPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("unary"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/unary");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.UNARY);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        runAllDeferredTasks();
+        replayListener.onMessage("hi");
+        runAllDeferredTasks();
+
+        next.awaitEvents(2);
+        assertThat(next.events)
+                .as("onMessage must be delivered after setDelegate even if onHalfClose was queued first")
+                .containsExactly("onMessage:hi", "onHalfClose");
+    }
+
+    /**
+     * Same deferred-message race on the {@code @Blocking} path.
+     */
+    @Test
+    @Timeout(10)
+    void blockingPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
+                Collections.emptyList());
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/unary");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.UNARY);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        next.startCallGate.set(true);
+
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        next.startCallGate.set(false);
+        synchronized (next.startCallGate) {
+            next.startCallGate.notifyAll();
+        }
+        replayListener.onMessage("hi");
+
+        next.awaitEvents(2);
+        assertThat(next.events)
+                .as("onMessage must be delivered after setDelegate even if onHalfClose was queued first")
+                .containsExactly("onMessage:hi", "onHalfClose");
+    }
+
 }

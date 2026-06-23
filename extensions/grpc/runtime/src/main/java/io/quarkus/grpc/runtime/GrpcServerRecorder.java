@@ -709,15 +709,12 @@ public class GrpcServerRecorder {
         interceptors.addAll(globalInterceptors);
         interceptors.addAll(grpcContainer.getSortedPerServiceInterceptors(service.getImplementationClassName()));
 
-        // We only register the blocking interceptor if needed by at least one method of the service (either blocking or runOnVirtualThread)
-        if (!blockingMethodsPerService.isEmpty()) {
-            List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
-            List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
-            if (list != null || virtuals != null) {
-                interceptors
-                        .add(new BlockingServerInterceptor(vertx, list, virtuals,
-                                VirtualThreadsRecorder.getCurrent(), devMode));
-            }
+        List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
+        List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
+        if (list != null || virtuals != null) {
+            interceptors
+                    .add(new BlockingServerInterceptor(vertx, list, virtuals,
+                            VirtualThreadsRecorder.getCurrent(), devMode));
         }
         interceptors.sort(Interceptors.INTERCEPTOR_COMPARATOR);
         return ServerInterceptors.intercept(service.definition, interceptors);

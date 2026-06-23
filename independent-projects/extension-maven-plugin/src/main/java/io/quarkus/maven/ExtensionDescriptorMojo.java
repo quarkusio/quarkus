@@ -49,18 +49,6 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
@@ -78,6 +66,17 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.platform.tools.ExtensionMetadataValidator;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -330,7 +329,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 extObject.put("name", project.getName());
             } else {
                 JsonNode node = extObject.get(ARTIFACT_ID);
-                String defaultName = node.asText();
+                String defaultName = node.asString();
                 int i = 0;
                 if (defaultName.startsWith("quarkus-")) {
                     i = "quarkus-".length();
@@ -382,7 +381,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         try (BufferedWriter bw = Files
                 .newBufferedWriter(output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME))) {
-            bw.write(getMapper(true).writer(prettyPrinter).writeValueAsString(extObject));
+            bw.write(getMapper(true).writer().with(prettyPrinter).writeValueAsString(extObject));
         } catch (IOException e) {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
@@ -1293,9 +1292,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private ObjectMapper getMapper(boolean yaml) {
 
         if (yaml) {
-            YAMLFactory yf = new YAMLFactory();
-            return new ObjectMapper(yf)
-                    .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+            return YAMLMapper.builder()
+                    .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                    .build();
         } else {
             return JsonMapper.builder()
                     .enable(SerializationFeature.INDENT_OUTPUT)

@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -14,6 +15,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.metrics.MetricsFactory;
 
 @Recorder
 public class VirtualThreadsRecorder {
@@ -25,6 +27,7 @@ public class VirtualThreadsRecorder {
     @Deprecated(since = "3.25", forRemoval = true)
     static volatile VirtualThreadsConfig config;
     private static volatile ExecutorService current;
+    private static volatile BoundedExecutorService boundedExecutor;
     private static final Object lock = new Object();
 
     private final VirtualThreadsConfig runtimeConfig;
@@ -52,6 +55,7 @@ public class VirtualThreadsRecorder {
                             service.shutdownNow();
                         }
                         current = null;
+                        boundedExecutor = null;
                     }
                 });
             } else {
@@ -60,6 +64,7 @@ public class VirtualThreadsRecorder {
                     public void run() {
                         ExecutorService service = current;
                         current = null;
+                        boundedExecutor = null;
                         if (service != null) {
                             service.shutdown();
 
@@ -95,6 +100,28 @@ public class VirtualThreadsRecorder {
 
     public Supplier<ExecutorService> getCurrentSupplier() {
         return VIRTUAL_THREADS_EXECUTOR_SUPPLIER;
+    }
+
+    /* RUNTIME_INIT */
+    public Consumer<MetricsFactory> registerMetrics() {
+        return new Consumer<MetricsFactory>() {
+            @Override
+            public void accept(MetricsFactory metricsFactory) {
+                // Ensure the executor is created so boundedExecutor is populated
+                getCurrent();
+                BoundedExecutorService bounded = boundedExecutor;
+                if (bounded == null) {
+                    return;
+                }
+                metricsFactory.builder("virtual_threads.permits.available")
+                        .description("Number of permits currently available in the virtual thread concurrency limiter.")
+                        .buildGauge(bounded::availablePermits);
+                metricsFactory.builder("virtual_threads.permits.queue_length")
+                        .description(
+                                "Number of virtual threads currently waiting to acquire a permit from the concurrency limiter.")
+                        .buildGauge(bounded::queueLength);
+            }
+        };
     }
 
     public static ExecutorService getCurrent() {
@@ -157,7 +184,9 @@ public class VirtualThreadsRecorder {
                                 " all virtual thread execution. Consider a higher value.", max);
                     }
                     logger.infof("Virtual thread concurrency limited to %d", max);
-                    executor = new BoundedExecutorService(executor, max);
+                    BoundedExecutorService bounded = new BoundedExecutorService(executor, max);
+                    boundedExecutor = bounded;
+                    executor = bounded;
                 }
                 return executor;
             } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {

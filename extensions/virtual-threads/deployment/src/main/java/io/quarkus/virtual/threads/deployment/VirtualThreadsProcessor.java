@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 
@@ -36,5 +37,12 @@ public class VirtualThreadsProcessor {
                         .setRuntimeInit()
                         .supplier(recorder.getCurrentSupplier())
                         .done());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void registerMetrics(VirtualThreadsRecorder recorder,
+            BuildProducer<MetricsFactoryConsumerBuildItem> metrics) {
+        metrics.produce(new MetricsFactoryConsumerBuildItem(recorder.registerMetrics()));
     }
 }

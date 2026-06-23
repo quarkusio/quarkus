@@ -160,6 +160,7 @@ public class AppModelGradleResolver implements AppModelResolver {
     @Override
     public ApplicationModel resolveManagedModel(ArtifactCoords appArtifact,
             Collection<Dependency> directDeps,
+            Set<ArtifactKey> excludedArtifacts,
             ArtifactCoords managingProject,
             Set<ArtifactKey> localProjects)
             throws AppModelResolverException {

@@ -2,10 +2,13 @@ package io.quarkus.hibernate.orm.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class NoDatasourceTest {
@@ -14,10 +17,9 @@ public class NoDatasourceTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
-            // Ideally we would not add quarkus-jdbc-h2 to the classpath and there _really_ wouldn't be a datasource,
-            // but that's inconvenient given our testing setup,
-            // so we'll just disable the implicit datasource.
-            .overrideConfigKey("quarkus.datasource.jdbc", "false")
+            .setExcludedDependencies(Set.of(
+                    ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2"),
+                    ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
                             "Persistence unit '<default>' defines entities [" + MyEntity.class.getName()

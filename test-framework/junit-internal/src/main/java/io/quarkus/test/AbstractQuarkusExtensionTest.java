@@ -60,6 +60,7 @@ import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -82,6 +83,8 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 /**
  * A test extension for testing Quarkus internals, not intended for end user consumption.
@@ -98,6 +101,8 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";
     private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
+    private static final String REPRODUCIBILITY_CROSS_JVM_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.cross-jvm";
+    private static final String REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.dump-dir";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -706,9 +711,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
                 }
 
+                String reproducibilityDumpDir = System.getProperty(REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME);
+                if (reproducibilityDumpDir != null) {
+                    runReproducibilityDump(extensionContext, testLocation, projectDir, customizers,
+                            Path.of(reproducibilityDumpDir));
+                }
+
                 if (reproducibilityCheck) {
-                    runReproducibilityCheck(extensionContext, testLocation, projectDir,
-                            reproducibilityRuns, customizers);
+                    runReproducibilityCheck(extensionContext, testLocation, projectDir, customizers, reproducibilityRuns);
                 }
 
                 // Normal path: single augmentation, start app, run tests
@@ -877,31 +887,37 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     }
 
     private void runReproducibilityCheck(ExtensionContext extensionContext, Path testLocation, Path projectDir,
-            int reproducibilityRuns, List<Consumer<BuildChainBuilder>> customizers) throws Exception {
+            List<Consumer<BuildChainBuilder>> customizers, int runs) throws Exception {
+        if (System.getProperty(REPRODUCIBILITY_CROSS_JVM_PROPERTY_NAME) != null) {
+            runReproducibilityCheckCrossJvm(extensionContext, runs);
+        } else {
+            runReproducibilityCheckInsideJvm(extensionContext, testLocation, projectDir, customizers, runs);
+        }
+    }
+
+    private void runReproducibilityCheckInsideJvm(ExtensionContext extensionContext, Path testLocation, Path projectDir,
+            List<Consumer<BuildChainBuilder>> customizers, int runs) throws Exception {
         String testName = extensionContext.getRequiredTestClass().getSimpleName();
-        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check (%d runs) for %s%n",
-                reproducibilityRuns, testName);
+        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check (%d runs) for %s%n", runs, testName);
         List<Consumer<BuildChainBuilder>> reproducibilityCustomizers = new ArrayList<>(customizers);
-        reproducibilityCustomizers.add(
-                buildChainBuilder -> buildChainBuilder
-                        .addBuildStep(context -> context.produce(new ReproducibilityCheckBuildItem()))
-                        .produces(ReproducibilityCheckBuildItem.class).build());
+        reproducibilityCustomizers.add(buildChainBuilder -> buildChainBuilder
+                .addBuildStep(context -> context.produce(new ReproducibilityCheckBuildItem()))
+                .produces(ReproducibilityCheckBuildItem.class)
+                .build());
         Map<String, byte[]> referenceInMemoryClasses = null;
-        ApplicationModel cachedApplicationModel = null;
-        for (int run = 1; run <= reproducibilityRuns; run++) {
+        ApplicationModel appModel = null;
+        for (int run = 1; run <= runs; run++) {
             CuratedApplication currentCuratedApplication = null;
             StartupActionImpl currentStartupAction = null;
             try {
                 resetLegacyGizmoFunctionCounters();
-                currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir,
-                        cachedApplicationModel);
-                if (cachedApplicationModel == null) {
+                currentCuratedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, appModel);
+                if (appModel == null) {
                     // Reuse the resolved model so this check focuses on repeated augmentation bytecode.
-                    cachedApplicationModel = currentCuratedApplication.getApplicationModel();
+                    appModel = currentCuratedApplication.getApplicationModel();
                 }
                 currentStartupAction = new AugmentActionImpl(currentCuratedApplication, reproducibilityCustomizers,
-                        classLoadListeners)
-                        .createInitialRuntimeApplication();
+                        classLoadListeners).createInitialRuntimeApplication();
 
                 Map<String, byte[]> currentInMemoryClasses = currentStartupAction.getClassLoader().getInMemoryClassBytes();
                 if (referenceInMemoryClasses == null) {
@@ -916,8 +932,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                         Path mismatchDumpPath = BytecodeTools.dumpReproducibilityMismatch(diff,
                                 referenceInMemoryClasses, currentInMemoryClasses, run, dumpDir);
                         throw new AssertionError("Build reproducibility check failed on run " + run + "/"
-                                + reproducibilityRuns + ": " + diff + ". Dumped to "
-                                + mismatchDumpPath);
+                                + runs + ": " + diff + ". Dumped to " + mismatchDumpPath);
                     }
                 }
             } finally {
@@ -931,18 +946,19 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             }
         }
         System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check passed for %s%n", testName);
-        throw new TestAbortedException(
-                "Reproducibility check passed (" + reproducibilityRuns + " runs). Test execution skipped.");
+        throw new TestAbortedException("Reproducibility check passed (" + runs + " runs). Test execution skipped.");
     }
 
     /**
-     *
-     * Legacy Gizmo createFunction() uses a static counter keyed by generated class name, which leaks between
-     * reproducibility runs in the same JVM. This affects generators that emit $$function$$ helper classes, such as
-     * {@link io.quarkus.rest.data.panache.deployment.JaxRsResourceImplementor#implement},
-     * {@link io.quarkus.hibernate.reactive.rest.data.panache.deployment.ResourceImplementor#implement},
-     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateIdentityProvider}
-     * {@link io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateTrustedIdentityProvider}.
+     * Legacy Gizmo {@code createFunction()} uses a {@code static} counter keyed by generated class name,
+     * which leaks between reproducibility runs in the same JVM. This affects generators that emit {@code $$function$$}
+     * helper classes, such as:
+     * <ul>
+     * <li>{@code io.quarkus.rest.data.panache.deployment.JaxRsResourceImplementor#implement}</li>
+     * <li>{@code io.quarkus.hibernate.reactive.rest.data.panache.deployment.ResourceImplementor#implement}</li>
+     * <li>{@code io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateIdentityProvider}</li>
+     * <li>{@code io.quarkus.security.jpa.reactive.deployment.QuarkusSecurityJpaReactiveProcessor#generateTrustedIdentityProvider}</li>
+     * </ul>
      */
     private static void resetLegacyGizmoFunctionCounters() {
         try {
@@ -955,9 +971,96 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         }
     }
 
+    private void runReproducibilityCheckCrossJvm(ExtensionContext extensionContext, int runs) throws Exception {
+        String testClassName = extensionContext.getRequiredTestClass().getName();
+        String testName = extensionContext.getRequiredTestClass().getSimpleName();
+        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check (%d runs) for %s%n", runs, testName);
+
+        Path baseDir = Path.of("target", "reproducibility", testName);
+        IoUtils.recursiveDelete(baseDir);
+        Files.createDirectories(baseDir);
+
+        List<String> baseArgs = new ArrayList<>();
+        baseArgs.add("-cp");
+        baseArgs.add(System.getProperty("java.class.path"));
+        for (String key : System.getProperties().stringPropertyNames()) {
+            if (key.equals(REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME)) {
+                continue;
+            }
+            baseArgs.add("-D" + key + "=" + System.getProperty(key));
+        }
+
+        Map<String, byte[]> referenceClasses = null;
+        for (int run = 1; run <= runs; run++) {
+            Path runDumpDir = baseDir.resolve("run-" + run);
+
+            List<String> args = new ArrayList<>(baseArgs);
+            args.add("-D" + REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME + "=" + runDumpDir);
+            args.add(ReproducibilityTestLauncher.class.getName());
+            args.add(testClassName);
+
+            System.out.printf("[AbstractQuarkusExtensionTest] Starting run %d/%d for %s%n", run, runs, testName);
+            ProcessBuilder.newBuilder(ProcessUtil.pathOfJava())
+                    .arguments(args)
+                    .output().inherited()
+                    .error().inherited()
+                    .run();
+
+            if (!Files.isDirectory(runDumpDir)) {
+                // this should never happen, the dump process creates the directory before running augmentation
+                throw new AssertionError("Reproducibility run " + run + "/" + runs
+                        + " did not produce dump directory " + runDumpDir);
+            }
+
+            Map<String, byte[]> runClasses = BytecodeTools.loadClassBytes(runDumpDir);
+            if (referenceClasses == null) {
+                referenceClasses = runClasses;
+            } else {
+                var diff = BytecodeTools.diff(referenceClasses, runClasses);
+                if (!diff.isEmpty()) {
+                    Path mismatchDir = baseDir.resolve("mismatch-run-" + run);
+                    BytecodeTools.dumpReproducibilityMismatch(diff, referenceClasses, runClasses, run, mismatchDir);
+                    throw new AssertionError("Reproducibility check failed on run " + run + "/"
+                            + runs + ": " + diff + ". Dumped to " + mismatchDir);
+                }
+            }
+        }
+        System.out.printf("[AbstractQuarkusExtensionTest] Reproducibility check passed for %s%n", testName);
+        throw new TestAbortedException("Reproducibility check passed (" + runs + " runs). Test execution skipped.");
+    }
+
+    private void runReproducibilityDump(ExtensionContext extensionContext, Path testLocation, Path projectDir,
+            List<Consumer<BuildChainBuilder>> customizers, Path dumpDir) throws Exception {
+
+        IoUtils.recursiveDelete(dumpDir);
+        Files.createDirectories(dumpDir);
+
+        List<Consumer<BuildChainBuilder>> dumpCustomizers = new ArrayList<>(customizers);
+        dumpCustomizers.add(
+                buildChainBuilder -> buildChainBuilder
+                        .addBuildStep(context -> context.produce(new ReproducibilityCheckBuildItem()))
+                        .produces(ReproducibilityCheckBuildItem.class).build());
+
+        CuratedApplication curatedApplication = null;
+        StartupActionImpl startupAction = null;
+        try {
+            curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, null);
+            startupAction = new AugmentActionImpl(curatedApplication, dumpCustomizers, classLoadListeners)
+                    .createInitialRuntimeApplication();
+            BytecodeTools.dumpClassBytes(startupAction.getClassLoader().getInMemoryClassBytes(), dumpDir);
+        } finally {
+            if (startupAction != null) {
+                startupAction.getClassLoader().close();
+            }
+            if (curatedApplication != null) {
+                curatedApplication.close();
+            }
+        }
+        throw new TestAbortedException("Reproducibility dump complete (" + dumpDir + "). Test execution skipped.");
+    }
+
     private CuratedApplication createCuratedApplication(ExtensionContext extensionContext, Path testLocation, Path projectDir,
-            ApplicationModel existingModel)
-            throws Exception {
+            ApplicationModel existingModel) throws Exception {
         QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                 .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
                 .setApplicationRoot(deploymentDir.resolve(APP_ROOT))

@@ -210,7 +210,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String error = requestParams.get(OidcConstants.CODE_FLOW_ERROR);
             String errorDescription = requestParams.get(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
 
-            LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
+            LOG.warnf("Authentication has failed, error: %s, description: %s", error, errorDescription);
 
             if (oidcTenantConfig.authentication().errorPath().isPresent()) {
                 Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
@@ -1509,7 +1509,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.debugf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
+                                            LOG.warnf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
                                             return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });

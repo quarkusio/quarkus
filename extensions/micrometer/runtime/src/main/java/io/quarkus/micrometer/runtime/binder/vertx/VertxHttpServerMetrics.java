@@ -3,6 +3,7 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.jboss.logging.Logger;
@@ -219,6 +220,24 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         requestMetric.requestEnded();
     }
 
+    private Tags effectiveTags(HttpRequestMetric requestMetric, Optional<HttpResponse> httpResponse, Tags originalTags) {
+        if (!httpServerMetricsTagsContributors.isEmpty()) {
+            HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(),
+                    httpResponse);
+            Tags allTags = originalTags;
+            for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
+                try {
+                    Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
+                    allTags = allTags.and(additionalTags);
+                } catch (Exception e) {
+                    log.debug("Unable to obtain additional tags", e);
+                }
+            }
+            return allTags;
+        }
+        return originalTags;
+    }
+
     /**
      * Called when an HTTP server response has ended.
      *
@@ -235,7 +254,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
-            Tags allTags = Tags.of(
+            Tags originalTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.httpRequest().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
@@ -257,7 +276,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             io.vertx.core.Context ctx = requestMetric.request() != null ? requestMetric.request().context() : null;
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
-                    requestsTimer.withTags(allTags),
+                    requestsTimer.withTags(effectiveTags),
                     ctx);
         }
         requestMetric.requestEnded();
@@ -297,7 +316,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     }
 
     private record DefaultContext(HttpRequest httpRequest,
-            HttpResponse response,
+            Optional<HttpResponse> response,
             HttpServerRequestInternal requestInternal,
             io.vertx.core.Context executionContext) implements HttpServerMetricsTagsContributor.Context {
         @Override

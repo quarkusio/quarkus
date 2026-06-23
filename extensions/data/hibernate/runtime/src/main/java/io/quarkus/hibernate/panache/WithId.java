@@ -6,28 +6,54 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 
+import org.hibernate.annotations.UuidGenerator;
+
+// This is now a dumb placeholder because @GeneratedValue only works with Long
 @MappedSuperclass
-public class WithId<IdType> {
-    /**
-     * The auto-generated ID field. This field is set by Hibernate ORM when this entity
-     * is persisted.
-     */
+public abstract class WithId<Identifier> {
+
     @Id
-    @GeneratedValue
-    public IdType id;
+    public Identifier id;
 
     @Override
-    public java.lang.String toString() {
+    public String toString() {
         return this.getClass().getSimpleName() + "<" + id + ">";
     }
 
-    public abstract static class AutoLong extends WithId<java.lang.Long> {
+    @MappedSuperclass
+    public abstract static class AutoLong {
+        @Id
+        @GeneratedValue
+        public Long id;
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName() + "<" + id + ">";
+        }
     }
 
-    public abstract static class AutoString extends WithId<java.lang.String> {
+    @MappedSuperclass
+    public abstract static class AutoString {
+        @Id
+        @UuidGenerator
+        public String id;
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName() + "<" + id + ">";
+        }
     }
 
-    public abstract static class AutoUUID extends WithId<java.util.UUID> {
+    @MappedSuperclass
+    public abstract static class AutoUUID {
+        @Id
+        @UuidGenerator
+        public UUID id;
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName() + "<" + id + ">";
+        }
     }
 
 }

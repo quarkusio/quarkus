@@ -40,6 +40,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.value.registry.ValueRegistry;
+
 /**
  * Manages {@link QuarkusTestResourceLifecycleManager}
  */
@@ -194,12 +196,12 @@ public class TestResourceManager implements Closeable {
         return allProps;
     }
 
-    public void inject(Object testInstance) {
+    public void inject(ValueRegistry valueRegistry, Object testInstance) {
         injectTestContext(testInstance, devServicesContext);
         for (TestResourceStartInfo entry : allTestResources) {
             QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager = entry.getTestResource();
             quarkusTestResourceLifecycleManager.inject(testInstance);
-            quarkusTestResourceLifecycleManager.inject(new DefaultTestInjector(testInstance));
+            quarkusTestResourceLifecycleManager.inject(new DefaultTestInjector(valueRegistry, testInstance));
         }
     }
 
@@ -730,10 +732,17 @@ public class TestResourceManager implements Closeable {
     static class DefaultTestInjector implements QuarkusTestResourceLifecycleManager.TestInjector {
 
         // visible for testing
+        final ValueRegistry valueRegistry;
         final Object testInstance;
 
-        private DefaultTestInjector(Object testInstance) {
+        private DefaultTestInjector(ValueRegistry valueRegistry, Object testInstance) {
+            this.valueRegistry = valueRegistry;
             this.testInstance = testInstance;
+        }
+
+        @Override
+        public ValueRegistry valueRegistry() {
+            return valueRegistry;
         }
 
         @Override

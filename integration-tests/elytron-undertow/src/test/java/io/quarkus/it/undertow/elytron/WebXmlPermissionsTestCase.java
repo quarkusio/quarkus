@@ -21,7 +21,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
                 .body("Bill")
                 .contentType(ContentType.TEXT)
                 .when()
-                .post("/foo/")
+                .post()
                 .then()
                 .statusCode(200)
                 .body(is("hello Bill"));
@@ -31,22 +31,22 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
     void testOpenApiNoPermissions() {
         given()
                 .when()
-                .get("/foo/openapi")
+                .get("/openapi")
                 .then()
                 .statusCode(401);
         given()
                 .when()
-                .get("/r/../foo/openapi")
+                .get("/r/../openapi")
                 .then()
                 .statusCode(401);
         given()
                 .when()
-                .get("/foo/bar/../openapi")
+                .get("/bar/../openapi")
                 .then()
                 .statusCode(401);
         given()
                 .when()
-                .get("/foo/bar/../openapi/;a")
+                .get("/bar/../openapi/;a")
                 .then()
                 .statusCode(401);
     }
@@ -56,7 +56,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/foo/openapi")
+                .get("/openapi")
                 .then()
                 .statusCode(403);
     }
@@ -67,7 +67,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .get("/foo/openapi")
+                .get("/openapi")
                 .then()
                 .statusCode(200);
     }
@@ -77,7 +77,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/foo/secure/a")
+                .get("/secure/a")
                 .then()
                 .statusCode(403);
     }
@@ -86,7 +86,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
     void testSecuredServletWithNoAuth() {
         given()
                 .when()
-                .get("/foo/secure/a")
+                .get("/secure/a")
                 .then()
                 .statusCode(401);
     }
@@ -97,7 +97,7 @@ class WebXmlPermissionsTestCase extends HttpsSetup {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .get("/foo/secure/a")
+                .get("/secure/a")
                 .then()
                 .statusCode(200);
     }

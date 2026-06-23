@@ -1,6 +1,7 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -396,19 +396,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
-            if (runningQuarkusApplication != null) {
-                boolean secure = false;
-                Optional<String> insecureAllowed = runningQuarkusApplication
-                        .getConfigValue("quarkus.http.insecure-requests", String.class);
-                if (insecureAllowed.isPresent()) {
-                    secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
-                }
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
-                        .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
-                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                        .getDeclaredMethod("setup", boolean.class).invoke(null, false);
+            ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
+            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI), endpointPath);
             }
-
+            TestScopeManager.setup(false);
         } else {
             throwBootFailureException();
         }
@@ -809,8 +801,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private Object createActualTestInstance(Class<?> testClass, ExtensionContext context, QuarkusTestExtensionState state)
-            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+    private Object createActualTestInstance(Class<?> testClass, ExtensionContext context, QuarkusTestExtensionState state) {
         Object testInstance = runningQuarkusApplication.instance(testClass);
 
         ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
@@ -818,8 +809,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         ValueRegistryInjector.inject(testInstance, valueRegistry);
         ConfigInjector.inject(testInstance, config);
         TestHTTPResourceManager.inject(testInstance, valueRegistry, config, testHttpEndpointProviders);
-
-        state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager, testInstance);
+        ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
         return testInstance;
     }
 

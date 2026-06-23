@@ -63,6 +63,7 @@ class ForwardedParser {
      */
     private final static AsciiString HOST_HEADER = AsciiString.cached("Host");
 
+    private boolean rejected;
     private boolean calculated;
     private String host;
     private int port = -1;
@@ -78,6 +79,13 @@ class ForwardedParser {
         this.delegate = delegate;
         this.forwardingProxyOptions = forwardingProxyOptions;
         this.trustedProxyCheck = trustedProxyCheck;
+    }
+
+    boolean isRejected() {
+        if (!calculated) {
+            calculate();
+        }
+        return rejected;
     }
 
     public String scheme() {
@@ -148,15 +156,16 @@ class ForwardedParser {
                     forwardedHeaders = processForwarded();
                     xForwardedHeaders = processXForwarded();
                 }
-                if (forwardingProxyOptions.strictForwardedControl) {
+                if (!rejected && forwardingProxyOptions.strictForwardedControl) {
                     log.debug(
                             "Strict forwarded control is enabled, checking if common Forwarded and X-Forwarded properties match");
                     if (!xForwardedHeaders.modifiedPropertiesMatch(forwardedHeaders)) {
-                        delegate.response().setStatusCode(400);
-                        delegate.end();
+                        log.debug("Rejecting request: Forwarded and X-Forwarded header values do not match");
+                        rejected = true;
                         return;
+                    } else {
+                        log.debug("Common Forwarded and X-Forwarded properties match");
                     }
-                    log.debug("Common Forwarded and X-Forwarded properties match");
                 }
             } else if (forwardingProxyOptions.allowForwarded) {
                 forwardedHeaders = processForwarded();
@@ -164,10 +173,14 @@ class ForwardedParser {
                 xForwardedHeaders = processXForwarded();
             }
 
-            if (xForwardedHeaders != null) {
-                storeForwarded(xForwardedHeaders);
-            } else if (forwardedHeaders != null) {
-                storeForwarded(forwardedHeaders);
+            if (rejected) {
+                return;
+            } else {
+                if (xForwardedHeaders != null) {
+                    storeForwarded(xForwardedHeaders);
+                } else if (forwardedHeaders != null) {
+                    storeForwarded(forwardedHeaders);
+                }
             }
         }
 
@@ -201,6 +214,9 @@ class ForwardedParser {
     }
 
     private Forwarded processForwarded() {
+        if (rejected) {
+            return null;
+        }
         Forwarded forwardedValues = new Forwarded();
 
         String forwarded = delegate.getHeader(FORWARDED);
@@ -210,7 +226,13 @@ class ForwardedParser {
 
         Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwarded);
         if (matcher.find()) {
-            scheme = matcher.group(1).trim();
+            String proto = matcher.group(1).trim();
+            if (forwardingProxyOptions.validateForwardedProto && isSchemeInvalid(proto)) {
+                log.debugf("Rejecting request: Forwarded header has invalid proto '%s'", proto);
+                rejected = true;
+                return null;
+            }
+            scheme = proto;
             port = -1;
             log.debugf("Using Forwarded 'proto' to set scheme to %s", scheme);
             forwardedValues.setScheme(scheme);
@@ -238,11 +260,21 @@ class ForwardedParser {
     }
 
     private Forwarded processXForwarded() {
+        if (rejected) {
+            return null;
+        }
+
         Forwarded xForwardedValues = new Forwarded();
 
         String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
         if (protocolHeader != null) {
-            scheme = getFirstElement(protocolHeader);
+            String proto = getFirstElement(protocolHeader).trim();
+            if (forwardingProxyOptions.validateForwardedProto && isSchemeInvalid(proto)) {
+                log.debugf("Rejecting request: X-Forwarded-Proto header has invalid proto '%s'", proto);
+                rejected = true;
+                return null;
+            }
+            scheme = proto;
             port = -1;
             log.debugf("Using X-Forwarded-Proto to set scheme to %s", scheme);
             xForwardedValues.setScheme(scheme);
@@ -297,6 +329,30 @@ class ForwardedParser {
         }
 
         return xForwardedValues;
+    }
+
+    private static boolean isSchemeInvalid(String scheme) {
+        if (scheme.isEmpty() || !isAsciiAlpha(scheme.charAt(0))) {
+            log.debugf("Invalid forwarded proto '%s': must start with a letter", scheme);
+            return true;
+        }
+        for (int i = 1; i < scheme.length(); i++) {
+            char c = scheme.charAt(i);
+            if (c == '+' || c == '-' || c == '.' || isAsciiAlpha(c) || isAsciiDigit(c)) {
+                continue;
+            }
+            log.debugf("Invalid forwarded proto '%s': illegal character '%c' at position %d", scheme, c, i);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isAsciiAlpha(char c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+    }
+
+    private static boolean isAsciiDigit(char c) {
+        return c >= '0' && c <= '9';
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {

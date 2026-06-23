@@ -26,21 +26,10 @@ import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 class BytecodeTools {
 
     private static final Map<String, Object> VINEFLOWER_OPTIONS = createVineflowerOptions();
-
-    // Known non-deterministic classes. Each extension should fix its non-determinism;
-    // entries here are temporary workarounds.
-    // TODO: allow extensions to declare exclusions dynamically via a build item
-    private static final Set<String> DEFAULT_EXCLUDED = Set.of(
-            // DevUI handler classes that embed non-deterministic data
-            "io/quarkus/runner/recorded/WebJarProcessor$processWebJarDevMode",
-            "io/quarkus/runner/recorded/SmallRyeHealthProcessor$registerHealthUiHandler",
-            "io/quarkus/runner/recorded/SmallRyeGraphQLProcessor$registerGraphQLUiHandler",
-            "io/quarkus/runner/recorded/SwaggerUiProcessor$registerSwaggerUiHandler");
-
     private static final Set<String> EXCLUDED = loadExclusions();
 
     private static Set<String> loadExclusions() {
-        Set<String> result = new TreeSet<>(DEFAULT_EXCLUDED);
+        Set<String> result = new TreeSet<>();
         String additional = System.getProperty("quarkus-internal.test.reproducibility-check.excludes");
         if (additional != null && !additional.isBlank()) {
             for (String prefix : additional.split(",")) {

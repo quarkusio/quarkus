@@ -16,6 +16,7 @@ import io.vertx.core.http.ClientAuth;
 
 public class ForwardingProxyOptions {
     public final boolean proxyAddressForwarding;
+    final boolean validateForwardedProto;
     final boolean allowForwarded;
     final boolean allowXForwarded;
     final boolean enableForwardedHost;
@@ -28,43 +29,29 @@ public class ForwardingProxyOptions {
     final boolean enableTrustedProxyHeader;
     public final List<List<Rdn>> trustedProxyDns;
 
-    public ForwardingProxyOptions(final boolean proxyAddressForwarding,
-            boolean allowForwarded,
-            boolean allowXForwarded,
-            boolean enableForwardedHost,
-            boolean enableTrustedProxyHeader,
-            AsciiString forwardedHostHeader,
-            boolean enableForwardedPrefix,
-            boolean strictForwardedControl,
-            ForwardedPrecedence forwardedPrecedence,
-            AsciiString forwardedPrefixHeader,
-            TrustedProxyCheckBuilder trustedProxyCheckBuilder,
-            List<List<Rdn>> trustedProxyDns) {
-        this.proxyAddressForwarding = proxyAddressForwarding;
-        this.allowForwarded = allowForwarded;
-        this.allowXForwarded = allowXForwarded;
-        this.enableForwardedHost = enableForwardedHost;
-        this.enableForwardedPrefix = enableForwardedPrefix;
-        this.forwardedHostHeader = forwardedHostHeader;
-        this.forwardedPrefixHeader = forwardedPrefixHeader;
-        this.strictForwardedControl = strictForwardedControl;
-        this.forwardedPrecedence = forwardedPrecedence;
-        this.trustedProxyCheckBuilder = trustedProxyCheckBuilder;
-        this.enableTrustedProxyHeader = enableTrustedProxyHeader;
-        this.trustedProxyDns = trustedProxyDns;
+    private ForwardingProxyOptions(Builder builder) {
+        this.proxyAddressForwarding = builder.proxyAddressForwarding;
+        this.validateForwardedProto = builder.validateForwardedProto;
+        this.allowForwarded = builder.allowForwarded;
+        this.allowXForwarded = builder.allowXForwarded;
+        this.enableForwardedHost = builder.enableForwardedHost;
+        this.enableForwardedPrefix = builder.enableForwardedPrefix;
+        this.forwardedHostHeader = builder.forwardedHostHeader;
+        this.forwardedPrefixHeader = builder.forwardedPrefixHeader;
+        this.strictForwardedControl = builder.strictForwardedControl;
+        this.forwardedPrecedence = builder.forwardedPrecedence;
+        this.trustedProxyCheckBuilder = builder.trustedProxyCheckBuilder;
+        this.enableTrustedProxyHeader = builder.enableTrustedProxyHeader;
+        this.trustedProxyDns = builder.trustedProxyDns;
+    }
+
+    static Builder builder() {
+        return new Builder();
     }
 
     public static ForwardingProxyOptions from(ProxyConfig proxyConfig, ClientAuth clientAuth) {
-        final boolean proxyAddressForwarding = proxyConfig.proxyAddressForwarding();
         final boolean allowForwarded = proxyConfig.allowForwarded();
         final boolean allowXForwarded = proxyConfig.allowXForwarded().orElse(!allowForwarded);
-        final boolean enableForwardedHost = proxyConfig.enableForwardedHost();
-        final boolean enableForwardedPrefix = proxyConfig.enableForwardedPrefix();
-        final boolean enableTrustedProxyHeader = proxyConfig.enableTrustedProxyHeader();
-        final boolean strictForwardedControl = proxyConfig.strictForwardedControl();
-        final ForwardedPrecedence forwardedPrecedence = proxyConfig.forwardedPrecedence();
-        final AsciiString forwardedPrefixHeader = AsciiString.cached(proxyConfig.forwardedPrefixHeader());
-        final AsciiString forwardedHostHeader = AsciiString.cached(proxyConfig.forwardedHostHeader());
 
         final List<TrustedProxyCheckPart> parts = proxyConfig.trustedProxies()
                 .isPresent() ? List.copyOf(proxyConfig.trustedProxies().get()) : List.of();
@@ -75,32 +62,47 @@ public class ForwardingProxyOptions {
         final var proxyCheckBuilder = (!allowXForwarded && !allowForwarded)
                 || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
 
-        return new ForwardingProxyOptions(proxyAddressForwarding, allowForwarded, allowXForwarded, enableForwardedHost,
-                enableTrustedProxyHeader, forwardedHostHeader, enableForwardedPrefix, strictForwardedControl,
-                forwardedPrecedence, forwardedPrefixHeader, proxyCheckBuilder, trustedProxyDns);
+        return builder()
+                .proxyAddressForwarding(proxyConfig.proxyAddressForwarding())
+                .validateForwardedProto(
+                        proxyConfig.forwardedProtoValidation() == ProxyConfig.ForwardedProtoValidation.REJECT)
+                .allowForwarded(allowForwarded)
+                .allowXForwarded(allowXForwarded)
+                .enableForwardedHost(proxyConfig.enableForwardedHost())
+                .enableForwardedPrefix(proxyConfig.enableForwardedPrefix())
+                .enableTrustedProxyHeader(proxyConfig.enableTrustedProxyHeader())
+                .strictForwardedControl(proxyConfig.strictForwardedControl())
+                .forwardedPrecedence(proxyConfig.forwardedPrecedence())
+                .forwardedHostHeader(AsciiString.cached(proxyConfig.forwardedHostHeader()))
+                .forwardedPrefixHeader(AsciiString.cached(proxyConfig.forwardedPrefixHeader()))
+                .trustedProxyCheckBuilder(proxyCheckBuilder)
+                .trustedProxyDns(trustedProxyDns)
+                .build();
     }
 
     private static List<List<Rdn>> collectAndValidateTrustedProxyDns(ProxyConfig proxyConfig, ClientAuth clientAuth,
             List<TrustedProxyCheckPart> parts, boolean allowXForwarded, boolean allowForwarded) {
-        final List<String> dnStrings = proxyConfig.trustedProxyDns().orElse(List.of());
+        final List<String> dnStrings = proxyConfig.trustedProxy().stream()
+                .map(ProxyConfig.TrustedProxyConfig::subjectDn)
+                .toList();
         if (dnStrings.isEmpty()) {
             return null;
         }
 
         if (!parts.isEmpty()) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxies' and 'quarkus.http.proxy.trusted-proxy-dns' are mutually exclusive");
+                    "'quarkus.http.proxy.trusted-proxies' and 'quarkus.http.proxy.trusted-proxy[*].subject-dn' are mutually exclusive");
         }
 
         if (clientAuth == ClientAuth.NONE) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxy-dns' requires 'quarkus.http.ssl.client-auth' to be set "
+                    "'quarkus.http.proxy.trusted-proxy[*].subject-dn' requires 'quarkus.http.ssl.client-auth' to be set "
                             + "to 'request' or 'required'");
         }
 
         if (!allowXForwarded && !allowForwarded) {
             throw new ConfigurationException(
-                    "'quarkus.http.proxy.trusted-proxy-dns' requires 'quarkus.http.proxy.allow-forwarded' "
+                    "'quarkus.http.proxy.trusted-proxy[*].subject-dn' requires 'quarkus.http.proxy.allow-forwarded' "
                             + "or 'quarkus.http.proxy.allow-x-forwarded' to be enabled");
         }
 
@@ -109,9 +111,98 @@ public class ForwardingProxyOptions {
                 var x500PrincipalName = new X500Principal(dn).getName(); // force DN validation
                 return List.copyOf(new LdapName(x500PrincipalName).getRdns());
             } catch (IllegalArgumentException | InvalidNameException e) {
-                throw new ConfigurationException("Invalid 'quarkus.http.proxy.trusted-proxy-dns' value '" + dn
+                throw new ConfigurationException("Invalid 'quarkus.http.proxy.trusted-proxy[*].subject-dn' value '" + dn
                         + "': not a valid RFC 2253 Distinguished Name", e);
             }
         }).toList();
+    }
+
+    static final class Builder {
+
+        private boolean proxyAddressForwarding;
+        private boolean validateForwardedProto;
+        private boolean allowForwarded;
+        private boolean allowXForwarded;
+        private boolean enableForwardedHost;
+        private boolean enableForwardedPrefix;
+        private AsciiString forwardedHostHeader;
+        private AsciiString forwardedPrefixHeader;
+        private boolean strictForwardedControl;
+        private ForwardedPrecedence forwardedPrecedence;
+        private TrustedProxyCheckBuilder trustedProxyCheckBuilder;
+        private boolean enableTrustedProxyHeader;
+        private List<List<Rdn>> trustedProxyDns;
+
+        private Builder() {
+        }
+
+        Builder proxyAddressForwarding(boolean proxyAddressForwarding) {
+            this.proxyAddressForwarding = proxyAddressForwarding;
+            return this;
+        }
+
+        Builder validateForwardedProto(boolean validateForwardedProto) {
+            this.validateForwardedProto = validateForwardedProto;
+            return this;
+        }
+
+        Builder allowForwarded(boolean allowForwarded) {
+            this.allowForwarded = allowForwarded;
+            return this;
+        }
+
+        Builder allowXForwarded(boolean allowXForwarded) {
+            this.allowXForwarded = allowXForwarded;
+            return this;
+        }
+
+        Builder enableForwardedHost(boolean enableForwardedHost) {
+            this.enableForwardedHost = enableForwardedHost;
+            return this;
+        }
+
+        Builder enableForwardedPrefix(boolean enableForwardedPrefix) {
+            this.enableForwardedPrefix = enableForwardedPrefix;
+            return this;
+        }
+
+        Builder forwardedHostHeader(AsciiString forwardedHostHeader) {
+            this.forwardedHostHeader = forwardedHostHeader;
+            return this;
+        }
+
+        Builder forwardedPrefixHeader(AsciiString forwardedPrefixHeader) {
+            this.forwardedPrefixHeader = forwardedPrefixHeader;
+            return this;
+        }
+
+        Builder strictForwardedControl(boolean strictForwardedControl) {
+            this.strictForwardedControl = strictForwardedControl;
+            return this;
+        }
+
+        Builder forwardedPrecedence(ForwardedPrecedence forwardedPrecedence) {
+            this.forwardedPrecedence = forwardedPrecedence;
+            return this;
+        }
+
+        Builder trustedProxyCheckBuilder(TrustedProxyCheckBuilder trustedProxyCheckBuilder) {
+            this.trustedProxyCheckBuilder = trustedProxyCheckBuilder;
+            return this;
+        }
+
+        Builder enableTrustedProxyHeader(boolean enableTrustedProxyHeader) {
+            this.enableTrustedProxyHeader = enableTrustedProxyHeader;
+            return this;
+        }
+
+        Builder trustedProxyDns(List<List<Rdn>> trustedProxyDns) {
+            this.trustedProxyDns = trustedProxyDns;
+            return this;
+        }
+
+        ForwardingProxyOptions build() {
+            return new ForwardingProxyOptions(this);
+        }
     }
 }

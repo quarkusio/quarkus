@@ -55,7 +55,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
 
-        <quarkus-platform-bom-plugin.version>0.0.131</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.132</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>

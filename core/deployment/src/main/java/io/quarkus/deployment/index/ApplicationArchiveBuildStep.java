@@ -51,6 +51,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 public class ApplicationArchiveBuildStep {
@@ -88,6 +89,12 @@ public class ApplicationArchiveBuildStep {
              * The maven classifier of the artifact (optional).
              */
             Optional<String> classifier();
+
+            /**
+             * The maven type of the artifact.
+             */
+            @WithDefault(ArtifactCoords.TYPE_JAR)
+            String type();
         }
     }
 
@@ -96,7 +103,8 @@ public class ApplicationArchiveBuildStep {
             BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
         for (IndexDependencyConfiguration.IndexDependencyConfig indexDependencyConfig : config.indexDependency().values()) {
             indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId(),
-                    indexDependencyConfig.artifactId().orElse(null), indexDependencyConfig.classifier().orElse(null)));
+                    indexDependencyConfig.artifactId().orElse(null), indexDependencyConfig.classifier().orElse(null),
+                    indexDependencyConfig.type()));
         }
     }
 
@@ -204,7 +212,7 @@ public class ApplicationArchiveBuildStep {
                 indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
                         indexDependencyBuildItem.getArtifactId(),
                         indexDependencyBuildItem.getClassifier(),
-                        ArtifactCoords.TYPE_JAR));
+                        indexDependencyBuildItem.getType()));
             } else {
                 indexGroupIds.add(indexDependencyBuildItem.getGroupId());
             }

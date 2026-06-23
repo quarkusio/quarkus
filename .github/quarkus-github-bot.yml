@@ -153,7 +153,7 @@ triage:
         - integration-tests/jpa
         - integration-tests/hibernate-envers
         - integration-tests/hibernate-orm-tenancy
-        - integration-tests/infinispan-cache-jpa
+        - integration-tests/hibernate-orm-cache
     - id: hibernate-search
       labels: [area/hibernate-search]
       expression: |
@@ -193,7 +193,7 @@ triage:
     - id: jaeger
       labels: [area/jaeger]
       title: "jaeger"
-      notify: [radcortez, brunobat]
+      notify: [jamezp, brunobat]
       directories:
         - extensions/jaeger/
     - id: jackson
@@ -239,7 +239,7 @@ triage:
     - id: opentelemetry
       labels: [area/tracing]
       title: "(trace|opentelemetry)"
-      notify: [radcortez, brunobat]
+      notify: [jamezp, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/opentelemetry/
@@ -263,7 +263,7 @@ triage:
     - id: micrometer
       labels: [area/metrics]
       title: "micrometer"
-      notify: [ebullient, brunobat]
+      notify: [jamezp, brunobat]
       notifyInPullRequest: true
       directories:
         - extensions/micrometer
@@ -401,7 +401,7 @@ triage:
       notify: [karesti, wburns]
       directories:
         - extensions/infinispan-client/
-        - integration-tests/infinispan-cache-jpa/
+        - integration-tests/infinispan-cache/
         - integration-tests/infinispan-client/
     - id: grpc
       labels: [area/grpc]

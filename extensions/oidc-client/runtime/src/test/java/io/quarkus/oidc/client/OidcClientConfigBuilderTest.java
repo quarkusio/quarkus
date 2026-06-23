@@ -91,6 +91,7 @@ public class OidcClientConfigBuilderTest {
         assertEquals(10, jwt.lifespan());
         assertFalse(jwt.assertion());
         assertFalse(jwt.tokenPath().isPresent());
+        assertFalse(credentials.forAllEndpoints());
 
         // OidcCommonConfig methods
         assertTrue(config.authServerUrl().isEmpty());
@@ -183,7 +184,9 @@ public class OidcClientConfigBuilderTest {
                 .signatureAlgorithm("ES512")
                 .lifespan(852)
                 .assertion(true)
-                .endCredentials()
+                .end()
+                .forAllEndpoints()
+                .end()
                 // OidcCommonConfig methods
                 .authServerUrl("we")
                 .discoveryEnabled(false)
@@ -284,6 +287,7 @@ public class OidcClientConfigBuilderTest {
         assertEquals("ES512", jwt.signatureAlgorithm().orElse(null));
         assertEquals(852, jwt.lifespan());
         assertTrue(jwt.assertion());
+        assertTrue(credentials.forAllEndpoints());
 
         // OidcCommonConfig methods
         assertEquals("we", config.authServerUrl().orElse(null));

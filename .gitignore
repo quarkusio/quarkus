@@ -54,4 +54,5 @@ docs/.docs-preview-root-build-head
 docs/.docs-preview-docs-build-last-run
 docs/.docs-preview-times
 docs/.docs-preview.lock/
-extensions/grpc/deployment/java_pid*.hprof
+hostkey.ser
+java_pid*.hprof

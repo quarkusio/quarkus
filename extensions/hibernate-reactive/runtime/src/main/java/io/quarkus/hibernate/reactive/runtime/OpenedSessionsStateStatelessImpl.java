@@ -28,4 +28,9 @@ public class OpenedSessionsStateStatelessImpl extends OpenedSessionsState<Mutiny
     protected Uni<Void> flushSession(Mutiny.StatelessSession session) {
         return Uni.createFrom().voidItem();
     }
+
+    @Override
+    protected Mutiny.Transaction currentTransaction(Mutiny.StatelessSession session) {
+        return session.currentTransaction();
+    }
 }

@@ -37,13 +37,15 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
+import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
@@ -213,6 +215,40 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
+    final class SpanProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private final OTelBuildConfig oTelBuildConfig;
+        private final List<SpanProcessor> spanProcessors;
+
+        public SpanProcessorCustomizer(OTelBuildConfig oTelBuildConfig,
+                @All List<SpanProcessor> spanProcessors) {
+            this.oTelBuildConfig = oTelBuildConfig;
+            this.spanProcessors = spanProcessors;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            builder.addSpanProcessorCustomizer(new BiFunction<SpanProcessor, ConfigProperties, SpanProcessor>() {
+                @Override
+                public SpanProcessor apply(SpanProcessor spanProcessor, ConfigProperties configProperties) {
+                    if (spanProcessors.isEmpty()) {
+                        if (spanProcessor instanceof BatchSpanProcessor batchSpanProcessor) {
+                            SpanExporter spanExporter = batchSpanProcessor.getSpanExporter();
+                            if (oTelBuildConfig.simple()) {
+                                return new SimpleSpanProcessorWithBatchShutdown(spanExporter, spanProcessor);
+                            }
+                            // NoopSpanExporter is package friendly
+                            if ("NoopSpanExporter".equals(spanExporter.getClass().getSimpleName())) {
+                                return SpanProcessor.composite();
+                            }
+                        }
+                    }
+                    return spanProcessor;
+                }
+            });
+        }
+    }
+
+    @Singleton
     final class TracerProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final OTelBuildConfig oTelBuildConfig;
@@ -236,13 +272,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 ConfigProperties configProperties) {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                 idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
-                                spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
-                                    @Override
-                                    public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
-                                    }
-                                })
-                                        .forEach(tracerProviderBuilder::addSpanProcessor);
+                                spanProcessors.forEach(tracerProviderBuilder::addSpanProcessor);
                             }
                             return tracerProviderBuilder;
                         }

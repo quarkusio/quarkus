@@ -460,6 +460,21 @@ public class OidcCommonUtils {
         return clientSecretMethod(creds) == Secret.Method.POST_JWT;
     }
 
+    public static void validateCredentialsForAllEndpoints(Credentials creds) {
+        if (!creds.forAllEndpoints()) {
+            return;
+        }
+        if (isClientSecretBasicAuthRequired(creds)) {
+            return;
+        }
+        if (creds.jwt().source() == Source.BEARER && creds.jwt().tokenPath().isPresent()) {
+            return;
+        }
+        throw new ConfigurationException(
+                "Client credentials cannot be sent to all OIDC endpoints because only "
+                        + "'client_secret_basic' or JWT bearer ('jwt.source=bearer') authentication methods are supported");
+    }
+
     public static boolean isJwtAssertion(Credentials creds) {
         return creds.jwt().assertion();
     }
@@ -986,7 +1001,7 @@ public class OidcCommonUtils {
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
                     jwtConfig.source());
-            if (clientAssertionProvider.getClientAssertion() == null) {
+            if (clientAssertionProvider.getAvailableClientAssertion() == null) {
                 throw exceptionCreator
                         .apply("Cannot find a valid "
                                 + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")

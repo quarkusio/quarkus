@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.runtime;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,14 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     protected abstract boolean isSessionOpen(T session);
 
     protected abstract Uni<Void> flushSession(T session);
+
+    protected abstract Mutiny.Transaction currentTransaction(T session);
+
+    public Optional<Mutiny.Transaction> currentTransaction(Context context, String persistenceUnitName) {
+        return getOpenedSession(context, persistenceUnitName)
+                .map(opened -> currentTransaction(opened.session()))
+                .filter(Objects::nonNull);
+    }
 
     private final ContextLocal<ConcurrentHashMap<String, T>> sessionsLocal;
 

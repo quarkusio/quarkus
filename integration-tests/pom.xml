@@ -178,7 +178,6 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
-                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>
@@ -204,6 +203,7 @@
                 <module>jpa-mssql</module>
                 <module>jpa-mysql</module>
                 <module>jpa-oracle</module>
+                <module>hibernate-orm-cache</module>
                 <module>hibernate-orm-compatibility-5.6/mariadb</module>
                 <module>hibernate-orm-compatibility-5.6/postgresql</module>
                 <module>hibernate-orm-panache</module>
@@ -250,7 +250,7 @@
                 <module>spring-cloud-config-client</module>
                 <module>spring-data-rest</module>
                 <module>spring-tx</module>
-                <module>infinispan-cache-jpa</module>
+                <module>infinispan-cache</module>
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
                 <module>elytron-resteasy</module>
@@ -369,6 +369,10 @@
                 <module>signals</module>
                 <module>signals-command-mode</module>
                 <module>simple with space</module>
+                <module>aesh</module>
+                <module>aesh-native</module>
+                <module>aesh-ssh-native</module>
+                <module>aesh-websocket-native</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
                 <module>web-dependency-locator</module>

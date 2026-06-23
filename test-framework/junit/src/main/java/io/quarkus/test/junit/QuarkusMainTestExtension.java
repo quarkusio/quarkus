@@ -42,12 +42,14 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.configuration.ConfigSourceOrdinal;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
@@ -244,8 +246,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             startupAction.overrideConfig(properties);
 
             testResourceManager.getClass()
-                    .getMethod("inject", Object.class)
-                    .invoke(testResourceManager, context.getRequiredTestInstance());
+                    .getMethod("inject", ValueRegistry.class, Object.class)
+                    .invoke(testResourceManager, ValueRegistryImpl.builder().build(), context.getRequiredTestInstance());
 
             var result = startupAction.runMainClassBlocking(arguments);
             flushAllLoggers();

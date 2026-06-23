@@ -34,6 +34,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funq
@@ -49,14 +50,17 @@ public class FunqyLambdaBindingRecorder {
     private final RuntimeValue<FunqyConfig> runtimeConfig;
     private final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
     private final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig;
+    private final RuntimeValue<ValueRegistry> valueRegistry;
 
     public FunqyLambdaBindingRecorder(
             final RuntimeValue<FunqyConfig> runtimeConfig,
             final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig,
-            final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig) {
+            final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig,
+            final RuntimeValue<ValueRegistry> valueRegistry) {
         this.runtimeConfig = runtimeConfig;
         this.amazonBuildTimeConfig = amazonBuildTimeConfig;
         this.amazonRuntimeConfig = amazonRuntimeConfig;
+        this.valueRegistry = valueRegistry;
     }
 
     public void init(BeanContainer bc) {
@@ -181,8 +185,7 @@ public class FunqyLambdaBindingRecorder {
                 throw new RuntimeException("Unreachable!");
             }
         };
-        loop.startPollLoop(context);
-
+        loop.startPollLoop(valueRegistry.getValue(), context);
     }
 
     private static FunqyServerResponse dispatch(Object input, Context context) throws IOException {

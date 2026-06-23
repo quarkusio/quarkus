@@ -76,6 +76,11 @@ public class ManagedReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
+    public Uni<Void> flush(Class<?> entityClass) {
+        return DELEGATE.flush(entityClass);
+    }
+
+    @Override
     public Uni<Void> persist(Iterable<?> entities) {
         return DELEGATE.persist(entities);
     }

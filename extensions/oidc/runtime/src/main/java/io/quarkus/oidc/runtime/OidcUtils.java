@@ -978,7 +978,7 @@ public final class OidcUtils {
             try {
                 return OidcUtils.decryptString(token, decryptionKey, encryptionAlgorithm);
             } catch (JoseException ex) {
-                LOG.debugf("Failed to decrypt a token: %s", ex.getMessage());
+                LOG.warnf("Failed to decrypt a token: %s", ex.getMessage());
             }
         }
         return token;

@@ -1,9 +1,11 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.http.TestHTTPResourceManager.*;
+import static io.quarkus.test.common.http.TestHTTPResourceManager.testUrlSsl;
+
 import java.net.URI;
 import java.util.Optional;
 
-import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
@@ -17,7 +19,8 @@ public record ListeningAddress(Integer port, String protocol) {
     public void register(ValueRegistry valueRegistry, Config config) {
         valueRegistry.register(isSsl() ? HTTPS_PORT : HTTP_PORT, port);
         valueRegistry.register(isSsl() ? HTTPS_TEST_PORT : HTTP_TEST_PORT, port);
-        valueRegistry.register(LOCAL_BASE_URI, URI.create(TestHTTPResourceManager.testUrl(valueRegistry, config)));
+        valueRegistry.register(LOCAL_BASE_URI,
+                URI.create(isSsl() ? testUrlSsl(valueRegistry, config) : testUrl(valueRegistry, config)));
     }
 
     // Compatibility with Config and io.quarkus.vertx.http.HttpServer

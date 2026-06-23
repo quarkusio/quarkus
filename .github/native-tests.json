@@ -93,7 +93,7 @@
         {
             "category": "Cache",
             "timeout": 80,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache, cache-multiple-backends",
+            "test-modules": "hibernate-orm-cache, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache, cache-multiple-backends",
             "os-name": "ubuntu-latest"
         },
         {

@@ -16,7 +16,7 @@ class TrustedProxyDnAndIpValidationFailureTest {
             quarkus.http.proxy.proxy-address-forwarding=true
             quarkus.http.proxy.allow-forwarded=true
             quarkus.http.proxy.trusted-proxies=localhost
-            quarkus.http.proxy.trusted-proxy-dns=CN=my-trusted-proxy
+            quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-trusted-proxy
             """;
 
     @RegisterExtension
@@ -25,7 +25,7 @@ class TrustedProxyDnAndIpValidationFailureTest {
                     .addClasses(ForwardedHandlerInitializer.class)
                     .addAsResource(new StringAsset(configuration), "application.properties"))
             .assertException(t -> assertThat(t).hasMessageContaining("quarkus.http.proxy.trusted-proxies")
-                    .hasMessageContaining("quarkus.http.proxy.trusted-proxy-dns"));
+                    .hasMessageContaining("quarkus.http.proxy.trusted-proxy[*].subject-dn"));
 
     @Test
     void testStartupFails() {

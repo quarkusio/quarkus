@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
 import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -15,7 +16,6 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
-import static java.util.Optional.empty;
 
 import java.io.Closeable;
 import java.io.File;
@@ -140,7 +140,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             listeningAddress.ifPresent(new Consumer<ListeningAddress>() {
                 @Override
                 public void accept(ListeningAddress listeningAddress) {
-                    RestAssuredStateManager.setURL(listeningAddress.isSsl(), listeningAddress.port(),
+                    RestAssuredStateManager.setTestUri(
+                            valueRegistry.get(LOCAL_BASE_URI),
                             QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
                 }
             });
@@ -293,12 +294,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 }
             }
 
-            // Properties set by @TestProfile
-            additionalProperties.putAll(testProfileAndProperties.properties());
             // Make the dev services config accessible from the test itself
             additionalProperties.putAll(devServicesLaunchResult.properties());
             // Allow override of dev services props by integration test extensions
             additionalProperties.putAll(testResourceManager.start());
+            // Properties set by @TestProfile
+            additionalProperties.putAll(testProfileAndProperties.properties());
 
             // Create the ValueRegistry with the current Config and test config
             ConfigSource integrationTestSource = new PropertiesConfigSource(

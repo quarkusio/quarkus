@@ -44,8 +44,8 @@ abstract class AbstractTrustedProxyDnTest {
                 quarkus.http.proxy.enable-trusted-proxy-header=true
                 """.formatted(CERTS_DIR + CERT_NAME, PASSWORD, clientAuth));
         for (int i = 0; i < trustedProxyDns.length; i++) {
-            sb.append("quarkus.http.proxy.trusted-proxy-dns[").append(i).append("]=").append(trustedProxyDns[i])
-                    .append("\n");
+            sb.append("quarkus.http.proxy.trusted-proxy[").append(i).append("].subject-dn=")
+                    .append(trustedProxyDns[i]).append("\n");
         }
 
         return new QuarkusExtensionTest()

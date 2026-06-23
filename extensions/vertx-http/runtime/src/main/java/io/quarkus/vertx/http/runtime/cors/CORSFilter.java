@@ -157,6 +157,9 @@ public class CORSFilter implements Handler<RoutingContext> {
                 LOG.debugf("Invalid origin %s", origin);
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
+                if (corsConfig.varyOrigin()) {
+                    response.headers().add(HttpHeaders.VARY, HttpHeaders.ORIGIN);
+                }
             } else {
                 if (wildcardOrigin && !corsConfig.returnExactOrigins()) {
                     // Return literal * for public APIs where caching matters.
@@ -170,6 +173,9 @@ public class CORSFilter implements Handler<RoutingContext> {
                     response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
                             String.valueOf(allowCredentials));
                     response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+                    if (corsConfig.varyOrigin()) {
+                        response.headers().add(HttpHeaders.VARY, HttpHeaders.ORIGIN);
+                    }
                 }
             }
 

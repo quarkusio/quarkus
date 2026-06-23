@@ -90,7 +90,7 @@ include::{includes}/devtools/build.adoc[]
 the `movies.avsc` will get compiled to a `Movie.java` file
 placed in the `target/generated-sources/avsc` directory.
 
-Take a look at the https://avro.apache.org/docs/current/spec.html#schemas[Avro specification] to learn more about
+Take a look at the https://avro.apache.org/docs/current/specification/#schemas[Avro specification] to learn more about
 the Avro syntax and supported types.
 
 TIP: With Quarkus, there's no need to use a specific Maven plugin to process the Avro schema, this is all done for you by the `quarkus-avro` extension!

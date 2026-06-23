@@ -106,7 +106,7 @@ The initial indexing may take a moment, but subsequent searches are fast.
 
 ==== Extension documentation RAG
 
-In addition to the main Quarkus documentation, the RAG system also includes extension-specific documentation from the extension modules.
+In addition to the main Quarkus documentation, the RAG system also includes extension-specific documentation from Quarkiverse and third-party extensions.
 Each extension can contribute its own documentation, which is automatically discovered and indexed alongside the core documentation.
 
 This ensures that when working with an extension, AI agents have access to:
@@ -116,7 +116,12 @@ This ensures that when working with an extension, AI agents have access to:
 - Integration examples
 - Troubleshooting guides
 
-The extension documentation is pulled from the extension's runtime module and is version-matched to your project, ensuring consistency between the code and documentation.
+Extensions contribute documentation in one of two ways:
+
+- **Bundled** — the RAG SQL is included directly in the deployment JAR (suitable for extensions with a single documentation page)
+- **Separate artifact** — the RAG SQL is published as a standalone artifact and the deployment JAR contains a small pointer file (recommended for extensions with multiple documentation pages, to avoid bloating the deployment JAR)
+
+Both approaches are discovered automatically by the MCP server. For details on how to contribute your extension's documentation, see the https://github.com/quarkusio/quarkus-agent-mcp/blob/main/docs/contributing-extension-docs.md[Contributing Extension Documentation] guide.
 
 === Extension skills
 

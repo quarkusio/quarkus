@@ -1144,6 +1144,56 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>reproducibility-check</id>
+            <activation>
+                <property>
+                    <name>quarkus-internal.test.reproducibility-check</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <additionalClasspathDependencies>
+                                <additionalClasspathDependency>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-junit-config</artifactId>
+                                    <version>${project.version}</version>
+                                    <exclusions>
+                                        <exclusion>
+                                            <groupId>*</groupId>
+                                            <artifactId>*</artifactId>
+                                        </exclusion>
+                                    </exclusions>
+                                </additionalClasspathDependency>
+                            </additionalClasspathDependencies>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <additionalClasspathDependencies>
+                                <additionalClasspathDependency>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-junit-config</artifactId>
+                                    <version>${project.version}</version>
+                                    <exclusions>
+                                        <exclusion>
+                                            <groupId>*</groupId>
+                                            <artifactId>*</artifactId>
+                                        </exclusion>
+                                    </exclusions>
+                                </additionalClasspathDependency>
+                            </additionalClasspathDependencies>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>Windows</id>
             <activation>

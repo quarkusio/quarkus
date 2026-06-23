@@ -425,4 +425,29 @@ public class HeaderUtil {
         }
         return null;
     }
+
+    /**
+     * Sanitizes a filename from a multipart {@code Content-Disposition} header by stripping path components and
+     * null bytes to prevent path traversal attacks.
+     *
+     * @param fileName the raw filename from the Content-Disposition header
+     * @return the base filename, or {@code null} if the input is null, empty, or resolves to a risky name ({@code .}
+     *         or {@code ..})
+     */
+    public static String sanitizeFileName(String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+        fileName = fileName.replace("\0", "");
+        int lastSlash = fileName.lastIndexOf('/');
+        int lastBackslash = fileName.lastIndexOf('\\');
+        int lastSep = Math.max(lastSlash, lastBackslash);
+        if (lastSep >= 0) {
+            fileName = fileName.substring(lastSep + 1);
+        }
+        if (fileName.isEmpty() || ".".equals(fileName) || "..".equals(fileName)) {
+            return null;
+        }
+        return fileName;
+    }
 }

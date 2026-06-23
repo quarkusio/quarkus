@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.fusesource.jansi.io.AnsiProcessor;
+import org.jline.jansi.io.AnsiProcessor;
 
 public class HtmlAnsiProcessor extends AnsiProcessor {
 

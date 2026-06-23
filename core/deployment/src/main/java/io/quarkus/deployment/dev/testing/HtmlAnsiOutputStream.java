@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.fusesource.jansi.AnsiColors;
-import org.fusesource.jansi.AnsiMode;
-import org.fusesource.jansi.AnsiType;
-import org.fusesource.jansi.io.AnsiOutputStream;
+import org.jline.jansi.AnsiColors;
+import org.jline.jansi.AnsiMode;
+import org.jline.jansi.AnsiType;
+import org.jline.jansi.io.AnsiOutputStream;
 
 public class HtmlAnsiOutputStream extends AnsiOutputStream {
 
@@ -17,7 +17,8 @@ public class HtmlAnsiOutputStream extends AnsiOutputStream {
     private static final byte[] BYTES_GT = "&gt;".getBytes();
 
     public HtmlAnsiOutputStream(OutputStream os) {
-        super(os, new ZeroWidthSupplier(), AnsiMode.Force, new HtmlAnsiProcessor(os), AnsiType.Redirected, AnsiColors.Colors256,
+        super(os, new ZeroWidthSupplier(), AnsiMode.Force, new HtmlAnsiProcessor(os),
+                AnsiType.Redirected, AnsiColors.Colors256,
                 StandardCharsets.UTF_8, null, null, true);
     }
 

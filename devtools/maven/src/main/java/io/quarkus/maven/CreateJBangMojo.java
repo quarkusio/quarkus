@@ -2,7 +2,7 @@ package io.quarkus.maven;
 
 import static io.quarkus.devtools.commands.CreateJBangProject.CreateJBangProjectKey.NO_JBANG_WRAPPER;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
-import static org.fusesource.jansi.Ansi.ansi;
+import static org.jline.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;

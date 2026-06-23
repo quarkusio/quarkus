@@ -40,8 +40,8 @@ class PicocliProcessor {
 
     @BuildStep
     ModuleEnableNativeAccessBuildItem allowNativeLibraryLoad() {
-        // Need to generate an --enable-native-access because of org.fusesource.jansi.internal.JansiLoader
-        return new ModuleEnableNativeAccessBuildItem("org.fusesource.jansi");
+        // Need to generate an --enable-native-access because of org.jline.nativ.JLineNativeLoader
+        return new ModuleEnableNativeAccessBuildItem("org.jline.jansi");
     }
 
     @BuildStep

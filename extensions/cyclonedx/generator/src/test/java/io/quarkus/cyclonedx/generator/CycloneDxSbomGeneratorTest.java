@@ -266,6 +266,40 @@ class CycloneDxSbomGeneratorTest {
                 .startsWith("urn:uuid:");
     }
 
+    @Test
+    void nestedComponentsRenderedAsBundledComponents() {
+        ComponentDescriptor nested = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.bundled", "bundled-dep", "2.0.0", "jar", null))
+                .setBomRef("pkg:maven/org.bundled/bundled-dep@2.0.0?type=jar#bundled")
+                .build();
+
+        ComponentDescriptor parent = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("com.example", "shaded-lib", "1.0.0", "jar", null))
+                .addComponent(nested)
+                .build();
+
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(parent));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        org.cyclonedx.model.Component parentComp = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("shaded-lib"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(parentComp.getComponents())
+                .as("Parent should contain nested bundled component")
+                .hasSize(1);
+
+        org.cyclonedx.model.Component nestedComp = parentComp.getComponents().get(0);
+        assertThat(nestedComp.getName()).isEqualTo("bundled-dep");
+        assertThat(nestedComp.getGroup()).isEqualTo("org.bundled");
+        assertThat(nestedComp.getVersion()).isEqualTo("2.0.0");
+    }
+
     private static Bom parseBom(String json) {
         try {
             return new org.cyclonedx.parsers.JsonParser().parse(json.getBytes());

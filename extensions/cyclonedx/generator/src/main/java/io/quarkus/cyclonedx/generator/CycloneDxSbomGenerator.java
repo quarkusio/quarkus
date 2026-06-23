@@ -468,6 +468,11 @@ public class CycloneDxSbomGenerator {
             c.setLicenses(resolveDescriptorLicenses(descriptor.getLicenses()));
         }
 
+        // Nested (bundled) components
+        for (ComponentDescriptor nested : descriptor.getComponents()) {
+            c.addComponent(renderComponentCore(nested));
+        }
+
         c.setProperties(props);
         return c;
     }

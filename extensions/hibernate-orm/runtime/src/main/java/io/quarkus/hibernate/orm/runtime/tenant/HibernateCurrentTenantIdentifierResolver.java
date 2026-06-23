@@ -10,13 +10,11 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 /**
- * Maps from the Quarkus {@link TenantResolver} to the Hibernate {@link CurrentTenantIdentifierResolver} model.
- *
- * @author Michael Schnell
+ * Maps from the Quarkus {@link TypedTenantResolver}
+ * to the Hibernate {@link CurrentTenantIdentifierResolver} model.
  *
  */
-// TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
-public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
+public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<Object> {
 
     private static final Logger LOG = Logger.getLogger(HibernateCurrentTenantIdentifierResolver.class);
 
@@ -27,17 +25,16 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
     }
 
     @Override
-    public String resolveCurrentTenantIdentifier() {
+    public Object resolveCurrentTenantIdentifier() {
 
         // Make sure that we're in a request
         if (!Arc.container().requestContext().isActive()) {
             return null;
         }
 
-        TenantResolver resolver = tenantResolver(persistenceUnitName);
-        String tenantId = resolver.resolveTenantId();
+        Object tenantId = tenantResolver(persistenceUnitName).resolveTenantId();
         if (tenantId == null) {
-            throw new IllegalStateException("Method 'TenantResolver.resolveTenantId()' returned a null value. "
+            throw new IllegalStateException("Method 'resolveTenantId()' returned a null value. "
                     + "Unfortunately Hibernate ORM does not allow null for tenant identifiers. "
                     + "Please use a non-null value!");
         }
@@ -52,28 +49,34 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
     }
 
     @Override
-    public boolean isRoot(String tenantId) {
+    public boolean isRoot(Object tenantId) {
         // Make sure that we're in a request
         if (!Arc.container().requestContext().isActive()) {
             return false;
         }
-        TenantResolver resolver = tenantResolver(persistenceUnitName);
-        if (resolver == null) {
-            return false;
-        }
-        return resolver.isRoot(tenantId);
+        return tenantResolver(persistenceUnitName).isRoot(tenantId);
     }
 
-    private static TenantResolver tenantResolver(String persistenceUnitName) {
-        InjectableInstance<TenantResolver> instance = PersistenceUnitUtil.legacySingleExtensionInstanceForPersistenceUnit(
-                TenantResolver.class, persistenceUnitName);
+    private static TypedTenantResolver tenantResolver(String persistenceUnitName) {
+        InjectableInstance<TenantResolverMarker> instance = PersistenceUnitUtil
+                .legacySingleExtensionInstanceForPersistenceUnit(
+                        TenantResolverMarker.class, persistenceUnitName);
         if (instance.isUnsatisfied()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "No instance of %1$s was found for persistence unit %2$s. "
                             + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
-                    TenantResolver.class.getSimpleName(), persistenceUnitName));
+                    TypedTenantResolver.class.getSimpleName(), persistenceUnitName));
         }
-        return instance.get();
+        TenantResolverMarker tenantResolver = instance.get();
+        if (tenantResolver instanceof TypedTenantResolver typedTenantResolver) {
+            return typedTenantResolver;
+        } else {
+            throw new IllegalStateException(String.format(Locale.ROOT,
+                    "An instance of %1$s was found for persistence unit %2$s "
+                            + "which is not a subtype of %3$s. You need to create an implementation for this interface to allow resolving the current tenant identifier.",
+                    TenantResolverMarker.class.getSimpleName(), persistenceUnitName,
+                    TypedTenantResolver.class.getSimpleName()));
+        }
     }
 
 }

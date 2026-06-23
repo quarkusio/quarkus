@@ -56,11 +56,13 @@ class ObservabilityDevServiceProcessor {
     private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
     private static final String OTEL_EXPORTER_OTLP_ENDPOINT = "quarkus.otel.exporter.otlp.endpoint";
     private static final String OTEL_EXPORTER_OTLP_PROTOCOL = "quarkus.otel.exporter.otlp.protocol";
+    private static final String MICROMETER_EXPORT_OTLP_URL = "quarkus.micrometer.export.otlp.url";
     private static final List<String> OTEL_EXPORTER_OTLP_ENDPOINT_CONFIG_KEYS = List.of(
             OTEL_EXPORTER_OTLP_ENDPOINT,
             "quarkus.otel.exporter.otlp.traces.endpoint",
             "quarkus.otel.exporter.otlp.metrics.endpoint",
             "quarkus.otel.exporter.otlp.logs.endpoint");
+    private static final List<String> MICROMETER_EXPORT_OTLP_CONFIG_KEYS = List.of(MICROMETER_EXPORT_OTLP_URL);
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
@@ -101,6 +103,22 @@ class ObservabilityDevServiceProcessor {
 
     static boolean hasUserDefinedOtlpEndpoint(Config config) {
         return hasConfiguredValue(config, OTEL_EXPORTER_OTLP_ENDPOINT_CONFIG_KEYS);
+    }
+
+    static boolean hasUserDefinedMicrometerOtlpEndpoint(Config config) {
+        return hasConfiguredValue(config, MICROMETER_EXPORT_OTLP_CONFIG_KEYS);
+    }
+
+    static boolean shouldStartDevService(String devId, ExtensionsCatalog catalog, Config config) {
+        if (!"Lgtm".equals(devId)) {
+            return true;
+        }
+
+        if (catalog.hasOpenTelemetry() && hasUserDefinedOtlpEndpoint(config)) {
+            return false;
+        }
+
+        return !catalog.hasMicrometerOtlp() || !hasUserDefinedMicrometerOtlpEndpoint(config);
     }
 
     static boolean hasConfiguredValue(Config config, List<String> propertyNames) {
@@ -155,6 +173,11 @@ class ObservabilityDevServiceProcessor {
 
             if (!currentDevServicesConfiguration.enabled()) {
                 log.debugf("Not starting Dev Services for %s as it has been disabled in the config", devId);
+                continue;
+            }
+
+            if (!shouldStartDevService(devId, catalog, ConfigProvider.getConfig())) {
+                log.debugf("Not starting Dev Services for %s as an explicit OTLP endpoint has been configured", devId);
                 continue;
             }
 

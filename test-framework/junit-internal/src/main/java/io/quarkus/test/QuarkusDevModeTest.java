@@ -1,6 +1,7 @@
 package io.quarkus.test;
 
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.DEV_TEST;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -73,6 +73,7 @@ import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -320,6 +321,10 @@ public class QuarkusDevModeTest
             ThreadLocalConfigSourceProvider.set(newConfig);
             TestHTTPResourceManager.inject(testInstance, valueRegistry);
 
+            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI));
+            }
+
         } catch (Exception e) {
             if (allowFailedStart) {
                 e.printStackTrace();
@@ -389,6 +394,7 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
+        RestAssuredStateManager.clearState();
         ThreadLocalConfigSourceProvider.reset();
         ConfigInjector.clear(context);
         ValueRegistryInjector.clear(context);

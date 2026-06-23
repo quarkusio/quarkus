@@ -524,6 +524,11 @@ public final class HibernateOrmProcessor {
             managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
         }
 
+        // Remove package names: only actual class names should be passed to generateProxies,
+        // because attempting to look up a package name via IndexWrapper.getClassByName()
+        // triggers a spurious "Failed to index" warning.
+        managedClassAndPackageNames.removeAll(jpaModel.getAllModelPackageNames());
+
         PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
                 generatedClassBuildItemBuildProducer, liveReloadBuildItem, buildExecutor);

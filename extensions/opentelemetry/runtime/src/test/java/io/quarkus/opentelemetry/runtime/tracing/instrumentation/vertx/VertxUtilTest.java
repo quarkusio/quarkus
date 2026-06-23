@@ -172,6 +172,11 @@ class VertxUtilTest {
             }
 
             @Override
+            public MultiMap params() {
+                return MultiMap.caseInsensitiveMultiMap();
+            }
+
+            @Override
             public MultiMap params(boolean semicolonIsNormalChar) {
                 return null;
             }

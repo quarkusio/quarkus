@@ -1,7 +1,6 @@
 package io.quarkus.bootstrap.runner;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -10,10 +9,10 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,26 +44,13 @@ public class QuarkusEntryPoint {
     }
 
     private static void doRun(String... args) throws Throwable {
-        String path = null;
-        URL location = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation();
-        if (location == null) {
-            // account for https://bugs.openjdk.org/browse/JDK-8376576
-            String className = QuarkusEntryPoint.class.getSimpleName() + ".class";
-            URL resource = QuarkusEntryPoint.class.getResource(className);
-            if (resource != null) {
-                String fullPath = resource.toString();
-                if (fullPath.startsWith("jar:")) {
-                    path = fullPath.substring(9, fullPath.indexOf("!"));
-                }
-            }
-        } else {
-            path = location.getPath();
-        }
-        if (path == null) {
+        Path jarPath = resolveJarPath(
+                QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation(),
+                QuarkusEntryPoint.class.getResource(QuarkusEntryPoint.class.getSimpleName() + ".class"));
+        if (jarPath == null) {
             throw new IllegalStateException("Unable to determine launch jar path");
         }
-        String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-        Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
+        Path appRoot = jarPath.getParent().getParent().getParent();
 
         if (Boolean.parseBoolean(System.getenv("QUARKUS_LAUNCH_DEVMODE"))) {
             DevModeMediator.doDevMode(appRoot);
@@ -89,6 +75,22 @@ public class QuarkusEntryPoint {
                 appRunnerClassLoader.close();
             }
         }
+    }
+
+    // Visible for testing
+    static Path resolveJarPath(URL location, URL classResource) throws URISyntaxException {
+        if (location != null) {
+            return Path.of(location.toURI());
+        }
+        // account for https://bugs.openjdk.org/browse/JDK-8376576
+        if (classResource != null) {
+            String fullPath = classResource.toString();
+            if (fullPath.startsWith("jar:")) {
+                String fileUri = fullPath.substring(4, fullPath.indexOf("!"));
+                return Path.of(new URI(fileUri));
+            }
+        }
+        return null;
     }
 
     private static void doReaugment(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,

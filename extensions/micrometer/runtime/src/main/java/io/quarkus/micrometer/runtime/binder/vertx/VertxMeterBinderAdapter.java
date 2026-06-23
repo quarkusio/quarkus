@@ -1,6 +1,8 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -12,6 +14,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
@@ -36,6 +39,9 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         implements VertxMetricsFactory, VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
     private static final Logger log = Logger.getLogger(VertxMeterBinderAdapter.class);
     public static final String METRIC_NAME_SEPARATOR = "|";
+
+    private final Gauges<LongAdder> longAdderGauges = Gauges.longAdder();
+    private final Gauges<AtomicReference<Double>> doubleGauges = Gauges.of(() -> new AtomicReference<>(0.0));
 
     private HttpBinderConfiguration httpBinderConfiguration;
     private OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper;
@@ -80,7 +86,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
             return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper,
-                    options);
+                    options, longAdderGauges);
         }
         return null;
     }
@@ -100,10 +106,10 @@ public class VertxMeterBinderAdapter extends MetricsOptions
             if (clientName != null) {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
                         Tags.of(Tag.of("clientName", clientName)),
-                        httpBinderConfiguration);
+                        httpBinderConfiguration, longAdderGauges);
             } else {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
-                        Tags.of(Tag.of("clientName", "<default>")), httpBinderConfiguration);
+                        Tags.of(Tag.of("clientName", "<default>")), httpBinderConfiguration, longAdderGauges);
             }
         }
         return null;
@@ -114,7 +120,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         return new VertxTcpServerMetrics(Metrics.globalRegistry, "tcp", Tags.of(
                 Tag.of("port", Integer.toString(localAddress.port())),
                 Tag.of("host", options.getHost()),
-                Tag.of("address", VertxTcpServerMetrics.toString(localAddress))));
+                Tag.of("address", VertxTcpServerMetrics.toString(localAddress))), longAdderGauges);
     }
 
     @Override
@@ -126,9 +132,11 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         String prefix = extractPrefix(options.getMetricsName());
         String clientName = extractClientName(options.getMetricsName());
         if (clientName != null) {
-            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", clientName)));
+            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", clientName)),
+                    longAdderGauges);
         } else {
-            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", "<default>")));
+            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", "<default>")),
+                    longAdderGauges);
         }
     }
 
@@ -140,17 +148,19 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         if (clientName != null) {
             return new VertxClientMetrics(Metrics.globalRegistry, prefix, Tags.of(
                     Tag.of("clientName", clientName),
-                    Tag.of("clientType", type)));
+                    Tag.of("clientType", type)), longAdderGauges);
         } else {
             return new VertxClientMetrics(Metrics.globalRegistry, prefix, Tags.of(
                     Tags.of(Tag.of("clientName", "<default>"),
-                            Tag.of("clientType", type))));
+                            Tag.of("clientType", type))),
+                    longAdderGauges);
         }
     }
 
     @Override
     public PoolMetrics<?> createPoolMetrics(String poolType, String poolName, int maxPoolSize) {
-        return new VertxPoolMetrics(Metrics.globalRegistry, poolType, poolName, maxPoolSize);
+        return new VertxPoolMetrics(Metrics.globalRegistry, poolType, poolName, maxPoolSize,
+                longAdderGauges, doubleGauges);
     }
 
     @Override
@@ -160,7 +170,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
 
     @Override
     public EventBusMetrics<?> createEventBusMetrics() {
-        return new VertxEventBusMetrics(Metrics.globalRegistry, Tags.empty());
+        return new VertxEventBusMetrics(Metrics.globalRegistry, Tags.empty(), longAdderGauges);
     }
 
     /**
@@ -206,6 +216,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
             private final Counter counter = Counter.builder("vertx.http.connections.rejected")
                     .description("Number of rejected HTTP connections")
                     .register(Metrics.globalRegistry);
+            private final Gauges<AtomicInteger> atomicIntGauges = Gauges.atomicInteger();
 
             @Override
             public void onConnectionRejected() {
@@ -214,14 +225,9 @@ public class VertxMeterBinderAdapter extends MetricsOptions
 
             @Override
             public void initialize(int maxConnections, AtomicInteger current) {
-                Gauge.builder("vertx.http.connections.current", new Supplier<Number>() {
-                    @Override
-                    public Number get() {
-                        return current.get();
-                    }
-                })
+                atomicIntGauges.builder("vertx.http.connections.current", AtomicInteger::doubleValue)
                         .description("Current number of active HTTP connections")
-                        .register(Metrics.globalRegistry);
+                        .register(Metrics.globalRegistry, current);
 
                 Gauge.builder("vertx.http.connections.max", new Supplier<Number>() {
                     @Override

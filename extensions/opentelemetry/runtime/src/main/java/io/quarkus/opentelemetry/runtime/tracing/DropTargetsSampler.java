@@ -37,11 +37,14 @@ public class DropTargetsSampler implements Sampler {
 
         if (spanKind.equals(SpanKind.SERVER)) {
             // HTTP_TARGET was split into url.path and url.query
-            String query = attributes.get(URL_QUERY);
-            String target = attributes.get(URL_PATH) + (query == null ? "" : "?" + query);
+            String path = attributes.get(URL_PATH);
+            if (path != null) {
+                String query = attributes.get(URL_QUERY);
+                String target = path + (query == null ? "" : "?" + query);
 
-            if (shouldDrop(target)) {
-                return SamplingResult.drop();
+                if (shouldDrop(target)) {
+                    return SamplingResult.drop();
+                }
             }
         }
 

@@ -550,7 +550,8 @@ public class KeycloakDevServicesProcessor {
             }
 
             if (fixedExposedPort.isPresent()) {
-                addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
+                addFixedExposedPort(fixedExposedPort.getAsInt(),
+                        keycloakX && isHttps() ? KEYCLOAK_HTTPS_PORT : KEYCLOAK_PORT);
                 if (useSharedNetwork) {
                     // expose random port for which we are able to ask Testcontainers for the actual mapped port at runtime
                     // as from the host's perspective Testcontainers actually expose container ports on random host port
@@ -578,7 +579,7 @@ public class KeycloakDevServicesProcessor {
                 }
                 withCommand(finalStartCommand);
                 addUpConfigResource();
-                if (isHttps()) {
+                if (isHttps() && !fixedExposedPort.isPresent()) {
                     addExposedPort(KEYCLOAK_HTTPS_PORT);
                 }
             } else {

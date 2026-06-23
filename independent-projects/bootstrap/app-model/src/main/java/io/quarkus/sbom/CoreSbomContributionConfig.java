@@ -1,5 +1,6 @@
 package io.quarkus.sbom;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -13,7 +14,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -245,10 +248,11 @@ public class CoreSbomContributionConfig {
         Map<ArtifactKey, ComponentHolder> compArtifacts = new HashMap<>();
         Map<Path, ComponentHolder> compPaths = new HashMap<>();
         List<ComponentHolder> compList = new ArrayList<>();
+        Map<String, AtomicInteger> bomRefCounters = new HashMap<>();
 
-        addApplicationModelComponents(compArtifacts, compPaths, compList);
+        addApplicationModelComponents(compArtifacts, compPaths, compList, bomRefCounters);
         ComponentHolder main = resolveMainComponent(compArtifacts, compPaths, compList);
-        addAdditionalComponents(compArtifacts, compPaths, compList);
+        addAdditionalComponents(compArtifacts, compPaths, compList, bomRefCounters);
         addRemainingDistributionContent(main, compArtifacts, compPaths, compList);
         return buildContribution(main, compList, compPaths);
     }
@@ -256,15 +260,82 @@ public class CoreSbomContributionConfig {
     private void addApplicationModelComponents(
             Map<ArtifactKey, ComponentHolder> compArtifacts,
             Map<Path, ComponentHolder> compPaths,
-            List<ComponentHolder> compList) {
+            List<ComponentHolder> compList,
+            Map<String, AtomicInteger> bomRefCounters) {
         if (applicationModel == null) {
             return;
         }
         ResolvedDependency appArtifact = applicationModel.getAppArtifact();
         addComponentHolder(toMavenDescriptor(appArtifact), appArtifact, compArtifacts, compPaths, compList);
+        registerBomRef(appArtifact.toCompactCoords(), bomRefCounters);
         for (ResolvedDependency dep : applicationModel.getDependencies()) {
-            addComponentHolder(toMavenDescriptor(dep), dep, compArtifacts, compPaths, compList);
+            ComponentHolder holder = addComponentHolder(toMavenDescriptor(dep), dep, compArtifacts, compPaths, compList);
+            registerBomRef(holder.component.getBomRef(), bomRefCounters);
+            detectShadedContent(dep, holder, bomRefCounters);
         }
+    }
+
+    private static void detectShadedContent(ResolvedDependency dep, ComponentHolder holder,
+            Map<String, AtomicInteger> bomRefCounters) {
+        if (!dep.isResolved() || !holder.component.getComponents().isEmpty()) {
+            return;
+        }
+        List<ComponentDescriptor> nested = new ArrayList<>();
+        dep.getContentTree().walkIfContains("META-INF/maven", visit -> {
+            if (Files.isDirectory(visit.getPath())
+                    || !visit.getPath().getFileName().toString().equals("pom.properties")) {
+                return;
+            }
+            try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
+                Properties props = new Properties();
+                props.load(reader);
+                String groupId = props.getProperty("groupId");
+                String artifactId = props.getProperty("artifactId");
+                String version = props.getProperty("version");
+                if (groupId == null || groupId.isBlank()
+                        || artifactId == null || artifactId.isBlank()
+                        || version == null || version.isBlank()) {
+                    return;
+                }
+                if (groupId.equals(dep.getGroupId()) && artifactId.equals(dep.getArtifactId())) {
+                    return;
+                }
+                Purl purl = Purl.maven(groupId, artifactId, version, ArtifactCoords.TYPE_JAR, null);
+                String bomRef = uniqueBomRef(purl + "#bundled", bomRefCounters);
+                nested.add(ComponentDescriptor.builder()
+                        .setPurl(purl)
+                        .setBomRef(bomRef)
+                        .build());
+            } catch (IOException e) {
+                // skip unreadable pom.properties
+            }
+        });
+        if (nested.isEmpty()) {
+            return;
+        }
+        ComponentDescriptor.Builder builder;
+        if (holder.component instanceof ComponentDescriptor.Builder) {
+            builder = (ComponentDescriptor.Builder) holder.component;
+        } else {
+            builder = new ComponentDescriptor.Builder(holder.component);
+            holder.component = builder;
+        }
+        for (ComponentDescriptor child : nested) {
+            builder.addComponent(child);
+        }
+    }
+
+    private static void registerBomRef(String bomRef, Map<String, AtomicInteger> bomRefCounters) {
+        bomRefCounters.computeIfAbsent(bomRef, k -> new AtomicInteger());
+    }
+
+    private static String uniqueBomRef(String bomRef, Map<String, AtomicInteger> bomRefCounters) {
+        AtomicInteger counter = bomRefCounters.get(bomRef);
+        if (counter == null) {
+            bomRefCounters.put(bomRef, new AtomicInteger());
+            return bomRef;
+        }
+        return bomRef + "-" + counter.incrementAndGet();
     }
 
     private ComponentHolder resolveMainComponent(
@@ -308,7 +379,8 @@ public class CoreSbomContributionConfig {
     private void addAdditionalComponents(
             Map<ArtifactKey, ComponentHolder> compArtifacts,
             Map<Path, ComponentHolder> compPaths,
-            List<ComponentHolder> compList) {
+            List<ComponentHolder> compList,
+            Map<String, AtomicInteger> bomRefCounters) {
         for (ComponentHolder extra : additionalComponents) {
             ComponentDescriptor desc = extra.component;
             if (desc == null && extra.dep != null) {
@@ -321,7 +393,11 @@ public class CoreSbomContributionConfig {
                 }
                 desc = builder;
             }
-            addComponentHolder(desc, extra.dep, compArtifacts, compPaths, compList);
+            ComponentHolder holder = addComponentHolder(desc, extra.dep, compArtifacts, compPaths, compList);
+            registerBomRef(holder.component.getBomRef(), bomRefCounters);
+            if (extra.dep != null) {
+                detectShadedContent(extra.dep, holder, bomRefCounters);
+            }
         }
     }
 

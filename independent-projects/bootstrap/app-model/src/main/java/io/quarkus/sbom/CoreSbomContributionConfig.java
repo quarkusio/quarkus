@@ -1,5 +1,6 @@
 package io.quarkus.sbom;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -13,7 +14,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -79,6 +82,7 @@ public class CoreSbomContributionConfig {
     private ResolvedDependency mainArtifact;
     private Collection<ArtifactCoords> mainDependencies;
     private List<ComponentHolder> additionalComponents = new ArrayList<>();
+    private Map<Path, List<Path>> extraFileDependencies = new HashMap<>();
 
     /**
      * Sets the application model whose dependencies will be converted to
@@ -216,6 +220,21 @@ public class CoreSbomContributionConfig {
     }
 
     /**
+     * Declares that the component at {@code parent} path depends on the component
+     * at {@code child} path. Both paths must correspond to files in the distribution
+     * directory so that they can be resolved to components during
+     * {@link #toSbomContribution()}.
+     *
+     * @param parent file path of the parent component
+     * @param child file path of the child component
+     * @return this config
+     */
+    public CoreSbomContributionConfig addFileDependency(Path parent, Path child) {
+        extraFileDependencies.computeIfAbsent(parent, k -> new ArrayList<>()).add(child);
+        return this;
+    }
+
+    /**
      * Converts this config into an {@link SbomContribution}, creating component
      * descriptors from the application model, deduplicating by file path and
      * Maven artifact key, resolving distribution paths, and producing the
@@ -229,26 +248,94 @@ public class CoreSbomContributionConfig {
         Map<ArtifactKey, ComponentHolder> compArtifacts = new HashMap<>();
         Map<Path, ComponentHolder> compPaths = new HashMap<>();
         List<ComponentHolder> compList = new ArrayList<>();
+        Map<String, AtomicInteger> bomRefCounters = new HashMap<>();
 
-        addApplicationModelComponents(compArtifacts, compPaths, compList);
+        addApplicationModelComponents(compArtifacts, compPaths, compList, bomRefCounters);
         ComponentHolder main = resolveMainComponent(compArtifacts, compPaths, compList);
-        addAdditionalComponents(compArtifacts, compPaths, compList);
+        addAdditionalComponents(compArtifacts, compPaths, compList, bomRefCounters);
         addRemainingDistributionContent(main, compArtifacts, compPaths, compList);
-        return buildContribution(main, compList);
+        return buildContribution(main, compList, compPaths);
     }
 
     private void addApplicationModelComponents(
             Map<ArtifactKey, ComponentHolder> compArtifacts,
             Map<Path, ComponentHolder> compPaths,
-            List<ComponentHolder> compList) {
+            List<ComponentHolder> compList,
+            Map<String, AtomicInteger> bomRefCounters) {
         if (applicationModel == null) {
             return;
         }
         ResolvedDependency appArtifact = applicationModel.getAppArtifact();
         addComponentHolder(toMavenDescriptor(appArtifact), appArtifact, compArtifacts, compPaths, compList);
+        registerBomRef(appArtifact.toCompactCoords(), bomRefCounters);
         for (ResolvedDependency dep : applicationModel.getDependencies()) {
-            addComponentHolder(toMavenDescriptor(dep), dep, compArtifacts, compPaths, compList);
+            ComponentHolder holder = addComponentHolder(toMavenDescriptor(dep), dep, compArtifacts, compPaths, compList);
+            registerBomRef(holder.component.getBomRef(), bomRefCounters);
+            detectShadedContent(dep, holder, bomRefCounters);
         }
+    }
+
+    private static void detectShadedContent(ResolvedDependency dep, ComponentHolder holder,
+            Map<String, AtomicInteger> bomRefCounters) {
+        if (!dep.isResolved() || !holder.component.getComponents().isEmpty()) {
+            return;
+        }
+        List<ComponentDescriptor> nested = new ArrayList<>();
+        dep.getContentTree().walkIfContains("META-INF/maven", visit -> {
+            if (Files.isDirectory(visit.getPath())
+                    || !visit.getPath().getFileName().toString().equals("pom.properties")) {
+                return;
+            }
+            try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
+                Properties props = new Properties();
+                props.load(reader);
+                String groupId = props.getProperty("groupId");
+                String artifactId = props.getProperty("artifactId");
+                String version = props.getProperty("version");
+                if (groupId == null || groupId.isBlank()
+                        || artifactId == null || artifactId.isBlank()
+                        || version == null || version.isBlank()) {
+                    return;
+                }
+                if (groupId.equals(dep.getGroupId()) && artifactId.equals(dep.getArtifactId())) {
+                    return;
+                }
+                Purl purl = Purl.maven(groupId, artifactId, version, ArtifactCoords.TYPE_JAR, null);
+                String bomRef = uniqueBomRef(purl + "#bundled", bomRefCounters);
+                nested.add(ComponentDescriptor.builder()
+                        .setPurl(purl)
+                        .setBomRef(bomRef)
+                        .build());
+            } catch (IOException e) {
+                // skip unreadable pom.properties
+            }
+        });
+        if (nested.isEmpty()) {
+            return;
+        }
+        ComponentDescriptor.Builder builder;
+        if (holder.component instanceof ComponentDescriptor.Builder) {
+            builder = (ComponentDescriptor.Builder) holder.component;
+        } else {
+            builder = new ComponentDescriptor.Builder(holder.component);
+            holder.component = builder;
+        }
+        for (ComponentDescriptor child : nested) {
+            builder.addComponent(child);
+        }
+    }
+
+    private static void registerBomRef(String bomRef, Map<String, AtomicInteger> bomRefCounters) {
+        bomRefCounters.computeIfAbsent(bomRef, k -> new AtomicInteger());
+    }
+
+    private static String uniqueBomRef(String bomRef, Map<String, AtomicInteger> bomRefCounters) {
+        AtomicInteger counter = bomRefCounters.get(bomRef);
+        if (counter == null) {
+            bomRefCounters.put(bomRef, new AtomicInteger());
+            return bomRef;
+        }
+        return bomRef + "-" + counter.incrementAndGet();
     }
 
     private ComponentHolder resolveMainComponent(
@@ -292,7 +379,8 @@ public class CoreSbomContributionConfig {
     private void addAdditionalComponents(
             Map<ArtifactKey, ComponentHolder> compArtifacts,
             Map<Path, ComponentHolder> compPaths,
-            List<ComponentHolder> compList) {
+            List<ComponentHolder> compList,
+            Map<String, AtomicInteger> bomRefCounters) {
         for (ComponentHolder extra : additionalComponents) {
             ComponentDescriptor desc = extra.component;
             if (desc == null && extra.dep != null) {
@@ -305,7 +393,11 @@ public class CoreSbomContributionConfig {
                 }
                 desc = builder;
             }
-            addComponentHolder(desc, extra.dep, compArtifacts, compPaths, compList);
+            ComponentHolder holder = addComponentHolder(desc, extra.dep, compArtifacts, compPaths, compList);
+            registerBomRef(holder.component.getBomRef(), bomRefCounters);
+            if (extra.dep != null) {
+                detectShadedContent(extra.dep, holder, bomRefCounters);
+            }
         }
     }
 
@@ -333,10 +425,13 @@ public class CoreSbomContributionConfig {
         }
     }
 
-    private SbomContribution buildContribution(ComponentHolder main, List<ComponentHolder> compList) {
+    private SbomContribution buildContribution(ComponentHolder main, List<ComponentHolder> compList,
+            Map<Path, ComponentHolder> compPaths) {
         Set<String> directDepPurls = collectDirectDependencyPurls(main);
         SbomContribution.Builder sb = SbomContribution.builder();
         sb.setRunnerPath(runnerPath);
+
+        Map<String, List<String>> depMap = new HashMap<>();
 
         for (ComponentHolder holder : compList) {
             if (holder == main) {
@@ -351,7 +446,7 @@ public class CoreSbomContributionConfig {
                 holder.component.topLevel = true;
             }
             sb.addComponent(holder.component.ensureImmutable());
-            addDependency(holder, sb);
+            collectDependencies(holder, depMap);
         }
 
         if (distDir != null) {
@@ -361,7 +456,13 @@ public class CoreSbomContributionConfig {
         ComponentDescriptor mainComponent = main.component.ensureImmutable();
         sb.setMainComponentBomRef(mainComponent.getBomRef());
         sb.addComponent(mainComponent);
-        addDependency(main, sb);
+        collectDependencies(main, depMap);
+
+        applyExtraFileDependencies(compPaths, depMap);
+
+        for (var entry : depMap.entrySet()) {
+            sb.addDependency(ComponentDependencies.of(entry.getKey(), entry.getValue()));
+        }
 
         return sb.build();
     }
@@ -461,7 +562,7 @@ public class CoreSbomContributionConfig {
         }
     }
 
-    private static void addDependency(ComponentHolder holder, SbomContribution.Builder sb) {
+    private static void collectDependencies(ComponentHolder holder, Map<String, List<String>> depMap) {
         Collection<ArtifactCoords> deps = holder.explicitDependencies;
         if (deps == null || deps.isEmpty()) {
             deps = holder.dep != null ? holder.dep.getDependencies() : null;
@@ -469,11 +570,27 @@ public class CoreSbomContributionConfig {
         if (deps == null || deps.isEmpty()) {
             return;
         }
-        List<String> depBomRefs = new ArrayList<>(deps.size());
+        List<String> depBomRefs = depMap.computeIfAbsent(holder.component.getBomRef(), k -> new ArrayList<>());
         for (ArtifactCoords depCoords : deps) {
             depBomRefs.add(mavenPurl(depCoords).toString());
         }
-        sb.addDependency(ComponentDependencies.of(holder.component.getBomRef(), depBomRefs));
+    }
+
+    private void applyExtraFileDependencies(Map<Path, ComponentHolder> compPaths,
+            Map<String, List<String>> depMap) {
+        for (var entry : extraFileDependencies.entrySet()) {
+            ComponentHolder parent = compPaths.get(entry.getKey());
+            if (parent == null) {
+                continue;
+            }
+            List<String> depBomRefs = depMap.computeIfAbsent(parent.component.getBomRef(), k -> new ArrayList<>());
+            for (Path childPath : entry.getValue()) {
+                ComponentHolder child = compPaths.get(childPath);
+                if (child != null) {
+                    depBomRefs.add(child.component.getBomRef());
+                }
+            }
+        }
     }
 
     private static void defaultScope(ComponentHolder holder) {

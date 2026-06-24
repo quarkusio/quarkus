@@ -71,6 +71,7 @@ import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.test.common.ListeningAddresses;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
@@ -311,12 +312,10 @@ public class QuarkusDevModeTest
             ConfigInjector.set(context, newConfig);
 
             // Capture the listening port if available and register it in ValueRegistry
-            Optional<ListeningAddress> listeningAddress = listeningAddress(startupLogHandler.getRecords());
-            listeningAddress.ifPresent(address -> address.register(valueRegistry, newConfig));
-            Optional<ListeningAddress> managementListeningAddress = managementListeningAddress(
-                    startupLogHandler.getRecords());
-            managementListeningAddress.ifPresent(address -> address.registerManagement(valueRegistry, newConfig));
-            valueRegistry.register(ListeningAddress.MANAGEMENT_LISTENING_ADDRESS, managementListeningAddress);
+            ListeningAddresses listeningAddresses = listeningAddresses(startupLogHandler.getRecords());
+            listeningAddresses.address().ifPresent(address -> address.register(valueRegistry, newConfig));
+            listeningAddresses.managementAddress().ifPresent(address -> address.registerManagement(valueRegistry, newConfig));
+            valueRegistry.register(ListeningAddress.MANAGEMENT_LISTENING_ADDRESS, listeningAddresses.managementAddress());
 
             // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);
@@ -333,32 +332,24 @@ public class QuarkusDevModeTest
         }
     }
 
-    private static final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
-    private static final Pattern managementListeningRegex = Pattern
-            .compile("Management interface listening on (https?)://[^:]*:(\\d+)");
+    private static final Pattern listeningRegex = Pattern.compile(
+            "Listening on:\\s+(https?)://[^:]*:(\\d+)(?:.*Management interface listening on (https?)://[^:]*:(\\d+))?");
 
-    private static Optional<ListeningAddress> listeningAddress(List<LogRecord> records) {
+    private static ListeningAddresses listeningAddresses(List<LogRecord> records) {
         if (records.size() == 1) {
             LogRecord logRecord = records.get(0);
             Matcher regexMatcher = listeningRegex.matcher((String) logRecord.getParameters()[4]);
             if (regexMatcher.find()) {
-                ListeningAddress listeningAddress = new ListeningAddress(Integer.parseInt(regexMatcher.group(2)),
-                        regexMatcher.group(1));
-                return Optional.of(listeningAddress);
+                Optional<ListeningAddress> address = Optional.of(
+                        new ListeningAddress(Integer.parseInt(regexMatcher.group(2)), regexMatcher.group(1)));
+                Optional<ListeningAddress> managementAddress = regexMatcher.group(3) != null
+                        ? Optional.of(new ListeningAddress(Integer.parseInt(regexMatcher.group(4)),
+                                regexMatcher.group(3)))
+                        : Optional.empty();
+                return new ListeningAddresses(address, managementAddress);
             }
         }
-        return Optional.empty();
-    }
-
-    private static Optional<ListeningAddress> managementListeningAddress(List<LogRecord> records) {
-        if (records.size() == 1) {
-            LogRecord logRecord = records.get(0);
-            Matcher regexMatcher = managementListeningRegex.matcher((String) logRecord.getParameters()[4]);
-            if (regexMatcher.find()) {
-                return Optional.of(new ListeningAddress(Integer.parseInt(regexMatcher.group(2)), regexMatcher.group(1)));
-            }
-        }
-        return Optional.empty();
+        return ListeningAddresses.EMPTY;
     }
 
     @Override

@@ -94,24 +94,15 @@ public final class LauncherUtil {
         ensureProcessIsAlive(quarkusProcess);
 
         CountDownLatch signal = new CountDownLatch(1);
-        AtomicReference<ListeningAddress> resultReference = new AtomicReference<>();
-        AtomicReference<ListeningAddress> managementResultReference = new AtomicReference<>();
+        AtomicReference<ListeningAddresses> resultReference = new AtomicReference<>();
         CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
-                Duration.ofSeconds(waitTimeSeconds), signal, resultReference, managementResultReference);
+                Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
         new Thread(captureListeningDataReader, "capture-listening-data").start();
         try {
             signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
-            ListeningAddress result = resultReference.get();
+            ListeningAddresses result = resultReference.get();
             if (result != null) {
-                Optional<ListeningAddress> address = result.port() != null && result.protocol() != null
-                        ? Optional.of(result)
-                        : Optional.empty();
-                ListeningAddress managementResult = managementResultReference.get();
-                Optional<ListeningAddress> managementAddress = managementResult != null
-                        && managementResult.port() != null && managementResult.protocol() != null
-                                ? Optional.of(managementResult)
-                                : Optional.empty();
-                return new ListeningAddresses(address, managementAddress);
+                return result;
             }
             // a null result means that we could not determine the status of the process so we need to abort testing
             destroyProcess(quarkusProcess);
@@ -253,21 +244,17 @@ public final class LauncherUtil {
         private final Path processOutput;
         private final Duration waitTime;
         private final CountDownLatch signal;
-        private final AtomicReference<ListeningAddress> resultReference;
-        private final AtomicReference<ListeningAddress> managementResultReference;
-        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
-        private final Pattern managementListeningRegex = Pattern
-                .compile("Management interface listening on (https?)://[^:]*:(\\d+)");
+        private final AtomicReference<ListeningAddresses> resultReference;
+        private final Pattern listeningRegex = Pattern.compile(
+                "Listening on:\\s+(https?)://[^:]*:(\\d+)(?:.*Management interface listening on (https?)://[^:]*:(\\d+))?");
         private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
-                AtomicReference<ListeningAddress> resultReference,
-                AtomicReference<ListeningAddress> managementResultReference) {
+                AtomicReference<ListeningAddresses> resultReference) {
             this.processOutput = processOutput;
             this.waitTime = waitTime;
             this.signal = signal;
             this.resultReference = resultReference;
-            this.managementResultReference = managementResultReference;
         }
 
         @Override
@@ -293,16 +280,12 @@ public final class LauncherUtil {
                             started = true;
                         }
 
-                        Matcher managementMatcher = managementListeningRegex.matcher(line);
-                        if (managementMatcher.find()) {
-                            managementResultReference.set(
-                                    new ListeningAddress(Integer.valueOf(managementMatcher.group(2)),
-                                            managementMatcher.group(1)));
-                        }
-
                         Matcher regexMatcher = listeningRegex.matcher(line);
                         if (regexMatcher.find()) {
-                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)));
+                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)),
+                                    regexMatcher.group(3), regexMatcher.group(3) != null
+                                            ? Integer.valueOf(regexMatcher.group(4))
+                                            : null);
                             return;
                         } else {
                             if (line.contains("Failed to start application (with profile")) {
@@ -318,7 +301,7 @@ public final class LauncherUtil {
                         // or waiting the next check interval will exceed the bailout time, it's time to finish waiting:
                         if (now + LOG_CHECK_INTERVAL > bailoutTime || now - 2 * LOG_CHECK_INTERVAL > timeStarted) {
                             if (started) {
-                                dataDetermined(null, null); // no http, all is null
+                                dataDetermined(null, null, null, null); // no http, all is null
                             } else {
                                 unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
                                         + " to contain info about the listening port and protocol but no such info was found. "
@@ -360,8 +343,15 @@ public final class LauncherUtil {
             return false;
         }
 
-        private void dataDetermined(String protocolValue, Integer portValue) {
-            this.resultReference.set(new ListeningAddress(portValue, protocolValue));
+        private void dataDetermined(String protocol, Integer port,
+                String managementProtocol, Integer managementPort) {
+            Optional<ListeningAddress> address = port != null && protocol != null
+                    ? Optional.of(new ListeningAddress(port, protocol))
+                    : Optional.empty();
+            Optional<ListeningAddress> managementAddress = managementPort != null && managementProtocol != null
+                    ? Optional.of(new ListeningAddress(managementPort, managementProtocol))
+                    : Optional.empty();
+            this.resultReference.set(new ListeningAddresses(address, managementAddress));
             signal.countDown();
         }
 

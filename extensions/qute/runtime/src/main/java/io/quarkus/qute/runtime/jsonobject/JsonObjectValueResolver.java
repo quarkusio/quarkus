@@ -1,8 +1,8 @@
 package io.quarkus.qute.runtime.jsonobject;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Results;
@@ -28,27 +28,33 @@ public class JsonObjectValueResolver implements ValueResolver {
         switch (context.getName()) {
             case "fieldNames":
             case "fields":
-                return CompletableFuture.completedFuture(jsonObject.fieldNames());
+                return CompletedStage.of(jsonObject.fieldNames());
             case "size":
-                return CompletableFuture.completedFuture(jsonObject.size());
+                return CompletedStage.of(jsonObject.size());
             case "empty":
             case "isEmpty":
-                return CompletableFuture.completedFuture(jsonObject.isEmpty());
+                return CompletedStage.of(jsonObject.isEmpty());
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(jsonObject.getValue((String) k));
+                        if (k == null || Results.isNotFound(k)) {
+                            return Results.notFound(context);
+                        }
+                        return CompletedStage.of(jsonObject.getValue(k.toString()));
                     });
                 }
             case "containsKey":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(jsonObject.containsKey((String) k));
+                        if (k == null || Results.isNotFound(k)) {
+                            return Results.notFound(context);
+                        }
+                        return CompletedStage.of(jsonObject.containsKey(k.toString()));
                     });
                 }
             default:
                 return jsonObject.containsKey(context.getName())
-                        ? CompletableFuture.completedFuture(jsonObject.getValue(context.getName()))
+                        ? CompletedStage.of(jsonObject.getValue(context.getName()))
                         : Results.notFound(context);
         }
     }

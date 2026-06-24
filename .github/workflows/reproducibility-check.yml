@@ -48,7 +48,7 @@ jobs:
           printf 'Running reproducibility check for %d deployment modules:\n' "${#deployment_modules[@]}"
           printf '%s\n' "${deployment_modules[@]}"
           deployment_module_list=$(IFS=,; printf '%s' "${deployment_modules[*]}")
-          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean install
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean test
       - name: Print disk usage after build
         if: always()
         run: .github/ci-disk-usage.sh
@@ -112,7 +112,7 @@ jobs:
       - name: Build Quarkus
         run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
       - name: Run RESTEasy Reactive TCK reproducibility check
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks/resteasy-reactive -amd clean install
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks/resteasy-reactive -amd clean test
       - name: Print disk usage after build
         if: always()
         run: .github/ci-disk-usage.sh

@@ -1,12 +1,9 @@
 package io.quarkus.io.opentelemetry.jackson;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import io.vertx.redis.client.impl.types.ErrorType;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class ErrorTypeSerializer extends StdSerializer<ErrorType> {
     public ErrorTypeSerializer() {
@@ -14,11 +11,10 @@ public class ErrorTypeSerializer extends StdSerializer<ErrorType> {
     }
 
     @Override
-    public void serialize(ErrorType errorType, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-            throws IOException {
+    public void serialize(ErrorType errorType, JsonGenerator jsonGenerator, SerializationContext serializationContext) {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("type", errorType.type().name());
-        jsonGenerator.writeStringField("message", errorType.getMessage());
+        jsonGenerator.writeStringProperty("type", errorType.type().name());
+        jsonGenerator.writeStringProperty("message", errorType.getMessage());
         jsonGenerator.writeEndObject();
     }
 }

@@ -20,6 +20,7 @@ import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.vertx.core.json.JsonObject;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -128,8 +129,9 @@ public class PanacheFunctionalityTest {
         // check
         // hence no 'persistence'-attribute
         assertEquals(
-                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-                personAsString);
+                new JsonObject(
+                        "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}"),
+                new JsonObject(personAsString));
     }
 
     /**

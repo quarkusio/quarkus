@@ -11,10 +11,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUIArcJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -34,7 +33,7 @@ public class DevUIArcJsonRPCTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(events);
         Assertions.assertTrue(events.isArray());
 
-        Iterator<JsonNode> en = events.elements();
+        Iterator<JsonNode> en = events.iterator();
         boolean startupExists = false;
         while (en.hasNext()) {
             JsonNode event = en.next();
@@ -54,7 +53,7 @@ public class DevUIArcJsonRPCTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(invocations);
         Assertions.assertTrue(invocations.isArray());
 
-        Iterator<JsonNode> en = invocations.elements();
+        Iterator<JsonNode> en = invocations.iterator();
         boolean loggerExists = false;
         while (en.hasNext()) {
             JsonNode invocation = en.next();

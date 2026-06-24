@@ -6,10 +6,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUIRestJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -33,7 +32,7 @@ public class DevUIRestJsonRPCTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(endpoints);
         Assertions.assertTrue(endpoints.isArray());
 
-        Iterator<JsonNode> en = endpoints.elements();
+        Iterator<JsonNode> en = endpoints.iterator();
         boolean exists = false;
         while (en.hasNext()) {
             JsonNode endpoint = en.next();

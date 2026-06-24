@@ -63,8 +63,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
-                            <groupId>org.hibernate.orm</groupId>
-                            <artifactId>hibernate-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-data-processor</artifactId>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <annotationProcessors>

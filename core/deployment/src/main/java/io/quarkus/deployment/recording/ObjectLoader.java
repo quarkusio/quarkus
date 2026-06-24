@@ -16,18 +16,20 @@ public interface ObjectLoader {
      * Load the given object if possible.
      *
      * @param body the body to use for bytecode generation (not {@code null})
-     * @param obj the object to substitute (not {@code null})
+     * @param obj the object to substitute (can be {@code null})
+     * @param type the object expected type (not {@code null})
      * @param staticInit {@code true} if this loader is for a static init method, {@code false} otherwise
      * @return the result handle of the value, or {@code null} if this loader cannot load the given object
      */
-    ResultHandle load(BytecodeCreator body, Object obj, boolean staticInit);
+    ResultHandle load(BytecodeCreator body, Object obj, Class<?> type, boolean staticInit);
 
     /**
      * Returns true if this object loader can handle the given object
      *
-     * @param obj The object
+     * @param obj The object (can be {@code null})
+     * @param type the object expected type (not {@code null})
      * @param staticInit If this is static init phase
      * @return true if this loader can handle the object
      */
-    boolean canHandleObject(Object obj, boolean staticInit);
+    boolean canHandleObject(Object obj, Class<?> type, boolean staticInit);
 }

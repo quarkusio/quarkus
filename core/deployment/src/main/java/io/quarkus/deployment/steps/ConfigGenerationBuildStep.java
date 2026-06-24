@@ -75,7 +75,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingWriter;
-import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -189,7 +188,6 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     void generateMappings(
-            NativeConfig nativeConfig,
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -200,23 +198,19 @@ public class ConfigGenerationBuildStep {
 
         Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
 
-        processConfigMapping(nativeConfig, configItem, combinedIndex, generatedConfigClasses, reflectiveClasses,
-                reflectiveMethods,
+        processConfigMapping(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
                 configClasses, additionalConstrainedClasses);
 
         List<ConfigClass> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
         for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
-            processExtensionConfigMapping(nativeConfig, buildTimeRunTimeMapping, combinedIndex, generatedConfigClasses,
-                    reflectiveClasses,
-                    reflectiveMethods, configClasses, additionalConstrainedClasses);
+            processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedConfigClasses,
+                    reflectiveClasses, reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
         List<ConfigClass> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
         for (ConfigClass runTimeMapping : runTimeMappings) {
-            processExtensionConfigMapping(nativeConfig, runTimeMapping, combinedIndex, generatedConfigClasses,
-                    reflectiveClasses,
-                    reflectiveMethods,
-                    configClasses, additionalConstrainedClasses);
+            processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedConfigClasses,
+                    reflectiveClasses, reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
         for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {

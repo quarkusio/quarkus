@@ -151,11 +151,16 @@ Before going further, open the `src/main/resources/application.properties` file 
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=postgresql
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-----
+quarkus.datasource.db-kind = postgresql <1>
 
-It instructs the application to use PostgreSQL for the database and to handle the database schema generation.
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <2>
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <3>
+----
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> The only different property from a Hibernate ORM configuration
+<3> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 In the same directory, create an `import.sql` file, which inserts a few fruits, so we don't start with an empty database in dev mode:
 

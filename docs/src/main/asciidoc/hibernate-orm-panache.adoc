@@ -121,14 +121,14 @@ Then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 ----
 # configure your datasource
-quarkus.datasource.db-kind = postgresql
-quarkus.datasource.username = sarah
-quarkus.datasource.password = connor
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.schema-management.strategy = drop-and-create
+quarkus.datasource.db-kind = postgresql <1>
+%prod.quarkus.datasource.username = sarah
+%prod.quarkus.datasource.password = connor
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 == Solution 1: using the active record pattern
 
@@ -593,7 +593,7 @@ INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Bro
 ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
-NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your demo ("production") environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
 
 After that, you can see the people list and add new person as followings:
 

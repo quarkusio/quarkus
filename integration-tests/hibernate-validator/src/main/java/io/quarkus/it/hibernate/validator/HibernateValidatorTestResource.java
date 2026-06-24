@@ -48,6 +48,7 @@ import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorCo
 import io.quarkus.it.hibernate.validator.injection.InjectedRuntimeConstraintValidatorConstraint;
 import io.quarkus.it.hibernate.validator.injection.MyService;
 import io.quarkus.it.hibernate.validator.orm.TestEntity;
+import io.quarkus.it.hibernate.validator.programmatic.ValidationServiceBasedOnProgrammaticConstraints;
 import io.quarkus.it.hibernate.validator.xml.ValidationServiceBasedOnXmlConstraints;
 import io.quarkus.runtime.StartupEvent;
 
@@ -67,6 +68,9 @@ public class HibernateValidatorTestResource
 
     @Inject
     ValidationServiceBasedOnXmlConstraints validationServiceBasedOnXmlConstraints;
+
+    @Inject
+    ValidationServiceBasedOnProgrammaticConstraints validationServiceBasedOnProgrammaticConstraints;
 
     @Inject
     ZipCodeService zipCodeResource;
@@ -352,6 +356,17 @@ public class HibernateValidatorTestResource
         ResultBuilder result = new ResultBuilder();
 
         result.append(formatViolations(validationServiceBasedOnXmlConstraints.validateSomeMyXmlBean()));
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/constraints-defined-programmatically")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testConstraintsDefinedProgrammatically() {
+        ResultBuilder result = new ResultBuilder();
+
+        result.append(formatViolations(validationServiceBasedOnProgrammaticConstraints.validateSomeMyProgrammaticBean()));
 
         return result.build();
     }

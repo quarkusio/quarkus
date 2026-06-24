@@ -72,8 +72,8 @@ You also have to configure the Hibernate processor, which is required:
         <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
         <annotationProcessorPaths>
             <path>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-processor</artifactId>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-data-processor</artifactId>
                 <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
             </path>
             <!-- other processors that may be required by your app -->
@@ -87,9 +87,9 @@ You also have to configure the Hibernate processor, which is required:
 .build.gradle
 ----
 // Enforce the version management of your annotation processor dependencies,
-// so that there's no need to define an explicit version of the hibernate-processor
+// so that there's no need to define an explicit version of the quarkus-data-processor
 annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-annotationProcessor 'org.hibernate.orm:hibernate-processor'
+annotationProcessor 'io.quarkus:quarkus-data-processor'
 ----
 
 TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[supported JDBC drivers].

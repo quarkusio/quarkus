@@ -118,9 +118,9 @@
                         <configuration>
                             <annotationProcessorPaths>
                                 <annotationProcessorPath>
-                                    <groupId>org.hibernate.orm</groupId>
-                                    <artifactId>hibernate-processor</artifactId>
-                                    <version>${hibernate-orm.version}</version>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-data-processor</artifactId>
+                                    <version>${project.version}</version>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                             <annotationProcessors>

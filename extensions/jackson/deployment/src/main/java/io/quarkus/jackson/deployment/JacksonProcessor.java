@@ -92,10 +92,10 @@ public class JacksonProcessor {
     private static final DotName JSON_TYPE_ID_RESOLVER = DotName.createSimple(JsonTypeIdResolver.class.getName());
     private static final DotName JSON_SUBTYPES = DotName.createSimple(JsonSubTypes.class.getName());
     private static final DotName JACKSON_NAMING = DotName.createSimple(JsonNaming.class.getName());
+
+    // these annotations are still in 'com.fasterxml.jackson'
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
-
     private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
-
     private static final DotName JSON_IDENTITY_INFO = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIdentityInfo");
 
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());

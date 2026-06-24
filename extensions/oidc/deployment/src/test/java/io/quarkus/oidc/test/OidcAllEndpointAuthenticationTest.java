@@ -1,9 +1,9 @@
 package io.quarkus.oidc.test;
 
 import static io.restassured.RestAssured.given;
+import static java.nio.file.Path.of;
 import static org.hamcrest.Matchers.is;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,8 +19,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.OidcRequestContext;
@@ -32,21 +36,18 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class OidcAllEndpointAuthenticationTest {
 
     private static final String CLIENT_ID = "test-client";
     private static final String CLIENT_SECRET = "test-secret";
-
-    private static final String JWT_HEADER = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0";
-    private static final String BEARER_TOKEN = JWT_HEADER
-            + ".eyJleHAiOjk5OTk5OTk5OTksInN1YiI6InRlc3Qtc2VydmljZSJ9.sig";
-    private static final File TOKEN_DIR = new File("target/test-tokens");
-    private static final File BEARER_TOKEN_FILE = new File(TOKEN_DIR, "bearer.jwt");
+    private static final String BEARER_TOKEN = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjk5OTk5OTk5OTksInN1YiI6InRlc3Qtc2VydmljZSJ9.sig";
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     ProtectedResource.class,
+                    BearerTokenFileCreator.class,
                     IncompatibleMethodTenantConfigResolver.class,
                     MockDiscoveryEndpoint.class,
                     MockJwksEndpoint.class,
@@ -69,27 +70,37 @@ class OidcAllEndpointAuthenticationTest {
                     quarkus.oidc.bearer.credentials.for-all-endpoints=true
                     quarkus.oidc.bearer.tenant-paths=/bearer/*
 
-                    """.formatted(CLIENT_ID, CLIENT_SECRET,
-                    BEARER_TOKEN_FILE.getAbsolutePath()))
-            .setBeforeAllCustomizer(() -> {
-                try {
-                    Files.createDirectories(TOKEN_DIR.toPath());
-                    Files.writeString(BEARER_TOKEN_FILE.toPath(), BEARER_TOKEN);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+                    """.formatted(CLIENT_ID, CLIENT_SECRET, of("target").resolve("test-tokens").resolve("bearer.jwt")));
 
+    @Order(1)
+    @Test
+    void testBearerAuthWhenTokenFileIsMissing() {
+        // we expect a failure as OIDC tenant cannot access the discovery endpoint
+        given()
+                .auth().oauth2("any-token")
+                .get("/bearer/protected")
+                .then()
+                .statusCode(500);
+    }
+
+    @Order(2)
+    @Test
+    void testBearerAuth() {
+        given()
+                .post("/test/create-bearer-token-file")
+                .then()
+                .statusCode(204);
+        // now that we've created the bearer token file, this OIDC tenant must recover
+        testAuth("bearer");
+    }
+
+    @Order(3)
     @Test
     void testBasicAuth() {
         testAuth("basic");
     }
 
-    @Test
-    void testBearerAuth() {
-        testAuth("bearer");
-    }
-
+    @Order(4)
     @Test
     void testIncompatibleMethodThrowsValidationError() {
         given()
@@ -117,6 +128,22 @@ class OidcAllEndpointAuthenticationTest {
         @Produces(MediaType.TEXT_PLAIN)
         public String get() {
             return "OK";
+        }
+    }
+
+    @Path("/test")
+    public static class BearerTokenFileCreator {
+
+        @ConfigProperty(name = "quarkus.oidc.bearer.credentials.jwt.token-path")
+        String tokenPath;
+
+        @POST
+        @Path("/create-bearer-token-file")
+        public Response createBearerTokenFile() throws IOException {
+            var path = of(tokenPath);
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, BEARER_TOKEN);
+            return Response.noContent().build();
         }
     }
 

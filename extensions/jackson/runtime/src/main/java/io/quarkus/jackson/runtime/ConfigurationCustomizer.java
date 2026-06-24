@@ -37,6 +37,11 @@ public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
         if (jacksonBuildTimeConfig.defaultViewInclusion()) {
             builder.enable(MapperFeature.DEFAULT_VIEW_INCLUSION);
         }
+        if (jacksonBuildTimeConfig.failOnTrailingTokens()) {
+            builder.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+        } else {
+            builder.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+        }
         if (jacksonBuildTimeConfig.failOnEmptyBeans()) {
             builder.enable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         }

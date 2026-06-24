@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.junit.QuarkusTest;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -20,9 +22,12 @@ public class PostResourceTest {
     @Test
     @Order(1)
     void testAll() {
-        List<Post> posts = when().get("/post/all").then()
+        String responseStr = when().get("/post/all").then()
                 .statusCode(200)
-                .extract().body().jsonPath().getList(".", Post.class);
+                .extract().body().asString();
+        JsonMapper jsonMapper = JsonMapper.builder().build();
+        List<Post> posts = jsonMapper.readValue(responseStr, new TypeReference<List<Post>>() {
+        });
 
         assertThat(posts)
                 .hasSize(3)

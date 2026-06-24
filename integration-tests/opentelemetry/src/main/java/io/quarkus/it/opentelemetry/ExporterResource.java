@@ -4,7 +4,9 @@ import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -48,10 +50,11 @@ public class ExporterResource {
      */
     @GET
     @Path("/export")
-    public List<SpanData> exportTraces() {
+    public List<Map<String, Object>> exportTraces() {
         return inMemorySpanExporter.getFinishedSpanItems()
                 .stream()
                 .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
+                .map(ExporterResource::toSpanMap)
                 .collect(Collectors.toList());
     }
 
@@ -76,14 +79,45 @@ public class ExporterResource {
      */
     @GET
     @Path("/export/logs")
-    public List<LogRecordData> exportLogs(@QueryParam("body") String message) {
-        if (message == null) {
-            return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
+    public List<Map<String, Object>> exportLogs(@QueryParam("body") String message) {
+        var items = inMemoryLogRecordExporter.getFinishedLogRecordItems();
+        if (message != null) {
+            items = items.stream()
+                    .filter(logRecordData -> logRecordData.getBody().asString().equals(message))
                     .collect(Collectors.toList());
         }
-        return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
-                .filter(logRecordData -> logRecordData.getBody().asString().equals(message))
-                .collect(Collectors.toList());
+        return items.stream().map(ExporterResource::toLogMap).collect(Collectors.toList());
+    }
+
+    private static Map<String, Object> toSpanMap(SpanData sd) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("spanId", sd.getSpanId());
+        map.put("traceId", sd.getTraceId());
+        map.put("name", sd.getName());
+        map.put("kind", sd.getKind().name());
+        map.put("ended", sd.hasEnded());
+        map.put("parentSpanId", sd.getParentSpanContext().getSpanId());
+        map.put("parent_spanId", sd.getParentSpanContext().getSpanId());
+        map.put("parent_traceId", sd.getParentSpanContext().getTraceId());
+        map.put("parent_remote", sd.getParentSpanContext().isRemote());
+        map.put("parent_valid", sd.getParentSpanContext().isValid());
+        sd.getAttributes().forEach((k, v) -> map.put("attr_" + k.getKey(), v.toString()));
+        sd.getResource().getAttributes().forEach((k, v) -> map.put("resource_" + k.getKey(), v.toString()));
+        return map;
+    }
+
+    private static Map<String, Object> toLogMap(LogRecordData lr) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("severityText", lr.getSeverityText());
+        Map<String, Object> spanCtx = new LinkedHashMap<>();
+        spanCtx.put("traceId", lr.getSpanContext().getTraceId());
+        spanCtx.put("spanId", lr.getSpanContext().getSpanId());
+        spanCtx.put("sampled", lr.getSpanContext().isSampled());
+        map.put("spanContext", spanCtx);
+        map.put("body_body", lr.getBody().asString());
+        lr.getAttributes().forEach((k, v) -> map.put("attr_" + k.getKey(), v.toString()));
+        lr.getResource().getAttributes().forEach((k, v) -> map.put("resource_" + k.getKey(), v.toString()));
+        return map;
     }
 
     private static boolean isPathFound(String path, Attributes attributes) {

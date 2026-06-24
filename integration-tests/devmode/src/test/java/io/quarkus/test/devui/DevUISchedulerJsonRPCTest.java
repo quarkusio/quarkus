@@ -8,11 +8,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUISchedulerJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -37,7 +36,7 @@ public class DevUISchedulerJsonRPCTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(methods);
         Assertions.assertTrue(methods.isArray());
 
-        Iterator<JsonNode> en = methods.elements();
+        Iterator<JsonNode> en = methods.iterator();
         boolean exists = false;
         while (en.hasNext()) {
             JsonNode method = en.next();

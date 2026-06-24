@@ -23,7 +23,7 @@ import io.quarkus.qute.debug.agent.resolvers.ValueResolverContext;
  * evaluated.
  * </p>
  */
-public class VariableContext implements ValueResolverContext {
+public class VariableContext<T> implements ValueResolverContext<Variable> {
 
     /** The object from which variables are collected. */
     private final Object base;
@@ -60,21 +60,22 @@ public class VariableContext implements ValueResolverContext {
     }
 
     @Override
-    public void addMethod(Method method) {
+    public Variable addMethod(Method method) {
         String name = method.getName();
         if (exists(name)) {
-            return;
+            return null;
         }
         Variable variable = new Variable();
         variable.setName(name);
         variables.add(variable);
+        return variable;
     }
 
     @Override
-    public void addProperty(Field field) {
+    public Variable addProperty(Field field) {
         String name = field.getName();
         if (exists(name)) {
-            return;
+            return null;
         }
 
         Object value = null;
@@ -84,27 +85,29 @@ public class VariableContext implements ValueResolverContext {
         } catch (Exception e) {
             // Ignore the error
         }
-        VariablesHelper.fillVariable(name, value, stackFrame, variables, variablesRegistry);
+        return VariablesHelper.fillVariable(name, value, stackFrame, variables, variablesRegistry);
     }
 
     @Override
-    public void addProperty(String property) {
+    public Variable addProperty(String property) {
         if (exists(property)) {
-            return;
+            return null;
         }
         Variable variable = new Variable();
         variable.setName(property);
         variables.add(variable);
+        return variable;
     }
 
     @Override
-    public void addMethod(String method) {
+    public Variable addMethod(String method) {
         if (exists(method)) {
-            return;
+            return null;
         }
         Variable variable = new Variable();
         variable.setName(method);
         variables.add(variable);
+        return variable;
     }
 
     /** Checks if a variable with the given name already exists. */

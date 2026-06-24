@@ -286,9 +286,7 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setTcpCork(httpConfig.tcpCork());
         httpServerOptions.setAcceptBacklog(httpConfig.acceptBacklog());
         httpServerOptions.setTcpFastOpen(httpConfig.tcpFastOpen());
-        // TODO This settings has been removed from Vert.x 5. It needs to be investigated.
-        // httpServerOptions
-        //        .setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
+        httpServerOptions.setUseSemicolonAsQueryParamDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter());
         httpServerOptions.setTcpUserTimeout((int) httpConfig.tcpUserTimeout().toMillis());
         httpServerOptions.setSoLinger(httpConfig.soLinger());
         if (httpConfig.sendBufferSize().isPresent()) {
@@ -454,8 +452,7 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(managementBuildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(managementConfig.handle100ContinueAutomatically());
-        // TODO This setting disappeared in Vert.x 5. It needs to be investigated.
-        // options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
+        options.setUseSemicolonAsQueryParamDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter());
 
         options.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
         options.setProxyProtocolTimeout(managementConfig.proxyProtocolTimeout().toMillis());

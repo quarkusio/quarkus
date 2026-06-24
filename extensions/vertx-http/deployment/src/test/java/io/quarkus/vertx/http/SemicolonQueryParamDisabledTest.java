@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.is;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +16,6 @@ import io.vertx.ext.web.Router;
  * Tests that semicolons are treated as literal characters when
  * {@code quarkus.http.use-semicolon-as-query-param-delimiter} is set to {@code false}.
  */
-@Disabled("Settings not present in Vert.x 5. It needs to be investigated.")
 public class SemicolonQueryParamDisabledTest {
 
     @RegisterExtension

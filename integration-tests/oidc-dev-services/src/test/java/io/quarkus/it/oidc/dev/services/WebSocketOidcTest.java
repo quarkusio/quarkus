@@ -178,8 +178,7 @@ public class WebSocketOidcTest {
             // permission checker only allows 'hello', so expect connection will be closed
             // this checks that permission checker is actually invoked, which is important because it checks for us
             // that updated identity is passed to the checker on the next invocation
-            // TODO Re-enable the following assertion once https://github.com/eclipse-vertx/vert.x/issues/6144 is fixed.
-            //Assertions.assertNull(ws1.get().closeStatusCode());
+            Assertions.assertNull(ws1.get().closeStatusCode());
             ws1.get().writeTextMessage(createRequest("bye", oidcTestClient.getAccessToken("alice", "alice")));
             Awaitility.await().atMost(TIMEOUT).untilAsserted(
                     () -> {
@@ -230,18 +229,15 @@ public class WebSocketOidcTest {
             assertEquals(1, messages.size(), "Messages: " + messages);
             assertEquals("bye", messages.get(0));
 
-            // TODO Re-enable the following assertion once https://github.com/eclipse-vertx/vert.x/issues/6144 is fixed.
             // after about 2 seconds, updated SecurityIdentity will expire, so expect connection closed
-            //Assertions.assertNull(ws1.get().closeStatusCode());
+            Assertions.assertNull(ws1.get().closeStatusCode());
             Awaitility.await().atMost(TIMEOUT).untilAsserted(
                     () -> {
-                        // TODO Re-enable the following assertions once https://github.com/eclipse-vertx/vert.x/issues/6144 is fixed.
-                        //Assertions.assertNotNull(ws1.get().closeStatusCode());
-                        //assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());
+                        Assertions.assertNotNull(ws1.get().closeStatusCode());
+                        assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());
                     });
-            // TODO Re-enable the following assertion once https://github.com/eclipse-vertx/vert.x/issues/6144 is fixed.
-            //  var closeReason = ws1.get().closeReason();
-            //  Assertions.assertTrue(closeReason.contains("Authentication expired"), closeReason);
+            var closeReason = ws1.get().closeReason();
+            Assertions.assertTrue(closeReason.contains("Authentication expired"), closeReason);
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
         }
@@ -293,8 +289,7 @@ public class WebSocketOidcTest {
             ws1.get().writeTextMessage(nextToken);
 
             // by default the authorization failure should result in closing of the connection
-            // TODO Re-enable the following assertion once https://github.com/eclipse-vertx/vert.x/issues/6144 is fixed.
-            //Assertions.assertNull(ws1.get().closeStatusCode());
+            Assertions.assertNull(ws1.get().closeStatusCode());
             Awaitility.await().atMost(TIMEOUT).untilAsserted(
                     () -> {
                         Assertions.assertNotNull(ws1.get().closeStatusCode());

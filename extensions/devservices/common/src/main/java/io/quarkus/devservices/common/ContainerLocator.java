@@ -11,9 +11,11 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
+import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.runtime.LaunchMode;
 
@@ -78,17 +80,7 @@ public class ContainerLocator {
             return lookup(serviceName)
                     .flatMap(container -> getMappedPort(container, port).stream()
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
-                                    .map(port -> {
-                                        final ContainerAddress containerAddress = new ContainerAddress(
-                                                container.getId(),
-                                                DockerClientFactory.instance().dockerHostIpAddress(),
-                                                containerPort.getPublicPort());
-                                        log.infof("Dev Services container found: %s (%s). Connecting to: %s.",
-                                                container.getId(),
-                                                container.getImage(),
-                                                containerAddress.getUrl());
-                                        return containerAddress;
-                                    }).stream()))
+                                    .map(publicPort -> toContainerAddress(container, containerPort)).stream()))
                     .findFirst();
         } else {
             return Optional.empty();
@@ -109,18 +101,28 @@ public class ContainerLocator {
 
                         Arrays.stream(container.getPorts())
                                 .filter(cp -> Objects.nonNull(cp.getPublicPort()) && Objects.nonNull(cp.getPrivatePort()))
-                                .forEach(cp -> {
-                                    ContainerAddress containerAddress = new ContainerAddress(
-                                            container.getId(),
-                                            DockerClientFactory.instance().dockerHostIpAddress(),
-                                            cp.getPublicPort());
-                                    consumer.accept(cp.getPrivatePort(), containerAddress);
-                                });
+                                .forEach(cp -> consumer.accept(cp.getPrivatePort(), toContainerAddress(container, cp)));
                         return container.getId();
                     });
         } else {
             return Optional.empty();
         }
+    }
+
+    private ContainerAddress toContainerAddress(Container container, ContainerPort containerPort) {
+        InspectContainerResponse inspectContainer = DockerClientFactory.lazyClient()
+                .inspectContainerCmd(container.getId())
+                .exec();
+        RunningContainer runningContainer = ContainerUtil.toRunningContainer(inspectContainer);
+        ContainerAddress containerAddress = new ContainerAddress(
+                runningContainer,
+                DockerClientFactory.instance().dockerHostIpAddress(),
+                containerPort.getPublicPort());
+        log.infof("Dev Services container found: %s (%s). Connecting to: %s.",
+                container.getId(),
+                container.getImage(),
+                containerAddress.getUrl());
+        return containerAddress;
     }
 
     public Optional<Integer> locatePublicPort(String serviceName, boolean shared, LaunchMode launchMode, int privatePort) {

@@ -127,6 +127,37 @@ public interface DevServicesBuildTimeConfig {
     Map<String, String> volumes();
 
     /**
+     * Indicates if the database Dev Service managed by Quarkus is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services starts a new container.
+     * <p>
+     * The discovery uses a database-specific dev service label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("false")
+    boolean shared();
+
+    /**
+     * The value of the dev service label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services looks for a container with the label
+     * set to the configured value. If found, it will use this container instead of starting a new one.
+     * Otherwise, it starts a new container with the label set to the specified value.
+     * <p>
+     * This property is used when you need multiple shared database Dev Services.
+     * <p>
+     * If not set, the datasource name is used ({@code default} for the default datasource).
+     *
+     * @asciidoclet
+     */
+    Optional<@WithConverter(TrimmedStringConverter.class) String> serviceName();
+
+    /**
      * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
      * to reuse them in the next dev mode session or test suite execution.
      *

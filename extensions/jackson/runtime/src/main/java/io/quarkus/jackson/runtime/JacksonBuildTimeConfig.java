@@ -38,6 +38,13 @@ public interface JacksonBuildTimeConfig {
     boolean defaultViewInclusion();
 
     /**
+     * If enabled, Jackson will fail when there are trailing tokens after the deserialized value.
+     * Note that Jackson 2 defaulted to {@code false}.
+     */
+    @WithDefault("true")
+    boolean failOnTrailingTokens();
+
+    /**
      * If enabled, Jackson will fail when no accessors are found for a type.
      * This is enabled by default to match the default Jackson 2 behavior.
      * Note that Jackson 3 defaults to {@code false}.

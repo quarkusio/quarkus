@@ -85,6 +85,9 @@ public class BeanDeployment {
     private final Map<DotName, StereotypeInfo> stereotypes;
 
     private final List<BeanInfo> beans;
+    private final List<BeanInfo> syntheticBeans;
+    // Unmodifiable live view that concatenates beans and syntheticBeans
+    private final Collection<BeanInfo> beansView;
     private volatile Map<DotName, List<BeanInfo>> beansByType;
     private final List<SkippedClass> skippedClasses;
 
@@ -237,6 +240,8 @@ public class BeanDeployment {
         this.interceptors = new CopyOnWriteArrayList<>();
         this.decorators = new CopyOnWriteArrayList<>();
         this.beans = new CopyOnWriteArrayList<>();
+        this.syntheticBeans = new CopyOnWriteArrayList<>();
+        this.beansView = new ConcatCollectionView<>(beans, syntheticBeans);
         this.skippedClasses = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
         this.invokers = ConcurrentHashMap.newKeySet();
@@ -300,7 +305,7 @@ public class BeanDeployment {
         this.skippedClasses.addAll(beanDiscoveryResult.skippedClasses);
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
-        buildContext.putInternal(Key.BEANS, Collections.unmodifiableList(beans));
+        buildContext.putInternal(Key.BEANS, beansView);
         buildContext.putInternal(Key.OBSERVERS, Collections.unmodifiableList(observers));
         this.interceptors.addAll(findInterceptors(injectionPoints));
         buildContext.putInternal(Key.INTERCEPTORS, Collections.unmodifiableList(interceptors));
@@ -315,18 +320,20 @@ public class BeanDeployment {
                     invokerFactory);
         }
 
-        return registerSyntheticBeans(beanRegistrars, buildContext);
+        RegistrationContext ret = registerSyntheticBeans(beanRegistrars, buildContext);
+        updateBeanByTypeMap(beans, false);
+        return ret;
     }
 
     void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.nanoTime();
 
-        initObserverAndProducerMethods(observers, beans);
+        initObserverAndProducerMethods(observers, beansView);
 
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
-        for (BeanInfo bean : beans) {
+        for (BeanInfo bean : beansView) {
             bean.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
         for (ObserverInfo observer : observers) {
@@ -362,7 +369,7 @@ public class BeanDeployment {
                     removedInterceptors.size(), removedDecorators.size(),
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - removalStart));
             //we need to re-initialize it, so it does not contain removed beans
-            initBeanByTypeMap();
+            updateBeanByTypeMap(beansView, false);
             buildContext.putInternal(Key.REMOVED_INTERCEPTORS, Collections.unmodifiableSet(removedInterceptors));
             buildContext.putInternal(Key.REMOVED_DECORATORS, Collections.unmodifiableSet(removedDecorators));
         }
@@ -371,35 +378,47 @@ public class BeanDeployment {
     }
 
     /**
-     * Re-initialize the map that is used to speed-up lookup requests.
+     * Update the map that is used to speed-up lookup requests.
+     *
+     * @param beans
+     * @param append {@code true} to add to the existing map, {@code false} to rebuild from scratch
      */
-    public void initBeanByTypeMap() {
-        Map<DotName, List<BeanInfo>> map = new HashMap<>();
+    void updateBeanByTypeMap(Collection<BeanInfo> beans, boolean append) {
+        Map<DotName, List<BeanInfo>> map = append ? this.beansByType : new HashMap<>();
         for (BeanInfo bean : beans) {
-            bean.types.stream().map(Type::name).distinct().forEach(rawTypeName -> {
-                if (DotNames.OBJECT.equals(rawTypeName)) {
-                    // Every bean has java.lang.Object - no need to cache results here
-                    return;
-                }
-                List<BeanInfo> beans = map.get(rawTypeName);
-                if (beans == null) {
-                    // Very often, there will be exactly one bean for a given type
-                    map.put(rawTypeName, List.of(bean));
-                } else {
-                    if (beans.size() == 1) {
-                        map.put(rawTypeName, List.of(beans.get(0), bean));
-                    } else {
-                        BeanInfo[] array = new BeanInfo[beans.size() + 1];
-                        for (int i = 0; i < beans.size(); i++) {
-                            array[i] = beans.get(i);
-                        }
-                        array[beans.size()] = bean;
-                        map.put(rawTypeName, List.of(array));
-                    }
-                }
-            });
+            processBeanTypes(bean, map);
         }
+        // Always volatile-write to ensure visibility across threads
         this.beansByType = map;
+    }
+
+    void synthesisFinished() {
+        updateBeanByTypeMap(syntheticBeans, true);
+    }
+
+    private void processBeanTypes(BeanInfo bean, Map<DotName, List<BeanInfo>> map) {
+        bean.types.stream().map(Type::name).distinct().forEach(rawTypeName -> {
+            if (DotNames.OBJECT.equals(rawTypeName)) {
+                // Every bean has java.lang.Object - no need to cache results here
+                return;
+            }
+            List<BeanInfo> beans = map.get(rawTypeName);
+            if (beans == null) {
+                // Very often, there will be exactly one bean for a given type
+                map.put(rawTypeName, List.of(bean));
+            } else {
+                if (beans.size() == 1) {
+                    map.put(rawTypeName, List.of(beans.get(0), bean));
+                } else {
+                    BeanInfo[] array = new BeanInfo[beans.size() + 1];
+                    for (int i = 0; i < beans.size(); i++) {
+                        array[i] = beans.get(i);
+                    }
+                    array[beans.size()] = bean;
+                    map.put(rawTypeName, List.of(array));
+                }
+            }
+        });
     }
 
     private void removeUnusedComponents(Set<BeanInfo> declaresObserver, Set<BeanInfo> invokerLookups,
@@ -426,7 +445,7 @@ public class BeanDeployment {
                 }
             }
             if (removable) {
-                for (BeanInfo bean : this.beans) {
+                for (BeanInfo bean : this.beansView) {
                     if (bean.getBoundInterceptors().contains(interceptor)) {
                         removable = false;
                         break;
@@ -470,7 +489,7 @@ public class BeanDeployment {
                 }
             }
             if (removable) {
-                for (BeanInfo bean : this.beans) {
+                for (BeanInfo bean : this.beansView) {
                     if (bean.getBoundDecorators().contains(decorator)) {
                         removable = false;
                         break;
@@ -499,10 +518,11 @@ public class BeanDeployment {
 
     private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, Set<BeanInfo> invokerLookups,
             List<Predicate<BeanInfo>> allUnusedExclusions) {
-        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(beanResolver, this.beans, this.injectionPoints,
+        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(beanResolver, this.beansView, this.injectionPoints,
                 declaresObserver, invokerLookups, allUnusedExclusions);
         if (!removableBeans.isEmpty()) {
             this.beans.removeAll(removableBeans);
+            this.syntheticBeans.removeAll(removableBeans);
             this.removedBeans.addAll(removableBeans);
             List<InjectionPointInfo> removableInjectionPoints = new ArrayList<>();
             for (BeanInfo bean : removableBeans) {
@@ -540,7 +560,7 @@ public class BeanDeployment {
     }
 
     public Collection<BeanInfo> getBeans() {
-        return Collections.unmodifiableList(beans);
+        return beansView;
     }
 
     Collection<BeanInfo> getBeansByRawType(DotName typeName) {
@@ -805,7 +825,7 @@ public class BeanDeployment {
         return observerAndProducerMethods;
     }
 
-    private void initObserverAndProducerMethods(List<ObserverInfo> observers, List<BeanInfo> beans) {
+    private void initObserverAndProducerMethods(List<ObserverInfo> observers, Collection<BeanInfo> beans) {
         Set<MethodInfo> ret = new HashSet<>();
         for (ObserverInfo observer : observers) {
             if (!observer.isSynthetic()) {
@@ -1592,14 +1612,14 @@ public class BeanDeployment {
     }
 
     private void addSyntheticBean(BeanInfo bean) {
-        for (BeanInfo b : beans) {
+        for (BeanInfo b : beansView) {
             if (b.getIdentifier().equals(bean.getIdentifier())) {
                 throw new IllegalStateException(
                         "A synthetic bean with identifier " + bean.getIdentifier() + " is already registered: "
                                 + b);
             }
         }
-        beans.add(bean);
+        syntheticBeans.add(bean);
     }
 
     void addSyntheticInterceptor(InterceptorInfo interceptor) {
@@ -1737,7 +1757,7 @@ public class BeanDeployment {
             }
         }
 
-        for (BeanInfo bean : beans) {
+        for (BeanInfo bean : beansView) {
             if (bean.getName() != null) {
                 List<BeanInfo> named = namedBeans.get(bean.getName());
                 if (named == null) {

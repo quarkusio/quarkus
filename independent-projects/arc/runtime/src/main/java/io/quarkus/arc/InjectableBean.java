@@ -121,7 +121,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     }
 
     /**
-     * Suppressed beans cannot be obtained by programmatic lookup via {@link Instance}.
+     * Suppressed beans cannot be obtained by programmatic lookup via {@link Instance} and {@link All}.
      *
      * @return {@code true} if the bean should be suppressed
      */

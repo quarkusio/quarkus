@@ -51,7 +51,6 @@ import io.quarkus.gizmo2.Expr;
  * <li>{@link #registerScopes()}</li>
  * <li>{@link #registerBeans()}</li>
  * <li>{@link #registerSyntheticInjectionPoints(io.quarkus.arc.processor.BeanRegistrar.RegistrationContext)}</li>
- * <li>{@link BeanDeployment#initBeanByTypeMap()}</li>
  * <li>{@link #registerSyntheticObservers()}</li>
  * <li>{@link #initialize(Consumer, List)}</li>
  * <li>{@link #validate(Consumer)}</li>
@@ -150,7 +149,11 @@ public class BeanProcessor {
      * @return the context applied to {@link BeanRegistrar}
      */
     public BeanRegistrar.RegistrationContext registerBeans() {
-        return beanDeployment.registerBeans(beanRegistrars);
+        BeanRegistrar.RegistrationContext context = beanDeployment.registerBeans(beanRegistrars);
+        // Initialize the type -> bean map so that BeanResolver is functional
+        // for consumers of BeanDiscoveryFinishedBuildItem
+        beanDeployment.initBeanByTypeMap();
+        return context;
     }
 
     /**
@@ -573,7 +576,6 @@ public class BeanProcessor {
         registerScopes();
         RegistrationContext registrationContext = registerBeans();
         registerSyntheticInjectionPoints(registrationContext);
-        beanDeployment.initBeanByTypeMap();
         registerSyntheticObservers();
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);

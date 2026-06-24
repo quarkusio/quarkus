@@ -24,17 +24,11 @@ public record ListeningAddress(Integer port, String protocol) {
     }
 
     public void registerManagement(ValueRegistry valueRegistry, Config config) {
-        if (!valueRegistry.containsKey(MANAGEMENT_PORT)) {
-            valueRegistry.register(MANAGEMENT_PORT, port);
-        }
-        if (!valueRegistry.containsKey(MANAGEMENT_TEST_PORT)) {
-            valueRegistry.register(MANAGEMENT_TEST_PORT, port);
-        }
-        if (!valueRegistry.containsKey(LOCAL_MANAGEMENT_BASE_URI)) {
-            valueRegistry.register(LOCAL_MANAGEMENT_BASE_URI,
-                    URI.create(isSsl() ? testManagementUrlSsl(valueRegistry, config)
-                            : testManagementUrl(valueRegistry, config)));
-        }
+        valueRegistry.register(MANAGEMENT_PORT, port);
+        valueRegistry.register(MANAGEMENT_TEST_PORT, port);
+        valueRegistry.register(LOCAL_MANAGEMENT_BASE_URI,
+                URI.create(isSsl() ? testManagementUrlSsl(valueRegistry, config)
+                        : testManagementUrl(valueRegistry, config)));
     }
 
     // Compatibility with Config and io.quarkus.vertx.http.HttpServer

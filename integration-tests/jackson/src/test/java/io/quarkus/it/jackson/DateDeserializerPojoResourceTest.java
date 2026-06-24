@@ -7,7 +7,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,22 +25,22 @@ public class DateDeserializerPojoResourceTest {
                 .when().post("/datedeserializers/sql/timestamp")
                 .then()
                 .statusCode(200)
-                .body("timestamp", equalTo("1970-01-01T00:00:00.000+00:00"));
+                // Jackson 3 uses "Z" instead of "+00:00" for UTC
+                .body("timestamp", equalTo("1970-01-01T00:00:00.000Z"));
     }
 
     @Test
     public void testSqlDate() throws IOException {
         SqlDatePojo pojo = new SqlDatePojo();
-        Date sqlDate = new Date(0);
-        pojo.date = sqlDate;
-        // the date will pass through Jackson's incorrect conversion; here is our equivalent:
-        sqlDate = new Date(sqlDate.toLocalDate().atStartOfDay(ZoneId.of("UTC")).toEpochSecond() * 1000L);
+        pojo.date = new Date(0);
 
         given()
                 .body(getObjectMapperForTest().writeValueAsString(pojo))
                 .when().post("/datedeserializers/sql/date")
                 .then()
                 .statusCode(200)
-                .body("date", equalTo(sqlDate.toString()));
+                // Jackson 3 serializes java.sql.Date like java.util.Date (full date-time)
+                // instead of using toString() (date-only). See https://github.com/FasterXML/jackson-databind/issues/2405
+                .body("date", equalTo("1970-01-01T00:00:00.000Z"));
     }
 }

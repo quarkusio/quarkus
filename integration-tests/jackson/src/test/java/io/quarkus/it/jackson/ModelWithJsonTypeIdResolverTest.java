@@ -12,10 +12,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.it.jackson.model.ModelWithJsonTypeIdResolver;
 import io.quarkus.test.junit.QuarkusTest;
+import tools.jackson.databind.ObjectMapper;
 
 @QuarkusTest
 public class ModelWithJsonTypeIdResolverTest {

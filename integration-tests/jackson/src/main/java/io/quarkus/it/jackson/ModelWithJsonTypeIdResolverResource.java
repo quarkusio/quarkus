@@ -9,9 +9,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.it.jackson.model.ModelWithJsonTypeIdResolver;
+import tools.jackson.databind.ObjectMapper;
 
 @Path("/typeIdResolver")
 public class ModelWithJsonTypeIdResolverResource {

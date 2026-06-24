@@ -11,7 +11,6 @@ public class OpenedSessionsStateStatelessImpl extends OpenedSessionsState<Mutiny
     }
 
     public OpenedSessionsStateStatelessImpl() {
-        super(HibernateReactiveVertxServiceProvider.STATELESS_SESSIONS_LOCAL);
     }
 
     @Override

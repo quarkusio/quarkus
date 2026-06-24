@@ -12,7 +12,6 @@ import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
-import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Argument;
 import org.aesh.command.option.Arguments;
@@ -197,7 +196,7 @@ public class TestTracingProcessor {
         return new ConsoleCommandBuildItem(new TestCommand());
     }
 
-    @GroupCommandDefinition(name = "test", description = "Test Commands", groupCommands = { TagsCommand.class,
+    @CommandDefinition(name = "test", description = "Test Commands", groupCommands = { TagsCommand.class,
             PatternCommand.class }, generateHelp = true)
     public static class TestCommand implements Command {
 
@@ -207,7 +206,7 @@ public class TestTracingProcessor {
         }
     }
 
-    @GroupCommandDefinition(name = "tags", description = "Tag Commands", groupCommands = { IncludeTagsCommand.class,
+    @CommandDefinition(name = "tags", description = "Tag Commands", groupCommands = { IncludeTagsCommand.class,
             ExcludeTagsCommand.class }, generateHelp = true)
     public static class TagsCommand implements Command {
 
@@ -269,7 +268,7 @@ public class TestTracingProcessor {
         }
     }
 
-    @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
+    @CommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
             IncludePatternCommand.class,
             ExcludePatternCommand.class }, generateHelp = true)
     public static class PatternCommand implements Command {

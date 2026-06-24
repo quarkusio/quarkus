@@ -463,7 +463,7 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
         beanProcessor.registerSyntheticInjectionPoints(beanRegistrationPhase.getContext());
 
-        // Initialize the type -> bean map
+        // Re-initialize the type -> bean map after synthetic injection points are registered
         beanProcessor.getBeanDeployment().initBeanByTypeMap();
 
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();

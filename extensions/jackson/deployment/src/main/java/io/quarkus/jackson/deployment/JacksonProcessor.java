@@ -95,7 +95,6 @@ public class JacksonProcessor {
 
     // these annotations are still in 'com.fasterxml.jackson'
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
-    private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
     private static final DotName JSON_IDENTITY_INFO = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIdentityInfo");
 
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
@@ -282,16 +281,6 @@ public class JacksonProcessor {
             }
         }
 
-        // register @JsonNaming strategy implementations for reflection
-        for (AnnotationInstance jsonNamingInstance : index.getAnnotations(JSON_NAMING)) {
-            AnnotationValue strategyValue = jsonNamingInstance.value("value");
-            if (strategyValue != null) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategyValue.asClass().name().toString())
-                        .reason(getClass().getName() + " @" + JSON_NAMING + " value")
-                        .methods().fields().build());
-            }
-        }
-
         // register @JsonIdentityInfo strategy implementations for reflection
         for (AnnotationInstance jsonIdentityInfoInstance : index.getAnnotations(JSON_IDENTITY_INFO)) {
             AnnotationValue generatorValue = jsonIdentityInfoInstance.value("generator");
@@ -335,7 +324,7 @@ public class JacksonProcessor {
 
         // register @JsonNaming for reflection
         Set<String> namingTypesNames = new HashSet<>();
-        for (AnnotationInstance namingInstance : index.getAnnotations(JSON_NAMING)) {
+        for (AnnotationInstance namingInstance : index.getAnnotations(JACKSON_NAMING)) {
             AnnotationValue namingValue = namingInstance.value();
             if (namingValue != null) {
                 namingTypesNames.add(namingValue.asClass().name().toString());

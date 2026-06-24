@@ -87,6 +87,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBu
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.infinispan.client.InfinispanClientName;
 import io.quarkus.infinispan.client.Remote;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
@@ -306,6 +307,10 @@ class InfinispanClientProcessor {
         // Elytron SASL service providers
         serviceProvider.produce(
                 ServiceProviderBuildItem.allProvidersFromClassPath(javax.security.sasl.SaslClientFactory.class.getName()));
+        // note that they are also instantiated by other components using other constructors so we need to register all constructors for reflection
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(ServiceUtil.classNamesNamedIn(javax.security.sasl.SaslClientFactory.class.getName())).constructors()
+                .build());
 
         // Elytron credential classes
         String[] elytronClasses = new String[] {

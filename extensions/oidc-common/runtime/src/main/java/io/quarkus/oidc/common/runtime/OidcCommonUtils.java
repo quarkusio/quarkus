@@ -993,17 +993,15 @@ public class OidcCommonUtils {
         });
     }
 
-    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig,
-            Function<String, RuntimeException> exceptionCreator) {
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig) {
         var jwtConfig = credentialsConfig.jwt();
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
                     jwtConfig.source());
             if (clientAssertionProvider.getAvailableClientAssertion() == null) {
-                throw exceptionCreator
-                        .apply("Cannot find a valid "
-                                + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")
-                                + " token at path: " + jwtConfig.tokenPath().get());
+                LOG.warnf("Cannot find a valid %s token at path: %s, deferring token loading to request time",
+                        jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer",
+                        jwtConfig.tokenPath().get());
             }
             return clientAssertionProvider;
         }

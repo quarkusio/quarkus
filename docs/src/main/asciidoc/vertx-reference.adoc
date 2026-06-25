@@ -944,93 +944,12 @@ The browser must use the `vertx-eventbus` JavaScript library to consume the mess
 ----
 
 [[native-transport]]
-== Use native transports
+== Native transports
 
-IMPORTANT: Native transports are not supported in native executables.
-
-NOTE: To use `io_uring`, refer to the <<use-io_uring>> section.
-
-Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports], which offers performance improvements on specific platforms.
-To enable them, you must include the appropriate dependency for your platform.
-It's usually a good idea to have both to keep your application platform-agnostic.
-Netty is smart enough to use the correct one, that includes none at all on unsupported platforms:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-  <groupId>io.netty</groupId>
-  <artifactId>netty-transport-native-epoll</artifactId>
-  <classifier>linux-x86_64</classifier>
-</dependency>
-
-<dependency>
-  <groupId>io.netty</groupId>
-  <artifactId>netty-transport-native-kqueue</artifactId>
-  <classifier>osx-x86_64</classifier>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.netty:netty-transport-native-epoll::linux-x86_64")
-
-implementation("io.netty:netty-transport-native-kqueue::osx-x86_64")
-----
-
-You will also have to explicitly configure Vert.x to use the native transport.
-In `application.properties` add:
-
-[source,properties]
-----
-quarkus.vertx.prefer-native-transport=true
-----
-
-Or in `application.yml`:
-
-[source,yml]
-----
-quarkus:
-  vertx:
-    prefer-native-transport: true
-----
-
-If all is well quarkus will log:
-
-----
-[io.qua.ver.cor.run.VertxCoreRecorder] (main) Vertx has Native Transport Enabled: true
-----
-
-=== Native Linux transport
-
-On Linux you can enable the following socket options:
-
-* SO_REUSEPORT
-----
-quarkus.http.so-reuse-port=true
-----
-* TCP_QUICKACK
-----
-quarkus.http.tcp-quick-ack=true
-----
-* TCP_CORK
-----
-quarkus.http.tcp-cork=true
-----
-* TCP_FASTOPEN
-----
-quarkus.http.tcp-fast-open=true
-----
-
-=== Native macOS transport
-
-On macOS Sierra and above you can enable the following socket options:
-
-* SO_REUSEPORT
-----
-quarkus.http.so-reuse-port=true
-----
+Quarkus supports Netty's native transports (epoll, kqueue, io_uring) for improved
+I/O performance on specific platforms.
+See the xref:native-transport-reference.adoc[Native Transport Reference] for
+configuration, dependencies, and platform-specific details.
 
 == Use a Vert.x context-aware scheduler
 
@@ -1087,6 +1006,8 @@ if you're setting up a service mesh with a proxy like Envoy.
 
 Unix Domain Sockets are supported in both JVM and native modes.
 
+NOTE: Unix domain sockets require a native transport dependency. See the xref:native-transport-reference.adoc[Native Transport Reference] for details.
+
 ----
 quarkus.http.domain-socket=/var/run/io.quarkus.app.socket
 quarkus.http.domain-socket-enabled=true
@@ -1103,99 +1024,6 @@ These properties can be set through Java's `-D` command line parameter or
 on `application.properties`.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
-
-[[use-io_uring]]
-== Use io_uring
-
-IMPORTANT: `io_uring` is not supported in native executables.
-
-NOTE: `io_uring` support is experimental
-
-`io_uring` is a Linux kernel interface that allows you to send and receive data asynchronously.
-It provides unified semantics for both file and network I/O.
-It was originally designed to target block devices and files but has since gained the ability to work with things like network sockets.
-It has the potential to provide modest performance benefits to network I/O on its own and greater benefits for mixed file and network I/O application workloads.
-
-To learn more about `io_uring`, we recommend the following links:
-
-* https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io[Why you should use io_uring for network I/O]: The main benefit of io_uring for network I/O is a modern asynchronous API that is straightforward to use and provides unified semantics for file and network I/O.
-A potential performance benefit of io_uring for network I/O is reducing the number of syscalls.
-This could provide the biggest benefit for high volumes of small operations where the overhead of system calls can be significant.
-* https://dzone.com/articles/the-backend-revolution-or-why-io-uring-is-so-impor[The Backend Revolution and Why io_uring Is So Important]: The io_uring API uses two ring buffers for communication between application and kernel (hence the API name) and designed in a way that enables natural batching of requests and responses.
-Besides, it provides a way to submit multiple requests in one system call, which can reduce overhead.
-* https://stackoverflow.com/questions/61767702/what-exactly-is-io-uring[What exactly is io_uring?]: io_uring is a Linux kernel interface to efficiently allow you to send and receive data asynchronously.
-It was originally designed to target block devices and files but has since gained the ability to work with things like network sockets.
-
-
-To use `io_uring`, you need to add two dependencies to your project and enable native transport.
-First add the following dependencies to your project:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.netty.incubator</groupId>
-    <artifactId>netty-incubator-transport-native-io_uring</artifactId>
-    <version>0.0.21.Final</version> <!-- Update this version (https://github.com/netty/netty-incubator-transport-io_uring/tags) -->
-    <classifier>linux-x86_64</classifier>
-</dependency>
-<dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-io_uring-incubator</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Update the io_uring version by picking the latest from https://github.com/netty/netty-incubator-transport-io_uring/tags
-implementation("io.netty.incubator:netty-incubator-transport-native-io_uring:0.0.21.Final")
-implementation("io.vertx:vertx-io_uring-incubator")
-----
-
-Then, in the `application.properties`, add:
-
-[source, properties]
-----
-quarkus.vertx.prefer-native-transport=true
-----
-
-[NOTE]
-.Can I use io_uring on my Linux machine?
-====
-To check if you can use `io_uring` on your Linux machine, execute the following command:
-[source, shell]
-----
-> grep io_uring_setup /proc/kallsyms
-0000000000000000 t __pfx_io_uring_setup
-0000000000000000 t io_uring_setup
-0000000000000000 T __pfx___x64_sys_io_uring_setup
-0000000000000000 T __x64_sys_io_uring_setup
-0000000000000000 T __pfx___ia32_sys_io_uring_setup
-0000000000000000 T __ia32_sys_io_uring_setup
-0000000000000000 d event_exit__io_uring_setup
-0000000000000000 d event_enter__io_uring_setup
-0000000000000000 d __syscall_meta__io_uring_setup
-0000000000000000 d args__io_uring_setup
-0000000000000000 d types__io_uring_setup
-0000000000000000 d __event_exit__io_uring_setup
-0000000000000000 d __event_enter__io_uring_setup
-0000000000000000 d __p_syscall_meta__io_uring_setup
-----
-If it prints something like above, you can use `io_uring`.
-====
-
-[NOTE]
-.Troubleshooting
-====
-`io_uring` support is still experimental.
-Check the https://github.com/netty/netty-incubator-transport-io_uring#faq[Netty io_uring FAQ] if you see some odd behavior.
-Also, the https://github.com/netty/netty-incubator-transport-io_uring/issues/152[netty io_uring was slower than epoll] issue describes a few configuration mistakes.
-====
-
-IMPORTANT: Domain sockets are not yet supported with io_uring.
-
-IMPORTANT: The Vert.x asynchronous file system API does not use io_uring yet.
 
 
 == Deploy on read-only environments

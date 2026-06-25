@@ -380,6 +380,55 @@ More details about this extension and its configuration can be found in the http
 For more information about the Mailer configuration please refer to the <<configuration-reference,Configuration Reference>>.
 ====
 
+[#rotating-credentials]
+=== Rotating credentials
+
+The mailer supports dynamic credential rotation through the xref:credentials-provider.adoc[Credentials Provider] interface.
+This is useful for:
+
+* `XOAUTH2` tokens that expire and need refreshing
+* Credential rotation for security compliance
+* Integration with secret management systems (HashiCorp Vault, AWS Secrets Manager, etc.)
+
+[NOTE]
+====
+When a credentials provider is configured, the `quarkus.mailer.username` and `quarkus.mailer.password` properties are ignored.
+All credentials are fetched from the provider.
+====
+
+To ensure new credentials are picked up promptly, tune the connection pool settings:
+
+[source, properties]
+----
+# Recycle idle connections after 5 minutes
+quarkus.mailer.keep-alive-timeout=5M
+# Check for expired connections every second
+quarkus.mailer.pool-cleaner-period=1S
+----
+
+IMPORTANT: Set `keep-alive-timeout` to less than your credential TTL so that connections are recycled before credentials expire.
+
+=== Configuring XOAUTH2
+
+`XOAUTH2` is an authentication mechanism that uses OAuth 2.0 access tokens instead of passwords.
+It is commonly used with Gmail and other providers that support OAuth 2.0 for SMTP authentication.
+
+[source, properties]
+----
+quarkus.mailer.host=smtp.gmail.com
+quarkus.mailer.port=587
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.login=XOAUTH2
+quarkus.mailer.username=YOUREMAIL@gmail.com
+quarkus.mailer.password=YOUR_ACCESS_TOKEN
+----
+
+OAuth 2.0 access tokens are typically short-lived.
+To handle token refresh automatically, use a xref:credentials-provider.adoc[Credentials Provider] that fetches fresh tokens.
+
+The credentials provider must return the username as the `user` property and the OAuth 2.0 access token as the `password` property.
+See <<rotating-credentials,Rotating Credentials>> for more details on connection pool tuning.
+
 == Configuring TLS
 
 SMTP provides various way to use TLS:

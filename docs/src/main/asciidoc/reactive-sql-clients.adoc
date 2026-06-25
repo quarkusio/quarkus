@@ -799,6 +799,24 @@ NOTE: When a named TLS configuration is set, manual SSL properties (`trust-certi
 
 For more information about the TLS registry, see the xref:tls-registry-reference.adoc[TLS Registry Reference guide].
 
+=== Direct SSL negotiation (PostgreSQL 17+)
+
+PostgreSQL 17 introduced direct SSL: the TLS handshake starts immediately on connect, with no prior SSL request/response round-trip.
+This reduces connection latency and enables standard TLS proxies (nginx, haproxy) to terminate the connection.
+
+Configure it with the `ssl-negotiation` property:
+
+[source,properties]
+----
+quarkus.datasource.reactive.postgresql.ssl-negotiation=direct
+quarkus.datasource.reactive.postgresql.ssl-mode=require
+----
+
+The `ssl-negotiation` property accepts two values:
+
+* `postgres` (default) — traditional negotiation, compatible with all PostgreSQL versions.
+* `direct` — direct SSL, requires PostgreSQL 17 or later.
+
 == Customizing pool creation
 
 Sometimes, the database connection pool cannot be configured only by declaration.

@@ -78,6 +78,18 @@
             <testResource>
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/*.key</exclude>
+                    <exclude>**/*.crt</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*.key</include>
+                    <include>**/*.crt</include>
+                </includes>
             </testResource>
         </testResources>
         <plugins>
@@ -153,6 +165,19 @@
                                         <ports>
                                             <port>5431:5432</port>
                                         </ports>
+                                        <volumes>
+                                            <bind>
+                                                <volume>
+                                                    ${project.basedir}/src/test/resources/tls/server.crt:/server.crt:ro
+                                                </volume>
+                                                <volume>
+                                                    ${project.basedir}/src/test/resources/tls/server.key:/server.key:ro
+                                                </volume>
+                                                <volume>
+                                                    ${project.basedir}/src/test/resources/tls/ssl.sh:/docker-entrypoint-initdb.d/ssl.sh:ro
+                                                </volume>
+                                            </bind>
+                                        </volumes>
                                         <wait>
                                             <!-- For some reason, Postgres will tell us it's ready *twice*,
                                             and that's the truth the second time only.

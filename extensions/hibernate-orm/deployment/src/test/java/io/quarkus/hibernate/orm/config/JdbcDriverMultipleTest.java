@@ -36,9 +36,9 @@ public class JdbcDriverMultipleTest {
                     Dependency.of("io.quarkus", "quarkus-jdbc-mysql-deployment", Version.getVersion())))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Persistence unit '<default>' defines entities",
-                            "datasource '<default>' cannot be found",
-                            "Datasource '<default>' is not configured"));
+                            "Hibernate ORM persistence unit '<default>' cannot be created",
+                            "JDBC datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "multiple JDBC driver extensions"));
 
     @Test
     public void test() {

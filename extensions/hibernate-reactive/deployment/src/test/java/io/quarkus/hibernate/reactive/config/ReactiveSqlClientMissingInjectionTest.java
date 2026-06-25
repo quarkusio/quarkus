@@ -33,10 +33,7 @@ public class ReactiveSqlClientMissingInjectionTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "persistence unit '<default>' cannot be created",
-                            "Reactive datasource '<default>' cannot be created",
-                            "Cannot infer the database kind", "no reactive SQL client extension",
-                            "Injection of 'SessionFactory'"));
+                            "Unsatisfied dependency for type org.hibernate.reactive.mutiny.Mutiny$SessionFactory"));
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

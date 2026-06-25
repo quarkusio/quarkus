@@ -14,15 +14,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 public class EventServerTest {
 
@@ -35,9 +35,10 @@ public class EventServerTest {
     public static void start() {
         server = new MockRestEventServer();
         server.start();
-        mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        JsonMapper.Builder builder = JsonMapper.builder();
+        mapper = builder.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+                .build();
         eventReader = mapper.readerFor(AwsProxyRequest.class);
         resWriter = mapper.writerFor(AwsProxyResponse.class);
     }

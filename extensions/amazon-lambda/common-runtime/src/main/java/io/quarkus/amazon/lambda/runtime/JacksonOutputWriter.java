@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.databind.ObjectWriter;
 
 public class JacksonOutputWriter implements LambdaOutputWriter {
     final private ObjectWriter writer;

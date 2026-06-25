@@ -2,8 +2,6 @@ package io.quarkus.amazon.lambda.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -21,6 +19,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 import io.quarkus.jackson.runtime.JsonMapperProducer;
 import io.quarkus.runtime.LaunchMode;
+import tools.jackson.databind.ObjectMapper;
 
 public final class AmazonLambdaCommonProcessor {
     @BuildStep

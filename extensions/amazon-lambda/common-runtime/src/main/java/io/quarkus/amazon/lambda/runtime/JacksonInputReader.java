@@ -3,7 +3,7 @@ package io.quarkus.amazon.lambda.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectReader;
 
 public class JacksonInputReader implements LambdaInputReader {
     final private ObjectReader reader;

@@ -11,7 +11,6 @@ import static io.quarkus.amazon.lambda.runtime.AmazonLambdaApi.functionVersion;
 import static io.quarkus.amazon.lambda.runtime.AmazonLambdaApi.logGroupName;
 import static io.quarkus.amazon.lambda.runtime.AmazonLambdaApi.logStreamName;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 
 import com.amazonaws.services.lambda.runtime.ClientContext;
@@ -19,7 +18,8 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.LambdaRuntime;
-import com.fasterxml.jackson.databind.ObjectReader;
+
+import tools.jackson.databind.ObjectReader;
 
 public class AmazonLambdaContext implements Context {
 
@@ -35,8 +35,7 @@ public class AmazonLambdaContext implements Context {
     private final int memoryLimitInMB;
     private final LambdaLogger logger;
 
-    public AmazonLambdaContext(HttpURLConnection request, ObjectReader cognitoReader, ObjectReader clientCtxReader)
-            throws IOException {
+    public AmazonLambdaContext(HttpURLConnection request, ObjectReader cognitoReader, ObjectReader clientCtxReader) {
         awsRequestId = request.getHeaderField(LAMBDA_RUNTIME_AWS_REQUEST_ID);
         logGroupName = logGroupName();
         logStreamName = logStreamName();

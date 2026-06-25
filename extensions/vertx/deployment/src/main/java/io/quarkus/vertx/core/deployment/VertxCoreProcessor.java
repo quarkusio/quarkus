@@ -17,7 +17,6 @@ import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassInfo;
@@ -57,6 +56,7 @@ import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;

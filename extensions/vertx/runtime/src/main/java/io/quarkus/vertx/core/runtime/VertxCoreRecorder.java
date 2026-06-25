@@ -1,5 +1,29 @@
 package io.quarkus.vertx.core.runtime;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
+import org.jboss.threads.ContextHandler;
+
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
@@ -38,29 +62,6 @@ import io.vertx.core.spi.VerticleFactory;
 import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.VertxThreadFactory;
 import io.vertx.core.transport.Transport;
-import org.jboss.logging.Logger;
-import org.jboss.threads.ContextHandler;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 @Recorder
 public class VertxCoreRecorder {
@@ -117,16 +118,16 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
     public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
-                             RuntimeValue<ShutdownConfig> shutdownConfig) {
+            RuntimeValue<ShutdownConfig> shutdownConfig) {
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
     }
 
     public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
-                                          List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
-                                          List<String> vertxServiceProviderClassNames,
-                                          List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
+            List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
+            List<String> vertxServiceProviderClassNames,
+            List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
         // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
 
@@ -239,9 +240,9 @@ public class VertxCoreRecorder {
     }
 
     public static Vertx initialize(VertxConfiguration conf, VertxCustomizer customizer,
-                                   ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
-                                   LaunchMode launchMode, List<String> vertxServiceProviderClassNames,
-                                   List<String> verticleFactoryClassNames) {
+            ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
+            LaunchMode launchMode, List<String> vertxServiceProviderClassNames,
+            List<String> verticleFactoryClassNames) {
 
         VertxOptions options = new VertxOptions();
 
@@ -259,7 +260,7 @@ public class VertxCoreRecorder {
         VertxThreadFactory vertxThreadFactory = new VertxThreadFactory() {
             @Override
             public VertxThread newVertxThread(Runnable target, String name, boolean worker, long maxExecTime,
-                                              TimeUnit maxExecTimeUnit) {
+                    TimeUnit maxExecTimeUnit) {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
@@ -356,7 +357,7 @@ public class VertxCoreRecorder {
     }
 
     private static VertxThread createVertxThread(Runnable target, String name, boolean worker, long maxExecTime,
-                                                 TimeUnit maxExecTimeUnit, LaunchMode launchMode, Optional<ClassLoader> nonDevModeTccl) {
+            TimeUnit maxExecTimeUnit, LaunchMode launchMode, Optional<ClassLoader> nonDevModeTccl) {
         var thread = VertxThreadFactory.INSTANCE.newVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit);
         if (launchMode == LaunchMode.DEVELOPMENT) {
             synchronized (devModeThreads) {
@@ -383,7 +384,7 @@ public class VertxCoreRecorder {
      * </ol>
      *
      * @param vertx the vert.x instance
-     * @param conf  the configuration
+     * @param conf the configuration
      * @return the vert.x instance
      */
     private static Vertx logVertxInitialization(Vertx vertx, VertxConfiguration conf) {
@@ -479,8 +480,8 @@ public class VertxCoreRecorder {
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
-                                                      ThreadPoolConfig threadPoolConfig,
-                                                      ShutdownContext shutdown) {
+            ThreadPoolConfig threadPoolConfig,
+            ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS()) {
             System.setProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true");
@@ -758,7 +759,7 @@ public class VertxCoreRecorder {
                         VertxContext.localContextData(ctx));
                 ConcurrentHashMap<String, Object> mdcSnapshot = new ConcurrentHashMap<>(
                         VertxMDC.MDC_LOCAL.get(ctx, ConcurrentHashMap::new));
-                return new Object[]{ctx, localSnapshot, mdcSnapshot};
+                return new Object[] { ctx, localSnapshot, mdcSnapshot };
             }
 
             @Override
@@ -839,11 +840,11 @@ public class VertxCoreRecorder {
         Vertx v;
 
         VertxSupplier(LaunchMode launchMode, VertxConfiguration config,
-                      List<Consumer<VertxBootstrap>> bootstrapCustomizers,
-                      List<Consumer<VertxOptions>> optionCustomizers,
-                      ThreadPoolConfig threadPoolConfig,
-                      ShutdownContext shutdown,
-                      List<String> vertxServiceProviderClassNames, List<String> verticleFactoryClassNames) {
+                List<Consumer<VertxBootstrap>> bootstrapCustomizers,
+                List<Consumer<VertxOptions>> optionCustomizers,
+                ThreadPoolConfig threadPoolConfig,
+                ShutdownContext shutdown,
+                List<String> vertxServiceProviderClassNames, List<String> verticleFactoryClassNames) {
             this.launchMode = launchMode;
             this.config = config;
             this.customizer = new VertxCustomizer(bootstrapCustomizers, optionCustomizers);
@@ -868,7 +869,7 @@ public class VertxCoreRecorder {
         private final List<Consumer<VertxOptions>> optionCustomizers;
 
         VertxCustomizer(List<Consumer<VertxBootstrap>> bootstrapCustomizers,
-                        List<Consumer<VertxOptions>> optionCustomizers) {
+                List<Consumer<VertxOptions>> optionCustomizers) {
             this.bootstrapCustomizers = bootstrapCustomizers;
             this.optionCustomizers = optionCustomizers;
             // Append runtime customizers at the end of the list.

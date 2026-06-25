@@ -47,6 +47,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.core.net.ProxyType;
 import io.vertx.core.net.SSLOptions;
@@ -395,6 +396,16 @@ public class ClientBuilderImpl extends ClientBuilder {
             }
             options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
             options.setUseAlpn(sslOptions.isUseAlpn());
+            if (sslOptions.isUseHybridKeyExchangeProtocol()) {
+                if (options.getSslEngineOptions() != null
+                        && !(options.getSslEngineOptions() instanceof OpenSSLEngineOptions)) {
+                    throw new IllegalStateException(
+                            "PQC hybrid key exchange requires OpenSSL, but a different SSL engine is already configured: "
+                                    + options.getSslEngineOptions().getClass().getSimpleName());
+                }
+                options.setSslEngineOptions(new OpenSSLEngineOptions());
+                options.setUseHybridKeyExchangeProtocol(true);
+            }
         }
     }
 

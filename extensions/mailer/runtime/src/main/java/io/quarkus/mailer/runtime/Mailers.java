@@ -26,6 +26,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SSLOptions;
@@ -318,7 +319,16 @@ public class Mailers {
                     cfg.addCrlValue(buffer);
                 }
                 cfg.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
-
+                if (sslOptions.isUseHybridKeyExchangeProtocol()) {
+                    if (cfg.getSslEngineOptions() != null
+                            && !(cfg.getSslEngineOptions() instanceof OpenSSLEngineOptions)) {
+                        throw new IllegalStateException(
+                                "PQC hybrid key exchange requires OpenSSL, but a different SSL engine is already configured: "
+                                        + cfg.getSslEngineOptions().getClass().getSimpleName());
+                    }
+                    cfg.setSslEngineOptions(new OpenSSLEngineOptions());
+                    cfg.setUseHybridKeyExchangeProtocol(true);
+                }
             }
 
         } else {

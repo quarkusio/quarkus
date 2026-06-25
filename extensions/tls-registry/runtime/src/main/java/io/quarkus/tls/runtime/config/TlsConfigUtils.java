@@ -15,6 +15,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.NetClientOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TCPSSLOptions;
 
@@ -90,6 +91,16 @@ public class TlsConfigUtils {
                 log.warnf(
                         "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
                         options.getClass().getName());
+            }
+            if (sslOptions.isUseHybridKeyExchangeProtocol()) {
+                if (options.getSslEngineOptions() != null
+                        && !(options.getSslEngineOptions() instanceof OpenSSLEngineOptions)) {
+                    throw new IllegalStateException(
+                            "PQC hybrid key exchange requires OpenSSL, but a different SSL engine is already configured: "
+                                    + options.getSslEngineOptions().getClass().getSimpleName());
+                }
+                options.setSslEngineOptions(new OpenSSLEngineOptions());
+                options.setUseHybridKeyExchangeProtocol(true);
             }
         }
     }

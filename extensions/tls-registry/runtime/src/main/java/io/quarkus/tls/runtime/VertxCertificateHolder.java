@@ -111,12 +111,33 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return sslContext;
     }
 
+    private SSLOptions checkPQCEnforcement(SSLOptions sslOptions) {
+        // We don't need to check
+        switch (config().enforcePQC()) {
+            case STRICT, CLIENT_NEGOTIATED -> {
+                // TODO change vertx so that setUseHybridKeyExchangeProtocol can be set to enable CLIENT_NEGOTIATED policy
+                if (config().keyExchangeProtocols().isPresent() &&
+                        config().keyExchangeProtocols().get().contains("x25519mlkem768")) {
+                    sslOptions.setUseHybridKeyExchangeProtocol(true);
+                } else {
+                    throw new IllegalStateException(
+                            "PQC can't be enforced if x25519mlkem768 is not in the server's supported key exchange protocols");
+                }
+            }
+            case RELAXED -> {
+                // don't do anythingc
+            }
+        }
+        return sslOptions;
+    }
+
     @Override
     public synchronized SSLOptions getSSLOptions() {
         SSLOptions options = new SSLOptions();
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+        options = checkPQCEnforcement(options);
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());

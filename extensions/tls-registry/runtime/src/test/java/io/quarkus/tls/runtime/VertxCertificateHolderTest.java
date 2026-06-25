@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
+import io.quarkus.tls.runtime.config.PqcEnforcePolicyEnum;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 
@@ -65,6 +66,16 @@ class VertxCertificateHolderTest {
             }
 
             @Override
+            public PqcEnforcePolicyEnum enforcePQC() {
+                return PqcEnforcePolicyEnum.STRICT;
+            }
+
+            @Override
+            public Optional<List<String>> keyExchangeProtocols() {
+                return Optional.of(List.of("x25519mlkem768"));
+            }
+
+            @Override
             public Duration handshakeTimeout() {
                 return Duration.ofSeconds(10);
             }
@@ -81,6 +92,11 @@ class VertxCertificateHolderTest {
     void testDefault() {
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS), "test"));
         assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS.toLowerCase()), "test"));
+    }
+
+    @Test
+    void testHybridKeyExchangeProtocol() {
+        assertTrue(holder.getSSLOptions().isUseHybridKeyExchangeProtocol());
     }
 
     @Test

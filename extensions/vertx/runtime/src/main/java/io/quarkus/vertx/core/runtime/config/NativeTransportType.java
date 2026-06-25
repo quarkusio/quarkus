@@ -10,25 +10,31 @@ public enum NativeTransportType {
      * Pick the most appropriate one.
      * This is the default.
      */
-    AUTO,
+    AUTO("auto"),
     /**
      * EPOLL (Linux Only)
      * <p>
      * <a href="https://man7.org/linux/man-pages/man7/epoll.7.html">See epoll man page</a>.
      */
-    EPOLL,
+    EPOLL("epoll"),
 
     /**
      * KQUEUE (OSX only)
      * <p>
      * <a href="https://en.wikipedia.org/wiki/Kqueue">See KQueue on Wikipedia</a>
      */
-    KQUEUE,
+    KQUEUE("KQueue"),
 
     /**
      * IO_URING (Linux only, need a recent Linux kernel (5.10+)).
      * <p>
      * <a href="https://man7.org/linux/man-pages/man7/io_uring.7.html">See io_uring man page</a>.
      */
-    IO_URING
+    IO_URING("io_uring");
+
+    public final String transportName;
+
+    NativeTransportType(String transportName) {
+        this.transportName = transportName;
+    }
 }

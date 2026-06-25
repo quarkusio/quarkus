@@ -78,6 +78,20 @@ public class VertxCoreRecorder {
     static volatile int blockingThreadPoolSize;
 
     /**
+     * Store the set of native transports found in the classpath at build time.
+     * This is used to check if the required native transport (if any) is available.
+     */
+    static volatile Set<String> detectedNativeTransports = Set.of();
+
+    /**
+     * Sets the list of native transports found in the classpath at build time.
+     * @param transports the set of transport, empty if none.
+     */
+    public void setDetectedNativeTransports(Set<String> transports) {
+        detectedNativeTransports = transports;
+    }
+
+    /**
      * This is a bit of a hack. In dev mode we undeploy all the verticles on restart, except
      * for this one
      */

@@ -10,6 +10,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -113,6 +114,12 @@ class ObservabilityDevServiceProcessor {
                         capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
                 hasMicrometerOtlp(metricsConfiguration));
 
+        String explicitEndpoint = findExplicitlyConfiguredOtlpEndpoint(catalog);
+        if (explicitEndpoint != null) {
+            log.infof("Not starting LGTM Dev Services: '%s' is explicitly configured.", explicitEndpoint);
+            return;
+        }
+
         for (DevResourceLifecycleManager<ContainerConfig> dev : resources) {
             String devId = devId(dev);
 
@@ -209,6 +216,27 @@ class ObservabilityDevServiceProcessor {
                     .build();
         }
 
+        return null;
+    }
+
+    private static String findExplicitlyConfiguredOtlpEndpoint(ExtensionsCatalog catalog) {
+        var config = ConfigProvider.getConfig();
+        if (catalog.hasOpenTelemetry()) {
+            for (String key : List.of(
+                    "quarkus.otel.exporter.otlp.endpoint",
+                    "quarkus.otel.exporter.otlp.traces.endpoint",
+                    "quarkus.otel.exporter.otlp.metrics.endpoint",
+                    "quarkus.otel.exporter.otlp.logs.endpoint")) {
+                if (config.getOptionalValue(key, String.class).isPresent()) {
+                    return key;
+                }
+            }
+        }
+        if (catalog.hasMicrometerOtlp()) {
+            if (config.getOptionalValue("quarkus.micrometer.export.otlp.url", String.class).isPresent()) {
+                return "quarkus.micrometer.export.otlp.url";
+            }
+        }
         return null;
     }
 

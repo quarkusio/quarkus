@@ -6,8 +6,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.util.List;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -19,6 +17,7 @@ import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.gcp.functions.FunqyCloudFunctionsBindingRecorder;
 import io.quarkus.jackson.runtime.JsonMapperProducer;
+import tools.jackson.databind.ObjectMapper;
 
 public class FunqyCloudFunctionsBuildStep {
     private static final String FEATURE_NAME = "funqy-google-cloud-functions";

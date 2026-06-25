@@ -237,6 +237,7 @@
                 <module>hibernate-orm-vector</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
+                <module>vertx-native-transport</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>

@@ -196,3 +196,7 @@ SBOMs generated for Mutable JAR distributions will also record locations of comp
 |`quarkus:component:scope` |`runtime` or `development` |Indicates whether a component is a runtime or a build/development time dependency of an application.
 |`quarkus:component:location` |String representing a file system path using `/` as a path element |Used in SBOMs with schema versions 1.4 or older. Starting from schema 1.5, `evidence.occurrences.location` is used instead. This property is used only if a component is found in the distribution. The value is a relative path to a file pointing to the location of a component in a distribution using `/` as a path element separator.
 |===
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-cyclonedx.adoc[opts=optional, leveloffset=+2]

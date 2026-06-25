@@ -27,9 +27,11 @@ public class RemoteUserAttribute implements ExchangeAttribute {
             return null;
         }
         if (user instanceof QuarkusHttpUser quarkusUser) {
-            return quarkusUser.getSecurityIdentity().getPrincipal().getName();
+            var principal = quarkusUser.getSecurityIdentity().getPrincipal();
+            return principal != null ? principal.getName() : null;
         } else {
-            return user.principal().getString(VERTX_USER_NAME);
+            var principal = user.principal();
+            return principal != null ? principal.getString(VERTX_USER_NAME) : null;
         }
     }
 

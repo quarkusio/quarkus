@@ -119,7 +119,7 @@
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.9</mariadb-jdbc.version>
         <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -128,7 +128,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
-        <infinispan.version>16.0.12</infinispan.version>
+        <infinispan.version>16.0.13</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.135.Final</netty.version>

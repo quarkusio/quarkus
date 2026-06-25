@@ -195,17 +195,12 @@ class VertxCoreProcessor {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             detected.add(NativeTransportType.KQUEUE.transportName);
         }
-        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.incubator.channel.uring.IOUring")) {
-            if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.transport.uring.UringTransport")) {
-                detected.add(NativeTransportType.IO_URING.transportName);
-            } else {
-                log.warn("Netty io_uring transport JAR found but vertx-io_uring-incubator is missing. "
-                        + "Add io.vertx:vertx-io_uring-incubator to enable io_uring support.");
-            }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            detected.add(NativeTransportType.IO_URING.transportName);
         }
 
         if (detected.isEmpty()) {
-            log.info("No native transport dependency detected on the classpath. "
+            log.debug("No native transport dependency detected on the classpath. "
                     + "If you set quarkus.vertx.prefer-native-transport=true, the application will fall back to NIO. "
                     + "See the Native Transport Reference guide for dependency information.");
         } else {

@@ -21,7 +21,7 @@
         {
             "category": "Data3",
             "timeout": 75,
-            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
+            "test-modules": "flyway, flyway-mongodb, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
             "os-name": "ubuntu-latest"
         },
         {

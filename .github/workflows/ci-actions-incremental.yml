@@ -615,6 +615,15 @@ jobs:
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: sudo apt-get clean
 
+      - name: Install mongosh (required for flyway-mongodb tests)
+        if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
+        run: |
+          MONGOSH_VERSION=2.8.3
+          wget -qO /tmp/mongosh.tgz "https://downloads.mongodb.com/compass/mongosh-${MONGOSH_VERSION}-linux-x64.tgz"
+          tar -xzf /tmp/mongosh.tgz -C /tmp
+          sudo install -m 755 "/tmp/mongosh-${MONGOSH_VERSION}-linux-x64/bin/mongosh" /usr/local/bin/mongosh
+          mongosh --version
+
       - name: Reclaim Disk Space
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: .github/ci-prerequisites.sh
@@ -1595,6 +1604,14 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         if: ${{ !startsWith(matrix.os-name, 'windows') }}
+      - name: Install mongosh (required for flyway-mongodb native tests)
+        if: ${{ contains(matrix.test-modules, 'flyway-mongodb') }}
+        run: |
+          MONGOSH_VERSION=2.8.3
+          wget -qO /tmp/mongosh.tgz "https://downloads.mongodb.com/compass/mongosh-${MONGOSH_VERSION}-linux-x64.tgz"
+          tar -xzf /tmp/mongosh.tgz -C /tmp
+          sudo install -m 755 "/tmp/mongosh-${MONGOSH_VERSION}-linux-x64/bin/mongosh" /usr/local/bin/mongosh
+          mongosh --version
       - name: Set up JDK 25
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:

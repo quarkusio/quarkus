@@ -420,4 +420,22 @@ public class GeneratedAnnotationResource {
     public PackageProtectedBean echoPackageProtected(PackageProtectedBean bean) {
         return bean;
     }
+
+    // --- SpecialCharPropertyBean: @JsonProperty with special characters (hyphens, dots) ---
+
+    @GET
+    @Path("/special-char-property")
+    public SpecialCharPropertyBean getSpecialCharProperty() {
+        SpecialCharPropertyBean bean = new SpecialCharPropertyBean();
+        bean.setRoundValue(1);
+        bean.setNormalName("test");
+        return bean;
+    }
+
+    @POST
+    @Path("/special-char-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public SpecialCharPropertyBean echoSpecialCharProperty(SpecialCharPropertyBean bean) {
+        return bean;
+    }
 }

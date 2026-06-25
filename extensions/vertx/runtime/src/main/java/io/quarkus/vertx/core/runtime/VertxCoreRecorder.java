@@ -301,6 +301,13 @@ public class VertxCoreRecorder {
                 if (requested != null && requested.available()) {
                     bootstrap.transport(requested.implementation());
                 }
+            } else if (conf.preferNativeTransport()) {
+                // VertxBootstrap does not check VertxOptions.preferNativeTransport,
+                // so we mirror what VertxBuilder does: auto-detect the best transport.
+                Transport nativeTransport = Transport.nativeTransport();
+                if (nativeTransport != null && nativeTransport.available()) {
+                    bootstrap.transport(nativeTransport.implementation());
+                }
             }
         }
 

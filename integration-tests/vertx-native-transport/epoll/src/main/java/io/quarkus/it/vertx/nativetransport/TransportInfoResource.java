@@ -1,15 +1,17 @@
 package io.quarkus.it.vertx.nativetransport;
 
-import io.quarkus.vertx.core.runtime.config.NativeTransportType;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.transport.Transport;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.transport.Transport;
 
 @Path("/transport")
 public class TransportInfoResource {

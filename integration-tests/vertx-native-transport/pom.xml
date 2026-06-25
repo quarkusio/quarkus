@@ -25,6 +25,10 @@
     <modules>
         <module>epoll</module>
         <module>io-uring</module>
+        <module>explicit-io-uring</module>
+        <module>auto-select</module>
         <module>nio-fallback</module>
+        <module>required-failure</module>
+        <module>native-transport-disabled</module>
     </modules>
 </project>

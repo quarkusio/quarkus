@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.opentelemetry.sdk.internal.ScopeConfiguratorBuilder.nameEquals;
+import static io.opentelemetry.sdk.common.internal.ScopeConfiguratorBuilder.nameEquals;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -291,7 +291,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 // In the future we can inject scopes here.
                                 Set<String> dropInstrumentationScopes = Set.of(
                                         "io.opentelemetry.sdk.trace",
-                                        "io.opentelemetry.sdk.logs");
+                                        "io.opentelemetry.sdk.logs",
+                                        "io.opentelemetry.sdk.metrics");
                                 for (String target : dropInstrumentationScopes) {
                                     SdkMeterProviderUtil.addMeterConfiguratorCondition(
                                             meterProviderBuilder,

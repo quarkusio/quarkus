@@ -10,9 +10,9 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 public final class VertxHttpSpanExporter implements SpanExporter {
 
-    private final HttpExporter<TraceRequestMarshaler> delegate;
+    private final HttpExporter delegate;
 
-    public VertxHttpSpanExporter(HttpExporter<TraceRequestMarshaler> delegate) {
+    public VertxHttpSpanExporter(HttpExporter delegate) {
         this.delegate = delegate;
     }
 

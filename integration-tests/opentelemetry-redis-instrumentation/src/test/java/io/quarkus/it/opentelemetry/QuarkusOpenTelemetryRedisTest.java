@@ -1,11 +1,11 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.semconv.DbAttributes.DB_NAMESPACE;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_PORT;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_CONNECTION_STRING;
-import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_NAMESPACE;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_OPERATION;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_SYSTEM;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
@@ -60,8 +60,8 @@ class QuarkusOpenTelemetryRedisTest {
     @Test
     public void syncValidOperation() {
         String path = String.format("redis/sync/%s", getKey(SYNC_KEY));
-        String getCommand = Command.GET.toString();
-        String setCommand = Command.SET.toString();
+        String getCommand = Command.GET.toString() + " 0";
+        String setCommand = Command.SET.toString() + " 0";
 
         RestAssured.given()
                 .body(SYNC_VALUE)
@@ -91,7 +91,7 @@ class QuarkusOpenTelemetryRedisTest {
 
         // SET
         assertEquals(setCommand, setSpan.get("name"));
-        assertEquals(setCommand, setAttributes.get(DB_OPERATION.getKey()));
+        assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
         assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
@@ -101,7 +101,7 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
         // GET
         assertEquals(getCommand, getSpan.get("name"));
-        assertEquals(getCommand, getAttributes.get(DB_OPERATION.getKey()));
+        assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
         assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
@@ -127,7 +127,7 @@ class QuarkusOpenTelemetryRedisTest {
         Map<String, Object> event = ((List<Map<String, Object>>) span.get("events")).get(0);
         Map<String, Object> exception = (Map<String, Object>) event.get("exception");
 
-        assertEquals("bazinga", span.get("name"));
+        assertEquals("bazinga 0", span.get("name"));
         assertEquals("ERROR", status.get("statusCode"));
         assertEquals("exception", event.get("name"));
 
@@ -142,8 +142,8 @@ class QuarkusOpenTelemetryRedisTest {
     @Test
     public void reactiveValidOperation() {
         String path = String.format("redis/reactive/%s", getKey(REACTIVE_KEY));
-        String getCommand = Command.GET.toString();
-        String setCommand = Command.SET.toString();
+        String getCommand = Command.GET.toString() + " 0";
+        String setCommand = Command.SET.toString() + " 0";
 
         RestAssured.given()
                 .body(REACTIVE_VALUE)
@@ -173,7 +173,7 @@ class QuarkusOpenTelemetryRedisTest {
 
         // SET
         assertEquals(setCommand, setSpan.get("name"));
-        assertEquals(setCommand, setAttributes.get(DB_OPERATION.getKey()));
+        assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
         assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
@@ -183,7 +183,7 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
         // GET
         assertEquals(getCommand, getSpan.get("name"));
-        assertEquals(getCommand, getAttributes.get(DB_OPERATION.getKey()));
+        assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", getAttributes.get(DB_NAMESPACE.getKey()));
         assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
@@ -209,7 +209,7 @@ class QuarkusOpenTelemetryRedisTest {
         Map<String, Object> event = ((List<Map<String, Object>>) span.get("events")).get(0);
         Map<String, Object> exception = (Map<String, Object>) event.get("exception");
 
-        assertEquals("bazinga", span.get("name"));
+        assertEquals("bazinga 0", span.get("name"));
         assertEquals("ERROR", status.get("statusCode"));
         assertEquals("exception", event.get("name"));
 

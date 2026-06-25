@@ -146,6 +146,7 @@ public class QuarkusDevModeTest
     private String[] commandLineArgs = new String[0];
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
+    private boolean restAssuredStateSet = false;
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -323,6 +324,7 @@ public class QuarkusDevModeTest
 
             if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
                 RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI));
+                restAssuredStateSet = true;
             }
 
         } catch (Exception e) {
@@ -394,7 +396,10 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
-        RestAssuredStateManager.clearState();
+        if (restAssuredStateSet) {
+            RestAssuredStateManager.clearState();
+            restAssuredStateSet = false;
+        }
         ThreadLocalConfigSourceProvider.reset();
         ConfigInjector.clear(context);
         ValueRegistryInjector.clear(context);

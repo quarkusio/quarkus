@@ -9,7 +9,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.Recorder;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectReader;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.joda.JodaModule;
@@ -17,7 +16,7 @@ import tools.jackson.datatype.joda.JodaModule;
 @Recorder
 public class AmazonLambdaMapperRecorder {
     private static final Logger log = Logger.getLogger(AmazonLambdaMapperRecorder.class);
-    public static ObjectMapper objectMapper;
+    public static JsonMapper objectMapper;
     public static ObjectReader cognitoIdReader;
     public static ObjectReader clientCtxReader;
 

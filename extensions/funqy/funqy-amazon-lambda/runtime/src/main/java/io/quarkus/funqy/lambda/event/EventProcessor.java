@@ -16,7 +16,6 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.fasterxml.jackson.databind.ObjectReader;
 
 import io.quarkus.funqy.lambda.FunqyResponseImpl;
 import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;
@@ -33,6 +32,7 @@ import io.quarkus.funqy.lambda.model.cloudevents.CloudEventV1;
 import io.quarkus.funqy.lambda.model.kinesis.PipesKinesisEvent;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.smallrye.mutiny.Uni;
+import tools.jackson.databind.ObjectReader;
 
 public class EventProcessor {
 

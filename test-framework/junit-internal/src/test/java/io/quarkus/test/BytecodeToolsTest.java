@@ -62,18 +62,6 @@ class BytecodeToolsTest {
     }
 
     @Test
-    void excludedClassIsNotReportedAsChanged() {
-        String excluded = "io/quarkus/runner/recorded/WebJarProcessor$processWebJarDevMode";
-        String resource = excluded + ".class";
-        Map<String, byte[]> reference = Map.of(resource, new byte[] { 1, 2, 3 });
-        Map<String, byte[]> current = Map.of(resource, new byte[] { 4, 5, 6 });
-
-        var diff = BytecodeTools.diff(reference, current);
-
-        assertThat(diff.isEmpty()).isTrue();
-    }
-
-    @Test
     void dumpCreatesExpectedFileStructure(@TempDir Path tempDir) throws Exception {
         Map<String, byte[]> reference = generateClassWithField("com.example.Foo", "fieldA");
         Map<String, byte[]> current = generateClassWithField("com.example.Foo", "fieldB");

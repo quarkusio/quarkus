@@ -106,7 +106,11 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
         List<MediaType> result = new ArrayList<>(contentTypeList.size());
         for (String s : contentTypeList) {
-            result.add(MediaTypeHelper.valueOf(s));
+            try {
+                result.add(MediaTypeHelper.valueOf(s));
+            } catch (IllegalArgumentException e) {
+                throw new NotSupportedException("The content-type header value did not correspond to a valid media type");
+            }
         }
         return result;
     }

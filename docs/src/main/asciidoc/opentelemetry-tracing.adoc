@@ -121,7 +121,9 @@ We have several options:
 * Logging exporter
 
 === Grafana OTel LGTM option
-A Dev Service that will receive your app's telemetry. Only the dependency is needed.
+A Dev Service will receive your app's telemetry.
+
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 

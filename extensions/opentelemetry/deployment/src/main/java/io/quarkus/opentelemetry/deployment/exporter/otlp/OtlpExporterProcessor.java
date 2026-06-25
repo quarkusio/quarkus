@@ -18,10 +18,10 @@ import org.jboss.jandex.Type;
 
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.annotations.Record;
@@ -32,7 +32,6 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
@@ -43,6 +42,7 @@ public class OtlpExporterProcessor {
 
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
+    private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName OKHTTP_INTERCEPTOR = DotName.createSimple("okhttp3.Interceptor");
 
     static class OtlpTracingExporterEnabled implements BooleanSupplier {
@@ -135,11 +135,18 @@ public class OtlpExporterProcessor {
         }
     }
 
+    @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
+    UnremovableBeanBuildItem ensureSpanExporterIsRetained() {
+        return UnremovableBeanBuildItem.beanTypes(SPAN_EXPORTER);
+    }
+
     @SuppressWarnings("deprecation")
     @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
-    void createSpanProcessor(OTelExporterRecorder recorder,
+    void createSpanExporter(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelExporterRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
@@ -147,16 +154,18 @@ public class OtlpExporterProcessor {
             // if there is an external exporter, we don't want to create the default one
             return;
         }
+        if (!beanDiscovery.beanStream().withBeanType(SPAN_EXPORTER).isEmpty()) {
+            // if there is a SpanExporter bean impl around, we don't want to create the default one
+            return;
+        }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(LateBoundSpanProcessor.class)
-                .types(SpanProcessor.class)
+                .configure(SpanExporter.class)
+                .types(SpanExporter.class)
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .unremovable()
-                .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                        new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx()))
+                .createWith(recorder.spanExporterForOtlp(vertxBuildItem.getVertx()))
                 .done());
     }
 

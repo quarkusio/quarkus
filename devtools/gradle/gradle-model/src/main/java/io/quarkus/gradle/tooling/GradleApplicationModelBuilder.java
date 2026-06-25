@@ -116,9 +116,12 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         boolean workspaceDiscovery = LaunchMode.DEVELOPMENT.equals(mode) || LaunchMode.TEST.equals(mode)
                 || Boolean.parseBoolean(System.getProperty(BootstrapConstants.QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY));
         if (!workspaceDiscovery) {
-            Object o = project.getProperties().get(BootstrapConstants.QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY);
+            // gradleProperty instead of Project.getProperties().get(...), which is not allowed under
+            // Isolated Projects (this builder also runs as a tooling model builder).
+            String o = project.getProviders().gradleProperty(BootstrapConstants.QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY)
+                    .getOrNull();
             if (o != null) {
-                workspaceDiscovery = Boolean.parseBoolean(o.toString());
+                workspaceDiscovery = Boolean.parseBoolean(o);
             }
         }
 

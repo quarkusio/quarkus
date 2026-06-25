@@ -213,8 +213,7 @@ public abstract class ResteasyReactiveRequestContext
     public void setupInitialMatchAndRestart(RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch) {
         this.initialMatch = initialMatch;
 
-        // add a default close handler that simply discards whatever REST handlers still remain to be run
-        serverResponse().addCloseHandler(new DiscardRemainingRunner(this));
+        serverResponse().addCloseHandler(new ConnectionCloseHandler(this));
 
         restart(initialMatch.value.handlers);
         setMaxPathParams(initialMatch.value.maxPathParams);
@@ -1345,17 +1344,38 @@ public abstract class ResteasyReactiveRequestContext
 
     }
 
-    private static class DiscardRemainingRunner implements Runnable {
+    /**
+     * The idea of this class is to prevent the execution of the remaining handlers
+     * that are cancellable (which all are by default)
+     */
+    private static class ConnectionCloseHandler implements Runnable {
 
         private ResteasyReactiveRequestContext context;
 
-        private DiscardRemainingRunner(ResteasyReactiveRequestContext context) {
+        private ConnectionCloseHandler(ResteasyReactiveRequestContext context) {
             this.context = context;
         }
 
         @Override
         public void run() {
-            context.discardRemaining();
+            ServerRestHandler[] handlers = context.getHandlers();
+            int pos = context.getPosition();
+            List<ServerRestHandler> nonCancellable = new ArrayList<>();
+            for (int i = pos; i < handlers.length; i++) {
+                if (!handlers[i].isCancellable()) {
+                    nonCancellable.add(handlers[i]);
+                }
+            }
+            if (nonCancellable.isEmpty()) {
+                context.discardRemaining();
+            } else {
+                ServerRestHandler[] newHandlers = new ServerRestHandler[pos + nonCancellable.size()];
+                System.arraycopy(handlers, 0, newHandlers, 0, pos);
+                for (int i = 0; i < nonCancellable.size(); i++) {
+                    newHandlers[pos + i] = nonCancellable.get(i);
+                }
+                context.handlers = newHandlers;
+            }
             context = null;
         }
     }

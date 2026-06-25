@@ -22,7 +22,7 @@
     <extension>
         <groupId>eu.maveniverse.maven.scalpel</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.3.3</version>
+        <version>0.3.4</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.nisse</groupId>
@@ -32,6 +32,6 @@
     <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.7</version>
+        <version>0.9.8</version>
     </extension>
 </extensions>

@@ -22,6 +22,35 @@ import io.restassured.RestAssured;
 @TestHTTPEndpoint(HibernateReactiveTransactionalTestEndpoint.class)
 public class HibernateReactiveTransactionalIntegrationTest {
 
+    /**
+     * Verifies that {@code session.currentTransaction()} returns a non-null transaction
+     * when called inside a {@code @Transactional} method after a DB operation has been
+     * performed, and that the transaction commits the data successfully.
+     * <p>
+     * The DB operation (persist) is necessary because {@code TransactionalContextPool}
+     * opens the transaction lazily when the connection is first used.
+     *
+     * @see <a href="https://github.com/hibernate/hibernate-reactive/issues/2852">HR #2852</a>
+     */
+    @Test
+    public void testCurrentTransactionInTransactionalMethod() {
+        // Persist a pig inside @Transactional and check currentTransaction()
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
+                .post("/currentTransaction/50")
+                .then()
+                .statusCode(200)
+                .body(equalTo("active"));
+
+        // Verify the pig was actually committed by the external transaction
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
+                .get("/findPig/50")
+                .then()
+                .body("id", equalTo(50))
+                .body("name", equalTo("currentTransaction"));
+    }
+
     @Test
     public void testTransactionalUpdate() {
         RestAssured.given().when()

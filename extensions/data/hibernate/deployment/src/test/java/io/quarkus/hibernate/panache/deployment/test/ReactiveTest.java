@@ -36,6 +36,22 @@ public class ReactiveTest {
     }
 
     @WithTransaction
+    Uni<Void> flushManagedReactiveRepository() {
+        return MyReactiveEntity_.managedReactive().count()
+                .flatMap(count -> {
+                    Assertions.assertEquals(0l, count);
+                    MyReactiveEntity.ManagedReactiveQueries repository = MyReactiveEntity_.managedReactiveQueries();
+                    MyReactiveEntity entity = new MyReactiveEntity();
+                    entity.foo = "flush";
+                    return repository.persist(entity)
+                            .flatMap(v -> repository.flush())
+                            .flatMap(v -> repository.count());
+                })
+                .onItem().invoke(count -> Assertions.assertEquals(1l, count))
+                .replaceWithVoid();
+    }
+
+    @WithTransaction
     Uni<Void> modifyOne() {
         return MyReactiveEntity_.managedReactive().listAll()
                 .onItem().invoke(list -> {
@@ -186,6 +202,8 @@ public class ReactiveTest {
     @RunOnVertxContext
     @Test
     void testRepositories(UniAsserter asserter) {
+        asserter.execute(() -> clear());
+        asserter.execute(() -> flushManagedReactiveRepository());
         asserter.execute(() -> clear());
         asserter.execute(() -> createOne());
         asserter.execute(() -> modifyOne());

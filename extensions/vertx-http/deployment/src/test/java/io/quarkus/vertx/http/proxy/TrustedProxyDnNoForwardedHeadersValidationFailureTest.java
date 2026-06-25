@@ -17,7 +17,7 @@ class TrustedProxyDnNoForwardedHeadersValidationFailureTest {
             quarkus.http.proxy.proxy-address-forwarding=true
             quarkus.http.proxy.allow-forwarded=false
             quarkus.http.proxy.allow-x-forwarded=false
-            quarkus.http.proxy.trusted-proxy-dns[0]=CN=my-trusted-proxy
+            quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-trusted-proxy
             """;
 
     @RegisterExtension
@@ -25,7 +25,7 @@ class TrustedProxyDnNoForwardedHeadersValidationFailureTest {
             .withApplicationRoot(jar -> jar
                     .addClasses(ForwardedHandlerInitializer.class)
                     .addAsResource(new StringAsset(configuration), "application.properties"))
-            .assertException(t -> assertThat(t).hasMessageContaining("quarkus.http.proxy.trusted-proxy-dns")
+            .assertException(t -> assertThat(t).hasMessageContaining("quarkus.http.proxy.trusted-proxy[*].subject-dn")
                     .hasMessageContaining("quarkus.http.proxy.allow-forwarded")
                     .hasMessageContaining("quarkus.http.proxy.allow-x-forwarded"));
 

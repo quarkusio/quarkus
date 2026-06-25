@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -19,6 +20,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.client.runtime.OidcClientRecorder.OidcConfigurationMetadata;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
@@ -28,8 +30,8 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -93,11 +95,10 @@ public class OidcClientImpl implements OidcClient {
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
-        this.jwtAssertionProvided = oidcClientConfig.credentials().jwt().source() != Source.CLIENT;
+        this.jwtAssertionProvided = clientCredentials.jwtAssertionProvided;
         this.clientJwtKey = jwtAssertionProvided ? null : clientCredentials.clientJwtKey;
         this.clientSecret = clientCredentials.clientSecret;
-        this.clientAssertionProvider = getClientAssertionProvider(vertx, oidcClientConfig.credentials(),
-                OidcClientException::new);
+        this.clientAssertionProvider = clientCredentials.clientAssertionProvider;
     }
 
     @Override
@@ -132,9 +133,10 @@ public class OidcClientImpl implements OidcClient {
         if (tokenRevokeUri != null) {
             MultiMap tokenRevokeParams = MultiMap.caseInsensitiveMultiMap();
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
-            return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
-                    tokenRevokeParams, additionalParameters, Operation.REVOKE)
-                    .transformToUni(resp -> toRevokeResponse(requestProps, resp));
+            return withAsyncCredentials().flatMap(asyncCredentials -> postRequest(requestProps,
+                    OidcEndpoint.Type.TOKEN_REVOCATION,
+                    client.postAbs(tokenRevokeUri), tokenRevokeParams, additionalParameters, Operation.REVOKE, asyncCredentials)
+                    .flatMap(resp -> toRevokeResponse(requestProps, resp)));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
             return Uni.createFrom().item(false);
@@ -175,9 +177,10 @@ public class OidcClientImpl implements OidcClient {
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
-                return postRequest(requestProps, endpointType, client.postAbs(tokenRequestUri), formBody,
-                        additionalGrantParameters, op)
-                        .transformToUni(resp -> emitGrantTokens(requestProps, resp, op));
+                return withAsyncCredentials()
+                        .flatMap(asyncCredentials -> postRequest(requestProps, endpointType,
+                                client.postAbs(tokenRequestUri), formBody, additionalGrantParameters, op, asyncCredentials))
+                        .flatMap(resp -> emitGrantTokens(requestProps, resp, op));
             }
         });
     }
@@ -194,7 +197,7 @@ public class OidcClientImpl implements OidcClient {
             OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
             MultiMap formBody,
             Map<String, String> additionalGrantParameters,
-            Operation op) {
+            Operation op, AsyncCredentials asyncCredentials) {
         PreparedPostRequest.CredentialsToRetry credentialsToRetry = null;
         MultiMap body = formBody;
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
@@ -212,8 +215,8 @@ public class OidcClientImpl implements OidcClient {
             }
         } else if (jwtAssertionProvided) {
             String clientAssertion = additionalGrantParameters.get(OidcConstants.CLIENT_ASSERTION);
-            if (clientAssertion == null && clientAssertionProvider != null) {
-                clientAssertion = clientAssertionProvider.getClientAssertion();
+            if (clientAssertion == null) {
+                clientAssertion = asyncCredentials.clientAssertion;
                 if (clientAssertion != null) {
                     body.set(OidcConstants.CLIENT_ASSERTION, clientAssertion);
                 }
@@ -295,12 +298,12 @@ public class OidcClientImpl implements OidcClient {
         return oidcConfig.credentials().clientSecret().provider().key().isPresent();
     }
 
-    private UniOnItem<HttpResponse<Buffer>> postRequest(
+    private Uni<HttpResponse<Buffer>> postRequest(
             OidcRequestContextProperties requestProps,
             OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
             MultiMap formBody,
             Map<String, String> additionalGrantParameters,
-            Operation op) {
+            Operation op, AsyncCredentials asyncCredentials) {
 
         final MultiMap newFormBody;
         boolean hasClientSecretProvider = hasClientSecretProvider();
@@ -311,7 +314,7 @@ public class OidcClientImpl implements OidcClient {
         }
 
         var preparedRequest = preparePostRequest(requestProps, endpointType, request, newFormBody, additionalGrantParameters,
-                op);
+                op, asyncCredentials);
         if (hasClientSecretProvider && preparedRequest.credentialsToRetry != null) {
             return preparedRequest.postRequest.flatMap(httpResponse -> {
                 if (httpResponse.statusCode() == 401) {
@@ -345,15 +348,15 @@ public class OidcClientImpl implements OidcClient {
                             LOG.debug("HTTP request failed with response status code 401 and the CredentialsProvider"
                                     + " provided new credentials, retrying the request with new credentials");
                             return preparePostRequest(requestProps, endpointType, request, formBody,
-                                    additionalGrantParameters, op).postRequest;
+                                    additionalGrantParameters, op, asyncCredentials).postRequest;
                         }
                         return Uni.createFrom().item(httpResponse);
                     });
                 }
                 return Uni.createFrom().item(httpResponse);
-            }).onItem();
+            });
         }
-        return preparedRequest.postRequest.onItem();
+        return preparedRequest.postRequest;
     }
 
     private Uni<Tokens> emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, Operation op) {
@@ -467,6 +470,13 @@ public class OidcClientImpl implements OidcClient {
         return OidcCommonUtils.filterHttpRequest(requestProps, request, body, requestFilters, endpointType);
     }
 
+    private Uni<AsyncCredentials> withAsyncCredentials() {
+        if (clientAssertionProvider != null) {
+            return clientAssertionProvider.getClientAssertion().map(AsyncCredentials::new);
+        }
+        return AsyncCredentials.UNI_WITH_EMPTY_CREDENTIALS;
+    }
+
     OidcClientConfig getConfig() {
         return oidcConfig;
     }
@@ -479,30 +489,47 @@ public class OidcClientImpl implements OidcClient {
         return op == Operation.REFRESH;
     }
 
-    static Uni<OidcClient> of(OidcWebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
+    static Uni<OidcClient> of(OidcWebClient client,
+            Function<ClientCredentials, Uni<OidcConfigurationMetadata>> metadataResolver, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters, Vertx vertx) {
+        final boolean jwtAssertionProvided = oidcClientConfig.credentials().jwt().source() != Source.CLIENT;
+        final ClientAssertionProvider assertionProvider = getClientAssertionProvider(vertx, oidcClientConfig.credentials(),
+                OidcClientException::new);
         return OidcCommonUtils.clientSecret(oidcClientConfig.credentials())
                 .onItem().ifNotNull()
-                .transform(clientSecret -> new ClientCredentials(clientSecret,
-                        OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig, clientSecret)))
+                .transform(clientSecret -> new ClientCredentials(null, clientSecret,
+                        OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig, clientSecret),
+                        jwtAssertionProvided, assertionProvider))
                 .onItem().ifNull()
-                .switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcClientConfig, false).map(ClientCredentials::new))
-                .onFailure().invoke(t -> LOG.error("Failed to create OidcClientImpl", t))
-                .map(clientCredentials -> new OidcClientImpl(client, tokenRequestUri, tokenRevokeUri, grantType,
-                        tokenGrantParams,
-                        commonRefreshGrantParams, oidcClientConfig, requestFilters, responseFilters, vertx, clientCredentials));
+                .switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcClientConfig, false)
+                        .map(key -> new ClientCredentials(key, null, null, jwtAssertionProvided, assertionProvider)))
+                .<OidcClient> flatMap(clientCredentials -> metadataResolver.apply(clientCredentials)
+                        .map(metadata -> {
+                            if (metadata == null || metadata.tokenRequestUri == null) {
+                                throw new ConfigurationException(
+                                        "OpenId Connect Provider token endpoint URL is not configured and can not be discovered");
+                            }
+                            return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
+                                    tokenGrantParams,
+                                    commonRefreshGrantParams, oidcClientConfig, requestFilters, responseFilters, vertx,
+                                    clientCredentials);
+                        }))
+                .onFailure().invoke(t -> {
+                    LOG.error("Failed to create OidcClientImpl", t);
+                    if (t instanceof ConfigurationException) {
+                        client.close();
+                    }
+                });
     }
 
-    private record ClientCredentials(Key clientJwtKey, String clientSecret, String clientSecretBasicAuthScheme) {
+    record ClientCredentials(Key clientJwtKey, String clientSecret, String clientSecretBasicAuthScheme,
+            boolean jwtAssertionProvided, ClientAssertionProvider clientAssertionProvider) {
+    }
 
-        private ClientCredentials(Key clientJwtKey) {
-            this(clientJwtKey, null, null);
-        }
-
-        private ClientCredentials(String clientSecret, String clientSecretBasicAuthScheme) {
-            this(null, clientSecret, clientSecretBasicAuthScheme);
-        }
+    record AsyncCredentials(String clientAssertion) {
+        private static final Uni<AsyncCredentials> UNI_WITH_EMPTY_CREDENTIALS = Uni.createFrom()
+                .item(new AsyncCredentials(null));
     }
 }

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +67,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     private final Executor contextExecutor;
     private final ClassLoader devModeTccl;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
+    private List<Runnable> closeHandlers;
     ContinueState continueState = ContinueState.NONE;
 
     public VertxResteasyReactiveRequestContext(Deployment deployment,
@@ -99,12 +101,18 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse addCloseHandler(Runnable onClose) {
-        this.response.closeHandler(new Handler<Void>() {
-            @Override
-            public void handle(Void v) {
-                onClose.run();
-            }
-        });
+        if (closeHandlers == null) {
+            closeHandlers = new ArrayList<>(1);
+            this.response.closeHandler(new Handler<>() {
+                @Override
+                public void handle(Void v) {
+                    for (Runnable handler : closeHandlers) {
+                        handler.run();
+                    }
+                }
+            });
+        }
+        closeHandlers.add(onClose);
         return this;
     }
 

@@ -32,8 +32,9 @@
         <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.60.1-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>6.0.0.Alpha4</quarkus-http.version>
-        <micrometer.version>1.16.5</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.17.0</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
+        <latencyutils.version>2.0.3</latencyutils.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.1.1-RC1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
@@ -51,7 +52,7 @@
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
         <smallrye-graphql.version>3.0.0.Beta3</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.11.1</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.11.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -108,7 +109,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.9.1.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.9.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>5.1.3</vertx.version>
@@ -120,7 +121,7 @@
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.9</mariadb-jdbc.version>
         <mysql-jdbc.version>9.7.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -169,7 +170,6 @@
         <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.28.2</javaparser.version>
-        <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.24.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP3</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
@@ -199,9 +199,9 @@
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
-        <aesh.version>2.8.2</aesh.version>
-        <aesh-readline.version>2.6</aesh-readline.version>
-        <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
+        <aesh.version>3.14.3</aesh.version>
+        <aesh-readline.version>3.14.1</aesh-readline.version>
+        <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.9.1</strimzi-oauth.nimbus.version>
@@ -3746,6 +3746,41 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-websocket</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-websocket-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-ssh</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-aesh-ssh-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-picocli</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -5642,9 +5677,14 @@
                 <version>${hibernate-reactive.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.local-cache</groupId>
-                <artifactId>quarkus-local-cache</artifactId>
-                <version>${hibernate-quarkus-local-cache.version}</version>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-jcache</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>jcache</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
@@ -6559,6 +6599,28 @@
                 <artifactId>aesh</artifactId>
                 <version>${aesh.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.aesh</groupId>
+                <artifactId>aesh-processor</artifactId>
+                <version>${aesh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aesh</groupId>
+                <artifactId>terminal-http</artifactId>
+                <version>${aesh-readline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aesh</groupId>
+                <artifactId>terminal-ssh</artifactId>
+                <version>${aesh-readline.version}</version>
+            </dependency>
+
+            <!-- Apache SSHD Netty transport (sshd-core and sshd-common already managed) -->
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-netty</artifactId>
+                <version>${sshd-common.version}</version>
+            </dependency>
 
             <!-- Picocli -->
             <dependency>
@@ -6578,6 +6640,11 @@
                 <groupId>org.hdrhistogram</groupId>
                 <artifactId>HdrHistogram</artifactId>
                 <version>${hdrhistogram.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.latencyutils</groupId>
+                <artifactId>LatencyUtils</artifactId>
+                <version>${latencyutils.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

@@ -153,6 +153,6 @@ If @QuarkusIntegrationTest is required, because of native, a `ExporterResource` 
 - **Build-time vs runtime.** `quarkus.otel.exporter.otlp.endpoint` is a runtime property. `quarkus.otel.traces.enabled` is build-time. Changing a build-time property at runtime has no effect.
 - **Serverless requires simple export.** Set `quarkus.otel.simple=true` for immediate export instead of batching — batched spans may be lost when the function terminates.
 - **Disable specific instrumentation** with `quarkus.otel.instrument.<extension>=false` (e.g., `quarkus.otel.instrument.rest=false`).
-- **Local dev visualization.** Add `quarkus-observability-devservices-lgtm` (scope `provided`) to auto-start Grafana, Tempo, Prometheus, and an OTel Collector in dev/test mode.
+- **Dev Services for LGTM stack.** Dev Services auto-start Grafana, Tempo, Prometheus, and an OTel Collector in dev/test mode.
 - **Avoid adding default configurations.** No need to add configurations to `application.properties` if the required values are already default.
 - **Spans arrive asynchronously to the exporter.** Use `Awaitility` or polling, not immediate assertions.

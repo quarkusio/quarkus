@@ -118,6 +118,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          */
         public Jwt jwt = new Jwt();
 
+        private boolean forAllEndpoints = false;
+
         public Optional<String> getSecret() {
             return secret;
         }
@@ -146,6 +148,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             secret = mapping.secret();
             clientSecret.addConfigMappingValues(mapping.clientSecret());
             jwt.addConfigMappingValues(mapping.jwt());
+            forAllEndpoints = mapping.forAllEndpoints();
         }
 
         @Override
@@ -161,6 +164,11 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         @Override
         public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt jwt() {
             return jwt;
+        }
+
+        @Override
+        public boolean forAllEndpoints() {
+            return forAllEndpoints;
         }
 
         /**

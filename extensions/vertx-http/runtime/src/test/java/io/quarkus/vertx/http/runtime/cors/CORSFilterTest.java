@@ -107,14 +107,14 @@ public class CORSFilterTest {
         record CORSConfigImpl(Optional<Boolean> accessControlAllowCredentials, Optional<Duration> accessControlMaxAge,
                 Optional<List<String>> exposedHeaders, Optional<List<String>> headers,
                 Optional<List<String>> methods, Optional<List<String>> origins,
-                boolean returnExactOrigins) implements CORSConfig {
+                boolean returnExactOrigins, boolean varyOrigin) implements CORSConfig {
             @Override
             public boolean enabled() {
                 return true;
             }
         }
         var config = new CORSConfigImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), true);
+                Optional.empty(), Optional.empty(), true, true);
         var emptyConfig = (CORSConfig) new CORS.Builder(config).build();
         Assertions.assertTrue(emptyConfig.enabled());
         Assertions.assertTrue(emptyConfig.origins().isEmpty());

@@ -1408,6 +1408,13 @@ public class VertxHttpRecorder {
                                 actualHttpsPort = actualPort;
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTPS_PORT, actualPort);
+                                URI localBaseUri = localBaseUri("https", actualPort);
+                                // Someone else may register the local base uri first (lambda extension)
+                                // The implemented behaviour is that lambda has priority, but we may want to review that
+                                if (!insecureRequests.equals(InsecureRequests.ENABLED)
+                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                }
                                 if (launchMode.isDevOrTest()) {
                                     valueRegistry.register(HTTPS_TEST_PORT, actualPort);
                                     // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
@@ -1421,7 +1428,12 @@ public class VertxHttpRecorder {
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTP_PORT, actualPort);
                                 URI localBaseUri = localBaseUri("http", actualPort);
-                                valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                // Someone else may register the local base uri first (lambda extension)
+                                // The implemented behaviour is that lambda has priority, but we may want to review that
+                                if (insecureRequests.equals(InsecureRequests.ENABLED)
+                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                }
                                 if (launchMode.isDevOrTest()) {
                                     valueRegistry.register(HTTP_TEST_PORT, actualPort);
                                     // Compatibility with test.url

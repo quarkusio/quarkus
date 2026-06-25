@@ -164,6 +164,11 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
             public boolean returnExactOrigins() {
                 return true;
             }
+
+            @Override
+            public boolean varyOrigin() {
+                return baseCorsConfig.varyOrigin();
+            }
         };
     }
 }

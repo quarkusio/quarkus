@@ -12,7 +12,6 @@ public class OpenedSessionsStateStatefulImpl extends OpenedSessionsState<Mutiny.
     }
 
     protected OpenedSessionsStateStatefulImpl() {
-        super(HibernateReactiveVertxServiceProvider.SESSIONS_LOCAL);
     }
 
     @Override
@@ -28,5 +27,10 @@ public class OpenedSessionsStateStatefulImpl extends OpenedSessionsState<Mutiny.
     @Override
     protected Uni<Void> flushSession(Mutiny.Session session) {
         return session.flush();
+    }
+
+    @Override
+    protected Mutiny.Transaction currentTransaction(Mutiny.Session session) {
+        return session.currentTransaction();
     }
 }

@@ -13,4 +13,11 @@ public interface VolumeItemConfig {
      */
     @WithDefault("-1")
     int mode();
+
+    /**
+     * @return {@code true} if {@link #mode()} was explicitly configured
+     */
+    default boolean hasExplicitMode() {
+        return mode() >= 0;
+    }
 }

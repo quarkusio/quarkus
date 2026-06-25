@@ -14,7 +14,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/foo/annotation-secure")
+                .get("/annotation-secure")
                 .then()
                 .statusCode(403);
     }
@@ -23,12 +23,12 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
     void testSecuredServletWithNoAuth() {
         given()
                 .when()
-                .get("/foo/annotation-secure")
+                .get("/annotation-secure")
                 .then()
                 .statusCode(401);
         given()
                 .when()
-                .get("/foo/bar/../annotation-secure")
+                .get("/bar/../annotation-secure")
                 .then()
                 .statusCode(401);
     }
@@ -39,7 +39,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .get("/foo/annotation-secure")
+                .get("/annotation-secure")
                 .then()
                 .statusCode(200);
     }
@@ -48,7 +48,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
     void testEmptyRolesPermit() {
         given()
                 .when()
-                .put("/foo/annotation-secure")
+                .put("/annotation-secure")
                 .then()
                 .statusCode(200);
     }
@@ -57,7 +57,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
     void testEmptyRolesDeny() {
         given()
                 .when()
-                .delete("/foo/annotation-secure")
+                .delete("/annotation-secure")
                 .then()
                 .statusCode(401);
     }
@@ -68,7 +68,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .post("/foo/annotation-secure")
+                .post("/annotation-secure")
                 .then()
                 .statusCode(403);
     }
@@ -80,7 +80,7 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
                 .body("tmp")
                 .auth()
                 .basic("poul", "poul")
-                .post("/foo/annotation-secure")
+                .post("/annotation-secure")
                 .then()
                 .statusCode(200);
     }

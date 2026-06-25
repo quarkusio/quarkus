@@ -236,6 +236,24 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    void registerJCacheForReflection(
+            HibernateOrmConfig config,
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
+
+        // Only register JCache classes if at least one persistence unit has caching enabled
+        boolean cachingEnabled = config.persistenceUnits().values().stream()
+                .anyMatch(HibernateOrmConfigPersistenceUnit::secondLevelCachingEnabled);
+
+        if (cachingEnabled) {
+            // TODO can we avoid this reflection?
+            reflective.produce(ReflectiveClassBuildItem.builder(
+                    "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider")
+                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                    .methods().fields().build());
+        }
+    }
+
+    @BuildStep
     void registerHibernateOrmMetadataForCoreDialects(
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DB2, "DB2",
@@ -371,9 +389,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
     public void configurationDescriptorBuilding(
-            HibernateOrmRecorder recorder,
             HibernateOrmConfig hibernateOrmConfig,
             CombinedIndexBuildItem index,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
@@ -433,7 +449,7 @@ public final class HibernateOrmProcessor {
         }
 
         if (persistenceXmlDescriptors.isEmpty() && impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
-            handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
+            handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index,
                     jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     additionalJpaModelBuildItems,
                     jpaModel, capabilities,
@@ -989,7 +1005,6 @@ public final class HibernateOrmProcessor {
     private void handleHibernateORMWithNoPersistenceXml(
             HibernateOrmConfig hibernateOrmConfig,
             CombinedIndexBuildItem index,
-            List<PersistenceXmlDescriptorBuildItem> descriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,

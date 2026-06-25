@@ -1,6 +1,7 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
+import io.quarkus.oidc.client.runtime.OidcClientImpl.ClientCredentials;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
@@ -26,12 +28,14 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.common.runtime.OidcWebClient;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
 
 @Recorder
 public class OidcClientRecorder {
@@ -103,6 +107,12 @@ public class OidcClientRecorder {
             return Uni.createFrom().item(new DisabledOidcClient(message));
         }
 
+        try {
+            OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
+        } catch (ConfigurationException e) {
+            return Uni.createFrom().failure(e);
+        }
+
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         OidcWebClient client = OidcWebClient.create(oidcConfig, tlsSupport, mutinyVertx, proxyConfigurationRegistry,
                 "OIDC client `" + oidcClientId + "`");
@@ -122,40 +132,33 @@ public class OidcClientRecorder {
                         OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath()),
                         OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath()));
             }
-            return createOidcClientUniFromMetadata(oidcConfigurationMetadata, oidcConfig, client, oidcRequestFilters,
-                    oidcResponseFilters, vertx);
+            return createOidcClientUniFromMetadata(cc -> Uni.createFrom().item(oidcConfigurationMetadata),
+                    oidcConfig, client, oidcRequestFilters, oidcResponseFilters, vertx);
         } else {
-            final Uni<OidcConfigurationMetadata> deferredOidcConfigurationMetadata = Uni.createFrom()
-                    .deferred(() -> discoverTokenUris(client, oidcRequestFilters, oidcResponseFilters,
-                            OidcCommonUtils.getAuthServerUrl(oidcConfig), oidcConfig, mutinyVertx));
+            final Uni<OidcClient> deferredClient = Uni.createFrom().deferred(() -> createOidcClientUniFromMetadata(
+                    cc -> discoverTokenUris(client, oidcRequestFilters, oidcResponseFilters,
+                            OidcCommonUtils.getAuthServerUrl(oidcConfig), oidcConfig, cc, mutinyVertx),
+                    oidcConfig, client, oidcRequestFilters, oidcResponseFilters, vertx));
 
-            return deferredOidcConfigurationMetadata.onItemOrFailure().transformToUni((metadata, originalFailure) -> {
-                if (originalFailure != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debugf(originalFailure, "OIDC metadata discovery for OIDC client '%s' failed. "
-                                + "Will try again the first time this OIDC client is used", oidcClientId);
-                    }
-                    Uni<OidcClient> deferredClient = deferredOidcConfigurationMetadata
-                            .onFailure().transform(t -> toOidcClientException(getEndpointUrl(oidcConfig), t))
-                            .flatMap(m -> createOidcClientUniFromMetadata(m, oidcConfig, client, oidcRequestFilters,
-                                    oidcResponseFilters, vertx));
-                    return Uni.createFrom().item(new DeferredOidcClient(deferredClient, oidcClientId, client));
-                }
-                return createOidcClientUniFromMetadata(metadata, oidcConfig, client, oidcRequestFilters, oidcResponseFilters,
-                        vertx);
-            });
+            return deferredClient
+                    .onFailure(f -> !(f instanceof ConfigurationException))
+                    .recoverWithItem(originalFailure -> {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debugf(originalFailure, "OIDC metadata discovery for OIDC client '%s' failed. "
+                                    + "Will try again the first time this OIDC client is used", oidcClientId);
+                        }
+                        return new DeferredOidcClient(
+                                deferredClient.onFailure().transform(t -> toOidcClientException(getEndpointUrl(oidcConfig), t)),
+                                oidcClientId, client);
+                    });
         }
     }
 
-    private static Uni<OidcClient> createOidcClientUniFromMetadata(OidcConfigurationMetadata metadata,
+    private static Uni<OidcClient> createOidcClientUniFromMetadata(
+            Function<ClientCredentials, Uni<OidcConfigurationMetadata>> metadataResolver,
             OidcClientConfig oidcConfig, OidcWebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters, Vertx vertx) {
-        if (metadata.tokenRequestUri == null) {
-            client.close();
-            throw new ConfigurationException(
-                    "OpenId Connect Provider token endpoint URL is not configured and can not be discovered");
-        }
         String grantType = oidcConfig.grant().type().getGrantType();
 
         MultiMap tokenGrantParams = null;
@@ -204,7 +207,7 @@ public class OidcClientRecorder {
         MultiMap commonRefreshGrantParams = MultiMap.caseInsensitiveMultiMap();
         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
-        return OidcClientImpl.of(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
+        return OidcClientImpl.of(client, metadataResolver, grantType,
                 tokenGrantParams, commonRefreshGrantParams, oidcConfig, oidcRequestFilters,
                 oidcResponseFilters, vertx);
     }
@@ -226,12 +229,39 @@ public class OidcClientRecorder {
     private static Uni<OidcConfigurationMetadata> discoverTokenUris(OidcWebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
-            String authServerUrl, OidcClientConfig oidcConfig, io.vertx.mutiny.core.Vertx vertx) {
+            String authServerUrl, OidcClientConfig oidcConfig, ClientCredentials clientCredentials,
+            io.vertx.mutiny.core.Vertx vertx) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                 Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.id().orElse(DEFAULT_OIDC_CLIENT_ID)));
         final String discoveryUrl = OidcCommonUtils.getDiscoveryUri(authServerUrl, oidcConfig.discoveryPath());
-        return OidcCommonUtils.discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters,
+        final Map<OidcEndpoint.Type, List<OidcRequestFilter>> discoveryFilters;
+        if (oidcConfig.credentials().forAllEndpoints()) {
+            discoveryFilters = new HashMap<>(oidcRequestFilters);
+            OidcRequestFilter authFilter = new OidcRequestFilter() {
+                @Override
+                public Uni<Void> filter(OidcRequestFilterContext context) {
+                    if (clientCredentials.clientSecretBasicAuthScheme() != null) {
+                        context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
+                                clientCredentials.clientSecretBasicAuthScheme());
+                    } else if (clientCredentials.jwtAssertionProvided()
+                            && clientCredentials.clientAssertionProvider() != null
+                            && oidcConfig.credentials().jwt().source() == Credentials.Jwt.Source.BEARER) {
+                        return clientCredentials.clientAssertionProvider().getClientAssertion()
+                                .onItem().ifNull().failWith(() -> new OidcClientException(
+                                        "Cannot access discovery endpoint because a JWT bearer client_assertion is not available"))
+                                .invoke(assertion -> context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
+                                        OidcConstants.BEARER_SCHEME + " " + assertion))
+                                .replaceWithVoid();
+                    }
+                    return Uni.createFrom().voidItem();
+                }
+            };
+            discoveryFilters.computeIfAbsent(OidcEndpoint.Type.DISCOVERY, k -> new ArrayList<>()).add(authFilter);
+        } else {
+            discoveryFilters = oidcRequestFilters;
+        }
+        return OidcCommonUtils.discoverMetadata(client, discoveryFilters, contextProps, oidcResponseFilters,
                 discoveryUrl, connectionDelayInMillisecs, vertx, oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
                         json.getString("revocation_endpoint")));
@@ -282,9 +312,9 @@ public class OidcClientRecorder {
 
     }
 
-    private static class OidcConfigurationMetadata {
-        private final String tokenRequestUri;
-        private final String tokenRevokeUri;
+    static final class OidcConfigurationMetadata {
+        final String tokenRequestUri;
+        final String tokenRevokeUri;
 
         OidcConfigurationMetadata(String tokenRequestUri, String tokenRevokeUri) {
             this.tokenRequestUri = tokenRequestUri;

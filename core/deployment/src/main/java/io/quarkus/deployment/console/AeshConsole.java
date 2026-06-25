@@ -19,7 +19,7 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.registry.CommandRegistry;
 import org.aesh.command.settings.Settings;
 import org.aesh.command.settings.SettingsBuilder;
-import org.aesh.readline.ReadlineConsole;
+import org.aesh.console.ReadlineConsole;
 import org.aesh.readline.alias.AliasManager;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
@@ -265,9 +265,9 @@ public class AeshConsole extends QuarkusConsole {
                                 }
                             }
                         }
-                        if (delegateConnection.getStdinHandler() != null) {
+                        if (delegateConnection.stdinHandler() != null) {
                             try {
-                                delegateConnection.getStdinHandler().accept(keys);
+                                delegateConnection.stdinHandler().accept(keys);
                             } catch (Throwable t) {
                                 t.printStackTrace();
                             }
@@ -600,7 +600,8 @@ public class AeshConsole extends QuarkusConsole {
     @Override
     public Map<Character, String> singleLetterAliases() {
         try {
-            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(),
+                    true);
             Map<Character, String> ret = new HashMap<>();
             for (String alias : manager.getAllNames()) {
                 if (alias.length() == 1) {
@@ -608,7 +609,7 @@ public class AeshConsole extends QuarkusConsole {
                 }
             }
             return ret;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return Map.of();
         }
     }

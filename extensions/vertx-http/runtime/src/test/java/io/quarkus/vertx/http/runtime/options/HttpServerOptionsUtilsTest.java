@@ -29,121 +29,76 @@ import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
 import io.vertx.core.http.ClientAuth;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 
 class HttpServerOptionsUtilsTest {
 
     @Test
-    void applyCommonOptionsWithGzipCompressor() {
-        HttpServerOptions options = new HttpServerOptions();
+    void applyCommonOptionsNewApiWithGzipCompressor() {
+        HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("gzip")), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
 
-        assertThat(options.getCompressors()).isNotNull();
-        assertThat(options.getCompressors()).hasSize(1);
-        assertThat(options.isCompressionSupported()).isTrue();
+        assertThat(config.getCompressionConfig()).isNotNull();
+        assertThat(config.getCompressionConfig().isCompressionEnabled()).isTrue();
     }
 
     @Test
-    void applyCommonOptionsWithDeflateCompressor() {
-        HttpServerOptions options = new HttpServerOptions();
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("deflate")), OptionalInt.empty());
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
-
-        assertThat(options.getCompressors()).isNotNull();
-        assertThat(options.getCompressors()).hasSize(1);
-    }
-
-    @Test
-    void applyCommonOptionsWithGzipAndDeflateCompressors() {
-        HttpServerOptions options = new HttpServerOptions();
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("gzip", "deflate")),
-                OptionalInt.empty());
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
-
-        assertThat(options.getCompressors()).hasSize(2);
-    }
-
-    @Test
-    void applyCommonOptionsWithoutCompressors() {
-        HttpServerOptions options = new HttpServerOptions();
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.empty(), OptionalInt.empty());
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
-
-        assertThat(options.isCompressionSupported()).isTrue();
-        assertThat(options.getCompressors()).isNull();
-    }
-
-    @Test
-    void applyCommonOptionsCompressionDisabled() {
-        HttpServerOptions options = new HttpServerOptions();
+    void applyCommonOptionsNewApiCompressionDisabled() {
+        HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
 
-        assertThat(options.isCompressionSupported()).isFalse();
+        assertThat(config.getCompressionConfig().isCompressionEnabled()).isFalse();
     }
 
     @Test
-    void applyCommonOptionsCompressionLevelApplied() {
-        HttpServerOptions options = new HttpServerOptions();
-        int level = 3;
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.empty(), OptionalInt.of(level));
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
-
-        assertThat(options.getCompressionLevel()).isEqualTo(level);
-    }
-
-    @Test
-    void applyCommonOptionsCompressionLevelAppliedToGzipCompressor() {
-        HttpServerOptions options = new HttpServerOptions();
-        int level = 4;
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("gzip")), OptionalInt.of(level));
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
-
-        assertThat(options.getCompressionLevel()).isEqualTo(level);
-        assertThat(options.getCompressors()).hasSize(1);
-    }
-
-    @Test
-    void applyCommonOptionsHttp2SettingsApplied() {
-        HttpServerOptions options = new HttpServerOptions();
+    void applyCommonOptionsNewApiHttp2SettingsApplied() {
+        HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig(true);
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
 
-        assertThat(options.getInitialSettings()).isNotNull();
-        assertThat(options.getInitialSettings().isPushEnabled()).isTrue();
+        assertThat(config.getHttp2Config()).isNotNull();
+        assertThat(config.getHttp2Config().getInitialSettings()).isNotNull();
+        assertThat(config.getHttp2Config().getInitialSettings().isPushEnabled()).isTrue();
     }
 
     @Test
-    void applyCommonOptionsHttp2Disabled() {
-        HttpServerOptions options = new HttpServerOptions();
+    void applyCommonOptionsNewApiSetsServerLimits() {
+        HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
-        VertxHttpConfig httpConfig = minimalHttpConfig(false);
+        VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
 
-        assertThat(options.isHttp2ClearTextEnabled()).isFalse();
+        assertThat(config.getHttp1Config().getMaxHeaderSize()).isEqualTo(20480);
+        assertThat(config.getHttp1Config().getMaxChunkSize()).isEqualTo(8192);
+        assertThat(config.getFormDecoderConfig().getMaxAttributeSize()).isEqualTo(2048);
+        assertThat(config.getFormDecoderConfig().getMaxFields()).isEqualTo(256);
+        assertThat(config.getHttp1Config().getMaxInitialLineLength()).isEqualTo(4096);
     }
 
     @Test
-    void applyCommonOptionsTrafficShapingEnabled() {
-        HttpServerOptions options = new HttpServerOptions();
+    void applyCommonOptionsNewApiSetsWebsocketSubProtocols() {
+        HttpServerConfig config = new HttpServerConfig();
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        List<String> subProtocols = List.of("graphql-ws", "subscriptions-transport-ws");
+
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, subProtocols);
+
+        assertThat(config.getWebSocketConfig().getSubProtocols()).containsExactlyElementsOf(subProtocols);
+    }
+
+    @Test
+    void applyCommonOptionsNewApiTrafficShapingEnabled() {
+        HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
@@ -156,47 +111,35 @@ class HttpServerOptionsUtilsTest {
         when(trafficShaping.peakOutboundGlobalBandwidth()).thenReturn(Optional.empty());
         when(httpConfig.trafficShaping()).thenReturn(trafficShaping);
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
 
-        assertThat(options.getTrafficShapingOptions()).isNotNull();
+        assertThat(config.getTcpConfig().getTrafficShapingOptions()).isNotNull();
     }
 
     @Test
-    void applyCommonOptionsTrafficShapingDisabled() {
-        HttpServerOptions options = new HttpServerOptions();
+    void createHttpServerConfigSetsPort() {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.hostEnabled()).thenReturn(true);
+        when(httpConfig.determinePort(LaunchMode.NORMAL)).thenReturn(8080);
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerConfig config = HttpServerOptionsUtils.createHttpServerConfig(
+                buildTimeConfig, httpConfig, LaunchMode.NORMAL, Collections.emptyList());
 
-        assertThat(options.getTrafficShapingOptions()).isNull();
+        assertThat(config).isNotNull();
+        assertThat(config.getTcpPort()).isEqualTo(8080);
     }
 
     @Test
-    void applyCommonOptionsSetsServerLimits() {
-        HttpServerOptions options = new HttpServerOptions();
+    void createHttpServerConfigReturnsNullWhenHostDisabled() {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.hostEnabled()).thenReturn(false);
 
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerConfig config = HttpServerOptionsUtils.createHttpServerConfig(
+                buildTimeConfig, httpConfig, LaunchMode.NORMAL, Collections.emptyList());
 
-        assertThat(options.getMaxHeaderSize()).isEqualTo(20480);
-        assertThat(options.getMaxChunkSize()).isEqualTo(8192);
-        assertThat(options.getMaxFormAttributeSize()).isEqualTo(2048);
-        assertThat(options.getMaxFormFields()).isEqualTo(256);
-        assertThat(options.getMaxInitialLineLength()).isEqualTo(4096);
-    }
-
-    @Test
-    void applyCommonOptionsSetsWebsocketSubProtocols() {
-        HttpServerOptions options = new HttpServerOptions();
-        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
-        VertxHttpConfig httpConfig = minimalHttpConfig();
-        List<String> subProtocols = List.of("graphql-ws", "subscriptions-transport-ws");
-
-        HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfig, subProtocols);
-
-        assertThat(options.getWebSocketSubProtocols()).containsExactlyElementsOf(subProtocols);
+        assertThat(config).isNull();
     }
 
     @Test
@@ -325,6 +268,8 @@ class HttpServerOptionsUtilsTest {
         VertxHttpConfig config = mock(VertxHttpConfig.class);
 
         when(config.host()).thenReturn("localhost");
+        when(config.hostEnabled()).thenReturn(true);
+        when(config.determinePort(Mockito.any())).thenReturn(8080);
         when(config.idleTimeout()).thenReturn(Duration.ofMinutes(30));
         when(config.http2()).thenReturn(http2Enabled);
         when(config.http2PushEnabled()).thenReturn(true);

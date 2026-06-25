@@ -11,12 +11,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.restassured.RestAssured;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.mutiny.ext.web.Router;
 
-public class HttpServerOptionsCustomizerTest {
+public class HttpServerConfigCustomizerTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -42,23 +43,23 @@ public class HttpServerOptionsCustomizerTest {
     }
 
     @ApplicationScoped
-    public static class MyCustomizer implements HttpServerOptionsCustomizer {
+    public static class MyCustomizer implements HttpServerConfigCustomizer {
 
         AtomicInteger count = new AtomicInteger();
 
         @Override
-        public void customizeHttpServer(HttpServerOptions options) {
+        public void customizeHttpServer(HttpServerConfig config) {
             count.incrementAndGet();
-            options.setPort(9998);
+            config.setPort(9998);
         }
 
         @Override
-        public void customizeHttpsServer(HttpServerOptions options) {
+        public void customizeHttpsServer(HttpServerConfig config, ServerSSLOptions sslOptions) {
             count.incrementAndGet();
         }
 
         @Override
-        public void customizeDomainSocketServer(HttpServerOptions options) {
+        public void customizeDomainSocketServer(HttpServerConfig config) {
             count.incrementAndGet();
         }
 

@@ -380,6 +380,14 @@ Note that some configuration attributes are specific to HTTP/2.
 For example, to configure the max header list size (~ header), you need to configure the `quarkus.http.limits.max-header-list-size` attribute.
 You can also enable or disable HTTP/2 push using `quarkus.http.http2-push-enabled`.
 
+== HTTP/3 Support
+
+HTTP/3 (QUIC) is available as an experimental extension.
+It uses QUIC over UDP instead of TCP and requires TLS.
+
+To enable HTTP/3, add the `quarkus-http3` extension to your project.
+See the xref:http3-reference.adoc[HTTP/3 reference guide] for configuration and usage details.
+
 == Listening on a Random Port
 
 If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port
@@ -562,25 +570,26 @@ Use `quarkus.http.access-log.exclude-pattern=/some/path/.*` to exclude all entri
 
 == Arbitrary customizations
 
-Quarkus allows users to arbitrarily customize the options of HTTP servers started by Quarkus via the use of `io.quarkus.vertx.http.HttpServerOptionsCustomizer`.
+Quarkus allows users to arbitrarily customize the configuration of HTTP servers started by Quarkus via the use of `io.quarkus.vertx.http.HttpServerConfigCustomizer`.
 For example, if the HTTP port needs to be set programmatically, then the following code could be used:
 
 [source,java]
 ----
 import jakarta.inject.Singleton;
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerConfigCustomizer;
+import io.vertx.core.http.HttpServerConfig;
 
 @Singleton <1>
-public class MyCustomizer implements HttpServerOptionsCustomizer {
+public class MyCustomizer implements HttpServerConfigCustomizer {
 
     @Override
-    public void customizeHttpServer(HttpServerOptions options) { <2>
-        options.setPort(9998);
+    public void customizeHttpServer(HttpServerConfig config) { <2>
+        config.setPort(9998);
     }
 }
 ----
 <1> By making the class a managed bean, Quarkus will take the customizer into account when it starts the Vert.x servers
-<2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerOptionsCustomizer` allows configuring the HTTPS and Domain Socket servers as well
+<2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerConfigCustomizer` allows configuring the HTTPS and Domain Socket servers as well
 
 
 == How to execute logic when HTTP server started

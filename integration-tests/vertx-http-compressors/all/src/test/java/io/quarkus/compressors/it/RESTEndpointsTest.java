@@ -24,12 +24,12 @@ public class RESTEndpointsTest {
     @CsvSource(value = {
     //@formatter:off
     // Context | Accept-Encoding | Content-Encoding | Content-Length
-    "/yes/text | deflate,gzip,br | br               | 2316",
+//    "/yes/text | deflate,gzip,br | br               | 2316", // Skip Brotli as we cannot configure the quality - https://github.com/eclipse-vertx/vert.x/issues/6201
     "/yes/text | deflate         | deflate          | 2402",
     "/no/text  | deflate,gzip,br | null             | 6483",
     "/yes/json | deflate         | deflate          | 2402",
     "/no/json  | deflate,gzip,br | null             | 6483",
-    "/yes/xml  | deflate,gzip,br | br               | 2316",
+//    "/yes/xml  | deflate,gzip,br | br               | 2316", // Skip Brotli as we cannot configure the quality - https://github.com/eclipse-vertx/vert.x/issues/6201
     "/no/xml   | deflate,gzip,br | null             | 6483",
     "/yes/xhtml| deflate,gzip    | gzip             | 2414",
     //@formatter:on

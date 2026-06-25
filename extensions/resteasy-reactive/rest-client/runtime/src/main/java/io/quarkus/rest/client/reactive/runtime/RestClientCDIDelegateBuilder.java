@@ -164,6 +164,9 @@ public class RestClientCDIDelegateBuilder<T> {
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
 
+        Boolean http3 = oneOf(restClientConfig.http3()).orElse(configRoot.http3());
+        builder.property(QuarkusRestClientProperties.HTTP3, http3);
+
         Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
                 configRoot.http2UpgradeMaxContentLength());
         if (http2UpgradeMaxContentLength.isPresent()) {

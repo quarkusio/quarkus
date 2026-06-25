@@ -11,7 +11,10 @@ import java.util.function.Supplier;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.PoolCreator;
@@ -25,6 +28,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.mysqlclient.MySQLBuilder;
 import io.vertx.mysqlclient.MySQLConnectOptions;
@@ -36,7 +40,7 @@ import io.vertx.sqlclient.SqlConnectOptions;
 @Recorder
 public class MySQLPoolRecorder {
 
-    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+    private static final Logger log = Logger.getLogger(MySQLPoolRecorder.class);
 
     private static final TypeLiteral<Instance<PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
@@ -84,8 +88,9 @@ public class MySQLPoolRecorder {
             TlsConfigurationRegistry tlsRegistry,
             SyntheticCreationalContext<Pool> context) {
         PoolOptions poolOptions = ReactivePoolUtil.toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
-        // MySQL-specific: connection timeout
-        if (dataSourceReactiveMySQLConfig.connectionTimeout().isPresent()) {
+        if (dataSourceReactiveRuntimeConfig.connectionTimeout().isEmpty()
+                && dataSourceReactiveMySQLConfig.connectionTimeout().isPresent()) {
+            logWarningForDeprecatedConnectionTimeout(dataSourceName);
             poolOptions.setConnectionTimeout(dataSourceReactiveMySQLConfig.connectionTimeout().getAsInt());
             poolOptions.setConnectionTimeoutUnit(TimeUnit.SECONDS);
         }
@@ -95,6 +100,17 @@ public class MySQLPoolRecorder {
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(mysqlConnectOptionsList,
                 dataSourceRuntimeConfig, MySQLConnectOptions::new);
         return createPool(vertx, poolOptions, mysqlConnectOptionsList, dataSourceName, databasesSupplier, context);
+    }
+
+    private void logWarningForDeprecatedConnectionTimeout(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            log.warn("'quarkus.datasource.reactive.mysql.connection-timeout' is deprecated,"
+                    + " use 'quarkus.datasource.reactive.connection-timeout' instead");
+        } else {
+            log.warnf("'quarkus.datasource.\"%s\".reactive.mysql.connection-timeout' is deprecated,"
+                    + " use 'quarkus.datasource.\"%s\".reactive.connection-timeout' instead",
+                    dataSourceName, dataSourceName);
+        }
     }
 
     private List<MySQLConnectOptions> toMySQLConnectOptions(String dataSourceName,
@@ -119,12 +135,21 @@ public class MySQLPoolRecorder {
         mysqlConnectOptionsList.forEach(mysqlConnectOptions -> {
             ReactivePoolUtil.configureCredentials(mysqlConnectOptions, dataSourceRuntimeConfig);
 
-            mysqlConnectOptions
-                    .setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements()
-                            .orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
+            ReactivePoolUtil.configurePreparedStatementCache(mysqlConnectOptions, dataSourceReactiveRuntimeConfig);
 
             dataSourceReactiveMySQLConfig.charset().ifPresent(mysqlConnectOptions::setCharset);
             dataSourceReactiveMySQLConfig.collation().ifPresent(mysqlConnectOptions::setCollation);
+            if (dataSourceReactiveMySQLConfig.characterEncoding().isPresent()) {
+                mysqlConnectOptions.setCharacterEncoding(dataSourceReactiveMySQLConfig.characterEncoding().get());
+            }
+            if (dataSourceReactiveMySQLConfig.serverRsaPublicKeyPath().isPresent()) {
+                mysqlConnectOptions.setServerRsaPublicKeyPath(dataSourceReactiveMySQLConfig.serverRsaPublicKeyPath().get());
+            }
+            if (dataSourceReactiveMySQLConfig.serverRsaPublicKeyValue().isPresent()) {
+                mysqlConnectOptions
+                        .setServerRsaPublicKeyValue(
+                                Buffer.buffer(dataSourceReactiveMySQLConfig.serverRsaPublicKeyValue().get()));
+            }
 
             if (dataSourceReactiveMySQLConfig.pipeliningLimit().isPresent()) {
                 mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit().getAsInt());

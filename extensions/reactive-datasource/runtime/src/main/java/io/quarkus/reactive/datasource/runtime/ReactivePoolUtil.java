@@ -3,6 +3,7 @@ package io.quarkus.reactive.datasource.runtime;
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,20 @@ public final class ReactivePoolUtil {
         PoolOptions poolOptions = new PoolOptions();
 
         poolOptions.setMaxSize(config.maxSize());
+
+        if (config.connectionTimeout().isPresent()) {
+            var connectionTimeout = unitised(config.connectionTimeout().get());
+            poolOptions.setConnectionTimeout(connectionTimeout.value).setConnectionTimeoutUnit(connectionTimeout.unit);
+        }
+
+        if (config.maxWaitQueueSize().isPresent()) {
+            poolOptions.setMaxWaitQueueSize(config.maxWaitQueueSize().getAsInt());
+        }
+
+        if (config.poolCleanerPeriod().isPresent()) {
+            var cleanerPeriod = unitised(config.poolCleanerPeriod().get());
+            poolOptions.setPoolCleanerPeriod((int) MILLISECONDS.convert(cleanerPeriod.value, cleanerPeriod.unit));
+        }
 
         if (config.idleTimeout().isPresent()) {
             var idleTimeout = unitised(config.idleTimeout().get());
@@ -122,6 +137,22 @@ public final class ReactivePoolUtil {
             if (password != null) {
                 connectOptions.setPassword(password);
             }
+        }
+    }
+
+    /**
+     * Apply all prepared statement cache settings from the generic reactive datasource config to connect options.
+     * <p>
+     * Only call this for SQL clients that support prepared statement caching.
+     */
+    public static void configurePreparedStatementCache(SqlConnectOptions connectOptions,
+            DataSourceReactiveRuntimeConfig config) {
+        connectOptions.setCachePreparedStatements(config.cachePreparedStatements().orElse(true));
+        if (config.preparedStatementCacheMaxSize().isPresent()) {
+            connectOptions.setPreparedStatementCacheMaxSize(config.preparedStatementCacheMaxSize().getAsInt());
+        }
+        if (config.preparedStatementCacheSqlLimit().isPresent()) {
+            connectOptions.setPreparedStatementCacheSqlLimit(config.preparedStatementCacheSqlLimit().getAsInt());
         }
     }
 

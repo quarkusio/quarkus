@@ -54,9 +54,35 @@ public @interface RegisterForReflection {
     boolean unsafeAllocated() default false;
 
     /**
-     * The lambda capturing types performing serialization in the native image
+     * The lambda capturing types performing serialization in the native image.
+     *
+     * @deprecated This parameter is no longer supported in reachability-metadata.json.
+     *             Lambda serialization must be registered using @LambdaDescriptor,
+     *             e.g.
+     *             integration-tests/native-image-annotations/src/main/java/io/quarkus/it/nat/annotation/ProperLambdaHolder.java
      */
+    @Deprecated(forRemoval = true, since = "3.36.0")
     String[] lambdaCapturingTypes() default {};
+
+    /**
+     * Lambda descriptors for serializable lambdas that need reflection metadata.
+     * Each descriptor specifies the declaring class, method, and interfaces of a lambda.
+     * <p>
+     * e.g.
+     *
+     * <pre>
+     * RegisterForReflection(
+     *     lambdaDescriptors = {
+     *         LambdaDescriptor(
+     *             declaringClass = MyClass.class,
+     *             declaringMethod = "getLambda",
+     *             interfaces = { Function.class }
+     *         )
+     *     }
+     * )
+     * </pre>
+     */
+    LambdaDescriptor[] lambdaDescriptors() default {};
 
     /**
      * Whether the full class hierarchy and dependencies should be registered.

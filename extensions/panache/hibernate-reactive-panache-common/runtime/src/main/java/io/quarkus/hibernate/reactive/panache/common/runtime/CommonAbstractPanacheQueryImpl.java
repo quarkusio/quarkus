@@ -23,6 +23,7 @@ import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Multi;
@@ -45,7 +46,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
-    private String orderBy;
+    private Sort sort;
 
     private Page page;
     private Uni<Long> count;
@@ -59,13 +60,16 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     private Class<?> projectionType;
 
     protected Uni<SessionType> em;
+    private Class<?> entityClass;
 
-    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, String query, String originalQuery, String orderBy,
+    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, Class<?> entityClass, String query, String originalQuery,
+            Sort sort,
             Object paramsArrayOrMap) {
         this.em = em;
+        this.entityClass = entityClass;
         this.query = query;
         this.originalQuery = originalQuery;
-        this.orderBy = orderBy;
+        this.sort = sort;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
@@ -74,9 +78,10 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
             String customCountQueryForSpring,
             Class<?> projectionType) {
         this.em = previousQuery.em;
+        this.entityClass = previousQuery.entityClass;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
-        this.orderBy = previousQuery.orderBy;
+        this.sort = previousQuery.sort;
         this.paramsArrayOrMap = previousQuery.paramsArrayOrMap;
         this.page = previousQuery.page;
         this.count = previousQuery.count;
@@ -284,10 +289,26 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
         }
     }
 
+    public Range range() {
+        checkRange();
+        return range;
+    }
+
     public void range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
         // reset the page to its default to be able to switch from page to range
         this.page = null;
+    }
+
+    private void checkRange() {
+        if (range == null) {
+            throw new UnsupportedOperationException("Cannot call a range related method, " +
+                    "call range(int, int) to initiate range first");
+        }
+        if (page != null) {
+            throw new UnsupportedOperationException("Cannot call a range related method in a paged query, " +
+                    "call range(int, int) to initiate range first");
+        }
     }
 
     public void withLock(LockModeType lockModeType) {
@@ -417,6 +438,7 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
                     : em.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
+                String orderBy = PanacheJpaUtil.toOrderBy(sort);
                 hibernateQuery = em.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
             } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);

@@ -6,14 +6,16 @@ import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractManagedJpaOperations;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class ManagedReactiveJpaOperations extends AbstractManagedJpaOperations<PanacheReactiveQuery<?>> {
 
     @Override
-    protected PanacheReactiveQuery<?> createPanacheQuery(Uni<Mutiny.Session> session, String query, String originalQuery,
-            String orderBy, Object paramsArrayOrMap) {
-        return new PanacheManagedReactiveQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+    protected PanacheReactiveQuery<?> createPanacheQuery(Uni<Mutiny.Session> session, Class<?> entityClass, String query,
+            String originalQuery,
+            Sort sort, Object paramsArrayOrMap) {
+        return new PanacheManagedReactiveQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @Override

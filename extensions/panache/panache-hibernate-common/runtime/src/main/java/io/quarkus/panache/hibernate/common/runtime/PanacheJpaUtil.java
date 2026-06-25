@@ -1,7 +1,12 @@
 package io.quarkus.panache.hibernate.common.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import org.hibernate.query.Order;
+import org.hibernate.query.SortDirection;
 
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -237,6 +242,27 @@ public class PanacheJpaUtil {
         }
 
         return result;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static List<Order<?>> toHibernateOrders(Class<?> entityClass, Sort sort) {
+        if (sort == null || sort.getColumns().isEmpty()) {
+            return List.of();
+        }
+        List<Order<?>> orders = new ArrayList<>();
+        for (Sort.Column column : sort.getColumns()) {
+            SortDirection direction = column.getDirection() == Sort.Direction.Ascending
+                    ? SortDirection.ASCENDING
+                    : SortDirection.DESCENDING;
+            Order<?> order = Order.by((Class) entityClass, column.getName(), direction, column.isIgnoreCase());
+            if (column.getNullPrecedence() == Sort.NullPrecedence.NULLS_FIRST) {
+                order = order.withNullsFirst();
+            } else if (column.getNullPrecedence() == Sort.NullPrecedence.NULLS_LAST) {
+                order = order.withNullsLast();
+            }
+            orders.add(order);
+        }
+        return orders;
     }
 
     private static StringBuilder escapeColumnName(String columnName) {

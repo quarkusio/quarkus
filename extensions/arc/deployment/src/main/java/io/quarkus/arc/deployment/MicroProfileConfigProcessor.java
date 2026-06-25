@@ -1,41 +1,33 @@
 package io.quarkus.arc.deployment;
 
-import static io.quarkus.arc.processor.Annotations.getParameterAnnotations;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.MAPPING;
-import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTIES;
-import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
-import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
-import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import jakarta.enterprise.inject.Vetoed;
 
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -46,52 +38,41 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.Annotations;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverInfo;
-import io.quarkus.arc.runtime.ConfigBeanCreator;
-import io.quarkus.arc.runtime.ConfigMappingCreator;
-import io.quarkus.arc.runtime.ConfigRecorder;
-import io.quarkus.arc.runtime.ConfigRecorder.ConfigValidationMetadata;
+import io.quarkus.arc.runtime.ConfigPropertiesCreator;
+import io.quarkus.arc.runtime.ConfigPropertyCreator;
+import io.quarkus.arc.runtime.MicroProfileConfigRecorder;
+import io.quarkus.arc.runtime.MicroProfileConfigRecorder.ConfigValidationMetadata;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigClassBuildItem;
-import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.ConfigPropertiesRegistrarBuildItem;
+import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
-import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
  * MicroProfile Config related build steps.
  */
-public class ConfigBuildStep {
+public class MicroProfileConfigProcessor {
 
-    static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
-    private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
-    private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
+    static final DotName MP_CONFIG_PROPERTY = DotName.createSimple(ConfigProperty.class.getName());
+    private static final DotName MP_CONFIG_PROPERTIES = DotName.createSimple(ConfigProperties.class.getName());
+    private static final DotName MP_CONFIG_VALUE = DotName.createSimple(ConfigValue.class.getName());
 
-    private static final DotName SR_CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
+    private static final DotName SR_CONFIG_VALUE = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
 
-    private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
-    private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
-    private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
-    private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
+    private static final DotName MAP = DotName.createSimple(Map.class.getName());
+    private static final DotName SET = DotName.createSimple(Set.class.getName());
+    private static final DotName LIST = DotName.createSimple(List.class.getName());
+    private static final DotName SUPPLIER = DotName.createSimple(Supplier.class.getName());
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -112,7 +93,7 @@ public class ConfigBuildStep {
                 continue;
             }
 
-            AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY_NAME);
+            AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY);
             if (configProperty != null) {
                 // Register a custom bean for injection points that are not handled by ConfigProducer
                 Type injectedType = injectionPoint.getRequiredType();
@@ -130,13 +111,13 @@ public class ConfigBuildStep {
                                 .reason(getClass().getName() + " Custom config bean")
                                 .build());
             }
-            DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
+            DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigPropertyCreator.class.getName())
                     : type.name();
             syntheticBeans.produce(SyntheticBeanBuildItem.configure(implClazz)
-                    .creator(ConfigBeanCreator.class)
+                    .creator(ConfigPropertyCreator.class)
                     .providerType(type)
                     .types(type)
-                    .addQualifier(MP_CONFIG_PROPERTY_NAME)
+                    .addQualifier(MP_CONFIG_PROPERTY)
                     .param("requiredType", type.name().toString()).done());
         }
     }
@@ -144,8 +125,7 @@ public class ConfigBuildStep {
     @BuildStep
     void configPropertyInjectionPoints(
             ValidationPhaseBuildItem validationPhase,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ConfigPropertyBuildItem> configProperties) {
 
         // @Observes @Initialized(ApplicationScoped.class) requires validation at static init
         Set<MethodInfo> observerMethods = new HashSet<>();
@@ -166,7 +146,7 @@ public class ConfigBuildStep {
                 continue;
             }
 
-            AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY_NAME);
+            AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY);
             if (configProperty != null) {
                 AnnotationValue nameValue = configProperty.value("name");
                 AnnotationValue defaultValue = configProperty.value("defaultValue");
@@ -194,9 +174,9 @@ public class ConfigBuildStep {
                         || DotNames.OPTIONAL_DOUBLE.equals(injectedType.name())
                         || DotNames.INSTANCE.equals(injectedType.name())
                         || DotNames.PROVIDER.equals(injectedType.name())
-                        || SUPPLIER_NAME.equals(injectedType.name())
-                        || SR_CONFIG_VALUE_NAME.equals(injectedType.name())
-                        || MP_CONFIG_VALUE_NAME.equals(injectedType.name())) {
+                        || SUPPLIER.equals(injectedType.name())
+                        || SR_CONFIG_VALUE.equals(injectedType.name())
+                        || MP_CONFIG_VALUE.equals(injectedType.name())) {
                     // Never validate container objects
                     continue;
                 }
@@ -221,7 +201,7 @@ public class ConfigBuildStep {
     @BuildStep
     @Record(STATIC_INIT)
     void validateStaticInitConfigProperty(
-            ConfigRecorder recorder,
+            MicroProfileConfigRecorder recorder,
             List<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
@@ -235,7 +215,7 @@ public class ConfigBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     void validateRuntimeConfigProperty(
-            ConfigRecorder recorder,
+            MicroProfileConfigRecorder recorder,
             List<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
@@ -246,213 +226,117 @@ public class ConfigBuildStep {
                         .collect(toCollection(LinkedHashSet::new)));
     }
 
+    /**
+     * We veto the {@link org.eclipse.microprofile.config.inject.ConfigProperties} class bean, because we are going to
+     * replace it by a custom synthetic bean.
+     *
+     * @see #registerConfigPropertiesBeans(java.util.List, io.quarkus.deployment.annotations.BuildProducer)
+     */
     @BuildStep
     AnnotationsTransformerBuildItem vetoMPConfigProperties() {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return CLASS.equals(kind);
+        return new AnnotationsTransformerBuildItem(
+                AnnotationTransformation.forClasses()
+                        .whenAnyMatch(MP_CONFIG_PROPERTIES)
+                        .transform(context -> context.add(Vetoed.class)));
+    }
+
+    @BuildStep
+    void discoverConfigProperties(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<ConfigPropertiesBuildItem> configProperties) {
+
+        for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(MP_CONFIG_PROPERTIES)) {
+            AnnotationTarget target = instance.target();
+            if (!target.kind().equals(CLASS)) {
+                continue;
             }
 
-            public void transform(TransformationContext context) {
-                if (context.getAnnotations().stream()
-                        .anyMatch(annotation -> annotation.name().equals(MP_CONFIG_PROPERTIES_NAME))) {
-                    context.transform()
-                            .add(DotNames.VETOED)
-                            .add(DotNames.UNREMOVABLE)
-                            .done();
-                }
-            }
-        });
+            AnnotationValue annotationPrefix = instance.value("prefix");
+            ClassInfo configClass = target.asClass();
+            String prefix = annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)
+                    ? annotationPrefix.asString()
+                    : "";
+            configProperties.produce(new ConfigPropertiesBuildItem(configClass, prefix, combinedIndex.getIndex()));
+        }
     }
 
     @BuildStep
     void generateConfigProperties(
-            NativeConfig nativeConfig,
-            ConfigurationBuildItem configItem,
-            CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ConfigClassBuildItem> configClasses,
-            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
+            List<ConfigPropertiesBuildItem> configProperties,
+            BuildProducer<GeneratedConfigClassBuildItem> configClasses) {
 
-        Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
-        processConfigClasses(nativeConfig, configItem, combinedIndex, generatedConfigClasses, reflectiveClasses,
-                reflectiveMethods,
-                configClasses, additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
-
-        for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {
-            generatedClasses.produce(generatedConfigClass);
+        for (ConfigPropertiesBuildItem properties : configProperties) {
+            configClasses.produce(GeneratedConfigClassBuildItem.of(properties.getConfigClass().name()));
         }
     }
 
     @BuildStep
-    void registerConfigMappingsBean(
-            BeanRegistrationPhaseBuildItem beanRegistration,
-            List<ConfigClassBuildItem> configClasses,
-            BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
+    void registerConfigPropertiesBeans(
+            List<ConfigPropertiesBuildItem> configProperties,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
 
-        if (configClasses.isEmpty()) {
-            return;
-        }
-
-        // Generate the mappings beans
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (!configClass.isMapping()) {
-                continue;
-            }
-
-            BeanConfigurator<Object> bean = beanRegistration.getContext()
-                    .configure(configClass.getConfigClass())
+        for (ConfigPropertiesBuildItem configClass : configProperties) {
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator bean = SyntheticBeanBuildItem
+                    .configure(configClass.getConfigClass().name())
                     .types(configClass.getTypes().toArray(new Type[] {}))
-                    .creator(ConfigMappingCreator.class)
-                    .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
-                    .param("type", configClass.getConfigClass())
-                    .param("prefix", configClass.getPrefix());
-
-            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
-                bean.unremovable();
-            }
-
-            beanConfigurator.produce(new BeanConfiguratorBuildItem(bean));
-        }
-    }
-
-    @BuildStep
-    void registerConfigPropertiesBean(
-            BeanRegistrationPhaseBuildItem beanRegistration,
-            List<ConfigClassBuildItem> configClasses,
-            BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
-
-        if (configClasses.isEmpty()) {
-            return;
-        }
-
-        // Generate the mappings beans
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (!configClass.isProperties()) {
-                continue;
-            }
-
-            BeanConfigurator<Object> bean = beanRegistration.getContext()
-                    .configure(configClass.getConfigClass())
-                    .types(configClass.getTypes().toArray(new Type[] {}))
-                    .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
+                    .addQualifier(create(MP_CONFIG_PROPERTIES, null,
                             new AnnotationValue[] {
                                     createStringValue("prefix", configClass.getPrefix())
                             }))
-                    .creator(ConfigMappingCreator.class)
                     .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
+                    .creator(ConfigPropertiesCreator.class)
                     .param("type", configClass.getConfigClass())
                     .param("prefix", configClass.getPrefix());
 
-            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
+            if (configClass.getConfigClass().hasDeclaredAnnotation(DotNames.UNREMOVABLE)) {
                 bean.unremovable();
             }
 
-            beanConfigurator.produce(new BeanConfiguratorBuildItem(bean));
+            syntheticBean.produce(bean.done());
         }
     }
 
+    /**
+     * Looks for prefixes overrides in injection points to provide the required registration in
+     * {@link io.smallrye.config.SmallRyeConfig}.
+     * <p>
+     * It uses the {@link io.quarkus.arc.deployment.ValidationPhaseBuildItem} to determine which injection points
+     * are actually used (the list does not contain the unused ones), to register only the required config classes
+     * with {@link io.smallrye.config.SmallRyeConfig}. Otherwise, it may fail with missing configuration, even if the
+     * injection point is unused.
+     */
     @BuildStep
-    void validateConfigMappingsInjectionPoints(
+    void activeConfigPropertiesInjectionPoints(
             ArcConfig arcConfig,
             ValidationPhaseBuildItem validationPhase,
-            List<UnremovableBeanBuildItem> unremovableBeans,
-            List<ConfigClassBuildItem> configClasses,
-            BuildProducer<ConfigMappingBuildItem> configMappings) {
+            List<ConfigPropertiesBuildItem> configProperties,
+            BuildProducer<ConfigPropertiesRegistrarBuildItem> configPropertiesRegistrar) {
 
-        if (configClasses.isEmpty()) {
-            return;
-        }
-
-        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
-        Set<ConfigMappingBuildItem> toRegister = new HashSet<>();
+        Map<String, Set<String>> toRegister = new HashMap<>();
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
-            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
-            ConfigClassBuildItem configClass = configMappingTypes.get(type);
-            if (configClass != null) {
-                AnnotationTarget target = injectionPoint.getAnnotationTarget();
-                AnnotationInstance mapping = null;
-
-                // target can be null for synthetic injection point
-                if (target != null) {
-                    if (target.kind().equals(FIELD)) {
-                        mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
-                    } else if (target.kind().equals(METHOD_PARAMETER)) {
-                        MethodParameterInfo methodParameterInfo = target.asMethodParameter();
-                        if (methodParameterInfo.type().name().equals(type.name())) {
-                            Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
-                                    validationPhase.getBeanProcessor().getBeanDeployment(),
-                                    target.asMethodParameter().method(), methodParameterInfo.position());
-                            mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
-                        }
-                    }
-                }
-
-                AnnotationValue annotationPrefix = null;
-                if (mapping != null) {
-                    annotationPrefix = mapping.value("prefix");
-                }
-
-                String prefix = annotationPrefix != null ? annotationPrefix.asString() : configClass.getPrefix();
-                toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), prefix));
-            }
-        }
-
-        if (arcConfig.shouldEnableBeanRemoval()) {
-            Set<DotName> unremovableClassNames = unremovableBeans.stream()
-                    .map(UnremovableBeanBuildItem::getClassNames)
-                    .flatMap(Collection::stream)
-                    .collect(toSet());
-
-            for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
-                if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)
-                        || unremovableClassNames.contains(configClass.getName())) {
-                    toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
-                }
-            }
-        }
-
-        toRegister.forEach(configMappings::produce);
-    }
-
-    @BuildStep
-    void validateConfigPropertiesInjectionPoints(
-            ArcConfig arcConfig,
-            ValidationPhaseBuildItem validationPhase,
-            List<ConfigClassBuildItem> configClasses,
-            BuildProducer<ConfigPropertiesBuildItem> configProperties) {
-
-        if (configClasses.isEmpty()) {
-            return;
-        }
-
-        Map<Type, ConfigClassBuildItem> configPropertiesTypes = configClassesToTypesMap(configClasses, PROPERTIES);
-        Set<ConfigPropertiesBuildItem> toRegister = new HashSet<>();
-        for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
-            AnnotationInstance properties = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES_NAME);
+            AnnotationInstance properties = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES);
             if (properties != null) {
                 Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
-                ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
-                if (configClass != null) {
-                    AnnotationValue annotationPrefix = properties.value("prefix");
-                    String prefix = annotationPrefix != null && !annotationPrefix.asString().equals(UNCONFIGURED_PREFIX)
-                            ? annotationPrefix.asString()
-                            : configClass.getPrefix();
-                    toRegister.add(new ConfigPropertiesBuildItem(configClass.getConfigClass(), prefix));
+                for (ConfigPropertiesBuildItem configClass : configProperties) {
+                    if (configClass.getTypes().contains(type)) {
+                        AnnotationValue annotationPrefix = properties.value("prefix");
+                        String prefix = annotationPrefix != null ? annotationPrefix.asString() : configClass.getPrefix();
+                        toRegister.putIfAbsent(configClass.getConfigClassName(), new HashSet<>());
+                        toRegister.get(configClass.getConfigClassName()).add(prefix);
+                    }
                 }
             }
         }
 
-        for (ConfigClassBuildItem configClass : configPropertiesTypes.values()) {
+        for (ConfigPropertiesBuildItem configClass : configProperties) {
             if (!arcConfig.shouldEnableBeanRemoval()
-                    || !validationPhase.getContext().beans().withBeanType(configClass.getConfigClass()).isEmpty()) {
-                toRegister.add(new ConfigPropertiesBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
+                    || configClass.getConfigClass().hasDeclaredAnnotation(DotNames.UNREMOVABLE)) {
+                toRegister.putIfAbsent(configClass.getConfigClassName(), new HashSet<>());
+                toRegister.get(configClass.getConfigClassName()).add(configClass.getPrefix());
             }
         }
 
-        toRegister.forEach(configProperties::produce);
+        configPropertiesRegistrar.produce(new ConfigPropertiesRegistrarBuildItem(toRegister));
     }
 
     /**
@@ -468,24 +352,15 @@ public class ConfigBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     void registerConfigClasses(
-            RecorderContext context,
-            ConfigRecorder recorder,
-            List<ConfigPropertiesBuildItem> configProperties,
-            BuildProducer<ServiceStartBuildItem> serviceStart) throws Exception {
+            MicroProfileConfigRecorder recorder,
+            Optional<ConfigPropertiesRegistrarBuildItem> configPropertiesRegistrar,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
 
-        if (configProperties.isEmpty()) {
+        if (configPropertiesRegistrar.isEmpty()) {
             return;
         }
 
-        context.registerNonDefaultConstructor(
-                ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
-                configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
-                        .collect(toList()));
-
-        recorder.registerConfigProperties(
-                configProperties.stream()
-                        .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
-                        .collect(Collectors.toCollection(LinkedHashSet::new)));
+        recorder.registerConfigProperties(configPropertiesRegistrar.get().getConfigProperties());
 
         // Ensure that @ConfigProperties are registered before Startup events
         serviceStart.produce(new ServiceStartBuildItem("microprofile-config-properties"));
@@ -513,9 +388,9 @@ public class ConfigBuildStep {
                 DotNames.OPTIONAL_INT.equals(type.name()) ||
                 DotNames.OPTIONAL_LONG.equals(type.name()) ||
                 DotNames.OPTIONAL_DOUBLE.equals(type.name()) ||
-                MAP_NAME.equals(type.name()) ||
-                SET_NAME.equals(type.name()) ||
-                LIST_NAME.equals(type.name()) ||
+                MAP.equals(type.name()) ||
+                SET.equals(type.name()) ||
+                LIST.equals(type.name()) ||
                 DotNames.LONG.equals(type.name()) ||
                 DotNames.FLOAT.equals(type.name()) ||
                 DotNames.INTEGER.equals(type.name()) ||
@@ -524,9 +399,9 @@ public class ConfigBuildStep {
                 DotNames.SHORT.equals(type.name()) ||
                 DotNames.BYTE.equals(type.name()) ||
                 DotNames.CHARACTER.equals(type.name()) ||
-                SUPPLIER_NAME.equals(type.name()) ||
-                SR_CONFIG_VALUE_NAME.equals(type.name()) ||
-                MP_CONFIG_VALUE_NAME.equals(type.name());
+                SUPPLIER.equals(type.name()) ||
+                SR_CONFIG_VALUE.equals(type.name()) ||
+                MP_CONFIG_VALUE.equals(type.name());
     }
 
     private static ConfigValidationMetadata configPropertyToConfigValidation(ConfigPropertyBuildItem configProperty,
@@ -536,7 +411,7 @@ public class ConfigBuildStep {
 
         if (configProperty.getPropertyType().kind() != Kind.PRIMITIVE) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(typeName)
-                    .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property")
+                    .reason(MicroProfileConfigProcessor.class.getSimpleName() + " Configuration property")
                     .build());
         }
 
@@ -544,7 +419,7 @@ public class ConfigBuildStep {
             List<Type> argumentTypes = configProperty.getPropertyType().asParameterizedType().arguments();
             typeArgumentNames = new ArrayList<>(argumentTypes.size());
             final List<String> forReflection = new ArrayList<>(argumentTypes.size());
-            final var reason = ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
+            final var reason = MicroProfileConfigProcessor.class.getSimpleName() + " Configuration property's " + typeName
                     + " parameter";
             for (Type argumentType : argumentTypes) {
                 final var argTypeClassName = argumentType.name().toString();
@@ -562,18 +437,5 @@ public class ConfigBuildStep {
 
         return new ConfigValidationMetadata(configProperty.getPropertyName(), typeName, typeArgumentNames,
                 configProperty.getDefaultValue());
-    }
-
-    private static Map<Type, ConfigClassBuildItem> configClassesToTypesMap(List<ConfigClassBuildItem> configClasses,
-            ConfigClassBuildItem.Kind kind) {
-        Map<Type, ConfigClassBuildItem> configClassesTypes = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.getKind().equals(kind)) {
-                for (Type type : configClass.getTypes()) {
-                    configClassesTypes.put(type, configClass);
-                }
-            }
-        }
-        return configClassesTypes;
     }
 }

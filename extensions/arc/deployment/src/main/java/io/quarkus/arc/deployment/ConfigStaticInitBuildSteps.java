@@ -27,7 +27,7 @@ public class ConfigStaticInitBuildSteps {
             // Apply to all producer methods declared on io.smallrye.config.inject.ConfigProducer
             return m.declaringClass().name().equals(configProducerName)
                     && m.hasAnnotation(DotNames.PRODUCES)
-                    && m.hasAnnotation(ConfigBuildStep.MP_CONFIG_PROPERTY_NAME);
+                    && m.hasAnnotation(MicroProfileConfigProcessor.MP_CONFIG_PROPERTY);
         }).thenTransform(t -> {
             t.add(ConfigStaticInitCheck.class);
         }));

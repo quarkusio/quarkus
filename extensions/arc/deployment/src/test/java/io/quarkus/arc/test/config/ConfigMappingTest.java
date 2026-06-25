@@ -65,7 +65,6 @@ public class ConfigMappingTest {
                             "override.server.port=8080\n" +
                             "cloud.server.host=cloud\n" +
                             "cloud.server.port=9000\n" +
-                            "cloud.server.port=9000\n" +
                             "hierarchy.foo=bar"),
                             "application.properties"));
     @Inject
@@ -303,7 +302,7 @@ public class ConfigMappingTest {
         assertEquals("bar", defaults.bar());
         assertEquals("foo", config.getValue("defaults.foo", String.class));
 
-        List<String> propertyNames = stream(config.getPropertyNames().spliterator(), false).collect(toList());
+        List<String> propertyNames = stream(config.getPropertyNames().spliterator(), false).toList();
         assertTrue(propertyNames.contains("defaults.foo"));
     }
 

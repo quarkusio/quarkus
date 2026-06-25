@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
@@ -27,13 +28,13 @@ import io.smallrye.config.inject.ConfigProducerUtil;
  * @author Martin Kouba
  */
 @Recorder
-public class ConfigRecorder {
+public class MicroProfileConfigRecorder {
 
     public void validateConfigProperties(Set<ConfigValidationMetadata> properties) {
         Config config = ConfigProvider.getConfig();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            cl = ConfigRecorder.class.getClassLoader();
+            cl = MicroProfileConfigRecorder.class.getClassLoader();
         }
         Set<String> problems = new HashSet<>();
         List<Throwable> suppressed = new ArrayList<>();
@@ -46,7 +47,7 @@ public class ConfigRecorder {
             if (propertyType.isArray() || (propertyType.getTypeParameters().length > 0 && propertyType != Map.class
                     && propertyType != List.class && propertyType != Set.class)) {
                 effectivePropertyType = String.class;
-            } else if (property.getActualTypeArgumentNames().size() > 0) {
+            } else if (!property.getActualTypeArgumentNames().isEmpty()) {
                 // this is a really simplified way of constructing the generic types, but we don't need anything more complex
                 // here due to what SR Config checks (which is basically if the type is a collection)
                 Type[] genericTypes = new Type[(property.getActualTypeArgumentNames().size())];
@@ -75,8 +76,15 @@ public class ConfigRecorder {
         }
     }
 
-    public void registerConfigProperties(final Set<ConfigClass> configClasses) {
+    public void registerConfigProperties(final Map<String, Set<String>> configProperties) {
         try {
+            Set<ConfigClass> configClasses = new HashSet<>();
+            for (Entry<String, Set<String>> entry : configProperties.entrySet()) {
+                for (String prefix : entry.getValue()) {
+                    configClasses.add(ConfigClass
+                            .configClass(load(entry.getKey(), Thread.currentThread().getContextClassLoader()), prefix));
+                }
+            }
             SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
             ConfigMappings.registerConfigProperties(config, configClasses);
         } catch (ConfigValidationException e) {
@@ -114,13 +122,13 @@ public class ConfigRecorder {
     }
 
     public static class ConfigValidationMetadata {
-        private String name;
-        private String rawTypeName;
-        private List<String> actualTypeArgumentNames;
-        private String defaultValue;
+        private final String name;
+        private final String rawTypeName;
+        private final List<String> actualTypeArgumentNames;
+        private final String defaultValue;
 
         @RecordableConstructor
-        public ConfigValidationMetadata(final String name, final String rawTypeName, List<String> actualTypeArgumentNames,
+        public ConfigValidationMetadata(final String name, final String rawTypeName, final List<String> actualTypeArgumentNames,
                 final String defaultValue) {
             this.name = name;
             this.rawTypeName = rawTypeName;
@@ -130,10 +138,6 @@ public class ConfigRecorder {
 
         public String getName() {
             return name;
-        }
-
-        public void setName(final String name) {
-            this.name = name;
         }
 
         public String getRawTypeName() {

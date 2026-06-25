@@ -38,6 +38,8 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
@@ -188,12 +190,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection) {
 
         DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
         if (buildTimeConfig.serializerAutodetectionEnabled()) {
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.serializerGenerationEnabled() ? generatedClass : null, reflection);
+                    buildTimeConfig.serializerGenerationEnabled() ? generatedClass : null,
+                    generatedResources, generatedServiceProviders, reflection);
         }
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
@@ -224,6 +229,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection) {
         Map<String, String> alreadyGeneratedSerializers = new HashMap<>();
         Map<String, String> alreadyGeneratedDeserializers = new HashMap<>();
@@ -237,8 +244,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             Type incomingType = getIncomingTypeFromMethod(method);
 
-            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
-                    alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
         }
 
         for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING)) {
@@ -257,7 +264,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                 handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
-            }, generatedClass, reflection, alreadyGeneratedSerializers);
+            }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
         }
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnInjectionPoints(DotNames.CHANNEL)) {
@@ -274,8 +281,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
 
-            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
-                    alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
             processKafkaTransactions(discovery, config, channelName, injectionPointType);
 
@@ -287,11 +294,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                             getChannelOutgoingPropertyName(channelName, "key.serializer"), keySerializer);
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                             getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
-                }, generatedClass, reflection, alreadyGeneratedSerializers);
+                }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
                 extractKeyValueType(replyType, (key, value, isBatchType) -> {
-                    Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
+                    Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass,
+                            generatedResources, generatedServiceProviders, reflection,
                             alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
-                    Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass, reflection,
+                    Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass,
+                            generatedResources, generatedServiceProviders, reflection,
                             alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
@@ -309,7 +318,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                             getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                     handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
-                }, generatedClass, reflection, alreadyGeneratedSerializers);
+                }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
             }
         }
     }
@@ -333,12 +342,17 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processIncomingType(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Type incomingType, String channelName,
-            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedDeserializers, Map<String, String> alreadyGeneratedSerializers) {
         extractKeyValueType(incomingType, (key, value, isBatchType) -> {
-            Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
+            Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass,
+                    generatedResources, generatedServiceProviders, reflection,
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
-            Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass, reflection,
+            Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass,
+                    generatedResources, generatedServiceProviders, reflection,
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
             produceRuntimeConfigurationDefaultBuildItem(discovery, config,
@@ -552,11 +566,14 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
             BiConsumer<Result, Result> serializerAcceptor, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, String> alreadyGeneratedSerializer) {
         extractKeyValueType(outgoingType, (key, value, isBatch) -> {
-            Result keySerializer = serializerFor(discovery, key, generatedClass, reflection,
-                    alreadyGeneratedSerializer);
-            Result valueSerializer = serializerFor(discovery, value, generatedClass, reflection,
+            Result keySerializer = serializerFor(discovery, key, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedSerializer);
+            Result valueSerializer = serializerFor(discovery, value, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection,
                     alreadyGeneratedSerializer);
             serializerAcceptor.accept(keySerializer, valueSerializer);
         });
@@ -871,6 +888,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             boolean key,
             String channelName,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedDeserializers,
             Map<String, String> alreadyGeneratedSerializers) {
@@ -885,7 +904,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Check if already generated
             String generatedDeserializerClassName = alreadyGeneratedDeserializers.get(type.name().toString());
             if (generatedDeserializerClassName == null) {
-                generatedDeserializerClassName = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
+                generatedDeserializerClassName = JacksonSerdeGenerator.generateDeserializer(generatedClass, generatedResources,
+                        generatedServiceProviders, type);
                 alreadyGeneratedDeserializers.put(type.name().toString(), generatedDeserializerClassName);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
                 // Deserializers are access by reflection.
@@ -896,7 +916,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
             // if the channel has a DLQ config generate a serializer as well
             if (hasDLQConfig(channelName, discovery.getConfig())) {
-                Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
+                Result serializer = serializerFor(discovery, type, generatedClass, generatedResources,
+                        generatedServiceProviders, reflection, alreadyGeneratedSerializers);
                 if (serializer != null) {
                     result = Result.of(generatedDeserializerClassName)
                             .with(key, "dead-letter-queue.key.serializer", serializer.value)
@@ -911,6 +932,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, true);
@@ -924,7 +947,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Check if already generated
             String generatedSerializerClassName = alreadyGeneratedSerializers.get(type.name().toString());
             if (generatedSerializerClassName == null) {
-                generatedSerializerClassName = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
+                generatedSerializerClassName = JacksonSerdeGenerator.generateSerializer(generatedClass, generatedResources,
+                        generatedServiceProviders, type);
                 alreadyGeneratedSerializers.put(type.name().toString(), generatedSerializerClassName);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
                 // Serializers are access by reflection.

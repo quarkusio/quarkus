@@ -26,7 +26,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -48,11 +47,13 @@ public class TlsCertificateReloader {
      * @throws IllegalArgumentException if any of the configuration is invalid
      */
     public static long initCertReloadingAction(Vertx vertx, HttpServer server,
-            HttpServerOptions options, ServerSslConfig sslConfig,
+            io.vertx.core.http.HttpServerConfig httpServerConfig, ServerSSLOptions sslOptions,
+            ServerSslConfig sslConfig,
             TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {
 
-        if (options == null) {
-            throw new IllegalArgumentException("Unable to configure TLS reloading - The HTTP server options were not provided");
+        if (httpServerConfig == null) {
+            throw new IllegalArgumentException(
+                    "Unable to configure TLS reloading - The HTTP server configuration was not provided");
         }
 
         boolean useRegistry = false;
@@ -65,7 +66,7 @@ public class TlsCertificateReloader {
         ServerSSLOptions ssl = null;
         TlsConfiguration tlsConfiguration = null;
         if (!useRegistry) {
-            ssl = (ServerSSLOptions) options.getSslOptions();
+            ssl = sslOptions;
             if (ssl == null) {
                 throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }

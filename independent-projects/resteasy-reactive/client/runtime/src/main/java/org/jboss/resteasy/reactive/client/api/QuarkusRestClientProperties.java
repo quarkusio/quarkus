@@ -86,6 +86,11 @@ public class QuarkusRestClientProperties {
     public static final String ALPN = "io.quarkus.rest.client.alpn";
 
     /**
+     * Set to true to explicitly use the HTTP/3 version.
+     */
+    public static final String HTTP3 = "io.quarkus.rest.client.http3";
+
+    /**
      * If set to true, the stacktrace of the invocation of the REST Client method is captured
      */
     public static final String CAPTURE_STACKTRACE = "io.quarkus.rest.client.capture-stacktrace";

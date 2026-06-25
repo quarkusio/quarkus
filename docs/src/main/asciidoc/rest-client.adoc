@@ -550,6 +550,24 @@ quarkus.rest-client.alpn=true
 quarkus.rest-client.extensions-api.alpn=true
 ----
 
+[[http3]]
+=== HTTP/3 Support
+
+The REST Client can connect to HTTP/3 servers when the `quarkus-http3` extension is on the classpath.
+HTTP/3 is disabled by default.
+To enable it:
+
+[source, properties]
+----
+// for all REST Clients:
+quarkus.rest-client.http3=true
+// or for a single REST Client:
+quarkus.rest-client.my-client.http3=true
+----
+
+The target server must support HTTP/3 and the connection must use TLS.
+See the xref:http3-reference.adoc[HTTP/3 reference guide] for server-side setup and additional details.
+
 == Programmatic client creation with QuarkusRestClientBuilder
 
 Instead of annotating the client with `@RegisterRestClient`, and injecting

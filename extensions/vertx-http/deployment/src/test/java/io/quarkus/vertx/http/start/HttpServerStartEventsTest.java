@@ -50,12 +50,13 @@ public class HttpServerStartEventsTest {
         static final CountDownLatch HTTPS = new CountDownLatch(1);
 
         void httpStarted(@ObservesAsync HttpServerStart start) {
-            assertNotNull(start.options());
+            assertNotNull(start.config());
             HTTP.countDown();
         }
 
         static void httpsStarted(@ObservesAsync HttpsServerStart start) {
-            assertNotNull(start.options());
+            assertNotNull(start.config());
+            assertNotNull(start.sslOptions());
             HTTPS.countDown();
         }
 

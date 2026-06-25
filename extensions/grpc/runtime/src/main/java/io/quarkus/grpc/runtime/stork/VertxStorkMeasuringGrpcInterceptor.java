@@ -28,14 +28,18 @@ public class VertxStorkMeasuringGrpcInterceptor implements ClientInterceptor, Pr
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions,
             Channel next) {
         boolean recordTime = method.getType() == MethodDescriptor.MethodType.UNARY;
-        Context context = Context.current().withValues(
-                STORK_SERVICE_INSTANCE, new AtomicReference<>(),
+        AtomicReference<ServiceInstance> serviceInstanceRef = new AtomicReference<>();
+        Context storkContext = Context.current().withValues(
+                STORK_SERVICE_INSTANCE, serviceInstanceRef,
                 STORK_MEASURE_TIME, recordTime);
-        Context oldContext = context.attach();
+        Context previous = storkContext.attach();
+        Runnable detachContext = () -> storkContext.detach(previous);
         try {
-            return new VertxStorkMeasuringCall<>(next.newCall(method, callOptions), recordTime);
-        } finally {
-            context.detach(oldContext);
+            return new VertxStorkMeasuringCall<>(next.newCall(method, callOptions), recordTime, serviceInstanceRef,
+                    detachContext);
+        } catch (RuntimeException | Error e) {
+            detachContext.run();
+            throw e;
         }
     }
 
@@ -45,24 +49,17 @@ public class VertxStorkMeasuringGrpcInterceptor implements ClientInterceptor, Pr
     }
 
     private static class VertxStorkMeasuringCall<ReqT, RespT> extends AbstractStorkMeasuringCall<ReqT, RespT> {
-        ServiceInstance serviceInstance;
+        private final Runnable detachContext;
 
-        protected VertxStorkMeasuringCall(ClientCall<ReqT, RespT> delegate, boolean recordTime) {
-            super(delegate, recordTime);
-        }
-
-        @Override
-        protected ServiceInstance serviceInstance() {
-            return serviceInstance;
+        protected VertxStorkMeasuringCall(ClientCall<ReqT, RespT> delegate, boolean recordTime,
+                AtomicReference<ServiceInstance> serviceInstanceRef, Runnable detachContext) {
+            super(delegate, recordTime, serviceInstanceRef);
+            this.detachContext = detachContext;
         }
 
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            AtomicReference<ServiceInstance> ref = STORK_SERVICE_INSTANCE.get();
-            if (ref != null) {
-                serviceInstance = ref.get();
-            }
-            super.start(new StorkMeasuringCallListener<>(responseListener, this), metadata);
+            super.start(new StorkMeasuringCallListener<>(responseListener, this, detachContext), metadata);
         }
     }
 }

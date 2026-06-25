@@ -4,8 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -26,25 +26,22 @@ public class ResourceImplementor {
     public String implement(ClassOutput classOutput, String resourceType, String entityType) {
         String className = resourceType + "ResourceImpl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(className)
-                .interfaces(RestDataResource.class)
-                .build();
 
-        classCreator.addAnnotation(ApplicationScoped.class);
-        methodsImplementor.implementIterable(classCreator, resourceType);
-        methodsImplementor.implementList(classCreator, resourceType);
-        methodsImplementor.implementPagedList(classCreator, resourceType);
-        methodsImplementor.implementAddList(classCreator, resourceType);
-        methodsImplementor.implementListById(classCreator, resourceType);
-        methodsImplementor.implementListPageCount(classCreator, resourceType);
-        methodsImplementor.implementGet(classCreator, resourceType);
-        methodsImplementor.implementAdd(classCreator, resourceType);
-        methodsImplementor.implementUpdate(classCreator, resourceType, entityType);
-        methodsImplementor.implementDelete(classCreator, resourceType);
-
-        classCreator.close();
+        Gizmo.create(classOutput).class_(className, cc -> {
+            cc.implements_(RestDataResource.class);
+            cc.addAnnotation(ApplicationScoped.class);
+            cc.defaultConstructor();
+            methodsImplementor.implementIterable(cc, resourceType);
+            methodsImplementor.implementList(cc, resourceType);
+            methodsImplementor.implementPagedList(cc, resourceType);
+            methodsImplementor.implementAddList(cc, resourceType);
+            methodsImplementor.implementListById(cc, resourceType);
+            methodsImplementor.implementListPageCount(cc, resourceType);
+            methodsImplementor.implementGet(cc, resourceType);
+            methodsImplementor.implementAdd(cc, resourceType);
+            methodsImplementor.implementUpdate(cc, resourceType, entityType);
+            methodsImplementor.implementDelete(cc, resourceType);
+        });
 
         LOGGER.tracef("Completed generation of '%s'", className);
         return className;

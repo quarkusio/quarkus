@@ -22,6 +22,7 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
@@ -364,7 +365,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             if (i.contentType() != null) {
                 headers.add(HttpHeaders.CONTENT_TYPE, i.contentType());
             }
-            ret.add(i.name(), Paths.get(i.uploadedFileName()), i.fileName(), headers);
+            ret.add(i.name(), Paths.get(i.uploadedFileName()), HeaderUtil.sanitizeFileName(i.fileName()), headers);
         }
         for (var i : request.formAttributes()) {
             ret.add(i.getKey(), i.getValue());

@@ -2,19 +2,26 @@ package io.quarkus.resteasy.reactive.client.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.UUID;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -55,6 +62,39 @@ class ContentTypeHeaderTest {
         SomeClient someClient = target.proxy(SomeClient.class);
         assertThat(someClient.echoText("some-other-text"))
                 .isEqualToIgnoringCase("some-other-text");
+    }
+
+    @Test
+    void testContentTypeInputStream() throws Exception {
+        try (final var client = ClientBuilder.newBuilder().build()) {
+            final var requestBuilder = client.target(uri)//
+                    .request()//
+                    .accept(MediaType.TEXT_PLAIN);
+
+            try (final var is = new ByteArrayInputStream("Test".getBytes(StandardCharsets.UTF_8));
+                    final var response = requestBuilder.post(Entity.entity(is, "application/zip"))) {
+                assertThat(response.getStatusInfo().getFamily()).isEqualTo(Status.Family.SUCCESSFUL);
+                assertThat(response.readEntity(String.class)).isEqualTo("application/zip");
+            }
+        }
+    }
+
+    @Test
+    void testContentTypeFile(@TempDir java.nio.file.Path tmpDir) throws Exception {
+        try (final var client = ClientBuilder.newBuilder().build()) {
+            final var requestBuilder = client.target(uri)//
+                    .request()//
+                    .accept(MediaType.TEXT_PLAIN);
+
+            final var file = Files.createFile(tmpDir.resolve("upload-file" + UUID.randomUUID()));
+
+            Files.writeString(file, "Test");
+
+            try (final var response = requestBuilder.post(Entity.entity(file, "application/zip"))) {
+                assertThat(response.getStatusInfo().getFamily()).isEqualTo(Status.Family.SUCCESSFUL);
+                assertThat(response.readEntity(String.class)).isEqualTo("application/zip");
+            }
+        }
     }
 
     @Path("/")

@@ -1735,7 +1735,158 @@ If the incoming record does have a _null_ key, the `mp.messaging.outgoing.$chann
 Kafka Transactions allows managing consumer offsets inside a transaction, together with produced messages.
 This enables coupling a consumer with a transactional producer in a _consume-transform-produce_ pattern, also known as *exactly-once processing*.
 
-The `KafkaTransactions` custom emitter provides a way to apply exactly-once processing to an incoming Kafka message inside a transaction.
+==== Declarative Exactly-Once with `@ExactlyOnce`
+
+The simplest way to enable exactly-once processing is to annotate a processor method with `@ExactlyOnce`.
+The method must have both `@Incoming` and `@Outgoing` annotations, and both channels must be managed by the Kafka connector:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.quarkus.smallrye.reactivemessaging.kafka.ExactlyOnce;
+import io.smallrye.reactive.messaging.kafka.Record;
+
+@ApplicationScoped
+public class OrderProcessor {
+
+    @Incoming("orders-in")
+    @Outgoing("orders-out")
+    @ExactlyOnce
+    Record<String, Integer> process(Record<String, Integer> order) {
+        return Record.of(order.key(), order.value() + 1);
+    }
+}
+----
+
+Each incoming record is consumed and the result is produced within a single Kafka transaction, ensuring atomic consumption and production -- no duplicates and no message loss.
+
+The method can also return a `List` to produce multiple records per input:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+List<Record<String, Integer>> process(Record<String, Integer> order) {
+    return List.of(
+            Record.of(order.key(), order.value() * 10),
+            Record.of(order.key(), order.value() * 10 + 1));
+}
+----
+
+Quarkus auto-configures the following Kafka properties when `@ExactlyOnce` is detected:
+
+[cols="1,1"]
+|===
+| Property | Value
+
+| `transactional.id` (outgoing)
+| `${quarkus.application.name}-<channel-name>`
+
+| `enable.idempotence` (outgoing)
+| `true`
+
+| `acks` (outgoing)
+| `all`
+
+| `commit-strategy` (incoming)
+| `ignore`
+
+| `isolation.level` (incoming)
+| `read_committed`
+|===
+
+These can be overridden in `application.properties` if needed.
+
+The method can also return reactive types (`Uni`, `CompletionStage`).
+In that case, the method runs non-blocking and the transaction commits when the returned `Uni` completes:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+Uni<Record<String, Integer>> process(Record<String, Integer> order) {
+    return invokeExternalService(order)
+            .onItem().transform(result -> Record.of(order.key(), result));
+}
+----
+
+[NOTE]
+====
+`@ExactlyOnce` methods must use payload parameters (e.g., `Record<K, V>`, plain types), not `Message<?>`.
+====
+
+===== Combining with Database Transactions
+
+`@ExactlyOnce` can be combined with database transactions.
+The database transaction runs inside the Kafka transaction: if the database commit fails, the Kafka transaction is rolled back too.
+If the database commit succeeds but the Kafka transaction fails, the database changes persist but the message will be reprocessed.
+So you need to design your consumer to be idempotent to handle this case.
+For stronger guarantees, consider using the transactional outbox pattern.
+
+For **Hibernate ORM** (blocking), use `@Transactional`:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+@Transactional
+Record<String, Order> process(Record<String, Order> order) {
+    OrderEntity entity = new OrderEntity(order.value());
+    entity.persist();
+    return Record.of(order.key(), order.value());
+}
+----
+
+For **Hibernate Reactive**, use `@Transactional` or `@WithTransaction` with a reactive return type:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+@Transactional
+Uni<Record<String, Order>> process(Record<String, Order> order) {
+    OrderEntity entity = new OrderEntity(order.value());
+    return entity.persist()
+            .map(e -> Record.of(order.key(), order.value()));
+}
+----
+
+===== Error Handling
+
+When an `@ExactlyOnce` method throws an exception, the Kafka transaction is aborted and the consumer offset is reset to the last committed position.
+The message will be retried automatically on the next poll.
+If the method is also annotated with `@Transactional`, the database transaction is rolled back as well.
+
+===== Routing to a Different Topic
+
+To route records to a different topic within the exactly-once transaction (e.g., a dead-letter topic), return a `ProducerRecord` with the target topic:
+
+[source, java]
+----
+@Incoming("orders-in")
+@Outgoing("orders-out")
+@ExactlyOnce
+ProducerRecord<String, Order> process(Record<String, Order> order) {
+    if (order.value().isInvalid()) {
+        return new ProducerRecord<>("orders-dlq", order.key(), order.value());
+    }
+    return new ProducerRecord<>("orders-out", order.key(), order.value());
+}
+----
+
+The record is sent transactionally — if the transaction is aborted, neither the main output nor the dead-letter record is published.
+
+==== Manual Exactly-Once with `KafkaTransactions`
+
+For more advanced use cases, the `KafkaTransactions` custom emitter provides a way to apply exactly-once processing to an incoming Kafka message inside a transaction.
 
 The following example includes a batch of Kafka records inside a transaction.
 

@@ -87,4 +87,25 @@ public class KafkaConnectorTest {
         await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets").as(PET_TYPE_REF).size()));
         await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets-consumed").as(PET_TYPE_REF).size()));
     }
+
+    @Test
+    public void testExactlyOnceWithTransaction() {
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<String> processed = get("/kafka/exactly-once-fruit-processed").as(new TypeRef<List<String>>() {
+            });
+            Assertions.assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
+        });
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<String> results = get("/kafka/exactly-once-fruit-results").as(new TypeRef<List<String>>() {
+            });
+            Assertions.assertTrue(results.size() >= 4, "Expected at least 4 results, got " + results.size());
+            Assertions.assertTrue(results.contains("persisted-fruit-0"));
+        });
+        // Verify fruits were persisted to the database by the @WithTransaction method
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<?> fruits = get("/kafka/exactly-once-fruits").as(new TypeRef<List<?>>() {
+            });
+            Assertions.assertTrue(fruits.size() >= 4, "Expected at least 4 persisted fruits, got " + fruits.size());
+        });
+    }
 }

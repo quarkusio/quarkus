@@ -17,11 +17,12 @@ public abstract class ExactlyOnceInvoker implements Invoker {
 
     private static final int SYNTHETIC_PARAM_COUNT = 2;
 
-    private final String outgoingChannel;
-    private volatile KafkaTransactions<Object> kafkaTransactions;
+    private final KafkaTransactions<Object> kafkaTransactions;
 
+    @SuppressWarnings("unchecked")
     protected ExactlyOnceInvoker(String outgoingChannel) {
-        this.outgoingChannel = outgoingChannel;
+        ChannelRegistry registry = CDI.current().select(ChannelRegistry.class).get();
+        this.kafkaTransactions = registry.getEmitter(outgoingChannel, KafkaTransactions.class);
     }
 
     protected abstract Object invokeBean(Object... args);
@@ -33,7 +34,7 @@ public abstract class ExactlyOnceInvoker implements Invoker {
 
         Object[] beanArgs = Arrays.copyOf(args, args.length - SYNTHETIC_PARAM_COUNT);
 
-        return invokeBeanInTransaction(getTransactions(), beanArgs, recordMeta, batchMeta);
+        return invokeBeanInTransaction(kafkaTransactions, beanArgs, recordMeta, batchMeta);
     }
 
     protected Object invokeBeanInTransaction(KafkaTransactions<Object> tx, Object[] beanArgs,
@@ -71,11 +72,4 @@ public abstract class ExactlyOnceInvoker implements Invoker {
         }
     }
 
-    protected KafkaTransactions<Object> getTransactions() {
-        if (kafkaTransactions == null) {
-            ChannelRegistry registry = CDI.current().select(ChannelRegistry.class).get();
-            kafkaTransactions = registry.getEmitter(outgoingChannel, KafkaTransactions.class);
-        }
-        return kafkaTransactions;
-    }
 }

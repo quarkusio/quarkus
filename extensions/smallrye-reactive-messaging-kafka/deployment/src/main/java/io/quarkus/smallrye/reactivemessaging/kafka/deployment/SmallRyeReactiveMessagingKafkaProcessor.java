@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
 import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
 import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.deployment.DotNames.VOID_BOXED;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
@@ -233,7 +234,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 }
             }
 
-            if (method.returnType().kind() == Type.Kind.VOID) {
+            if (method.returnType().name().equals(DotNames.VOID)
+                    || method.returnType().name().equals(VOID_BOXED)) {
                 throw new IllegalArgumentException(
                         "@ExactlyOnce on method " + methodName
                                 + " must return a value to produce to the outgoing channel");
@@ -248,6 +250,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             DotName returnTypeName = method.returnType().name();
             boolean reactive = DotNames.UNI.equals(returnTypeName) || DotNames.MULTI.equals(returnTypeName)
                     || DotNames.COMPLETION_STAGE.equals(returnTypeName);
+
+            if (reactive && method.returnType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                DotName typeArg = method.returnType().asParameterizedType().arguments().get(0).name();
+                if (typeArg.equals(VOID_BOXED)) {
+                    throw new IllegalArgumentException(
+                            "@ExactlyOnce on method " + methodName
+                                    + " must return a value to produce to the outgoing channel");
+                }
+            }
 
             if (method.hasAnnotation(DotNames.WITH_TRANSACTION) && !reactive) {
                 throw new IllegalArgumentException(
@@ -302,6 +313,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     getChannelIncomingPropertyName(incomingChannel, "commit-strategy"), "ignore");
             produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
                     getChannelIncomingPropertyName(incomingChannel, "isolation.level"), "read_committed");
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelIncomingPropertyName(incomingChannel, "failure-strategy"), "fail");
 
             // Register a KafkaTransactions emitter for the outgoing channel
             emitters.produce(InjectedEmitterBuildItem.of(outgoingChannel,
@@ -329,7 +342,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             String invokerClassName = generatedName.replace('/', '.');
 
             customInvokers.produce(CustomInvokerBuildItem
-                    .builder(method.declaringClass().name().toString(), method.name(), invokerClassName)
+                    .builder(CustomInvokerBuildItem.mediatorMethodId(method), invokerClassName)
                     .shape(Shape.SUBSCRIBER)
                     .production(MediatorConfiguration.Production.NONE)
                     .acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)

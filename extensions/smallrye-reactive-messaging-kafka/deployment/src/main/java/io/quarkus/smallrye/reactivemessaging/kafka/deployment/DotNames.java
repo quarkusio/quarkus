@@ -59,6 +59,7 @@ final class DotNames {
     static final DotName CONSUMER_RECORDS = DotName.createSimple(org.apache.kafka.clients.consumer.ConsumerRecords.class.getName());
 
     static final DotName VOID = DotName.createSimple(void.class.getName());
+    static final DotName VOID_BOXED = DotName.createSimple(Void.class.getName());
     static final DotName BLOCKING = DotName.createSimple(io.smallrye.reactive.messaging.annotations.Blocking.class.getName());
     static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
     static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");

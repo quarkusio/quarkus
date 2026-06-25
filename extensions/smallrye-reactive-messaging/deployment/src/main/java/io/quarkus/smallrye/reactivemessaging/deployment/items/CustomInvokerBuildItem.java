@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.deployment.items;
 import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
@@ -19,8 +20,7 @@ import io.smallrye.reactive.messaging.annotations.Merge;
  */
 public final class CustomInvokerBuildItem extends MultiBuildItem {
 
-    private final String declaringClassName;
-    private final String methodName;
+    private final String methodId;
     private final String invokerClassName;
     private final List<String> syntheticParameterTypes;
     // Overrides for MediatorConfiguration
@@ -32,8 +32,7 @@ public final class CustomInvokerBuildItem extends MultiBuildItem {
     private final Boolean blocking;
 
     private CustomInvokerBuildItem(Builder builder) {
-        this.declaringClassName = builder.declaringClassName;
-        this.methodName = builder.methodName;
+        this.methodId = builder.methodId;
         this.invokerClassName = builder.invokerClassName;
         this.shape = builder.shape;
         this.production = builder.production;
@@ -46,12 +45,16 @@ public final class CustomInvokerBuildItem extends MultiBuildItem {
                 : List.of();
     }
 
-    public static Builder builder(String declaringClassName, String methodName, String invokerClassName) {
-        return new Builder(declaringClassName, methodName, invokerClassName);
+    public static Builder builder(String methodId, String invokerClassName) {
+        return new Builder(methodId, invokerClassName);
+    }
+
+    public static String mediatorMethodId(MethodInfo method) {
+        return method.declaringClass().name().toString() + "#" + method.name() + method.descriptor();
     }
 
     public String getMethodId() {
-        return declaringClassName + "#" + methodName;
+        return methodId;
     }
 
     public String getInvokerClassName() {
@@ -87,8 +90,7 @@ public final class CustomInvokerBuildItem extends MultiBuildItem {
     }
 
     public static class Builder {
-        private final String declaringClassName;
-        private final String methodName;
+        private final String methodId;
         private final String invokerClassName;
         private Shape shape;
         private MediatorConfiguration.Production production;
@@ -98,9 +100,8 @@ public final class CustomInvokerBuildItem extends MultiBuildItem {
         private Boolean blocking;
         private List<String> syntheticParameterTypes;
 
-        private Builder(String declaringClassName, String methodName, String invokerClassName) {
-            this.declaringClassName = declaringClassName;
-            this.methodName = methodName;
+        private Builder(String methodId, String invokerClassName) {
+            this.methodId = methodId;
             this.invokerClassName = invokerClassName;
         }
 

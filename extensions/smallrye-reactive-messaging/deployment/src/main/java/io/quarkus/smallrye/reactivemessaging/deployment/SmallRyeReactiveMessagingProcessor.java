@@ -301,7 +301,7 @@ public class SmallRyeReactiveMessagingProcessor {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
 
-            String methodId = methodInfo.declaringClass().name().toString() + "#" + methodInfo.name();
+            String methodId = CustomInvokerBuildItem.mediatorMethodId(methodInfo);
             CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
 
             if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
@@ -407,7 +407,7 @@ public class SmallRyeReactiveMessagingProcessor {
             QuarkusMediatorConfiguration mediatorConfiguration,
             ClassOutput classOutput, Map<String, CustomInvokerBuildItem> customInvokerMap) {
 
-        String methodId = method.declaringClass().name().toString() + "#" + method.name();
+        String methodId = CustomInvokerBuildItem.mediatorMethodId(method);
         CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
         if (customInvoker != null) {
             return customInvoker.getInvokerClassName();

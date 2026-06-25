@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -16,6 +17,7 @@ import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassInfo;
@@ -180,6 +182,37 @@ class VertxCoreProcessor {
             handleBlockingWarningsInDevOrTestMode();
         }
         return new CoreVertxBuildItem(vertx);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void detectNativeTransports(VertxCoreRecorder recorder) {
+        Set<String> detected = new HashSet<>();
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
+            detected.add(NativeTransportType.EPOLL.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
+            detected.add(NativeTransportType.KQUEUE.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.incubator.channel.uring.IOUring")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.transport.uring.UringTransport")) {
+                detected.add(NativeTransportType.IO_URING.transportName);
+            } else {
+                log.warn("Netty io_uring transport JAR found but vertx-io_uring-incubator is missing. "
+                        + "Add io.vertx:vertx-io_uring-incubator to enable io_uring support.");
+            }
+        }
+
+        if (detected.isEmpty()) {
+            log.info("No native transport dependency detected on the classpath. "
+                    + "If you set quarkus.vertx.prefer-native-transport=true, the application will fall back to NIO. "
+                    + "See the Native Transport Reference guide for dependency information.");
+        } else {
+            log.debugf("Detected native transport(s) on classpath: %s", detected);
+        }
+
+        recorder.setDetectedNativeTransports(detected);
     }
 
     @BuildStep

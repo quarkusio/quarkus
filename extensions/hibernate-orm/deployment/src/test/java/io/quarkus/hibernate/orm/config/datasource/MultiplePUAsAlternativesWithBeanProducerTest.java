@@ -54,13 +54,11 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.active", "false")
-                .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.datasource", "ds-2")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.schema-management.strategy", "drop-and-create")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.active", "false")
-                .overrideConfigKey("quarkus.datasource.ds-2.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-2.active", "false")
                 // This is where we select the active PU / datasource
                 .overrideRuntimeConfigKey("quarkus.hibernate-orm." + activePuName + ".active", "true")

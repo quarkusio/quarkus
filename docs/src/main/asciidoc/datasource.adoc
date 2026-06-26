@@ -75,17 +75,12 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 +
 [source,properties]
 ----
-quarkus.datasource.db-kind=postgresql <1>
 quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
 quarkus.datasource.jdbc.max-size=16
 ----
-<1> This configuration value is only required if there is more than one database extension on the classpath.
-
-If only one viable extension is available, Quarkus assumes this is the correct one.
-When you add a driver to the test scope, Quarkus automatically includes it in testing.
 
 ==== JDBC connection pool size adjustment
 
@@ -113,14 +108,12 @@ endif::no-quarkus-reactive-db2-client[]
 +
 [source,properties]
 ----
-quarkus.datasource.db-kind=postgresql <1>
 quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 
 quarkus.datasource.reactive.url=postgresql:///your_database
 quarkus.datasource.reactive.max-size=20
 ----
-<1> This configuration value is only required if there is more than one Reactive driver extension on the classpath.
 
 [[configure-datasources]]
 == Configure datasources
@@ -133,40 +126,6 @@ For simplicity, we will reference a single datasource as the default (unnamed) d
 
 A datasource can be JDBC, reactive, or both.
 This depends on the configuration and the selection of project extensions.
-
-. Define a datasource with the following configuration property, where `db-kind` defines which database platform to connect to, for example, `h2`:
-+
-[source,properties]
-----
-quarkus.datasource.db-kind=h2
-----
-+
-Quarkus derives the JDBC driver class from the `db-kind` database platform value.
-+
-[NOTE]
-====
-This step is required only if your application depends on multiple database drivers.
-If the application uses a single driver, Quarkus detects that driver automatically.
-====
-+
-Quarkus currently includes the following built-in database kinds:
-
-* DB2: `db2`
-* H2: `h2`
-* MariaDB: `mariadb`
-* Microsoft SQL Server: `mssql`
-* MySQL: `mysql`
-* Oracle: `oracle`
-* PostgreSQL: `postgresql`, `pgsql` or `pg`
-* To use a database kind that is not built-in, use `other` and define the JDBC driver explicitly
-+
-[NOTE]
-====
-You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Custom databases and drivers>>.
-However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
-
-For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
-====
 
 . Configure the following properties to define credentials:
 +
@@ -218,9 +177,7 @@ For example, to add the PostgreSQL driver dependency:
 +
 [NOTE]
 ====
-When you add a built-in JDBC driver extension, Quarkus also adds the `quarkus-agroal` extension.
-Agroal provides the JDBC connection pool for built-in and custom JDBC drivers.
-When you use a custom JDBC driver, add `quarkus-agroal` explicitly.
+If your application depends on multiple JDBC driver extensions, you will also need to <<datasource-db-kind,select one through configuration>>.
 ====
 
 .. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
@@ -230,8 +187,7 @@ When you use a custom JDBC driver, add `quarkus-agroal` explicitly.
 ./mvnw quarkus:add-extension -Dextensions="agroal"
 ----
 +
-To use a JDBC driver for another database, <<other-databases,use a database with no built-in extension or with a different driver>>.
-
+Then follow instructions found in <<other-databases,Custom databases and drivers>>.
 
 . Configure the JDBC connection by defining the JDBC URL property:
 +
@@ -314,7 +270,10 @@ endif::no-quarkus-reactive-db2-client[]
 * Oracle: `quarkus-reactive-oracle-client`
 * PostgreSQL: `quarkus-reactive-pg-client`
 +
-The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.
+[NOTE]
+====
+If your application depends on multiple reactive SQL client extensions, you will also need to <<datasource-db-kind,select one through configuration>>.
+====
 
 . After adding the driver, configure the connection URL and define a proper size for your connection pool.
 +
@@ -336,7 +295,7 @@ For more information about pool size adjustment properties, see the <<reactive-c
 [[jdbc-and-reactive-datasources-simultaneously]]
 ==== JDBC and reactive datasources simultaneously
 
-When you add both a JDBC extension and a reactive datasource extension for the same `db-kind`, Quarkus creates both JDBC and reactive datasources by default.
+When you add both a JDBC extension and a reactive datasource extension for the same database kind, Quarkus creates both JDBC and reactive datasources by default.
 
 * To use the <<jdbc-datasource,JDBC>> and <<reactive-datasource,reactive>> datasources simultaneously:
 +
@@ -387,32 +346,18 @@ Each with its configuration:
 
 [source,properties]
 ----
-quarkus.datasource.db-kind=h2
 quarkus.datasource.username=username-default
-quarkus.datasource.jdbc.url=jdbc:h2:mem:default
 quarkus.datasource.jdbc.max-size=13
 
-quarkus.datasource.users.db-kind=h2
 quarkus.datasource.users.username=username1
-quarkus.datasource.users.jdbc.url=jdbc:h2:mem:users
 quarkus.datasource.users.jdbc.max-size=11
 
-quarkus.datasource.inventory.db-kind=h2
 quarkus.datasource.inventory.username=username2
-quarkus.datasource.inventory.jdbc.url=jdbc:h2:mem:inventory
 quarkus.datasource.inventory.jdbc.max-size=12
 ----
 
-Notice there is an extra section in the configuration property.
+Notice there is an extra section in the configuration property key.
 The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
-
-[NOTE]
-====
-Even when you install only one database extension, named datasources must set at least one build-time property so Quarkus can detect them.
-In most cases, set `db-kind`.
-
-You can also set Dev Services properties to create named datasources as described in the xref:databases-dev-services.adoc[Dev Services for Databases] guide.
-====
 
 ==== Named datasource injection
 
@@ -433,6 +378,64 @@ AgroalDataSource usersDataSource;
 @DataSource("inventory")
 AgroalDataSource inventoryDataSource;
 ----
+
+[[datasource-detection]]
+=== Conditions for datasource creation
+
+Quarkus creates a datasource when it detects that one is needed, i.e. when any of the following conditions is met:
+
+* It is requested by another extension (e.g. Hibernate ORM, Flyway, Liquibase)
+* OR it is injected statically in application code (e.g. `@Inject DataSource` or `@Inject @DataSource("inventory") AgroalDataSource`)
+* OR at least one build-time property is set for it (e.g. `db-kind`).
+
+Notably, as soon as a datasource is used by Hibernate ORM or injected in your application,
+you may not need any configuration for it while developing,
+as the database type (<<datasource-db-kind,`db-kind`>>) will be inferred automatically if you only have one JDBC driver in the classpath,
+and the database URL, username and password will be filled in automatically by <<dev-services,Dev Services>>.
+
+All this applies equally to the default persistence unit and to named persistence units.
+You can mix the default persistence unit and named persistence units, or only have a default persistence unit, or only have named persistence units.
+
+[[datasource-db-kind]]
+=== Applications with multiple datasource extensions
+
+If your application depends on multiple database drivers,
+Quarkus may be unable to determine which database kind a given datasource is meant to target.
+In that case, the build may fail and prompt you to select a datasource extension through configuration.
+
+[NOTE]
+====
+// See io.quarkus.datasource.deployment.DataSourceProcessor.resolveDbKinds
+Some ambiguities, in particular related to testing, are resolved automatically; see <<in-memory-databases>>.
+====
+
+Selecting a datasource extension for the default datasource is achieved with the following configuration property:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+----
+
+Below are the `db-kind` values for each of the built-in JDBC drivers:
+
+* DB2: `db2`
+* H2: `h2`
+* MariaDB: `mariadb`
+* Microsoft SQL Server: `mssql`
+* MySQL: `mysql`
+* Oracle: `oracle`
+* PostgreSQL: `postgresql`, `pgsql` or `pg`
+
+Below are the `db-kind` values for each of the built-in reactive SQL clients:
+
+ifndef::no-quarkus-reactive-db2-client[]
+* DB2: `db2`
+endif::no-quarkus-reactive-db2-client[]
+* MariaDB: `mariadb`
+* Microsoft SQL Server: `mssql`
+* MySQL: `mysql`
+* Oracle: `oracle`
+* PostgreSQL: `postgresql`, `pgsql` or `pg`
 
 [[datasource-active]]
 === Activate or deactivate datasources

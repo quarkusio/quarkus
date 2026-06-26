@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,6 +9,7 @@ import jakarta.enterprise.inject.Default;
 
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -25,6 +27,10 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
 public class HibernateSearchElasticsearchCdiProcessor {
+
+    private static final DotName SEARCH_MAPPING = DotName.createSimple(SearchMapping.class);
+    private static final DotName SEARCH_SESSION = DotName.createSimple(SearchSession.class);
+    static final Set<DotName> ALL_INJECTABLE_TYPES = Set.of(SEARCH_MAPPING, SEARCH_SESSION);
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep

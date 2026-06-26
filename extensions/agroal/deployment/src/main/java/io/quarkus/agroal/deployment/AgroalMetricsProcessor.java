@@ -17,9 +17,9 @@ public class AgroalMetricsProcessor {
     void registerMetrics(AgroalMetricsRecorder recorder,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             BuildProducer<MetricsFactoryConsumerBuildItem> datasourceMetrics,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs) {
+            List<DataSourceDefinitionBuildItem> aggregatedDataSourceBuildTimeConfigs) {
 
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
+        for (DataSourceDefinitionBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             // Create a MetricsFactory consumer to register metrics for a data source
             // IFF metrics are enabled globally and for the data source
             // (they are enabled for each data source by default if they are also enabled globally)

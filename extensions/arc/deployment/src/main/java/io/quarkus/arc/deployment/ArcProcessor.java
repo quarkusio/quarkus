@@ -57,6 +57,7 @@ import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
@@ -446,6 +447,15 @@ public class ArcProcessor {
         return new BeanRegistrationPhaseBuildItem(registrationContext, beanProcessor);
     }
 
+    @BuildStep
+    BeanDiscoveryInjectionPointsBuildItem indexInjectionPointsByType(BeanDiscoveryFinishedBuildItem beanDiscovery) {
+        Map<DotName, List<InjectionPointInfo>> ipsByType = new HashMap<>();
+        for (InjectionPointInfo ip : beanDiscovery.getInjectionPoints()) {
+            ipsByType.computeIfAbsent(ip.getRequiredType().name(), k -> new ArrayList<>()).add(ip);
+        }
+        return new BeanDiscoveryInjectionPointsBuildItem(ipsByType);
+    }
+
     // PHASE 3 - register synthetic observers
     @BuildStep
     public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
@@ -463,7 +473,7 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
         beanProcessor.registerSyntheticInjectionPoints(beanRegistrationPhase.getContext());
 
-        // Initialize the type -> bean map
+        // Re-initialize the type -> bean map after synthetic injection points are registered
         beanProcessor.getBeanDeployment().initBeanByTypeMap();
 
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();

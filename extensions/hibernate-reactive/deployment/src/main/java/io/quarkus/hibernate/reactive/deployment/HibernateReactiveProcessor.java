@@ -9,13 +9,11 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.js
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
-import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -24,15 +22,19 @@ import java.util.logging.Level;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -40,27 +42,26 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateDataSourceUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
-import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaPersistenceUnitModel;
 import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDefinitionBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
@@ -72,9 +73,10 @@ import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.transaction.HibernateActionsStrategy;
 import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.util.ProgrammingParadigm;
+import io.quarkus.runtime.util.Reason;
 
 @BuildSteps(onlyIf = HibernateReactiveEnabled.class)
 public final class HibernateReactiveProcessor {
@@ -115,24 +117,75 @@ public final class HibernateReactiveProcessor {
     }
 
     @BuildStep
-    public void buildReactivePersistenceUnit(
-            HibernateOrmConfig hibernateOrmConfig, CombinedIndexBuildItem index,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+    void collectImplicitReactivePersistenceUnitRequests(HibernateOrmConfig config,
+            JpaModelPerPersistenceUnitBuildItem jpaModelPerPersistenceUnit,
+            PersistenceUnitLookupBuildItem lookupBuildItem,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        HibernateProcessorUtil.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.REACTIVE, config,
+                jpaModelPerPersistenceUnit, lookupBuildItem, puRequests);
+
+    }
+
+    @BuildStep
+    void collectReactivePersistenceUnitRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                HibernateReactiveCdiProcessor.ALL_REACTIVE_INJECTABLE_TYPES,
+                List.of(io.quarkus.hibernate.orm.deployment.ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
+                PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+                },
+                (name, reason) -> puRequests
+                        .produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
+    }
+
+    @BuildStep
+    void definePersistenceUnits(
+            HibernateOrmConfig hibernateOrmConfig,
+            PersistenceUnitLookupBuildItem lookupBuildItem,
+            List<PersistenceUnitRequestBuildItem> puRequests,
+            BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
+        HibernateProcessorUtil.definePersistenceUnits(ProgrammingParadigm.REACTIVE, hibernateOrmConfig, lookupBuildItem,
+                puRequests, persistenceUnitDefinitions);
+    }
+
+    @BuildStep
+    public void collectDatasourceReferencesFromPersistenceUnits(
+            List<PersistenceUnitDefinitionBuildItem> puDefinitions,
+            BuildProducer<DataSourceRequestBuildItem> datasourceReferences) {
+        for (PersistenceUnitDefinitionBuildItem puDefinition : puDefinitions) {
+            if (!ProgrammingParadigm.REACTIVE.equals(puDefinition.getParadigm())
+                    || puDefinition.getDataSourceName().isEmpty()) {
+                continue;
+            }
+            Reason reason = new Reason(
+                    "Hibernate Reactive persistence unit '" + puDefinition.getPersistenceUnitName() + "'",
+                    puDefinition.getReasons());
+            datasourceReferences.produce(new DataSourceRequestBuildItem(puDefinition.getDataSourceName().get(),
+                    ProgrammingParadigm.REACTIVE, reason));
+        }
+    }
+
+    @BuildStep
+    public void buildReactivePersistenceUnitsFromConfig(
+            HibernateOrmConfig hibernateOrmConfig,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
+            List<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions,
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
-            List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
-            JpaModelBuildItem jpaModel,
+            JpaModelPerPersistenceUnitBuildItem jpaModel,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
         // Block any reactive persistence units from using persistence.xml
@@ -146,107 +199,61 @@ public final class HibernateReactiveProcessor {
             }
         }
 
-        Optional<ReactiveDataSourceBuildItem> defaultReactiveDataSource = reactiveDataSources.stream()
-                .filter(i -> i.isDefault())
-                .findFirst();
+        for (PersistenceUnitDefinitionBuildItem puDefinition : persistenceUnitDefinitions) {
+            if (puDefinition.getParadigm() != ProgrammingParadigm.REACTIVE) {
+                continue;
+            }
+            String puName = puDefinition.getPersistenceUnitName();
+            var model = jpaModel.getModelPerPersistenceUnit().get(puName);
+            if (model == null) {
+                model = new JpaPersistenceUnitModel();
+            }
 
-        boolean enableDefaultPersistenceUnit = (defaultReactiveDataSource.isPresent() &&
-                hibernateOrmConfig.namedPersistenceUnits().isEmpty())
-                || hibernateOrmConfig.defaultPersistenceUnit().isAnyPropertySet();
-
-        if (enableDefaultPersistenceUnit) {
-            producePersistenceUnitFromConfig(hibernateOrmConfig, DEFAULT_PERSISTENCE_UNIT_NAME,
-                    hibernateOrmConfig.defaultPersistenceUnit(), index,
-                    enableDefaultPersistenceUnit,
+            buildReactivePersistenceUnitFromConfig(hibernateOrmConfig, puDefinition, model,
                     reactiveDataSources,
-                    jdbcDataSources,
-                    applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
+                    applicationArchivesBuildItem,
+                    launchMode,
+                    capabilities,
                     additionalSqlLoadScriptDefaults,
-                    systemProperties, nativeImageResources,
-                    hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    unremovableBeans, dbKindDialectBuildItems);
-        }
-
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig
-                .namedPersistenceUnits()
-                .entrySet()) {
-            String namedPersistenceUnitName = persistenceUnitEntry.getKey();
-
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.namedPersistenceUnits()
-                    .get(namedPersistenceUnitName);
-
-            producePersistenceUnitFromConfig(hibernateOrmConfig, namedPersistenceUnitName, persistenceUnitConfig, index,
-                    enableDefaultPersistenceUnit, reactiveDataSources, jdbcDataSources,
-                    applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
-                    additionalSqlLoadScriptDefaults,
-                    systemProperties, nativeImageResources,
+                    nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     unremovableBeans, dbKindDialectBuildItems);
         }
     }
 
-    private static void producePersistenceUnitFromConfig(HibernateOrmConfig hibernateOrmConfig, String persistenceUnitName,
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, CombinedIndexBuildItem index,
-            boolean enableDefaultPersistenceUnit,
+    private static void buildReactivePersistenceUnitFromConfig(HibernateOrmConfig hibernateOrmConfig,
+            PersistenceUnitDefinitionBuildItem puDefinition,
+            JpaPersistenceUnitModel model,
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
-            List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
-            JpaModelBuildItem jpaModel, LaunchModeBuildItem launchMode,
+            LaunchModeBuildItem launchMode,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
-
-        Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
-                persistenceUnitName,
-                jdbcDataSources,
-                JdbcDataSourceBuildItem::getName,
-                JdbcDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
-
-        Optional<ReactiveDataSourceBuildItem> reactiveDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
-                persistenceUnitName,
+        String persistenceUnitName = puDefinition.getPersistenceUnitName();
+        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = puDefinition.getConfig();// Reactive does not support multitenancy so we always require a datasource (explicit or implied),
+        // so this optional should have previously been checked and should be non-empty.
+        // See https://github.com/quarkusio/quarkus/issues/15959
+        String dataSourceName = puDefinition.getDataSourceName().orElseThrow();
+        ReactiveDataSourceBuildItem reactiveDataSource = HibernateProcessorUtil.findDataSourceWithName(
+                dataSourceName,
                 reactiveDataSources,
-                ReactiveDataSourceBuildItem::getName,
-                ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+                ReactiveDataSourceBuildItem::getName);
 
-        boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
-        if (jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()) {
-            LOG.debugf("The datasource '%s' is only blocking, do not create this PU '%s' as reactive",
-                    persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
-            return;
-        }
-
-        if (reactiveDataSource.isEmpty() && explicitDataSource) {
-            String dataSourceName = persistenceUnitConfig.datasource().get();
-            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
-        }
-
-        Optional<String> datasourceName = reactiveDataSource.map(ReactiveDataSourceBuildItem::getName);
         Optional<String> explicitDialect = persistenceUnitConfig.dialect().dialect();
-        Optional<String> explicitDbMinVersion = reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getVersion);
-        Optional<String> dbKindOptional = reactiveDataSource.map(ReactiveDataSourceBuildItem::getDbKind);
-        Optional<String> dbVersion = reactiveDataSource.flatMap(ReactiveDataSourceBuildItem::getVersion);
-
-        if (dbKindOptional.isEmpty()) {
-            throw new ConfigurationException(
-                    "The datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
-                    Set.of("quarkus.datasource.db-kind", "quarkus.datasource.username",
-                            "quarkus.datasource.password"));
-        }
+        Optional<String> dbVersion = reactiveDataSource.getVersion();
+        Optional<String> dbKindOptional = Optional.of(reactiveDataSource.getDbKind());
 
         QuarkusPersistenceUnitDescriptorWithSupportedDBKind reactivePUWithDBKind = generateReactivePersistenceUnit(
-                hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, additionalJpaModelBuildItems, jpaModel,
-                dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
+                hibernateOrmConfig, persistenceUnitName, persistenceUnitConfig, model,
+                dbKindOptional, explicitDialect, dbVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 additionalSqlLoadScriptDefaults,
-                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
-                enableDefaultPersistenceUnit);
+                nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
         Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
@@ -259,7 +266,7 @@ public final class HibernateReactiveProcessor {
 
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
         Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
-        entityClassNames.retainAll(jpaModel.getEntityClassNames());
+        entityClassNames.retainAll(model.entityClassNames());
 
         //Some constant arguments to the following method:
         // - this is Reactive
@@ -267,7 +274,7 @@ public final class HibernateReactiveProcessor {
         // - we don't support Hibernate Envers with Hibernate Reactive
         persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
                 new RecordedConfig(
-                        datasourceName,
+                        Optional.of(dataSourceName),
                         dbKindOptional,
                         reactivePUWithDBKind.supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                         dbVersion,
@@ -279,9 +286,10 @@ public final class HibernateReactiveProcessor {
                         jsonFormatterCustomizationCheck,
                         persistenceUnitConfig.unsupportedProperties()),
                 null,
-                jpaModel.getXmlMappings(reactivePU.getName()),
+                model.xmlMappings(),
                 false,
                 isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
+
     }
 
     @BuildStep
@@ -335,28 +343,17 @@ public final class HibernateReactiveProcessor {
     private static QuarkusPersistenceUnitDescriptorWithSupportedDBKind generateReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig,
             String persistenceUnitName,
-            CombinedIndexBuildItem index,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
-            JpaModelBuildItem jpaModel,
+            JpaPersistenceUnitModel model,
             Optional<String> dbKindOptional,
             Optional<String> explicitDialect,
             Optional<String> explicitDbMinVersion,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems, boolean enableDefaultPersistenceUnit) {
-
-        var modelPerPersistencesUnit = HibernateOrmProcessor
-                .getModelPerPersistenceUnit(hibernateOrmConfig, additionalJpaModelBuildItems, jpaModel,
-                        index.getIndex(),
-                        enableDefaultPersistenceUnit);
-
-        var model = modelPerPersistencesUnit.get(persistenceUnitName);
-
+            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
                 new HibernateReactivePersistenceUnitProviderHelper(),
@@ -374,7 +371,6 @@ public final class HibernateReactiveProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindDialectBuildItems,
-                systemProperties,
                 descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);

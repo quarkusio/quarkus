@@ -25,6 +25,7 @@ import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -34,9 +35,13 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -67,10 +72,13 @@ import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
+import io.quarkus.liquibase.runtime.LiquibaseFactoryUtil;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.PathFilter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
+import io.quarkus.runtime.util.Reason;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.changelog.ChangeLogParameters;
@@ -96,6 +104,59 @@ class LiquibaseProcessor {
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
     private static final DotName DATA_TYPE_INFO_ANNOTATION = DotName.createSimple(DataTypeInfo.class.getName());
+
+    @BuildStep
+    void collectImplicitDataSourceRequestsFromConfiguration(
+            LiquibaseBuildTimeConfig liquibaseBuildTimeConfig,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        for (String dsName : liquibaseBuildTimeConfig.datasources().keySet()) {
+            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
+            //   For now, since we can't trust keySet for the default datasource, we'll ignore it.
+            if (DataSourceUtil.isDefault(dsName)) {
+                continue;
+            }
+            dataSourceRequests.produce(new DataSourceRequestBuildItem(dsName, ProgrammingParadigm.BLOCKING,
+                    String.format("Configuration '%s'", LiquibaseFactoryUtil.liquibasePropertyKey(dsName, "*"))));
+        }
+
+    }
+
+    @BuildStep
+    void collectDatasourceRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        BiConsumer<String, Reason> requestProducer = (name, reason) -> dataSourceRequests
+                .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason));
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                Set.of(LIQUIBASE_FACTORY),
+                List.of(LIQUIBASE_DATASOURCE_QUALIFIER),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                requestProducer);
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                Set.of(LIQUIBASE_FACTORY),
+                List.of(DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    if (value == null || value.asString().isEmpty()) {
+                        return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                    }
+                    String name = value.asString();
+                    if (name.startsWith(LIQUIBASE_BEAN_NAME_PREFIX)) {
+                        name = name.substring(LIQUIBASE_BEAN_NAME_PREFIX.length());
+                    }
+                    return name;
+                },
+                requestProducer);
+    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -326,25 +387,31 @@ class LiquibaseProcessor {
         }
     }
 
+    // Separate from createBeans so that AdditionalBeanBuildItem is not produced
+    // by a step that depends (transitively) on BeanDiscoveryFinishedBuildItem,
+    // which would create a cycle.
+    @BuildStep
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class).setUnremovable()
+                        .setDefaultScope(DotNames.SINGLETON).build());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
+    }
+
+    private static final DotName LIQUIBASE_FACTORY = DotName.createSimple(LiquibaseFactory.class);
+    private static final DotName LIQUIBASE_DATASOURCE_QUALIFIER = DotName.createSimple(LiquibaseDataSource.class);
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-
-        // make a LiquibaseContainerProducer bean
-        additionalBeans
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class).setUnremovable()
-                        .setDefaultScope(DotNames.SINGLETON).build());
-        // add the @LiquibaseDataSource class otherwise it won't be registered as a qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
         for (String dataSourceName : dataSourceNames) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(LiquibaseFactory.class)
+                    .configure(LIQUIBASE_FACTORY)
                     .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()

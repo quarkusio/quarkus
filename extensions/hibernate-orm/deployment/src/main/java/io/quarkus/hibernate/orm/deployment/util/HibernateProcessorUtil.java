@@ -13,13 +13,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
@@ -31,6 +35,7 @@ import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -38,11 +43,14 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDefinitionBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -53,6 +61,8 @@ import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.util.ProgrammingParadigm;
+import io.quarkus.runtime.util.Reason;
 
 /**
  * A set of utilities method to collect the common operations needed to configure the
@@ -63,6 +73,146 @@ public final class HibernateProcessorUtil {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private HibernateProcessorUtil() {
+    }
+
+    public static Optional<String> getDataSourceName(HibernateOrmConfig config, String persistenceUnitName) {
+        Optional<String> result = config.persistenceUnits().get(persistenceUnitName).datasource();
+        if (result.isEmpty() && PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            result = Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+        }
+        return result;
+    }
+
+    public static <T> T findDataSourceWithName(String dataSourceName,
+            List<T> datasSources,
+            Function<T, String> nameExtractor) {
+        return datasSources.stream()
+                .filter(i -> dataSourceName.equals(nameExtractor.apply(i)))
+                .findFirst()
+                // If there is a configured datasource, it should have been requested and thus exist
+                .orElseThrow(() -> new IllegalStateException(String.format(Locale.ROOT,
+                        "Datasource %s was referenced but was not created -- this is a bug, please report it",
+                        dataSourceName)));
+    }
+
+    public static void collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm paradigm,
+            HibernateOrmConfig config,
+            JpaModelPerPersistenceUnitBuildItem jpaModelPerPersistenceUnit,
+            PersistenceUnitLookupBuildItem lookupBuildItem,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        LOG.debugf("Collecting implicit %s persistence unit requests from configuration: keySet = %s",
+                paradigm, config.persistenceUnits().keySet());
+        for (String name : config.persistenceUnits().keySet()) {
+            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
+            //   For now, since we can't trust keySet for the default datasource, we're using isAnyPropertySet() as a workaround.
+            if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)
+                    && !config.persistenceUnits().get(name).isAnyPropertySet()) {
+                continue;
+            }
+            if (ProgrammingParadigm.BLOCKING.equals(paradigm) && !config.blocking()) {
+                // Explicitly disabled
+                continue;
+            }
+
+            Set<ProgrammingParadigm> available = lookupBuildItem.getLookup().availableParadigms(name);
+            if (!available.contains(paradigm) && !available.isEmpty()) {
+                // The extension handling the other paradigm (Hibernate ORM vs. Hibernate Reactive)
+                // will create a request -- on our side we'll assume this configuration can be ignored.
+                // Note other requests for this PU and paradigm can be created
+                // (and potentially lead to failures down the line),
+                // it's just that we won't request it *only* because it's configured.
+                LOG.debugf("Persistence unit '%s' can only be %s; assuming configuration is not meant for variant %s",
+                        name, available, paradigm);
+                continue;
+            }
+
+            puRequests.produce(new PersistenceUnitRequestBuildItem(name, paradigm,
+                    String.format(Locale.ROOT, "Configuration '%s'", HibernateOrmRuntimeConfig.puPropertyKey(name, "*"))));
+        }
+
+        for (var entry : jpaModelPerPersistenceUnit.getModelPerPersistenceUnit().entrySet()) {
+            String name = entry.getKey();
+            if (ProgrammingParadigm.BLOCKING.equals(paradigm) && !config.blocking()) {
+                // Explicitly disabled
+                continue;
+            }
+
+            Set<ProgrammingParadigm> available = lookupBuildItem.getLookup().availableParadigms(name);
+            if (!available.contains(paradigm) && !available.isEmpty()) {
+                // The extension handling the other paradigm (Hibernate ORM vs. Hibernate Reactive)
+                // will create a request -- on our side we'll assume this model can be ignored.
+                // Note other requests for this PU and paradigm can be created
+                // (and potentially lead to failures down the line),
+                // it's just that we won't request it *only* because there's a model assigned to it.
+                LOG.debugf("Persistence unit '%s' can only be %s; assuming assigned model is not meant for variant %s",
+                        name, available, paradigm);
+                continue;
+            }
+
+            puRequests.produce(new PersistenceUnitRequestBuildItem(name, paradigm,
+                    "JPA model including classes/packages " + entry.getValue().allModelClassAndPackageNames()));
+        }
+    }
+
+    public static void definePersistenceUnits(ProgrammingParadigm paradigm,
+            HibernateOrmConfig config,
+            PersistenceUnitLookupBuildItem lookupBuildItem,
+            List<PersistenceUnitRequestBuildItem> puRequests,
+            BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
+        // Collect all relevant persistence unit names that are referenced, with their reasons
+        Map<String, List<Reason>> puNamesWithReasons = new LinkedHashMap<>();
+        Set<String> puNamesBlockingOrReactive = new HashSet<>();
+        for (PersistenceUnitRequestBuildItem puReq : puRequests) {
+            puNamesBlockingOrReactive.add(puReq.getName());
+            if (puReq.getParadigm() == paradigm) {
+                puNamesWithReasons.computeIfAbsent(puReq.getName(), k -> new ArrayList<>())
+                        .add(puReq.getReason());
+            }
+        }
+
+        // If there is no referenced PU (across blocking/reactive, which implies there is no configuration)
+        // and there can be a default PU (for our current paradigm), then we'll define that default PU.
+        if (puNamesBlockingOrReactive.isEmpty()
+                && lookupBuildItem.getLookup().availableParadigms(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+                        .contains(paradigm)) {
+            puNamesWithReasons.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    List.of(new Reason(
+                            "No other persistence unit exists, and the default persistence unit can be configured")));
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Defining %s persistence units; reasons:\n%s", paradigm,
+                    puNamesWithReasons.entrySet().stream()
+                            .map(e -> e.getKey() + ": " + Reason.format(e.getValue()))
+                            .collect(Collectors.joining("\n")));
+        }
+        for (var entry : puNamesWithReasons.entrySet()) {
+            String puName = entry.getKey();
+
+            List<Reason> unavailableReasons = lookupBuildItem.getLookup().unavailableReasons(puName, paradigm);
+            if (!unavailableReasons.isEmpty()) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        """
+                                Hibernate %s persistence unit '%s' cannot be created for the following reason(s):
+                                %s
+                                Refer to https://quarkus.io/guides/datasource for guidance.
+                                This persistence unit is being created because of:
+                                %s
+                                """,
+                        switch (paradigm) {
+                            case BLOCKING -> "ORM";
+                            case REACTIVE -> "Reactive";
+                        },
+                        puName,
+                        Reason.format(unavailableReasons),
+                        Reason.format(entry.getValue())));
+            }
+
+            persistenceUnitDefinitions.produce(new PersistenceUnitDefinitionBuildItem(puName, paradigm,
+                    entry.getValue(),
+                    config.persistenceUnits().get(puName),
+                    getDataSourceName(config, puName)));
+        }
     }
 
     public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
@@ -98,7 +248,6 @@ public final class HibernateProcessorUtil {
             Optional<String> explicitDbMinVersion,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector) {
         Optional<String> dialect = explicitDialect;
         Optional<String> dbProductName = Optional.empty();
@@ -579,4 +728,5 @@ public final class HibernateProcessorUtil {
     private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
         return first.isPresent() ? first : second;
     }
+
 }

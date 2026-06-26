@@ -1,21 +1,19 @@
-package io.quarkus.hibernate.orm.config;
+package io.quarkus.hibernate.orm.panache.deployment.test.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 
-import jakarta.enterprise.context.control.ActivateRequestContext;
-import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
-import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class NoEntitiesNoDatasourceTest {
+public class JdbcDriverMissingNoEntitiesTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -24,17 +22,14 @@ public class NoEntitiesNoDatasourceTest {
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2"),
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")));
 
-    @Inject
-    InjectableInstance<Session> session;
-
+    // Test for https://github.com/quarkusio/quarkus/issues/50247
     // When having no entities, no configuration, and no datasource,
-    // as long as the Hibernate ORM beans are not injected anywhere,
     // we should still be able to start the application.
     @Test
-    @ActivateRequestContext
+    @Transactional
     public void test() {
         // But Hibernate ORM should be disabled, so its beans should not be there.
-        assertThat(session.isUnsatisfied()).isTrue();
+        assertThat(Panache.getSession()).isNull();
     }
 
 }

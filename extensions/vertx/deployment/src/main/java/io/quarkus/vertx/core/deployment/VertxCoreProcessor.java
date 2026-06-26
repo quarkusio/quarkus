@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -55,6 +56,7 @@ import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
@@ -180,6 +182,32 @@ class VertxCoreProcessor {
             handleBlockingWarningsInDevOrTestMode();
         }
         return new CoreVertxBuildItem(vertx);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void detectNativeTransports(VertxCoreRecorder recorder) {
+        Set<String> detected = new HashSet<>();
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
+            detected.add(NativeTransportType.EPOLL.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
+            detected.add(NativeTransportType.KQUEUE.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            detected.add(NativeTransportType.IO_URING.transportName);
+        }
+
+        if (detected.isEmpty()) {
+            log.debug("No native transport dependency detected on the classpath. "
+                    + "If you set quarkus.vertx.prefer-native-transport=true, the application will fall back to NIO. "
+                    + "See the Native Transport Reference guide for dependency information.");
+        } else {
+            log.debugf("Detected native transport(s) on classpath: %s", detected);
+        }
+
+        recorder.setDetectedNativeTransports(detected);
     }
 
     @BuildStep

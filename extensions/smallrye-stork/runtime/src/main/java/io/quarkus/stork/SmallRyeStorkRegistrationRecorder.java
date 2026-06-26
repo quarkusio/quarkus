@@ -1,9 +1,8 @@
 package io.quarkus.stork;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -12,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.config.ServiceConfig;
@@ -20,6 +20,7 @@ import io.smallrye.stork.api.config.ServiceConfig;
 public class SmallRyeStorkRegistrationRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkRegistrationRecorder.class.getName());
+    private static final Duration REGISTRATION_TIMEOUT = Duration.ofSeconds(10);
 
     private final RuntimeValue<StorkConfiguration> runtimeConfig;
 
@@ -44,8 +45,9 @@ public class SmallRyeStorkRegistrationRecorder {
                 String host = StorkConfigUtil.getOrDefaultHost(parameters,
                         quarkusConfig);
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
-                Stork.getInstance().getService(serviceName).registerInstance(serviceName, host,
-                        port).await().indefinitely();
+                Uni<Void> registration = Stork.getInstance().getService(serviceName)
+                        .registerInstance(serviceName, host, port);
+                awaitOrSubscribe(registration, serviceName, "registration");
             }
 
         }
@@ -60,6 +62,32 @@ public class SmallRyeStorkRegistrationRecorder {
         });
     }
 
+    /**
+     * Waits for the given {@link Uni} to complete if the caller thread can be blocked,
+     * otherwise subscribes and logs on failure. In both cases, a timeout is applied to
+     * avoid hanging indefinitely if the registrar is unreachable.
+     *
+     * @param uni the operation to execute
+     * @param serviceName the service name, used for logging
+     * @param action a description of the action (e.g. "registration", "deregistration"), used for logging
+     */
+    private void awaitOrSubscribe(Uni<Void> uni, String serviceName, String action) {
+        if (Infrastructure.canCallerThreadBeBlocked()) {
+            try {
+                uni.await().atMost(REGISTRATION_TIMEOUT);
+                LOGGER.debugf("'%s' successfully completed for service '%s'", action, serviceName);
+            } catch (Exception failure) {
+                LOGGER.warnf("Failed to complete %s for service '%s': %s", action, serviceName, failure.getMessage());
+            }
+        } else {
+            uni.ifNoItem().after(REGISTRATION_TIMEOUT).fail()
+                    .subscribe().with(
+                            success -> LOGGER.debugf("'%s' successfully completed for service '%s'", action, serviceName),
+                            failure -> LOGGER.warnf("Failed to complete %s for service '%s': %s", action, serviceName,
+                                    failure.getMessage()));
+        }
+    }
+
     private void deregisterServiceInstance(StorkConfiguration configuration) {
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         for (ServiceConfig serviceConfig : serviceConfigs) {
@@ -70,31 +98,11 @@ public class SmallRyeStorkRegistrationRecorder {
                 if (!storkServiceRegistrarConfiguration.enabled()) {
                     continue;
                 }
+                Uni<Void> deregistration = Stork.getInstance()
+                        .getService(serviceName)
+                        .deregisterServiceInstance(serviceName);
+                awaitOrSubscribe(deregistration, serviceName, "deregistration");
             }
-            CountDownLatch registrationLatch = new CountDownLatch(1);
-            Stork.getInstance()
-                    .getService(serviceName)
-                    .deregisterServiceInstance(serviceName)
-                    .subscribe()
-                    .with(
-                            success -> registrationLatch.countDown(),
-                            failure -> {
-                                LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, failure.getMessage());
-                                registrationLatch.countDown();
-                            });
-
-            if (Infrastructure.canCallerThreadBeBlocked()) {
-                try {
-                    if (!registrationLatch.await(10, TimeUnit.SECONDS)) {
-                        LOGGER.warnf("Failed to deregister service '%s' - Timeout reached", serviceName);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            } else {
-                LOGGER.debugf("Unable to wait for the service deregistration of '%s' - running on the event loop", serviceName);
-            }
-
         }
     }
 }

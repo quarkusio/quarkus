@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -128,7 +128,7 @@ final class FaultToleranceScanner {
     }
 
     FaultToleranceMethod createFaultToleranceMethod(ClassInfo beanClass, MethodInfo method) {
-        Set<Class<? extends Annotation>> annotationsPresentDirectly = new HashSet<>();
+        Set<Class<? extends Annotation>> annotationsPresentDirectly = new LinkedHashSet<>();
 
         FaultToleranceMethod result = new FaultToleranceMethod();
 

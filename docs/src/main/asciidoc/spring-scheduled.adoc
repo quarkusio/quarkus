@@ -245,3 +245,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
 * xref:spring-security.adoc[Quarkus - Extension for Spring Security]
 * xref:spring-tx.adoc[Quarkus - Extension for Spring Transaction]
+* xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]

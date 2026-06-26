@@ -262,7 +262,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (disposition != null) {
                 if (disposition.startsWith("form-data")) {
                     currentName = HeaderUtil.extractQuotedValueFromHeader(disposition, "name");
-                    fileName = HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename");
+                    fileName = HeaderUtil.sanitizeFileName(
+                            HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename"));
                     String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
                     if (((fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName))
                             && fileSizeThreshold == 0) {

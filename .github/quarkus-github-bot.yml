@@ -593,7 +593,7 @@ triage:
         - extensions/jaxb/
     - id: logging
       labels: [area/logging]
-      notify: [dmlloyd]
+      notify: [dmlloyd, xstefank]
       directories:
         - extensions/logging-gelf/
         - extensions/logging-json/

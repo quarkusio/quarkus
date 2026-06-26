@@ -219,23 +219,26 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, List.of(), null, Set.of());
+        return resolveManagedModel(appArtifact, List.of(), Set.of(), null, Set.of());
     }
 
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact,
             Collection<io.quarkus.maven.dependency.Dependency> directDeps)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, directDeps, null, Set.of());
+        return resolveManagedModel(appArtifact, directDeps, Set.of(), null, Set.of());
     }
 
     @Override
     public ApplicationModel resolveManagedModel(ArtifactCoords appArtifact,
             Collection<io.quarkus.maven.dependency.Dependency> directDeps,
+            Set<ArtifactKey> excludedArtifacts,
             ArtifactCoords managingProject,
             Set<ArtifactKey> reloadableModules)
             throws AppModelResolverException {
-        return doResolveModel(appArtifact, toAetherDeps(directDeps), managingProject, reloadableModules);
+        return doResolveModel(appArtifact, toAetherDeps(directDeps),
+                excludedArtifacts, managingProject,
+                reloadableModules);
     }
 
     /**
@@ -305,6 +308,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     private ApplicationModel doResolveModel(ArtifactCoords coords,
             List<Dependency> directMvnDeps,
+            Set<ArtifactKey> excludedArtifacts,
             ArtifactCoords managingProject,
             Set<ArtifactKey> reloadableModules)
             throws AppModelResolverException {
@@ -332,8 +336,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             managedDeps = DependencyUtils.toMap(appArtifactDescr.getManagedDependencies());
         }
 
-        directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(), managedDeps,
-                Set.of());
+        directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(),
+                excludedArtifacts, managedDeps, Set.of());
         aggregatedRepos = mvn.aggregateRepositories(aggregatedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 

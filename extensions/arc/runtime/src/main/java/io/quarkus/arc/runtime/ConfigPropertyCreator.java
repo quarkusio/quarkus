@@ -1,24 +1,22 @@
 package io.quarkus.arc.runtime;
 
-import java.util.Map;
-
-import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.InjectionPointProvider;
 import io.smallrye.config.inject.ConfigProducerUtil;
 
-public class ConfigBeanCreator implements BeanCreator<Object> {
+public class ConfigPropertyCreator implements BeanCreator<Object> {
     @Override
-    public Object create(CreationalContext<Object> creationalContext, Map<String, Object> params) {
-        String requiredType = params.get("requiredType").toString();
+    public Object create(SyntheticCreationalContext<Object> context) {
+        String requiredType = context.getParams().get("requiredType").toString();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            cl = ConfigBeanCreator.class.getClassLoader();
+            cl = ConfigPropertyCreator.class.getClassLoader();
         }
 
         try {
@@ -27,7 +25,7 @@ public class ConfigBeanCreator implements BeanCreator<Object> {
             throw new IllegalStateException("Cannot load required type: " + requiredType);
         }
 
-        InjectionPoint injectionPoint = InjectionPointProvider.getCurrent(creationalContext);
+        InjectionPoint injectionPoint = InjectionPointProvider.getCurrent(context);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
         }

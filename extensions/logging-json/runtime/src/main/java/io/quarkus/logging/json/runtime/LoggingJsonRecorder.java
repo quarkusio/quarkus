@@ -149,14 +149,19 @@ public class LoggingJsonRecorder {
         if (!dateFormat.equals("default")) {
             formatter.setDateFormat(dateFormat);
         }
-        // ECS requires a flat rendered stack trace string in error.stack_trace.
-        // The FORMATTED output type writes the stack trace via Key.STACK_TRACE (mapped
-        // to "error.stack_trace" by addEcsFieldOverrides) and suppresses the structured
-        // "exception" object that DETAILED would produce.
-        if (JsonConfig.LogFormat.ECS == config.logFormat()) {
-            formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.FORMATTED);
-        } else {
-            formatter.setExceptionOutputType(config.exceptionOutputType());
+        switch (config.logFormat()) {
+            case ECS:
+                formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.FORMATTED);
+                break;
+            case GCP:
+                formatter.setExceptionOutputType(
+                        config.exceptionOutputType() == StructuredFormatter.ExceptionOutputType.DETAILED
+                                ? StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED
+                                : config.exceptionOutputType());
+                break;
+            default:
+                formatter.setExceptionOutputType(config.exceptionOutputType());
+                break;
         }
         formatter.setPrintDetails(config.printDetails());
         config.recordDelimiter().ifPresent(formatter::setRecordDelimiter);
@@ -207,6 +212,7 @@ public class LoggingJsonRecorder {
     private OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
         EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.LEVEL, "severity");
+        keyOverrides.putIfAbsent(Key.STACK_TRACE, "stack_trace");
 
         Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());

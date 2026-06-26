@@ -6,6 +6,7 @@ import static io.quarkus.vertx.http.HttpServer.HTTPS_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.HTTP_PORT;
 import static io.quarkus.vertx.http.HttpServer.HTTP_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.LOCAL_BASE_URI;
+import static io.quarkus.vertx.http.HttpServer.LOCAL_MANAGEMENT_BASE_URI;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_PORT;
 import static io.quarkus.vertx.http.HttpServer.MANAGEMENT_TEST_PORT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
@@ -851,6 +852,20 @@ public class VertxHttpRecorder {
                                     valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
                                 }
                             }
+                            String mgmtScheme = httpManagementServerOptions.isSsl() ? "https" : "http";
+                            String mgmtHost = httpManagementServerOptions.getHost();
+                            if ("0.0.0.0".equals(mgmtHost)) {
+                                mgmtHost = "localhost";
+                            }
+                            String mgmtRootPath = managementBuildTimeConfig.rootPath();
+                            if (!mgmtRootPath.startsWith("/")) {
+                                mgmtRootPath = "/" + mgmtRootPath;
+                            }
+                            if (mgmtRootPath.length() > 1 && mgmtRootPath.endsWith("/")) {
+                                mgmtRootPath = mgmtRootPath.substring(0, mgmtRootPath.length() - 1);
+                            }
+                            valueRegistry.getValue().register(LOCAL_MANAGEMENT_BASE_URI,
+                                    URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath));
                             managementInterfaceFuture.complete(ar.result());
                         }
                     });

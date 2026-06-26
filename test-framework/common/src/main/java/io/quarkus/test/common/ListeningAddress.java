@@ -23,6 +23,14 @@ public record ListeningAddress(Integer port, String protocol) {
                 URI.create(isSsl() ? testUrlSsl(valueRegistry, config) : testUrl(valueRegistry, config)));
     }
 
+    public void registerManagement(ValueRegistry valueRegistry, Config config) {
+        valueRegistry.register(MANAGEMENT_PORT, port);
+        valueRegistry.register(MANAGEMENT_TEST_PORT, port);
+        valueRegistry.register(LOCAL_MANAGEMENT_BASE_URI,
+                URI.create(isSsl() ? testManagementUrlSsl(valueRegistry, config)
+                        : testManagementUrl(valueRegistry, config)));
+    }
+
     // Compatibility with Config and io.quarkus.vertx.http.HttpServer
     public static final RuntimeKey<Integer> HTTP_PORT = RuntimeKey.intKey("quarkus.http.port");
     public static final RuntimeKey<Integer> HTTP_TEST_PORT = RuntimeKey.intKey("quarkus.http.test-port");
@@ -31,4 +39,11 @@ public record ListeningAddress(Integer port, String protocol) {
     public static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
     public static final RuntimeKey<Optional<ListeningAddress>> LISTENING_ADDRESS = RuntimeKey
             .key("quarkus.http.listening-address");
+
+    // Compatibility with Config and io.quarkus.vertx.http.HttpServer (management interface)
+    public static final RuntimeKey<Integer> MANAGEMENT_PORT = RuntimeKey.intKey("quarkus.management.port");
+    public static final RuntimeKey<Integer> MANAGEMENT_TEST_PORT = RuntimeKey.intKey("quarkus.management.test-port");
+    public static final RuntimeKey<URI> LOCAL_MANAGEMENT_BASE_URI = RuntimeKey.key("quarkus.management.local-base-uri");
+    public static final RuntimeKey<Optional<ListeningAddress>> MANAGEMENT_LISTENING_ADDRESS = RuntimeKey
+            .key("quarkus.management.listening-address");
 }

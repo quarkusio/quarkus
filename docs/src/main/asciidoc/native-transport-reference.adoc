@@ -37,31 +37,33 @@ Applications with high I/O volume or many concurrent connections typically see t
 
 == Supported transports
 
-[cols="1,1,2,2",stripes=even,options=header]
+[cols="1,1,2,2,1",stripes=even,options=header]
 |===
 |Transport
 |Platform
 |Dependency
 |Classifiers
+|Native executable
 
 |epoll
 |Linux
 |`io.netty:netty-transport-native-epoll`
 |`linux-x86_64`, `linux-aarch_64`
+|Supported
 
 |kqueue
 |macOS, BSD
 |`io.netty:netty-transport-native-kqueue`
 |`osx-x86_64`, `osx-aarch_64`
+|Not yet supported
 
 |io_uring
 |Linux 5.1+
 |`io.netty:netty-transport-native-io_uring`
 |`linux-x86_64`, `linux-aarch_64`
+|Supported
 
 |===
-
-NOTE: Native transports are not yet supported in native executables. Support is planned for a future release.
 
 == Quick start
 
@@ -401,12 +403,12 @@ If the command returns output, io_uring is available.
 
 == Native executable support
 
-Native transport is **not yet supported** in Quarkus native executables.
+Native transports can be used in Quarkus native executables on Linux.
+**epoll** and **io_uring** are supported in native mode.
+**kqueue** is not yet supported in native executables.
 
-When you build a native image, Quarkus will use Java NIO regardless of your native transport configuration.
-
-Support for native transport in native images is planned for a future release.
-Track progress in the related GitHub issues.
+When building a native executable with native transport dependencies on the classpath, the transport is available at runtime just as in JVM mode.
+No additional configuration is needed beyond the standard setup described in this guide.
 
 == Troubleshooting
 

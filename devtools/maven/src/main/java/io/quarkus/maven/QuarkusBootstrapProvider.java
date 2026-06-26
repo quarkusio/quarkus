@@ -324,8 +324,8 @@ public class QuarkusBootstrapProvider implements Closeable {
             final List<Dependency> forcedDependencies = mojo.forcedDependencies(mode);
             final ApplicationModel appModel;
             try {
-                appModel = modelResolver.resolveManagedModel(appArtifact, forcedDependencies, managingProject(mojo),
-                        reloadableModules);
+                appModel = modelResolver.resolveManagedModel(appArtifact, forcedDependencies, Set.of(),
+                        managingProject(mojo), reloadableModules);
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);
             }

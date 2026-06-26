@@ -175,7 +175,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private static final String SUPER_CLASS_NAME = GeneratedSerializer.class.getName();
     private static final String SER_STRINGS_CLASS_NAME = "SerializedStrings$quarkusjacksonserializer";
 
-    private final Map<String, Set<String>> generatedFields = new HashMap<>();
+    private final Map<String, Map<String, String>> generatedFields = new HashMap<>();
 
     public JacksonSerializerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
@@ -196,7 +196,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
         MethodDescriptor serStringCtor = MethodDescriptor.ofConstructor(SerializedString.class, String.class);
 
-        for (Map.Entry<String, Set<String>> fieldsInPkg : generatedFields.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> fieldsInPkg : generatedFields.entrySet()) {
             try (ClassCreator classCreator = new ClassCreator(
                     new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
                     fieldsInPkg.getKey() + "." + SER_STRINGS_CLASS_NAME, null,
@@ -204,11 +204,12 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
                 MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
 
-                for (String field : fieldsInPkg.getValue()) {
-                    FieldCreator fieldCreator = classCreator.getFieldCreator(field, SerializedString.class.getName())
+                for (Map.Entry<String, String> field : fieldsInPkg.getValue().entrySet()) {
+                    FieldCreator fieldCreator = classCreator
+                            .getFieldCreator(field.getKey(), SerializedString.class.getName())
                             .setModifiers(ACC_STATIC | ACC_FINAL);
                     clinit.writeStaticField(fieldCreator.getFieldDescriptor(),
-                            clinit.newInstance(serStringCtor, clinit.load(field)));
+                            clinit.newInstance(serStringCtor, clinit.load(field.getValue())));
                 }
 
                 clinit.returnVoid();
@@ -429,7 +430,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             bytecode.invokeStaticMethod(serializeUnwrapped, arg, ctx.jsonGenerator, ctx.serializerProvider);
         } else {
             String pkgName = classInfo.name().packagePrefixName().toString();
-            generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
+            generatedFields.computeIfAbsent(pkgName, pkg -> new HashMap<>())
+                    .put(sanitizeFieldName(fieldSpecs.jsonName), fieldSpecs.jsonName);
             String typeName = fieldSpecs.fieldType.name().toString();
 
             if (fieldSpecs.isRawValue()) {
@@ -533,7 +535,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private static void writeFieldName(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,
             String pkgName) {
         ResultHandle serStringHandle = bytecode.readStaticField(
-                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
+                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, sanitizeFieldName(fieldSpecs.jsonName),
                         SerializedString.class.getName()));
 
         if (fieldSpecs.hasExplicitJsonName) {
@@ -646,6 +648,22 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         ResultHandle invalidException = isFailEnabledBranch.invokeStaticMethod(exceptionConstructor, jsonGenerator,
                 isFailEnabledBranch.load(errorMsg), javaType);
         isFailEnabledBranch.throwException(invalidException);
+    }
+
+    static String sanitizeFieldName(String jsonName) {
+        StringBuilder sb = null;
+        for (int i = 0; i < jsonName.length(); i++) {
+            char c = jsonName.charAt(i);
+            boolean valid = i == 0 ? Character.isJavaIdentifierStart(c) : Character.isJavaIdentifierPart(c);
+            if (!valid && sb == null) {
+                sb = new StringBuilder(jsonName.length());
+                sb.append(jsonName, 0, i);
+            }
+            if (sb != null) {
+                sb.append(valid ? c : '_');
+            }
+        }
+        return sb != null ? sb.toString() : jsonName;
     }
 
     private record SerializationContext(ResultHandle valueHandle, ResultHandle jsonGenerator, ResultHandle serializerProvider,

@@ -528,7 +528,12 @@ public final class ValueResolvers {
         public CompletionStage<Object> resolve(EvalContext context) {
             if (context.getBase() instanceof CharSequence) {
                 return context.evaluate(context.getParams().get(0))
-                        .thenApply(param -> context.getBase().toString() + (param != null ? param.toString() : ""));
+                        .thenCompose(param -> {
+                            if (param == null || Results.isNotFound(param)) {
+                                return Results.notFound(context);
+                            }
+                            return CompletedStage.of(context.getBase().toString() + param.toString());
+                        });
             }
             return super.resolve(context);
         }

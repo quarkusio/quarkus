@@ -712,6 +712,32 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("label", Matchers.is("from-json"));
     }
 
+    // --- @JsonProperty with special characters (hyphens, dots) ---
+
+    @Test
+    public void testSpecialCharPropertySerialization() {
+        RestAssured.get("/generated/special-char-property")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("'ROUND-0.2'", Matchers.is(1))
+                .body("normal_name", Matchers.is("test"));
+    }
+
+    @Test
+    public void testSpecialCharPropertyRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"ROUND-0.2\":5,\"normal_name\":\"hello\"}")
+                .when()
+                .post("/generated/special-char-property")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("'ROUND-0.2'", Matchers.is(5))
+                .body("normal_name", Matchers.is("hello"));
+    }
+
     // --- @JsonRawValue ---
 
     @Test

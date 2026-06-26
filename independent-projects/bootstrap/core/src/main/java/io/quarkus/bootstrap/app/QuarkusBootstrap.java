@@ -83,6 +83,7 @@ public class QuarkusBootstrap implements Serializable {
     private final MavenArtifactResolver mavenArtifactResolver;
     private final ArtifactCoords managingProject;
     private final List<Dependency> forcedDependencies;
+    private final Set<ArtifactKey> excludedDependencies;
     private final boolean disableClasspathCache;
     private final ApplicationModel existingModel;
     private final boolean rebuild;
@@ -118,6 +119,7 @@ public class QuarkusBootstrap implements Serializable {
         this.mavenArtifactResolver = builder.mavenArtifactResolver;
         this.managingProject = builder.managingProject;
         this.forcedDependencies = new ArrayList<>(builder.forcedDependencies);
+        this.excludedDependencies = new HashSet<>(builder.excludedDependencies);
         this.disableClasspathCache = builder.disableClasspathCache;
         this.existingModel = builder.existingModel;
         this.rebuild = builder.rebuild;
@@ -167,6 +169,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
                 .setForcedDependencies(forcedDependencies)
+                .setExcludedDependencies(excludedDependencies)
                 .setLocalArtifacts(localArtifacts)
                 .setProjectRoot(projectRoot);
         if (mode == Mode.TEST || test) {
@@ -283,6 +286,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setManagingProject(managingProject)
                 .setForcedDependencies(forcedDependencies)
+                .setExcludedDependencies(excludedDependencies)
                 .setDisableClasspathCache(disableClasspathCache)
                 .addClassLoaderEventListeners(classLoadListeners)
                 .setExistingModel(existingModel);
@@ -336,6 +340,7 @@ public class QuarkusBootstrap implements Serializable {
         MavenArtifactResolver mavenArtifactResolver;
         ArtifactCoords managingProject;
         List<Dependency> forcedDependencies = Collections.emptyList();
+        Set<ArtifactKey> excludedDependencies = Collections.emptySet();
         boolean disableClasspathCache;
         ApplicationModel existingModel;
         final Set<ArtifactKey> localArtifacts = new HashSet<>();
@@ -515,6 +520,14 @@ public class QuarkusBootstrap implements Serializable {
          */
         public Builder setForcedDependencies(List<Dependency> forcedDependencies) {
             this.forcedDependencies = forcedDependencies;
+            return this;
+        }
+
+        /**
+         * If set, each of these dependencies will be excluded from the application dependencies
+         */
+        public Builder setExcludedDependencies(Set<ArtifactKey> excludedDependencies) {
+            this.excludedDependencies = excludedDependencies;
             return this;
         }
 

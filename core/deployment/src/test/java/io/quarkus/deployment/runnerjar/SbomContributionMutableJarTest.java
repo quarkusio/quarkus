@@ -103,7 +103,7 @@ public class SbomContributionMutableJarTest extends SbomContributionTestBase {
 
         expectFileComponent("quarkus-run.jar", comp -> {
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
-            assertDependencies(comp, artifactCoords("app"));
+            assertDependencyBomRefs(comp, "pkg:generic/quarkus-app-dependencies.txt@" + TsArtifact.DEFAULT_VERSION);
             assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 

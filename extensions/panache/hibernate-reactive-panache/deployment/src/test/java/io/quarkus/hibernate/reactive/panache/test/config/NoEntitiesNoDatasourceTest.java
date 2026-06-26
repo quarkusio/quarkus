@@ -2,10 +2,13 @@ package io.quarkus.hibernate.reactive.panache.test.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 
@@ -14,10 +17,9 @@ public class NoEntitiesNoDatasourceTest {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withEmptyApplication()
-            // Ideally we would not add quarkus-reactive-pg-client to the classpath and there _really_ wouldn't be a datasource,
-            // but that's inconvenient given our testing setup,
-            // so we'll just disable the implicit datasource.
-            .overrideConfigKey("quarkus.datasource.reactive", "false");
+            .setExcludedDependencies(Set.of(
+                    ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client"),
+                    ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client-deployment")));
 
     // When having no entities, no configuration, and no datasource,
     // we should still be able to start the application.

@@ -24,6 +24,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(
             new YAMLFactory().configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false));
     private static final String APP_CONFIG = "app-config";
+    private static final String USE_CONFIG_DIR = "use-config-dir";
+    private static final String SRC_MAIN_RESOURCES_PREFIX = "src/main/resources/";
 
     @Override
     public String name() {
@@ -45,7 +47,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
                 config.putAll(NestedMaps.deepMerge(config, o));
             }
         }
-        final Path targetPath = targetDirectory.resolve(relativePath);
+        final String resolvedRelativePath = resolveConfigPath(relativePath, data);
+        final Path targetPath = targetDirectory.resolve(resolvedRelativePath);
         createDirectories(targetPath);
         if (Objects.equals(configType, "config-properties")) {
             writePropertiesConfig(targetPath, config);
@@ -96,6 +99,14 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         }
 
         return "\"" + key.replaceAll("\"", "\\\"") + "\"";
+    }
+
+    private static String resolveConfigPath(String relativePath, Map<String, Object> data) {
+        if (Boolean.TRUE.equals(data.get(USE_CONFIG_DIR))
+                && relativePath.startsWith(SRC_MAIN_RESOURCES_PREFIX)) {
+            return "config/" + relativePath.substring(SRC_MAIN_RESOURCES_PREFIX.length());
+        }
+        return relativePath;
     }
 
     private static String getConfigType(Map<String, Object> data) {

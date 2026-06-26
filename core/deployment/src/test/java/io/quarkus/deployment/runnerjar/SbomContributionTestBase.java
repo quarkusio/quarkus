@@ -59,7 +59,7 @@ public abstract class SbomContributionTestBase extends BootstrapFromOriginalJarT
         });
     }
 
-    private static String toBomRef(ArtifactCoords coords) {
+    protected static String toBomRef(ArtifactCoords coords) {
         return Purl.maven(coords.getGroupId(), coords.getArtifactId(), coords.getVersion(),
                 coords.getType(), coords.getClassifier().isEmpty() ? null : coords.getClassifier()).toString();
     }
@@ -117,6 +117,16 @@ public abstract class SbomContributionTestBase extends BootstrapFromOriginalJarT
                     .as(() -> desc.getBomRef() + " has dependencies")
                     .isEqualTo(expectedBomRefs);
         }
+    }
+
+    protected void assertDependencyBomRefs(ComponentDescriptor desc, String... expectedBomRefs) {
+        ComponentDependencies deps = dependenciesMap.get(desc.getBomRef());
+        assertThat(deps)
+                .as(() -> desc.getBomRef() + " has dependency record")
+                .isNotNull();
+        assertThat(new HashSet<>(deps.getDependsOn()))
+                .as(() -> desc.getBomRef() + " has dependencies")
+                .isEqualTo(Set.of(expectedBomRefs));
     }
 
     @Override

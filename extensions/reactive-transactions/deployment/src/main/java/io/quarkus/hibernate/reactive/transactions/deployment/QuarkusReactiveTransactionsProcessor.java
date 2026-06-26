@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.transactions.deployment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionManager;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorMandatory;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorNever;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorNotSupported;
@@ -14,6 +15,7 @@ public class QuarkusReactiveTransactionsProcessor {
     @BuildStep
     AdditionalBeanBuildItem produceItems() {
         return new AdditionalBeanBuildItem(
+                ReactiveTransactionManager.class,
                 TransactionalInterceptorMandatory.class,
                 TransactionalInterceptorNever.class,
                 TransactionalInterceptorNotSupported.class,

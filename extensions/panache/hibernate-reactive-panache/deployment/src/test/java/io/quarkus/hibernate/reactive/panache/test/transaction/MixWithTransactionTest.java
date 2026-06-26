@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.hibernate.reactive.runtime.transaction.HibernateActionsStrategy;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -20,7 +19,7 @@ public class MixWithTransactionTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TransactionalInterceptorRequired.class, HibernateActionsStrategy.class));
+                    .addClasses(TransactionalInterceptorRequired.class));
 
     @Test
     @RunOnVertxContext

@@ -13,6 +13,6 @@ public class TransactionalInterceptorNotSupported extends TransactionalIntercept
 
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        return doIntercept(ic, null);
+        return doIntercept(ic);
     }
 }

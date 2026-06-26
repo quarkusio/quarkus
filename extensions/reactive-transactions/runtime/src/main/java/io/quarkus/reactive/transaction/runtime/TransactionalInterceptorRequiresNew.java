@@ -13,6 +13,6 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
 
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        return doIntercept(ic, null);
+        return doIntercept(ic);
     }
 }

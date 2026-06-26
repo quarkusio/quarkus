@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import static io.quarkus.reactive.transaction.runtime.ReactiveTransactionManager.TRANSACTIONAL_METHOD_KEY;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
-import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.List;
 import java.util.Locale;
@@ -18,12 +18,15 @@ import org.hibernate.reactive.mutiny.delegation.MutinyStatelessSessionDelegator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.hibernate.reactive.runtime.transaction.HibernateReactiveSynchronization;
 import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionManager;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.common.vertx.ContextLocals;
@@ -143,6 +146,10 @@ public class HibernateReactiveRecorder {
         } else {
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
             ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
+
+            ReactiveTransactionManager txManager = Arc.container().instance(ReactiveTransactionManager.class).get();
+            txManager.registerSynchronization(new HibernateReactiveSynchronization());
+
             LOG.debugf("Opening lazy session for Persistence Unit '%s'", persistenceUnitName);
             return OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
         }
@@ -180,6 +187,10 @@ public class HibernateReactiveRecorder {
         } else {
             // Store the persistence unit name so that we can close only this session at the end of the interceptor
             ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
+
+            ReactiveTransactionManager txManager = Arc.container().instance(ReactiveTransactionManager.class).get();
+            txManager.registerSynchronization(new HibernateReactiveSynchronization());
+
             LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
             return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
         }

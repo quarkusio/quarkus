@@ -6,7 +6,10 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionManager;
+import io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool;
 import io.vertx.sqlclient.Pool;
 
 public final class QuarkusReactiveConnectionPoolInitiator
@@ -31,7 +34,8 @@ public final class QuarkusReactiveConnectionPoolInitiator
             // nothing to do, but given the separate hierarchies have to handle this here.
             return null;
         }
-        return new QuarkusSqlClientPool(new io.quarkus.reactive.transaction.runtime.pool.TransactionalContextPool(pool));
+        ReactiveTransactionManager txManager = Arc.container().instance(ReactiveTransactionManager.class).get();
+        return new QuarkusSqlClientPool(new TransactionalContextPool(pool, txManager));
     }
 
 }

@@ -5,6 +5,7 @@ import java.lang.invoke.VarHandle;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionResource;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.sqlclient.Pool;
@@ -12,8 +13,10 @@ import io.vertx.sqlclient.Pool;
 /**
  * Holder for the connection future, ensuring only one connection is created per transaction
  * even when multiple sessions request it concurrently.
+ * <p>
+ * Implements {@link ReactiveTransactionResource} to participate in the reactive transaction lifecycle.
  */
-class ConnectionHolder {
+public class ConnectionHolder implements ReactiveTransactionResource {
 
     private static final Logger LOG = Logger.getLogger(ConnectionHolder.class);
 
@@ -32,7 +35,7 @@ class ConnectionHolder {
     final Promise<TransactionalContextConnection> connectionPromise = Promise.promise();
     private volatile boolean opened = false;
 
-    ConnectionHolder(Pool delegate) {
+    public ConnectionHolder(Pool delegate) {
         this.delegate = delegate;
     }
 
@@ -57,5 +60,42 @@ class ConnectionHolder {
                     .onComplete(connectionPromise);
         }
         return connectionPromise.future();
+    }
+
+    @Override
+    public Future<Void> commit() {
+        return connectionPromise.future()
+                .compose(wrappedConnection -> {
+                    if (wrappedConnection.transaction() == null) {
+                        LOG.tracef("Transaction doesn't exist, so won't commit here");
+                        return Future.succeededFuture();
+                    }
+                    return wrappedConnection.transaction().commit()
+                            .onFailure(t -> LOG.tracef("Failed to commit transaction"))
+                            .onSuccess(v -> LOG.tracef("Transaction committed"));
+                });
+    }
+
+    @Override
+    public Future<Void> rollback() {
+        return connectionPromise.future()
+                .compose(wrappedConnection -> {
+                    if (wrappedConnection.transaction() == null) {
+                        LOG.tracef("Transaction doesn't exist, so won't rollback here");
+                        return Future.succeededFuture();
+                    }
+                    return wrappedConnection.transaction().rollback()
+                            .onFailure(t -> LOG.tracef("Failed to rollback transaction"))
+                            .onSuccess(v -> LOG.tracef("Transaction rolled back"));
+                });
+    }
+
+    @Override
+    public Future<Void> close() {
+        return connectionPromise.future()
+                .compose(wrappedConnection -> {
+                    LOG.tracef("Closing the underlying connection");
+                    return wrappedConnection.getDelegate().close();
+                });
     }
 }

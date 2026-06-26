@@ -1,14 +1,10 @@
 package io.quarkus.reactive.transaction.runtime.pool;
 
-import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
-
 import org.jboss.logging.Logger;
 
-import io.smallrye.common.vertx.ContextLocals;
-import io.smallrye.common.vertx.VertxContext;
-import io.vertx.core.Context;
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionManager;
+import io.quarkus.reactive.transaction.runtime.ReactiveTransactionResource;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PrepareOptions;
 import io.vertx.sqlclient.PreparedQuery;
@@ -18,94 +14,48 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 
 /**
- * A connection pool that handles transaction based on Vert.x context set by the @Transactional interceptor.
+ * A connection pool that handles transactions based on the {@link ReactiveTransactionManager}.
+ * <p>
+ * When a reactive transaction is active (via {@code @Transactional}), {@link #getConnection()} returns
+ * a transaction-scoped connection. Otherwise, it delegates to the raw pool.
+ * <p>
+ * {@link #withTransaction} always delegates to the raw pool, so manual transactions work
+ * both inside and outside {@code @Transactional} scope.
  */
 public class TransactionalContextPool implements Pool {
 
     private static final Logger LOG = Logger.getLogger(TransactionalContextPool.class);
 
-    // Key to store the connection holder for reuse by multiple sessions
-    private static final String CURRENT_CONNECTION_KEY = "reactive.transaction.currentConnection";
-
     private final Pool delegate;
+    private final ReactiveTransactionManager txManager;
 
-    public TransactionalContextPool(Pool delegate) {
+    public TransactionalContextPool(Pool delegate, ReactiveTransactionManager txManager) {
         this.delegate = delegate;
+        this.txManager = txManager;
     }
 
     @Override
     public Future<SqlConnection> getConnection() {
-        if (!shouldOpenTransaction()) {
+        if (!txManager.isActive()) {
             return delegate.getConnection();
-        } else {
-            return getOrCreateConnectionHolder()
-                    .getConnection()
-                    .map(conn -> (SqlConnection) conn);
         }
-    }
 
-    /**
-     * Gets or creates the ConnectionHolder for the current context.
-     * The holder ensures only one connection is created even with concurrent access.
-     */
-    private ConnectionHolder getOrCreateConnectionHolder() {
-        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
-        if (holder == null) {
+        ReactiveTransactionResource resource = txManager.getResource();
+        ConnectionHolder holder;
+        if (resource instanceof ConnectionHolder) {
+            holder = (ConnectionHolder) resource;
+        } else if (resource == null) {
             holder = new ConnectionHolder(delegate);
-            ContextLocals.put(CURRENT_CONNECTION_KEY, holder);
-        }
-        return holder;
-    }
-
-    public static Future<? extends SqlConnection> getCurrentConnectionFromVertxContext() {
-        Context context = Vertx.currentContext();
-        if (context == null) {
-            return null;
-        }
-        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
-        if (holder == null) {
-            return null;
-        }
-        return holder.connectionPromise.future();
-    }
-
-    /**
-     * Closes the current connection and clears it from the Vertx context.
-     * This should be called by TransactionalInterceptorBase at the end of the transaction.
-     *
-     * @return a Future that completes when the connection is closed, or null if no connection exists
-     */
-    public static Future<Void> closeAndClearCurrentConnection() {
-        Context context = Vertx.currentContext();
-        if (context == null) {
-            return null;
-        }
-        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
-        if (holder == null) {
-            return null;
-        }
-        // Wait for the connection to be available, then close it
-        return holder.connectionPromise.future()
-                .compose(wrappedConnection -> {
-                    SqlConnection delegateConnection = wrappedConnection.getDelegate();
-                    return delegateConnection.close();
-                })
-                .andThen(ar -> ContextLocals.remove(CURRENT_CONNECTION_KEY));
-    }
-
-    private boolean shouldOpenTransaction() {
-
-        Context context = Vertx.currentContext();
-
-        // Vert.x context during DB Validation in startup is null
-        // When using reactive in a @Transactional method, the context is surely duplicated
-        if (VertxContext.isOnDuplicatedContext()) {
-            Object createTransaction = ContextLocals.get(TRANSACTIONAL_METHOD_KEY, null);
-            return createTransaction != null && (boolean) createTransaction;
+            txManager.enlistResource(holder);
         } else {
-            LOG.tracef("Vert.x context is either null or non duplicated, won't create a new transaction");
-            return false;
+            // A different resource is already enlisted (different datasource)
+            throw new IllegalStateException(
+                    "Cannot enlist multiple resources in a reactive transaction (XA not supported). "
+                            + "Use a single datasource per @Transactional method, "
+                            + "or use pool.withTransaction() for manual transaction management.");
         }
+
+        return holder.getConnection().map(conn -> (SqlConnection) conn);
     }
 
     @Override

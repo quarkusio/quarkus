@@ -557,7 +557,7 @@ If you do not specify it on the command line, the plugin will derive it from `ex
 So you may consider omitting explicit `name` in some cases.
 
 // The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
-Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
+Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-branch}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 
 ==== Using Gradle
 

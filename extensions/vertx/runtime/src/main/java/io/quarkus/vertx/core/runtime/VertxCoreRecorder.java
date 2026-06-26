@@ -444,15 +444,50 @@ public class VertxCoreRecorder {
                         + "io.netty:netty-transport-native-kqueue (macOS) to your project. "
                         + "See the Native Transport Reference guide for details.";
             } else {
-                Throwable cause = vertx.unavailableNativeTransportCause();
-                String causeMsg = cause != null ? " Cause: " + cause.getMessage() : "";
-                msg = String.format(
-                        "Native transport was requested and %s was found on the classpath, "
-                                + "but it failed to load on this platform: %s",
-                        detected, causeMsg);
-            }
-            if (required) {
-                throw new IllegalStateException(msg);
+                Transport requestedTransport = null;
+                if (requestedType != NativeTransportType.AUTO) {
+                    requestedTransport = switch (requestedType) {
+                        case EPOLL -> Transport.EPOLL;
+                        case KQUEUE -> Transport.KQUEUE;
+                        case IO_URING -> Transport.IO_URING;
+                        default -> null;
+                    };
+                } else {
+                    if (detected.contains("epoll")) {
+                        requestedTransport = Transport.EPOLL;
+                    } else if (detected.contains("io_uring")) {
+                        requestedTransport = Transport.IO_URING;
+                    }
+                }
+
+                // Prefer the transport-specific cause (more precise), fall back to Vert.x-level cause
+                Throwable cause = null;
+                if (requestedTransport != null) {
+                    cause = requestedTransport.unavailabilityCause();
+                }
+                if (cause == null) {
+                    cause = vertx.unavailableNativeTransportCause();
+                }
+
+                if (cause != null) {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform. Cause: %s",
+                            detected, cause.getMessage());
+                } else {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform.",
+                            detected);
+                }
+
+                if (required) {
+                    if (requestedTransport != null && requestedTransport.unavailabilityCause() != null) {
+                        LOGGER.errorf("Unable to load native transport: " + requestedTransport.name(),
+                                requestedTransport.unavailabilityCause());
+                    }
+                    throw new IllegalStateException(msg, cause);
+                }
             }
             LOGGER.warn(msg);
         }

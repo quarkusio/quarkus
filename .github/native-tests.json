@@ -103,6 +103,12 @@
             "os-name": "ubuntu-latest"
         },
         {
+            "category": "Native Transport",
+            "timeout": 55,
+            "test-modules": "vertx-native-transport/epoll, vertx-native-transport/io-uring, vertx-native-transport/explicit-io-uring, vertx-native-transport/nio-fallback, vertx-native-transport/native-transport-disabled",
+            "os-name": "ubuntu-latest"
+        },
+        {
             "category": "Misc1",
             "timeout": 80,
             "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator, signals, signals-command-mode",

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -130,6 +131,12 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
 
     public static final class Factory implements JsonMapper.Factory {
 
+        private final List<Consumer<Builder>> customizers = new ArrayList<>();
+
+        public void addCustomizer(Consumer<Builder> customizer) {
+            customizers.add(customizer);
+        }
+
         @Override
         public JsonMapper create(JsonTypeAdapter<?, Map<String, Object>> jsonObjectAdapter,
                 JsonTypeAdapter<?, List<?>> jsonArrayAdapter, JsonTypeAdapter<?, String> bufferAdapter) {
@@ -207,6 +214,10 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
                 addAdapterToString(runtimeModule, bufferAdapter);
             }
             builder.addModule(runtimeModule);
+
+            for (Consumer<Builder> customizer : customizers) {
+                customizer.accept(builder);
+            }
 
             ObjectMapper mapper = builder.build();
             return new DevJsonRpcDatabindCodec(mapper,

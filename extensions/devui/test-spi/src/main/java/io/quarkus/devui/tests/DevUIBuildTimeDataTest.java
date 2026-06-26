@@ -62,6 +62,10 @@ public abstract class DevUIBuildTimeDataTest {
         for (String kv : kvs) {
             if (kv.startsWith(key + SPACE + EQUALS + SPACE)) {
                 String json = kv.substring(kv.indexOf(EQUALS) + 1).trim();
+                // TODO: need to figure out why this is now needed
+                if (json.endsWith(";")) {
+                    json = json.substring(0, json.length() - 1);
+                }
                 log.debug("json = " + json);
                 return toJsonNode(json);
             }

@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Observation"
+metadata:
+  keywords:
+    - "micrometer"
+    - "observation"
+    - "tracing"
+    - "metrics"
+    - "monitoring"
+  categories:
+    - "observability"
+  status: "preview"
+  config:
+    - "quarkus.observation."

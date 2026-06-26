@@ -35,7 +35,7 @@ public interface ContainerImageOpenshiftConfig {
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return ContainerImages.S2I_JAVA_21;
         }
-        return ContainerImages.S2I_JAVA_17;
+        throw new IllegalArgumentException("Unsupported Java version: " + version);
     }
 
     /**

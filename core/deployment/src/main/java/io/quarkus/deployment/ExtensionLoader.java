@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
@@ -71,6 +72,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Key;
 import io.quarkus.deployment.annotations.Overridable;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.ProduceWeak;
@@ -84,6 +86,9 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.ConfigMappingUtils;
+import io.quarkus.deployment.key.KeyDescriptor;
+import io.quarkus.deployment.key.KeyUtils;
+import io.quarkus.deployment.key.KeyedParam;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -255,7 +260,7 @@ public final class ExtensionLoader {
      * @return a consumer which adds the steps to the given chain builder
      */
     @SuppressWarnings("unchecked")
-    private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
+    static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
             Map<Class<?>, Object> runTimeProxies,
             BooleanSupplierFactoryBuildItem supplierFactory) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
@@ -468,6 +473,7 @@ public final class ExtensionLoader {
                 }
             }
             final List<BiFunction<BuildContext, BytecodeRecorderImpl, Object>> methodParamFns;
+            final List<KeyedParam> keyedParams;
             Consumer<BuildStepBuilder> methodStepConfig = Functions.discardingConsumer();
             BooleanSupplier addStep = () -> true;
             addStep = and(addStep, supplierFactory, classOnlyIf, false);
@@ -488,11 +494,34 @@ public final class ExtensionLoader {
                 });
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
+            int keyParamIdx = -1;
+            Class<?> keyType = null;
+            for (int i = 0; i < methodParameters.length; i++) {
+                Key keyAnn = methodParameters[i].getAnnotation(Key.class);
+                if (keyAnn != null) {
+                    if (keyParamIdx >= 0) {
+                        throw reportError(method,
+                                "Multiple @Key parameters found. Only one @Key parameter is supported per method.");
+                    }
+                    if (methodParameters[i].getType() != String.class) {
+                        throw reportError(methodParameters[i], "@Key parameter must be of type String");
+                    }
+                    keyParamIdx = i;
+                    keyType = keyAnn.value();
+                }
+            }
+            final int finalKeyParamIndex = keyParamIdx;
             if (methodParameters.length == 0) {
                 methodParamFns = Collections.emptyList();
+                keyedParams = Collections.emptyList();
             } else {
                 methodParamFns = new ArrayList<>(methodParameters.length);
+                List<KeyedParam> tmpKeyedParams = new ArrayList<>();
                 for (Parameter parameter : methodParameters) {
+                    if (parameter.isAnnotationPresent(Key.class)) {
+                        methodParamFns.add((bc, bri) -> null);
+                        continue;
+                    }
                     final boolean weak = parameter.isAnnotationPresent(Weak.class);
                     final boolean overridable = parameter.isAnnotationPresent(Overridable.class);
                     final Type parameterType = parameter.getParameterizedType();
@@ -512,7 +541,25 @@ public final class ExtensionLoader {
                         final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                                 .asSubclass(MultiBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
+                        if (keyType != null) {
+                            KeyDescriptor itemKey = KeyUtils.findKeyField(buildItemClass);
+                            if (itemKey != null && itemKey.keyType() == keyType) {
+                                tmpKeyedParams.add(new KeyedParam(methodParamFns.size(), itemKey, false));
+                            }
+                        }
                         methodParamFns.add((bc, bri) -> bc.consumeMulti(buildItemClass));
+                    } else if (keyType != null && rawTypeExtends(parameterType, MultiBuildItem.class)) {
+                        final Class<? extends MultiBuildItem> buildItemClass = parameterClass
+                                .asSubclass(MultiBuildItem.class);
+                        KeyDescriptor itemKey = KeyUtils.findKeyField(buildItemClass);
+                        if (itemKey != null && itemKey.keyType() == keyType) {
+                            methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
+                            tmpKeyedParams.add(new KeyedParam(methodParamFns.size(), itemKey, true));
+                            methodParamFns.add((bc, bri) -> bc.consumeMulti(buildItemClass));
+                        } else {
+                            throw reportError(parameter,
+                                    "Bare MultiBuildItem parameter requires a @Key field matching the method's key type");
+                        }
                     } else if (isConsumerOf(parameterType, BuildItem.class)) {
                         methodStepConfig = configureBuildStepFlags(methodStepConfig, weak, overridable,
                                 rawTypeOfParameter(parameterType, 0)
@@ -556,7 +603,8 @@ public final class ExtensionLoader {
                             }
                         } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
-                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment()
+                                        .equals(warn)) {
                                     methodParamFns.add((bc, bri) -> {
                                         RunTimeConfigurationProxyBuildItem proxies = bc
                                                 .consume(RunTimeConfigurationProxyBuildItem.class);
@@ -617,7 +665,8 @@ public final class ExtensionLoader {
                                         } else {
                                             methodConsumingConfigPhases.add(annotation.phase());
                                             if (annotation.phase().isReadAtMain() && !isRuntimeValue) {
-                                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                                if (extensionLoaderConfig
+                                                        .reportRuntimeConfigAtDeployment().equals(warn)) {
                                                     loadLog.warn(reportError(parameter, annotation.phase() + " configuration "
                                                             + type.getTypeName()
                                                             + " should be injected in a @Recorder constructor as a RuntimeValue<"
@@ -652,6 +701,7 @@ public final class ExtensionLoader {
                         throw reportError(parameter, "Unsupported method parameter " + parameterType);
                     }
                 }
+                keyedParams = tmpKeyedParams;
             }
 
             final BiConsumer<BuildContext, Object> resultConsumer;
@@ -806,17 +856,35 @@ public final class ExtensionLoader {
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
                                 }
-                                Object result;
-                                try {
-                                    result = methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
-                                } catch (IllegalAccessException e) {
-                                    throw ReflectUtil.toError(e);
-                                } catch (RuntimeException | Error e2) {
-                                    throw e2;
-                                } catch (Throwable t) {
-                                    throw new UndeclaredThrowableException(t);
+                                if (finalKeyParamIndex < 0) {
+                                    Object result = invokeStep(methodHandle, instance, methodArgs);
+                                    resultConsumer.accept(bc, result);
+                                } else {
+                                    Set<String> uniqueKeys = KeyUtils.collectUniqueKeys(methodArgs,
+                                            keyedParams);
+                                    if (!uniqueKeys.isEmpty()) {
+                                        RuntimeException firstFailure = null;
+                                        for (String keyValue : uniqueKeys) {
+                                            try {
+                                                Object[] perKeyArgs = KeyUtils.filterKeyedArgs(methodArgs,
+                                                        finalKeyParamIndex, keyedParams, keyValue);
+                                                Object result = invokeStep(methodHandle, instance, perKeyArgs);
+                                                resultConsumer.accept(bc, result);
+                                            } catch (RuntimeException | Error e) {
+                                                if (firstFailure == null) {
+                                                    firstFailure = (e instanceof RuntimeException re)
+                                                            ? re
+                                                            : new RuntimeException(e);
+                                                } else {
+                                                    firstFailure.addSuppressed(e);
+                                                }
+                                            }
+                                        }
+                                        if (firstFailure != null) {
+                                            throw firstFailure;
+                                        }
+                                    }
                                 }
-                                resultConsumer.accept(bc, result);
                                 if (isRecorder) {
                                     // commit recorded data
                                     if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
@@ -824,7 +892,6 @@ public final class ExtensionLoader {
                                     } else {
                                         bc.produce(new MainBytecodeRecorderBuildItem(bri));
                                     }
-
                                 }
                             }
 
@@ -853,6 +920,18 @@ public final class ExtensionLoader {
             flags = weak ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE;
         }
         return methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass, flags));
+    }
+
+    private static Object invokeStep(MethodHandle methodHandle, Object instance, Object[] methodArgs) {
+        try {
+            return methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
+        } catch (IllegalAccessException e) {
+            throw ReflectUtil.toError(e);
+        } catch (RuntimeException | Error e2) {
+            throw e2;
+        } catch (Throwable t) {
+            throw new UndeclaredThrowableException(t);
+        }
     }
 
     private static MethodHandle unreflect(Method method, MethodHandles.Lookup lookup) {

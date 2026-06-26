@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.data.hibernate.runtime;
 import java.util.List;
 
 import jakarta.data.Order;
-import jakarta.data.Sort;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;

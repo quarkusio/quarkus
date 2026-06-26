@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;

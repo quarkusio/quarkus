@@ -1,7 +1,6 @@
 package io.quarkus.it.panache.defaultpu;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 

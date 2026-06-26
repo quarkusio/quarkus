@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MultiAnnotationRecord(
         @JsonProperty("title") String name,
-        @JsonAlias( {
+        @JsonAlias({
                 "desc", "description" }) String summary,
-        @JsonProperty("is_active") boolean active){
+        @JsonProperty("is_active") boolean active) {
 }

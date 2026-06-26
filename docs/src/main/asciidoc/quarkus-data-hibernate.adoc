@@ -634,11 +634,6 @@ You want to start using your entities in a reactive application? Let's start by 
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-reactive-pg-client</artifactId>
 </dependency>
-<!-- FIXME: this will not be required in the future -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
-</dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
@@ -648,8 +643,6 @@ You want to start using your entities in a reactive application? Let's start by 
 implementation("io.quarkus:quarkus-hibernate-reactive")
 // Pick your database reactive driver
 implementation("io.quarkus:quarkus-reactive-pg-client")
-// FIXME: this will not be required in the future
-implementation("io.quarkus:quarkus-hibernate-reactive-panache-common")
 ----
 
 TIP: You can use any of the xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].

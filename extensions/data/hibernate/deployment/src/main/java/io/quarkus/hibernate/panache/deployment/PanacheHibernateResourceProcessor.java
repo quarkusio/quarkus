@@ -267,6 +267,23 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
+    ValidationPhaseBuildItem.ValidationErrorBuildItem validateReactivePanacheRequiresHibernateReactive(
+            CombinedIndexBuildItem index,
+            Capabilities capabilities) {
+        Set<String> offendingTypes = ReactivePanacheValidator.findOffendingReactivePanacheTypes(index.getIndex(),
+                capabilities);
+        if (offendingTypes.isEmpty()) {
+            return null;
+        }
+
+        BuildException be = new BuildException(
+                ReactivePanacheValidator.REACTIVE_PANACHE_REQUIRES_HIBERNATE_REACTIVE
+                        + " Found reactive Panache type(s): " + String.join(", ", offendingTypes),
+                Collections.emptyList());
+        return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
+    }
+
+    @BuildStep
     void registerPanacheRepositoryInterfacesForSecurityScanning(Capabilities capabilities,
             CombinedIndexBuildItem indexBuildItem,
             BuildProducer<SecuredTopLevelInterfaceBuildItem> interfaceBuildItemBuildProducer) {

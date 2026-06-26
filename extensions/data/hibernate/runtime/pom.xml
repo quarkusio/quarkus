@@ -23,7 +23,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

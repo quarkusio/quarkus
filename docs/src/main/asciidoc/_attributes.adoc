@@ -3,7 +3,14 @@
 :project-name: Quarkus
 :quarkus-version: ${project.version}
 :quarkus-platform-groupid: io.quarkus.platform
-// .
+//
+  ifeval::["{quarkus-version}" == "999-SNAPSHOT"]
+  :quarkus-branch: main
+  endif::[]
+  ifeval::["{quarkus-version}" != "999-SNAPSHOT"]
+  :quarkus-branch: {quarkus-version}
+  endif::[]
+//
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-community.version-for-documentation}
 :graalvm-docs-version: ${graal-community.tag-for-documentation}

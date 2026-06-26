@@ -5,14 +5,11 @@ import java.util.Map;
 
 public enum SourceType {
     JAVA,
-    KOTLIN,
-    SCALA;
+    KOTLIN;
 
     private static Map<String, SourceType> EXTENSION_SOURCE_TYPE = Map.of(
             "kotlin", KOTLIN,
-            "quarkus-kotlin", KOTLIN,
-            "scala", SCALA,
-            "quarkus-scala", SCALA);
+            "quarkus-kotlin", KOTLIN);
 
     public static SourceType resolve(Collection<String> extensions) {
         for (String extension : extensions) {

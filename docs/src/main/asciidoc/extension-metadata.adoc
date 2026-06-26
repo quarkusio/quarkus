@@ -41,7 +41,6 @@ metadata:
     languages:
       - "java"
       - "kotlin"
-      - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config: <10>
   - "quarkus.rest."
@@ -83,7 +82,6 @@ metadata:
     languages:
     - "java"
     - "kotlin"
-    - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
   config:
   - "quarkus.rest."

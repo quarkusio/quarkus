@@ -190,7 +190,6 @@
 
         <!-- Additional languages -->
         <module>kotlin</module>
-        <module>scala</module>
 
         <!-- Kubernetes -->
         <module>container-image</module>

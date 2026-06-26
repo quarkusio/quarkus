@@ -5,13 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -24,8 +22,6 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public class QuarkusPluginTest {
 
@@ -84,24 +80,6 @@ public class QuarkusPluginTest {
                 .contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME);
 
         Task quarkusDev = tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME);
-    }
-
-    @Test
-    public void shouldReturnMultipleOutputSourceDirectories() {
-        Project project = ProjectBuilder.builder().build();
-        project.getPluginManager().apply(QuarkusPlugin.ID);
-        project.getPluginManager().apply("java");
-        project.getPluginManager().apply("scala");
-
-        final QuarkusPluginExtension extension = project.getExtensions().getByType(QuarkusPluginExtension.class);
-
-        final Set<File> outputSourceDirs = extension.combinedOutputSourceDirs();
-        assertThat(outputSourceDirs).hasSize(4);
-        assertThat(outputSourceDirs).contains(
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/main"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/test"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/main"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/test"));
     }
 
     @Test

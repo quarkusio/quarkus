@@ -666,11 +666,7 @@ triage:
       notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
-    - id: scala
-      labels: [area/scala]
-      directories:
-        - extensions/scala/
-        - integration-tests/scala/
+
     - id: vault
       labels: [area/vault]
       title: vault

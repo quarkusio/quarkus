@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.hibernate.SessionFactory;
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
@@ -36,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Key;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
@@ -67,13 +69,17 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(HibernateSearchElasticsearchRecorder recorder,
+    public void build(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
+        // Make it possible to record the settings as bytecode:
+        recorderContext.registerSubstitution(ElasticsearchVersion.class,
+                String.class, ElasticsearchVersionSubstitution.class);
+
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
 
@@ -174,44 +180,39 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     @BuildStep
+    RootAnnotationMappedClassNamesBuildItem produceRootAnnotationMappedClassNames(
+            CombinedIndexBuildItem combinedIndexBuildItem) {
+        return new RootAnnotationMappedClassNamesBuildItem(
+                collectRootAnnotationMappedClassNames(combinedIndexBuildItem.getIndex()));
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setStaticConfig(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
-            CombinedIndexBuildItem combinedIndexBuildItem,
+    void setStaticConfig(@Key(SessionFactory.class) String persistenceUnitName,
+            HibernateSearchElasticsearchRecorder recorder,
+            RootAnnotationMappedClassNamesBuildItem rootAnnotationMappedClassNames,
             List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
-            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
-        // Make it possible to record the settings as bytecode:
-        recorderContext.registerSubstitution(ElasticsearchVersion.class,
-                String.class, ElasticsearchVersionSubstitution.class);
-
-        IndexView index = combinedIndexBuildItem.getIndex();
-        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClassNames(index);
-
-        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
-            String puName = configuredPersistenceUnit.getPersistenceUnitName();
-            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners = new ArrayList<>();
-            boolean xmlMappingRequired = false;
-            for (HibernateSearchIntegrationStaticConfiguredBuildItem item : integrationStaticConfigBuildItems) {
-                if (item.getPersistenceUnitName().equals(puName)) {
-                    HibernateOrmIntegrationStaticInitListener listener = item.getInitListener();
-                    if (listener != null) {
-                        integrationStaticInitListeners.add(listener);
-                    }
-                }
-                if (item.isXmlMappingRequired()) {
-                    xmlMappingRequired = true;
-                }
+        List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners = new ArrayList<>();
+        boolean xmlMappingRequired = false;
+        for (HibernateSearchIntegrationStaticConfiguredBuildItem item : integrationStaticConfigBuildItems) {
+            HibernateOrmIntegrationStaticInitListener listener = item.getInitListener();
+            if (listener != null) {
+                integrationStaticInitListeners.add(listener);
             }
-            staticConfigured.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(
-                                    // we cannot pass a config group to a recorder so passing the whole config
-                                    recorder.createStaticInitListener(
-                                            configuredPersistenceUnit.mapperContext,
-                                            rootAnnotationMappedClassNames,
-                                            integrationStaticInitListeners))
-                            .setXmlMappingRequired(xmlMappingRequired));
+            if (item.isXmlMappingRequired()) {
+                xmlMappingRequired = true;
+            }
         }
+        staticConfigured.produce(
+                new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, persistenceUnitName)
+                        .setInitListener(
+                                recorder.createStaticInitListener(
+                                        configuredPersistenceUnit.mapperContext,
+                                        rootAnnotationMappedClassNames.getClassNames(),
+                                        integrationStaticInitListeners))
+                        .setXmlMappingRequired(xmlMappingRequired));
     }
 
     private static Set<String> collectRootAnnotationMappedClassNames(IndexView index) {
@@ -241,26 +242,22 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
+    void setRuntimeConfig(@Key(SessionFactory.class) String persistenceUnitName,
+            HibernateSearchElasticsearchRecorder recorder,
             List<HibernateSearchIntegrationRuntimeConfiguredBuildItem> integrationRuntimeConfigBuildItems,
-            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
-            String puName = configuredPersistenceUnit.getPersistenceUnitName();
-            List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
-            for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
-                if (item.getPersistenceUnitName().equals(puName)) {
-                    HibernateOrmIntegrationRuntimeInitListener listener = item.getInitListener();
-                    if (listener != null) {
-                        integrationRuntimeInitListeners.add(listener);
-                    }
-                }
+        List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
+        for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
+            HibernateOrmIntegrationRuntimeInitListener listener = item.getInitListener();
+            if (listener != null) {
+                integrationRuntimeInitListeners.add(listener);
             }
-            runtimeConfigured.produce(
-                    new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
-                                    integrationRuntimeInitListeners)));
         }
+        runtimeConfigured.produce(
+                new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, persistenceUnitName)
+                        .setInitListener(recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
+                                integrationRuntimeInitListeners)));
     }
 
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
@@ -292,30 +289,27 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
-    void devServicesDropAndCreateAndDropByDefault(
-            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+    void devServicesDropAndCreateAndDropByDefault(@Key(SessionFactory.class) String persistenceUnitName,
+            HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
-        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
-            String puName = configuredPersistenceUnit.getPersistenceUnitName();
-            List<String> propertyKeysIndicatingHostsConfigured = defaultBackendPropertyKeys(puName, "hosts");
+        List<String> propertyKeysIndicatingHostsConfigured = defaultBackendPropertyKeys(persistenceUnitName, "hosts");
 
-            if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingHostsConfigured)) {
-                String schemaManagementStrategyPropertyKey = mapperPropertyKey(puName, "schema-management.strategy");
-                if (!ConfigUtils.isPropertyPresent(schemaManagementStrategyPropertyKey)) {
-                    devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
-                                // Only force DB generation if the datasource is configured through dev services
-                                if (propertyKeysIndicatingHostsConfigured.stream()
-                                        .anyMatch(devServicesConfig::containsKey)) {
-                                    String forcedValue = "drop-and-create-and-drop";
-                                    LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
-                                            schemaManagementStrategyPropertyKey, forcedValue);
-                                    return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
-                                } else {
-                                    return Map.of();
-                                }
-                            }));
-                }
+        if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingHostsConfigured)) {
+            String schemaManagementStrategyPropertyKey = mapperPropertyKey(persistenceUnitName,
+                    "schema-management.strategy");
+            if (!ConfigUtils.isPropertyPresent(schemaManagementStrategyPropertyKey)) {
+                devServicesAdditionalConfigProducer
+                        .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                            if (propertyKeysIndicatingHostsConfigured.stream()
+                                    .anyMatch(devServicesConfig::containsKey)) {
+                                String forcedValue = "drop-and-create-and-drop";
+                                LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
+                                        schemaManagementStrategyPropertyKey, forcedValue);
+                                return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
+                            } else {
+                                return Map.of();
+                            }
+                        }));
             }
         }
     }

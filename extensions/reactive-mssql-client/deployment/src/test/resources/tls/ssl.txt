@@ -1,0 +1,7 @@
+For reference, browse to:
+https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-docker-container-security?view=sql-server-ver15#encrypting-connections-to-sql-server-linux-containers
+
+Certificate and key created with the following command:
+openssl req -x509 -nodes -newkey rsa:2048 -subj '/CN=sql1' -keyout mssql.key -out mssql.pem -days 36500
+
+The certificate CN is 'sql1' to test hostname verification.

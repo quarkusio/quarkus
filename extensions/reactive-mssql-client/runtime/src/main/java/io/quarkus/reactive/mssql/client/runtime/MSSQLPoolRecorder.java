@@ -117,7 +117,9 @@ public class MSSQLPoolRecorder {
 
         ReactivePoolUtil.configureCredentials(mssqlConnectOptions, dataSourceRuntimeConfig);
 
-        if (dataSourceReactiveMSSQLConfig.ssl()) {
+        if (dataSourceReactiveMSSQLConfig.encryptionMode().isPresent()) {
+            mssqlConnectOptions.setEncryptionMode(dataSourceReactiveMSSQLConfig.encryptionMode().get());
+        } else if (dataSourceReactiveMSSQLConfig.ssl()) {
             mssqlConnectOptions.setSsl(true);
         } else if (dataSourceReactiveRuntimeConfig.tlsConfigurationName().isPresent()) {
             // Auto-enable SSL when a named TLS configuration is set

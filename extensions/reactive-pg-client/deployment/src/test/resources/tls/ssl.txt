@@ -1,0 +1,4 @@
+Certificate and key created with the following command:
+openssl req -x509 -nodes -newkey rsa:2048 -subj '/CN=thebrain.ca' -keyout server.key -out server.crt -days 36500
+
+The certificate CN is 'thebrain.ca'.

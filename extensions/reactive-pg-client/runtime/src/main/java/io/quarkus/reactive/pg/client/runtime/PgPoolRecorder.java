@@ -132,6 +132,10 @@ public class PgPoolRecorder {
                 pgConnectOptions.setSslMode(SslMode.REQUIRE);
             }
 
+            if (dataSourceReactivePostgreSQLConfig.sslNegotiation().isPresent()) {
+                pgConnectOptions.setSslNegotiation(dataSourceReactivePostgreSQLConfig.sslNegotiation().get());
+            }
+
             pgConnectOptions.setUseLayer7Proxy(dataSourceReactivePostgreSQLConfig.useLayer7Proxy());
 
             ReactivePoolUtil.configureSsl(pgConnectOptions, dataSourceReactiveRuntimeConfig, tlsRegistry);

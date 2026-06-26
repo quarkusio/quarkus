@@ -27,6 +27,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -49,9 +50,11 @@ import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.enterprise.inject.spi.Decorator;
+import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.enterprise.inject.spi.Interceptor;
+import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Scope;
 import jakarta.inject.Singleton;
@@ -276,7 +279,7 @@ public class ArcContainerImpl implements ArcContainer {
     public void init() {
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
         Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false, null)
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false, null, null)
                 .notify("@Initialized(ApplicationScoped.class)");
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
@@ -460,7 +463,9 @@ public class ArcContainerImpl implements ArcContainer {
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
             beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false, null)
+                EventImpl
+                        .createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false, null,
+                                initShutdownActionExecutor(true))
                         .notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
@@ -472,7 +477,8 @@ public class ArcContainerImpl implements ArcContainer {
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
             destroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false, null).notify(toString());
+                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false, null,
+                        initShutdownActionExecutor(false)).notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
@@ -489,6 +495,27 @@ public class ArcContainerImpl implements ArcContainer {
 
             LOGGER.debugf("ArC DI container shut down");
         }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private BiConsumer<ObserverMethod, EventContext> initShutdownActionExecutor(boolean beforeDestroyed) {
+        return new BiConsumer<ObserverMethod, EventContext>() {
+            @Override
+            public void accept(ObserverMethod om, EventContext ec) {
+                InjectableBean<?> declaringBean = (InjectableBean<?>) om.getDeclaringBean();
+                String info = declaringBean != null ? declaringBean.getBeanClass().getName() : om.toString();
+                ArcShutdownAction actionType = beforeDestroyed
+                        ? ArcShutdownAction.CDI_BEFORE_DESTROYED_APPLICATION_CONTEXT
+                        : ArcShutdownAction.CDI_DESTROYED_APPLICATION_CONTEXT;
+                actionType.run(info, new Runnable() {
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public void run() {
+                        om.notify(ec);
+                    }
+                });
+            }
+        };
     }
 
     public List<InjectableBean<?>> getBeans() {
@@ -528,7 +555,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private Notifier<Object> notifierOrNull(Set<Annotation> qualifiers) {
         Notifier<Object> notifier = EventImpl.createNotifier(Object.class, Object.class,
-                qualifiers, this, false, null);
+                qualifiers, this, false, null, null);
         return notifier.isEmpty() ? null : notifier;
     }
 

@@ -19,6 +19,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -173,11 +174,13 @@ class EventImpl<T> implements Event<T> {
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, InjectionPoint injectionPoint) {
         return createNotifier(runtimeType, eventType, qualifiers, container, !Arc.requireContainer().strictCompatibility(),
-                injectionPoint);
+                injectionPoint, null);
     }
 
+    @SuppressWarnings("rawtypes")
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
+            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint,
+            BiConsumer<ObserverMethod, EventContext> notifyAction) {
         // all events should have `@Any` qualifiers
         // if there was no other explicit qualifier added, also add @Default
         Set<Annotation> normalizedQualifiers = new HashSet<>(qualifiers);
@@ -188,7 +191,7 @@ class EventImpl<T> implements Event<T> {
         EventMetadata metadata = new EventMetadataImpl(normalizedQualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
                 container.resolveObserverMethods(eventType, normalizedQualifiers));
-        return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
+        return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext, notifyAction);
     }
 
     private Type initEventType(Type type) {
@@ -259,12 +262,16 @@ class EventImpl<T> implements Event<T> {
         private final boolean hasTxObservers;
         private final boolean activateRequestContext;
 
+        @SuppressWarnings("rawtypes")
+        private final BiConsumer<ObserverMethod, EventContext> notifyAction;
+
         Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
-            this(runtimeType, observerMethods, eventMetadata, true);
+            this(runtimeType, observerMethods, eventMetadata, true, null);
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata,
-                boolean activateRequestContext) {
+                boolean activateRequestContext, BiConsumer<ObserverMethod, EventContext> notifyAction) {
             this.runtimeType = runtimeType;
             this.observerMethods = observerMethods;
             this.eventMetadata = eventMetadata;
@@ -277,6 +284,7 @@ class EventImpl<T> implements Event<T> {
             }
             this.hasTxObservers = hasTxObservers;
             this.activateRequestContext = activateRequestContext;
+            this.notifyAction = notifyAction != null ? notifyAction : ObserverMethod::notify;
         }
 
         void notify(T event) {
@@ -356,14 +364,14 @@ class EventImpl<T> implements Event<T> {
             }
         }
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
+        @SuppressWarnings({ "rawtypes" })
         private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler,
                 Predicate<ObserverMethod<?>> predicate) {
             EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
             for (ObserverMethod<?> observerMethod : observerMethods) {
                 if (predicate.test(observerMethod)) {
                     try {
-                        observerMethod.notify(eventContext);
+                        notifyAction.accept(observerMethod, eventContext);
                     } catch (Throwable t) {
                         exceptionHandler.handle(t, observerMethod, eventContext);
                     }

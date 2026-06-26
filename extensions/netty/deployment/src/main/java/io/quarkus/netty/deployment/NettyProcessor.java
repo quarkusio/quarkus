@@ -317,6 +317,18 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            // Runtime initialize due to kernel version checking, native library loading, and kernel feature probing
+            // in static initializer, and to respect the run-time provided value of io.netty.transport.noNative
+            builder.addRuntimeInitializedClass("io.netty.channel.uring.IoUring")
+                    // Runtime initialize due to native library loading in static initializer
+                    .addRuntimeInitializedClass("io.netty.channel.uring.Native")
+                    // Runtime initialize due to system properties read in static initializer
+                    .addRuntimeInitializedClass("io.netty.channel.uring.IoUringDatagramChannel");
+        } else {
+            log.debug("Not registering Netty native io_uring classes as they were not found");
+        }
+
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.quic.Quiche")) {
             builder.addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSL")
                     .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLAsyncPrivateKeyMethod")
@@ -762,6 +774,9 @@ class NettyProcessor {
         }
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.kqueue"));
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.io_uring"));
         }
     }
 

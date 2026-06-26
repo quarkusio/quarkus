@@ -534,6 +534,54 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 }
 ----
 
+Additionally, if you want to do a programmatic lookup of an `OidcClient`,
+use the `NamedOidcClient.Literal` qualifier to select it instead of relying on a static `@NamedOidcClient` injection point:
+
+[source,java]
+----
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.oidc.client.NamedOidcClient;
+import io.quarkus.oidc.client.OidcClient;
+import io.smallrye.mutiny.Uni;
+
+@Path("/clients")
+public class OidcClientResource {
+
+    @Inject
+    @Any
+    Instance<OidcClient> clients; // <1>
+
+    @GET
+    @Path("{name}/user-name")
+    public Uni<String> getUserName(@PathParam("name") String name) {
+        OidcClient client = clients.select(NamedOidcClient.Literal.of(name)).get();
+        return client.getTokens().onItem().transform(tokens -> tokens.getAccessToken());
+    }
+
+    @GET
+    @Path("{name}/access-token")
+    public Uni<String> getAccessToken(@PathParam("name") String name) {
+        // Alternatively, look the OidcClient up directly from the CDI container
+        OidcClient client = Arc.container().instance(OidcClient.class, NamedOidcClient.Literal.of(name)).get(); // <2>
+        return client.getTokens().onItem().transform(tokens -> tokens.getAccessToken());
+    }
+}
+----
+<1> Inject with `@Any` so that all the named `OidcClient` beans are available for selection by the `NamedOidcClient.Literal` qualifier.
+<2> `Arc.container()` resolves the bean directly without an injected `Instance`, passing the `NamedOidcClient.Literal` qualifier to select the wanted `OidcClient`.
+
+[NOTE]
+====
+Prefer the static `@NamedOidcClient` injection point whenever the client name is known in advance.
+====
+
 [[rest-client-oidc-filter]]
 === Use OidcClient in RestClient Reactive ClientFilter
 

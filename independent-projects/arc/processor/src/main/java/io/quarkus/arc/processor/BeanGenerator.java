@@ -1967,9 +1967,14 @@ public class BeanGenerator extends AbstractGenerator {
                     }
                 };
                 for (Consumer<SuppressConditionGeneration> generator : suppressConditionGenerators) {
+                    if (!bc.active()) {
+                        break;
+                    }
                     generator.accept(generation);
                 }
-                bc.returnFalse();
+                if (bc.active()) {
+                    bc.returnFalse();
+                }
             });
         });
     }

@@ -383,6 +383,7 @@
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-observation</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>

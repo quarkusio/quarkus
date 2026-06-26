@@ -57,6 +57,7 @@
         <module>micrometer-registry-prometheus</module>
         <module>micrometer-opentelemetry</module>
         <module>opentelemetry</module>
+        <module>observation</module>
         <module>info</module>
         <module>observability-devservices</module>
         <module>jfr</module>

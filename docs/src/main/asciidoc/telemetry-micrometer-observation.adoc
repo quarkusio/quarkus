@@ -1,0 +1,437 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Micrometer Observation API
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: observability
+:summary: Use the Micrometer Observation API to produce correlated traces and metrics from a single instrumentation point.
+:topics: observability,micrometer,observation,tracing,metrics,opentelemetry
+:extensions: io.quarkus:quarkus-observation
+
+The https://docs.micrometer.io/micrometer/reference/observation/introduction.html[Micrometer Observation API] provides a single instrumentation point that produces both traces and metrics.
+Instead of separately instrumenting your code with a `Tracer` for traces and a `MeterRegistry` for metrics, you create an `Observation` that automatically generates both signals.
+
+include::{includes}/observability-include.adoc[]
+
+The `quarkus-observation` extension integrates the Observation API with Quarkus, providing:
+
+- The `@Observed` CDI interceptor for declarative instrumentation
+- Programmatic `Observation` API for manual instrumentation
+- Observations produce traces and a Timer metric
+- Automatic bridging to OpenTelemetry tracing (when `quarkus-opentelemetry` is present)
+- Automatic bridging to Micrometer metrics (via any configured `MeterRegistry`)
+- Context propagation across threads and async boundaries
+
+== Using the extension
+
+If you already have your Quarkus project, you can add the `quarkus-observation` extension
+to it by running the following command in your project base directory:
+
+:add-extension-extensions: observation
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-observation</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-observation")
+----
+
+== Choosing backends
+
+The `quarkus-observation` extension produces traces and metrics through pluggable backends.
+Add the backend extensions that match your infrastructure:
+
+[cols="3,2,2"]
+|===
+| Scenario | Additional dependencies | What you get
+
+| Observation API only
+| None
+| `@Observed` interceptor and programmatic API work. Metrics not sent anywhere because a metrics registry implementation is needed. No Traces produced.
+
+| OpenTelemetry tracing
+| `quarkus-opentelemetry`
+| Observations produce OTel spans with parent-child relationships and context propagation
+
+| Prometheus metrics
+| `quarkus-micrometer-registry-prometheus`
+| Observation timer metrics scraped at `/q/metrics` in Prometheus format
+
+| OTel tracing + Prometheus metrics
+| `quarkus-opentelemetry` + `quarkus-micrometer-registry-prometheus`
+| Spans via OTel exporters, metrics via Prometheus scraping
+
+| Full OTel backend (traces + metrics)
+| `quarkus-micrometer-opentelemetry`
+| Spans and metrics exported via OTel OTLP protocol
+|===
+
+[NOTE]
+====
+No telemetry will be produce without a backend. The `quarkus-observation` extension instruments the code, but it doesn't have the ability to send data out of your app.
+====
+
+For example, to get OpenTelemetry tracing with Prometheus metrics from observations the following dependencies are needed:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-observation</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-opentelemetry</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+</dependency>
+----
+
+== Using `@Observed`
+
+The `@Observed` annotation instruments CDI bean methods declaratively.
+Each invocation creates an `Observation` that produces a trace span and a timer metric.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.micrometer.observation.annotation.Observed;
+
+@ApplicationScoped
+public class GreetingService {
+
+    @Observed // <1>
+    public String greet(String name) {
+        return "Hello, " + name;
+    }
+
+    @Observed(name = "custom.greeting", // <2>
+              contextualName = "greeting-operation", // <3>
+              lowCardinalityKeyValues = {"service", "greeting"}) // <4>
+    public String customGreet(String name) {
+        return "Hi, " + name;
+    }
+}
+----
+<1> Creates an observation named after the method (`greet`). The span contextual name defaults to `GreetingService#greet`.
+<2> Overrides the observation name (used for the timer metric name).
+<3> Overrides the contextual name (used for the span name).
+<4> Adds low-cardinality key-values as tags on both the span and the metric.
+
+=== Supported return types
+
+The `@Observed` interceptor handles synchronous and asynchronous return types:
+
+- Synchronous methods — the observation spans the method execution
+- `Uni<T>` — the observation stays open until the `Uni` completes or fails
+- `Multi<T>` — the observation stays open until the `Multi` completes, fails, or is cancelled
+- `CompletionStage<T>` — the observation stays open until the future completes
+
+=== Automatic attributes
+
+Every `@Observed` method automatically gets these low-cardinality key-values (which become span attributes and metric tags):
+
+- `code.function` — the method name
+- `code.namespace` — the fully qualified class name
+
+== Programmatic observations
+
+For finer control, inject `ObservationRegistry` and create observations manually.
+
+=== Simple observation
+
+[source,java]
+----
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+
+@Inject
+ObservationRegistry registry;
+
+public String doWork() {
+    Observation observation = Observation.createNotStarted("my.operation", registry);
+    observation.lowCardinalityKeyValue("operation.type", "compute");
+    return observation.observe(() -> {
+        // your business logic
+        return "result";
+    });
+}
+----
+
+The `observe()` method handles start, scope, stop, and error recording automatically.
+
+=== Nested observations with scopes
+
+Observations created within a scope automatically become children of the outer observation:
+
+[source,java]
+----
+Observation parent = Observation.start("parent.operation", registry);
+try (Observation.Scope parentScope = parent.openScope()) {
+    // work in parent context
+
+    Observation child = Observation.start("child.operation", registry);
+    try (Observation.Scope childScope = child.openScope()) {
+        // work in child context — child span is linked to parent
+    }
+    child.stop();
+}
+parent.stop();
+----
+
+=== Error recording
+
+Errors are recorded on the observation and propagated to the span (as error status) and metric (as an `error` tag):
+
+[source,java]
+----
+Observation observation = Observation.start("risky.operation", registry);
+try (Observation.Scope scope = observation.openScope()) {
+    riskyOperation();
+} catch (Exception e) {
+    observation.error(e); // <1>
+    throw e;
+} finally {
+    observation.stop();
+}
+----
+<1> Records the error on the span and adds `error=<exception class>` to the metric tags.
+
+=== Low and high cardinality attributes
+
+Low and high cardinality attributes will end up in traces but only low cardinality ones will be used as metrics Tags (or attributes, if OTel is used).
+
+Cardinality is related with the nr. of different values an attribute can have.
+
+As an example, the deployment.environment.name attribute typically has a small, fixed set of possible values such as test, development, staging, and prod. This results in a cardinality of 4, which is considered *low*.
+
+In contrast, a user identifier represented by enduser.id in a system with 2 million users can have up to 2 million distinct values. This leads to a cardinality of 2 million, which is considered *high*.
+
+All frameworks face challenges with high cardinality, but the Observation API offers a clean interface that encourages you to consider this issue upfront and keep it under control.
+
+[IMPORTANT]
+====
+It's up to the user to understand if an attribute is low or high cardinality and place it under the right bucket.
+
+High-cardinality attributes in metrics can cause a rapid increase in the number of metric dimensions, potentially leading to excessive memory usage and out-of-memory errors.
+====
+
+== Sender and Receiver contexts
+
+For distributed trace propagation across service boundaries, use `SenderContext` and `ReceiverContext`.
+These contexts tell the tracing handler to inject or extract trace context from a carrier (e.g., HTTP headers, message headers).
+
+=== Sender (outgoing requests)
+
+[source,java]
+----
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.transport.Kind;
+import io.micrometer.observation.transport.SenderContext;
+
+Map<String, String> headers = new HashMap<>();
+SenderContext<Map<String, String>> senderContext = new SenderContext<>(
+        (carrier, key, value) -> carrier.put(key, value), // <1>
+        Kind.CLIENT); // <2>
+senderContext.setCarrier(headers);
+
+Observation observation = Observation.createNotStarted("client.call",
+        () -> senderContext, registry);
+observation.start();
+try (Observation.Scope scope = observation.openScope()) {
+    // metadata with the context to be sent
+    client.call(headers);
+}
+observation.stop();
+----
+<1> A setter function that injects trace context keys into the carrier.
+<2> `Kind.CLIENT` creates a span with `SpanKind.CLIENT`. Use `Kind.PRODUCER` for messaging.
+
+=== Receiver (incoming requests)
+
+[source,java]
+----
+import io.micrometer.observation.transport.ReceiverContext;
+
+ReceiverContext<Map<String, String>> receiverContext = new ReceiverContext<>(
+        (carrier, key) -> carrier.get(key), // <1>
+        Kind.SERVER); // <2>
+receiverContext.setCarrier(incomingHeaders);
+
+Observation observation = Observation.createNotStarted("server.handle",
+        () -> receiverContext, registry);
+observation.start();
+try (Observation.Scope scope = observation.openScope()) {
+    // span is linked to the incoming trace context
+    handleRequest();
+}
+observation.stop();
+----
+<1> A getter function that extracts trace context keys from the carrier.
+<2> `Kind.SERVER` creates a span with `SpanKind.SERVER`. Use `Kind.CONSUMER` for messaging.
+
+== Customization
+
+The Observation API provides several CDI extension points for customizing behavior.
+Register them as CDI beans and they are automatically discovered.
+
+=== ObservationFilter
+
+An `ObservationFilter` modifies observation contexts before they are processed by handlers.
+Use it to add common tags to all observations:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.micrometer.common.KeyValue;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationFilter;
+
+@ApplicationScoped
+public class CustomObservationFilter implements ObservationFilter {
+
+    @Override
+    public Observation.Context map(Observation.Context context) {
+        context.addLowCardinalityKeyValue(KeyValue.of("env", "production"));
+        return context;
+    }
+}
+----
+
+=== ObservationPredicate
+
+An `ObservationPredicate` controls which observations are created.
+Return `false` to suppress an observation entirely (no span, no metric):
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationPredicate;
+
+@ApplicationScoped
+public class CustomObservationPredicate implements ObservationPredicate {
+
+    @Override
+    public boolean test(String name, Observation.Context context) {
+        return !"noisy.internal.operation".equals(name);
+    }
+}
+----
+
+=== ObservedInterceptorConvention
+
+An `ObservedInterceptorConvention` customizes the naming and tagging for `@Observed` methods.
+It overrides the default convention for all intercepted methods:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import io.micrometer.common.KeyValues;
+import io.quarkus.observation.cdi.ObservedInterceptorContext;
+import io.quarkus.observation.cdi.convention.ObservedInterceptorConvention;
+
+@ApplicationScoped
+public class CustomObservedConvention implements ObservedInterceptorConvention {
+
+    /**
+    * Timer name
+    */
+    @Override
+    public String getName() {
+        return "custom.observed";
+    }
+
+    /**
+    * Trace name
+    */
+    @Override
+    public String getContextualName(ObservedInterceptorContext context) {
+        return "custom-" + context.getInvocationContext().getMethod().getName();
+    }
+
+    @Override
+    public KeyValues getLowCardinalityKeyValues(ObservedInterceptorContext context) {
+        return KeyValues.of(
+                "code.function", context.getInvocationContext().getMethod().getName(),
+                "code.namespace", context.getInvocationContext().getMethod()
+                        .getDeclaringClass().getName(),
+                "custom.key", "custom.value");
+    }
+}
+----
+
+=== Custom MeterObservationHandler
+
+A custom `MeterObservationHandler` replaces the default metric recording logic.
+When provided as a CDI bean, it takes over from the built-in `DefaultMeterObservationHandler` supported by Micrometer. This is an example using Micrometer's MeterRegistry:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.MeterObservationHandler;
+import io.micrometer.observation.Observation;
+
+@ApplicationScoped
+public class CustomMeterHandler implements MeterObservationHandler<Observation.Context> {
+
+    @Inject
+    MeterRegistry meterRegistry;
+
+    @Override
+    public void onStop(Observation.Context context) {
+        Counter.builder("observation.count")
+                .tag("name", context.getName())
+                .register(meterRegistry)
+                .increment();
+    }
+
+    @Override
+    public boolean supportsContext(Observation.Context context) {
+        return true;
+    }
+}
+----
+
+When using the `quarkus-micrometer-opentelemetry` bridge, the metrics will be implemented with OpenTelemetry.
+
+[IMPORTANT]
+====
+A custom `MeterObservationHandler` CDI bean replaces the default handler entirely.
+The default handler creates timers for each observation. If you provide a custom handler, you are responsible for all metric recording.
+====
+
+== Disabling the extension
+
+To disable the Observation extension at build time:
+
+[source,properties]
+----
+quarkus.observation.enabled=false
+----
+
+When disabled, `@Observed` interceptors are not registered and no `ObservationRegistry` bean is created.
+
+[[configuration-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-observation.adoc[opts=optional, leveloffset=+1]

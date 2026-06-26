@@ -171,6 +171,7 @@ class NarayanaJtaProcessor {
                 nativeImageFeatures);
         recorder.setNodeName();
         recorder.setDefaultTimeout();
+        recorder.setReaperConfig();
         recorder.setConfig();
     }
 

@@ -1,1 +1,2 @@
 io.quarkus.test.config.LoggingSetupExtension
+io.quarkus.test.config.ReproducibilityOnlyCondition

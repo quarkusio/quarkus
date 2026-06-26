@@ -1,0 +1,159 @@
+name: Quarkus Reproducibility Check
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  push: # TODO: Remove this before merging
+    branches:
+      - '**'
+  workflow_dispatch:
+
+env:
+  LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  QUICK_INSTALL_MAVEN_ARGS: "-Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dno-build-cache -Dno-test-modules -Prelocations"
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  REPRODUCIBILITY_MAVEN_ARGS: "-Dno-build-cache -Dquarkus-internal.test.reproducibility-check=5 -Djunit.jupiter.extensions.autodetection.enabled=true"
+
+jobs:
+  jvm-tests:
+    name: Deployment JVM Tests
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Print disk usage before build
+        run: .github/ci-disk-usage.sh
+      - name: Build Quarkus
+        run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
+      - name: Run reproducibility check
+        run: |
+          deployment_modules=()
+          while IFS= read -r pom; do
+            deployment_modules+=("${pom%/pom.xml}")
+          done < <(git ls-files 'core/deployment/pom.xml' 'core/**/deployment/pom.xml' 'extensions/**/deployment/pom.xml')
+          printf 'Running reproducibility check for %d deployment modules:\n' "${#deployment_modules[@]}"
+          printf '%s\n' "${deployment_modules[@]}"
+          deployment_module_list=$(IFS=,; printf '%s' "${deployment_modules[*]}")
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean test
+      - name: Print disk usage after build
+        if: always()
+        run: .github/ci-disk-usage.sh
+      - name: Prepare failure archive
+        if: failure()
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure archive
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-jvm-reproducibility
+          path: test-reports.tgz
+          retention-days: 7
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-reports-${{ github.run_attempt }}-Deployment JVM Reproducibility Check
+          path: build-reports.zip
+          retention-days: 7
+      - name: Upload reproducibility debug dumps
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: debug-${{ github.run_attempt }}-Deployment JVM Reproducibility Check
+          path: '**/target/debug/**'
+          if-no-files-found: ignore
+          retention-days: 28
+      - name: Upload build.log
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-logs-Deployment JVM Reproducibility Check
+          path: '**/build.log'
+          retention-days: 7
+
+  resteasy-reactive-tck-tests:
+    name: RESTEasy Reactive TCK Tests
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Print disk usage before build
+        run: .github/ci-disk-usage.sh
+      - name: Build Quarkus
+        run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
+      - name: Run RESTEasy Reactive TCK reproducibility check
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks/resteasy-reactive -amd clean test
+      - name: Print disk usage after build
+        if: always()
+        run: .github/ci-disk-usage.sh
+      - name: Prepare failure archive
+        if: failure()
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure archive
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-resteasy-reactive-tck-reproducibility
+          path: test-reports.tgz
+          retention-days: 7
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              '**/target/*-reports-*/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-reports-${{ github.run_attempt }}-RESTEasy Reactive TCK Reproducibility Check
+          path: build-reports.zip
+          retention-days: 7
+      - name: Upload reproducibility debug dumps
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: debug-${{ github.run_attempt }}-RESTEasy Reactive TCK Reproducibility Check
+          path: '**/target/debug/**'
+          if-no-files-found: ignore
+          retention-days: 28
+      - name: Upload build.log
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-logs-RESTEasy Reactive TCK Reproducibility Check
+          path: '**/build.log'
+          retention-days: 7

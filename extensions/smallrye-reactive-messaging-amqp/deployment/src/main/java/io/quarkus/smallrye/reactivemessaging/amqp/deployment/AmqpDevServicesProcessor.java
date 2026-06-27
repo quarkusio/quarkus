@@ -51,7 +51,9 @@ public class AmqpDevServicesProcessor {
     private static final int AMQP_PORT = 5672;
     private static final int AMQP_CONSOLE_PORT = 8161;
 
-    private static final ContainerLocator amqpContainerLocator = locateContainerWithLabels(AMQP_PORT, DEV_SERVICE_LABEL);
+    private static final ContainerLocator amqpContainerLocator = locateContainerWithLabels(AMQP_PORT, true,
+            DEV_SERVICE_LABEL);
+
     private static final String AMQP_HOST_PROP = "amqp-host";
     private static final String AMQP_PORT_PROP = "amqp-port";
     private static final String AMQP_MAPPED_PORT_PROP = "amqp-mapped-port";
@@ -105,6 +107,7 @@ public class AmqpDevServicesProcessor {
                 })
                 .orElseGet(() -> DevServicesResultBuildItem.owned()
                         .feature(Feature.MESSAGING_AMQP)
+                        .serviceName(config.serviceName())
                         .serviceConfig(config)
                         .startable(() -> new ArtemisContainer(
                                 DockerImageName.parse(config.imageName().orElse(getDefaultImageNameFor("amqp")))

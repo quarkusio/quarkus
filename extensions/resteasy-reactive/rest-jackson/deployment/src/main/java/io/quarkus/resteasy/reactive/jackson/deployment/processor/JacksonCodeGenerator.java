@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -369,10 +370,111 @@ public abstract class JacksonCodeGenerator {
                         .filter(ctor -> ctor.parametersCount() == 0)
                         .findFirst();
             }
-            ctorOpt = classInfo.isRecord() ? Optional.of(classInfo.canonicalRecordConstructor())
-                    : classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
+            if (classInfo.isRecord()) {
+                return Optional.of(classInfo.canonicalRecordConstructor());
+            }
+            ctorOpt = findUsableConstructor(classInfo);
         }
         return ctorOpt;
+    }
+
+    protected Optional<MethodInfo> findUsableConstructor(ClassInfo classInfo) {
+        List<MethodInfo> publicConstructors = classInfo.constructors().stream()
+                .filter(ctor -> Modifier.isPublic(ctor.flags()))
+                .toList();
+        List<MethodInfo> usableConstructors = publicConstructors.stream()
+                .filter(ctor -> isUsableKotlinAwareConstructor(classInfo, ctor))
+                .toList();
+        if (!usableConstructors.isEmpty()) {
+            int minParameterCount = usableConstructors.stream()
+                    .mapToInt(JacksonCodeGenerator::countRealParameters)
+                    .min()
+                    .orElse(0);
+            for (MethodInfo constructor : usableConstructors) {
+                if (countRealParameters(constructor) == minParameterCount) {
+                    return Optional.of(constructor);
+                }
+            }
+            return Optional.of(usableConstructors.get(0));
+        }
+        return publicConstructors.stream().findFirst();
+    }
+
+    protected static boolean isKotlinSyntheticParameter(Type parameterType, String parameterName) {
+        if (parameterName != null) {
+            return false;
+        }
+        String typeName = parameterType.name().toString();
+        if (typeName.startsWith("kotlin.jvm.internal.")) {
+            return true;
+        }
+        return "int".equals(typeName);
+    }
+
+    protected static int countRealParameters(MethodInfo constructor) {
+        int count = 0;
+        for (MethodParameterInfo parameter : constructor.parameters()) {
+            if (!isKotlinSyntheticParameter(parameter.type(), parameter.name())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    protected static boolean isInstanceField(FieldInfo field) {
+        return !Modifier.isStatic(field.flags()) && !field.isSynthetic();
+    }
+
+    protected static int countInstanceFields(ClassInfo classInfo) {
+        int count = 0;
+        for (FieldInfo field : classInfo.fields()) {
+            if (isInstanceField(field)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    protected static List<String> listInstanceFieldNames(ClassInfo classInfo) {
+        return classInfo.fields().stream()
+                .filter(JacksonCodeGenerator::isInstanceField)
+                .map(field -> demangleKotlinInlinePropertyName(field.name()))
+                .toList();
+    }
+
+    protected static boolean isUsableKotlinAwareConstructor(ClassInfo classInfo, MethodInfo constructor) {
+        return countRealParameters(constructor) > 0;
+    }
+
+    protected String resolveFieldNameFromParameterIndex(ClassInfo classInfo, MethodInfo constructor, int parameterIndex) {
+        List<String> instanceFieldNames = listInstanceFieldNames(classInfo);
+        int realParameterIndex = 0;
+        for (int i = 0; i < constructor.parameters().size(); i++) {
+            MethodParameterInfo parameter = constructor.parameters().get(i);
+            if (isKotlinSyntheticParameter(parameter.type(), parameter.name())) {
+                continue;
+            }
+            if (i == parameterIndex) {
+                return realParameterIndex < instanceFieldNames.size() ? instanceFieldNames.get(realParameterIndex) : null;
+            }
+            realParameterIndex++;
+        }
+        return parameterIndex < instanceFieldNames.size() ? instanceFieldNames.get(parameterIndex) : null;
+    }
+
+    protected static String demangleKotlinInlinePropertyName(String name) {
+        if (name == null) {
+            return null;
+        }
+        int dash = name.lastIndexOf('-');
+        if (dash <= 0 || dash == name.length() - 1) {
+            return name;
+        }
+        String suffix = name.substring(dash + 1);
+        if (suffix.chars().allMatch(Character::isLetterOrDigit) && suffix.length() >= 4) {
+            return name.substring(0, dash);
+        }
+        return name;
     }
 
     protected PropertyNamingStrategy getNamingStrategy(ClassInfo classInfo) {
@@ -461,8 +563,13 @@ public abstract class JacksonCodeGenerator {
         return null;
     }
 
-    protected FieldSpecs fieldSpecsFromFieldParam(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
-        return new FieldSpecs(paramInfo, namingStrategy);
+    protected FieldSpecs fieldSpecsFromFieldParam(ClassInfo classInfo, MethodInfo constructor, int parameterIndex,
+            MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+        String fieldName = paramInfo.name();
+        if (fieldName == null && classInfo != null && constructor != null) {
+            fieldName = resolveFieldNameFromParameterIndex(classInfo, constructor, parameterIndex);
+        }
+        return new FieldSpecs(paramInfo, fieldName, namingStrategy);
     }
 
     protected static class FieldSpecs {
@@ -507,10 +614,10 @@ public abstract class JacksonCodeGenerator {
             this.aliases = jsonAliases();
         }
 
-        FieldSpecs(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+        FieldSpecs(MethodParameterInfo paramInfo, String fieldName, PropertyNamingStrategy namingStrategy) {
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
-            this.fieldName = paramInfo.name();
+            this.fieldName = fieldName;
             JsonNameResult result = jsonName(null, namingStrategy);
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
@@ -557,9 +664,9 @@ public abstract class JacksonCodeGenerator {
             if (jsonProperty == null) {
                 jsonProperty = annotations.get(JsonSetter.class.getName());
             }
-            if (jsonProperty == null && constructor != null) {
+            if (jsonProperty == null && constructor != null && fieldName != null) {
                 jsonProperty = constructor.parameters().stream()
-                        .filter(parameter -> parameter.name().equals(fieldName)).findFirst()
+                        .filter(parameter -> fieldName.equals(parameter.name())).findFirst()
                         .map(parameter -> parameter.annotation(JsonProperty.class.getName()))
                         .orElse(null);
             }
@@ -570,14 +677,20 @@ public abstract class JacksonCodeGenerator {
                     return new JsonNameResult(value.asString(), true);
                 }
             }
-            if (namingStrategy != null) {
+            if (namingStrategy != null && fieldName != null) {
                 return new JsonNameResult(namingStrategy.nameForField(null, null, fieldName), true);
             }
-            return new JsonNameResult(fieldName, false);
+            return new JsonNameResult(fieldName != null ? fieldName : "", false);
         }
 
         private String fieldName() {
-            return fieldInfo != null ? fieldInfo.name() : fieldNameFromMethod(methodInfo);
+            if (fieldInfo != null) {
+                return JacksonCodeGenerator.demangleKotlinInlinePropertyName(fieldInfo.name());
+            }
+            if (methodInfo != null) {
+                return JacksonCodeGenerator.demangleKotlinInlinePropertyName(fieldNameFromMethod(methodInfo));
+            }
+            return null;
         }
 
         private String fieldNameFromMethod(MethodInfo methodInfo) {

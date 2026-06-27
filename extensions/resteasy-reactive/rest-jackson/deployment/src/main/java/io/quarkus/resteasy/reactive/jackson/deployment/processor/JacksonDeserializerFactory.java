@@ -300,10 +300,17 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
-        ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
+        List<MethodParameterInfo> constructorParameters = deserData.constructor.parameters();
+        ResultHandle[] params = new ResultHandle[constructorParameters.size()];
         int i = 0;
-        for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
-            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, deserData.namingStrategy);
+        for (int parameterIndex = 0; parameterIndex < constructorParameters.size(); parameterIndex++) {
+            MethodParameterInfo paramInfo = constructorParameters.get(parameterIndex);
+            if (isKotlinSyntheticParameter(paramInfo.type(), paramInfo.name())) {
+                params[i++] = deserData.methodCreator.loadNull();
+                continue;
+            }
+            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(deserData.classInfo, deserData.constructor, parameterIndex,
+                    paramInfo, deserData.namingStrategy);
             deserData.constructorFields.add(fieldSpecs.jsonName);
             for (String alias : fieldSpecs.aliases) {
                 deserData.constructorFields.add(alias);
@@ -499,9 +506,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             PropertyNamingStrategy namingStrategy) {
         Set<String> names = new HashSet<>();
         if (constructor.parametersCount() > 0) {
-            for (MethodParameterInfo paramInfo : constructor.parameters()) {
-                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, namingStrategy);
-                if (!fieldSpecs.hasExplicitJsonName) {
+            List<MethodParameterInfo> constructorParameters = constructor.parameters();
+            for (int parameterIndex = 0; parameterIndex < constructorParameters.size(); parameterIndex++) {
+                MethodParameterInfo paramInfo = constructorParameters.get(parameterIndex);
+                if (isKotlinSyntheticParameter(paramInfo.type(), paramInfo.name())) {
+                    continue;
+                }
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, constructor, parameterIndex, paramInfo,
+                        namingStrategy);
+                if (!fieldSpecs.hasExplicitJsonName && fieldSpecs.fieldName != null) {
                     names.add(fieldSpecs.fieldName);
                 }
             }

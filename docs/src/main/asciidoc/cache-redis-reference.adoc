@@ -162,3 +162,76 @@ quarkus.cache.redis.expensiveResourceCache.use-optimistic-locking=true
 ----
 
 When used, the key is _watched_ and the _SET_ command is executed in a transaction (`MULTI/EXEC`).
+
+[[bulk-operations]]
+== Bulk operations (programmatic API)
+
+The `RedisCache` interface exposes bulk operations that retrieve or store multiple cache entries in a single Redis round-trip.
+These methods are available via programmatic injection of `RedisCache` and complement the annotation-based API.
+
+=== Inject the cache
+
+[source, java]
+----
+@Inject
+@CacheName("my-cache")
+RedisCache cache;
+----
+
+=== Retrieve multiple entries — `getAll`
+
+`getAll` issues a single Redis `MGET` command for all supplied keys and returns only the entries that are currently stored in the cache.
+Keys not found in the cache are absent from the result map — this is not an error.
+
+[source, java]
+----
+// Using an explicit value type
+Uni<Map<String, Person>> hits = cache.getAll(List.of("alice", "bob"), Person.class);
+
+// Using the default value type configured for the cache
+Uni<Map<String, Person>> hits = cache.getAll(List.of("alice", "bob"));
+----
+
+A value loader can be supplied to automatically fetch and write back any missing entries.
+The loader is invoked at most once, receiving the complete set of cache-miss keys:
+
+[source, java]
+----
+// Synchronous loader
+Uni<Map<String, Person>> result = cache.getAll(
+        List.of("alice", "bob", "carol"),
+        Person.class,
+        missingKeys -> personRepository.findAllById(missingKeys));
+
+// Asynchronous loader
+Uni<Map<String, Person>> result = cache.getAllAsync(
+        List.of("alice", "bob", "carol"),
+        Person.class,
+        missingKeys -> personRepository.findAllByIdAsync(missingKeys));
+----
+
+NOTE: Bulk `getAll` / `getAllAsync` with a value loader is not supported when optimistic locking is enabled for the cache.
+An `UnsupportedOperationException` is thrown in that case.
+
+=== Store multiple entries — `putAll`
+
+`putAll` stores all entries from the supplied map in a single Redis operation.
+
+* When no expiration is configured, a single atomic `MSET` command is used.
+* When `expire-after-write` is configured, individual `SET` commands with a per-key TTL are pipelined in a single round-trip, because `MSET` does not support expiration.
+
+[source, java]
+----
+Map<String, Person> people = Map.of(
+        "alice", new Person("Alice", "Smith"),
+        "bob",   new Person("Bob",   "Jones"));
+
+Uni<Void> done = cache.putAll(people);
+----
+
+NOTE: `null` values in the map are not permitted and cause an `IllegalArgumentException`.
+
+=== expire-after-access and bulk reads
+
+When `expire-after-access` is configured, each `getAll` call refreshes the TTL for every key found in the cache.
+Because Redis has no bulk equivalent of `GETEX`, the implementation issues a pipelined batch of `EXPIRE` commands — one per hit key — immediately after the `MGET`.

@@ -535,7 +535,7 @@ public class HttpServerOptionsUtils {
         return a.isPresent() ? a : b;
     }
 
-    private static TlsConfiguration getTlsConfiguration(Optional<String> tlsConfigurationName,
+    public static TlsConfiguration getTlsConfiguration(Optional<String> tlsConfigurationName,
             TlsConfigurationRegistry registry) {
         TlsConfiguration bucket = null;
         if (tlsConfigurationName.isPresent()) {

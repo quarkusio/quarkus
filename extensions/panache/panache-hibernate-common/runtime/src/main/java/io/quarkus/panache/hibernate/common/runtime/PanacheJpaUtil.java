@@ -3,7 +3,9 @@ package io.quarkus.panache.hibernate.common.runtime;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-import io.quarkus.panache.common.Sort;
+import jakarta.data.Order;
+import jakarta.data.Sort;
+
 import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheJpaUtil {
@@ -158,7 +160,7 @@ public class PanacheJpaUtil {
         return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
-    public static String toOrderBy(Sort sort) {
+    public static String toOrderBy(io.quarkus.panache.common.Sort sort) {
         if (sort == null) {
             return null;
         }
@@ -167,7 +169,7 @@ public class PanacheJpaUtil {
         }
         StringBuilder sb = new StringBuilder(" ORDER BY ");
         for (int i = 0; i < sort.getColumns().size(); i++) {
-            Sort.Column column = sort.getColumns().get(i);
+            io.quarkus.panache.common.Sort.Column column = sort.getColumns().get(i);
             if (i > 0)
                 sb.append(" , ");
 
@@ -186,12 +188,12 @@ public class PanacheJpaUtil {
                 sb.append(columnRef);
             }
 
-            if (column.getDirection() != Sort.Direction.Ascending) {
+            if (column.getDirection() != io.quarkus.panache.common.Sort.Direction.Ascending) {
                 sb.append(" DESC");
             }
 
             if (column.getNullPrecedence() != null) {
-                if (column.getNullPrecedence() == Sort.NullPrecedence.NULLS_FIRST) {
+                if (column.getNullPrecedence() == io.quarkus.panache.common.Sort.NullPrecedence.NULLS_FIRST) {
                     sb.append(" NULLS FIRST");
                 } else {
                     sb.append(" NULLS LAST");
@@ -203,29 +205,39 @@ public class PanacheJpaUtil {
     }
 
     /**
+     * Convert Jakarta Data Sort to Jakarta Data Order.
+     *
+     * @param sort the Jakarta Data sort, may be null
+     * @return the Jakarta Data order, or null if sort is null
+     */
+    public static <T> Order<T> toOrder(Sort<? super T> sort) {
+        return sort == null ? null : Order.by(sort);
+    }
+
+    /**
      * Convert Jakarta Data Order to Panache Sort.
      *
      * @param order the Jakarta Data order, may be null
      * @return the Panache Sort, or null if order is null
      */
-    public static Sort toSort(jakarta.data.Order<?> order) {
+    public static <T> io.quarkus.panache.common.Sort toSort(Order<? super T> order) {
         if (order == null) {
             return null;
         }
 
         if (order.sorts().isEmpty()) {
-            return Sort.empty();
+            return io.quarkus.panache.common.Sort.empty();
         }
 
-        Sort result = null;
-        for (jakarta.data.Sort<?> jdSort : order.sorts()) {
+        io.quarkus.panache.common.Sort result = null;
+        for (Sort<? super T> jdSort : order.sorts()) {
             String property = jdSort.property();
-            Sort.Direction direction = jdSort.isAscending()
-                    ? Sort.Direction.Ascending
-                    : Sort.Direction.Descending;
+            io.quarkus.panache.common.Sort.Direction direction = jdSort.isAscending()
+                    ? io.quarkus.panache.common.Sort.Direction.Ascending
+                    : io.quarkus.panache.common.Sort.Direction.Descending;
 
             if (result == null) {
-                result = Sort.by(property, direction);
+                result = io.quarkus.panache.common.Sort.by(property, direction);
             } else {
                 result = result.and(property, direction);
             }

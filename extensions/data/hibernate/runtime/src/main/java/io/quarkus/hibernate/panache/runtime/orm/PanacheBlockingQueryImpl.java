@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.SharedSessionContract;
@@ -13,6 +14,7 @@ import org.hibernate.query.Page;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<Entity> {
 
@@ -86,6 +88,12 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
     @Override
     public PanacheBlockingQueryImpl<Entity> range(int startIndex, int lastIndex) {
         delegate.range(startIndex, lastIndex);
+        return this;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> sort(Order<? super Entity> order) {
+        delegate.sort(PanacheJpaUtil.toOrderBy(PanacheJpaUtil.toSort(order)));
         return this;
     }
 

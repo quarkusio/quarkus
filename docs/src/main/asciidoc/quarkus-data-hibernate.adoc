@@ -347,6 +347,8 @@ packed with most of the operations you need to work on your entity, such as, out
 [source,java]
 ----
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.hibernate.Session;
@@ -372,6 +374,7 @@ public class Code {
         List<Cat> allCats = repo.listAll();
         repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
         PanacheBlockingQuery<Cat> catQuery = repo.findAll();
+        List<Cat> sortedCats = repo.findAll().sort(Sort.asc("name")).list();
         // operations on the Hibernate session
         repo.flush();
         Session session = repo.getSession();
@@ -391,6 +394,8 @@ you want to write non-type-safe queries, you can always use the provided methods
 [source,java]
 ----
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.hibernate.Session;
@@ -418,9 +423,29 @@ public class Code {
         repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
         // Make every cat cute
         repo.update("breed = CUTE");
+        // Sort results using PanacheQuery
+        List<Cat> sortedByName = repo.findAll().sort(Sort.asc("name")).list();
+        List<Cat> sortedMatches = repo.find("breed = ?1", Cat.Breed.CUTE)
+                .sort(Sort.desc("name"))
+                .list();
     }
 }
 ----
+
+Sorting is applied on the `PanacheQuery` returned by `find()` and `findAll()`, not on the shortcut
+`list()`, `listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort`
+directly — there is no need to wrap it in `Order.by()`. Use `Order` only when you need multiple
+criteria, or when receiving an `Order` from a REST endpoint:
+
+[source,java]
+----
+List<Cat> byName = repo.findAll().sort(Sort.asc("name")).list();
+List<Cat> byNameThenBirth = repo.findAll()
+        .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
+        .list();
+----
+
+Pass `null` or an empty `Order.by()` to leave the query unsorted.
 
 == About entity identifiers
 
@@ -1199,14 +1224,14 @@ The following Jakarta Data types are automatically mapped from query parameters:
 |`page=1`, `size=10`, `requestTotal=true`
 |`?page=2&size=25`
 
-|`Sort<?>`
+|`Sort<Cat>`
 |`sort`
 |`null`
 |`?sort=name` (asc) or `?sort=-name` (desc)
 
-|`Order<?>`
+|`Order<Cat>`
 |`sort` (repeating)
-|`null`
+|empty `Order.by()`
 |`?sort=name&sort=-salary`
 
 |`Limit`
@@ -1222,6 +1247,23 @@ The following Jakarta Data types are automatically mapped from query parameters:
 |===
 
 For `Sort` and `Order`, prefix the property name with `-` to indicate descending order.
+
+When binding sort parameters from REST endpoints to `PanacheQuery`, prefer `Order<Cat>` over
+`Sort<Cat>`. A missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty
+`Order.by()` for `Order<Cat>`, which matches the usual "no sort requested" case without null
+checks. Both types are accepted by `PanacheQuery.sort()` — pass `null` or an empty
+`Order.by()` to leave the query unsorted:
+
+[source,java]
+----
+import jakarta.data.Order;
+import jakarta.ws.rs.GET;
+
+@GET
+public List<Cat> list(Order<Cat> order) {
+    return Cat_.managedBlocking().findAll().sort(order).list();
+}
+----
 
 NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
 by this REST integration. Only offset-based pagination is available via query parameters.
@@ -1248,8 +1290,7 @@ The `totalElements` and `totalPages` fields are only included when the `PageRequ
 === Example endpoint
 
 Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
-list of cats. `PanacheRepository` already provides a `findAll(PageRequest, Order)` method, so you can use
-the entity and repository we defined earlier directly:
+list of cats. Define a `@Find` method on your repository that accepts `PageRequest` and `Order`:
 
 [source,java]
 ----

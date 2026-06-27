@@ -29,6 +29,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -200,7 +201,7 @@ public class MqttDevServicesProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return String.format("mqtt://%s:%d", getEffectiveHost(), getPort());
+            return DevServicesHostUtil.formatPrefixedAuthority("mqtt", getEffectiveHost(), getPort());
         }
 
         @Override
@@ -209,7 +210,7 @@ public class MqttDevServicesProcessor {
         }
 
         public String getEffectiveHost() {
-            return useSharedNetwork ? hostName : getHost();
+            return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
         }
 
         public int getPort() {

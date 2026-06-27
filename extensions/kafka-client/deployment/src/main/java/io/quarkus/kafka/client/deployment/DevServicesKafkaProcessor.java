@@ -37,6 +37,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.strimzi.test.container.StrimziKafkaCluster;
@@ -80,11 +81,13 @@ public class DevServicesKafkaProcessor {
                         List.of(config.effectiveImageName(), "kafka", "strimzi", "redpanda"),
                         KAFKA_PORT, launchMode.getLaunchMode(), useSharedNetwork))
                 .map(containerAddress -> {
-                    createTopicPartitions(containerAddress.getUrl(), config);
+                    String bootstrapServers = DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                            containerAddress.getHost(), containerAddress.getPort());
+                    createTopicPartitions(bootstrapServers, config);
                     return DevServicesResultBuildItem.discovered()
                             .feature(Feature.KAFKA_CLIENT)
                             .containerId(containerAddress.getId())
-                            .config(Map.of(KAFKA_BOOTSTRAP_SERVERS, containerAddress.getUrl()))
+                            .config(Map.of(KAFKA_BOOTSTRAP_SERVERS, bootstrapServers))
                             .build();
                 }).orElseGet(() -> DevServicesResultBuildItem.owned()
                         .feature(Feature.KAFKA_CLIENT)
@@ -115,7 +118,8 @@ public class DevServicesKafkaProcessor {
                             String hostName = ConfigureUtil.configureNetwork(strimzi,
                                     composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
                             if (useSharedNetwork) {
-                                strimzi.withBootstrapServers(c -> String.format("PLAINTEXT://%s:%s", hostName, KAFKA_PORT));
+                                strimzi.withBootstrapServers(c -> DevServicesHostUtil.formatPrefixedAuthority("PLAINTEXT",
+                                        hostName, KAFKA_PORT));
                             }
                             if (config.port().isPresent() && config.port().get() != 0) {
                                 strimzi.withPort(config.port().get());

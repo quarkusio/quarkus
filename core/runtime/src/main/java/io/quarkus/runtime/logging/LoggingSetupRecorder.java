@@ -128,7 +128,8 @@ public class LoggingSetupRecorder {
                 new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
                         DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
                         emptyList(),
-                        emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+                        emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false,
+                        emptyList());
     }
 
     public ShutdownListener initializeLogging(
@@ -145,7 +146,8 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedHandlerFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             final LaunchMode launchMode,
-            final boolean includeFilters) {
+            final boolean includeFilters,
+            final List<LogCleanupFilterElement> additionalLogCleanupFilters) {
 
         LogBuildTimeConfig buildConfig = logBuildTimeConfig;
         LogRuntimeConfig config = logRuntimeConfig.getValue();
@@ -166,17 +168,16 @@ public class LoggingSetupRecorder {
 
         ErrorManager errorManager = new OnlyOnceErrorManager();
         Map<String, CleanupFilterConfig> filters = config.filters();
-        List<LogCleanupFilterElement> filterElements;
-        if (filters.isEmpty()) {
-            filterElements = emptyList();
-        } else {
-            filterElements = new ArrayList<>(filters.size());
-            filters.forEach(new BiConsumer<>() {
-                @Override
-                public void accept(String loggerName, CleanupFilterConfig config) {
-                    filterElements.add(new LogCleanupFilterElement(loggerName, config.targetLevel(), config.ifStartsWith()));
-                }
-            });
+        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size() + additionalLogCleanupFilters.size());
+        filters.forEach(new BiConsumer<>() {
+            @Override
+            public void accept(String loggerName, CleanupFilterConfig config) {
+                filterElements.add(new LogCleanupFilterElement(loggerName, config.targetLevel(), config.ifStartsWith()));
+            }
+        });
+        for (LogCleanupFilterElement additionalLogCleanupFilter : additionalLogCleanupFilters) {
+            filterElements.add(new LogCleanupFilterElement(additionalLogCleanupFilter.getLoggerName(),
+                    additionalLogCleanupFilter.getTargetLevel(), additionalLogCleanupFilter.getMessageStarts()));
         }
         LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements, shutdownNotifier);
         for (Handler handler : LogManager.getLogManager().getLogger("").getHandlers()) {

@@ -74,6 +74,7 @@ import io.quarkus.vertx.http.deployment.spi.HttpServerStartedBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.HostValidationRecorder;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
 import io.quarkus.vertx.http.runtime.HttpStaticDirConfig;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
@@ -166,6 +167,13 @@ class VertxHttpProcessor {
         return new FilterBuildItem(
                 recorder.corsHandler(programmaticCorsConfig, capabilities.isPresent(Capability.SECURITY)),
                 SecurityHandlerPriorities.CORS);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    FilterBuildItem hostValidation(HostValidationRecorder recorder) {
+        // If the filter is null, it will be automatically filtered out.
+        return new FilterBuildItem(recorder.hostValidationHandler(), SecurityHandlerPriorities.HOST_VALIDATION);
     }
 
     @BuildStep

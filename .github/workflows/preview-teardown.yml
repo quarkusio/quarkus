@@ -21,7 +21,7 @@ jobs:
         id: deploy
         run: npx surge teardown https://quarkus-pr-main-${{ github.event.number }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }} || true
       - name: Update PR status comment
-        uses: quarkusio/action-helpers@main
+        uses: quarkusio/action-helpers@4f05abc46fce576bd83fe6d61df45506783f60d1 # main
         with:
           action: maintain-one-comment
           github-token: ${{ secrets.GITHUB_TOKEN }}

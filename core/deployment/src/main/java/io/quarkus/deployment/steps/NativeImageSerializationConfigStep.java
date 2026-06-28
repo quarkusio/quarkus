@@ -3,7 +3,6 @@ package io.quarkus.deployment.steps;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,8 +27,7 @@ public class NativeImageSerializationConfigStep {
         final Set<String> serializableClasses = new HashSet<>();
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             if (i.isSerialization()) {
-                String[] classNames = i.getClassNames().toArray(new String[0]);
-                Collections.addAll(serializableClasses, classNames);
+                serializableClasses.addAll(i.getClassNames());
             }
         }
 

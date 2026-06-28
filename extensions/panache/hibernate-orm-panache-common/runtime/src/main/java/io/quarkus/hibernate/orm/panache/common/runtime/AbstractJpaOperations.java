@@ -20,6 +20,7 @@ import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.Subclass;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
@@ -70,6 +71,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
     public static <Entity> Class<? extends Entity> getRepositoryEntityClass(
             // FIXME: if we move this to JpaOperations we can add a type constraint on the repo class
             Class<?> repositoryImplementationClass) {
+        if (Subclass.class.isAssignableFrom(repositoryImplementationClass)) {
+            repositoryImplementationClass = repositoryImplementationClass.getSuperclass();
+        }
         Class<?> ret = repositoryClassToEntityClass.get(repositoryImplementationClass);
         if (ret == null) {
             throw new RuntimeException("Your repository class " + repositoryImplementationClass

@@ -105,7 +105,7 @@ jobs:
           PR_ID: ${{ steps.pr.outputs.id }}
 
       - name: Update PR status comment on success
-        uses: quarkusio/action-helpers@main
+        uses: quarkusio/action-helpers@4f05abc46fce576bd83fe6d61df45506783f60d1 # main
         with:
           action: maintain-one-comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -119,7 +119,7 @@ jobs:
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png">
           body-marker: <!-- Preview status comment marker -->
       - name: Update PR status comment on failure
-        uses: quarkusio/action-helpers@main
+        uses: quarkusio/action-helpers@4f05abc46fce576bd83fe6d61df45506783f60d1 # main
         if: ${{ failure() }}
         with:
           action: maintain-one-comment

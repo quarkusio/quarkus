@@ -196,6 +196,12 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitDiscriminator discriminator();
 
     /**
+     * Reactive settings for this persistence unit.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitReactive reactive();
+
+    /**
      * Config related to identifier quoting.
      */
     HibernateOrmConfigPersistenceUnitQuoteIdentifiers quoteIdentifiers();
@@ -261,6 +267,7 @@ public interface HibernateOrmConfigPersistenceUnit {
                 query().isAnyPropertySet() ||
                 database().isAnyPropertySet() ||
                 jdbc().isAnyPropertySet() ||
+                reactive().isAnyPropertySet() ||
                 !cache().isEmpty() ||
                 !secondLevelCachingEnabled() ||
                 multitenant().isPresent() ||
@@ -694,8 +701,28 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt statementBatchSize();
 
+        /**
+         * Enable/disable JDBC (blocking) bootstrapping for this PU.
+         * If unset, it is inferred from datasource configuration (AUTO behavior).
+         */
+        Optional<Boolean> enabled();
+
         default boolean isAnyPropertySet() {
-            return timezone().isPresent() || statementFetchSize().isPresent() || statementBatchSize().isPresent();
+            return timezone().isPresent() || statementFetchSize().isPresent() || enabled().isPresent()
+                    || statementBatchSize().isPresent();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitReactive {
+        /**
+         * Enable/disable reactive bootstrapping for this PU.
+         * If unset, it is inferred from datasource configuration (AUTO behavior).
+         */
+        Optional<Boolean> enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled().isPresent();
         }
     }
 

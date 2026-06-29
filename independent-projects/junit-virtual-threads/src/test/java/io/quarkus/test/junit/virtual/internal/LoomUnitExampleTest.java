@@ -1,8 +1,6 @@
 package io.quarkus.test.junit.virtual.internal;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.test.junit.virtual.ShouldNotPin;
 import io.quarkus.test.junit.virtual.ShouldPin;
@@ -24,7 +22,6 @@ public class LoomUnitExampleTest {
 
     @Test
     @ShouldPin
-    @EnabledForJreRange(min = JRE.JAVA_21)
     void methodShouldPin() {
         TestPinJfrEvent.pin();
     }

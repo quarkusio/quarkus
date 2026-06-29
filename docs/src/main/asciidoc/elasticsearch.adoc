@@ -431,10 +431,11 @@ You can override the scope at the class level if you prefer a different scope.
 [NOTE]
 ====
 When configuring the <<named-clients,named clients>> with `@ElasticsearchClientConfig`
-pass the name of the client to configure through the `value` attribute:
+pass the name of the client to configure through the `value` attribute of the `@Identifier` qualifier:
 [source,java]
 ----
-@ElasticsearchClientConfig("second-client")
+@Identifier("second-client")
+@ElasticsearchClientConfig
 public class AnotherClientConfigurer implements RestClientBuilder.HttpClientConfigCallback {
 	// ...
 }

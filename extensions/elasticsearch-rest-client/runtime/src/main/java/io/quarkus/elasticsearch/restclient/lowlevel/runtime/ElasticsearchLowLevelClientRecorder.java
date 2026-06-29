@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.http.Header;
@@ -94,15 +95,31 @@ public class ElasticsearchLowLevelClientRecorder {
 
                         // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with ElasticsearchClientConfig
                         HttpAsyncClientBuilder result = httpClientBuilder;
-                        Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
+                        // since the <default> client won't have any additional qualifiers we want to just filter out any others?
+                        final Predicate<InstanceHandle<?>> configFilter = ElasticsearchClientBeanUtil.isDefault(clientName)
+                                ? matchingDefaultClient()
+                                : matchingNamedClient(clientName);
+                        final Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
                                 .select(RestClientBuilder.HttpClientConfigCallback.class,
-                                        new ElasticsearchClientConfig.Literal(clientName))
-                                .handles();
+                                        ElasticsearchClientConfig.Literal.of())
+                                .handlesStream()
+                                .filter(configFilter)
+                                .toList();
                         for (InstanceHandle<RestClientBuilder.HttpClientConfigCallback> handle : handles) {
                             result = handle.get().customizeHttpClient(result);
                             handle.close();
                         }
                         return result;
+                    }
+
+                    private Predicate<InstanceHandle<?>> matchingNamedClient(String clientName) {
+                        return h -> h.getBean().getQualifiers().stream()
+                                .anyMatch(q -> q instanceof Identifier id && id.value().equals(clientName));
+                    }
+
+                    private Predicate<InstanceHandle<?>> matchingDefaultClient() {
+                        return h -> h.getBean().getQualifiers().stream()
+                                .noneMatch(q -> q.annotationType().equals(Identifier.class));
                     }
                 });
 

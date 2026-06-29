@@ -9,6 +9,12 @@ package io.quarkus.runtime.util;
 public enum ProgrammingParadigm {
 
     BLOCKING,
-    REACTIVE
+    REACTIVE;
 
+    public ProgrammingParadigm other() {
+        return switch (this) {
+            case BLOCKING -> REACTIVE;
+            case REACTIVE -> BLOCKING;
+        };
+    }
 }

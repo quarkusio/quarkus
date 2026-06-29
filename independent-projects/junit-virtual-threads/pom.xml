@@ -44,7 +44,7 @@
         <jandex.version>3.6.0</jandex.version>
         <smallrye-common.version>2.18.1</smallrye-common.version>
 
-        <junit.version>6.1.0</junit.version>
+        <junit.version>6.1.1</junit.version>
         <assertj.version>3.27.7</assertj.version>
     </properties>
 

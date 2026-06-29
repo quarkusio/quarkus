@@ -362,9 +362,13 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             } else {
                 valueRegistry.register(LISTENING_ADDRESS, Optional.empty());
             }
-            listeningData.managementAddress().ifPresent(
-                    managementAddress -> managementAddress.registerManagement(valueRegistry, newConfig));
-            valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, listeningData.managementAddress());
+            Optional<ListeningAddress> managementAddress = listeningData.managementAddress();
+            if (managementAddress.isPresent()) {
+                managementAddress.get().registerManagement(valueRegistry, newConfig);
+                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, managementAddress);
+            } else {
+                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, Optional.empty());
+            }
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 

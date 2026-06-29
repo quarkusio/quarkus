@@ -474,7 +474,7 @@ Both `SignalMetadataEnricher` and `ReceiverInterceptor` implementations must be 
 === Signal Metadata Enricher
 
 A `SignalMetadataEnricher` enriches the metadata of a signal emission _before_ any receiver is invoked.
-It is called once per emission (i.e., per call to `publish()`, `send()`, or `request()`), not per receiver.
+It is called once per emission (i.e., per call to `publish()`, `send()`, or `request()`), not per receiver, and is executed synchronously on the thread that emits the signal.
 
 [source,java]
 ----

@@ -42,7 +42,8 @@ public class ElasticsearchClientConfigTest {
         assertNotNull(client);
         assertNotNull(secondClient);
         assertTrue(TestConfigurator.invoked);
-        assertTrue(SecondTestConfigurator.invoked);
+        assertTrue(SecondFirstTestConfigurator.invoked);
+        assertTrue(SecondSecondTestConfigurator.invoked);
     }
 
     @ElasticsearchClientConfig
@@ -58,9 +59,24 @@ public class ElasticsearchClientConfigTest {
         }
     }
 
-    @ElasticsearchClientConfig("second-client")
+    @Identifier("second-client")
+    @ElasticsearchClientConfig
     @ApplicationScoped
-    public static class SecondTestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+    public static class SecondFirstTestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+
+        private static boolean invoked = false;
+
+        @Override
+        public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder builder) {
+            invoked = true;
+            return builder;
+        }
+    }
+
+    @Identifier("second-client")
+    @ElasticsearchClientConfig
+    @ApplicationScoped
+    public static class SecondSecondTestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
 
         private static boolean invoked = false;
 

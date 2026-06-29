@@ -162,6 +162,7 @@ public abstract class ResteasyReactiveRequestContext
     private boolean producesChecked;
 
     private RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch;
+    private volatile boolean connectionClosed;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -436,16 +437,6 @@ public abstract class ResteasyReactiveRequestContext
             log.debug("Failed to close stream", e);
         }
         super.close();
-    }
-
-    /**
-     * This method ensures that no more handlers will run and that all the resources tied to the request are closed
-     */
-    private void discardRemaining() {
-        int length = getHandlers().length;
-        if (length > 0) {
-            setPosition(length);
-        }
     }
 
     public LazyResponse getResponse() {
@@ -1216,6 +1207,11 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     @Override
+    protected boolean isHandlerCanceled(int pos) {
+        return connectionClosed && handlers[pos].isCancellable();
+    }
+
+    @Override
     protected abstract Executor getEventLoop();
 
     public abstract Runnable registerTimer(long millis, Runnable task);
@@ -1358,24 +1354,7 @@ public abstract class ResteasyReactiveRequestContext
 
         @Override
         public void run() {
-            ServerRestHandler[] handlers = context.getHandlers();
-            int pos = context.getPosition();
-            List<ServerRestHandler> nonCancellable = new ArrayList<>();
-            for (int i = pos; i < handlers.length; i++) {
-                if (!handlers[i].isCancellable()) {
-                    nonCancellable.add(handlers[i]);
-                }
-            }
-            if (nonCancellable.isEmpty()) {
-                context.discardRemaining();
-            } else {
-                ServerRestHandler[] newHandlers = new ServerRestHandler[pos + nonCancellable.size()];
-                System.arraycopy(handlers, 0, newHandlers, 0, pos);
-                for (int i = 0; i < nonCancellable.size(); i++) {
-                    newHandlers[pos + i] = nonCancellable.get(i);
-                }
-                context.handlers = newHandlers;
-            }
+            context.connectionClosed = true;
             context = null;
         }
     }

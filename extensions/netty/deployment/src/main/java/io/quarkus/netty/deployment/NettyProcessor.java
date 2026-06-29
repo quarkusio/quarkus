@@ -1,6 +1,5 @@
 package io.quarkus.netty.deployment;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +47,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -545,28 +543,54 @@ class NettyProcessor {
     }
 
     /**
-     * When the application targets Java 21+, then we can convert {@code io.netty.util.internal.PlatformDependent0} to depend
-     * explicitly on Virtual Threads instead of Netty needing to use reflection (that has a noticeable impact on startup).
-     * The change makes the {@code IS_VIRTUAL_THREAD_METHOD} and {@code BASE_VIRTUAL_THREAD_CLASS} fields {@code null} while
-     * also
-     * converting the {@code isVirtualThread} method to:
+     * Rewrites {@code PlatformDependent0} to avoid the {@code MethodHandle} lookup used by Netty for virtual thread
+     * detection (which has a noticeable impact on startup). Since we target Java 21+, {@code Thread.isVirtual()} is
+     * always available and can be called directly.
+     * <p>
+     * The upstream Netty 4.2.x code initializes a {@code MethodHandle} at class load time:
      *
      * <pre>{@code
-     * static boolean isVirtualThread() {
-     *     return thread != null && thread.isVirtual();
+     * static final MethodHandle IS_VIRTUAL_THREAD_METHOD_HANDLE = getIsVirtualThreadMethodHandle();
+     *
+     * private static MethodHandle getIsVirtualThreadMethodHandle() {
+     *     try {
+     *         MethodHandle methodHandle = MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual",
+     *                 methodType(boolean.class));
+     *         boolean isVirtual = (boolean) methodHandle.invokeExact(Thread.currentThread());
+     *         return methodHandle;
+     *     } catch (Throwable e) {
+     *         ...
+     *         return null;
+     *     }
      * }
      * }</pre>
      *
-     * The reason we don't remove the aforementioned fields is that to do that we would have to transform the class loading
-     * initialization method,
-     * which would be to brittle.
+     * and then uses it in:
+     *
+     * <pre>{@code
+     * static boolean isVirtualThread(Thread thread) {
+     *     if (thread == null || IS_VIRTUAL_THREAD_METHOD_HANDLE == null) {
+     *         return false;
+     *     }
+     *     try {
+     *         return (boolean) IS_VIRTUAL_THREAD_METHOD_HANDLE.invokeExact(thread);
+     *     } catch (Throwable t) {
+     *         ...
+     *     }
+     * }
+     * }</pre>
+     *
+     * We replace {@code getIsVirtualThreadMethodHandle()} to return {@code null} (skipping the lookup)
+     * and {@code isVirtualThread(Thread)} with a direct call:
+     *
+     * <pre>{@code
+     * static boolean isVirtualThread(Thread thread) {
+     *     return thread != null && thread.isVirtual();
+     * }
+     * }</pre>
      */
     @BuildStep
-    void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
-            BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion().isJava21OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return;
-        }
+    void transformPlatformDependent0(BuildProducer<BytecodeTransformerBuildItem> producer) {
         String className = "io.netty.util.internal.PlatformDependent0";
         producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                 .setCacheable(true).setVisitorFunction(
@@ -577,22 +601,12 @@ class NettyProcessor {
 
                                 {
                                     MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
-                                            "getIsVirtualThreadMethod",
-                                            Method.class);
+                                            "getIsVirtualThreadMethodHandle",
+                                            "java.lang.invoke.MethodHandle");
                                     transformer.removeMethod(methodDescriptor);
-                                    MethodCreator getIsVirtualThreadMethod = transformer.addMethod(methodDescriptor)
+                                    MethodCreator method = transformer.addMethod(methodDescriptor)
                                             .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
-                                    getIsVirtualThreadMethod.returnValue(getIsVirtualThreadMethod.loadNull());
-                                }
-
-                                {
-                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
-                                            "getBaseVirtualThreadClass",
-                                            Class.class);
-                                    transformer.removeMethod(methodDescriptor);
-                                    MethodCreator getBaseVirtualThreadClassMethod = transformer.addMethod(methodDescriptor)
-                                            .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
-                                    getBaseVirtualThreadClassMethod.returnValue(getBaseVirtualThreadClassMethod.loadNull());
+                                    method.returnValue(method.loadNull());
                                 }
 
                                 {
@@ -632,22 +646,43 @@ class NettyProcessor {
     }
 
     /**
-     * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we know we are using Java 17+.
+     * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we target Java 21+.
      * <p>
-     * Generates:
+     * The upstream Netty 4.2.x code uses reflection:
      *
-     * <pre>
-     * public static int processHandlePid(ClassLoader classLoader) {
+     * <pre>{@code
+     * static int processHandlePid(ClassLoader loader) {
+     *     int nilValue = -1;
+     *     if (PlatformDependent.javaVersion() >= 9) {
+     *         Long pid;
+     *         try {
+     *             Class<?> processHandleImplType = Class.forName("java.lang.ProcessHandle", true, loader);
+     *             Method processHandleCurrent = processHandleImplType.getMethod("current");
+     *             Object processHandleInstance = processHandleCurrent.invoke(null);
+     *             Method processHandlePid = processHandleImplType.getMethod("pid");
+     *             pid = (Long) processHandlePid.invoke(processHandleInstance);
+     *         } catch (Exception e) {
+     *             logger.debug("Could not invoke ProcessHandle.current().pid();", e);
+     *             return nilValue;
+     *         }
+     *         if (pid > Integer.MAX_VALUE || pid < Integer.MIN_VALUE) {
+     *             throw new IllegalStateException("Current process ID exceeds int range: " + pid);
+     *         }
+     *         return pid.intValue();
+     *     }
+     *     return nilValue;
+     * }
+     * }</pre>
+     *
+     * We replace it with direct {@code ProcessHandle} API calls:
+     *
+     * <pre>{@code
+     * static int processHandlePid(ClassLoader classLoader) {
      *     int resultVar;
      *     try {
      *         ProcessHandle processHandle = ProcessHandle.current();
-     *
      *         long pid = processHandle.pid();
-     *
-     *         long maxInt = 2147483647L;
-     *         int cmp = Long.compare(pid, maxInt);
-     *
-     *         if (cmp > 0) {
+     *         if (pid > Integer.MAX_VALUE) {
      *             resultVar = -1;
      *         } else {
      *             resultVar = (int) pid;
@@ -656,10 +691,9 @@ class NettyProcessor {
      *         logger.debug("Could not invoke ProcessHandle.current().pid();", e);
      *         resultVar = -1;
      *     }
-     *
      *     return resultVar;
      * }
-     * </pre>
+     * }</pre>
      */
     @BuildStep
     void transformDefaultChannelId(BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
@@ -770,6 +804,37 @@ class NettyProcessor {
         producer.produce(new IndexDependencyBuildItem("io.netty", "netty-transport"));
     }
 
+    /**
+     * Optimizes {@code ChannelHandlerAdapter#isSharable()} to avoid the per-call annotation lookup via
+     * {@code ThreadLocal} + {@code WeakHashMap} cache that Netty uses.
+     * <p>
+     * The upstream Netty 4.2.x code:
+     *
+     * <pre>{@code
+     * public boolean isSharable() {
+     *     Class<?> clazz = getClass();
+     *     Map<Class<?>, Boolean> cache = InternalThreadLocalMap.get().handlerSharableCache();
+     *     Boolean sharable = cache.get(clazz);
+     *     if (sharable == null) {
+     *         sharable = clazz.isAnnotationPresent(Sharable.class);
+     *         cache.put(clazz, sharable);
+     *     }
+     *     return sharable;
+     * }
+     * }</pre>
+     *
+     * We replace it with a compile-time marker interface approach: all classes annotated with {@code @Sharable}
+     * get the {@code NettySharable} marker interface added, and {@code isSharable()} becomes:
+     *
+     * <pre>{@code
+     * public boolean isSharable() {
+     *     if (this instanceof NettySharable) {
+     *         return true;
+     *     }
+     *     return this.isSharable0(); // original method, fallback for non-indexed classes
+     * }
+     * }</pre>
+     */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void transformIsSharable(CombinedIndexBuildItem indexBuildItem,

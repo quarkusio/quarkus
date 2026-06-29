@@ -46,6 +46,7 @@ import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommon
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -54,8 +55,10 @@ import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.Elastics
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchOrmElasticsearchMapperContext;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
@@ -64,6 +67,24 @@ class HibernateSearchElasticsearchProcessor {
     static final String HIBERNATE_SEARCH_ELASTICSEARCH = "Hibernate Search ORM + Elasticsearch";
 
     private static final Logger LOG = Logger.getLogger(HibernateSearchElasticsearchProcessor.class);
+
+    @BuildStep
+    void collectImplicitPersistenceUnitRequests(HibernateSearchElasticsearchBuildTimeConfig config,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        for (String name : config.persistenceUnits().keySet()) {
+            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
+            //   For now, since we can't trust keySet for the default datasource, we'll ignore it.
+            if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)) {
+                continue;
+            }
+
+            puRequests.produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.BLOCKING,
+                    String.format("Configuration '%s'",
+                            HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(name, "*"))));
+        }
+
+        // TODO injection points
+    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

@@ -6,7 +6,9 @@ import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_SESSION
 import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_STATELESS_SESSION;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -39,6 +41,15 @@ public class HibernateReactiveCdiProcessor {
 
     private static final List<DotName> MUTINY_STATELESS_SESSION_EXPOSED_TYPES = Arrays.asList(
             MUTINY_STATELESS_SESSION);
+
+    static final Set<DotName> ALL_REACTIVE_INJECTABLE_TYPES;
+    static {
+        Set<DotName> types = new HashSet<>();
+        types.addAll(MUTINY_SESSION_FACTORY_EXPOSED_TYPES);
+        types.addAll(MUTINY_SESSION_EXPOSED_TYPES);
+        types.addAll(MUTINY_STATELESS_SESSION_EXPOSED_TYPES);
+        ALL_REACTIVE_INJECTABLE_TYPES = Set.copyOf(types);
+    }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep

@@ -22,7 +22,7 @@ public class ErroneousConfigHotReloadTestCase {
     @Test
     public void test() {
         // Because there is no entity, the fact that there is no datasource will not trigger an error:
-        // the persistence unit will simply be automatically deactivated.
+        // the default persistence unit will simply be automatically deactivated.
         // Panache will however raise an exception on first attempt to use a class that is not, in fact, an entity.
         RestAssured.when().get("/unannotatedEntity").then().statusCode(500).body(containsString("@Entity"))
                 .body(not(containsString("NullPointer")));
@@ -41,7 +41,7 @@ public class ErroneousConfigHotReloadTestCase {
                 // Weirdly, in case of build errors, Quarkus will return the error as HTML, even if we set the content type to JSON...
                 // Hence the &lt; / &gt;
                 .body(containsString(
-                        "Datasource '&lt;default&gt;' is not configured. To solve this, configure datasource '&lt;default&gt;'."))
+                        "Datasource '&lt;default&gt;' was deactivated automatically because its URL is not set."))
                 .body(not(containsString("NullPointer")));
 
         TEST.modifyResourceFile("application.properties", new Function<String, String>() {

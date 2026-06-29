@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -88,6 +89,20 @@ public class HibernateOrmCdiProcessor {
     private static final List<DotName> CACHE_EXPOSED_TYPES = List.of(ClassNames.CACHE, ClassNames.HIBERNATE_CACHE);
     private static final List<DotName> PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES = List.of(ClassNames.PERSISTENCE_UNIT_UTIL);
 
+    static final Set<DotName> ALL_INJECTABLE_TYPES;
+    static {
+        Set<DotName> types = new HashSet<>();
+        types.addAll(SESSION_FACTORY_EXPOSED_TYPES);
+        types.addAll(SESSION_EXPOSED_TYPES);
+        types.addAll(STATELESS_SESSION_EXPOSED_TYPES);
+        types.addAll(CRITERIA_BUILDER_EXPOSED_TYPES);
+        types.addAll(METAMODEL_EXPOSED_TYPES);
+        types.addAll(SCHEMA_MANAGER_EXPOSED_TYPES);
+        types.addAll(CACHE_EXPOSED_TYPES);
+        types.addAll(PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES);
+        ALL_INJECTABLE_TYPES = Set.copyOf(types);
+    }
+
     private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(
             ClassNames.TENANT_RESOLVER,
             ClassNames.TENANT_CONNECTION_RESOLVER,
@@ -99,8 +114,7 @@ public class HibernateOrmCdiProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType) {
+            List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) {
         AnnotationTransformation transformer = new AnnotationsTransformer() {
 
             @Override
@@ -135,9 +149,8 @@ public class HibernateOrmCdiProcessor {
                         .add(DotNames.INJECT);
                 if (persistenceUnitNameAnnotationValue == null || persistenceUnitNameAnnotationValue.asString().isEmpty()) {
                     transformation.add(DotNames.DEFAULT);
-                } else if (persistenceUnitDescriptors.size() == 1
-                        && !impliedBlockingPersistenceUnitType.shouldGenerateImpliedBlockingPersistenceUnit()
-                        && persistenceUnitDescriptors.get(0).getPersistenceUnitName()
+                } else if (persistenceXmlDescriptors.size() == 1
+                        && persistenceXmlDescriptors.get(0).getDescriptor().getName()
                                 .equals(persistenceUnitNameAnnotationValue.asString())) {
                     // we are in the case where we have only one persistence unit defined in a persistence.xml
                     // in this case, we consider it the default too if the name matches
@@ -232,11 +245,12 @@ public class HibernateOrmCdiProcessor {
     }
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerBeans(
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<AutoAddScopeBuildItem> autoAddScope,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Capabilities capabilities,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
         if (descriptors.isEmpty()) {
             return;

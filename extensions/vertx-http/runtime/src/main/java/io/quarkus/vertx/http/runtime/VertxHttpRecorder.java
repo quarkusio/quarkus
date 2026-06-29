@@ -861,14 +861,12 @@ public class VertxHttpRecorder {
                             }
 
                             actualManagementPort = ar.result().actualPort();
-                            if (actualManagementPort != httpManagementServerConfig.getTcpPort()) {
-                                valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
-                                if (launchMode.isDevOrTest()) {
-                                    valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
-                                }
+                            valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
+                            if (launchMode.isDevOrTest()) {
+                                valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
                             }
-                            String mgmtScheme = httpManagementServerOptions.isSsl() ? "https" : "http";
-                            String mgmtHost = httpManagementServerOptions.getHost();
+                            String mgmtScheme = httpManagementSslOptions != null ? "https" : "http";
+                            String mgmtHost = httpManagementServerConfig.getTcpHost();
                             if ("0.0.0.0".equals(mgmtHost)) {
                                 mgmtHost = "localhost";
                             }

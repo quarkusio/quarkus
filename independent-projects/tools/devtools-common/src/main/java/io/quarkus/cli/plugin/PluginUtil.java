@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public final class PluginUtil {
 
@@ -36,13 +36,13 @@ public final class PluginUtil {
     /**
      * Get the {@link PluginType} that corresponds the the specified location.
      *
-     * @param the location
+     * @param location the location
      * @return the {@link PluginType} that corresponds to the location.
      */
     public static PluginType getType(String location) {
         Optional<URL> url = checkUrl(location);
         Optional<Path> path = checkPath(location);
-        Optional<GACTV> gactv = checkGACTV(location);
+        Optional<ArtifactCoords> gactv = checkArtifactCoords(location);
         return getType(gactv, url, path);
     }
 
@@ -51,12 +51,12 @@ public final class PluginUtil {
      *
      * @param url the url
      * @param path the path
-     * @param gactv the gactv
+     * @param coords the artifact coordinates
      * @return the {@link PluginType} that corresponds to the location.
      */
-    public static PluginType getType(Optional<GACTV> gactv, Optional<URL> url, Optional<Path> path) {
+    public static PluginType getType(Optional<ArtifactCoords> coords, Optional<URL> url, Optional<Path> path) {
 
-        return gactv.map(i -> PluginType.maven)
+        return coords.map(i -> PluginType.maven)
                 .or(() -> url.map(u -> u.getPath()).or(() -> path.map(Path::toAbsolutePath).map(Path::toString))
                         .filter(f -> f.endsWith(".jar") || f.endsWith(".java")) // java or jar files
                         .map(f -> f.substring(f.lastIndexOf(".") + 1)) // get extension
@@ -84,7 +84,7 @@ public final class PluginUtil {
         if (checkUrl(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
             return false;
         }
-        if (checkGACTV(p.getLocation()).isPresent() && p.getType() != PluginType.extension) { //We don't want to remove remotely located plugins
+        if (checkArtifactCoords(p.getLocation()).isPresent() && p.getType() != PluginType.extension) { //We don't want to remove remotely located plugins
             return false;
         }
         if (p.getLocation().map(PluginUtil::isLocalFile).orElse(false)) {
@@ -112,21 +112,21 @@ public final class PluginUtil {
     }
 
     /**
-     * Chekcs if specified {@link String} is a valid {@URL}.
+     * Checks if specified {@link String} is a valid {@link ArtifactCoords}.
      *
      * @param location The string to check
      * @return The {@link URL} wrapped in {@link Optional} if valid, empty otherwise.
      */
-    public static Optional<GACTV> checkGACTV(String location) {
+    public static Optional<ArtifactCoords> checkArtifactCoords(String location) {
         try {
-            return Optional.of(GACTV.fromString(location));
+            return Optional.of(ArtifactCoords.fromString(location));
         } catch (IllegalArgumentException | NullPointerException e) {
             return Optional.empty();
         }
     }
 
-    public static Optional<GACTV> checkGACTV(Optional<String> location) {
-        return location.flatMap(PluginUtil::checkGACTV);
+    public static Optional<ArtifactCoords> checkArtifactCoords(Optional<String> location) {
+        return location.flatMap(PluginUtil::checkArtifactCoords);
     }
 
     /**
@@ -171,7 +171,8 @@ public final class PluginUtil {
      * @return true if location is url or gactv
      */
     public static boolean isRemoteLocation(String location) {
-        return checkUrl(location).isPresent() || checkGACTV(location).isPresent() || checkRemoteCatalog(location).isPresent();
+        return checkUrl(location).isPresent() || checkArtifactCoords(location).isPresent()
+                || checkRemoteCatalog(location).isPresent();
     }
 
     /**

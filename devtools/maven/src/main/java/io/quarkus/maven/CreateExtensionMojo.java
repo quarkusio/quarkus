@@ -4,7 +4,7 @@ import static io.quarkus.devtools.commands.CreateExtension.extractQuarkiverseExt
 import static io.quarkus.devtools.commands.CreateExtension.isQuarkiverseGroupId;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.fusesource.jansi.Ansi.ansi;
+import static org.jline.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;

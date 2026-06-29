@@ -25,7 +25,7 @@ class TrustedProxyDnAndIpValidationFailureTest {
                     .addClasses(ForwardedHandlerInitializer.class)
                     .addAsResource(new StringAsset(configuration), "application.properties"))
             .assertException(t -> assertThat(t).hasMessageContaining("quarkus.http.proxy.trusted-proxies")
-                    .hasMessageContaining("quarkus.http.proxy.trusted-proxy[*].subject-dn"));
+                    .hasMessageContaining("quarkus.http.proxy.trusted-proxy"));
 
     @Test
     void testStartupFails() {

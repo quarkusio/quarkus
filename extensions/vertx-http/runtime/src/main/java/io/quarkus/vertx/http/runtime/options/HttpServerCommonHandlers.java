@@ -1,27 +1,23 @@
 package io.quarkus.vertx.http.runtime.options;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
-import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.allowAll;
-import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.createTrustedProxyDnCheck;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.vertx.http.runtime.FilterConfig;
-import io.quarkus.vertx.http.runtime.ForwardedProxyHandler;
-import io.quarkus.vertx.http.runtime.ForwardedServerRequestWrapper;
-import io.quarkus.vertx.http.runtime.ForwardingProxyOptions;
+import io.quarkus.vertx.http.runtime.ForwardingProxyHandlerFactory;
 import io.quarkus.vertx.http.runtime.HeaderConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ResumingRequestWrapper;
 import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
-import io.quarkus.vertx.http.runtime.TrustedProxyCheck;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -93,35 +89,10 @@ public class HttpServerCommonHandlers {
     }
 
     public static Handler<HttpServerRequest> applyProxy(ProxyConfig proxyConfig, Handler<HttpServerRequest> root,
-            Supplier<Vertx> vertx, ClientAuth clientAuth) {
+            Supplier<Vertx> vertx, ClientAuth clientAuth, Optional<String> tlsConfigName, String configPrefix) {
         if (proxyConfig.proxyAddressForwarding()) {
-            final ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(proxyConfig, clientAuth);
-
-            if (forwardingProxyOptions.trustedProxyDns != null && !forwardingProxyOptions.trustedProxyDns.isEmpty()) {
-                return new ProxyHttpServerRequestHandler(root, forwardingProxyOptions) {
-                    @Override
-                    protected TrustedProxyCheck getProxyCheck(HttpServerRequest event) {
-                        return createTrustedProxyDnCheck(event, forwardingProxyOptions.trustedProxyDns);
-                    }
-                };
-            }
-
-            final TrustedProxyCheck.TrustedProxyCheckBuilder proxyCheckBuilder = forwardingProxyOptions.trustedProxyCheckBuilder;
-            if (proxyCheckBuilder == null) {
-                // no proxy check => we do not restrict who can send `X-Forwarded` or `X-Forwarded-*` headers
-                return new ProxyHttpServerRequestHandler(root, forwardingProxyOptions) {
-
-                    private final TrustedProxyCheck trustedProxyCheck = allowAll();
-
-                    @Override
-                    protected TrustedProxyCheck getProxyCheck(HttpServerRequest event) {
-                        return trustedProxyCheck;
-                    }
-                };
-            } else {
-                // restrict who can send `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers
-                return new ForwardedProxyHandler(proxyCheckBuilder, vertx, root, forwardingProxyOptions);
-            }
+            var factory = new ForwardingProxyHandlerFactory(proxyConfig, clientAuth, tlsConfigName, vertx, root, configPrefix);
+            return factory.createHandler();
         }
         return root;
     }
@@ -216,22 +187,4 @@ public class HttpServerCommonHandlers {
         }
     }
 
-    private static abstract class ProxyHttpServerRequestHandler implements Handler<HttpServerRequest> {
-
-        private final Handler<HttpServerRequest> root;
-        private final ForwardingProxyOptions forwardingProxyOptions;
-
-        protected ProxyHttpServerRequestHandler(Handler<HttpServerRequest> root,
-                ForwardingProxyOptions forwardingProxyOptions) {
-            this.root = root;
-            this.forwardingProxyOptions = forwardingProxyOptions;
-        }
-
-        protected abstract TrustedProxyCheck getProxyCheck(HttpServerRequest event);
-
-        @Override
-        public void handle(HttpServerRequest event) {
-            ForwardedServerRequestWrapper.handleOrReject(event, forwardingProxyOptions, getProxyCheck(event), root);
-        }
-    }
 }

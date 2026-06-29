@@ -338,7 +338,7 @@ class ClassLoadingChainAnalyzerTest {
     private static byte[] generateSimpleClass(String className) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         String internalName = className.replace('.', '/');
-        cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
+        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
 
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitCode();
@@ -356,7 +356,7 @@ class ClassLoadingChainAnalyzerTest {
     private static byte[] generateClassThatLoads(String className, String targetClassName) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         String internalName = className.replace('.', '/');
-        cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
+        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
 
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitCode();

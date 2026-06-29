@@ -1,28 +1,25 @@
 package io.quarkus.it.hibertnate.orm.graphql.panache;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class PayloadCreator {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private PayloadCreator() {
     }
 
     public static String getPayload(String query) {
-        JsonObject jsonObject = createRequestBody(query);
-        return jsonObject.toString();
+        ObjectNode node = createRequestBody(query);
+        return node.toString();
     }
 
-    private static JsonObject createRequestBody(String graphQL) {
-        return createRequestBody(graphQL, null);
-    }
-
-    private static JsonObject createRequestBody(String graphQL, JsonObject variables) {
-        // Create the request
-        if (variables == null || variables.isEmpty()) {
-            variables = Json.createObjectBuilder().build();
-        }
-        return Json.createObjectBuilder().add(QUERY, graphQL).add(VARIABLES, variables).build();
+    private static ObjectNode createRequestBody(String graphQL) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put(QUERY, graphQL);
+        node.putObject(VARIABLES);
+        return node;
     }
 
     public static final String MEDIATYPE_JSON = "application/json";

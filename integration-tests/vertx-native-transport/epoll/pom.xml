@@ -94,4 +94,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- epoll is Linux-only; skip native image build on non-Linux -->
+            <id>skip-native-on-non-linux</id>
+            <activation>
+                <os>
+                    <name>!linux</name>
+                </os>
+            </activation>
+            <properties>
+                <quarkus.native.enabled>false</quarkus.native.enabled>
+                <quarkus.package.jar.enabled>true</quarkus.package.jar.enabled>
+            </properties>
+        </profile>
+    </profiles>
 </project>

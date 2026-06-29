@@ -92,6 +92,32 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <io.netty.iouring.ringSize>512</io.netty.iouring.ringSize>
+                        <io.netty.iouring.cqSize>1024</io.netty.iouring.cqSize>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- io_uring is Linux-only; skip native image build on non-Linux -->
+            <id>skip-native-on-non-linux</id>
+            <activation>
+                <os>
+                    <name>!linux</name>
+                </os>
+            </activation>
+            <properties>
+                <quarkus.native.enabled>false</quarkus.native.enabled>
+                <quarkus.package.jar.enabled>true</quarkus.package.jar.enabled>
+            </properties>
+        </profile>
+    </profiles>
 </project>

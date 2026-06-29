@@ -10,6 +10,11 @@ public class IoUringAvailableCondition implements ExecutionCondition {
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        if ("true".equals(System.getenv("CI"))) {
+            return ConditionEvaluationResult.disabled(
+                    "io_uring tests are disabled on CI (MEMLOCK limits prevent ring buffer allocation)");
+        }
+
         if (!System.getProperty("os.name", "").toLowerCase().contains("linux")) {
             return ConditionEvaluationResult.disabled("io_uring requires Linux");
         }

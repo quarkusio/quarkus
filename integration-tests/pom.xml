@@ -274,6 +274,7 @@
                 <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-dpop</module>
+                <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>

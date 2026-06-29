@@ -683,11 +683,96 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 [[client-active]]
 == Activate/deactivate clients
 
-In some cases it may be useful to deactivate some of the REST clients detected at build time.
-To deactivate a client at runtime, set the `quarkus.elasticsearch[.optional client name].active` (for the low-level Elasticsearch REST client)
-or `quarkus.elasticsearch-java[.optional client name].active` (for the Java Elasticsearch client) to `false`.
-Deactivating a low-level Elasticsearch REST client automatically deactivates the corresponding Java Elasticsearch client,
-since it is using the low-level one as its transport for communication with the cluster.
+Elasticsearch clients configured at build time are active by default at runtime:
+Quarkus starts the underlying HTTP client on application startup.
+
+In some cases, it may be useful to deactivate some of the clients detected at build time.
+This is especially useful when the application must select one Elasticsearch cluster
+from a predefined set at runtime -- for example, connecting to either an Elasticsearch or an OpenSearch cluster
+depending on the deployment environment, or switching between different cluster versions
+(e.g. Elasticsearch 8 vs 9).
+
+=== Deactivating a client
+
+To deactivate a client at runtime, set `quarkus.elasticsearch."client-name".active` to `false`.
+For the default (unnamed) client, use `quarkus.elasticsearch.active`.
+
+Since the Java Elasticsearch client uses the low-level REST client as its transport,
+deactivating a low-level REST client automatically deactivates the corresponding Java client as well.
+
+[source,properties]
+----
+quarkus.elasticsearch."client1".hosts=elasticsearch1:9200
+quarkus.elasticsearch."client1".active=false
+
+quarkus.elasticsearch."client2".hosts=elasticsearch2:9200
+quarkus.elasticsearch."client2".active=false
+----
+
+=== Consequences when a client is inactive
+
+When a client is deactivated:
+
+* The corresponding health check, if any, does not contribute to the health status.
+* Any static CDI injection of that client (e.g. `@Inject RestClient`) will cause
+  the application to fail at startup.
+* Programmatic retrieval of the client (e.g. via `Arc.container()` or `CDI.current()`)
+  will throw an exception.
+
+=== Programmatic selection of the active client
+
+If you need to decide at runtime which client to use, do not inject the client directly.
+Instead, inject an `InjectableInstance` and use `getActive()` to retrieve the active
+client safely:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.elasticsearch.client.RestClient;
+
+import io.quarkus.arc.InjectableInstance;
+import io.smallrye.common.annotation.Identifier;
+
+@ApplicationScoped
+public class ElasticsearchService {
+    @Inject
+    @Identifier("client1")
+    InjectableInstance<RestClient> client1;
+
+    @Inject
+    @Identifier("client2")
+    InjectableInstance<RestClient> client2;
+
+    public RestClient getClient() {
+        if (client1.getHandle().getBean().isActive()) {
+            return client1.get();
+        } else if (client2.getHandle().getBean().isActive()) {
+            return client2.get();
+        }
+        throw new IllegalStateException("No active Elasticsearch client!");
+    }
+}
+----
+
+=== Selecting the active client through profiles
+
+You can use configuration profiles to select which client is active at runtime:
+
+[source,properties]
+----
+quarkus.elasticsearch."client1".hosts=elasticsearch1:9200
+quarkus.elasticsearch."client1".active=false
+
+quarkus.elasticsearch."client2".hosts=elasticsearch2:9200
+quarkus.elasticsearch."client2".active=false
+
+%client1.quarkus.elasticsearch."client1".active=true
+%client2.quarkus.elasticsearch."client2".active=true
+----
+
+Then start the application with the desired profile, for example `quarkus.profile=prod,client1`.
 
 == Conclusion
 

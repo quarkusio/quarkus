@@ -134,7 +134,6 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
-import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
@@ -171,8 +170,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
     public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
 
-    private static final boolean JDK_SUPPORTS_VIRTUAL_THREADS;
-
     static {
         primitiveTypes = Map.ofEntries(
                 entry(byte.class.getName(), Byte.class.getName()),
@@ -207,14 +204,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 entry(CHARACTER, Character.class),
                 entry(BIG_DECIMAL, BigDecimal.class),
                 entry(BIG_INTEGER, BigInteger.class));
-
-        boolean isJDKCompatible = true;
-        try {
-            Class.forName("java.lang.ThreadBuilders");
-        } catch (ClassNotFoundException e) {
-            isJDKCompatible = false;
-        }
-        JDK_SUPPORTS_VIRTUAL_THREADS = isJDKCompatible;
     }
 
     protected final IndexView index;
@@ -238,7 +227,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final TargetJavaVersion targetJavaVersion;
-
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
@@ -884,15 +872,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
 
         if (runOnVirtualThreadAnnotation != null) {
-            if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
-                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                        + "' uses @RunOnVirtualThread but the JDK version '" + Runtime.version() +
-                        "' and doesn't support virtual threads");
-            }
-            if (targetJavaVersion.isJava19OrHigher() == Status.FALSE) {
-                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                        + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
-            }
             if (!blocking) {
                 if (blockingAnnotation != null) {
                     return false;
@@ -1773,7 +1752,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         };
         private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
-
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;

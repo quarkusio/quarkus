@@ -535,8 +535,7 @@ public final class MemorySize implements Comparable<MemorySize> {
             if (Math.multiplyHigh(h, 10L) != 0) {
                 throw parseOverflow();
             }
-            // unsigned multiply high correction: use Math.unsignedMultiplyHigh on Java 18+
-            h = h * 10L + Math.multiplyHigh(l, 10L) + (l >>> 63) * 10L;
+            h = h * 10L + Math.unsignedMultiplyHigh(l, 10L);
             // add digit to low part
             long l10 = l * 10L;
             h = addHigh(h, l10, 0, d);

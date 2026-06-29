@@ -13,7 +13,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
-import io.quarkus.arc.deployment.ConfigBuildStep;
+import io.quarkus.arc.deployment.MicroProfileConfigProcessor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.Const;
@@ -200,7 +200,7 @@ final class ConfigurationPropertiesUtil {
 
     static void registerImplicitConverter(Type type, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         // We need to register for reflection in case an implicit converter is required.
-        if (!ConfigBuildStep.isHandledByProducers(type)) {
+        if (!MicroProfileConfigProcessor.isHandledByProducers(type)) {
             if (type.kind() != Type.Kind.ARRAY) {
                 reflectiveClasses
                         .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());

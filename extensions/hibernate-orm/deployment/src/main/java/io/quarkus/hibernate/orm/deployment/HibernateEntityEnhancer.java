@@ -33,7 +33,7 @@ import net.bytebuddy.ClassFileVersion;
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     private static final BytecodeProviderImpl PROVIDER = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl(
-            ClassFileVersion.JAVA_V17);
+            ClassFileVersion.JAVA_V21);
 
     //Choose this set to include Jakarta annotations, basic Java types such as String and Map, Hibernate annotations, and Panache supertypes:
     static final CoreTypePool CORE_TYPE_POOL = new CoreTypePool(

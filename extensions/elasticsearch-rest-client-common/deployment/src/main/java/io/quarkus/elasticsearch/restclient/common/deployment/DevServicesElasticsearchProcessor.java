@@ -92,8 +92,9 @@ public class DevServicesElasticsearchProcessor {
                 devServicesSharedNetworkBuildItem);
 
         for (DevservicesElasticsearchBuildItemsConfiguration buildItemsConfig : servicesToStart) {
-            ElasticsearchDevServicesBuildTimeConfig config = configuration.devservices()
-                    .get(buildItemsConfig.clientName);
+            ElasticsearchDevServicesBuildTimeConfig config = configuration.clients()
+                    .get(buildItemsConfig.clientName)
+                    .devservices();
 
             DevServicesResultBuildItem devService = startElasticsearchDevService(
                     dockerStatusBuildItem, composeProjectBuildItem, config, buildItemsConfig,

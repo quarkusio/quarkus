@@ -73,6 +73,8 @@ public abstract class JacksonCodeGenerator {
 
     private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
             JacksonAnnotationsInside.class.getName(),
@@ -108,7 +110,7 @@ public abstract class JacksonCodeGenerator {
     protected final Set<String> generatedClassNames = new HashSet<>();
     protected final Deque<ClassInfo> toBeGenerated = new ArrayDeque<>();
 
-    public JacksonCodeGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+    protected JacksonCodeGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
         this.jandexIndex = jandexIndex;
@@ -117,7 +119,7 @@ public abstract class JacksonCodeGenerator {
     protected abstract String getSuperClassName();
 
     protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return new String[0];
+        return EMPTY_STRING_ARRAY;
     }
 
     protected abstract String getClassSuffix();
@@ -158,7 +160,7 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void createConstructor(ClassCreator classCreator, String beanClassName) {
-        MethodCreator constructor = classCreator.getConstructorCreator(new String[0]);
+        MethodCreator constructor = classCreator.getConstructorCreator(EMPTY_STRING_ARRAY);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(getSuperClassName(), "java.lang.Class"),
                 constructor.getThis(), constructor.loadClass(beanClassName));
@@ -543,7 +545,7 @@ public abstract class JacksonCodeGenerator {
                     return value.asStringArray();
                 }
             }
-            return new String[0];
+            return EMPTY_STRING_ARRAY;
         }
 
         private record JsonNameResult(String name, boolean explicit) {
@@ -600,6 +602,11 @@ public abstract class JacksonCodeGenerator {
 
         boolean isUnwrapped() {
             return annotations.get(JsonUnwrapped.class.getName()) != null;
+        }
+
+        String[] fieldIgnoreProperties() {
+            AnnotationInstance ann = annotations.get(JsonIgnoreProperties.class.getName());
+            return ann == null || ann.value() == null ? EMPTY_STRING_ARRAY : ann.value().asStringArray();
         }
 
         boolean isBackReference() {

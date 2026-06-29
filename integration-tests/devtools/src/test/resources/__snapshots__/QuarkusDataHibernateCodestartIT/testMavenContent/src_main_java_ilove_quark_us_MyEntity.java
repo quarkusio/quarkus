@@ -1,11 +1,11 @@
 package ilove.quark.us;
 
-import io.quarkus.data.hibernate.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import jakarta.persistence.Entity;
 
 
 /**
- * Example JPA entity defined as a Panache Entity.
+ * Example JPA entity defined as a Managed Entity.
  * An ID field of Long type is provided, if you want to define your own ID field extends <code>WithId</code> instead.
  *
  * Documentation: {@see https://quarkus.io/guides/quarkus-data-hibernate}
@@ -23,6 +23,6 @@ import jakarta.persistence.Entity;
  * }
  */
 @Entity
-public class MyEntity extends PanacheEntity {
+public class MyEntity extends ManagedEntity {
     public String field;
 }

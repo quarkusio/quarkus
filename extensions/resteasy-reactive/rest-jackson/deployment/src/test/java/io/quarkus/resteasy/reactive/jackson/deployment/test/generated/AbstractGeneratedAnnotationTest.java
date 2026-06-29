@@ -575,6 +575,18 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("child", not(hasKey("parent")));
     }
 
+    // --- @JsonFormat with date pattern ---
+
+    @Test
+    public void testFormatDatePatternSerialization() {
+        RestAssured.get("/generated/date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-test"))
+                .body("date", Matchers.is("2025-06-15"));
+    }
+
     // --- @JsonFormat ---
 
     @Test

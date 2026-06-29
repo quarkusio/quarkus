@@ -43,6 +43,7 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     AnyGetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
+                                    DateFormatBean.class,
                                     FormatShape.class,
                                     FormatBean.class,
                                     GetterSetterBean.class,

@@ -426,8 +426,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             String typeName = fieldSpecs.fieldType.name().toString();
             registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
             MethodDescriptor serializeUnwrapped = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
-                    "serializeUnwrapped", void.class, Object.class, JsonGenerator.class, SerializerProvider.class);
-            bytecode.invokeStaticMethod(serializeUnwrapped, arg, ctx.jsonGenerator, ctx.serializerProvider);
+                    "serializeUnwrapped", void.class, Object.class, JsonGenerator.class,
+                    SerializerProvider.class, Set.class);
+            bytecode.invokeStaticMethod(serializeUnwrapped, arg, ctx.jsonGenerator, ctx.serializerProvider,
+                    ignoreProperties(fieldSpecs, bytecode));
         } else {
             String pkgName = classInfo.name().packagePrefixName().toString();
             generatedFields.computeIfAbsent(pkgName, pkg -> new HashMap<>())
@@ -444,6 +446,24 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeFieldValue(fieldSpecs, bytecode, ctx, typeName, arg, pkgName);
             }
         }
+    }
+
+    private static ResultHandle ignoreProperties(FieldSpecs fieldSpecs, BytecodeCreator bytecode) {
+        String[] ignoredProperties = fieldSpecs.fieldIgnoreProperties();
+        ResultHandle ignoredSet;
+        if (ignoredProperties.length > 0) {
+            ResultHandle[] loadedNames = new ResultHandle[ignoredProperties.length];
+            for (int i = 0; i < ignoredProperties.length; i++) {
+                loadedNames[i] = bytecode.load(ignoredProperties[i]);
+            }
+            ignoredSet = bytecode.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(Set.class, "of", Set.class, Object[].class),
+                    bytecode.marshalAsArray(Object.class, loadedNames));
+        } else {
+            ignoredSet = bytecode.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(Set.class, "of", Set.class));
+        }
+        return ignoredSet;
     }
 
     private static void writeFormattedValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,

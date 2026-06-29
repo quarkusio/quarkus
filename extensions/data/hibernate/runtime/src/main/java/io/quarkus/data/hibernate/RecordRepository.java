@@ -1,15 +1,15 @@
 package io.quarkus.data.hibernate;
 
-import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepositoryBase;
-import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveRepositoryBase;
+import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase;
+import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
 
-public interface RecordRepository<Entity> extends PanacheStatelessBlockingRepositoryBase<Entity, Long> {
+public interface RecordRepository<Entity> extends BlockingRecordRepositoryBase<Entity, Long> {
 
-    interface CustomId<Entity, Id> extends PanacheStatelessBlockingRepositoryBase<Entity, Id> {
+    interface CustomId<Entity, Id> extends BlockingRecordRepositoryBase<Entity, Id> {
     }
 
-    interface Reactive<Entity> extends PanacheStatelessReactiveRepositoryBase<Entity, Long> {
-        interface CustomId<Entity, Id> extends PanacheStatelessReactiveRepositoryBase<Entity, Id> {
+    interface Reactive<Entity> extends ReactiveRecordRepositoryBase<Entity, Long> {
+        interface CustomId<Entity, Id> extends ReactiveRecordRepositoryBase<Entity, Id> {
         }
     }
 }

@@ -4,13 +4,13 @@ import java.util.stream.Stream;
 
 import org.hibernate.Session;
 
-import io.quarkus.data.hibernate.managed.PanacheManagedRepositoryOperations;
+import io.quarkus.data.hibernate.managed.ManagedRepositoryOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
-public interface PanacheManagedBlockingRepositoryOperations<Entity, Id>
-        extends PanacheManagedRepositoryOperations<Entity, Session, Void, Boolean, Id> {
+public interface BlockingManagedRepositoryOperations<Entity, Id>
+        extends ManagedRepositoryOperations<Entity, Session, Void, Boolean, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());

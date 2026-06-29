@@ -2,7 +2,7 @@ package io.quarkus.data.hibernate.stateless;
 
 import io.quarkus.data.hibernate.EntitySwitcher;
 
-public interface PanacheStatelessEntityOperations<Completion, Confirmation> extends EntitySwitcher {
+public interface RecordEntityOperations<Completion, Confirmation> extends EntitySwitcher {
     /**
      * Insert this entity in the database. This will set your ID field if it is not already set.
      */

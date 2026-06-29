@@ -11,8 +11,8 @@ import jakarta.persistence.LockModeType;
 
 import io.quarkus.data.hibernate.RepositoryQueries;
 
-public interface PanacheRepositoryBlockingQueries<Entity, Id>
-        extends RepositoryQueries<Entity, List<Entity>, PanacheBlockingQuery<Entity>, Long, Boolean, Id> {
+public interface BlockingRepositoryQueries<Entity, Id>
+        extends RepositoryQueries<Entity, List<Entity>, BlockingDataQuery<Entity>, Long, Boolean, Id> {
 
     // Queries
 

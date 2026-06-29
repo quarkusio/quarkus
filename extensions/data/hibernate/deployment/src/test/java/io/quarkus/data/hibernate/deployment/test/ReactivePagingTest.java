@@ -11,7 +11,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.data.hibernate.reactive.PanacheReactiveQuery;
+import io.quarkus.data.hibernate.reactive.ReactiveDataQuery;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -53,7 +53,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> offsetPageBasic() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.pages().page(0, 10).list().flatMap(page0 -> {
             assertThat(page0).hasSize(10);
@@ -75,7 +75,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> offsetPageNavigation() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         query.pages().page(0, 10);
         return query.list().flatMap(page0 -> {
@@ -122,7 +122,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> offsetPageCount() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         query.pages().page(0, 10);
         return query.pages().count().flatMap(pageCount -> {
@@ -136,7 +136,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> offsetPageIterateAll() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         int[] totalResults = { 0 };
         return query.pages().page(0, 10).list().flatMap(list -> {
@@ -148,7 +148,7 @@ public class ReactivePagingTest {
         });
     }
 
-    private Uni<Void> iteratePages(PanacheReactiveQuery<MyReactiveEntity> query, int[] totalResults) {
+    private Uni<Void> iteratePages(ReactiveDataQuery<MyReactiveEntity> query, int[] totalResults) {
         return query.pages().hasNext().flatMap(hasNext -> {
             if (!hasNext) {
                 return Uni.createFrom().voidItem();
@@ -165,7 +165,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> cursorPageThrows() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         assertThatThrownBy(() -> query.pages().cursor(0, 10))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -177,7 +177,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitBasic() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(10).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -189,7 +189,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitWithStartOffset() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(5, 10).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -200,7 +200,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitRange() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().range(5, 14).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -212,7 +212,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitAll() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(100).list().map(list -> {
             assertThat(list).hasSize(25);
@@ -222,7 +222,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitZeroThrows() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll();
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll();
 
         assertThatThrownBy(() -> query.limits().limit(0))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -231,7 +231,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitFrom() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limitFrom(5).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -243,7 +243,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitFromBeyondEnd() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limitFrom(20).list().map(list -> {
             assertThat(list).hasSize(5);
@@ -254,7 +254,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitWithJakartaLimit() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(Limit.of(10)).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -266,7 +266,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> limitWithJakartaLimitRange() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(Limit.range(6, 15)).list().map(list -> {
             assertThat(list).hasSize(10);
@@ -278,7 +278,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> requestWithPageRequest() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.pages().request(PageRequest.ofPage(1, 10, false)).list().flatMap(page0 -> {
             assertThat(page0).hasSize(10);
@@ -302,7 +302,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> switchFromOffsetToLimit() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         query.pages().page(0, 10);
         return query.list().flatMap(paged -> {
@@ -318,7 +318,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> switchFromLimitToOffset() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(Order.by(_MyReactiveEntity.foo.asc()));
 
         return query.limits().limit(5).list().flatMap(limited -> {
             assertThat(limited).hasSize(5);
@@ -335,7 +335,7 @@ public class ReactivePagingTest {
 
     @WithTransaction
     Uni<Void> noPaging() {
-        PanacheReactiveQuery<MyReactiveEntity> query = repo.findAll(_MyReactiveEntity.foo.asc());
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll(_MyReactiveEntity.foo.asc());
 
         return query.list().map(all -> {
             assertThat(all).hasSize(25);

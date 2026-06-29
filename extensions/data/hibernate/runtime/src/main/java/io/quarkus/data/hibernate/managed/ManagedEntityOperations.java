@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.data.hibernate.EntitySwitcher;
 
-public interface PanacheManagedEntityOperations<Completion, Confirmation> extends EntitySwitcher {
+public interface ManagedEntityOperations<Completion, Confirmation> extends EntitySwitcher {
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      *

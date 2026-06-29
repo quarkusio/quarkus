@@ -16,21 +16,21 @@ public class QuarkusDataHibernateTypeNames implements QuarkusDataTypeNames {
 
     @Override
     public String managedBlockingRepositoryBase() {
-        return "io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingRepositoryBase";
+        return "io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase";
     }
 
     @Override
     public String statelessBlockingRepositoryBase() {
-        return "io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingRepositoryBase";
+        return "io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase";
     }
 
     @Override
     public String managedReactiveRepositoryBase() {
-        return "io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveRepositoryBase";
+        return "io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase";
     }
 
     @Override
     public String statelessReactiveRepositoryBase() {
-        return "io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveRepositoryBase";
+        return "io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase";
     }
 }

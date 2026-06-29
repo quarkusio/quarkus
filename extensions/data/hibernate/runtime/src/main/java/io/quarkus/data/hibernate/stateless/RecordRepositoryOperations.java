@@ -2,7 +2,7 @@ package io.quarkus.data.hibernate.stateless;
 
 import java.util.stream.Stream;
 
-public interface PanacheStatelessRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
+public interface RecordRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
 
     // Operations
 

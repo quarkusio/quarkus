@@ -6,11 +6,11 @@ import org.hibernate.StatelessSession;
 
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
-import io.quarkus.data.hibernate.stateless.PanacheStatelessRepositoryOperations;
+import io.quarkus.data.hibernate.stateless.RecordRepositoryOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
-public interface PanacheStatelessBlockingRepositoryOperations<Entity, Id>
-        extends PanacheStatelessRepositoryOperations<Entity, StatelessSession, Void, Boolean, Id> {
+public interface BlockingRecordRepositoryOperations<Entity, Id>
+        extends RecordRepositoryOperations<Entity, StatelessSession, Void, Boolean, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());

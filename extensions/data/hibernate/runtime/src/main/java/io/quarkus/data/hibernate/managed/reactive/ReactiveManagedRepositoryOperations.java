@@ -4,14 +4,14 @@ import java.util.stream.Stream;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import io.quarkus.data.hibernate.managed.PanacheManagedRepositoryOperations;
+import io.quarkus.data.hibernate.managed.ManagedRepositoryOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheManagedReactiveRepositoryOperations<Entity, Id>
-        extends PanacheManagedRepositoryOperations<Entity, Uni<Mutiny.Session>, Uni<Void>, Uni<Boolean>, Id> {
+public interface ReactiveManagedRepositoryOperations<Entity, Id>
+        extends ManagedRepositoryOperations<Entity, Uni<Mutiny.Session>, Uni<Void>, Uni<Boolean>, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());

@@ -6,13 +6,13 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 //FIXME: duplicate with ORM and probably HR
 /**
- * Represents a regular Panache entity class.
+ * Represents a regular Quarkus Data entity class.
  */
-public final class PanacheEntityClassBuildItem extends MultiBuildItem {
+public final class QuarkusDataEntityClassBuildItem extends MultiBuildItem {
 
     private final ClassInfo entityClass;
 
-    public PanacheEntityClassBuildItem(ClassInfo entityClass) {
+    public QuarkusDataEntityClassBuildItem(ClassInfo entityClass) {
         this.entityClass = entityClass;
     }
 

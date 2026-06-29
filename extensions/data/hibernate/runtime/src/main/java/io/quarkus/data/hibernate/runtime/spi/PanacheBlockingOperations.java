@@ -11,10 +11,10 @@ import jakarta.persistence.LockModeType;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 
-import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 
 public interface PanacheBlockingOperations extends
-        PanacheOperations<Object, List<?>, PanacheBlockingQuery<?>, Long, Void, Boolean> {
+        PanacheOperations<Object, List<?>, BlockingDataQuery<?>, Long, Void, Boolean> {
 
     Session getSession(Class<?> entityClass);
 

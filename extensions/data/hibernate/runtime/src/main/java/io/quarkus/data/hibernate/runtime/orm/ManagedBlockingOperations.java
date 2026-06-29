@@ -11,7 +11,7 @@ import jakarta.persistence.LockModeType;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 
-import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
@@ -129,32 +129,32 @@ public class ManagedBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Object... params) {
+    public BlockingDataQuery<?> find(Class<?> entityClass, String query, Object... params) {
         return DELEGATE.find(entityClass, query, params);
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Order<?> order, Object... params) {
+    public BlockingDataQuery<?> find(Class<?> entityClass, String query, Order<?> order, Object... params) {
         return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
+    public BlockingDataQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
         return DELEGATE.find(entityClass, query, params);
     }
 
     @Override
-    public PanacheBlockingQuery<?> find(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
+    public BlockingDataQuery<?> find(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
         return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
-    public PanacheBlockingQuery<?> findAll(Class<?> entityClass) {
+    public BlockingDataQuery<?> findAll(Class<?> entityClass) {
         return DELEGATE.findAll(entityClass);
     }
 
     @Override
-    public PanacheBlockingQuery<?> findAll(Class<?> entityClass, Order<?> order) {
+    public BlockingDataQuery<?> findAll(Class<?> entityClass, Order<?> order) {
         return DELEGATE.findAll(entityClass, PanacheJpaUtil.toSort(order));
     }
 

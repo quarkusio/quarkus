@@ -1,49 +1,49 @@
 package io.quarkus.data.hibernate;
 
-import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingEntity;
-import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveEntity;
+import io.quarkus.data.hibernate.managed.blocking.BlockingManagedEntity;
+import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedEntity;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingEntity;
-import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveEntity;
+import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordEntity;
+import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordEntity;
 import io.smallrye.mutiny.Uni;
 
 public interface EntitySwitcher {
-    default PanacheManagedBlockingEntity managedBlocking() {
-        if (this instanceof PanacheManagedBlockingEntity) {
-            return (PanacheManagedBlockingEntity) this;
+    default BlockingManagedEntity managedBlocking() {
+        if (this instanceof BlockingManagedEntity) {
+            return (BlockingManagedEntity) this;
         } else {
             return new PanacheManagedBlockingEntityOperationsImpl(this);
         }
     }
 
-    default PanacheManagedReactiveEntity managedReactive() {
-        if (this instanceof PanacheManagedReactiveEntity) {
-            return (PanacheManagedReactiveEntity) this;
+    default ReactiveManagedEntity managedReactive() {
+        if (this instanceof ReactiveManagedEntity) {
+            return (ReactiveManagedEntity) this;
         } else {
             return new PanacheManagedReactiveEntityOperationsImpl(this);
         }
     }
 
-    default PanacheStatelessReactiveEntity statelessReactive() {
-        if (this instanceof PanacheStatelessReactiveEntity) {
-            return (PanacheStatelessReactiveEntity) this;
+    default ReactiveRecordEntity statelessReactive() {
+        if (this instanceof ReactiveRecordEntity) {
+            return (ReactiveRecordEntity) this;
         } else {
             return new PanacheStatelessReactiveEntityOperationsImpl(this);
         }
     }
 
-    default PanacheStatelessBlockingEntity statelessBlocking() {
-        if (this instanceof PanacheStatelessBlockingEntity) {
-            return (PanacheStatelessBlockingEntity) this;
+    default BlockingRecordEntity statelessBlocking() {
+        if (this instanceof BlockingRecordEntity) {
+            return (BlockingRecordEntity) this;
         } else {
             return new PanacheStatelessBlockingEntityOperationsImpl(this);
         }
     }
 
     // FIXME: move to runtime
-    static class PanacheManagedBlockingEntityOperationsImpl implements PanacheManagedBlockingEntity {
+    static class PanacheManagedBlockingEntityOperationsImpl implements BlockingManagedEntity {
 
         private Object entity;
 
@@ -77,7 +77,7 @@ public interface EntitySwitcher {
     }
 
     // FIXME: move to runtime
-    static class PanacheManagedReactiveEntityOperationsImpl implements PanacheManagedReactiveEntity {
+    static class PanacheManagedReactiveEntityOperationsImpl implements ReactiveManagedEntity {
 
         private Object entity;
 
@@ -111,7 +111,7 @@ public interface EntitySwitcher {
     }
 
     // FIXME: move to runtime
-    static class PanacheStatelessReactiveEntityOperationsImpl implements PanacheStatelessReactiveEntity {
+    static class PanacheStatelessReactiveEntityOperationsImpl implements ReactiveRecordEntity {
 
         private Object entity;
 
@@ -145,7 +145,7 @@ public interface EntitySwitcher {
     }
 
     // FIXME: move to runtime
-    static class PanacheStatelessBlockingEntityOperationsImpl implements PanacheStatelessBlockingEntity {
+    static class PanacheStatelessBlockingEntityOperationsImpl implements BlockingRecordEntity {
 
         private Object entity;
 

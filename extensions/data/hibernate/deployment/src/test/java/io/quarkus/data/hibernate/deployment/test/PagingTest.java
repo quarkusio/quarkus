@@ -14,7 +14,7 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class PagingTest {
@@ -44,7 +44,7 @@ public class PagingTest {
 
     @Transactional
     void offsetPageBasic() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> page0 = query.pages().page(0, 10).list();
         assertThat(page0).hasSize(10);
@@ -62,7 +62,7 @@ public class PagingTest {
 
     @Transactional
     void offsetPageNavigation() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         query.pages().page(0, 10);
         List<MyEntity> page0 = query.list();
@@ -100,7 +100,7 @@ public class PagingTest {
 
     @Transactional
     void offsetPageCount() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         query.pages().page(0, 10);
         assertThat(query.pages().count()).isEqualTo(3L);
@@ -109,7 +109,7 @@ public class PagingTest {
 
     @Transactional
     void offsetPageIterateAll() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         int totalResults = 0;
         List<MyEntity> list = query.pages().page(0, 10).list();
@@ -125,7 +125,7 @@ public class PagingTest {
 
     @Transactional
     void cursorPageBasic() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> page0 = query.pages().cursor(0, 10).list();
         assertThat(page0).hasSize(10);
@@ -135,7 +135,7 @@ public class PagingTest {
 
     @Transactional
     void cursorPageNavigation() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> page0 = query.pages().cursor(0, 10).list();
         assertThat(page0).hasSize(10);
@@ -164,7 +164,7 @@ public class PagingTest {
 
     @Transactional
     void cursorPageIterateAll() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         int totalResults = 0;
         List<MyEntity> list = query.pages().cursor(0, 10).list();
@@ -178,7 +178,7 @@ public class PagingTest {
 
     @Transactional
     void cursorPageWithoutSortThrows() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll();
+        BlockingDataQuery<MyEntity> query = repo.findAll();
 
         assertThatThrownBy(() -> query.pages().cursor(0, 10))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -187,7 +187,7 @@ public class PagingTest {
 
     @Transactional
     void cursorPageLastThrows() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         query.pages().cursor(0, 10).list();
         assertThatThrownBy(() -> query.pages().last())
@@ -198,7 +198,7 @@ public class PagingTest {
 
     @Transactional
     void limitBasic() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limit(10).list();
         assertThat(list).hasSize(10);
@@ -208,7 +208,7 @@ public class PagingTest {
 
     @Transactional
     void limitWithStartOffset() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limit(5, 10).list();
         assertThat(list).hasSize(10);
@@ -217,7 +217,7 @@ public class PagingTest {
 
     @Transactional
     void limitRange() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().range(5, 14).list();
         assertThat(list).hasSize(10);
@@ -227,7 +227,7 @@ public class PagingTest {
 
     @Transactional
     void limitAll() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limit(100).list();
         assertThat(list).hasSize(25);
@@ -235,7 +235,7 @@ public class PagingTest {
 
     @Transactional
     void limitZeroThrows() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll();
+        BlockingDataQuery<MyEntity> query = repo.findAll();
 
         assertThatThrownBy(() -> query.limits().limit(0))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -243,7 +243,7 @@ public class PagingTest {
 
     @Transactional
     void limitFrom() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limitFrom(5).list();
         assertThat(list).hasSize(10);
@@ -253,7 +253,7 @@ public class PagingTest {
 
     @Transactional
     void limitFromBeyondEnd() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limitFrom(20).list();
         assertThat(list).hasSize(5);
@@ -262,7 +262,7 @@ public class PagingTest {
 
     @Transactional
     void limitWithJakartaLimit() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limit(Limit.of(10)).list();
         assertThat(list).hasSize(10);
@@ -272,7 +272,7 @@ public class PagingTest {
 
     @Transactional
     void limitWithJakartaLimitRange() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> list = query.limits().limit(Limit.range(6, 15)).list();
         assertThat(list).hasSize(10);
@@ -282,7 +282,7 @@ public class PagingTest {
 
     @Transactional
     void requestWithPageRequest() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         List<MyEntity> page0 = query.pages().request(PageRequest.ofPage(1, 10, false)).list();
         assertThat(page0).hasSize(10);
@@ -302,7 +302,7 @@ public class PagingTest {
 
     @Transactional
     void switchFromOffsetToLimit() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         query.pages().page(0, 10);
         List<MyEntity> paged = query.list();
@@ -315,7 +315,7 @@ public class PagingTest {
 
     @Transactional
     void switchFromLimitToOffset() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
+        BlockingDataQuery<MyEntity> query = repo.findAll(Order.by(_MyEntity.foo.asc()));
 
         query.limits().limit(5);
         List<MyEntity> limited = query.list();
@@ -330,7 +330,7 @@ public class PagingTest {
 
     @Transactional
     void noPaging() {
-        PanacheBlockingQuery<MyEntity> query = repo.findAll(_MyEntity.foo.asc());
+        BlockingDataQuery<MyEntity> query = repo.findAll(_MyEntity.foo.asc());
 
         List<MyEntity> all = query.list();
         assertThat(all).hasSize(25);

@@ -1,21 +1,21 @@
 package io.quarkus.data.hibernate;
 
-import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingEntity;
-import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveEntity;
+import io.quarkus.data.hibernate.managed.blocking.BlockingManagedEntity;
+import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedEntity;
 
 /**
  * Represents an entity with managed blocking operations.
  */
-public class ManagedEntity extends WithId.AutoLong implements PanacheManagedBlockingEntity {
+public class ManagedEntity extends WithId.AutoLong implements BlockingManagedEntity {
 
-    public interface CustomId extends PanacheManagedBlockingEntity {
+    public interface CustomId extends BlockingManagedEntity {
     }
 
     /**
      * Represents an entity with managed reactive operations.
      */
-    public static class Reactive extends WithId.AutoLong implements PanacheManagedReactiveEntity {
-        public interface CustomId extends PanacheManagedReactiveEntity {
+    public static class Reactive extends WithId.AutoLong implements ReactiveManagedEntity {
+        public interface CustomId extends ReactiveManagedEntity {
         }
     }
 }

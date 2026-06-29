@@ -4,12 +4,12 @@ import jakarta.json.bind.annotation.JsonbTransient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.quarkus.data.hibernate.managed.PanacheManagedEntityOperations;
+import io.quarkus.data.hibernate.managed.ManagedEntityOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheManagedReactiveEntity extends PanacheManagedEntityOperations<Uni<Void>, Uni<Boolean>> {
+public interface ReactiveManagedEntity extends ManagedEntityOperations<Uni<Void>, Uni<Boolean>> {
 
     private PanacheReactiveOperations operations() {
         return PanacheOperations.getReactiveManaged();

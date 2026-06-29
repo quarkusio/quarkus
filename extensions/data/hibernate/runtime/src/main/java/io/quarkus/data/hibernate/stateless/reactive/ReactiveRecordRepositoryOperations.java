@@ -6,12 +6,12 @@ import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.PanacheStatelessRepositoryOperations;
+import io.quarkus.data.hibernate.stateless.RecordRepositoryOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheStatelessReactiveRepositoryOperations<Entity, Id>
-        extends PanacheStatelessRepositoryOperations<Entity, Uni<Mutiny.StatelessSession>, Uni<Void>, Uni<Boolean>, Id> {
+public interface ReactiveRecordRepositoryOperations<Entity, Id>
+        extends RecordRepositoryOperations<Entity, Uni<Mutiny.StatelessSession>, Uni<Void>, Uni<Boolean>, Id> {
 
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());

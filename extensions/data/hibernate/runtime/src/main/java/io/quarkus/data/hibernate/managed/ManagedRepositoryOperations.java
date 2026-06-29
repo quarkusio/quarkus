@@ -2,7 +2,7 @@ package io.quarkus.data.hibernate.managed;
 
 import java.util.stream.Stream;
 
-public interface PanacheManagedRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
+public interface ManagedRepositoryOperations<Entity, Session, Completion, Confirmation, Id> {
 
     // Operations
 

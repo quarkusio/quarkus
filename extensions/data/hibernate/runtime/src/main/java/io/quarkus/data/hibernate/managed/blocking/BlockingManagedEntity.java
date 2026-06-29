@@ -4,11 +4,11 @@ import jakarta.json.bind.annotation.JsonbTransient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.quarkus.data.hibernate.managed.PanacheManagedEntityOperations;
+import io.quarkus.data.hibernate.managed.ManagedEntityOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 
-public interface PanacheManagedBlockingEntity extends PanacheManagedEntityOperations<Void, Boolean> {
+public interface BlockingManagedEntity extends ManagedEntityOperations<Void, Boolean> {
 
     private PanacheBlockingOperations operations() {
         return PanacheOperations.getBlockingManaged();

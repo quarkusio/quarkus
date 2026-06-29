@@ -6,14 +6,14 @@ import java.util.Map;
 import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
-import io.quarkus.data.hibernate.reactive.PanacheReactiveQuery;
-import io.quarkus.data.hibernate.reactive.PanacheRepositoryReactiveQueries;
+import io.quarkus.data.hibernate.reactive.ReactiveDataQuery;
+import io.quarkus.data.hibernate.reactive.ReactiveRepositoryQueries;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends PanacheRepositoryReactiveQueries<Entity, Id> {
+public interface ReactiveRecordRepositoryQueries<Entity, Id> extends ReactiveRepositoryQueries<Entity, Id> {
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
     }
@@ -33,33 +33,33 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Object... params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, params);
+    default ReactiveDataQuery<Entity> find(String query, Object... params) {
+        return (ReactiveDataQuery<Entity>) operations().find(getEntityClass(), query, params);
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Object... params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
+    default ReactiveDataQuery<Entity> find(String query, Order<?> order, Object... params) {
+        return (ReactiveDataQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Map<String, Object> params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, params);
+    default ReactiveDataQuery<Entity> find(String query, Map<String, Object> params) {
+        return (ReactiveDataQuery<Entity>) operations().find(getEntityClass(), query, params);
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
+    default ReactiveDataQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
+        return (ReactiveDataQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> findAll() {
-        return (PanacheReactiveQuery<Entity>) operations().findAll(getEntityClass());
+    default ReactiveDataQuery<Entity> findAll() {
+        return (ReactiveDataQuery<Entity>) operations().findAll(getEntityClass());
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> findAll(Order<?> order) {
-        return (PanacheReactiveQuery<Entity>) operations().findAll(getEntityClass(), order);
+    default ReactiveDataQuery<Entity> findAll(Order<?> order) {
+        return (ReactiveDataQuery<Entity>) operations().findAll(getEntityClass(), order);
     }
 
     @Override

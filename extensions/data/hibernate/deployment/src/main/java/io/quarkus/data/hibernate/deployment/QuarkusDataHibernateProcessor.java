@@ -36,11 +36,11 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
 import io.quarkus.data.hibernate.EntitySwitcher;
 import io.quarkus.data.hibernate.RepositorySwitcher;
-import io.quarkus.data.hibernate.managed.blocking.PanacheManagedBlockingEntity;
-import io.quarkus.data.hibernate.managed.reactive.PanacheManagedReactiveEntity;
+import io.quarkus.data.hibernate.managed.blocking.BlockingManagedEntity;
+import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedEntity;
 import io.quarkus.data.hibernate.runtime.PanacheHibernateRecorder;
-import io.quarkus.data.hibernate.stateless.blocking.PanacheStatelessBlockingEntity;
-import io.quarkus.data.hibernate.stateless.reactive.PanacheStatelessReactiveEntity;
+import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordEntity;
+import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordEntity;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -64,7 +64,7 @@ import io.quarkus.security.spi.SecuredTopLevelInterfaceBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
 
-public final class PanacheHibernateResourceProcessor {
+public final class QuarkusDataHibernateProcessor {
 
     /**
      * Collection of Jakarta Data annotations for which we create a repository, if they're detected on an inner interface.
@@ -82,13 +82,13 @@ public final class PanacheHibernateResourceProcessor {
     static final DotName DOTNAME_PANACHE_REPOSITORY_SWITCHER = DotName.createSimple(RepositorySwitcher.class.getName());
 
     static final DotName DOTNAME_PANACHE_MANAGED_BLOCKING_ENTITY = DotName
-            .createSimple(PanacheManagedBlockingEntity.class.getName());
+            .createSimple(BlockingManagedEntity.class.getName());
     static final DotName DOTNAME_PANACHE_MANAGED_REACTIVE_ENTITY = DotName
-            .createSimple(PanacheManagedReactiveEntity.class.getName());
+            .createSimple(ReactiveManagedEntity.class.getName());
     static final DotName DOTNAME_PANACHE_STATELESS_BLOCKING_ENTITY = DotName
-            .createSimple(PanacheStatelessBlockingEntity.class.getName());
+            .createSimple(BlockingRecordEntity.class.getName());
     static final DotName DOTNAME_PANACHE_STATELESS_REACTIVE_ENTITY = DotName
-            .createSimple(PanacheStatelessReactiveEntity.class.getName());
+            .createSimple(ReactiveRecordEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_MARKER = DotName.createSimple(EntitySwitcher.class.getName());
 
     private static final Set<String> ALL_REPOSITORY_METHOD_ANNOTATIONS;
@@ -159,7 +159,7 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheEntityClassBuildItem> entityClasses) {
+    void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<QuarkusDataEntityClassBuildItem> entityClasses) {
         // NOTE: we don't skip abstract/generic entities because they still need accessors
         for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_ENTITY_MARKER)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
@@ -167,7 +167,7 @@ public final class PanacheHibernateResourceProcessor {
                     && !panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_MANAGED_REACTIVE_ENTITY)
                     && !panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_STATELESS_BLOCKING_ENTITY)
                     && !panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_STATELESS_REACTIVE_ENTITY)) {
-                entityClasses.produce(new PanacheEntityClassBuildItem(panacheEntityBaseSubclass));
+                entityClasses.produce(new QuarkusDataEntityClassBuildItem(panacheEntityBaseSubclass));
             }
         }
     }
@@ -178,7 +178,7 @@ public final class PanacheHibernateResourceProcessor {
     void build(
             CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            List<PanacheEntityClassBuildItem> entityClasses,
+            List<QuarkusDataEntityClassBuildItem> entityClasses,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
@@ -197,7 +197,7 @@ public final class PanacheHibernateResourceProcessor {
         }
 
         Set<String> modelClasses = new HashSet<>();
-        for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+        for (QuarkusDataEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             modelClasses.add(entityClassName);
         }

@@ -5,26 +5,26 @@ import java.util.stream.Stream;
 
 import org.hibernate.StatelessSession;
 
-import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractStatelessJpaOperations;
 import io.quarkus.panache.common.Sort;
 
-public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperations<PanacheBlockingQuery<?>> {
+public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperations<BlockingDataQuery<?>> {
 
     @Override
-    protected PanacheBlockingQuery<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
+    protected BlockingDataQuery<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
             String originalQuery,
             Sort sort, Object paramsArrayOrMap) {
         return new PanacheBlockingQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @Override
-    public List<?> list(PanacheBlockingQuery<?> query) {
+    public List<?> list(BlockingDataQuery<?> query) {
         return query.list();
     }
 
     @Override
-    public Stream<?> stream(PanacheBlockingQuery<?> query) {
+    public Stream<?> stream(BlockingDataQuery<?> query) {
         return query.stream();
     }
 

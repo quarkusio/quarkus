@@ -2,10 +2,10 @@ package io.quarkus.data.hibernate.stateless.reactive;
 
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.PanacheStatelessEntityOperations;
+import io.quarkus.data.hibernate.stateless.RecordEntityOperations;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheStatelessReactiveEntity extends PanacheStatelessEntityOperations<Uni<Void>, Uni<Boolean>> {
+public interface ReactiveRecordEntity extends RecordEntityOperations<Uni<Void>, Uni<Boolean>> {
 
     private PanacheReactiveOperations operations() {
         return PanacheOperations.getReactiveManaged();

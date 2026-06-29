@@ -1,4 +1,4 @@
-package io.quarkus.data.hibernate.stateless.blocking;
+package io.quarkus.data.hibernate.managed.blocking;
 
 import java.util.List;
 import java.util.Map;
@@ -8,19 +8,19 @@ import java.util.stream.Stream;
 import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
-import io.quarkus.data.hibernate.blocking.PanacheBlockingQuery;
-import io.quarkus.data.hibernate.blocking.PanacheRepositoryBlockingQueries;
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
+import io.quarkus.data.hibernate.blocking.BlockingRepositoryQueries;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
-public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends PanacheRepositoryBlockingQueries<Entity, Id> {
+public interface BlockingManagedRepositoryQueries<Entity, Id> extends BlockingRepositoryQueries<Entity, Id> {
     private Class<? extends Entity> getEntityClass() {
         return AbstractJpaOperations.getRepositoryEntityClass(getClass());
     }
 
     private PanacheBlockingOperations operations() {
-        return PanacheOperations.getBlockingStateless();
+        return PanacheOperations.getBlockingManaged();
     }
 
     @Override
@@ -44,33 +44,33 @@ public interface PanacheStatelessBlockingRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Object... params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, params);
+    default BlockingDataQuery<Entity> find(String query, Object... params) {
+        return (BlockingDataQuery<Entity>) operations().find(getEntityClass(), query, params);
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Order<?> order, Object... params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, order, params);
+    default BlockingDataQuery<Entity> find(String query, Order<?> order, Object... params) {
+        return (BlockingDataQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Map<String, Object> params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, params);
+    default BlockingDataQuery<Entity> find(String query, Map<String, Object> params) {
+        return (BlockingDataQuery<Entity>) operations().find(getEntityClass(), query, params);
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
-        return (PanacheBlockingQuery<Entity>) operations().find(getEntityClass(), query, order, params);
+    default BlockingDataQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
+        return (BlockingDataQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> findAll() {
-        return (PanacheBlockingQuery<Entity>) operations().findAll(getEntityClass());
+    default BlockingDataQuery<Entity> findAll() {
+        return (BlockingDataQuery<Entity>) operations().findAll(getEntityClass());
     }
 
     @Override
-    default PanacheBlockingQuery<Entity> findAll(Order<?> order) {
-        return (PanacheBlockingQuery<Entity>) operations().findAll(getEntityClass(), order);
+    default BlockingDataQuery<Entity> findAll(Order<?> order) {
+        return (BlockingDataQuery<Entity>) operations().findAll(getEntityClass(), order);
     }
 
     @Override

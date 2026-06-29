@@ -82,6 +82,34 @@
         </testResources>
         <plugins>
             <plugin>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!--
+                        Must execute early so that certs are available
+                        when the Docker Maven Plugin stops/starts the container.
+                         -->
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <certificates>
+                        <certificate>
+                            <name>postgres-server</name>
+                            <formats>
+                                <format>PEM</format>
+                            </formats>
+                            <cn>thebrain.ca</cn>
+                            <duration>2</duration>
+                        </certificate>
+                    </certificates>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
@@ -153,6 +181,13 @@
                                         <ports>
                                             <port>5431:5432</port>
                                         </ports>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.build.directory}/certificates/postgres-server.crt:/server.crt:ro</volume>
+                                                <volume>${project.build.directory}/certificates/postgres-server.key:/server.key:ro</volume>
+                                                <volume>${project.basedir}/src/test/resources/tls/ssl.sh:/docker-entrypoint-initdb.d/ssl.sh:ro</volume>
+                                            </bind>
+                                        </volumes>
                                         <wait>
                                             <!-- For some reason, Postgres will tell us it's ready *twice*,
                                             and that's the truth the second time only.

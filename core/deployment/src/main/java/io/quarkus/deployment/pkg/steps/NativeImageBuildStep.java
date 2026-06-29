@@ -46,6 +46,7 @@ import io.quarkus.deployment.pkg.builditem.BuildPgoOptimizedNativeRequestBuildIt
 import io.quarkus.deployment.pkg.builditem.BuildPgoOptimizedNativeResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
@@ -103,16 +104,20 @@ public class NativeImageBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            JarTreeShakeBuildItem treeShakeResult) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
+        var manifestConfig = new CoreSbomContributionConfig()
+                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                .setMainPurl(Purl.generic(image.getPath().getFileName().toString(),
+                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
+                .setMainDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                .setMainPath(image.getPath());
+        for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+            manifestConfig.addComponent(dep, null, treeShakeResult.computePedigree(dep.getKey()));
+        }
         return new ArtifactResultBuildItem(image.getPath(), ARTIFACT_RESULT_TYPE,
-                graalVMVersion.toMap(),
-                new CoreSbomContributionConfig()
-                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainPurl(Purl.generic(image.getPath().getFileName().toString(),
-                                curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
-                        .setMainDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
-                        .setMainPath(image.getPath()));
+                graalVMVersion.toMap(), manifestConfig);
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)

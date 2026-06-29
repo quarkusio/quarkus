@@ -8,8 +8,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusProdModeTest;
 
 /**
- * Verifies that the application fails to start when `native-transport-required=true` and the requested native
- * transport is not available (no native transport dependency on the classpath).
+ * Verifies that the build fails when {@code native-transport-required=true} and the requested native
+ * transport dependency is not on the classpath.
  */
 class NativeTransportRequiredFailureTest {
 
@@ -20,13 +20,13 @@ class NativeTransportRequiredFailureTest {
                     .addAsResource("application.properties"))
             .setApplicationName("native-transport-required-failure")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .setRun(true)
-            .setExpectExit(true);
+            .assertBuildException(t -> {
+                assertThat(t).hasMessageContaining("Native transport 'epoll' was requested")
+                        .hasMessageContaining("dependency is not on the classpath");
+            });
 
     @Test
-    void startupShouldFailWhenRequiredTransportUnavailable() {
-        assertThat(config.getStartupConsoleOutput())
-                .contains("Native transport was requested but no native transport dependency was found");
-        assertThat(config.getExitCode()).isNotNull().isNotEqualTo(0);
+    void buildShouldFailWhenRequiredTransportMissing() {
+        // the build fails before the application starts — nothing to assert here
     }
 }

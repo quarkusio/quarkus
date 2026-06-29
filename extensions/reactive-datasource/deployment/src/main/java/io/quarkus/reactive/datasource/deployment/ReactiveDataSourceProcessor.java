@@ -19,6 +19,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
@@ -26,12 +27,16 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.DataSourceProcessorUtil;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
@@ -65,6 +70,8 @@ class ReactiveDataSourceProcessor {
             new Type[] { POOL_CREATOR_TYPE }, null);
     private static final DotName POOL = DotName.createSimple(Pool.class);
     private static final Type POOL_TYPE = ClassType.create(POOL);
+
+    private static final DotName REACTIVE_DATASOURCE_QUALIFIER = DotName.createSimple(ReactiveDataSource.class);
 
     @BuildStep
     DataSourceRequestHandlerBuildItem defineDataSourceRequestHandler(
@@ -101,10 +108,29 @@ class ReactiveDataSourceProcessor {
                 ProgrammingParadigm.REACTIVE, config, reactiveConfig.dataSources().keySet(), enabled,
                 "reactive.*", dataSourceRequests);
 
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO find a way to collect injection points for a given DS that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
+    }
+
+    @BuildStep
+    void collectReactiveDataSourceRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        Set<DotName> reactiveTypes = new HashSet<>();
+        reactiveTypes.add(ReactiveDataSourceDotNames.VERTX_POOL);
+        reactiveTypes.add(ReactiveDataSourceDotNames.MUTINY_POOL);
+
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                reactiveTypes,
+                List.of(REACTIVE_DATASOURCE_QUALIFIER, DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                (name, reason) -> dataSourceRequests
+                        .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
     }
 
     @BuildStep
@@ -248,19 +274,20 @@ class ReactiveDataSourceProcessor {
     /**
      * The health check needs to be produced in a separate method to avoid a circular dependency
      * (the Vert.x instance creation consumes the AdditionalBeanBuildItems).
-     * We use ReactiveDataSourceDefinitionBuildItem (build-time) instead of ReactivePoolBuildItem (runtime)
-     * to avoid introducing a cycle.
+     * We intentionally avoid consuming ReactiveDataSourceDefinitionBuildItem or
+     * DataSourceDefinedBuildItem here, because they depend (indirectly) on
+     * BeanDiscoveryFinishedBuildItem, which would create a cycle through
+     * HealthBuildItem → AdditionalBeanBuildItem → Arc.
+     * Since this build step is in ReactiveDataSourceProcessor, which is only
+     * loaded when the reactive datasource extension is present, we always
+     * register the health check.
      */
     @BuildStep
     void addHealthCheck(
             Capabilities capabilities,
             BuildProducer<HealthBuildItem> healthChecks,
-            List<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         if (!capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
-            return;
-        }
-        if (dataSourceDefinitions.isEmpty()) {
             return;
         }
         healthChecks.produce(new HealthBuildItem(

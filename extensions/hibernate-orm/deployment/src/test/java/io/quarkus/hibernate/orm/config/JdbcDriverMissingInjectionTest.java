@@ -32,7 +32,11 @@ public class JdbcDriverMissingInjectionTest {
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unsatisfied dependency for type org.hibernate.StatelessSession"));
+                            "Hibernate ORM persistence unit '<default>' cannot be created",
+                            "JDBC datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no JDBC driver extension",
+                            "being created because of",
+                            "Injection of 'StatelessSession'"));
 
     @Inject
     StatelessSession statelessSession;

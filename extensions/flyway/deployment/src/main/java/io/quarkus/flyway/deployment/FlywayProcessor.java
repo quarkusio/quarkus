@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,6 +32,7 @@ import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.extensibility.ConfigurationExtension;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -42,6 +44,9 @@ import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -74,6 +79,7 @@ import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.runtime.util.ProgrammingParadigm;
+import io.quarkus.runtime.util.Reason;
 
 @BuildSteps(onlyIf = FlywayEnabled.class)
 class FlywayProcessor {
@@ -128,10 +134,43 @@ class FlywayProcessor {
                     String.format("Configuration '%s'", FlywayContainerUtil.flywayPropertyKey(dsName, "*"))));
         }
 
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO find a way to collect injection points for a given DS that have no matching user-defined producer? Maybe BeanDiscoveryFinishedBuildItem
+    }
+
+    @BuildStep
+    void collectDatasourceRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        BiConsumer<String, Reason> requestProducer = (name, reason) -> dataSourceRequests
+                .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason));
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                Set.of(FLYWAY),
+                List.of(FLYWAY_DATASOURCE_QUALIFIER),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                requestProducer);
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                Set.of(FLYWAY),
+                List.of(DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    if (value == null || value.asString().isEmpty()) {
+                        return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                    }
+                    String name = value.asString();
+                    if (name.startsWith(FLYWAY_BEAN_NAME_PREFIX)) {
+                        name = name.substring(FLYWAY_BEAN_NAME_PREFIX.length());
+                    }
+                    return name;
+                },
+                requestProducer);
     }
 
     @Record(STATIC_INIT)
@@ -207,21 +246,28 @@ class FlywayProcessor {
         }
     }
 
+    // Separate from createBeans so that AdditionalBeanBuildItem is not produced
+    // by a step that depends (transitively) on BeanDiscoveryFinishedBuildItem,
+    // which would create a cycle.
+    @BuildStep
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
+                .setDefaultScope(DotNames.SINGLETON).build());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
+    }
+
+    private static final DotName FLYWAY = DotName.createSimple(Flyway.class);
+    private static final DotName FLYWAY_DATASOURCE_QUALIFIER = DotName.createSimple(FlywayDataSource.class);
+
     @BuildStep
     @Produce(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(FlywayRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             List<JdbcInitialSQLGeneratorBuildItem> sqlGeneratorBuildItems,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             MigrationStateBuildItem migrationsBuildItem,
             FlywayBuildTimeConfig flywayBuildTimeConfig) {
-        // make a FlywayContainerProducer bean
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
-                .setDefaultScope(DotNames.SINGLETON).build());
-        // add the @FlywayDataSource class otherwise it won't be registered as a qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
@@ -271,7 +317,7 @@ class FlywayProcessor {
             syntheticBeanBuildItemBuildProducer.produce(flywayContainerConfigurator.done());
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayConfigurator = SyntheticBeanBuildItem
-                    .configure(Flyway.class)
+                    .configure(FLYWAY)
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .unremovable()

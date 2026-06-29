@@ -28,7 +28,11 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -83,7 +87,25 @@ class HibernateSearchElasticsearchProcessor {
                             HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(name, "*"))));
         }
 
-        // TODO injection points
+    }
+
+    @BuildStep
+    void collectPersistenceUnitRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                HibernateSearchElasticsearchCdiProcessor.ALL_INJECTABLE_TYPES,
+                List.of(io.quarkus.hibernate.orm.deployment.ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
+                PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+                },
+                (name, reason) -> puRequests
+                        .produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason)));
     }
 
     @BuildStep

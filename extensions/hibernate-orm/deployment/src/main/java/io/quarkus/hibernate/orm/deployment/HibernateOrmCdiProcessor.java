@@ -245,17 +245,11 @@ public class HibernateOrmCdiProcessor {
     }
 
     @BuildStep
-    void registerBeans(
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<AutoAddScopeBuildItem> autoAddScope,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Capabilities capabilities,
             JpaModelBuildItem jpaModel) {
-        if (descriptors.isEmpty()) {
-            return;
-        }
-
         List<Class<?>> unremovableClasses = new ArrayList<>();
         unremovableClasses.add(QuarkusArcBeanContainer.class);
 

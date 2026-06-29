@@ -36,6 +36,7 @@ public class ReactiveSqlClientMissingInjectionTest {
                             "persistence unit '<default>' cannot be created",
                             "Reactive datasource '<default>' cannot be created",
                             "Cannot infer the database kind", "no reactive SQL client extension",
+                            "being created because of",
                             "Injection of 'SessionFactory'"));
 
     @Inject

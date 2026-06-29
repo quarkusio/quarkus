@@ -22,6 +22,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -57,10 +58,15 @@ class ElasticsearchLowLevelClientProcessor {
             BeanRegistrationPhaseBuildItem registrationPhase,
             ElasticsearchBuildTimeConfig config,
             BuildProducer<ElasticsearchLowLevelClientReferenceBuildItem> references) {
+        Set<String> userProvidedClientNames = findUserProvidedRestClientNames(registrationPhase);
+
         Set<String> clientNames = new HashSet<>();
         for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(indexBuildItem, registrationPhase,
                 Set.of(REST_CLIENT),
                 Set.of(ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION))) {
+            if (userProvidedClientNames.contains(name)) {
+                continue;
+            }
             references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(name));
             clientNames.add(name);
         }
@@ -69,10 +75,25 @@ class ElasticsearchLowLevelClientProcessor {
         //  or the ones we add in synthetic beans, so we say that there should be at least some build-time prop
         //  that we can work things out from:
         for (String clientName : config.clients().keySet()) {
-            if (clientNames.add(clientName)) {
+            if (!userProvidedClientNames.contains(clientName) && clientNames.add(clientName)) {
                 references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(clientName));
             }
         }
+    }
+
+    private static Set<String> findUserProvidedRestClientNames(BeanRegistrationPhaseBuildItem registrationPhase) {
+        Set<String> names = new HashSet<>();
+        for (BeanInfo bean : registrationPhase.getContext().beans().withBeanType(RestClient.class)) {
+            if (bean.hasDefaultQualifiers()) {
+                names.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+            }
+            for (AnnotationInstance qualifier : bean.getQualifiers()) {
+                if (qualifier.name().equals(DotNames.IDENTIFIER)) {
+                    names.add(qualifier.value().asString());
+                }
+            }
+        }
+        return names;
     }
 
     @BuildStep

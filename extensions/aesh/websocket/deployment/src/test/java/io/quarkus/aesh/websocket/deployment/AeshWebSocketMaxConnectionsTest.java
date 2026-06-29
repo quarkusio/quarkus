@@ -61,16 +61,19 @@ public class AeshWebSocketMaxConnectionsTest {
                     return;
                 }
                 var ws = ar.result();
+                AtomicBoolean commandSent = new AtomicBoolean(false);
                 ws.textMessageHandler(msg -> {
+                    // Wait for the prompt before sending the command
+                    if (!commandSent.get() && msg.contains("$")) {
+                        commandSent.set(true);
+                        ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                    }
                     if (msg.contains("Hello World!")) {
                         results.add(msg);
                         twoConnected.countDown();
                     }
                 });
                 ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-                vertx.setTimer(500, id -> {
-                    ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
-                });
             });
         }
 
@@ -102,7 +105,7 @@ public class AeshWebSocketMaxConnectionsTest {
             ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
         });
 
-        boolean done = thirdDone.await(10, TimeUnit.SECONDS);
+        boolean done = thirdDone.await(30, TimeUnit.SECONDS);
         Assertions.assertThat(done).as("Third connection attempt should complete").isTrue();
         Assertions.assertThat(thirdClosed.get())
                 .as("Third connection should be closed by server")

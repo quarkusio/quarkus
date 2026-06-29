@@ -172,8 +172,8 @@
                             <annotationProcessorPaths>
                                 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
                                 <annotationProcessorPath>
-                                    <groupId>org.hibernate.orm</groupId>
-                                    <artifactId>hibernate-processor</artifactId>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-data-processor</artifactId>
                                 </annotationProcessorPath>
                                 {/if}
                                 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}

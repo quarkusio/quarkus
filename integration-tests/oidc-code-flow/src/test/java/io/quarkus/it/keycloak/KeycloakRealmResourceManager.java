@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -67,6 +68,14 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getClients().add(createClientJwt("quarkus-app-jwt"));
         realm.getClients().add(createClientRequiredPar("quarkus-app-par", defaultClientSecret));
         realm.getClients().add(createClientJwtWithRequiredPar("quarkus-app-jwt-par"));
+        realm.addIdentityProvider(
+                createAttestationTrustIdp("abca-attester",
+                        "http://host.testcontainers.internal:8081/.well-known/attestation-jwks/tenant-attestation"));
+        realm.getClients().add(createClientAttestation("quarkus-app-attestation", "abca-attester"));
+        realm.addIdentityProvider(
+                createAttestationTrustIdp("abca-attester-custom",
+                        "http://host.testcontainers.internal:8081/.well-known/attestation-jwks/tenant-attestation-custom"));
+        realm.getClients().add(createClientAttestation("quarkus-app-attestation-custom", "abca-attester-custom"));
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("admin", "user", "admin"));
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
@@ -98,6 +107,29 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         client.setAttributes(Map.of("require.pushed.authorization.requests", "true"));
         client.setStandardFlowEnabled(true);
         return client;
+    }
+
+    private static ClientRepresentation createClientAttestation(String clientId, String trustIdpAlias) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setEnabled(true);
+        client.setRedirectUris(Arrays.asList("*"));
+        client.setClientAuthenticatorType("attestation-based");
+        client.setAttributes(Map.of("attester_trust_idps", trustIdpAlias));
+
+        return client;
+    }
+
+    private static IdentityProviderRepresentation createAttestationTrustIdp(String alias, String jwksUrl) {
+        IdentityProviderRepresentation idp = new IdentityProviderRepresentation();
+
+        idp.setAlias(alias);
+        idp.setProviderId("default-trust");
+        idp.setEnabled(true);
+        idp.setConfig(Map.of("jwksUrl", jwksUrl));
+
+        return idp;
     }
 
     private static ClientRepresentation createClient(String clientId, String secret) {

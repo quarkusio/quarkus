@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
@@ -23,10 +24,13 @@ import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.ClientAttester;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.AttestationKeyRegistry;
+import io.quarkus.oidc.common.runtime.AttestationKeyRegistry.AttestationJwtContext;
 import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -101,6 +105,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final boolean clientSecretQueryAuthentication;
     private final Map<String, Uni<AuthorizationCodeTokens>> refreshTokenToTokensUni;
     private final String jwtSecret;
+    private final ClientAttestation clientAttestation;
     private volatile String clientSecret;
     private volatile String clientSecretBasicAuthScheme;
 
@@ -108,12 +113,14 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private OidcProviderClientImpl(OidcWebClient client, Vertx vertx, OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig, ClientCredentials clientCredentials,
+            ClientAttestation clientAttestation,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
         this.client = client;
         this.vertx = vertx;
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
+        this.clientAttestation = clientAttestation;
         this.clientSecretBasicAuthScheme = clientCredentials.clientSecretBasicAuthScheme;
         this.jwtAssertionProvided = clientCredentials.jwtAssertionProvided;
         this.clientAssertionProvider = clientCredentials.clientAssertionProvider;
@@ -412,6 +419,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 if (oidcConfig.clientId().isPresent() && oidcConfig.introspectionCredentials().includeClientId()) {
                     formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
                 }
+            } else if (clientAttestation != null) {
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             } else if (clientSecretBasicAuthScheme != null) {
                 request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
                 if (hasClientSecretProvider()) {
@@ -481,7 +490,17 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             LOG.debug(logMessage);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
-        var preparedResponse = filterHttpRequest(requestProps, endpointType, request, buffer)
+        Uni<HttpRequest<Buffer>> filteredRequest;
+        if (clientAttestation != null) {
+            filteredRequest = OidcCommonUtils.prepareClientAttestation(
+                    clientAttestation.attester(), clientAttestation.keyRegistry(),
+                    clientAttestation.jwtContext(),
+                    oidcConfig.clientId().get(), metadata.getIssuer(), request)
+                    .flatMap(req -> filterHttpRequest(requestProps, endpointType, req, buffer));
+        } else {
+            filteredRequest = filterHttpRequest(requestProps, endpointType, request, buffer);
+        }
+        var preparedResponse = filteredRequest
                 .flatMap(httpRequest -> httpRequest.sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer)))
                 .onFailure(SocketException.class)
                 .retry()
@@ -612,6 +631,9 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         client.close();
         if (clientAssertionProvider != null) {
             clientAssertionProvider.close();
+        }
+        if (clientAttestation != null) {
+            clientAttestation.keyRegistry().remove(oidcConfig.clientId().get());
         }
     }
 
@@ -750,6 +772,22 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 .source() != OidcClientCommonConfig.Credentials.Jwt.Source.CLIENT;
         final ClientAssertionProvider assertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials());
         final boolean queryAuth = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
+        final ClientAttestation clientAttestation;
+        AttestationKeyRegistry attestationKeyRegistry = OidcCommonUtils.initAttestationJwtContext(oidcConfig);
+        if (attestationKeyRegistry != null) {
+            final ClientAttester clientAttester;
+            List<ClientAttester> attesters = TenantFeatureFinder.find(oidcConfig, ClientAttester.class);
+            if (!attesters.isEmpty()) {
+                clientAttester = attesters.get(0);
+            } else {
+                clientAttester = Arc.container().instance(ClientAttester.class).get();
+            }
+            AttestationJwtContext jwtContext = attestationKeyRegistry
+                    .getAttestationJwtContext(oidcConfig.clientId().get());
+            clientAttestation = new ClientAttestation(clientAttester, attestationKeyRegistry, jwtContext);
+        } else {
+            clientAttestation = null;
+        }
         return OidcCommonUtils.clientSecret(oidcConfig.credentials())
                 .onItem().ifNotNull()
                 .transform(clientSecret -> new ClientCredentials(null, clientSecret, null,
@@ -765,7 +803,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                                         jwtAssertionProvided, assertionProvider, queryAuth))))
                 .flatMap(cc -> metadataResolver.apply(cc)
                         .map(metadata -> new OidcProviderClientImpl(client, vertx, metadata, oidcConfig,
-                                cc, requestFilters, responseFilters)))
+                                cc, clientAttestation, requestFilters, responseFilters)))
                 .onFailure().invoke(t -> {
                     LOG.error("Failed to create OidcProviderClientImpl", t);
                     client.close();
@@ -803,5 +841,9 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     record AsyncCredentials(String clientAssertion) {
         private static final Uni<AsyncCredentials> UNI_WITH_EMPTY_CREDENTIALS = Uni.createFrom()
                 .item(new AsyncCredentials(null));
+    }
+
+    private record ClientAttestation(ClientAttester attester, AttestationKeyRegistry keyRegistry,
+            AttestationJwtContext jwtContext) {
     }
 }

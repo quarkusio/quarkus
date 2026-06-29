@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+
 public abstract class OidcClientCommonConfig extends OidcCommonConfig
         implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig {
 
@@ -120,6 +122,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
 
         private boolean forAllEndpoints = false;
 
+        public Attestation attestation = new Attestation();
+
         public Optional<String> getSecret() {
             return secret;
         }
@@ -149,6 +153,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             clientSecret.addConfigMappingValues(mapping.clientSecret());
             jwt.addConfigMappingValues(mapping.jwt());
             forAllEndpoints = mapping.forAllEndpoints();
+            attestation.addConfigMappingValues(mapping.attestation());
         }
 
         @Override
@@ -169,6 +174,11 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         @Override
         public boolean forAllEndpoints() {
             return forAllEndpoints;
+        }
+
+        @Override
+        public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Attestation attestation() {
+            return attestation;
         }
 
         /**
@@ -604,6 +614,29 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 lifespan = mapping.lifespan();
                 assertion = mapping.assertion();
                 tokenPath = mapping.tokenPath();
+            }
+        }
+
+        public static class Attestation
+                implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Attestation {
+
+            public boolean enabled = false;
+            public String signatureAlgorithm = SignatureAlgorithm.ES256.getAlgorithm();
+
+            @Override
+            public boolean enabled() {
+                return enabled;
+            }
+
+            @Override
+            public String signatureAlgorithm() {
+                return signatureAlgorithm;
+            }
+
+            private void addConfigMappingValues(
+                    io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Attestation mapping) {
+                enabled = mapping.enabled();
+                signatureAlgorithm = mapping.signatureAlgorithm();
             }
         }
 

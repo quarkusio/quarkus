@@ -43,7 +43,9 @@ class UbiMinimalBaseProviderTest {
                 Arguments.of(8, 17, ContainerImages.UBI8_MINIMAL_VERSION),
                 Arguments.of(8, 21, ContainerImages.UBI8_MINIMAL_VERSION),
                 Arguments.of(9, 17, ContainerImages.UBI9_MINIMAL_VERSION),
-                Arguments.of(9, 21, ContainerImages.UBI9_MINIMAL_VERSION));
+                Arguments.of(9, 21, ContainerImages.UBI9_MINIMAL_VERSION),
+                Arguments.of(10, 21, ContainerImages.UBI10_MINIMAL_VERSION),
+                Arguments.of(10, 25, ContainerImages.UBI10_MINIMAL_VERSION));
     }
 
     @Test

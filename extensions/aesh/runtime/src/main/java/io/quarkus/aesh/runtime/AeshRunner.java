@@ -28,9 +28,7 @@ public class AeshRunner implements QuarkusApplication {
             if (result == null || result.isSuccess()) {
                 return 0;
             }
-            // Aesh uses -1 for FAILURE; map negative values to 1 for Unix convention
-            int exitCode = result.getResultValue();
-            return exitCode > 0 ? exitCode : 1;
+            return result.getExitCode();
         } catch (Exception e) {
             LOG.error("Error executing command", e);
             return 1;

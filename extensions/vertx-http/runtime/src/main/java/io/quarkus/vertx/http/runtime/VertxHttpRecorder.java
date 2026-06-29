@@ -99,6 +99,7 @@ import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.InvalidRequestAccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -165,6 +166,8 @@ public class VertxHttpRecorder {
     private static volatile Runnable closeTask;
 
     static volatile Handler<HttpServerRequest> rootHandler;
+
+    static volatile Handler<HttpServerRequest> invalidRequestHandler;
 
     private static volatile Handler<RoutingContext> nonApplicationRedirectHandler;
 
@@ -521,6 +524,7 @@ public class VertxHttpRecorder {
         }
 
         AccessLogConfig accessLog = httpConfig.accessLog();
+        AccessLogReceiver invalidRequestAccessLogReceiver = null;
         if (accessLog.enabled()) {
             AccessLogReceiver receiver;
             if (accessLog.logToFile()) {
@@ -530,6 +534,7 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category());
             }
+            invalidRequestAccessLogReceiver = receiver;
             setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
                     nonRootPath, accessLog.pattern(), accessLog.consolidateReroutedRequests(), accessLog.excludePattern());
             quarkusWrapperNeeded = true;
@@ -546,10 +551,20 @@ public class VertxHttpRecorder {
                 }
             };
 
+            if (invalidRequestAccessLogReceiver == null) {
+                invalidRequestAccessLogReceiver = receiver;
+            }
             setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
                     nonRootPath, accessLog.pattern(), accessLog.consolidateReroutedRequests(),
                     accessLog.excludePattern().or(() -> Optional.of("^" + nonRootPath + ".*")));
             quarkusWrapperNeeded = true;
+        }
+
+        if (invalidRequestAccessLogReceiver != null) {
+            invalidRequestHandler = new InvalidRequestAccessLogHandler(invalidRequestAccessLogReceiver,
+                    accessLog.pattern());
+        } else {
+            invalidRequestHandler = null;
         }
 
         BiConsumer<Cookie, HttpServerRequest> cookieFunction = null;
@@ -638,6 +653,14 @@ public class VertxHttpRecorder {
                     };
                 }
             }
+        }
+    }
+
+    private static void configureHttpServer(HttpServer httpServer, Handler<HttpServerRequest> requestHandler) {
+        httpServer.requestHandler(requestHandler);
+        Handler<HttpServerRequest> invalid = invalidRequestHandler;
+        if (invalid != null) {
+            httpServer.invalidRequestHandler(invalid);
         }
     }
 
@@ -741,19 +764,19 @@ public class VertxHttpRecorder {
                         "Unable to write in the domain socket directory (`%s`). Binding to the socket is likely going to fail.",
                         managementConfig.domainSocket());
             }
-            vertx.createHttpServer(domainSocketConfigForManagement, null)
-                    .requestHandler(managementRouter)
-                    .listen().onComplete(ar -> {
-                        if (ar.failed()) {
-                            managementInterfaceDomainSocketFuture.completeExceptionally(
-                                    new IllegalStateException(
-                                            "Unable to start the management interface on the "
-                                                    + domainSocketConfigForManagement.getTcpHost() + " domain socket",
-                                            ar.cause()));
-                        } else {
-                            managementInterfaceDomainSocketFuture.complete(ar.result());
-                        }
-                    });
+            HttpServer managementDomainSocketServer = vertx.createHttpServer(domainSocketConfigForManagement, null);
+            configureHttpServer(managementDomainSocketServer, managementRouter);
+            managementDomainSocketServer.listen().onComplete(ar -> {
+                if (ar.failed()) {
+                    managementInterfaceDomainSocketFuture.completeExceptionally(
+                            new IllegalStateException(
+                                    "Unable to start the management interface on the "
+                                            + domainSocketConfigForManagement.getTcpHost() + " domain socket",
+                                    ar.cause()));
+                } else {
+                    managementInterfaceDomainSocketFuture.complete(ar.result());
+                }
+            });
         } else {
             managementInterfaceDomainSocketFuture.complete(null);
         }
@@ -812,48 +835,48 @@ public class VertxHttpRecorder {
         }
 
         if (httpManagementServerConfig != null) {
-            vertx.createHttpServer(httpManagementServerConfig, httpManagementSslOptions)
-                    .requestHandler(managementRouter)
-                    .listen(address).onComplete(ar -> {
-                        if (ar.failed()) {
-                            managementInterfaceFuture.completeExceptionally(
-                                    new IllegalStateException("Unable to start the management interface on "
-                                            + httpManagementServerConfig.getTcpHost() + ":"
-                                            + httpManagementServerConfig.getTcpPort(), ar.cause()));
-                        } else {
-                            if (httpManagementSslOptions != null
-                                    && (managementConfig.ssl().certificate().reloadPeriod().isPresent())) {
-                                try {
-                                    long l = TlsCertificateReloader.initCertReloadingAction(
-                                            vertx, ar.result(), httpManagementServerConfig, httpManagementSslOptions,
-                                            managementConfig.ssl(), registry,
-                                            managementConfig.tlsConfigurationName());
-                                    if (l != -1) {
-                                        refresTaskIds.add(l);
-                                    }
-                                } catch (IllegalArgumentException e) {
-                                    managementInterfaceFuture.completeExceptionally(e);
-                                    return;
-                                }
+            HttpServer managementServer = vertx.createHttpServer(httpManagementServerConfig, httpManagementSslOptions);
+            configureHttpServer(managementServer, managementRouter);
+            managementServer.listen(address).onComplete(ar -> {
+                if (ar.failed()) {
+                    managementInterfaceFuture.completeExceptionally(
+                            new IllegalStateException("Unable to start the management interface on "
+                                    + httpManagementServerConfig.getTcpHost() + ":"
+                                    + httpManagementServerConfig.getTcpPort(), ar.cause()));
+                } else {
+                    if (httpManagementSslOptions != null
+                            && (managementConfig.ssl().certificate().reloadPeriod().isPresent())) {
+                        try {
+                            long l = TlsCertificateReloader.initCertReloadingAction(
+                                    vertx, ar.result(), httpManagementServerConfig, httpManagementSslOptions,
+                                    managementConfig.ssl(), registry,
+                                    managementConfig.tlsConfigurationName());
+                            if (l != -1) {
+                                refresTaskIds.add(l);
                             }
-
-                            if (httpManagementSslOptions != null) {
-                                CDI.current().select(HttpCertificateUpdateEventListener.class).get()
-                                        .register(ar.result(),
-                                                managementConfig.tlsConfigurationName().orElse(TlsConfig.DEFAULT_NAME),
-                                                "management interface");
-                            }
-
-                            actualManagementPort = ar.result().actualPort();
-                            if (actualManagementPort != httpManagementServerConfig.getTcpPort()) {
-                                valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
-                                if (launchMode.isDevOrTest()) {
-                                    valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
-                                }
-                            }
-                            managementInterfaceFuture.complete(ar.result());
+                        } catch (IllegalArgumentException e) {
+                            managementInterfaceFuture.completeExceptionally(e);
+                            return;
                         }
-                    });
+                    }
+
+                    if (httpManagementSslOptions != null) {
+                        CDI.current().select(HttpCertificateUpdateEventListener.class).get()
+                                .register(ar.result(),
+                                        managementConfig.tlsConfigurationName().orElse(TlsConfig.DEFAULT_NAME),
+                                        "management interface");
+                    }
+
+                    actualManagementPort = ar.result().actualPort();
+                    if (actualManagementPort != httpManagementServerConfig.getTcpPort()) {
+                        valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
+                        if (launchMode.isDevOrTest()) {
+                            valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
+                        }
+                    }
+                    managementInterfaceFuture.complete(ar.result());
+                }
+            });
 
         } else {
             managementInterfaceFuture.complete(null);
@@ -1271,9 +1294,9 @@ public class VertxHttpRecorder {
             if (httpServerEnabled) {
                 httpServer = vertx.createHttpServer(httpConfig_server, null);
                 if (insecureRequests == InsecureRequests.ENABLED) {
-                    httpServer.requestHandler(ACTUAL_ROOT);
+                    configureHttpServer(httpServer, ACTUAL_ROOT);
                 } else {
-                    httpServer.requestHandler(new Handler<HttpServerRequest>() {
+                    configureHttpServer(httpServer, new Handler<HttpServerRequest>() {
                         @Override
                         public void handle(HttpServerRequest req) {
                             try {
@@ -1304,14 +1327,14 @@ public class VertxHttpRecorder {
 
             if (domainSocketConfig_server != null) {
                 domainSocketServer = vertx.createHttpServer(domainSocketConfig_server, null);
-                domainSocketServer.requestHandler(ACTUAL_ROOT);
+                configureHttpServer(domainSocketServer, ACTUAL_ROOT);
                 setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketConfig_server, startFuture, remainingCount,
                         container, notifyStartObservers);
             }
 
             if (httpsConfig_server != null) {
                 httpsServer = vertx.createHttpServer(httpsConfig_server, sslOptions);
-                httpsServer.requestHandler(ACTUAL_ROOT);
+                configureHttpServer(httpsServer, ACTUAL_ROOT);
                 setupTcpHttpServer(httpsServer, httpsConfig_server, true, sslOptions, startFuture, remainingCount,
                         connectionCount, container, notifyStartObservers);
             }
@@ -1626,6 +1649,10 @@ public class VertxHttpRecorder {
                                     null,
                                     null);
                             conn.handler(ACTUAL_ROOT);
+                            Handler<HttpServerRequest> invalid = invalidRequestHandler;
+                            if (invalid != null) {
+                                conn.invalidRequestHandler(invalid);
+                            }
                             return conn;
                         });
 

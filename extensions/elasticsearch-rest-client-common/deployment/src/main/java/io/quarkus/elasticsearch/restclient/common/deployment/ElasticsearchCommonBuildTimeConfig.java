@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -15,19 +16,29 @@ import io.smallrye.config.WithParentName;
 import io.smallrye.config.WithUnnamedKey;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-@ConfigMapping(prefix = "quarkus.elasticsearch.devservices")
+@ConfigMapping(prefix = "quarkus.elasticsearch")
 public interface ElasticsearchCommonBuildTimeConfig {
 
     /**
-     * Dev Services
-     * <p>
-     * Dev Services allows Quarkus to automatically start Elasticsearch in dev and test mode.
+     * Per-client build-time configuration.
      */
     @ConfigDocMapKey("client-name")
     @WithParentName
     @WithDefaults
     @WithUnnamedKey(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME)
-    Map<String, ElasticsearchDevServicesBuildTimeConfig> devservices();
+    Map<String, ElasticsearchClientCommonBuildTimeConfig> clients();
+
+    @ConfigGroup
+    interface ElasticsearchClientCommonBuildTimeConfig {
+
+        /**
+         * Dev Services
+         * <p>
+         * Dev Services allows Quarkus to automatically start Elasticsearch in dev and test mode.
+         */
+        @ConfigDocSection(generated = true)
+        ElasticsearchDevServicesBuildTimeConfig devservices();
+    }
 
     @ConfigGroup
     interface ElasticsearchDevServicesBuildTimeConfig {

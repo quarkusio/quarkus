@@ -239,7 +239,7 @@ public abstract class JacksonCodeGenerator {
         LIST(true),
         SET(true),
         MAP(true),
-        OPTIONAL(true),
+        WRAPPER(true),
         TYPE_VARIABLE(true);
 
         private final boolean generic;
@@ -275,10 +275,8 @@ public abstract class JacksonCodeGenerator {
                     registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.LIST;
                 }
-                if (Optional.class.getName().equals(typeName)) {
-                    registerTypeToBeGenerated(pType.arguments().get(0));
-                    return FieldKind.OPTIONAL;
-                }
+                registerTypeToBeGenerated(pType.arguments().get(0));
+                return FieldKind.WRAPPER;
             }
             if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {
                 registerTypeToBeGenerated(pType.arguments().get(0));

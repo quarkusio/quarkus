@@ -40,6 +40,7 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     AnyGetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
+                                    DateFormatBean.class,
                                     FormatShape.class,
                                     FormatBean.class,
                                     GetterSetterBean.class,

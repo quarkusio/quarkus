@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 
 import jakarta.ws.rs.Consumes;
@@ -310,6 +313,17 @@ public class GeneratedAnnotationResource {
         child.setParent(parent);
         parent.setChild(child);
         return parent;
+    }
+
+    // --- DateFormatBean: @JsonFormat with date pattern ---
+
+    @GET
+    @Path("/date-format")
+    public DateFormatBean getDateFormat() {
+        DateFormatBean bean = new DateFormatBean();
+        bean.setName("date-test");
+        bean.setDate(Date.from(LocalDate.of(2025, 6, 15).atStartOfDay().toInstant(ZoneOffset.UTC)));
+        return bean;
     }
 
     // --- FormatBean: @JsonFormat ---

@@ -45,7 +45,7 @@ public class ActiveInactiveClientProgrammaticAccessOnlyTest {
         assertTrue(Arc.container().select(ElasticsearchClient.class).getHandle().getBean().isActive());
         assertFalse(Arc.container().select(ElasticsearchClient.class, Identifier.Literal.of("client2")).getHandle().getBean()
                 .isActive());
-        assertFalse(Arc.container().select(ElasticsearchClient.class, Identifier.Literal.of("client3")).getHandle().getBean()
+        assertTrue(Arc.container().select(ElasticsearchClient.class, Identifier.Literal.of("client3")).getHandle().getBean()
                 .isActive());
     }
 }

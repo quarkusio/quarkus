@@ -33,17 +33,17 @@ class QuarkusCodestartCatalogTest {
         assertThat(catalog.getCodestarts())
                 .filteredOn(c -> c.getType().isBase())
                 .extracting(Codestart::getImplementedLanguages)
-                .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 3).isTrue());
+                .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 2).isTrue());
 
         assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy-reactive")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
 
         assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
-                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
     }
 
     @Test
@@ -105,16 +105,6 @@ class QuarkusCodestartCatalogTest {
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
                 .isEqualTo("kotlin");
-    }
-
-    @Test
-    void prepareProjectTestScala() throws IOException {
-        final QuarkusCodestartProjectInput input = newInputBuilder()
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .build();
-        final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
-                .isEqualTo("scala");
     }
 
     @Test

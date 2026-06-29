@@ -161,8 +161,7 @@
         "compiler-plugin-version": "${compiler-plugin.version}",
         "surefire-plugin-version": "${version.surefire.plugin}",
         "kotlin-version": "${kotlin.version}",
-        "scala-version": "${scala.version}",
-        "scala-plugin-version": "${scala-plugin.version}",
+
         "quarkus-core-version": "${project.version}",
         "maven-plugin-groupId": "${project.groupId}",
         "maven-plugin-artifactId": "quarkus-maven-plugin",

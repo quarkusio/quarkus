@@ -22,6 +22,3 @@ language:
   kotlin:
     dependencies:
       - org.jetbrains.kotlin:kotlin-stdlib-jdk8
-  scala:
-    dependencies:
-      - org.scala-lang:scala-library:2.12.13

@@ -177,8 +177,6 @@ public class CreateProjectHelper {
     public static void addSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {
         if (sourceType == SourceType.KOTLIN) {
             extensions.add("quarkus-kotlin");
-        } else if (sourceType == SourceType.SCALA) {
-            extensions.add("quarkus-scala");
         }
     }
 

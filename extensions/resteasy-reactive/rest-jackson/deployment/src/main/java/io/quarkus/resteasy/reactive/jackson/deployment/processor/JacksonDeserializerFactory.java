@@ -709,7 +709,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 ResultHandle valueTypes = bytecode.readInstanceField(valueTypesField, bytecode.getThis());
                 yield bytecode.readArrayValue(valueTypes, parameterIndex);
             }
-            case LIST, SET, OPTIONAL -> {
+            case LIST, SET, WRAPPER -> {
                 Type contentType = ((ParameterizedType) fieldType).arguments().get(0);
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);

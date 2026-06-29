@@ -6,7 +6,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -89,7 +88,8 @@ public class DataSourceProcessorUtil {
         //   here we're mostly concerned by what happens when "dev-services.enabled" is set on the default datasource.
         //   Also note this does not depend on the value of "dev-services.enabled" (true or false),
         //   just on whether it's set or not -- that might simply have been a mistake?
-        Optional<Boolean> defaultDataSourceDevServicesEnabled = config.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME).devservices()
+        Optional<Boolean> defaultDataSourceDevServicesEnabled = config.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+                .devservices()
                 .enabled();
         if (defaultDataSourceDevServicesEnabled.isPresent()) {
             if (lookupBuildItem.getLookup().availableParadigms(DataSourceUtil.DEFAULT_DATASOURCE_NAME).contains(paradigm)) {

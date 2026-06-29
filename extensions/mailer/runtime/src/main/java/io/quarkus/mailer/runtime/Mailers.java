@@ -15,6 +15,8 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.mailer.SentMail;
@@ -34,6 +36,7 @@ import io.vertx.ext.mail.CanonicalizationAlgorithm;
 import io.vertx.ext.mail.DKIMSignOptions;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
+import io.vertx.ext.mail.MailClientBuilder;
 import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.StartTLSOptions;
 
@@ -146,8 +149,24 @@ public class Mailers {
     private MailClient createMailClient(Vertx vertx, String name, MailerRuntimeConfig config,
             TlsConfigurationRegistry tlsRegistry) {
         io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(name, config, tlsRegistry);
+        MailClientBuilder clientBuilder = MailClient.builder(vertx).with(cfg);
+        if (config.credentialsProvider().isPresent()) {
+            String beanName = config.credentialsProviderName().orElse(null);
+            CredentialsProvider credentialsProvider = findCredentialsProvider(name, beanName);
+            String providerName = config.credentialsProvider().get();
+            MailCredentialsSupplier credentialsSupplier = new MailCredentialsSupplier(credentialsProvider, providerName);
+            clientBuilder.withCredentialsSupplier(credentialsSupplier);
+        }
         // Do not create a shared instance, as we want separated connection pool for each SMTP servers.
-        return MailClient.create(vertx, cfg);
+        return clientBuilder.build();
+    }
+
+    private CredentialsProvider findCredentialsProvider(String mailerName, String beanName) {
+        try {
+            return CredentialsProviderFinder.find(beanName);
+        } catch (Exception e) {
+            throw new ConfigurationException("Unable to find credentials provider for the mailer " + mailerName + ".", e);
+        }
     }
 
     private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {
@@ -229,11 +248,13 @@ public class Mailers {
             cfg.setOwnHostname(config.ownHostName().get());
         }
 
-        if (config.username().isPresent()) {
-            cfg.setUsername(config.username().get());
-        }
-        if (config.password().isPresent()) {
-            cfg.setPassword(config.password().get());
+        if (config.credentialsProvider().isEmpty()) {
+            if (config.username().isPresent()) {
+                cfg.setUsername(config.username().get());
+            }
+            if (config.password().isPresent()) {
+                cfg.setPassword(config.password().get());
+            }
         }
 
         if (config.port().isPresent()) {

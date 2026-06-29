@@ -316,7 +316,6 @@ public class QuarkusDevModeTest
             ListeningAddresses listeningAddresses = listeningAddresses(startupLogHandler.getRecords());
             listeningAddresses.address().ifPresent(address -> address.register(valueRegistry, newConfig));
             listeningAddresses.managementAddress().ifPresent(address -> address.registerManagement(valueRegistry, newConfig));
-            valueRegistry.register(ListeningAddress.MANAGEMENT_LISTENING_ADDRESS, listeningAddresses.managementAddress());
 
             // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);

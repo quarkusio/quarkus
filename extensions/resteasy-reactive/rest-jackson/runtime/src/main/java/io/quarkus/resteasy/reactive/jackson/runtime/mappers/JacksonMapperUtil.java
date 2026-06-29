@@ -8,11 +8,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.filter.FilteringGeneratorDelegate;
+import com.fasterxml.jackson.core.filter.TokenFilter;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
@@ -234,9 +237,17 @@ public class JacksonMapperUtil {
     }
 
     public static void serializeUnwrapped(Object value, JsonGenerator generator,
-            SerializerProvider serializerProvider) throws IOException {
+            SerializerProvider serializerProvider, Set<String> ignoredProperties) throws IOException {
         if (value == null) {
             return;
+        }
+        if (!ignoredProperties.isEmpty()) {
+            generator = new FilteringGeneratorDelegate(generator, new TokenFilter() {
+                @Override
+                public TokenFilter includeProperty(String name) {
+                    return ignoredProperties.contains(name) ? null : TokenFilter.INCLUDE_ALL;
+                }
+            }, TokenFilter.Inclusion.INCLUDE_ALL_AND_PATH, true);
         }
         JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
         if (serializer instanceof GeneratedSerializer gs) {

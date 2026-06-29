@@ -619,6 +619,30 @@ public abstract class JacksonCodeGenerator {
             return shape != null && "NUMBER".equals(shape.asEnum());
         }
 
+        String formatPattern() {
+            AnnotationInstance format = annotations.get(JsonFormat.class.getName());
+            if (format == null) {
+                return null;
+            }
+            AnnotationValue pattern = format.value("pattern");
+            if (pattern == null || pattern.asString().isEmpty()) {
+                return null;
+            }
+            return pattern.asString();
+        }
+
+        String formatTimezone() {
+            AnnotationInstance format = annotations.get(JsonFormat.class.getName());
+            if (format == null) {
+                return null;
+            }
+            AnnotationValue timezone = format.value("timezone");
+            if (timezone == null || timezone.asString().isEmpty() || "##default".equals(timezone.asString())) {
+                return null;
+            }
+            return timezone.asString();
+        }
+
         String jsonIncludeValue() {
             AnnotationInstance include = annotations.get(JsonInclude.class.getName());
             if (include == null || include.value() == null) {

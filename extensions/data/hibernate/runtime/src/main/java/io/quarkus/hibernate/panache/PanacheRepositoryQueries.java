@@ -3,9 +3,10 @@ package io.quarkus.hibernate.panache;
 import java.util.Map;
 
 import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.persistence.LockModeType;
 
-public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?>, Count, Confirmation, Id> {
+public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
 
     // Queries
 
@@ -54,6 +55,19 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
     Query find(String query, Order<?> order, Object... params);
 
     /**
+     * Find entities using a query and the given sort option, with optional indexed parameters.
+     * This is a shortcut for <code>find(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params optional sequence of indexed parameters
+     * @return a new {@link PanacheQuery} instance for the given query
+     */
+    default Query find(String query, Sort<?> sort, Object... params) {
+        return find(query, Order.by(sort), params);
+    }
+
+    /**
      * Find entities using a query, with named parameters.
      *
      * @param query a {@link io.quarkus.hibernate.panache query string}
@@ -81,6 +95,19 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
     Query find(String query, Order<?> order, Map<String, Object> params);
 
     /**
+     * Find entities using a query and the given sort option, with named parameters.
+     * This is a shortcut for <code>find(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params {@link Map} of named parameters
+     * @return a new {@link PanacheQuery} instance for the given query
+     */
+    default Query find(String query, Sort<?> sort, Map<String, Object> params) {
+        return find(query, Order.by(sort), params);
+    }
+
+    /**
      * Find all entities of this type.
      *
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
@@ -100,6 +127,17 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @see #streamAll(Order)
      */
     Query findAll(Order<?> order);
+
+    /**
+     * Find all entities of this type, in the given order.
+     * This is a shortcut for <code>findAll(Order.by(sort))</code>.
+     *
+     * @param sort the sort order to use
+     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     */
+    default Query findAll(Sort<?> sort) {
+        return findAll(Order.by(sort));
+    }
 
     /**
      * Find entities matching a query, with optional indexed parameters.
@@ -131,6 +169,19 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
     EntityList list(String query, Order<?> order, Object... params);
 
     /**
+     * Find entities matching a query and the given sort option, with optional indexed parameters.
+     * This is a shortcut for <code>list(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params optional sequence of indexed parameters
+     * @return a {@link List} containing all results, without paging
+     */
+    default EntityList list(String query, Sort<?> sort, Object... params) {
+        return list(query, Order.by(sort), params);
+    }
+
+    /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
      *
@@ -160,6 +211,19 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
     EntityList list(String query, Order<?> order, Map<String, Object> params);
 
     /**
+     * Find entities matching a query and the given sort option, with named parameters.
+     * This is a shortcut for <code>list(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params {@link Map} of named parameters
+     * @return a {@link List} containing all results, without paging
+     */
+    default EntityList list(String query, Sort<?> sort, Map<String, Object> params) {
+        return list(query, Order.by(sort), params);
+    }
+
+    /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().list()</code>.
      *
@@ -181,6 +245,17 @@ public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extend
      * @see #streamAll(Order)
      */
     EntityList listAll(Order<?> order);
+
+    /**
+     * Find all entities of this type, in the given order.
+     * This is a shortcut for <code>listAll(Order.by(sort))</code>.
+     *
+     * @param sort the sort order to use
+     * @return a {@link List} containing all results, without paging
+     */
+    default EntityList listAll(Sort<?> sort) {
+        return listAll(Order.by(sort));
+    }
 
     /**
      * Counts the number of this type of entity in the database.

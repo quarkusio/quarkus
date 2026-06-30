@@ -34,8 +34,8 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * Starts a AMQP 1.0 broker as dev service if needed.
- * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
- * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
+ * It uses <a href="https://quay.io/repository/arkmq-org/arkmq-org-broker">arkmq-org-broker</a> as image.
+ * See <a href="https://arkmq.org/">ArkMQ (formerly Artemis Cloud)</a> for details.
  */
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class AmqpDevServicesProcessor {
@@ -108,7 +108,7 @@ public class AmqpDevServicesProcessor {
                         .serviceConfig(config)
                         .startable(() -> new ArtemisContainer(
                                 DockerImageName.parse(config.imageName().orElse(getDefaultImageNameFor("amqp")))
-                                        .asCompatibleSubstituteFor("artemiscloud/activemq-artemis-broker"),
+                                        .asCompatibleSubstituteFor("arkmq-org/arkmq-org-broker"),
                                 config.extraArgs(),
                                 config.port().orElse(0),
                                 launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName() : null,

@@ -205,6 +205,8 @@ we will use the `src/main/resources/templates/MailingResource/hello.html` and `s
 <3> Create a mail template instance and set the recipient.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
+IMPORTANT: `MailTemplateInstance.send()` returns a `Uni<Void>` that *must be subscribed to* — otherwise no e-mail will be sent. If you return the `Uni` from a RESTEasy Reactive resource method, the framework subscribes automatically. In other contexts, make sure the `Uni` is part of a reactive pipeline that is eventually subscribed to, or use `sendAndAwait()` for a blocking alternative.
+
 Alternatively, use a Java record that implements `io.quarkus.mailer.MailTemplate`.
 The record components represent the template parameters.
 

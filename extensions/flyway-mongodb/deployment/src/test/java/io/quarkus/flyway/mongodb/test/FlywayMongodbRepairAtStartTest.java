@@ -30,13 +30,14 @@ public class FlywayMongodbRepairAtStartTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.repair-at-start", "true")
-            .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true");
+            .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
 
     @Inject
     Flyway flyway;
@@ -72,7 +73,7 @@ public class FlywayMongodbRepairAtStartTest {
                         .append("version", "0.5")
                         .append("description", "failed attempt")
                         .append("type", "SCRIPT")
-                        .append("script", "V0_5__failed_attempt.js")
+                        .append("script", "V0_5__failed_attempt.json")
                         .append("checksum", 0)
                         .append("installed_by", "test")
                         .append("installed_on", Timestamp.from(Instant.now()).toString())

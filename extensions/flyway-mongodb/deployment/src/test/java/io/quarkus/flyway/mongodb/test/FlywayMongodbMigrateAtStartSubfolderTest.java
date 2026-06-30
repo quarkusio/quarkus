@@ -23,13 +23,14 @@ public class FlywayMongodbMigrateAtStartSubfolderTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration-subfolder/subfolder/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration-subfolder/subfolder/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", "subfolder")
             .overrideConfigKey("quarkus.flyway-mongodb.locations", "db/migration-subfolder")
             .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
-            .overrideConfigKey("quarkus.flyway-mongodb.database", "subfolder");
+            .overrideConfigKey("quarkus.flyway-mongodb.database", "subfolder")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
 
     @Inject
     Flyway flyway;

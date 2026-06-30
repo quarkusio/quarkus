@@ -21,10 +21,10 @@ public class FlywayMongodbMultiClientTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration/V1__create_users.js")
-                    .addAsResource("analytics-migrations/V1__create_events.js",
-                            "analytics-migrations/V1__create_events.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration/V1__create_users.json")
+                    .addAsResource("analytics-migrations/V1__create_events.json",
+                            "analytics-migrations/V1__create_events.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", "appdb")
             .overrideConfigKey("quarkus.mongodb.analytics.connection-string",
@@ -32,9 +32,11 @@ public class FlywayMongodbMultiClientTest {
             .overrideConfigKey("quarkus.mongodb.analytics.database", "analyticsdb")
             .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
             .overrideConfigKey("quarkus.flyway-mongodb.database", "appdb")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json")
             .overrideConfigKey("quarkus.flyway-mongodb.analytics.migrate-at-start", "true")
             .overrideConfigKey("quarkus.flyway-mongodb.analytics.database", "analyticsdb")
-            .overrideConfigKey("quarkus.flyway-mongodb.analytics.locations", "analytics-migrations");
+            .overrideConfigKey("quarkus.flyway-mongodb.analytics.locations", "analytics-migrations")
+            .overrideConfigKey("quarkus.flyway-mongodb.analytics.migration-suffixes", ".json");
 
     @Inject
     Flyway defaultFlyway;

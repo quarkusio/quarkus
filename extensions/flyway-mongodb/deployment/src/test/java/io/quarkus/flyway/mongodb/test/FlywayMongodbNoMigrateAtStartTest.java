@@ -17,11 +17,12 @@ public class FlywayMongodbNoMigrateAtStartTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", "nomigrate")
-            .overrideConfigKey("quarkus.flyway-mongodb.database", "nomigrate");
+            .overrideConfigKey("quarkus.flyway-mongodb.database", "nomigrate")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
     // migrate-at-start defaults to false.
 
     @Inject

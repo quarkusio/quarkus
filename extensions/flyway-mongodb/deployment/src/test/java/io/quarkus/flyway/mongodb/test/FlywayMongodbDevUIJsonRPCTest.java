@@ -25,12 +25,13 @@ public class FlywayMongodbDevUIJsonRPCTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("db.createCollection('devuitest');"),
-                            "db/migration/V1__init.js")
+                    .addAsResource(new StringAsset("{\"create\": \"devuitest\"}"),
+                            "db/migration/V1__init.json")
                     .addAsResource(new StringAsset(
                             "quarkus.mongodb.connection-string=" + FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING + "\n"
                                     + "quarkus.mongodb.database=devuitest\n"
-                                    + "quarkus.flyway-mongodb.database=devuitest"),
+                                    + "quarkus.flyway-mongodb.database=devuitest\n"
+                                    + "quarkus.flyway-mongodb.migration-suffixes=.json"),
                             "application.properties"));
 
     @Test

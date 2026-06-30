@@ -25,23 +25,24 @@ public class FlywayMongodbDevModeModifyMigrationTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DocCountEndpoint.class)
-                    .addAsResource(new StringAsset("db.createCollection('migtest');"),
-                            "db/migration/V1__init.js")
+                    .addAsResource(new StringAsset("{\"create\": \"migtest\"}"),
+                            "db/migration/V1__init.json")
                     .addAsResource(new StringAsset(
                             "quarkus.mongodb.connection-string=" + FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING + "\n"
                                     + "quarkus.mongodb.database=devmodemodify\n"
                                     + "quarkus.flyway-mongodb.migrate-at-start=true\n"
                                     + "quarkus.flyway-mongodb.clean-at-start=true\n"
-                                    + "quarkus.flyway-mongodb.database=devmodemodify"),
+                                    + "quarkus.flyway-mongodb.database=devmodemodify\n"
+                                    + "quarkus.flyway-mongodb.migration-suffixes=.json"),
                             "application.properties"));
 
     @Test
     public void testModifyingExistingMigrationScriptCausesRestart() {
         RestAssured.get("/doc-count").then().statusCode(200).body(is("0"));
-        config.modifyResourceFile("db/migration/V1__init.js", new Function<String, String>() {
+        config.modifyResourceFile("db/migration/V1__init.json", new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s + "\ndb.migtest.insertOne({name:'modified'});";
+                return "{\"insert\": \"migtest\", \"documents\": [{\"name\": \"modified\"}]}";
             }
         });
         RestAssured.get("/doc-count").then().statusCode(200).body(is("1"));

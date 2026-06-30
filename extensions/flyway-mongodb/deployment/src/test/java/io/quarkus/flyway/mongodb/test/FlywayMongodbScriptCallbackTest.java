@@ -21,22 +21,23 @@ public class FlywayMongodbScriptCallbackTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration/V1__create_users.js")
-                    .addAsResource("db/callback-extras/V2__insert_bob.js",
-                            "db/migration/V2__insert_bob.js")
-                    .addAsResource("db/migration/beforeMigrate__marker.js",
-                            "db/migration/beforeMigrate__marker.js")
-                    .addAsResource("db/migration/afterMigrate__marker.js",
-                            "db/migration/afterMigrate__marker.js")
-                    .addAsResource("db/migration/beforeEachMigrate__marker.js",
-                            "db/migration/beforeEachMigrate__marker.js")
-                    .addAsResource("db/migration/afterEachMigrate__marker.js",
-                            "db/migration/afterEachMigrate__marker.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration/V1__create_users.json")
+                    .addAsResource("db/callback-extras/V2__insert_bob.json",
+                            "db/migration/V2__insert_bob.json")
+                    .addAsResource("db/migration/beforeMigrate__marker.json",
+                            "db/migration/beforeMigrate__marker.json")
+                    .addAsResource("db/migration/afterMigrate__marker.json",
+                            "db/migration/afterMigrate__marker.json")
+                    .addAsResource("db/migration/beforeEachMigrate__marker.json",
+                            "db/migration/beforeEachMigrate__marker.json")
+                    .addAsResource("db/migration/afterEachMigrate__marker.json",
+                            "db/migration/afterEachMigrate__marker.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.database", DATABASE)
-            .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true");
+            .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
 
     @Inject
     MongoClient mongoClient;

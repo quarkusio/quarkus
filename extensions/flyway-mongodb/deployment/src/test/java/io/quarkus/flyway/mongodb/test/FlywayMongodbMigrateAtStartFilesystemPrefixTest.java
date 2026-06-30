@@ -27,7 +27,8 @@ public class FlywayMongodbMigrateAtStartFilesystemPrefixTest {
             .overrideConfigKey("quarkus.mongodb.database", "filesystemprefix")
             .overrideConfigKey("quarkus.flyway-mongodb.locations", "filesystem:src/test/resources/db/migration")
             .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
-            .overrideConfigKey("quarkus.flyway-mongodb.database", "filesystemprefix");
+            .overrideConfigKey("quarkus.flyway-mongodb.database", "filesystemprefix")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
 
     @Inject
     Flyway flyway;

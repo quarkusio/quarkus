@@ -31,7 +31,8 @@ public interface FlywayMongodbClientBuildTimeConfig {
     /**
      * Comma-separated list of file suffixes to recognize as migration scripts.
      * Defaults to {@code .js}. Set to {@code .json} to use JSON-format migrations instead;
-     * the {@code flyway-database-nc-mongodb} connector does not support mixing
+     * JSON migrations do not require {@code mongosh} to be installed.
+     * The {@code flyway-database-nc-mongodb} connector does not support mixing
      * {@code .js} and {@code .json} migrations in the same project.
      */
     @WithDefault(DEFAULT_MIGRATION_SUFFIX)

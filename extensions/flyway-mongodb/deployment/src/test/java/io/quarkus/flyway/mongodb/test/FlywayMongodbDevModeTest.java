@@ -21,7 +21,7 @@ public class FlywayMongodbDevModeTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MongodbDevModeTestEndpoint.class)
-                    .addAsResource("db/migration/V1__create_users.js")
+                    .addAsResource("db/migration/V1__create_users.json")
                     .addAsResource("config-empty-mongodb.properties", "application.properties"));
 
     @Test
@@ -34,7 +34,8 @@ public class FlywayMongodbDevModeTest {
                 return "quarkus.mongodb.connection-string=" + FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING + "\n"
                         + "quarkus.mongodb.database=devmodetest\n"
                         + "quarkus.flyway-mongodb.migrate-at-start=true\n"
-                        + "quarkus.flyway-mongodb.database=devmodetest";
+                        + "quarkus.flyway-mongodb.database=devmodetest\n"
+                        + "quarkus.flyway-mongodb.migration-suffixes=.json";
             }
         });
         RestAssured.get("/fly").then().statusCode(200);

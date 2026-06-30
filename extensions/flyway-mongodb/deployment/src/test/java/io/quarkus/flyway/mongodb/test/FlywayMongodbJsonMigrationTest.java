@@ -21,9 +21,10 @@ import io.quarkus.test.QuarkusExtensionTest;
  * {@code migration-suffixes} is set to {@code .json}.
  * <p>
  * JSON migrations are a single MongoDB command document executed through the
- * driver API. The connector does not support mixing {@code .js} and
- * {@code .json} migrations within a single project, so this test isolates
- * the JSON migration in its own location.
+ * driver API and do not require {@code mongosh} to be installed.
+ * The connector does not support mixing {@code .js} and {@code .json}
+ * migrations within a single project, so this test isolates the JSON
+ * migration in its own location.
  */
 @ExtendWith(FlapdoodleMongodbExtension.class)
 public class FlywayMongodbJsonMigrationTest {

@@ -27,13 +27,14 @@ public class FlywayMongodbBaselineOnMigrateTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
-                    .addAsResource("db/migration/V1__create_users.js", "db/migration/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json", "db/migration/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.baseline-on-migrate", "true")
             .overrideConfigKey("quarkus.flyway-mongodb.baseline-version", "0.0.1")
-            .overrideConfigKey("quarkus.flyway-mongodb.baseline-description", "Initial description for test");
+            .overrideConfigKey("quarkus.flyway-mongodb.baseline-description", "Initial description for test")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json");
 
     @Inject
     Flyway flyway;

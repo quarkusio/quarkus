@@ -32,14 +32,15 @@ public class FlywayMongodbValidateAtStartFailsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1__create_users.js",
-                            "db/migration/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json",
+                            "db/migration/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.database", DATABASE)
             .overrideConfigKey("quarkus.flyway-mongodb.validate-at-start", "true")
             .overrideConfigKey("quarkus.flyway-mongodb.validate-at-start.clean-on-validation-error", "false")
             .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json")
             .setExpectedException(FlywayValidateException.class);
 
     @Test
@@ -59,7 +60,7 @@ public class FlywayMongodbValidateAtStartFailsTest {
                         .append("version", "1")
                         .append("description", "create users")
                         .append("type", "SCRIPT")
-                        .append("script", "V1__create_users.js")
+                        .append("script", "V1__create_users.json")
                         .append("checksum", 99999)
                         .append("installed_by", "test")
                         .append("installed_on", Timestamp.from(Instant.now()).toString())

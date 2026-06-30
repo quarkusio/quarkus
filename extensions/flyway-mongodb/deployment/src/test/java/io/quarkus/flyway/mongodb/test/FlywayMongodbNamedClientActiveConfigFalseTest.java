@@ -29,11 +29,12 @@ public class FlywayMongodbNamedClientActiveConfigFalseTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
-                    .addAsResource("db/migration/V1__create_users.js", "db/migration/V1__create_users.js"))
+                    .addAsResource("db/migration/V1__create_users.json", "db/migration/V1__create_users.json"))
             .overrideConfigKey("quarkus.mongodb.connection-string", FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.database", "namedacf")
             .overrideConfigKey("quarkus.flyway-mongodb.migrate-at-start", "true")
             .overrideConfigKey("quarkus.flyway-mongodb.database", "namedacf")
+            .overrideConfigKey("quarkus.flyway-mongodb.migration-suffixes", ".json")
             .overrideConfigKey("quarkus.mongodb.analytics.connection-string",
                     FlapdoodleMongodbExtension.MONGO_CONNECTION_STRING)
             .overrideConfigKey("quarkus.mongodb.analytics.database", "namedacf_analytics")

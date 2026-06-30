@@ -22,18 +22,24 @@ the JavaScript migration scripts.
 [[prerequisites]]
 == Prerequisites
 
-The `flyway-database-nc-mongodb` connector executes every migration script
-by spawning a `mongosh` subprocess, so `mongosh` must be installed and
-available on the `PATH` of the process that runs Flyway. This is true at
-both development time and at runtime (including JVM and native modes).
+The `flyway-database-nc-mongodb` connector executes JavaScript (`.js`)
+migration scripts by spawning a `mongosh` subprocess, so when you use
+`.js` migrations `mongosh` must be installed and available on the `PATH`
+of the process that runs Flyway. This is true at both development time and
+at runtime (including JVM and native modes).
 
 Install `mongosh` by following the
 https://www.mongodb.com/docs/mongodb-shell/install/[official instructions]
 for your operating system.
 
-If `mongosh` is not available, Flyway will fail when applying a migration
-with an error from the NC connector indicating that the shell could not be
-started.
+If `mongosh` is not available, Flyway will fail when applying a `.js`
+migration with an error from the NC connector indicating that the shell
+could not be started.
+
+`mongosh` is *not* required if you use JSON (`.json`) migrations, which are
+executed directly through the MongoDB driver API. Set
+`quarkus.flyway-mongodb.migration-suffixes=.json` to switch to that format
+(see <<migration-scripts>>).
 
 == Adding the extension
 
@@ -107,6 +113,7 @@ bean is still produced for every configured MongoDB client using the default
 settings. Startup operations such as `migrate-at-start` remain disabled until
 opted in.
 
+[[migration-scripts]]
 == Migration scripts
 
 Migrations follow Flyway's naming convention, for example `V1__create_users.js`.

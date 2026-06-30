@@ -1,5 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -15,6 +18,7 @@ import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.Get
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoEncodedQueryResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoEncodedTemplateResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoEscapedMatrParamResource;
+import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoMatrixParamResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoQueryParamsResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoRelativizeResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoResolveResource;
@@ -58,7 +62,8 @@ public class UriInfoTest {
                             UriInfoQueryParamsResource.class, UriInfoSimpleSingletonResource.class,
                             UriInfoEncodedTemplateResource.class, UriInfoEscapedMatrParamResource.class,
                             UriInfoEncodedTemplateResource.class, GetAbsolutePathResource.class,
-                            UriInfoRelativizeResource.class, UriInfoResolveResource.class);
+                            UriInfoRelativizeResource.class, UriInfoResolveResource.class,
+                            UriInfoMatrixParamResource.class);
                     return war;
                 }
             });
@@ -158,6 +163,22 @@ public class UriInfoTest {
         WebTarget target = client.target(PortProviderUtil.generateURL("/"));
         String result = target.path("resolve").queryParam("to", "a/d/e").request().get(String.class);
         Assertions.assertEquals(PortProviderUtil.generateURL("/a/d/e"), result);
+    }
+
+    @Test
+    @DisplayName("Test matrix params in UriInfo")
+    public void testMatrixParamsInUriInfo() {
+        given()
+                .urlEncodingEnabled(false)
+                .when()
+                .get("/UriInfoMatrixParamResource/ex;m1;m2=foo?q1&q2=bar")
+                .then()
+                .statusCode(200)
+                .body(containsString("http://localhost:8080/UriInfoMatrixParamResource/ex"))
+                .body(containsString("m1: null m2: foo"))
+                .body(containsString("q1: null q2: bar"))
+                .body(containsString("query params: {q1=[], q2=[bar]}"))
+                .body(containsString("matrix params: {m1=[], m2=[foo]}"));
     }
 
     private static void basicTest(String path, String testName) throws Exception {

@@ -49,11 +49,10 @@ public class ResteasyReactiveRequestContextTest {
             }
         };
         Mockito.when(request.getRequestNormalisedPath()).thenReturn("/path;a");
-        Mockito.when(request.getRequestScheme()).thenReturn("http");
-        Mockito.when(request.getRequestHostAndPort()).thenReturn("host:port");
+        Mockito.when(request.getRequestAbsoluteUri()).thenReturn("http://host:port/path;a?foo=bar");
 
         context.initPathSegments();
-        assertEquals("http://host:port/path", context.getAbsoluteURI());
+        assertEquals("http://host:port/path?foo=bar", context.getAbsoluteURI());
 
         context.setRequestUri(URI.create("https://host1:port1/path1"));
         assertEquals("https://host1:port1/path1", context.getAbsoluteURI());

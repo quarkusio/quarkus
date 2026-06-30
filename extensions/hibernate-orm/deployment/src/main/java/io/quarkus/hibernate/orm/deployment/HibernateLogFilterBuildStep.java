@@ -44,10 +44,6 @@ public final class HibernateLogFilterBuildStep {
         //property (we have a custom DialectFactory already so this could be trivial), however even in this case ORM
         //can't guess things since there is no connection, so even if we did so, this message wouldn't be applicable.
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.deprecation", "HHH90000025"));
-
-        // This is issued during static init, but it's a false positive: Hibernate ORM is confusing
-        // start > stop > stop with a stop without a prior start (which is expected in our case, and harmless).
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.cache", "HHH90001002"));
     }
 
     @BuildStep(onlyIf = HibernateSpatialAvailable.class)

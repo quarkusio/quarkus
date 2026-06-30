@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.internal.VertxBootstrap;
 
@@ -24,7 +26,7 @@ public class VertxCoreRecorderConfigurationTest {
 
     @BeforeEach
     public void setUp() {
-        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
+        recorder = new VertxCoreRecorder(null, new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
     }
 
     @AfterEach
@@ -104,13 +106,28 @@ public class VertxCoreRecorderConfigurationTest {
 
     @Test
     public void shouldConfigurePreferNativeTransport() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
+        VertxCoreRecorder.buildTimeConfig = new VertxBuildTimeConfig() {
             @Override
             public boolean preferNativeTransport() {
                 return true;
             }
-        });
-        Assertions.assertTrue(opts.getPreferNativeTransport());
+
+            @Override
+            public NativeTransportType nativeTransportType() {
+                return NativeTransportType.AUTO;
+            }
+
+            @Override
+            public boolean nativeTransportRequired() {
+                return false;
+            }
+        };
+        try {
+            VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration());
+            Assertions.assertTrue(opts.getPreferNativeTransport());
+        } finally {
+            VertxCoreRecorder.buildTimeConfig = null;
+        }
     }
 
     @Test

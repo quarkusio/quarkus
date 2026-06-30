@@ -38,6 +38,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
@@ -117,8 +118,15 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
-    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
+    /**
+     * We keep a static reference on the build time config as we need to pass it for the Vert.x creation after failures.
+     */
+    static VertxBuildTimeConfig buildTimeConfig;
+
+    public VertxCoreRecorder(VertxBuildTimeConfig btConfig, RuntimeValue<VertxConfiguration> vertxConfig,
+            RuntimeValue<ThreadPoolConfig> threadPoolConfig,
             RuntimeValue<ShutdownConfig> shutdownConfig) {
+        buildTimeConfig = btConfig;
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
@@ -289,8 +297,8 @@ public class VertxCoreRecorder {
             customizer.customize(bootstrap);
         }
 
-        if (conf != null) {
-            NativeTransportType transportType = conf.nativeTransportType();
+        if (buildTimeConfig != null) {
+            NativeTransportType transportType = buildTimeConfig.nativeTransportType();
             if (transportType != NativeTransportType.AUTO) {
                 io.vertx.core.transport.Transport requested = switch (transportType) {
                     case EPOLL -> Transport.EPOLL;
@@ -301,7 +309,7 @@ public class VertxCoreRecorder {
                 if (requested != null && requested.available()) {
                     bootstrap.transport(requested.implementation());
                 }
-            } else if (conf.preferNativeTransport()) {
+            } else if (buildTimeConfig.preferNativeTransport()) {
                 // VertxBootstrap does not check VertxOptions.preferNativeTransport,
                 // so we mirror what VertxBuilder does: auto-detect the best transport.
                 Transport nativeTransport = Transport.nativeTransport();
@@ -326,7 +334,7 @@ public class VertxCoreRecorder {
 
         LateBoundMDCProvider.setMDCProviderDelegate(VertxMDC.INSTANCE);
 
-        return logVertxInitialization(vertx, conf);
+        return logVertxInitialization(vertx);
     }
 
     private static <T> List<T> instantiateServices(List<String> classNames, Class<T> serviceClass) {
@@ -394,15 +402,15 @@ public class VertxCoreRecorder {
      * @param conf the configuration
      * @return the vert.x instance
      */
-    private static Vertx logVertxInitialization(Vertx vertx, VertxConfiguration conf) {
-        if (conf == null) {
+    private static Vertx logVertxInitialization(Vertx vertx) {
+        if (buildTimeConfig == null) {
             LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
             return vertx;
         }
 
-        NativeTransportType requestedType = conf.nativeTransportType();
-        boolean preferNative = conf.preferNativeTransport() || requestedType != NativeTransportType.AUTO;
-        boolean required = conf.nativeTransportRequired();
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        boolean preferNative = buildTimeConfig.preferNativeTransport() || requestedType != NativeTransportType.AUTO;
+        boolean required = buildTimeConfig.nativeTransportRequired();
 
         if (!preferNative) {
             LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
@@ -600,7 +608,9 @@ public class VertxCoreRecorder {
 
         options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
-        boolean preferNative = conf.preferNativeTransport() || conf.nativeTransportType() != NativeTransportType.AUTO;
+        boolean preferNative = buildTimeConfig != null
+                && (buildTimeConfig.preferNativeTransport()
+                        || buildTimeConfig.nativeTransportType() != NativeTransportType.AUTO);
         options.setPreferNativeTransport(preferNative);
 
         options.setDisableTCCL(true);

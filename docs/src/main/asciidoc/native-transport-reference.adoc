@@ -174,7 +174,9 @@ If native transport dependencies are missing, you will see:
 
 == Configuration reference
 
-Quarkus provides three configuration properties to control native transport behavior:
+Quarkus provides three configuration properties to control native transport behavior.
+All three are **build-time properties** (fixed at build time), meaning they are resolved during the Quarkus augmentation phase.
+They can be set in `application.properties` and overridden using Quarkus profiles (e.g., `%dev`, `%prod`), but cannot be changed at runtime via environment variables.
 
 [cols="2,1,4",options=header]
 |===
@@ -182,17 +184,17 @@ Quarkus provides three configuration properties to control native transport beha
 |Default
 |Description
 
-|`quarkus.vertx.prefer-native-transport`
+|`quarkus.vertx.prefer-native-transport` icon:lock[title=Fixed at build time]
 |`false`
 |Enable native transport. When `true`, Vert.x will use a native transport if available. When `false`, Vert.x always uses Java NIO.
 
-|`quarkus.vertx.native-transport-type`
+|`quarkus.vertx.native-transport-type` icon:lock[title=Fixed at build time]
 |`auto`
 |Select a specific transport: `auto` (let Vert.x choose), `epoll`, `kqueue`, or `io-uring`. Setting this to a value other than `auto` implicitly enables native transport.
 
-|`quarkus.vertx.native-transport-required`
+|`quarkus.vertx.native-transport-required` icon:lock[title=Fixed at build time]
 |`false`
-|Enforce strict native transport loading. When `true`, the application fails to start if the requested transport is unavailable. When `false`, the application falls back to Java NIO with a warning.
+|Enforce strict native transport loading. When `true` and the requested transport dependency is not on the classpath, the **build fails**. If the dependency is present but the native library cannot load at runtime (e.g., wrong platform), the application fails to start.
 
 |===
 
@@ -224,46 +226,49 @@ quarkus.vertx.native-transport-type=io-uring
 quarkus.vertx.native-transport-required=false
 ----
 
+=== Profile-based configuration
+
+Since native transport properties are fixed at build time, you can use Quarkus profiles to configure different transports per environment.
+This is useful when developing on macOS and deploying on Linux:
+
+[source,properties]
+----
+# Dev mode: no native transport needed (works on macOS or Linux)
+%dev.quarkus.vertx.prefer-native-transport=false
+
+# Production: require io_uring on Linux
+%prod.quarkus.vertx.native-transport-type=io-uring
+%prod.quarkus.vertx.native-transport-required=true
+----
+
+The `%dev` profile applies during `quarkus dev`, while `%prod` applies when building production artifacts.
+This lets you develop locally without native transport dependencies and enforce them in production.
+
 == Build-time and runtime checks
 
-Quarkus performs two-stage validation of native transport dependencies:
+Quarkus performs two-stage validation of native transport configuration:
 
-=== Build-time detection
+=== Build-time validation
 
-During build, Quarkus scans the classpath for native transport JAR files.
-If `prefer-native-transport=true` but no transport dependencies are found, the build logs a message:
+During the build, Quarkus scans the classpath for native transport dependencies and validates them against the configuration:
 
-[source]
-----
-[io.qua.ver.cor.run.VertxCoreProcessor] (build) No native transport detected. Consider adding io.netty:netty-transport-native-epoll or io.netty:netty-transport-native-kqueue dependency.
-----
+* If `native-transport-type` is set to a specific transport (e.g., `epoll`) but the corresponding dependency is missing:
+** When `native-transport-required=true`: the build **fails** with a `ConfigurationException`.
+** When `native-transport-required=false`: the build logs a warning and continues. The application will fall back to Java NIO at runtime.
+* If `prefer-native-transport=true` but no native transport dependency is found, the build logs a warning.
 
 === Runtime behavior
 
-At startup, Quarkus attempts to load the requested transport.
-The behavior depends on the `native-transport-required` property:
+Even when a transport dependency is on the classpath, the native library may fail to load at runtime (e.g., running on a different platform, or the kernel does not support io_uring).
+Quarkus checks the actual transport status at startup:
 
 ==== When `native-transport-required=false` (default)
 
-If the transport fails to load or is unavailable on the current platform, Quarkus logs a warning and falls back to Java NIO:
-
-[source]
-----
-WARN [io.qua.ver.cor.run.VertxCoreRecorder] (main) Native transport was requested but is not available. The application will use Java NIO instead. To resolve this:
-1. Ensure you have added the correct native transport dependency with the appropriate classifier for your platform
-2. Verify your platform supports native transport
-3. Check that no conflicting dependencies are present
-If you want to require native transport and fail startup when unavailable, set quarkus.vertx.native-transport-required=true
-----
+If the transport fails to load, Quarkus logs a warning and falls back to Java NIO.
 
 ==== When `native-transport-required=true`
 
-If the transport fails to load, the application fails to start with an `IllegalStateException`:
-
-[source]
-----
-java.lang.IllegalStateException: Native transport was requested (native-transport-required=true) but is not available. Ensure you have added the correct native transport dependency with the appropriate classifier for your platform.
-----
+If the transport fails to load, the application fails to start with an `IllegalStateException`.
 
 ==== Transport type mismatch
 
@@ -349,6 +354,8 @@ Both epoll and io_uring are available on Linux. Which should you use?
 * You are running a modern kernel (5.6+)
 * You want to experiment with cutting-edge I/O performance
 * You can tolerate experimental features
+
+NOTE: https://sibexi.co/posts/epoll-vs-io_uring/[This article], from Nicolas J. Altmann, gives a gentle introduction to the differences between epoll and io_uring.
 
 === Default behavior
 
@@ -469,14 +476,3 @@ If your kernel is too old, either:
 2. Use `epoll` instead
 3. Set `native-transport-required=false` to fall back to NIO
 
-=== Debug logging
-
-To troubleshoot native transport issues, enable debug logging for Vert.x:
-
-[source,properties]
-----
-quarkus.log.category."io.quarkus.vertx".level=DEBUG
-quarkus.log.category."io.vertx".level=DEBUG
-----
-
-This will show detailed information about transport selection and loading.

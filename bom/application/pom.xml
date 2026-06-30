@@ -156,7 +156,7 @@
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
-        <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>4.1.8</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -202,7 +202,7 @@
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
         <aesh.version>3.16.1</aesh.version>
         <aesh-readline.version>3.16.1</aesh-readline.version>
-        <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with dekorate -->
+        <jline.version>4.2.1</jline.version> <!-- Keep in sync with dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.9.1</strimzi-oauth.nimbus.version>
@@ -6587,9 +6587,9 @@
                 <version>${aesh-readline.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.fusesource.jansi</groupId>
+                <groupId>org.jline</groupId>
                 <artifactId>jansi</artifactId>
-                <version>${jansi.version}</version>
+                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.aesh</groupId>

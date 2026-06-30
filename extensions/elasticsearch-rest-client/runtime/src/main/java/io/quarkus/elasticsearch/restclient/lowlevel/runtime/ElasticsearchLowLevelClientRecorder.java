@@ -8,6 +8,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Any;
+
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
@@ -33,7 +35,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
-import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheckCondition;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -93,15 +94,13 @@ public class ElasticsearchLowLevelClientRecorder {
                             httpClientBuilder.setSSLStrategy(NoopIOSessionStrategy.INSTANCE);
                         }
 
-                        // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with ElasticsearchClientConfig
+                        // Apply configuration from RestClientBuilder.HttpClientConfigCallback CDI beans
                         HttpAsyncClientBuilder result = httpClientBuilder;
-                        // since the <default> client won't have any additional qualifiers we want to just filter out any others?
                         final Predicate<InstanceHandle<?>> configFilter = ElasticsearchClientBeanUtil.isDefault(clientName)
                                 ? matchingDefaultClient()
                                 : matchingNamedClient(clientName);
                         final Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
-                                .select(RestClientBuilder.HttpClientConfigCallback.class,
-                                        ElasticsearchClientConfig.Literal.of())
+                                .select(RestClientBuilder.HttpClientConfigCallback.class, Any.Literal.INSTANCE)
                                 .handlesStream()
                                 .filter(configFilter)
                                 .toList();

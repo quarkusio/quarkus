@@ -6,13 +6,10 @@ import java.util.Set;
 import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.smallrye.common.annotation.Identifier;
 
@@ -26,28 +23,13 @@ public final class ElasticsearchClientProcessorUtil {
             .createSimple(Identifier.class.getName());
 
     /**
-     * Collect referenced names for a given type of Elasticsearch client:
-     * <ul>
-     * <li>All injected clients with the @Default or @Identifier qualifiers</li>
-     * <li>All configuration classes that are expected to target a given client,
-     * e.g. @ElasticsearchClientConfig</li>
-     * </ul>
+     * Collect referenced client names by scanning injection points for a given type of Elasticsearch client.
+     * Returns client names found via @Default or @Identifier qualifiers on injection points.
      */
-    public static Set<String> collectReferencedClientNames(CombinedIndexBuildItem indexBuildItem,
+    public static Set<String> collectReferencedClientNames(
             BeanRegistrationPhaseBuildItem registrationPhase,
-            Set<DotName> clientTypeNames, Set<DotName> configAnnotationNames) {
+            Set<DotName> clientTypeNames) {
         Set<String> referencedNames = new HashSet<>();
-        IndexView indexView = indexBuildItem.getIndex();
-        for (DotName annotationName : configAnnotationNames) {
-            for (AnnotationInstance annotation : indexView.getAnnotations(annotationName)) {
-                AnnotationValue value = annotation.value();
-                if (value == null) {
-                    referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
-                } else {
-                    referencedNames.add(value.asString());
-                }
-            }
-        }
         for (InjectionPointInfo injectionPoint : registrationPhase.getInjectionPoints()) {
             DotName injectionPointType = injectionPoint.getRequiredType().name();
             if (!clientTypeNames.contains(injectionPointType)) {

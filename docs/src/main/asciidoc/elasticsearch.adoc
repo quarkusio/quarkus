@@ -376,19 +376,18 @@ For more information you can read the xref:elasticsearch-dev-services.adoc[Dev S
 
 === Programmatically Configuring Elasticsearch
 
-On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` and annotating it with `ElasticsearchClientConfig`. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
+On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` as an `@ApplicationScoped` CDI bean. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
 
 For example, when accessing an Elasticsearch cluster that is set up for TLS on the HTTP layer, the client needs to trust the certificate that Elasticsearch is using. The following is an example of setting up the client to trust the CA that has signed the certificate that Elasticsearch is using, when that CA certificate is available in a PKCS#12 keystore.
 
 [source,java]
 ----
-import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.client.RestClientBuilder;
 
-import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.ApplicationScoped;
 import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -396,7 +395,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 
-@ElasticsearchClientConfig
+@ApplicationScoped
 public class SSLContextConfigurator implements RestClientBuilder.HttpClientConfigCallback {
     @Override
     public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
@@ -424,18 +423,12 @@ See https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current
 
 [NOTE]
 ====
-Classes marked with `@ElasticsearchClientConfig` are made application scoped CDI beans by default.
-You can override the scope at the class level if you prefer a different scope.
-====
-
-[NOTE]
-====
-When configuring the <<named-clients,named clients>> with `@ElasticsearchClientConfig`
+When configuring the <<named-clients,named clients>>,
 pass the name of the client to configure through the `value` attribute of the `@Identifier` qualifier:
 [source,java]
 ----
 @Identifier("second-client")
-@ElasticsearchClientConfig
+@ApplicationScoped
 public class AnotherClientConfigurer implements RestClientBuilder.HttpClientConfigCallback {
 	// ...
 }

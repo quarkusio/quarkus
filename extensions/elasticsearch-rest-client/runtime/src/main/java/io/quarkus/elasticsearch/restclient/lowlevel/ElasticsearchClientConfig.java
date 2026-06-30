@@ -17,10 +17,14 @@ import jakarta.inject.Qualifier;
  * configuration of injected Elasticsearch {@code RestClient} You may provide multiple implementations each annotated with
  * {@code ElasticsearchClientConfig} and configuration provided by each implementation will be applied in a randomly ordered
  * cascading manner
+ *
+ * @deprecated This annotation is no longer required. Simply make your {@code HttpClientConfigCallback} implementation
+ *             an {@code @ApplicationScoped} CDI bean. Use {@code @Identifier("client-name")} to target a specific named client.
  */
 @Qualifier
 @Target({ FIELD, TYPE, METHOD, PARAMETER })
 @Retention(RUNTIME)
+@Deprecated(forRemoval = true)
 public @interface ElasticsearchClientConfig {
 
     class Literal extends AnnotationLiteral<ElasticsearchClientConfig> implements ElasticsearchClientConfig {

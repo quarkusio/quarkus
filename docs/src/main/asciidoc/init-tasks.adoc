@@ -156,6 +156,31 @@ If, for any reason, additional permissions are required either by the init conta
 The application, the init container and the job use the same `ServiceAccount` and therefore, share the same permissions.
 ====
 
+== Controlling the Job lifetime
+
+By default, finished init-task Jobs remain in the cluster until they are manually deleted.
+You can configure Kubernetes to automatically delete them after a given number of seconds using `ttlSecondsAfterFinished`.
+
+To set the TTL for all init-task Jobs:
+
+[source,properties]
+----
+quarkus.kubernetes.init-task-defaults.ttl-seconds-after-finished=120
+----
+
+To set the TTL for a specific task only (e.g. Flyway):
+
+[source,properties]
+----
+quarkus.kubernetes.init-tasks.flyway.ttl-seconds-after-finished=120
+----
+
+[NOTE]
+====
+When a per-task entry is present (e.g. `quarkus.kubernetes.init-tasks.flyway.*`), it fully replaces the defaults for that task.
+If the per-task entry does not specify `ttl-seconds-after-finished`, the global default value is **not** inherited.
+====
+
 == Extensions providing Initialization Tasks
 
 Currently, this feature is used by the following extensions:

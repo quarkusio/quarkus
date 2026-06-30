@@ -28,7 +28,6 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
-import org.hibernate.query.SemanticException
 import org.junit.jupiter.api.Assertions
 
 /**
@@ -1256,16 +1255,12 @@ class TestEndpoint {
         Assertions.assertNotNull(annotatedConstructor)
         Assertions.assertEquals(mark.name, annotatedConstructor?.name)
 
-        val semanticException =
-            Assertions.assertThrowsExactly(SemanticException::class.java) {
-                Person.find("name = ?1", "Mark")
-                    .project(MyProjectionDoubleConstructor::class.java)
-                    .firstResult()
-            }
-        Assertions.assertEquals(
-            "Could not interpret path expression 'fakeParameter'",
-            semanticException.message,
-        )
+        val withoutAnnotation =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructor::class.java)
+                .firstResult()
+        Assertions.assertNotNull(withoutAnnotation)
+        Assertions.assertEquals(mark.name, withoutAnnotation?.name)
 
         Person.deleteAll()
 
@@ -1311,16 +1306,12 @@ class TestEndpoint {
         Assertions.assertNotNull(annotatedConstructor)
         Assertions.assertEquals(mark.name, annotatedConstructor?.name)
 
-        val semanticException =
-            Assertions.assertThrowsExactly(SemanticException::class.java) {
-                Person.find("name = ?1", "Mark")
-                    .project(MyProjectionDoubleConstructor::class.java)
-                    .firstResult()
-            }
-        Assertions.assertEquals(
-            "Could not interpret path expression 'fakeParameter'",
-            semanticException.message,
-        )
+        val withoutAnnotation =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructor::class.java)
+                .firstResult()
+        Assertions.assertNotNull(withoutAnnotation)
+        Assertions.assertEquals(mark.name, withoutAnnotation?.name)
 
         Person.deleteAll()
 
@@ -1364,16 +1355,31 @@ class TestEndpoint {
         Assertions.assertNotNull(annotatedConstructor)
         Assertions.assertEquals(mark.name, annotatedConstructor?.name)
 
-        val semanticException =
-            Assertions.assertThrowsExactly(SemanticException::class.java) {
-                Person.find("name = ?1", "Mark")
-                    .project(MyProjectionDoubleConstructor::class.java)
-                    .firstResult()
-            }
-        Assertions.assertEquals(
-            "Could not interpret path expression 'fakeParameter'",
-            semanticException.message,
-        )
+        val withoutAnnotation =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructor::class.java)
+                .firstResult()
+        Assertions.assertNotNull(withoutAnnotation)
+        Assertions.assertEquals(mark.name, withoutAnnotation?.name)
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-value-class")
+    @Transactional
+    fun testValueClassProjection(): String {
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val projected =
+            Person.find("id", mark.id!!).project(GreetingValueClassDto::class.java).firstResult()
+        Assertions.assertNotNull(projected)
+        Assertions.assertEquals(mark.id, projected?.id?.value)
+        Assertions.assertEquals(mark.name, projected?.name)
 
         Person.deleteAll()
 

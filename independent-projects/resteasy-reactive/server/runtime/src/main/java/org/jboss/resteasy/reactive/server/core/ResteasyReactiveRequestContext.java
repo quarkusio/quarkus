@@ -525,7 +525,13 @@ public abstract class ResteasyReactiveRequestContext
         // Note: we could store our cache as normalised, but I'm not sure if the vertx one is normalised
         if (absoluteUri == null) {
             try {
-                absoluteUri = new URI(getScheme(), getAuthority(), path, query, null).toASCIIString();
+                if (scheme != null || authority != null || query != null) {
+                    absoluteUri = new URI(getScheme(), getAuthority(), path, query, null).toASCIIString();
+                } else {
+                    URI original = URI.create(serverRequest().getRequestAbsoluteUri());
+                    absoluteUri = new URI(original.getScheme(), original.getRawAuthority(), path,
+                            original.getRawQuery(), original.getRawFragment()).toASCIIString();
+                }
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -868,6 +874,7 @@ public abstract class ResteasyReactiveRequestContext
             }
             String newPath = sb.toString();
             this.path = newPath;
+            this.absoluteUri = null;
             if (this.remaining != null) {
                 this.remaining = newPath.substring(getPathWithoutPrefix().length() - this.remaining.length());
             }

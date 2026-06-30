@@ -50,6 +50,7 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -114,6 +115,14 @@ public class CreateProjectMojo extends AbstractMojo {
      */
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
+
+    /**
+     * A target platform stream, for example: {@code 3.15} or {@code io.quarkus.platform:3.15}.
+     * When specified, the extension registry client will be used to resolve the platform BOM
+     * corresponding to the given stream.
+     */
+    @Parameter(property = "stream", required = false)
+    private String stream;
 
     /**
      * Version of Java used to build the project.
@@ -235,8 +244,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
         ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver(mvn, log);
-        ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
-                mvn, log);
+        ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, stream,
+                catalogResolver, mvn, log);
 
         File projectRoot = outputDirectory;
         File pom = project != null ? project.getFile() : null;
@@ -368,8 +377,18 @@ public class CreateProjectMojo extends AbstractMojo {
     }
 
     static ExtensionCatalog resolveExtensionsCatalog(AbstractMojo mojo, String groupId, String artifactId, String version,
-            ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
+            String stream, ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver,
+            MessageWriter log)
             throws MojoExecutionException {
+
+        if (!isBlank(stream)) {
+            if (!isBlank(groupId) || !isBlank(artifactId) || !isBlank(version)) {
+                throw new MojoExecutionException(
+                        "The 'stream' parameter cannot be combined with 'platformGroupId', 'platformArtifactId', or 'platformVersion'."
+                                + " Please use either 'stream' or the platform coordinates, not both.");
+            }
+            return resolveExtensionsCatalogForStream(mojo, stream, catalogResolver);
+        }
 
         if (catalogResolver.hasRegistries()) {
             try {
@@ -384,6 +403,29 @@ public class CreateProjectMojo extends AbstractMojo {
             }
         }
         return resolveExtensionCatalogDirectly(mojo, groupId, artifactId, version, catalogResolver, artifactResolver, log);
+    }
+
+    private static ExtensionCatalog resolveExtensionsCatalogForStream(AbstractMojo mojo, String stream,
+            ExtensionCatalogResolver catalogResolver) throws MojoExecutionException {
+        if (!catalogResolver.hasRegistries()) {
+            throw new MojoExecutionException(
+                    "Specifying a stream requires the Quarkus extension registry client."
+                            + " Please make sure the registry client is enabled.");
+        }
+        final PlatformStreamCoords streamCoords;
+        try {
+            streamCoords = PlatformStreamCoords.fromString(stream.trim());
+        } catch (IllegalArgumentException e) {
+            throw new MojoExecutionException(
+                    "Invalid stream value '" + stream + "'."
+                            + " Value should be specified as 'platformKey:streamId', for example: 3.15 or io.quarkus.platform:3.15",
+                    e);
+        }
+        try {
+            return catalogResolver.resolveExtensionCatalog(streamCoords);
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to resolve the extension catalog for stream '" + stream + "'", e);
+        }
     }
 
     private static ExtensionCatalog resolveExtensionCatalogDirectly(AbstractMojo mojo, String groupId, String artifactId,

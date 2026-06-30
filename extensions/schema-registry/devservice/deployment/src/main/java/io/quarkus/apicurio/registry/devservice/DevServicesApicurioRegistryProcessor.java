@@ -3,11 +3,13 @@ package io.quarkus.apicurio.registry.devservice;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,6 +32,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -108,10 +111,11 @@ public class DevServicesApicurioRegistryProcessor {
         }
 
         return apicurioRegistryContainerLocator
-                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                        expectedPortConfig(config.port()))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(config.imageName().orElseGet(() -> getDefaultImageNameFor("apicurio-registry")), "apicurio"),
-                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode(), useSharedNetwork))
+                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode(), useSharedNetwork, config.port()))
                 .map(address -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.APICURIO_REGISTRY_AVRO)
                         .containerId(address.getId())
@@ -186,6 +190,7 @@ public class DevServicesApicurioRegistryProcessor {
                 throw new IllegalArgumentException("Only apicurio/apicurio-registry images are supported");
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "apicurio-registry");
+            Labels.addPortConfigLabel(this, fixedExposedPort > 0 ? OptionalInt.of(fixedExposedPort) : OptionalInt.empty());
             withEnv(containerEnv);
             timeout.ifPresent(this::withStartupTimeout);
         }

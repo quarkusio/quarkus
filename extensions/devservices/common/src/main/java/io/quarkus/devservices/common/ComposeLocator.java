@@ -2,10 +2,12 @@ package io.quarkus.devservices.common;
 
 import static io.quarkus.devservices.common.ContainerUtil.getShortId;
 import static io.quarkus.devservices.common.Labels.DOCKER_COMPOSE_SERVICE;
+import static java.util.Arrays.stream;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -23,8 +25,18 @@ public class ComposeLocator {
 
     public static Optional<ContainerAddress> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, int port, LaunchMode launchMode, boolean useSharedNetwork) {
+        return locateContainer(composeProject, images, port, launchMode, useSharedNetwork, OptionalInt.empty());
+    }
+
+    public static Optional<ContainerAddress> locateContainer(DevServicesComposeProjectBuildItem composeProject,
+            List<String> images, int port, LaunchMode launchMode, boolean useSharedNetwork,
+            OptionalInt fixedExposedPort) {
         if (launchMode.isDevServicesSupported()) {
             return composeProject.locate(images, port)
+                    .filter(rc -> fixedExposedPort.isEmpty()
+                            || rc.getPortMapping(port)
+                                    .map(publicPort -> publicPort == fixedExposedPort.getAsInt())
+                                    .orElse(false))
                     .map(runningContainer -> {
                         String serviceName = getServiceName(runningContainer);
                         ContainerAddress containerAddress = new ContainerAddress(runningContainer,
@@ -48,8 +60,20 @@ public class ComposeLocator {
 
     public static List<RunningContainer> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, LaunchMode launchMode) {
+        return locateContainer(composeProject, images, launchMode, OptionalInt.empty());
+    }
+
+    public static List<RunningContainer> locateContainer(DevServicesComposeProjectBuildItem composeProject,
+            List<String> images, LaunchMode launchMode, OptionalInt fixedExposedPort) {
         if (launchMode.isDevServicesSupported()) {
-            return composeProject.locate(images);
+            List<RunningContainer> containers = composeProject.locate(images);
+            if (fixedExposedPort.isPresent()) {
+                return containers.stream()
+                        .filter(rc -> stream(rc.containerInfo().exposedPorts())
+                                .anyMatch(p -> p.publicPort() == fixedExposedPort.getAsInt()))
+                        .toList();
+            }
+            return containers;
         }
         return Collections.emptyList();
     }

@@ -3,9 +3,11 @@ package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -29,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -76,12 +79,14 @@ public class AmqpDevServicesProcessor {
         }
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig, sharedNetwork);
+        OptionalInt fixedPort = config.port().map(OptionalInt::of).orElse(OptionalInt.empty());
 
-        return amqpContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+        return amqpContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                expectedPortConfig(fixedPort))
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.imageName().orElse(getDefaultImageNameFor("amqp")),
                                 "amqp", "activemq-artemis", "amq-broker", "rabbitmq"),
-                        AMQP_PORT, launchMode.getLaunchMode(), useSharedNetwork))
+                        AMQP_PORT, launchMode.getLaunchMode(), useSharedNetwork, fixedPort))
                 .map(containerAddress -> {
                     // Discovered service
                     RunningContainer container = containerAddress.getRunningContainer();
@@ -110,7 +115,7 @@ public class AmqpDevServicesProcessor {
                                 DockerImageName.parse(config.imageName().orElse(getDefaultImageNameFor("amqp")))
                                         .asCompatibleSubstituteFor("artemiscloud/activemq-artemis-broker"),
                                 config.extraArgs(),
-                                config.port().orElse(0),
+                                fixedPort,
                                 launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName() : null,
                                 compose.getDefaultNetworkId(),
                                 useSharedNetwork)
@@ -188,15 +193,15 @@ public class AmqpDevServicesProcessor {
      */
     private static final class ArtemisContainer extends GenericContainer<ArtemisContainer> implements Startable {
 
-        private final int port;
+        private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
         private final String hostName;
 
-        private ArtemisContainer(DockerImageName dockerImageName, String extra, int fixedExposedPort, String serviceName,
-                String defaultNetworkId, boolean useSharedNetwork) {
+        private ArtemisContainer(DockerImageName dockerImageName, String extra, OptionalInt fixedExposedPort,
+                String serviceName, String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
-            this.port = fixedExposedPort;
+            this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
 
             withExposedPorts(AMQP_PORT, AMQP_CONSOLE_PORT);
@@ -218,13 +223,14 @@ public class AmqpDevServicesProcessor {
                 log.info("Skipping startup probe for the Dev Service for AMQP as it does not use the default image.");
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "artemis");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override
         protected void configure() {
             super.configure();
-            if (port > 0) {
-                addFixedExposedPort(port, AMQP_PORT);
+            if (fixedExposedPort.isPresent()) {
+                addFixedExposedPort(fixedExposedPort.getAsInt(), AMQP_PORT);
             }
         }
 

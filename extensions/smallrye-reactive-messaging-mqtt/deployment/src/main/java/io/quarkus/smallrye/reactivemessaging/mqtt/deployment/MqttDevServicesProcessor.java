@@ -2,10 +2,12 @@ package io.quarkus.smallrye.reactivemessaging.mqtt.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -29,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -71,7 +74,8 @@ public class MqttDevServicesProcessor {
 
         // Handle ComposeLocator differently - MQTT has custom port detection logic
 
-        return mqttContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+        return mqttContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                expectedPortConfig(config.port()))
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.MESSAGING_MQTT)
                         .containerId(containerAddress.getId())
@@ -81,7 +85,7 @@ public class MqttDevServicesProcessor {
                         .build())
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.imageName(), "hivemq", "eclipse-mosquitto"),
-                        launchMode.getLaunchMode()).stream()
+                        launchMode.getLaunchMode(), config.port()).stream()
                         .filter(r -> Arrays.stream(r.containerInfo().exposedPorts())
                                 .anyMatch(c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
                         .findFirst()
@@ -181,6 +185,8 @@ public class MqttDevServicesProcessor {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
+            Labels.addPortConfigLabel(this,
+                    fixedExposedPort > 0 ? OptionalInt.of(fixedExposedPort) : OptionalInt.empty());
             withClasspathResourceMapping("mosquitto.conf",
                     "/mosquitto/config/mosquitto.conf",
                     BindMode.READ_ONLY);

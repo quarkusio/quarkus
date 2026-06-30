@@ -120,7 +120,8 @@ public class PostgresqlDevServicesProcessor {
                         CPU.host());
                 List<String> images = List.of(selectedImage, "postgres");
                 return ComposeLocator
-                        .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork)
+                        .locateContainer(composeProjectBuildItem, images, POSTGRESQL_PORT, launchMode, useSharedNetwork,
+                                containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
@@ -160,6 +161,7 @@ public class PostgresqlDevServicesProcessor {
                     .withStrategy(Wait.forListeningPort())
                     .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "postgres");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

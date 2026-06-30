@@ -112,7 +112,8 @@ public class OracleDevServicesProcessor {
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")),
                         "oracle");
 
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork,
+                        containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
@@ -133,6 +134,7 @@ public class OracleDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "oracle");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

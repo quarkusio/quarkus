@@ -140,7 +140,9 @@ public class DB2DevServicesProcessor {
                 List<String> images = List.of(containerConfig.getImageName()
                         .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")),
                         "db2");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode, useSharedNetwork)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode, useSharedNetwork,
+                                containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
@@ -161,6 +163,7 @@ public class DB2DevServicesProcessor {
             this.useSharedNetwork = useSharedNetwork;
             this.podman = podman;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "db2");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

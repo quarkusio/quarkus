@@ -95,7 +95,8 @@ public class MariaDBDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")),
                         "maria");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
+                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork,
+                        containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
@@ -116,6 +117,7 @@ public class MariaDBDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mariadb");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

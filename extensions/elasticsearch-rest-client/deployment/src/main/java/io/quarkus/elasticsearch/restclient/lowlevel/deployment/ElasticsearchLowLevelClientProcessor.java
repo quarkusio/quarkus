@@ -67,17 +67,30 @@ class ElasticsearchLowLevelClientProcessor {
             if (userProvidedClientNames.contains(name)) {
                 continue;
             }
-            references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(name));
             clientNames.add(name);
         }
 
         // Because we may have not found some of the injections e.g. programmatic ones,
         //  or the ones we add in synthetic beans, so we say that there should be at least some build-time prop
-        //  that we can work things out from:
+        //  that we can work things out from.
+        // Skip the default entry that @WithDefaults always creates:
         for (String clientName : config.clients().keySet()) {
-            if (!userProvidedClientNames.contains(clientName) && clientNames.add(clientName)) {
-                references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(clientName));
+            if (!ElasticsearchClientBeanUtil.isDefault(clientName)
+                    && !userProvidedClientNames.contains(clientName)) {
+                clientNames.add(clientName);
             }
+        }
+
+        // If no named client was found in injection points or configuration,
+        // assume the default client is needed
+        boolean hasNamedClient = clientNames.stream()
+                .anyMatch(n -> !ElasticsearchClientBeanUtil.isDefault(n));
+        if (!hasNamedClient) {
+            clientNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+        }
+
+        for (String name : clientNames) {
+            references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(name));
         }
     }
 

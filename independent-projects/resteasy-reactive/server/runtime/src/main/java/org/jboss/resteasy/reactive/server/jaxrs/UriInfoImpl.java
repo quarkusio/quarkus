@@ -13,7 +13,6 @@ import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
-import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
@@ -75,7 +74,7 @@ public class UriInfoImpl implements UriInfo {
         if (!decode) {
             throw encodedNotSupported();
         }
-        return PathSegmentImpl.parseSegments(getPath(), decode);
+        return currentRequest.getPathSegments();
     }
 
     @Override

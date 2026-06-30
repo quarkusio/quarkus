@@ -29,7 +29,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -70,14 +69,12 @@ class ElasticsearchJavaClientProcessor {
 
     @BuildStep
     public void collectJavaClientReferences(
-            CombinedIndexBuildItem indexBuildItem,
             BeanRegistrationPhaseBuildItem registrationPhase,
             List<ElasticsearchLowLevelClientReferenceBuildItem> elasticsearchLowLevelClientReferenceBuildItems,
             BuildProducer<ElasticsearchJavaClientReferenceBuildItem> references) {
         Set<String> clientNames = new HashSet<>();
-        for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(indexBuildItem, registrationPhase,
-                Set.of(ELASTICSEARCH_CLIENT),
-                Set.of())) {
+        for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(registrationPhase,
+                Set.of(ELASTICSEARCH_CLIENT))) {
             references.produce(new ElasticsearchJavaClientReferenceBuildItem(name));
             clientNames.add(name);
         }

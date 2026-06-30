@@ -11,6 +11,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.sniff.Sniffer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
@@ -22,6 +23,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
@@ -31,7 +33,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientProcessorUtil;
@@ -54,20 +55,28 @@ class ElasticsearchLowLevelClientProcessor {
     }
 
     @BuildStep
-    public void collectLowLevelClientReferences(CombinedIndexBuildItem indexBuildItem,
+    public void collectLowLevelClientReferences(
             BeanRegistrationPhaseBuildItem registrationPhase,
             ElasticsearchBuildTimeConfig config,
             BuildProducer<ElasticsearchLowLevelClientReferenceBuildItem> references) {
         Set<String> userProvidedClientNames = findUserProvidedRestClientNames(registrationPhase);
 
         Set<String> clientNames = new HashSet<>();
-        for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(indexBuildItem, registrationPhase,
-                Set.of(REST_CLIENT),
-                Set.of(ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION))) {
+        for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(registrationPhase,
+                Set.of(REST_CLIENT))) {
             if (userProvidedClientNames.contains(name)) {
                 continue;
             }
             clientNames.add(name);
+        }
+
+        // Discover client names from HttpClientConfigCallback beans
+        for (BeanInfo bean : registrationPhase.getContext().beans()
+                .withBeanType(RestClientBuilder.HttpClientConfigCallback.class)) {
+            String name = extractClientName(bean);
+            if (!userProvidedClientNames.contains(name)) {
+                clientNames.add(name);
+            }
         }
 
         // Because we may have not found some of the injections e.g. programmatic ones,
@@ -109,15 +118,21 @@ class ElasticsearchLowLevelClientProcessor {
         return names;
     }
 
+    @SuppressWarnings("removal")
     @BuildStep
     void elasticsearchClientConfigSupport(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         // add the @ElasticsearchClientConfig class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(ElasticsearchClientConfig.class).build());
 
+        // Keep @ElasticsearchClientConfig as bean-defining annotation for backward compatibility
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION,
                         DotNames.APPLICATION_SCOPED, false));
+
+        // Ensure HttpClientConfigCallback beans are not removed by ArC (they are only looked up programmatically)
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(RestClientBuilder.HttpClientConfigCallback.class));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -255,6 +270,15 @@ class ElasticsearchLowLevelClientProcessor {
         } else {
             return AnnotationInstance.builder(Identifier.class).value(clientName).build();
         }
+    }
+
+    private static String extractClientName(BeanInfo bean) {
+        for (AnnotationInstance qualifier : bean.getQualifiers()) {
+            if (qualifier.name().equals(DotNames.IDENTIFIER)) {
+                return qualifier.value().asString();
+            }
+        }
+        return ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME;
     }
 
 }

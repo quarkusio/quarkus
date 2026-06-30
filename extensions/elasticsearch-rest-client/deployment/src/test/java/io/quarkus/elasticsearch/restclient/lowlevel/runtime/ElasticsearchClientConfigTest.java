@@ -19,6 +19,7 @@ import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Identifier;
 
+@SuppressWarnings("removal")
 public class ElasticsearchClientConfigTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
@@ -74,7 +75,6 @@ public class ElasticsearchClientConfigTest {
     }
 
     @Identifier("second-client")
-    @ElasticsearchClientConfig
     @ApplicationScoped
     public static class SecondSecondTestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
 

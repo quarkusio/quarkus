@@ -122,41 +122,4 @@ public interface VertxConfiguration {
     @WithDefault("1s")
     Duration blockedThreadCheckInterval();
 
-    /**
-     * Enable or disable native transport
-     */
-    @WithDefault("false")
-    boolean preferNativeTransport();
-
-    /**
-     * The type of native transport to use.
-     * <p>
-     * When set to a value other than {@code auto}, the application will attempt to use the specified
-     * native transport. If the transport is not available at runtime, the behavior depends on
-     * {@link #nativeTransportRequired()}.
-     * <p>
-     * Setting this to a specific transport type implicitly enables native transport
-     * (i.e., {@link #preferNativeTransport()} is treated as {@code true}).
-     * <p>
-     * Supported values:
-     * <ul>
-     * <li>{@code auto} - Let Vert.x pick the best available transport (default)</li>
-     * <li>{@code epoll} - Use Linux epoll transport</li>
-     * <li>{@code kqueue} - Use macOS kqueue transport</li>
-     * <li>{@code io-uring} - Use Linux io_uring transport</li>
-     * </ul>
-     */
-    @WithDefault("auto")
-    NativeTransportType nativeTransportType();
-
-    /**
-     * Whether native transport is required.
-     * <p>
-     * When {@code true} and native transport is requested (via {@link #preferNativeTransport()} or
-     * {@link #nativeTransportType()}) but fails to load, the application will fail to start instead
-     * of falling back to NIO.
-     */
-    @WithDefault("false")
-    boolean nativeTransportRequired();
-
 }

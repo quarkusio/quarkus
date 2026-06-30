@@ -37,7 +37,9 @@ import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
+import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
@@ -117,8 +119,15 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
-    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
+    /**
+     * We keep a static reference on the build time config as we need to pass it for the Vert.x creation after failures.
+     */
+    static VertxBuildTimeConfig buildTimeConfig;
+
+    public VertxCoreRecorder(VertxBuildTimeConfig btConfig, RuntimeValue<VertxConfiguration> vertxConfig,
+            RuntimeValue<ThreadPoolConfig> threadPoolConfig,
             RuntimeValue<ShutdownConfig> shutdownConfig) {
+        buildTimeConfig = btConfig;
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
@@ -289,8 +298,8 @@ public class VertxCoreRecorder {
             customizer.customize(bootstrap);
         }
 
-        if (conf != null) {
-            NativeTransportType transportType = conf.nativeTransportType();
+        if (buildTimeConfig != null) {
+            NativeTransportType transportType = buildTimeConfig.nativeTransportType();
             if (transportType != NativeTransportType.AUTO) {
                 io.vertx.core.transport.Transport requested = switch (transportType) {
                     case EPOLL -> Transport.EPOLL;
@@ -301,8 +310,8 @@ public class VertxCoreRecorder {
                 if (requested != null && requested.available()) {
                     bootstrap.transport(requested.implementation());
                 }
-            } else if (conf.preferNativeTransport()) {
-                // VertxBootstrap does not check VertxOptions.preferNativeTransport,
+            } else if (buildTimeConfig.nativeTransport() != NativeTransportMode.DISABLED) {
+                // VertxBootstrap does not check VertxOptions.setPreferNativeTransport,
                 // so we mirror what VertxBuilder does: auto-detect the best transport.
                 Transport nativeTransport = Transport.nativeTransport();
                 if (nativeTransport != null && nativeTransport.available()) {
@@ -326,7 +335,7 @@ public class VertxCoreRecorder {
 
         LateBoundMDCProvider.setMDCProviderDelegate(VertxMDC.INSTANCE);
 
-        return logVertxInitialization(vertx, conf);
+        return logVertxInitialization(vertx);
     }
 
     private static <T> List<T> instantiateServices(List<String> classNames, Class<T> serviceClass) {
@@ -380,29 +389,29 @@ public class VertxCoreRecorder {
     /**
      * Validate and Log native transport selection.
      * <p>
-     * The validation depends on the value of prefer-native-transport, native-transport-type and native-transport-required:
+     * The validation depends on the value of native-transport and native-transport-type:
      *
      * <ol>
-     * <li>If prefer-native-transport is set to false, it will use NIO.</li>
-     * <li>If prefer-native-transport is set to true, and native-transport-type is set to auto, it will pick the most
-     * appropriate one. If no native transport is found on the classpath, it will use NIO</li>
-     * <li>If prefer-native-transport is set to true and native-transport-type selects an explicit transport, it will use
+     * <li>If native-transport is set to disabled, it will use NIO.</li>
+     * <li>If native-transport is set to if-available (or a specific type is selected), and native-transport-type is set to
+     * auto, it will pick the most appropriate one. If no native transport is found on the classpath, it will use NIO</li>
+     * <li>If native-transport is set to required and native-transport-type selects an explicit transport, it will use
      * this transport. If not found, an exception is thrown.</li>
      * </ol>
      *
      * @param vertx the vert.x instance
-     * @param conf the configuration
      * @return the vert.x instance
      */
-    private static Vertx logVertxInitialization(Vertx vertx, VertxConfiguration conf) {
-        if (conf == null) {
+    private static Vertx logVertxInitialization(Vertx vertx) {
+        if (buildTimeConfig == null) {
             LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
             return vertx;
         }
 
-        NativeTransportType requestedType = conf.nativeTransportType();
-        boolean preferNative = conf.preferNativeTransport() || requestedType != NativeTransportType.AUTO;
-        boolean required = conf.nativeTransportRequired();
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        NativeTransportMode mode = buildTimeConfig.nativeTransport();
+        boolean preferNative = mode != NativeTransportMode.DISABLED || requestedType != NativeTransportType.AUTO;
+        boolean required = mode == NativeTransportMode.REQUIRED;
 
         if (!preferNative) {
             LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
@@ -600,7 +609,9 @@ public class VertxCoreRecorder {
 
         options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
-        boolean preferNative = conf.preferNativeTransport() || conf.nativeTransportType() != NativeTransportType.AUTO;
+        boolean preferNative = buildTimeConfig != null
+                && (buildTimeConfig.nativeTransport() != NativeTransportMode.DISABLED
+                        || buildTimeConfig.nativeTransportType() != NativeTransportType.AUTO);
         options.setPreferNativeTransport(preferNative);
 
         options.setDisableTCCL(true);

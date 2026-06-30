@@ -9,7 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 
 /**
- * Verifies that NIO is used when {@code prefer-native-transport=false}, even though native transport dependencies
+ * Verifies that NIO is used when {@code native-transport=disabled}, even though native transport dependencies
  * (epoll, kqueue) are on the classpath.
  */
 @QuarkusTest

@@ -53,10 +53,13 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
@@ -186,7 +189,7 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void detectNativeTransports(VertxCoreRecorder recorder) {
+    void detectNativeTransports(VertxBuildTimeConfig buildTimeConfig, VertxCoreRecorder recorder) {
         Set<String> detected = new HashSet<>();
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
@@ -199,11 +202,25 @@ class VertxCoreProcessor {
             detected.add(NativeTransportType.IO_URING.transportName);
         }
 
-        if (detected.isEmpty()) {
-            log.debug("No native transport dependency detected on the classpath. "
-                    + "If you set quarkus.vertx.prefer-native-transport=true, the application will fall back to NIO. "
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        NativeTransportMode mode = buildTimeConfig.nativeTransport();
+        boolean preferNative = mode != NativeTransportMode.DISABLED || requestedType != NativeTransportType.AUTO;
+
+        if (requestedType != NativeTransportType.AUTO && !detected.contains(requestedType.transportName)) {
+            String msg = String.format(
+                    "Native transport '%s' was requested (quarkus.vertx.native-transport-type=%s) "
+                            + "but its dependency is not on the classpath. "
+                            + "See the Native Transport Reference guide for the required dependency.",
+                    requestedType.transportName, requestedType.name().toLowerCase().replace('_', '-'));
+            if (mode == NativeTransportMode.REQUIRED) {
+                throw new ConfigurationException(msg);
+            }
+            log.warn(msg);
+        } else if (preferNative && detected.isEmpty()) {
+            log.warn("Native transport was requested but no native transport dependency was found on the classpath. "
+                    + "The application will fall back to Java NIO. "
                     + "See the Native Transport Reference guide for dependency information.");
-        } else {
+        } else if (!detected.isEmpty()) {
             log.debugf("Detected native transport(s) on classpath: %s", detected);
         }
 

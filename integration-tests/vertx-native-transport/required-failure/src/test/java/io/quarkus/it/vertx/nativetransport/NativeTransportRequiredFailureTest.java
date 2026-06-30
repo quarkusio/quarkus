@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusProdModeTest;
 
 /**
- * Verifies that the application fails to start when `native-transport-required=true` and the requested native
+ * Verifies that the application fails to start when {@code native-transport=required} and the requested native
  * transport is not available (no native transport dependency on the classpath).
  */
 class NativeTransportRequiredFailureTest {

@@ -19,7 +19,6 @@ import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
-import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -32,7 +31,7 @@ public class VertxCoreProducerTest {
 
     @BeforeEach
     public void setUp() {
-        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
+        recorder = new VertxCoreRecorder(null, new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
     }
 
     @AfterEach
@@ -322,20 +321,6 @@ public class VertxCoreProducerTest {
             };
         }
 
-        @Override
-        public boolean preferNativeTransport() {
-            return false;
-        }
-
-        @Override
-        public NativeTransportType nativeTransportType() {
-            return NativeTransportType.AUTO;
-        }
-
-        @Override
-        public boolean nativeTransportRequired() {
-            return false;
-        }
     }
 
     static class DefaultThreadPoolConfig implements ThreadPoolConfig {

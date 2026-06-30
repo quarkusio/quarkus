@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.slf4j.MDC;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;

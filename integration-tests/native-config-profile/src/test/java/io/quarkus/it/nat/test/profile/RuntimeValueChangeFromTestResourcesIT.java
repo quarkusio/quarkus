@@ -1,7 +1,5 @@
 package io.quarkus.it.nat.test.profile;
 
-import org.junit.jupiter.api.Test;
-
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**

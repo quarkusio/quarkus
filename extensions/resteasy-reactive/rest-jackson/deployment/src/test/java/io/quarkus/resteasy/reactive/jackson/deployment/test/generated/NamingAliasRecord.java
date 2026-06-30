@@ -7,6 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record NamingAliasRecord(
         String firstName,
-        @JsonAlias( {
-                "surname", "familyName" }) String lastName){
+        @JsonAlias({
+                "surname", "familyName" }) String lastName) {
 }

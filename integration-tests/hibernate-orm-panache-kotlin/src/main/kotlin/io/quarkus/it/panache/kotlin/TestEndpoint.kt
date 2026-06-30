@@ -1189,7 +1189,7 @@ class TestEndpoint {
                 io.quarkus.it.panache.kotlin.Person
             where
                 name = ?1
-        """
+            """
                 .trimIndent()
         val withoutSpace =
             Person.find(hqlWithoutSpace, "Mark").project(MyProjection::class.java).firstResult()
@@ -1205,7 +1205,7 @@ class TestEndpoint {
                 io.quarkus.it.panache.kotlin.Person
             where
                 name = ?1
-        """
+            """
                 .trimIndent()
         val withSpace =
             Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()

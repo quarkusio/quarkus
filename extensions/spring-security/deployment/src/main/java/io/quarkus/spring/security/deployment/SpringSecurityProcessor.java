@@ -1,7 +1,5 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
-
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;

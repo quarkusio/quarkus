@@ -1,6 +1,11 @@
 package io.quarkus.analytics;
 
 import static io.quarkus.analytics.config.ExtensionsFilter.onlyPublic;
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_DISTRIBUTION;
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_JAVA;
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_VERSION;
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRADLE_VERSION;
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.MAVEN_VERSION;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_APP;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_BUILD;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_CI;
@@ -23,11 +28,6 @@ import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_TIMEZONE;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_VENDOR;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.PROP_VERSION;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.VALUE_NULL_IP;
-import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_DISTRIBUTION;
-import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_JAVA;
-import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_VERSION;
-import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRADLE_VERSION;
-import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.MAVEN_VERSION;
 import static io.quarkus.analytics.rest.RestClient.DEFAULT_TIMEOUT;
 import static io.quarkus.analytics.util.StringUtils.hashSHA256;
 import static io.quarkus.maven.dependency.DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT;

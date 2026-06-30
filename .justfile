@@ -23,6 +23,10 @@ docs-preview:
 format:
     {{mvncmd}} process-sources -Denforcer.skip -Dprotoc.skip
 
+# clean spotless index caches
+clean-spotless-index:
+    find . -name "spotless-index" -path "*/.cache/*" -delete
+
 # run Quarkus CLI from locally built snapshot
 qss:
     java -jar ./devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar

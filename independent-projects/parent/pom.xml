@@ -54,6 +54,7 @@
         <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
         <maven.compiler.testTarget>${maven.compiler.target}</maven.compiler.testTarget>
         <maven.compiler.testSource>${maven.compiler.source}</maven.compiler.testSource>
+        <maven.compiler.testRelease>${maven.compiler.release}</maven.compiler.testRelease>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
 
         <!-- Cross plugins settings -->
@@ -69,8 +70,10 @@
         -->
         <maven.compiler.argument.target>${maven.compiler.target}</maven.compiler.argument.target>
         <maven.compiler.argument.source>${maven.compiler.source}</maven.compiler.argument.source>
+        <maven.compiler.argument.release>${maven.compiler.release}</maven.compiler.argument.release>
         <maven.compiler.argument.testTarget>${maven.compiler.testTarget}</maven.compiler.argument.testTarget>
         <maven.compiler.argument.testSource>${maven.compiler.testSource}</maven.compiler.argument.testSource>
+        <maven.compiler.argument.testRelease>${maven.compiler.testRelease}</maven.compiler.argument.testRelease>
 
         <!-- maven-enforcer-plugin -->
         <maven.min.version>3.9.6</maven.min.version>
@@ -182,8 +185,10 @@
                     <showWarnings>true</showWarnings>
                     <source>${maven.compiler.argument.source}</source>
                     <target>${maven.compiler.argument.target}</target>
+                    <release>${maven.compiler.argument.release}</release>
                     <testSource>${maven.compiler.argument.testSource}</testSource>
                     <testTarget>${maven.compiler.argument.testTarget}</testTarget>
+                    <testRelease>${maven.compiler.argument.testRelease}</testRelease>
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-Xlint:unchecked</arg>

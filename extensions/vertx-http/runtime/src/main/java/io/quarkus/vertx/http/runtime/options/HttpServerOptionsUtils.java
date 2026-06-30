@@ -111,8 +111,8 @@ public class HttpServerOptionsUtils {
         Optional<String> tlsConfigurationName = getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode);
         TlsConfiguration bucket = getTlsConfiguration(tlsConfigurationName, registry);
         if (bucket != null) {
-            ServerSSLOptions sslOptions = createSslOptionsFromTlsConfiguration(bucket);
-            sslOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
+            ClientAuth clientAuth = getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode);
+            ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
             applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
             return new ServerConfig(config, sslOptions);
         }
@@ -149,8 +149,8 @@ public class HttpServerOptionsUtils {
 
         TlsConfiguration bucket = getTlsConfiguration(managementConfig.tlsConfigurationName(), registry);
         if (bucket != null) {
-            ServerSSLOptions sslOptions = createSslOptionsFromTlsConfiguration(bucket);
-            sslOptions.setClientAuth(managementBuildTimeConfig.tlsClientAuth());
+            ClientAuth clientAuth = managementBuildTimeConfig.tlsClientAuth();
+            ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
             applyCommonOptionsForManagementInterface(config, managementBuildTimeConfig, managementConfig,
                     websocketSubProtocols);
             return new ServerConfig(config, sslOptions);
@@ -168,9 +168,9 @@ public class HttpServerOptionsUtils {
     }
 
     /**
-     * Create {@link ServerSSLOptions} from a Quarkus TLS registry configuration.
+     * Create {@link ServerSSLOptions} for a server from a TLS registry configuration and client authentication setting.
      */
-    public static ServerSSLOptions createSslOptionsFromTlsConfiguration(TlsConfiguration bucket) {
+    public static ServerSSLOptions createServerSslOptions(TlsConfiguration bucket, ClientAuth clientAuth) {
         ServerSSLOptions sslOptions = new ServerSSLOptions();
 
         KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
@@ -196,6 +196,8 @@ public class HttpServerOptionsUtils {
             sslOptions.setUseAlpn(false);
         }
         sslOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
+
+        sslOptions.setClientAuth(clientAuth);
 
         return sslOptions;
     }

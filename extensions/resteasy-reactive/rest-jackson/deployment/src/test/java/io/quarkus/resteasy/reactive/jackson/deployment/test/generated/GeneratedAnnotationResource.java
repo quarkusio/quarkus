@@ -435,6 +435,21 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- UnwrappedIgnorePropertiesBean: @JsonUnwrapped + @JsonIgnoreProperties ---
+
+    @GET
+    @Path("/unwrapped-ignore-props")
+    public UnwrappedIgnorePropertiesBean getUnwrappedIgnoreProps() {
+        UnwrappedIgnorePropertiesBean bean = new UnwrappedIgnorePropertiesBean();
+        bean.setId("u1");
+        UnwrappedIgnorePropertiesBean.User user = new UnwrappedIgnorePropertiesBean.User();
+        user.setName("Alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("secret123");
+        bean.setUser(user);
+        return bean;
+    }
+
     // --- SpecialCharPropertyBean: @JsonProperty with special characters (hyphens, dots) ---
 
     @GET

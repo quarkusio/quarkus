@@ -189,6 +189,22 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("address")));
     }
 
+    // --- @JsonUnwrapped + @JsonIgnoreProperties ---
+
+    @Test
+    public void testUnwrappedIgnoreProperties() {
+        RestAssured.get("/generated/unwrapped-ignore-props")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("id", Matchers.is("u1"))
+                .body("name", Matchers.is("Alice"))
+                .body("email", Matchers.is("alice@example.com"))
+                .body(not(containsString("password")))
+                .body(not(containsString("secret123")))
+                .body(not(containsString("user")));
+    }
+
     // --- @JsonAnySetter + @JsonIgnoreProperties + @JsonProperty ---
 
     @Test

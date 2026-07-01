@@ -317,14 +317,48 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         }
 
         List<FieldSpecs> allFieldSpecs = collectAllFieldSpecs(classInfo, namingStrategy);
+
+        boolean hasAutoDetectedGetters = false;
+        boolean hasAutoDetectedIsGetters = false;
+        for (FieldSpecs fieldSpecs : allFieldSpecs) {
+            if (fieldSpecs.isAutoDetectedGetter()) {
+                if (fieldSpecs.methodInfo.name().startsWith("is")) {
+                    hasAutoDetectedIsGetters = true;
+                } else {
+                    hasAutoDetectedGetters = true;
+                }
+            }
+        }
+
+        ResultHandle getterVisibleHandle = null;
+        if (hasAutoDetectedGetters) {
+            getterVisibleHandle = bytecode.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(JacksonMapperUtil.class, "isPublicGetterVisible",
+                            boolean.class, SerializerProvider.class),
+                    ctx.serializerProvider);
+        }
+        ResultHandle isGetterVisibleHandle = null;
+        if (hasAutoDetectedIsGetters) {
+            isGetterVisibleHandle = bytecode.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(JacksonMapperUtil.class, "isPublicIsGetterVisible",
+                            boolean.class, SerializerProvider.class),
+                    ctx.serializerProvider);
+        }
+
         for (FieldSpecs fieldSpecs : allFieldSpecs) {
             if (serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.isIgnoredField() || ignoredProperties.contains(fieldSpecs.jsonName)
                         || fieldSpecs.isBackReference() || isFieldTypeIgnored(fieldSpecs)) {
                     continue;
                 }
-                writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, bytecode, fieldSpecs, ctx), ctx,
-                        classInclude);
+                BytecodeCreator writeBranch = writeFieldBranch(classCreator, bytecode, fieldSpecs, ctx);
+                if (fieldSpecs.isAutoDetectedGetter()) {
+                    ResultHandle visibleHandle = fieldSpecs.methodInfo.name().startsWith("is")
+                            ? isGetterVisibleHandle
+                            : getterVisibleHandle;
+                    writeBranch = writeBranch.ifTrue(visibleHandle).trueBranch();
+                }
+                writeField(classInfo, fieldSpecs, writeBranch, ctx, classInclude);
             }
         }
 
@@ -334,15 +368,22 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private List<FieldSpecs> collectAllFieldSpecs(ClassInfo classInfo, PropertyNamingStrategy namingStrategy) {
         List<FieldSpecs> allSpecs = new ArrayList<>();
         MethodInfo constructor = findConstructor(classInfo).orElse(null);
+        Set<MethodInfo> boundMethods = new HashSet<>();
 
         for (FieldInfo fieldInfo : classFields(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, constructor, fieldInfo, namingStrategy);
             if (fieldSpecs != null) {
                 allSpecs.add(fieldSpecs);
+                if (fieldSpecs.methodInfo != null) {
+                    boundMethods.add(fieldSpecs.methodInfo);
+                }
             }
         }
 
         for (MethodInfo methodInfo : classMethods(classInfo)) {
+            if (boundMethods.contains(methodInfo)) {
+                continue;
+            }
             FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, namingStrategy);
             if (fieldSpecs != null) {
                 allSpecs.add(fieldSpecs);

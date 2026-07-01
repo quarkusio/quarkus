@@ -766,6 +766,32 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("normal_name", Matchers.is("hello"));
     }
 
+    // --- @JsonProperty renames field ---
+
+    @Test
+    public void testJsonPropertyRenameSerialization() {
+        RestAssured.get("/generated/json-property-rename")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Alice"))
+                .body(not(containsString("\"field\"")));
+    }
+
+    @Test
+    public void testJsonPropertyRenameRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"Bob\"}")
+                .when()
+                .post("/generated/json-property-rename")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bob"))
+                .body(not(containsString("\"field\"")));
+    }
+
     // --- @JsonRawValue ---
 
     @Test

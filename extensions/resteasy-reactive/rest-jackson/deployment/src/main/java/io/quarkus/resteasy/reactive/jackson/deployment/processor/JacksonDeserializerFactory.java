@@ -303,7 +303,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
-            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, deserData.namingStrategy);
+            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(deserData.classInfo, paramInfo, deserData.namingStrategy);
             deserData.constructorFields.add(fieldSpecs.jsonName);
             for (String alias : fieldSpecs.aliases) {
                 deserData.constructorFields.add(alias);
@@ -500,7 +500,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Set<String> names = new HashSet<>();
         if (constructor.parametersCount() > 0) {
             for (MethodParameterInfo paramInfo : constructor.parameters()) {
-                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, namingStrategy);
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, paramInfo, namingStrategy);
                 if (!fieldSpecs.hasExplicitJsonName) {
                     names.add(fieldSpecs.fieldName);
                 }
@@ -579,17 +579,25 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch) {
 
         AtomicBoolean valid = new AtomicBoolean(true);
+        Set<String> boundFieldNames = new HashSet<>();
 
         for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo,
+                    deserData.namingStrategy);
+            if (fieldSpecs != null) {
+                boundFieldNames.add(fieldSpecs.fieldName);
+            }
             deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch,
-                    fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo, deserData.namingStrategy),
-                    valid);
+                    deserializedFields, strSwitch, fieldSpecs, valid);
         }
 
         for (MethodInfo methodInfo : classMethods(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, deserData.namingStrategy);
+            if (fieldSpecs != null && boundFieldNames.contains(fieldSpecs.fieldName)) {
+                continue;
+            }
             deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo, deserData.namingStrategy), valid);
+                    deserializedFields, strSwitch, fieldSpecs, valid);
         }
 
         return valid.get();

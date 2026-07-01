@@ -9,13 +9,18 @@ import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.util.Comparator;
 
+import io.quarkus.runtime.annotations.LambdaDescriptor;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
- * This class is registering for lambda capturing
+ * Lambda serialization test using @RegisterForReflection with lambda descriptors.
+ * The lambda descriptor and capturing class are registered via generated metadata.
  */
-@RegisterForReflection(lambdaCapturingTypes = "java.util.Comparator", targets = {
-        SerializedLambda.class, SerializableDoubleFunction.class }, serialization = true)
+@RegisterForReflection(targets = { SerializedLambda.class,
+        SerializableDoubleFunction.class }, serialization = true, lambdaDescriptors = {
+                @LambdaDescriptor(declaringClass = Comparator.class, declaringMethod = "comparingDouble", parameterTypes = {
+                        java.util.function.ToDoubleFunction.class }, interfaces = { Comparator.class })
+        })
 public class ResourceLambda {
 
     public Class<?> getLambdaFuncClass(Integer n) throws IOException, ClassNotFoundException {

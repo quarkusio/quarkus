@@ -15,6 +15,7 @@ public class ErrorPropagationTest {
         Engine engine = Engine.builder()
                 .strictRendering(true)
                 .addSectionHelper("foo", new FooSectionHelper.FooSectionHelperFactory())
+                .addSectionHelper(new EvalSectionHelper.Factory())
                 .addDefaults()
                 .build();
 

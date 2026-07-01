@@ -9,7 +9,7 @@ public class EvalTest {
 
     @Test
     public void testEval() {
-        Engine engine = Engine.builder().addDefaults().build();
+        Engine engine = Engine.builder().addDefaults().addSectionHelper(new EvalSectionHelper.Factory()).build();
         assertEquals("Hello Foo!",
                 engine.parse("{#eval 'Hello Foo!' /}").render());
         assertEquals("Hello Foo!",
@@ -28,14 +28,16 @@ public class EvalTest {
     @Test
     public void testTemplateParamNotSet() {
         assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{#eval name='Foo' /}"))
+                .isThrownBy(() -> Engine.builder().addDefaults().addSectionHelper(new EvalSectionHelper.Factory()).build()
+                        .parse("{#eval name='Foo' /}"))
                 .withMessageContainingAll("Parser error", "mandatory section parameters not declared");
     }
 
     @Test
     public void testInvalidTemplateContents() {
         assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{#eval invalid /}").data("invalid", "{foo")
+                .isThrownBy(() -> Engine.builder().addDefaults().addSectionHelper(new EvalSectionHelper.Factory()).build()
+                        .parse("{#eval invalid /}").data("invalid", "{foo")
                         .render())
                 .withMessageContainingAll("Parser error in the evaluated template", "unterminated expression");
     }
@@ -44,6 +46,7 @@ public class EvalTest {
     public void testStrEvalNamespace() {
         Engine engine = Engine.builder()
                 .addDefaults()
+                .addSectionHelper(new EvalSectionHelper.Factory())
                 .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
                 .addNamespaceResolver(new StrEvalNamespaceResolver())
                 .build();

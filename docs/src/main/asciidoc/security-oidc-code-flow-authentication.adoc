@@ -252,6 +252,19 @@ quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
 The token's `sub` claim is verified to start with the `spiffe://` scheme.
 
+Alternatively, when the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present and no `token-path` is set, Quarkus fetches JWT-SVIDs directly from the local SPIRE Agent instead of reading them from disk.
+Tokens are cached and refreshed automatically before they expire.
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.jwt.source=spiffe-jwt
+----
+
+The JWT-SVID audience defaults to the `quarkus.oidc.auth-server-url` value.
+If the OIDC provider's issuer differs from `quarkus.oidc.auth-server-url`, set `quarkus.oidc.credentials.jwt.audience` explicitly.
+
 ==== Additional JWT authentication options
 
 If `client_secret_jwt`, `private_key_jwt`, or an Apple `post_jwt` authentication method is used, then you can customize the JWT signature algorithm, key identifier, audience, subject, and issuer.

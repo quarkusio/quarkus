@@ -91,5 +91,6 @@ public class KeycloakReflectionBuildStep {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.DerUtils"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.KeystoreUtil"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.CertificateUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.SecretGenerator"));
     }
 }

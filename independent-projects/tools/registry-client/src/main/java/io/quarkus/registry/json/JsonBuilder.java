@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -74,7 +75,7 @@ public interface JsonBuilder<T> {
         if (map == null || map.isEmpty()) {
             return Collections.emptyMap();
         }
-        return Map.copyOf(map);
+        return Collections.unmodifiableMap(new LinkedHashMap<>(map));
     }
 
     static <T> T buildIfBuilder(T o) {

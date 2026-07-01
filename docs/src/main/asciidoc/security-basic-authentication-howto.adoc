@@ -9,13 +9,17 @@ include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: security
 :topics: security,authentication,basic-authentication,http
-:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-security-jpa,io.quarkus:quarkus-security-jpa-reactive,io.quarkus:quarkus-elytron-security-properties-file,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap
 
-Enable xref:security-basic-authentication.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
+Enable Basic authentication to require a username and password before users can access your Quarkus application. Configure an identity provider to store and verify credentials, then activate the Basic authentication mechanism built into Quarkus HTTP.
+
+For more about the mechanism, see xref:security-basic-authentication.adoc[Basic authentication].
+For a production application, store credentials in a database through an identity provider.
+Configuring credentials in the `application.properties` file is not appropriate for production credentials; this approach is suitable for testing only. This how-to includes an optional embedded-realm example from the `elytron-security-properties-file` extension to demonstrate that approach.
 
 == Prerequisites
 
-* You have installed at least one extension that provides an `IdentityProvider` based on username and password.
+* You have installed at least one extension that provides an `IdentityProvider` to verify username and password credentials and map them to a `SecurityIdentity`.
 For example:
 
 ifndef::no-quarkus-security-jpa-reactive[]
@@ -27,8 +31,6 @@ endif::no-quarkus-security-jpa-reactive[]
 ** xref:security-properties.adoc[Elytron security properties file extension `(quarkus-elytron-security-properties-file)`]
 ** xref:security-jdbc.adoc[Elytron security JDBC extension `(quarkus-elytron-security-jdbc)`]
 
-The following procedure outlines how you can enable Basic authentication for your application by using the `elytron-security-properties-file` extension.
-
 == Procedure
 
 . In the `application.properties` file, set the `quarkus.http.auth.basic` property to `true`.
@@ -38,7 +40,11 @@ The following procedure outlines how you can enable Basic authentication for you
 quarkus.http.auth.basic=true
 ----
 
-. **Optional:** In a non-production environment only and purely for testing Quarkus Security in your applications:
+. Configure an identity provider to verify the username and password against your user store.
+For a production application, configure one of the identity provider extensions listed in the Prerequisites, for example, by storing users in a database with the Jakarta Persistence extension.
+For more information, see the xref:security-identity-providers.adoc[Identity providers] guide.
+
+. *For testing only:* In a non-production environment, you can use the embedded realm provided by the `quarkus-elytron-security-properties-file` extension instead of a production identity provider.
 .. To enable authentication for the embedded realm, set the `quarkus.security.users.embedded.enabled` property to `true`.
 +
 [source,properties]
@@ -46,7 +52,7 @@ quarkus.http.auth.basic=true
 quarkus.security.users.embedded.enabled=true
 ----
 
-.. You can also configure the required user credentials, user name, secret, and roles.
+.. You can also configure the required user credentials: user name, password, and roles.
 For example:
 +
 [source,properties]
@@ -54,27 +60,44 @@ For example:
 quarkus.http.auth.basic=true
 quarkus.security.users.embedded.enabled=true
 quarkus.security.users.embedded.plain-text=true
-quarkus.security.users.embedded.users.alice=alice <1>
-quarkus.security.users.embedded.users.bob=bob <2>
-quarkus.security.users.embedded.roles.alice=admin <1>
-quarkus.security.users.embedded.roles.bob=user <2>
+quarkus.security.users.embedded.users.alice=alice
+quarkus.security.users.embedded.users.bob=bob
+quarkus.security.users.embedded.roles.alice=admin
+quarkus.security.users.embedded.roles.bob=user
 ----
-<1> The user, `alice`, has `alice` as their password and `admin` as their role.
-<2> The user, `bob`, has `bob` as their password and `user` as their role.
+where:
+
+* The user, `alice`, has `alice` as their password and `admin` as their role.
+* The user, `bob`, has `bob` as their password and `user` as their role.
+
+== Verification
+
+. Start your application.
+
+. Send a request to a secured endpoint _without_ credentials and confirm that the application returns a `401 Unauthorized` response:
 +
-For information about other methods that you can use to configure the required user credentials, see the xref:security-testing.adoc#configuring-user-information[Configuring User Information] section of the Quarkus "Security Testing" guide.
+[source,shell]
+----
+$ curl -i -X GET http://localhost:8080/<your_secured_endpoint>
+
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Basic
+----
+
+. Send the same request _with_ a valid username and password and confirm that the application returns a `200 OK` response:
 +
-[IMPORTANT]
-====
-Configuring user names, secrets, and roles in the `application.properties` file is appropriate only for testing scenarios.
-For securing a production application, it is crucial to use a database to store this information.
-====
+[source,shell]
+----
+$ curl -i -X GET -u <username>:<password> http://localhost:8080/<your_secured_endpoint>
+
+HTTP/1.1 200 OK
+----
 
 == Next steps
 
 For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] guide.
 
-== References
+== Additional resources
 
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-identity-providers.adoc[Identity Providers]

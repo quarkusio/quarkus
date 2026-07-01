@@ -23,6 +23,10 @@ public final class ClassNames {
     public static final DotName TENANT_CONNECTION_RESOLVER = createConstant(
             "io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver");
     public static final DotName TENANT_RESOLVER = createConstant("io.quarkus.hibernate.orm.runtime.tenant.TenantResolver");
+    public static final DotName TYPED_TENANT_RESOLVER = createConstant(
+            "io.quarkus.hibernate.orm.runtime.tenant.TypedTenantResolver");
+    public static final DotName TENANT_RESOLVER_MARKER = createConstant(
+            "io.quarkus.hibernate.orm.runtime.tenant.TenantResolverMarker");
 
     public static final DotName STATIC_METAMODEL = createConstant("jakarta.persistence.metamodel.StaticMetamodel");
 

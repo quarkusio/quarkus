@@ -2,11 +2,12 @@ package io.quarkus.hibernate.orm.runtime.tenant;
 
 /**
  * Resolves tenant identifier dynamically so that the proper configuration can be used.
- *
- * @author Michael Schnell
+ * <p>
+ * Tenant identifiers are {@link String}-typed. To use a custom type for tenant identifiers,
+ * implement {@link TypedTenantResolver} directly instead.
  *
  */
-public interface TenantResolver {
+public interface TenantResolver extends TypedTenantResolver<String> {
 
     /**
      * Returns the identifier of the default tenant.

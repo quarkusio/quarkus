@@ -81,6 +81,7 @@ import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ReproducibilityCapableTestExtension;
 import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.common.process.ProcessBuilder;
@@ -96,7 +97,7 @@ import io.smallrye.common.process.ProcessUtil;
  */
 public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest<S>>
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
-        InvocationInterceptor, ParameterResolver {
+        InvocationInterceptor, ParameterResolver, ReproducibilityCapableTestExtension {
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";

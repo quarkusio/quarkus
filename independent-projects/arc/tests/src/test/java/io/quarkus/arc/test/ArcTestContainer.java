@@ -53,6 +53,7 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
+import io.quarkus.test.config.ReproducibilityCapableTestExtension;
 
 /**
  * Junit5 extension for Arc bootstrap/shutdown.
@@ -61,7 +62,7 @@ import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
  * It bootstraps Arc before each test method and shuts down afterwards.
  * Leverages root {@code ExtensionContext.Store} to store and retrieve some variables.
  */
-public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
+public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback, ReproducibilityCapableTestExtension {
 
     // our specific namespace for storing anything into ExtensionContext.Store
     private static ExtensionContext.Namespace EXTENSION_NAMESPACE = ExtensionContext.Namespace.create(ArcTestContainer.class);

@@ -14,6 +14,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devmcp.spi.DevMcpBuildTimeTool;
+import io.quarkus.devmcp.spi.DevMcpParam;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;
@@ -28,8 +30,6 @@ import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.deployment.extension.ExtensionGroup;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
-import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
-import io.quarkus.devui.spi.buildtime.DevMcpParam;
 import io.quarkus.devui.spi.page.Page;
 
 /**

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 
 /**
  * Contains info on the build time template used to build static content for Dev UI
@@ -15,7 +15,7 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
  * This allows extensions developers to add "static files" that they generate with Qute at build time.
  * From a runtime p.o.v this is file served from "disk"
  */
-public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
+public final class QuteTemplateBuildItem extends AbstractDevBuildItem {
     private final List<TemplateData> templateDatas;
 
     public QuteTemplateBuildItem() {

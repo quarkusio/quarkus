@@ -13,9 +13,9 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.devmcp.spi.DevMcpBuildTimeTool;
+import io.quarkus.devmcp.spi.DevMcpParam;
 import io.quarkus.devtools.utils.SkillComposer;
-import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
-import io.quarkus.devui.spi.buildtime.DevMcpParam;
 
 public class AggregateSkillsMojoTest {
 

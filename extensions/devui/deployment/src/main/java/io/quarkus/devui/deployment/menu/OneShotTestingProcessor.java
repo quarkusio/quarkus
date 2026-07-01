@@ -15,9 +15,9 @@ import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devmcp.spi.DevMcpBuildTimeTool;
+import io.quarkus.devmcp.spi.DevMcpParam;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
-import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
-import io.quarkus.devui.spi.buildtime.DevMcpParam;
 
 /**
  * Registers one-shot synchronous testing tools for AI coding agents.

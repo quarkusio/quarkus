@@ -388,9 +388,9 @@ public class AggregateSkillsMojo extends AbstractMojo {
     // ── Jandex scanning for @DevMcpBuildTimeTool annotations on deployment classes ──
 
     private static final DotName DEV_MCP_BUILD_TIME_TOOL = DotName
-            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool");
+            .createSimple("io.quarkus.devmcp.spi.DevMcpBuildTimeTool");
     private static final DotName DEV_MCP_BUILD_TIME_TOOLS = DotName
-            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTools");
+            .createSimple("io.quarkus.devmcp.spi.DevMcpBuildTimeTools");
 
     /**
      * Scans compiled deployment classes for {@code @DevMcpBuildTimeTool} annotations

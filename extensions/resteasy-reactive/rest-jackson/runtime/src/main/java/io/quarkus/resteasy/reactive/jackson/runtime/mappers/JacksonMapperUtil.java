@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -34,6 +35,25 @@ import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigE
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
+
+    private static final Method VISIBILITY_TEST_METHOD;
+    static {
+        try {
+            VISIBILITY_TEST_METHOD = Object.class.getMethod("getClass");
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean isPublicGetterVisible(SerializerProvider provider) {
+        return provider.getConfig().getDefaultVisibilityChecker()
+                .isGetterVisible(VISIBILITY_TEST_METHOD);
+    }
+
+    public static boolean isPublicIsGetterVisible(SerializerProvider provider) {
+        return provider.getConfig().getDefaultVisibilityChecker()
+                .isIsGetterVisible(VISIBILITY_TEST_METHOD);
+    }
 
     public static void serializeFormattedDate(Object value, String pattern, String timezone,
             JsonGenerator generator) throws IOException {

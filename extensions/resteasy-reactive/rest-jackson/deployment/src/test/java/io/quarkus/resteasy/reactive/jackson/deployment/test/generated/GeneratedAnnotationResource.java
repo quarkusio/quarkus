@@ -450,6 +450,21 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- TestWithJsonPropertyDto: @JsonProperty renames field ---
+
+    @GET
+    @Path("/json-property-rename")
+    public TestWithJsonPropertyDto getJsonPropertyRename() {
+        return new TestWithJsonPropertyDto("Alice");
+    }
+
+    @POST
+    @Path("/json-property-rename")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public TestWithJsonPropertyDto echoJsonPropertyRename(TestWithJsonPropertyDto dto) {
+        return dto;
+    }
+
     // --- SpecialCharPropertyBean: @JsonProperty with special characters (hyphens, dots) ---
 
     @GET

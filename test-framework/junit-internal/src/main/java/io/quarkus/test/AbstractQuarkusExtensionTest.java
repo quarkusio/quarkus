@@ -1229,6 +1229,32 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     }
 
     /**
+     * Resets mutable per-invocation state on this extension instance.
+     * <p>
+     * This method is intended for use with JUnit 5's {@link org.junit.jupiter.params.ParameterizedClass}:
+     * call it from a {@link org.junit.jupiter.params.BeforeParameterizedClassInvocation} method to clear
+     * configuration and log-record state left by the previous parameterization, so each invocation
+     * starts with a clean slate.
+     *
+     * @return {@code this}, for method chaining.
+     */
+    public S resetForParameterizedClass() {
+        this.customApplicationProperties = null;
+        this.customRuntimeApplicationProperties = null;
+        this.assertLogRecords = null;
+        this.inMemoryLogHandler = new InMemoryLogHandler(r -> false);
+        this.forcedDependencies = Collections.emptyList();
+        this.excludedDependencies = Collections.emptySet();
+        this.assertException = null;
+        this.beforeAllCustomizer = null;
+        this.afterAllCustomizer = null;
+        this.afterUndeployListener = null;
+        this.buildChainCustomizers = new ArrayList<>();
+        this.commandLineParameters = new String[0];
+        return (S) this;
+    }
+
+    /**
      * Controls bytecode-related debug dumping.
      * <p>
      * When enabled, each Quarkus startup will have configuration properties

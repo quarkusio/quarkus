@@ -54,6 +54,7 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     RawValueBean.class,
                                     PackageProtectedBean.class,
                                     SpecialCharPropertyBean.class,
+                                    TestWithJsonPropertyDto.class,
                                     UnwrappedIgnorePropertiesBean.class,
                                     UnwrappedIgnorePropertiesBean.User.class)
                             .addAsResource(new StringAsset(

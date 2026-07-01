@@ -51,6 +51,7 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     RawValueBean.class,
                                     PackageProtectedBean.class,
                                     SpecialCharPropertyBean.class,
+                                    TestWithJsonPropertyDto.class,
                                     UnwrappedIgnorePropertiesBean.class,
                                     UnwrappedIgnorePropertiesBean.User.class)
                             .addAsResource(new StringAsset(

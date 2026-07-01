@@ -724,17 +724,39 @@ public class JunitTestRunner {
             }
             var enclosing = enclosingClasses.get(testClass);
             if (enclosing != null) {
-                final String enclosingString = enclosing.toString();
-                if (quarkusTestClassesForFacadeClassLoader.contains(enclosingString)) {
-                    quarkusTestClassesForFacadeClassLoader.add(name);
+                // Walk up the enclosing class chain to handle multi-level @Nested classes
+                DotName ancestor = enclosing;
+                while (ancestor != null) {
+                    final String ancestorString = ancestor.toString();
+                    if (quarkusTestClassesForFacadeClassLoader.contains(ancestorString)) {
+                        quarkusTestClassesForFacadeClassLoader.add(name);
+                        break;
+                    }
+                    ClassInfo ancestorInfo = index.getClassByName(ancestor);
+                    if (ancestorInfo == null) {
+                        break;
+                    }
+                    ancestor = ancestorInfo.enclosingClass();
                 }
 
                 // No else here, this is an 'also do'
-                if (integrationTestClasses.contains(enclosingString)) {
-                    integrationTestClasses.add(name);
-                    continue;
-                } else if (quarkusTestClasses.contains(enclosingString)) {
-                    quarkusTestClasses.add(name);
+                ancestor = enclosing;
+                while (ancestor != null) {
+                    final String ancestorString = ancestor.toString();
+                    if (integrationTestClasses.contains(ancestorString)) {
+                        integrationTestClasses.add(name);
+                        break;
+                    } else if (quarkusTestClasses.contains(ancestorString)) {
+                        quarkusTestClasses.add(name);
+                        break;
+                    }
+                    ClassInfo ancestorInfo = index.getClassByName(ancestor);
+                    if (ancestorInfo == null) {
+                        break;
+                    }
+                    ancestor = ancestorInfo.enclosingClass();
+                }
+                if (integrationTestClasses.contains(name) || quarkusTestClasses.contains(name)) {
                     continue;
                 }
             }

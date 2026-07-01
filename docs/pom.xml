@@ -3471,6 +3471,46 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>check-categories</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.CheckCategories</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/src/main/asciidoc</argument>
+                                <argument>${project.basedir}/src/main/resources/categories.yaml</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>inject-categories</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.InjectCategories</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}/asciidoc/sources</argument>
+                                <argument>${project.basedir}/src/main/resources/categories.yaml</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>generate-quarkus-mvn-plugin-docs</id>
                         <phase>process-classes</phase>
                         <goals>

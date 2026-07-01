@@ -1,43 +1,41 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime.health;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.apache.http.util.EntityUtils;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
 
-import io.vertx.core.json.JsonObject;
+import io.quarkus.arc.All;
+import io.quarkus.arc.InstanceHandle;
 
 @Readiness
 @ApplicationScoped
 public class ElasticsearchHealthCheck implements HealthCheck {
     @Inject
-    RestClient restClient;
+    @All
+    List<InstanceHandle<ElasticsearchHealthCheckCondition>> conditionHandles;
 
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Elasticsearch cluster health check").up();
-        try {
-            Request request = new Request("GET", "/_cluster/health");
-            Response response = restClient.performRequest(request);
-            String responseBody = EntityUtils.toString(response.getEntity());
-            JsonObject json = new JsonObject(responseBody);
-            String status = json.getString("status");
-            if ("red".equals(status)) {
-                builder.down().withData("status", status);
-            } else {
-                builder.up().withData("status", status);
+        boolean isUp = true;
+        for (InstanceHandle<ElasticsearchHealthCheckCondition> handle : conditionHandles) {
+            if (!handle.getBean().isActive()) {
+                continue;
             }
-
-        } catch (Exception e) {
-            return builder.down().withData("reason", e.getMessage()).build();
+            ElasticsearchHealthCheckCondition.Status status = handle.get().check();
+            if (status.reason() != null || "red".equals(status.status())) {
+                isUp = false;
+            }
+            builder.withData("status(%s)".formatted(status.clientName()), status.status());
+            builder.withData("reason(%s)".formatted(status.clientName()), status.reason());
         }
+        builder.status(isUp);
         return builder.build();
     }
 }

@@ -44,7 +44,7 @@ public class HibernateSearchDevModeFailingSearchTest {
         config.modifyResourceFile(
                 "application.properties",
                 s -> APPLICATION_PROPERTIES.replace(
-                        "quarkus.hibernate-search-orm.elasticsearch.hosts=${elasticsearch.hosts:localhost:9200}",
+                        "#quarkus.hibernate-search-orm.elasticsearch.hosts=not-a-localhost:9211",
                         "quarkus.hibernate-search-orm.elasticsearch.hosts=not-a-localhost:9211"));
         RestAssured.when().put("/test/hibernate-search-outbox-polling/check-agents-running").then()
                 .statusCode(500);

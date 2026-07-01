@@ -14,10 +14,10 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devmcp.spi.DevMcpBuildTimeTool;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
-import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
 import io.quarkus.devui.spi.page.Page;
 
 /**

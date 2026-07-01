@@ -15,13 +15,13 @@ import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devmcp.spi.DevMcpBuildTimeTool;
 import io.quarkus.devui.runtime.logstream.LogStreamBroadcaster;
 import io.quarkus.devui.runtime.logstream.LogStreamJsonRPCService;
 import io.quarkus.devui.runtime.logstream.LogStreamRecorder;
 import io.quarkus.devui.runtime.logstream.MutinyLogHandler;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
-import io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool;
 import io.quarkus.runtime.RuntimeValue;
 
 /**

@@ -629,7 +629,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getPlatformInfo().configureFrom(classpath.getPlatformPropertiesConfiguration());
         task.getDeploymentClasspath().configureFrom(classpath.getDeploymentConfiguration());
         task.getCompileOnlyClasspath().configureFrom(classpath.getCompileOnlyWithoutResolvingDeployment());
-        task.getDeploymentResolvedWorkaround().from(classpath.getDeploymentConfiguration().getIncoming().getFiles());
+        task.dependsOn(classpath.getDeploymentConfiguration().getIncoming().getFiles().getBuildDependencies());
+        Path projectDir = project.getLayout().getProjectDirectory().getAsFile().toPath();
+        task.getDeploymentClasspathSnapshot().set(project.provider(() -> QuarkusApplicationModelTask
+                .deploymentClasspathSnapshot(classpath.getDeploymentConfiguration().getIncoming().getArtifacts(),
+                        projectDir)));
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
     }
 

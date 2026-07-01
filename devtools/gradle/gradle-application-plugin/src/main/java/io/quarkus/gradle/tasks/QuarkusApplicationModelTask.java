@@ -14,6 +14,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
+import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
@@ -47,12 +49,9 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
 import org.gradle.work.DisableCachingByDefault;
@@ -105,9 +104,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @CompileClasspath
     public abstract ConfigurableFileCollection getOriginalClasspath();
 
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public abstract ConfigurableFileCollection getDeploymentResolvedWorkaround();
+    @Input
+    public abstract ListProperty<String> getDeploymentClasspathSnapshot();
 
     @Nested
     public abstract QuarkusResolvedClasspath getPlatformConfiguration();
@@ -528,6 +526,41 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 .setCoords(artifactCoords)
                 .setResolvedPaths(PathList.of(file.toPath()))
                 .setFlags(allFlags);
+    }
+
+    public static List<String> deploymentClasspathSnapshot(ArtifactCollection artifactCollection, Path projectDir) {
+        return artifactCollection.getArtifacts().stream()
+                .map(artifact -> deploymentArtifactSnapshot(artifact, projectDir))
+                .sorted()
+                .collect(toList());
+    }
+
+    private static String deploymentArtifactSnapshot(ResolvedArtifactResult artifact, Path projectDir) {
+        var attributes = artifact.getVariant().getAttributes();
+        return artifact.getId().getDisplayName() + "|" + artifact.getId().getComponentIdentifier().getDisplayName() + "|"
+                + artifact.getFile().getName() + "|"
+                // Use lastModified and length to distinguish rebuilt artifacts with the same name,
+                // identifier, version, and selected variant.
+                // A content checksum would be more precise, but it would add file I/O while Gradle
+                // calculates task inputs before execution. This task is not cacheable, so the
+                // timestamp/size pair is the pragmatic local up-to-date check here.
+                + artifact.getFile().lastModified() + "|"
+                + artifact.getFile().length() + "|"
+                + projectArtifactPath(artifact, projectDir) + "|"
+                + attributes.keySet().stream()
+                        .sorted(Comparator.comparing(Attribute::getName))
+                        .map(attribute -> attribute.getName() + "=" + attributes.getAttribute(attribute))
+                        .collect(Collectors.joining(","));
+    }
+
+    private static String projectArtifactPath(ResolvedArtifactResult artifact, Path projectDir) {
+        if (!(artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier)) {
+            return "";
+        }
+        return projectDir.toAbsolutePath().normalize()
+                .relativize(artifact.getFile().toPath().toAbsolutePath().normalize())
+                .toString()
+                .replace(File.separatorChar, '/');
     }
 
     public static abstract class QuarkusPlatformInfo {

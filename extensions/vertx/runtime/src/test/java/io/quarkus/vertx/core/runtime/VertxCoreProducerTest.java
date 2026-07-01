@@ -31,7 +31,7 @@ public class VertxCoreProducerTest {
 
     @BeforeEach
     public void setUp() {
-        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
+        recorder = new VertxCoreRecorder(null, new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
     }
 
     @AfterEach
@@ -321,10 +321,6 @@ public class VertxCoreProducerTest {
             };
         }
 
-        @Override
-        public boolean preferNativeTransport() {
-            return false;
-        }
     }
 
     static class DefaultThreadPoolConfig implements ThreadPoolConfig {

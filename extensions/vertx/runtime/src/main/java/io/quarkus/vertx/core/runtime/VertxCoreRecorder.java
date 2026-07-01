@@ -37,6 +37,8 @@ import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
@@ -60,6 +62,7 @@ import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
 import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.VertxThreadFactory;
+import io.vertx.core.transport.Transport;
 
 @Recorder
 public class VertxCoreRecorder {
@@ -76,6 +79,21 @@ public class VertxCoreRecorder {
     static volatile VertxSupplier vertx;
 
     static volatile int blockingThreadPoolSize;
+
+    /**
+     * Store the set of native transports found in the classpath at build time.
+     * This is used to check if the required native transport (if any) is available.
+     */
+    static volatile Set<String> detectedNativeTransports = Set.of();
+
+    /**
+     * Sets the list of native transports found in the classpath at build time.
+     *
+     * @param transports the set of transport, empty if none.
+     */
+    public void setDetectedNativeTransports(Set<String> transports) {
+        detectedNativeTransports = transports;
+    }
 
     /**
      * This is a bit of a hack. In dev mode we undeploy all the verticles on restart, except
@@ -100,8 +118,15 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
-    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
+    /**
+     * We keep a static reference on the build time config as we need to pass it for the Vert.x creation after failures.
+     */
+    static VertxBuildTimeConfig buildTimeConfig;
+
+    public VertxCoreRecorder(VertxBuildTimeConfig btConfig, RuntimeValue<VertxConfiguration> vertxConfig,
+            RuntimeValue<ThreadPoolConfig> threadPoolConfig,
             RuntimeValue<ShutdownConfig> shutdownConfig) {
+        buildTimeConfig = btConfig;
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
@@ -272,6 +297,28 @@ public class VertxCoreRecorder {
             customizer.customize(bootstrap);
         }
 
+        if (buildTimeConfig != null) {
+            NativeTransportType transportType = buildTimeConfig.nativeTransportType();
+            if (transportType != NativeTransportType.AUTO) {
+                io.vertx.core.transport.Transport requested = switch (transportType) {
+                    case EPOLL -> Transport.EPOLL;
+                    case KQUEUE -> Transport.KQUEUE;
+                    case IO_URING -> Transport.IO_URING;
+                    default -> null;
+                };
+                if (requested != null && requested.available()) {
+                    bootstrap.transport(requested.implementation());
+                }
+            } else if (buildTimeConfig.preferNativeTransport()) {
+                // VertxBootstrap does not check VertxOptions.preferNativeTransport,
+                // so we mirror what VertxBuilder does: auto-detect the best transport.
+                Transport nativeTransport = Transport.nativeTransport();
+                if (nativeTransport != null && nativeTransport.available()) {
+                    bootstrap.transport(nativeTransport.implementation());
+                }
+            }
+        }
+
         vertx = bootstrap.init().vertx();
 
         for (VerticleFactory verticleFactory : verticleFactories) {
@@ -338,9 +385,148 @@ public class VertxCoreRecorder {
         return thread;
     }
 
+    /**
+     * Validate and Log native transport selection.
+     * <p>
+     * The validation depends on the value of prefer-native-transport, native-transport-type and native-transport-required:
+     *
+     * <ol>
+     * <li>If prefer-native-transport is set to false, it will use NIO.</li>
+     * <li>If prefer-native-transport is set to true, and native-transport-type is set to auto, it will pick the most
+     * appropriate one. If no native transport is found on the classpath, it will use NIO</li>
+     * <li>If prefer-native-transport is set to true and native-transport-type selects an explicit transport, it will use
+     * this transport. If not found, an exception is thrown.</li>
+     * </ol>
+     *
+     * @param vertx the vert.x instance
+     * @param conf the configuration
+     * @return the vert.x instance
+     */
     private static Vertx logVertxInitialization(Vertx vertx) {
-        LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+        if (buildTimeConfig == null) {
+            LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+            return vertx;
+        }
+
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        boolean preferNative = buildTimeConfig.preferNativeTransport() || requestedType != NativeTransportType.AUTO;
+        boolean required = buildTimeConfig.nativeTransportRequired();
+
+        if (!preferNative) {
+            LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+            return vertx;
+        }
+
+        if (vertx.isNativeTransportEnabled()) {
+            if (requestedType != NativeTransportType.AUTO) {
+                Transport requestedTransport = switch (requestedType) {
+                    case EPOLL -> Transport.EPOLL;
+                    case KQUEUE -> Transport.KQUEUE;
+                    case IO_URING -> Transport.IO_URING;
+                    default -> null;
+                };
+                if (requestedTransport != null && requestedTransport.available()) {
+                    LOGGER.infof("Native transport enabled: %s", requestedType.transportName);
+                } else if (requestedTransport != null) {
+                    // We have an explicit request for a given transport, but it's not available
+                    String activeTransport = detectActiveTransportName();
+                    String msg = String.format(
+                            "Requested native transport '%s' but '%s' was loaded instead.",
+                            requestedType.transportName, activeTransport);
+                    if (required) {
+                        throw new IllegalStateException(msg);
+                    }
+                    LOGGER.warnf(msg);
+                }
+            } else {
+                // auto
+                String activeTransport = detectActiveTransportName();
+                LOGGER.infof("Native transport enabled: %s", activeTransport);
+            }
+        } else {
+            Set<String> detected = detectedNativeTransports;
+            String msg;
+            if (detected.isEmpty()) {
+                msg = "Native transport was requested but no native transport dependency was found. "
+                        + "Add io.netty:netty-transport-native-epoll (Linux) or "
+                        + "io.netty:netty-transport-native-kqueue (macOS) to your project. "
+                        + "See the Native Transport Reference guide for details.";
+            } else {
+                Transport requestedTransport = null;
+                if (requestedType != NativeTransportType.AUTO) {
+                    requestedTransport = switch (requestedType) {
+                        case EPOLL -> Transport.EPOLL;
+                        case KQUEUE -> Transport.KQUEUE;
+                        case IO_URING -> Transport.IO_URING;
+                        default -> null;
+                    };
+                } else {
+                    if (detected.contains("epoll")) {
+                        requestedTransport = Transport.EPOLL;
+                    } else if (detected.contains("io_uring")) {
+                        requestedTransport = Transport.IO_URING;
+                    }
+                }
+
+                // Prefer the transport-specific cause (more precise), fall back to Vert.x-level cause
+                Throwable cause = null;
+                if (requestedTransport != null) {
+                    cause = requestedTransport.unavailabilityCause();
+                }
+                if (cause == null) {
+                    cause = vertx.unavailableNativeTransportCause();
+                }
+
+                if (cause != null) {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform. Cause: %s",
+                            detected, cause.getMessage());
+                } else {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform.",
+                            detected);
+                }
+
+                if (required) {
+                    if (requestedTransport != null && requestedTransport.unavailabilityCause() != null) {
+                        LOGGER.errorf("Unable to load native transport: " + requestedTransport.name(),
+                                requestedTransport.unavailabilityCause());
+                    }
+                    throw new IllegalStateException(msg, cause);
+                }
+            }
+            LOGGER.warn(msg);
+        }
+
         return vertx;
+    }
+
+    private static String detectActiveTransportName() {
+        try {
+            var epoll = Transport.EPOLL;
+            if (epoll != null && epoll.available()) {
+                return NativeTransportType.EPOLL.transportName;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            var kqueue = Transport.KQUEUE;
+            if (kqueue != null && kqueue.available()) {
+                return NativeTransportType.KQUEUE.transportName;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            var iouring = Transport.IO_URING;
+            if (iouring != null && iouring.available()) {
+                return NativeTransportType.IO_URING.transportName;
+            }
+        } catch (Throwable ignored) {
+            // Ignore the loading issue, it will be made available using `unavailableNativeTransportCause`
+        }
+        return "unknown";
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
@@ -422,7 +608,10 @@ public class VertxCoreRecorder {
 
         options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
-        options.setPreferNativeTransport(conf.preferNativeTransport());
+        boolean preferNative = buildTimeConfig != null
+                && (buildTimeConfig.preferNativeTransport()
+                        || buildTimeConfig.nativeTransportType() != NativeTransportType.AUTO);
+        options.setPreferNativeTransport(preferNative);
 
         options.setDisableTCCL(true);
         options.setUseDaemonThread(false);

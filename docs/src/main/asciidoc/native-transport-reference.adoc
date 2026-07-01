@@ -1,0 +1,478 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Native Transport Reference
+include::_attributes.adoc[]
+:categories: web
+:summary: Configure Netty native transports (epoll, kqueue, io_uring) for improved I/O performance.
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: native-transport,netty,epoll,kqueue,io-uring,vertx
+:extensions: io.quarkus:quarkus-vertx-http
+
+Quarkus supports Netty's native transports to improve I/O performance on specific platforms.
+This guide explains how to configure and use native transports in your Quarkus application.
+
+== What are native transports?
+
+By default, Quarkus uses Java NIO for network I/O, which works across all platforms but relies on the JVM's abstraction layer.
+Netty provides native transports that bypass this abstraction and directly use platform-specific system calls:
+
+* **epoll** — Linux-specific transport using the epoll API
+* **kqueue** — macOS/BSD transport using the kqueue API
+* **io_uring** — Linux-specific transport using the io_uring API
+
+Native transports can provide:
+
+* Lower latency for I/O operations
+* Reduced CPU overhead
+* Better scalability under high connection counts
+* Access to platform-specific socket options
+
+The performance benefit varies by workload.
+Applications with high I/O volume or many concurrent connections typically see the most improvement.
+
+== Supported transports
+
+[cols="1,1,2,2,1",stripes=even,options=header]
+|===
+|Transport
+|Platform
+|Dependency
+|Classifiers
+|Native executable
+
+|epoll
+|Linux
+|`io.netty:netty-transport-native-epoll`
+|`linux-x86_64`, `linux-aarch_64`
+|Supported
+
+|kqueue
+|macOS, BSD
+|`io.netty:netty-transport-native-kqueue`
+|`osx-x86_64`, `osx-aarch_64`
+|Not yet supported
+
+|io_uring
+|Linux 5.1+
+|`io.netty:netty-transport-native-io_uring`
+|`linux-x86_64`, `linux-aarch_64`
+|Supported
+
+|===
+
+== Quick start
+
+To use native transports, add the appropriate dependencies and enable native transport in your configuration.
+
+=== Add dependencies
+
+Add the native transport dependencies matching your deployment platform.
+You can include multiple transports to support different platforms from the same build.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<!-- Linux epoll (x86) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+
+<!-- Linux epoll (ARM) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <classifier>linux-aarch_64</classifier>
+</dependency>
+
+<!-- Linux io_uring (x86) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-io_uring</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+
+<!-- Linux io_uring (ARM) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-io_uring</artifactId>
+    <classifier>linux-aarch_64</classifier>
+</dependency>
+
+<!-- OSX KQueue (x86) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-kqueue</artifactId>
+    <classifier>osx-x86_64</classifier>
+</dependency>
+
+<!-- OSX KQueue (Apple Silicon) -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-kqueue</artifactId>
+    <classifier>osx-aarch_64</classifier>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Linux epoll
+implementation("io.netty:netty-transport-native-epoll::linux-x86_64")
+implementation("io.netty:netty-transport-native-epoll::linux-aarch_64")
+
+// Linux io_uring
+implementation("io.netty:netty-transport-native-io_uring::linux-x86_64")
+implementation("io.netty:netty-transport-native-io_uring::linux-aarch_64")
+
+// macOS kqueue
+implementation("io.netty:netty-transport-native-kqueue::osx-x86_64")
+implementation("io.netty:netty-transport-native-kqueue::osx-aarch_64")
+----
+
+NOTE: The version is managed by the Quarkus BOM, so you do not need to specify it explicitly.
+
+=== Enable native transport
+
+Add the following to your `application.properties`:
+
+[source,properties]
+----
+quarkus.vertx.prefer-native-transport=true
+----
+
+Or in `application.yml`:
+
+[source,yml]
+----
+quarkus:
+    vertx:
+        prefer-native-transport: true
+----
+
+=== Verify native transport is active
+
+When native transport is successfully loaded, you will see a log message at startup:
+
+[source]
+----
+[io.qua.ver.cor.run.VertxCoreRecorder] (main) Vertx has Native Transport Enabled: true
+----
+
+If native transport dependencies are missing, you will see:
+
+[source]
+----
+[io.qua.ver.cor.run.VertxCoreProcessor] (build) No native transport detected. Consider adding io.netty:netty-transport-native-epoll or io.netty:netty-transport-native-kqueue dependency.
+----
+
+== Configuration reference
+
+Quarkus provides three configuration properties to control native transport behavior.
+All three are **build-time properties** (fixed at build time), meaning they are resolved during the Quarkus augmentation phase.
+They can be set in `application.properties` and overridden using Quarkus profiles (e.g., `%dev`, `%prod`), but cannot be changed at runtime via environment variables.
+
+[cols="2,1,4",options=header]
+|===
+|Property
+|Default
+|Description
+
+|`quarkus.vertx.prefer-native-transport` icon:lock[title=Fixed at build time]
+|`false`
+|Enable native transport. When `true`, Vert.x will use a native transport if available. When `false`, Vert.x always uses Java NIO.
+
+|`quarkus.vertx.native-transport-type` icon:lock[title=Fixed at build time]
+|`auto`
+|Select a specific transport: `auto` (let Vert.x choose), `epoll`, `kqueue`, or `io-uring`. Setting this to a value other than `auto` implicitly enables native transport.
+
+|`quarkus.vertx.native-transport-required` icon:lock[title=Fixed at build time]
+|`false`
+|Enforce strict native transport loading. When `true` and the requested transport dependency is not on the classpath, the **build fails**. If the dependency is present but the native library cannot load at runtime (e.g., wrong platform), the application fails to start.
+
+|===
+
+=== Property relationships
+
+* Setting `prefer-native-transport=false` disables native transport entirely, regardless of other settings.
+* Setting `native-transport-type` to a specific value (e.g., `epoll`) implicitly enables native transport, even if `prefer-native-transport` is `false`.
+* `native-transport-required` only takes effect when native transport is requested.
+
+=== Example configurations
+
+.Use any available native transport
+[source,properties]
+----
+quarkus.vertx.prefer-native-transport=true
+----
+
+.Require epoll on Linux (fail if unavailable)
+[source,properties]
+----
+quarkus.vertx.native-transport-type=epoll
+quarkus.vertx.native-transport-required=true
+----
+
+.Prefer io_uring but fall back to NIO if unavailable
+[source,properties]
+----
+quarkus.vertx.native-transport-type=io-uring
+quarkus.vertx.native-transport-required=false
+----
+
+=== Profile-based configuration
+
+Since native transport properties are fixed at build time, you can use Quarkus profiles to configure different transports per environment.
+This is useful when developing on macOS and deploying on Linux:
+
+[source,properties]
+----
+# Dev mode: no native transport needed (works on macOS or Linux)
+%dev.quarkus.vertx.prefer-native-transport=false
+
+# Production: require io_uring on Linux
+%prod.quarkus.vertx.native-transport-type=io-uring
+%prod.quarkus.vertx.native-transport-required=true
+----
+
+The `%dev` profile applies during `quarkus dev`, while `%prod` applies when building production artifacts.
+This lets you develop locally without native transport dependencies and enforce them in production.
+
+== Build-time and runtime checks
+
+Quarkus performs two-stage validation of native transport configuration:
+
+=== Build-time validation
+
+During the build, Quarkus scans the classpath for native transport dependencies and validates them against the configuration:
+
+* If `native-transport-type` is set to a specific transport (e.g., `epoll`) but the corresponding dependency is missing:
+** When `native-transport-required=true`: the build **fails** with a `ConfigurationException`.
+** When `native-transport-required=false`: the build logs a warning and continues. The application will fall back to Java NIO at runtime.
+* If `prefer-native-transport=true` but no native transport dependency is found, the build logs a warning.
+
+=== Runtime behavior
+
+Even when a transport dependency is on the classpath, the native library may fail to load at runtime (e.g., running on a different platform, or the kernel does not support io_uring).
+Quarkus checks the actual transport status at startup:
+
+==== When `native-transport-required=false` (default)
+
+If the transport fails to load, Quarkus logs a warning and falls back to Java NIO.
+
+==== When `native-transport-required=true`
+
+If the transport fails to load, the application fails to start with an `IllegalStateException`.
+
+==== Transport type mismatch
+
+If you request a specific transport type (e.g., `epoll`) but a different transport loaded (e.g., `io_uring`), the application logs a warning or fails depending on the `native-transport-required` setting.
+
+== Platform-specific socket options
+
+Native transports provide access to platform-specific socket options not available with Java NIO.
+
+=== Linux (epoll and io_uring)
+
+==== SO_REUSEPORT
+
+Allows multiple sockets to bind to the same address and port.
+The kernel distributes incoming connections across the sockets, improving scalability.
+
+[source,properties]
+----
+quarkus.http.so-reuse-port=true
+----
+
+==== TCP_QUICKACK
+
+Disables delayed ACKs, reducing latency for request-response protocols.
+
+[source,properties]
+----
+quarkus.http.tcp-quick-ack=true
+----
+
+==== TCP_CORK
+
+Buffers small packets until the buffer is full or the cork is removed, reducing the number of packets sent.
+
+[source,properties]
+----
+quarkus.http.tcp-cork=true
+----
+
+==== TCP_FASTOPEN
+
+Enables TCP Fast Open, allowing data to be sent in the SYN packet during connection establishment.
+
+[source,properties]
+----
+quarkus.http.tcp-fast-open=true
+----
+
+==== TCP_USER_TIMEOUT
+
+Sets the maximum time (in milliseconds) that transmitted data may remain unacknowledged before the connection is forcibly closed.
+
+[source,properties]
+----
+quarkus.http.tcp-user-timeout=30000
+----
+
+=== OSX (kqueue)
+
+==== SO_REUSEPORT
+
+Same functionality as Linux (see above).
+
+[source,properties]
+----
+quarkus.http.so-reuse-port=true
+----
+
+== epoll vs io_uring
+
+Both epoll and io_uring are available on Linux. Which should you use?
+
+=== Use epoll if
+
+* You need a stable, battle-tested transport
+* Your application primarily handles network I/O
+* You are running on an older kernel (pre-5.1)
+* You need the widest compatibility
+
+=== Use io_uring if
+
+* You have a mixed workload with file and network I/O
+* You are running a modern kernel (5.6+)
+* You want to experiment with cutting-edge I/O performance
+* You can tolerate experimental features
+
+NOTE: https://sibexi.co/posts/epoll-vs-io_uring/[This article], from Nicolas J. Altmann, gives a gentle introduction to the differences between epoll and io_uring.
+
+=== Default behavior
+
+When both epoll and io_uring are available on the classpath, Quarkus prefers **epoll** in `auto` mode.
+This default prioritizes stability over experimental features.
+
+To explicitly select io_uring, set:
+
+[source,properties]
+----
+quarkus.vertx.native-transport-type=io-uring
+----
+
+== io_uring details
+
+io_uring is a modern Linux I/O interface that provides unified semantics for file and network I/O.
+
+=== Kernel requirements
+
+* **Minimum:** Linux kernel 5.1
+* **Recommended:** Linux kernel 5.6 or later
+
+Earlier kernels either do not support io_uring or have significant bugs and performance issues.
+
+=== Check your kernel version
+
+[source,shell]
+----
+uname -r
+----
+
+Example output:
+
+[source,shell]
+----
+6.5.0-28-generic
+----
+
+To verify io_uring support:
+
+[source,shell]
+----
+grep io_uring_setup /proc/kallsyms
+----
+
+If the command returns output, io_uring is available.
+
+=== Limitations
+
+* Domain sockets are not yet supported with io_uring
+* The Vert.x asynchronous file system API does not yet use io_uring
+
+== Native executable support
+
+Native transports can be used in Quarkus native executables on Linux.
+**epoll** and **io_uring** are supported in native mode.
+**kqueue** is not yet supported in native executables.
+
+When building a native executable with native transport dependencies on the classpath, the transport is available at runtime just as in JVM mode.
+No additional configuration is needed beyond the standard setup described in this guide.
+
+== Troubleshooting
+
+=== Wrong classifier
+
+If you see a warning about native transport being unavailable, verify that your dependency uses the correct classifier for your platform.
+
+Common classifiers:
+
+* Linux x86_64: `linux-x86_64`
+* Linux aarch64: `linux-aarch_64`
+* macOS x86_64: `osx-x86_64`
+* macOS aarch64: `osx-aarch_64`
+
+Example error:
+
+[source]
+----
+WARN [io.qua.ver.cor.run.VertxCoreRecorder] (main) Native transport was requested but is not available.
+----
+
+Solution: Add the dependency with the correct classifier:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+----
+
+=== Missing dependencies
+
+If native transport is not detected at build time, ensure you have added the dependency to your `pom.xml` or `build.gradle`.
+
+Enable debug logging to see more details:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.vertx.core.runtime".level=DEBUG
+----
+
+=== Kernel too old for io_uring
+
+If you request io_uring on a kernel older than 5.1, the transport will fail to load.
+
+Check your kernel version:
+
+[source,shell]
+----
+uname -r
+----
+
+If your kernel is too old, either:
+
+1. Upgrade your kernel to 5.6 or later
+2. Use `epoll` instead
+3. Set `native-transport-required=false` to fall back to NIO
+

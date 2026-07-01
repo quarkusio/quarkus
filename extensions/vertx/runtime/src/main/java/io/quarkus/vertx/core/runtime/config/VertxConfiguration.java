@@ -122,10 +122,4 @@ public interface VertxConfiguration {
     @WithDefault("1s")
     Duration blockedThreadCheckInterval();
 
-    /**
-     * Enable or disable native transport
-     */
-    @WithDefault("false")
-    boolean preferNativeTransport();
-
 }

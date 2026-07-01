@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.createServerSslOptions;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,7 +17,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.tls.CertificateUpdatedEvent;
 import io.quarkus.tls.TlsConfiguration;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.net.ServerSSLOptions;
 
 /**
  * A listener that listens for certificate updates and updates the HTTP server accordingly.
@@ -39,11 +43,12 @@ public class HttpCertificateUpdateEventListener {
         });
     }
 
-    public void register(HttpServer server, String tlsConfigurationName, String id) {
+    public void register(HttpServer server, String tlsConfigurationName, String id, ClientAuth clientAuth) {
         registrations.add(new CertificateUpdateRegistration(tlsConfigurationName) {
             @Override
             void notify(CertificateUpdatedEvent event, CountDownLatch latch) {
-                server.updateSSLOptions(event.tlsConfiguration().getServerSSLOptions())
+                ServerSSLOptions serverSSLOptions = createServerSslOptions(event.tlsConfiguration(), clientAuth);
+                server.updateSSLOptions(serverSSLOptions)
                         .toCompletionStage().whenComplete(new BiConsumer<Boolean, Throwable>() {
                             @Override
                             public void accept(Boolean v, Throwable t) {

@@ -15,7 +15,6 @@ import java.security.KeyStore;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -36,7 +35,6 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PfxOptions;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/55130") // TODO: enable when #55130 is fixed
 @Certificates(certificates = {
         @Certificate(subjectAlternativeNames = "DNS:localhost", client = true, aliases = {
                 @Alias(name = "proxy-a", cn = "proxy-a", client = true, password = PASSWORD),

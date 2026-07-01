@@ -110,7 +110,7 @@
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.54.0</artemis.version>
+        <artemis.version>2.55.0</artemis.version>
 
         <!-- Dev Services Images -->
         <!-- TODO switch to apache/activemq-artemis to match the artemis version-->

@@ -64,6 +64,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devservices-mariadb</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

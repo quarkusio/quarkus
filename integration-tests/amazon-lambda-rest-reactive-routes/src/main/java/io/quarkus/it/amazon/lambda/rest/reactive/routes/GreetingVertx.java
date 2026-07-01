@@ -16,7 +16,7 @@ public class GreetingVertx {
 
     @Route(path = "/vertx/hello", methods = POST)
     void helloPost(RoutingContext context) {
-        String name = context.getBodyAsString();
+        String name = context.body().asString();
         context.response().headers().set("Content-Type", "text/plain");
         context.response().setStatusCode(200).end("hello " + name);
     }
@@ -29,7 +29,7 @@ public class GreetingVertx {
 
     @Route(path = "/vertx/rx/hello", methods = POST)
     void rxHelloPost(RoutingContext context) {
-        String name = context.getBodyAsString();
+        String name = context.body().asString();
         context.response().headers().set("Content-Type", "text/plain");
         context.response().setStatusCode(200).end("hello " + name);
     }

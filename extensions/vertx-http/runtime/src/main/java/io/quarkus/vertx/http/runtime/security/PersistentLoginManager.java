@@ -155,7 +155,7 @@ public class PersistentLoginManager {
             if (cookieDomain != null) {
                 cookie.setDomain(cookieDomain);
             }
-            context.addCookie(cookie);
+            context.response().addCookie(cookie);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -31,7 +31,7 @@ public class NettyBinderProcessor {
     static final String NETTY_BYTE_BUF_ALLOCATOR_NAME = "io.netty.buffer.PooledByteBufAllocator";
     static final Class<?> NETTY_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(NETTY_BYTE_BUF_ALLOCATOR_NAME);
 
-    static final String VERTX_BYTE_BUF_ALLOCATOR_NAME = "io.vertx.core.buffer.impl.VertxByteBufAllocator";
+    static final String VERTX_BYTE_BUF_ALLOCATOR_NAME = "io.vertx.core.impl.buffer.VertxByteBufAllocator";
     static final Class<?> VERTX_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(VERTX_BYTE_BUF_ALLOCATOR_NAME);
 
     static final String REACTIVE_USAGE_NAME = "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload";

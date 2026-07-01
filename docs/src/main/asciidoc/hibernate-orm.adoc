@@ -85,16 +85,15 @@ then add the relevant configuration properties in `{config-file}`.
 ----
 quarkus.datasource.db-kind = postgresql <1>
 
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create <2>
-
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
 %prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
-<1> xref:datasource.adoc[Configure the datasource].
-<2> Drop and create the database at startup (use `update` to only update the schema).
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on <<dev-mode,convenient defaults in tests / dev mode>>.
 
-Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file.
+Note that configuration properties for the Hibernate ORM Quarkus extension are not the same ones as in your typical Hibernate ORM configuration file.
 They will often map to Hibernate ORM configuration properties but could have different names and don't necessarily map 1:1 to each other.
 
 Also, Quarkus will set many Hibernate ORM configuration settings automatically, and will often use more modern defaults.
@@ -326,7 +325,7 @@ For instance, the following snippet defines a default datasource and a default p
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+quarkus.hibernate-orm.schema-management.strategy=validate
 ----
 
 Using a map based approach, it is possible to define named persistence units:
@@ -339,20 +338,17 @@ quarkus.datasource."users".jdbc.url=jdbc:h2:mem:users;DB_CLOSE_DELAY=-1
 quarkus.datasource."inventory".db-kind=h2 <2>
 quarkus.datasource."inventory".jdbc.url=jdbc:h2:mem:inventory;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm."users".schema-management.strategy=drop-and-create <3>
-quarkus.hibernate-orm."users".datasource=users <4>
-quarkus.hibernate-orm."users".packages=org.acme.model.user <5>
+quarkus.hibernate-orm."users".datasource=users <3>
+quarkus.hibernate-orm."users".packages=org.acme.model.user <4>
 
-quarkus.hibernate-orm."inventory".schema-management.strategy=drop-and-create <6>
-quarkus.hibernate-orm."inventory".datasource=inventory
+quarkus.hibernate-orm."inventory".datasource=inventory <5>
 quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 ----
 <1> Define a datasource named `users`.
 <2> Define a datasource named `inventory`.
-<3> Define a persistence unit called `users`.
-<4> Define the datasource used by the persistence unit.
-<5> This configuration property is important, but we will discuss it a bit later.
-<6> Define a persistence unit called `inventory` pointing to the `inventory` datasource.
+<3> Define a persistence unit called `users` pointing to the `users` datasource.
+<4> This configuration property is important, but we will discuss it a bit later.
+<5> Define a persistence unit called `inventory` pointing to the `inventory` datasource.
 
 [NOTE]
 ====
@@ -383,10 +379,8 @@ Using the `packages` configuration property is simple:
 
 [source,properties]
 ----
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 quarkus.hibernate-orm.packages=org.acme.model.defaultpu
 
-quarkus.hibernate-orm."users".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."users".datasource=users
 quarkus.hibernate-orm."users".packages=org.acme.model.user
 ----
@@ -590,7 +584,6 @@ For example, with the following configuration:
 ----
 quarkus.hibernate-orm."pg".packages=org.acme.model.shared
 quarkus.hibernate-orm."pg".datasource=pg
-quarkus.hibernate-orm."pg".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."pg".active=false
 quarkus.datasource."pg".db-kind=h2
 quarkus.datasource."pg".active=false
@@ -598,7 +591,6 @@ quarkus.datasource."pg".active=false
 
 quarkus.hibernate-orm."oracle".packages=org.acme.model.shared
 quarkus.hibernate-orm."oracle".datasource=oracle
-quarkus.hibernate-orm."oracle".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."oracle".active=false
 quarkus.datasource."oracle".db-kind=oracle
 quarkus.datasource."oracle".active=false
@@ -754,11 +746,8 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
 
-            <!--
-                Optimistically create the tables;
-                will cause background errors being logged if they already exist,
-                but is practical to retain existing data across runs (or create as needed) -->
-            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <!-- Schema generation on startup -->
+            <property name="jakarta.persistence.schema-generation.database.action" value="create"/>
 
             <property name="jakarta.persistence.validation.mode" value="NONE"/>
         </properties>
@@ -806,25 +795,28 @@ This will allow Quarkus to index and enhance your entities as if they were insid
 [[dev-mode]]
 == Hibernate ORM in development mode
 
-Quarkus development mode is really useful for applications that mix front end or services and database access.
+During tests and in xref:dev-mode-differences.adoc[development mode], Hibernate ORM benefits from xref:datasource.adoc#dev-services[datasource Dev Services],
+making configuration of database connections unnecessary.
 
-There are a few common approaches to make the best of it.
+The main remaining question is how to initialize that database.
 
-The first choice is to use `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` in conjunction with `import.sql`.
-
+1. The first choice is to use `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` in conjunction with `import.sql`.
++
 That way for every change to your app and in particular to your entities, the database schema will be properly recreated
 and your data fixture (stored in `import.sql`) will be used to repopulate it from scratch.
++
 This is best to perfectly control your environment and works magic with Quarkus live reload mode:
 your entity changes or any change to your `import.sql` is immediately picked up and the schema updated without restarting the application!
-
+In fact, this is the default when using xref:dev-services.adoc[Dev Services].
++
 [TIP]
 ====
-By default, in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
-You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
+You can use a file with a different name than `import.sql` by setting the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
 You can also provide a `.zip` file in the same way which should contain only the files containing the SQL statements to be executed.
 ====
 
-The second approach is to use `quarkus.hibernate-orm.schema-management.strategy=update`.
+2. The second approach is to use `quarkus.hibernate-orm.schema-management.strategy=update`.
++
 This approach is best when you do many entity changes but
 still need to work on a copy of the production data
 or if you want to reproduce a bug that is based on specific database entries.
@@ -833,14 +825,15 @@ including altering your database structure which could lead to data loss.
 For example if you change structures which violate a foreign key constraint, Hibernate ORM might have to bail out.
 But for development, these limitations are acceptable.
 
-The third approach is to use `quarkus.hibernate-orm.schema-management.strategy=none`.
+3. The third approach is to use `quarkus.hibernate-orm.schema-management.strategy=none`.
++
 This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
 Or if you use a database schema migration tool like xref:flyway.adoc[Flyway] or xref:liquibase.adoc[Liquibase].
-
++
 With this approach when making changes to an entity, make sure to adapt the database schema accordingly;
 you could also use `validate` to have Hibernate verify the schema matches its expectations.
 
-WARNING: Do not use `quarkus.hibernate-orm.schema-management.strategy` `drop-and-create` and `update` in your production environment.
+WARNING: Do not set `quarkus.hibernate-orm.schema-management.strategy` to `drop-and-create` or `update` in your production environment.
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.

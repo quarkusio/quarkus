@@ -10,7 +10,7 @@ import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveListCommandsImpl<K, V> extends AbstractListCommands<K, V> implements ReactiveListCommands<K, V> {
 

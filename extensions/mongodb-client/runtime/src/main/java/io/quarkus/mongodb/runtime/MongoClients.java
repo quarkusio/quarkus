@@ -72,7 +72,8 @@ import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
+import io.vertx.core.internal.VertxInternal;
 
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
@@ -413,7 +414,7 @@ public class MongoClients {
     private void configureNettyTransport(MongoClientSettings.Builder settings) {
         var nettyStreaming = TransportSettings.nettyBuilder()
                 .allocator(VertxByteBufAllocator.POOLED_ALLOCATOR)
-                .eventLoopGroup(vertx.nettyEventLoopGroup())
+                .eventLoopGroup(((VertxInternal) vertx).nettyEventLoopGroup())
                 .socketChannelClass(NioSocketChannel.class).build();
         settings.transportSettings(nettyStreaming);
     }

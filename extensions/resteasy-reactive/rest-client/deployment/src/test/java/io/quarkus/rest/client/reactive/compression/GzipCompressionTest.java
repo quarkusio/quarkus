@@ -26,11 +26,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.rest.client.reactive.TestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.CompressionConfig;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
@@ -144,11 +145,14 @@ public class GzipCompressionTest {
      * header requests indicates the client supports such compression
      */
     @Singleton
-    public static class ServerOptionsCustomizer implements HttpServerOptionsCustomizer {
+    public static class ServerOptionsCustomizer implements HttpServerConfigCustomizer {
 
         @Override
-        public void customizeHttpServer(HttpServerOptions options) {
-            options.setCompressionSupported(true);
+        public void customizeHttpServer(HttpServerConfig config) {
+            CompressionConfig compression = new CompressionConfig();
+            compression.setCompressionEnabled(true);
+            compression.addGzip();
+            config.setCompressionConfig(compression);
         }
     }
 

@@ -13,8 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpVersion;
@@ -58,9 +56,9 @@ public class Http2TestCase {
                     .setUseAlpn(true)
                     .setProtocolVersion(HttpVersion.HTTP_2)
                     .setSsl(true)
-                    .setKeyStoreOptions(
+                    .setKeyCertOptions(
                             new JksOptions().setPath("src/test/resources/" + keystoreName).setPassword("password"))
-                    .setTrustStoreOptions(
+                    .setTrustOptions(
                             new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"));
 
             WebClient client = WebClient.create(vertx, options);
@@ -93,7 +91,7 @@ public class Http2TestCase {
         client
                 .get(port, "localhost", "/ping")
                 .virtualHost("server")
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         // Obtain response
                         HttpResponse<Buffer> response = ar.result();
@@ -111,12 +109,8 @@ public class Http2TestCase {
         public void register(@Observes Router router) {
             //ping only works on HTTP/2
             router.get("/ping").handler(rc -> {
-                rc.request().connection().ping(Buffer.buffer(PING_DATA), new Handler<AsyncResult<Buffer>>() {
-                    @Override
-                    public void handle(AsyncResult<Buffer> event) {
-                        rc.response().end(event.result());
-                    }
-                });
+                rc.request().connection().ping(Buffer.buffer(PING_DATA))
+                        .onComplete(event -> rc.response().end(event.result()));
             });
         }
 

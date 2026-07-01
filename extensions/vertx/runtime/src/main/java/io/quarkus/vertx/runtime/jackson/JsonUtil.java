@@ -90,7 +90,7 @@ public final class JsonUtil {
             val = val.toString();
         } else if (val instanceof Shareable) {
             // Shareable objects know how to copy themselves, this covers:
-            // JsonObject, JsonArray or any user defined type that can shared across the cluster
+            // JsonObject, JsonArray or any user defined Shareable type
             val = ((Shareable) val).copy();
         } else if (val instanceof Map) {
             val = (new JsonObject((Map) val)).copy();

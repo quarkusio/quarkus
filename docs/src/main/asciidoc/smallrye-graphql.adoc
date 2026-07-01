@@ -1299,6 +1299,92 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
 
 <1> The error code
 
+== JavaScript Client
+
+When `quarkus.smallrye-graphql.js-client.enabled` is set to `true`, the extension generates a JavaScript client library and a typed proxy module as web resources at build time. These can be imported via the standard https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap[import map] convention when using https://quarkus.io/guides/web-dependency-locator[Web Dependency Locator].
+
+=== Enabling the Client
+
+Add to `application.properties`:
+
+[source,properties]
+----
+quarkus.smallrye-graphql.js-client.enabled=true
+----
+
+This generates two resources:
+
+[cols="1,2"]
+|===
+| Resource | Purpose
+
+| `@quarkus/graphql`
+| Reusable `GraphQLClient` class with `query()`, `mutate()`, and `subscribe()` methods
+
+| `@quarkus/graphql-api`
+| Typed proxy with exports for each GraphQL query, mutation, and subscription
+|===
+
+=== Using the Typed Proxy
+
+The generated proxy exports `Queries`, `Mutations`, and `Subscriptions` objects, plus the underlying `client` instance:
+
+[source,javascript]
+----
+import { client, Queries, Mutations } from '@quarkus/graphql-api';
+
+// Call a query
+const data = await Queries.allBooks();
+
+// Call a query with variables
+const result = await Queries.book({ id: 42 });
+
+// Call a mutation
+const created = await Mutations.createBook({ title: 'Quarkus in Action' });
+----
+
+Each function accepts a `variables` object matching the GraphQL operation's arguments. The GraphQL query string, including the selection set, is generated automatically at build time.
+
+=== Subscriptions
+
+Subscription operations return a `Subscription` object:
+
+[source,javascript]
+----
+import { Subscriptions } from '@quarkus/graphql-api';
+
+const sub = Subscriptions.onBookCreated()
+    .onData(data => console.log('New book:', data))
+    .onError(err => console.error('Error:', err))
+    .onComplete(() => console.log('Stream completed'));
+
+// Cancel later
+await sub.cancel();
+----
+
+Subscriptions use the `graphql-transport-ws` WebSocket subprotocol.
+
+=== Using the Client Library Directly
+
+For more control, import the `GraphQLClient` class directly:
+
+[source,javascript]
+----
+import { GraphQLClient } from '@quarkus/graphql';
+
+const client = new GraphQLClient({ endpoint: '/graphql' });
+
+// Custom query
+const data = await client.query(`
+    query {
+        allBooks {
+            title
+            author { name }
+        }
+    }
+`);
+----
+
 == Conclusion
 
 SmallRye GraphQL enables clients to retrieve the exact data that is

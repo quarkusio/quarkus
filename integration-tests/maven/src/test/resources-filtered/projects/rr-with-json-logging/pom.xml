@@ -43,11 +43,6 @@
       <artifactId>quarkus-smallrye-context-propagation</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.smallrye.common</groupId>
-      <artifactId>smallrye-common-vertx-context</artifactId>
-      <version>1.13.2</version>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
     </dependency>

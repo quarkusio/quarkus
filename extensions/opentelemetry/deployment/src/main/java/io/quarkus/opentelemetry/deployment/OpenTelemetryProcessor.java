@@ -66,6 +66,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -184,7 +185,8 @@ public class OpenTelemetryProcessor {
             LaunchModeBuildItem launchMode,
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
-            BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
+            BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
         syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
@@ -223,6 +225,8 @@ public class OpenTelemetryProcessor {
 
         recorder.eagerlyCreateContextStorage();
         recorder.storeVertxOnContextStorage(vertx.getVertx());
+
+        serviceStart.produce(new ServiceStartBuildItem("OpenTelemetry"));
     }
 
     @BuildStep
@@ -366,7 +370,9 @@ public class OpenTelemetryProcessor {
                 || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
-        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable, redisClientAvailable);
+        boolean grpcAvailable = capabilities.isPresent(Capability.GRPC);
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable, redisClientAvailable,
+                grpcAvailable);
     }
 
     @BuildStep

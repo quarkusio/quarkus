@@ -114,9 +114,6 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean hasTestableMethod() {
-            if (configuration.server().ssl().certificate().isPresent() || configuration.server().ssl().keyStore().isPresent()) {
-                return false;
-            }
             Map<String, String> prototypes = DevConsoleManager.getGlobal("io.quarkus.grpc.messagePrototypes");
             for (ServerMethodDefinition<?, ?> method : getMethods()) {
                 if (method.getMethodDescriptor().getType() != MethodType.UNKNOWN
@@ -156,8 +153,7 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean isTestable() {
-            return configuration.server().ssl().certificate().isEmpty()
-                    && configuration.server().ssl().keyStore().isEmpty();
+            return true;
         }
 
         public String getPrototype() {

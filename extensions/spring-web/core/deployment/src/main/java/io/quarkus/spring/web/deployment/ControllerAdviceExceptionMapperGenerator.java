@@ -1,7 +1,7 @@
 package io.quarkus.spring.web.deployment;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,17 +20,21 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.spring.web.runtime.common.ResponseEntityConverter;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -38,6 +42,8 @@ import io.vertx.core.http.HttpServerResponse;
 class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
+
+    private static final ClassDesc CD_ANNOTATION_ARRAY = ClassDesc.of(Annotation.class.getName()).arrayType();
 
     // Preferred content types order for String or primitive type responses
     private static final List<String> TEXT_MEDIA_TYPES = Arrays.asList(
@@ -52,9 +58,9 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     private final List<Type> parameterTypes;
     private final String declaringClassName;
 
-    private final Map<Type, FieldDescriptor> parameterTypeToField = new HashMap<>();
+    private final Map<Type, FieldDesc> parameterTypeToField = new HashMap<>();
 
-    private FieldDescriptor httpHeadersField;
+    private FieldDesc httpHeadersField;
 
     private final boolean isResteasyClassic;
 
@@ -97,12 +103,14 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                 }
 
                 // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletRequest", HttpServletRequest.class)
-                        .setModifiers(Modifier.PRIVATE);
-                httpRequestFieldCreator.addAnnotation(Context.class);
+                FieldDesc httpRequestField = cc.field("httpServletRequest", fc -> {
+                    fc.setType(HttpServletRequest.class);
+                    fc.private_();
+                    fc.addAnnotation(Context.class);
+                });
 
                 // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
-                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
+                parameterTypeToField.put(parameterType, httpRequestField);
             } else if (typesUtil.isAssignable(HttpServletResponse.class, parameterTypeDotName)) {
                 if (parameterTypeToField.containsKey(parameterType)) {
                     throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
@@ -110,13 +118,15 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                             + controllerAdviceMethod.declaringClass().name());
                 }
 
-                // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletResponse", HttpServletResponse.class)
-                        .setModifiers(Modifier.PRIVATE);
-                httpRequestFieldCreator.addAnnotation(Context.class);
+                // we need to generate a field that injects the HttpServletResponse into the class
+                FieldDesc httpResponseField = cc.field("httpServletResponse", fc -> {
+                    fc.setType(HttpServletResponse.class);
+                    fc.private_();
+                    fc.addAnnotation(Context.class);
+                });
 
                 // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
-                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
+                parameterTypeToField.put(parameterType, httpResponseField);
             } else {
                 notAllowedParameterIndex = i;
             }
@@ -131,41 +141,43 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     }
 
     private void createHttpHeadersField(ClassCreator classCreator) {
-        FieldCreator httpHeadersFieldCreator = classCreator
-                .getFieldCreator("httpHeaders", HttpHeaders.class)
-                .setModifiers(Modifier.PRIVATE);
-        httpHeadersFieldCreator.addAnnotation(Context.class);
-        httpHeadersField = httpHeadersFieldCreator.getFieldDescriptor();
+        httpHeadersField = classCreator.field("httpHeaders", fc -> {
+            fc.setType(HttpHeaders.class);
+            fc.private_();
+            fc.addAnnotation(Context.class);
+        });
     }
 
     @Override
-    void generateMethodBody(MethodCreator toResponse) {
+    void generateMethodBody(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
         if (isVoidType(returnType)) {
-            generateVoidExceptionHandler(toResponse);
+            generateVoidExceptionHandler(bc, thisRef, exceptionParam);
         } else if (isEntityType(returnType)) {
-            generateResponseEntityExceptionHandler(toResponse);
+            generateResponseEntityExceptionHandler(bc, thisRef, exceptionParam);
         } else {
-            generateGenericResponseExceptionHandler(toResponse);
+            generateGenericResponseExceptionHandler(bc, thisRef, exceptionParam);
         }
     }
 
-    private void generateVoidExceptionHandler(MethodCreator methodCreator) {
-        invokeExceptionHandlerMethod(methodCreator);
+    private void generateVoidExceptionHandler(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
+        invokeExceptionHandlerMethod(bc, thisRef, exceptionParam);
         int status = getAnnotationStatusOrDefault(Response.Status.NO_CONTENT.getStatusCode());
-        ResultHandle result = new ResponseBuilder(methodCreator, status)
-                .withType(getResponseContentType(methodCreator, TEXT_MEDIA_TYPES))
+        Expr result = new ResponseBuilder(bc, status)
+                .withType(getResponseContentType(bc, thisRef, TEXT_MEDIA_TYPES))
                 .build();
-        methodCreator.returnValue(result);
+        bc.return_(result);
     }
 
-    private void generateResponseEntityExceptionHandler(MethodCreator methodCreator) {
-        ResultHandle result = methodCreator.invokeStaticMethod(
-                MethodDescriptor.ofMethod(ResponseEntityConverter.class.getName(), "toResponse",
-                        Response.class.getName(), RESPONSE_ENTITY.toString(), MediaType.class.getName()),
-                invokeExceptionHandlerMethod(methodCreator),
-                getResponseContentType(methodCreator, getSupportedMediaTypesForType(getResponseEntityType())));
+    private void generateResponseEntityExceptionHandler(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
+        Expr result = bc.invokeStatic(
+                ClassMethodDesc.of(ClassDesc.of(ResponseEntityConverter.class.getName()), "toResponse",
+                        ClassDesc.of(Response.class.getName()),
+                        ClassDesc.of(RESPONSE_ENTITY.toString()),
+                        ClassDesc.of(MediaType.class.getName())),
+                invokeExceptionHandlerMethod(bc, thisRef, exceptionParam),
+                getResponseContentType(bc, thisRef, getSupportedMediaTypesForType(getResponseEntityType())));
 
-        methodCreator.returnValue(result);
+        bc.return_(result);
     }
 
     private Type getResponseEntityType() {
@@ -175,14 +187,14 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         return returnType;
     }
 
-    private void generateGenericResponseExceptionHandler(MethodCreator methodCreator) {
+    private void generateGenericResponseExceptionHandler(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
         int status = getAnnotationStatusOrDefault(Response.Status.OK.getStatusCode());
-        ResultHandle result = new ResponseBuilder(methodCreator, status)
-                .withEntity(invokeExceptionHandlerMethod(methodCreator))
-                .withType(getResponseContentType(methodCreator, getSupportedMediaTypesForType(returnType)))
+        Expr result = new ResponseBuilder(bc, status)
+                .withEntity(invokeExceptionHandlerMethod(bc, thisRef, exceptionParam))
+                .withType(getResponseContentType(bc, thisRef, getSupportedMediaTypesForType(returnType)))
                 .build();
 
-        methodCreator.returnValue(result);
+        bc.return_(result);
     }
 
     private List<String> getSupportedMediaTypesForType(Type type) {
@@ -193,75 +205,82 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         return OBJECT_MEDIA_TYPES;
     }
 
-    private ResultHandle getResponseContentType(MethodCreator methodCreator, List<String> supportedMediaTypeStrings) {
-        ResultHandle[] supportedMediaTypes = supportedMediaTypeStrings.stream()
-                .map(methodCreator::load)
-                .toArray(ResultHandle[]::new);
+    private Expr getResponseContentType(BlockCreator bc, Expr thisRef, List<String> supportedMediaTypeStrings) {
+        Expr[] supportedMediaTypes = supportedMediaTypeStrings.stream()
+                .map(Const::of)
+                .toArray(Expr[]::new);
 
         String responseContentTypeResolverClassName = isResteasyClassic
                 ? "io.quarkus.spring.web.resteasy.classic.runtime.ResteasyClassicResponseContentTypeResolver"
                 : "io.quarkus.spring.web.resteasy.reactive.runtime.ResteasyReactiveResponseContentTypeResolver";
-        ResultHandle contentTypeResolver = methodCreator
-                .newInstance(MethodDescriptor.ofConstructor(responseContentTypeResolverClassName));
+        ClassDesc resolverClassDesc = ClassDesc.of(responseContentTypeResolverClassName);
+        LocalVar contentTypeResolver = bc.localVar("contentTypeResolver",
+                bc.new_(ConstructorDesc.of(resolverClassDesc)));
+
+        ClassMethodDesc resolveMethod = ClassMethodDesc.of(resolverClassDesc, "resolve",
+                MediaType.class, HttpHeaders.class, String[].class);
 
         if (isResteasyClassic) {
-            return methodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
-                            HttpHeaders.class, String[].class),
+            return bc.invokeVirtual(
+                    resolveMethod,
                     contentTypeResolver,
-                    methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
-                    methodCreator.marshalAsArray(String.class, supportedMediaTypes));
+                    bc.get(thisRef.field(httpHeadersField)),
+                    bc.newArray(String.class, supportedMediaTypes));
         }
-        return methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
-                        HttpHeaders.class, String[].class),
+        return bc.invokeVirtual(
+                resolveMethod,
                 contentTypeResolver,
-                getBeanFromArc(methodCreator, HttpHeaders.class.getName()),
-                methodCreator.marshalAsArray(String.class, supportedMediaTypes));
+                getBeanFromArc(bc, HttpHeaders.class.getName()),
+                bc.newArray(String.class, supportedMediaTypes));
     }
 
-    private ResultHandle invokeExceptionHandlerMethod(MethodCreator toResponse) {
+    private Expr invokeExceptionHandlerMethod(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
         String returnTypeClassName = isVoidType(returnType) ? void.class.getName() : returnType.name().toString();
+        ClassDesc returnTypeClassDesc = isVoidType(returnType)
+                ? ClassDesc.ofDescriptor("V")
+                : ClassDesc.of(returnTypeClassName);
+        ClassDesc declaringClassDesc = ClassDesc.of(declaringClassName);
 
         if (parameterTypes.isEmpty()) {
-            return toResponse.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(), returnTypeClassName),
-                    controllerAdviceInstance(toResponse));
+            return bc.invokeVirtual(
+                    ClassMethodDesc.of(declaringClassDesc, controllerAdviceMethod.name(), returnTypeClassDesc),
+                    controllerAdviceInstance(bc));
         }
 
-        String[] parameterTypesStr = new String[parameterTypes.size()];
-        ResultHandle[] parameterTypeHandles = new ResultHandle[parameterTypes.size()];
+        ClassDesc[] parameterTypeClassDescs = new ClassDesc[parameterTypes.size()];
+        LocalVar[] parameterTypeHandles = new LocalVar[parameterTypes.size()];
         if (isResteasyClassic) {
             for (int i = 0; i < parameterTypes.size(); i++) {
                 Type parameterType = parameterTypes.get(i);
-                parameterTypesStr[i] = parameterType.name().toString();
+                parameterTypeClassDescs[i] = Jandex2Gizmo.classDescOf(parameterType);
                 if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
-                    parameterTypeHandles[i] = toResponse.getMethodParam(i);
+                    parameterTypeHandles[i] = bc.localVar("param" + i, exceptionParam);
                 } else {
-                    parameterTypeHandles[i] = toResponse.readInstanceField(parameterTypeToField.get(parameterType),
-                            toResponse.getThis());
+                    parameterTypeHandles[i] = bc.localVar("param" + i,
+                            bc.get(thisRef.field(parameterTypeToField.get(parameterType))));
                 }
             }
         } else {
             for (int i = 0; i < parameterTypes.size(); i++) {
                 Type parameterType = parameterTypes.get(i);
-                parameterTypesStr[i] = parameterType.name().toString();
+                parameterTypeClassDescs[i] = Jandex2Gizmo.classDescOf(parameterType);
                 if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
-                    parameterTypeHandles[i] = toResponse.getMethodParam(i);
+                    parameterTypeHandles[i] = bc.localVar("param" + i, exceptionParam);
                 } else if (typesUtil.isAssignable(UriInfo.class, parameterType.name())) {
-                    parameterTypeHandles[i] = getBeanFromArc(toResponse, UriInfo.class.getName());
+                    parameterTypeHandles[i] = bc.localVar("param" + i, getBeanFromArc(bc, UriInfo.class.getName()));
                 } else if (typesUtil.isAssignable(Request.class, parameterType.name())) {
-                    parameterTypeHandles[i] = getBeanFromArc(toResponse, Request.class.getName());
+                    parameterTypeHandles[i] = bc.localVar("param" + i, getBeanFromArc(bc, Request.class.getName()));
                 } else if (typesUtil.isAssignable(HttpServerRequest.class, parameterType.name())) {
-                    parameterTypeHandles[i] = getBeanFromArc(toResponse, HttpServerRequest.class.getName());
+                    parameterTypeHandles[i] = bc.localVar("param" + i,
+                            getBeanFromArc(bc, HttpServerRequest.class.getName()));
                 } else if (typesUtil.isAssignable(HttpServerResponse.class, parameterType.name())) {
-                    ResultHandle requestHandle = getBeanFromArc(toResponse, HttpServerRequest.class.getName());
-                    ResultHandle responseHandle = toResponse.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(HttpServerRequest.class,
+                    LocalVar requestHandle = bc.localVar("request",
+                            getBeanFromArc(bc, HttpServerRequest.class.getName()));
+                    parameterTypeHandles[i] = bc.localVar("param" + i, bc.invokeInterface(
+                            MethodDesc.of(HttpServerRequest.class,
                                     "response",
                                     HttpServerResponse.class),
-                            requestHandle);
-                    parameterTypeHandles[i] = responseHandle;
+                            requestHandle));
                 } else {
                     throw new IllegalArgumentException(
                             "Parameter type '" + parameterType.name() + "' is not supported for method '"
@@ -272,41 +291,41 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
             }
         }
 
-        return toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(), returnTypeClassName,
-                        parameterTypesStr),
-                controllerAdviceInstance(toResponse), parameterTypeHandles);
+        return bc.invokeVirtual(
+                ClassMethodDesc.of(declaringClassDesc, controllerAdviceMethod.name(), returnTypeClassDesc,
+                        parameterTypeClassDescs),
+                controllerAdviceInstance(bc), parameterTypeHandles);
     }
 
-    private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {
+    private LocalVar controllerAdviceInstance(BlockCreator bc) {
+        ClassDesc declaringClassDesc = ClassDesc.of(declaringClassName);
         if (isResteasyClassic) {
-            ResultHandle controllerAdviceClass = toResponse.loadClassFromTCCL(declaringClassName);
-
-            ResultHandle container = toResponse
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-            ResultHandle instance = toResponse.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+            LocalVar controllerAdviceClass = bc.localVar("controllerAdviceClass",
+                    bc.classForName(Const.of(declaringClassName)));
+            LocalVar container = bc.localVar("container",
+                    bc.invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+            LocalVar instance = bc.localVar("instance", bc.invokeInterface(
+                    MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                             Annotation[].class),
-                    container, controllerAdviceClass, toResponse.loadNull());
-            ResultHandle bean = toResponse.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                    container, controllerAdviceClass, Const.ofNull(CD_ANNOTATION_ARRAY)));
+            Expr bean = bc.invokeInterface(
+                    MethodDesc.of(InstanceHandle.class, "get", Object.class),
                     instance);
-            return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
+            return bc.localVar("controllerAdvice", bc.cast(bean, declaringClassDesc));
         } else {
-            return toResponse.checkCast(getBeanFromArc(toResponse, declaringClassName),
-                    controllerAdviceMethod.declaringClass().name().toString());
+            return bc.localVar("controllerAdvice", bc.cast(getBeanFromArc(bc, declaringClassName), declaringClassDesc));
         }
     }
 
-    private ResultHandle getBeanFromArc(MethodCreator methodCreator, String beanClassName) {
-        ResultHandle container = methodCreator
-                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instance = methodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+    private Expr getBeanFromArc(BlockCreator bc, String beanClassName) {
+        LocalVar container = bc.localVar("container",
+                bc.invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+        LocalVar instance = bc.localVar("instance", bc.invokeInterface(
+                MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                container, methodCreator.loadClassFromTCCL(beanClassName), methodCreator.loadNull());
-        return methodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                container, bc.classForName(Const.of(beanClassName)), Const.ofNull(CD_ANNOTATION_ARRAY)));
+        return bc.invokeInterface(
+                MethodDesc.of(InstanceHandle.class, "get", Object.class),
                 instance);
     }
 

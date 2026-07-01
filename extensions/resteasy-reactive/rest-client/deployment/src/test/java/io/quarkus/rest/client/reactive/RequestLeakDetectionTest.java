@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ResponseBody;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -90,18 +91,18 @@ public class RequestLeakDetectionTest {
         @Path("/reactive-server-and-client/{val}")
         public Uni<Foo> reactiveServerAndClient(int val) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            Vertx.currentContext().putLocal("count", val);
+            ContextLocals.put("count", val);
             bean.setValue(val);
 
             return Uni.createFrom().<Integer> emitter(e -> {
                 barrier.enqueue(Vertx.currentContext(), () -> {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
                     Assertions.assertEquals(bean.getValue(), val);
-                    int rBefore = Vertx.currentContext().getLocal("count");
+                    int rBefore = ContextLocals.<Integer> get("count").orElse(0);
                     client.invokeReactive(Integer.toString(val))
                             .invoke(s -> {
                                 Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                                int rAfter = Vertx.currentContext().getLocal("count");
+                                int rAfter = ContextLocals.<Integer> get("count").orElse(0);
                                 Assertions.assertEquals(s, "hello " + rAfter);
                                 Assertions.assertEquals(rBefore, rAfter);
                                 Assertions.assertEquals(rAfter, val);
@@ -118,18 +119,18 @@ public class RequestLeakDetectionTest {
         @Path("/blocking-server-and-reactive-client/{val}")
         public Foo blockingServerWithReactiveClient(int val) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            Vertx.currentContext().putLocal("count", val);
+            ContextLocals.put("count", val);
             bean.setValue(val);
 
             return Uni.createFrom().<Integer> emitter(e -> {
                 barrier.enqueue(Vertx.currentContext(), () -> {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int rBefore = Vertx.currentContext().getLocal("count");
+                    int rBefore = ContextLocals.<Integer> get("count").orElse(0);
                     Assertions.assertEquals(bean.getValue(), val);
                     client.invokeReactive(Integer.toString(val))
                             .invoke(s -> {
                                 Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                                int rAfter = Vertx.currentContext().getLocal("count");
+                                int rAfter = ContextLocals.<Integer> get("count").orElse(0);
                                 Assertions.assertEquals(s, "hello " + rAfter);
                                 Assertions.assertEquals(rBefore, rAfter);
                                 Assertions.assertEquals(rAfter, val);
@@ -147,17 +148,17 @@ public class RequestLeakDetectionTest {
         @Path("/blocking-server-and-client/{val}")
         public Foo blockingServerAndBlockingClient(int val) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            Vertx.currentContext().putLocal("count", val);
+            ContextLocals.put("count", val);
             bean.setValue(val);
 
             return Uni.createFrom().<Integer> emitter(e -> {
                 barrier.enqueue(Vertx.currentContext(), () -> {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int rBefore = Vertx.currentContext().getLocal("count");
+                    int rBefore = ContextLocals.<Integer> get("count").orElse(0);
                     Assertions.assertEquals(bean.getValue(), val);
                     String s = client.invokeBlocking(Integer.toString(val));
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int rAfter = Vertx.currentContext().getLocal("count");
+                    int rAfter = ContextLocals.<Integer> get("count").orElse(0);
                     Assertions.assertEquals(s, "hello " + rAfter);
                     Assertions.assertEquals(rBefore, rAfter);
                     Assertions.assertEquals(rAfter, val);
@@ -175,17 +176,17 @@ public class RequestLeakDetectionTest {
         @Path("/reactive-server-and-blocking-client/{val}")
         public Uni<Foo> reactiveServerWithBlockingClient(int val) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            Vertx.currentContext().putLocal("count", val);
+            ContextLocals.put("count", val);
             bean.setValue(val);
 
             return Uni.createFrom().<Integer> emitter(e -> {
                 barrier.enqueue(Vertx.currentContext(), () -> {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int rBefore = Vertx.currentContext().getLocal("count");
+                    int rBefore = ContextLocals.<Integer> get("count").orElse(0);
                     Assertions.assertEquals(bean.getValue(), val);
                     String s = client.invokeBlocking(Integer.toString(val));
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int rAfter = Vertx.currentContext().getLocal("count");
+                    int rAfter = ContextLocals.<Integer> get("count").orElse(0);
                     Assertions.assertEquals(s, "hello " + rAfter);
                     Assertions.assertEquals(rBefore, rAfter);
                     Assertions.assertEquals(rAfter, val);

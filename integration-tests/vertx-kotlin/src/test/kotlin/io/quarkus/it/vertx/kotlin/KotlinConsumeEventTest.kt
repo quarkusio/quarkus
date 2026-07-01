@@ -50,13 +50,4 @@ class KotlinConsumeEventTest {
         MessageConsumers.latch.await(2, TimeUnit.SECONDS)
         assertEquals("test header - payload", MessageConsumers.message)
     }
-
-    @Test
-    fun mutinyHeadersPayload() {
-        val options = DeliveryOptions().addHeader("header", "test mutiny header")
-        bus.send("mutiny-headers-payload", "payload", options)
-
-        MessageConsumers.latch.await(2, TimeUnit.SECONDS)
-        assertEquals("test mutiny header - payload", MessageConsumers.message)
-    }
 }

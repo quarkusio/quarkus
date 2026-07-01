@@ -3,7 +3,6 @@ package io.quarkus.vertx.deployment;
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
-import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE_HEADERS;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessage;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
@@ -85,6 +84,7 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.spi.VertxServiceProvider;
 
 class VertxProcessor {
 
@@ -223,9 +223,6 @@ class VertxProcessor {
                     } else if (parametersCount == 1) {
                         // parameter is payload
                         builder.withArgumentTransformer(0, io.vertx.core.eventbus.Message.class, "body");
-                    } else if (parametersCount == 2 && method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
-                        // if the method expects Mutiny MultiMap, wrap the Vert.x MultiMap
-                        builder.withArgumentTransformer(0, io.vertx.mutiny.core.MultiMap.class, "newInstance");
                     }
 
                     if (method.returnType().name().equals(UNI)) {
@@ -286,7 +283,7 @@ class VertxProcessor {
     NativeImageConfigBuildItem reinitializeClassesForNetty() {
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
 
-        builder.addRuntimeInitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+        builder.addRuntimeInitializedClass("io.vertx.core.http.impl.http1.Http1ServerResponse")
                 .addRuntimeInitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
@@ -305,9 +302,10 @@ class VertxProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
-        // Accessed by io.vertx.core.impl.VertxBuilder.<init>
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VertxServiceProvider"));
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        // Accessed by io.vertx.core.impl.VertxBuilder.<init> via ServiceLoader
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(VertxServiceProvider.class.getName()));
         // Accessed by io.vertx.core.impl.VertxImpl.<init>
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VerticleFactory"));
     }

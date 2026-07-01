@@ -1,16 +1,18 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
-import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.spring.security.deployment.SpringSecurityProcessorUtil.BASIC_BEAN_METHOD_INVOCATION_PATTERN;
 import static io.quarkus.spring.security.deployment.SpringSecurityProcessorUtil.createGenericMalformedException;
 import static io.quarkus.spring.security.deployment.SpringSecurityProcessorUtil.getClassInfoFromBeanName;
 import static io.quarkus.spring.security.deployment.SpringSecurityProcessorUtil.getParameterIndex;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -25,15 +27,15 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.spring.security.runtime.interceptor.check.AbstractBeanMethodSecurityCheck;
@@ -106,116 +108,143 @@ class BeanMethodInvocationGenerator {
 
         String generatedClassName = "io.quarkus.spring.security.check." + beanClassInfo.name().withoutPackagePrefix() + "_"
                 + HashUtil.sha1(cacheKey) + "_CheckFor_" + beanMethodName;
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .superClass(AbstractBeanMethodSecurityCheck.class)
-                .build()) {
+
+        final String[] finalBeanMethodArgumentExpressions = beanMethodArgumentExpressions;
+        final boolean[] checkRequiresMethodArguments = { false };
+
+        Gizmo.create(classOutput).class_(generatedClassName, cc -> {
+            cc.extends_(AbstractBeanMethodSecurityCheck.class);
+            cc.defaultConstructor();
 
             /*
              * The generated classes will have a static getInstance method that will allow the creation of a single instance
              * This is done to avoid creating multiple objects for the same expression
              */
 
-            FieldDescriptor instanceField = of(generatedClassName, "INSTANCE", generatedClassName);
-            cc.getFieldCreator(instanceField).setModifiers(Modifier.STATIC | Modifier.PRIVATE);
+            ClassDesc generatedClassDesc = ClassDesc.of(generatedClassName);
+            FieldDesc instanceFieldDesc = FieldDesc.of(generatedClassDesc, "INSTANCE", generatedClassDesc);
+            cc.staticField("INSTANCE", sfc -> {
+                sfc.private_();
+                sfc.setType(generatedClassDesc);
+            });
 
-            try (MethodCreator getInstance = cc.getMethodCreator("getInstance", generatedClassName)
-                    .setModifiers(Modifier.STATIC | Modifier.PUBLIC)) {
-                ResultHandle instance = getInstance.readStaticField(instanceField);
-                BranchResult instanceNullBranch = getInstance.ifNull(instance);
-                instanceNullBranch.falseBranch().returnValue(instance);
-                BytecodeCreator instanceNullTrue = instanceNullBranch.trueBranch();
-                ResultHandle newInstance = instanceNullTrue.newInstance(ofConstructor(generatedClassName));
-                instanceNullTrue.writeStaticField(instanceField, newInstance);
-                instanceNullTrue.returnValue(newInstance);
-            }
+            cc.staticMethod("getInstance", smc -> {
+                smc.public_();
+                smc.returning(generatedClassDesc);
+                smc.body(bc -> {
+                    Expr instance = bc.getStaticField(instanceFieldDesc);
+                    bc.ifElse(bc.isNotNull(instance),
+                            trueBlock -> {
+                                trueBlock.return_(trueBlock.getStaticField(instanceFieldDesc));
+                            },
+                            falseBlock -> {
+                                LocalVar newInstance = falseBlock.localVar("newInstance",
+                                        falseBlock.new_(ConstructorDesc.of(generatedClassDesc)));
+                                falseBlock.setStaticField(instanceFieldDesc, newInstance);
+                                falseBlock.return_(newInstance);
+                            });
+                });
+            });
 
-            boolean checkRequiresMethodArguments = false;
-            try (MethodCreator check = cc.getMethodCreator("check", boolean.class, SecurityIdentity.class, Object[].class)
-                    .setModifiers(Modifier.PROTECTED)) {
-                ResultHandle arcContainer = check
-                        .invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
-                ResultHandle instanceHandle = check.invokeInterfaceMethod(
-                        ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class),
-                        arcContainer, check.load(beanName));
-                ResultHandle bean = check
-                        .invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
-                ResultHandle castedBean = check.checkCast(bean, beanClassInfo.name().toString());
-                ResultHandle[] argHandles = new ResultHandle[beanMethodArgumentExpressions.length];
+            cc.method("check", mc -> {
+                mc.protected_();
+                mc.returning(boolean.class);
+                ParamVar securityIdentityParam = mc.parameter("securityIdentity", SecurityIdentity.class);
+                ParamVar methodArgsParam = mc.parameter("methodArgs", Object[].class);
 
-                for (int i = 0; i < beanMethodArgumentExpressions.length; i++) {
-                    String argumentExpression = beanMethodArgumentExpressions[i];
-                    String trimmedArgumentExpression = argumentExpression.trim();
-                    if (argumentExpression.startsWith("'") && argumentExpression.endsWith("'")) { // hard coded string case
-                        if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type String");
-                        }
+                mc.body(bc -> {
+                    LocalVar arcContainer = bc.localVar("arcContainer", bc
+                            .invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+                    LocalVar instanceHandle = bc.localVar("instanceHandle", bc.invokeInterface(
+                            MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, String.class),
+                            arcContainer, Const.of(beanName)));
+                    LocalVar bean = bc.localVar("bean", bc
+                            .invokeInterface(MethodDesc.of(InstanceHandle.class, "get", Object.class), instanceHandle));
+                    LocalVar castedBean = bc.localVar("castedBean", bc.cast(bean, classDescOf(beanClassInfo)));
 
-                        argHandles[i] = check.load(argumentExpression.replace("'", ""));
-                    } else if (trimmedArgumentExpression.matches(METHOD_PARAMETER_REGEX)) { // secured method's parameter case
-                        checkRequiresMethodArguments = true;
-                        Matcher parameterMatcher = METHOD_PARAMETER_PATTERN.matcher(trimmedArgumentExpression);
-                        if (!parameterMatcher.find()) { // should never happen
+                    List<Expr> argHandles = new ArrayList<>(finalBeanMethodArgumentExpressions.length);
+
+                    for (int i = 0; i < finalBeanMethodArgumentExpressions.length; i++) {
+                        String argumentExpression = finalBeanMethodArgumentExpressions[i];
+                        String trimmedArgumentExpression = argumentExpression.trim();
+                        if (argumentExpression.startsWith("'") && argumentExpression.endsWith("'")) { // hard coded string case
+                            if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
+                                throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
+                                        + "' found in expression '" + trimmedArgumentExpression
+                                        + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                        + " of class "
+                                        + securedMethodInfo.declaringClass() + " is not of type String");
+                            }
+
+                            argHandles.add(Const.of(argumentExpression.replace("'", "")));
+                        } else if (trimmedArgumentExpression.matches(METHOD_PARAMETER_REGEX)) { // secured method's parameter case
+                            checkRequiresMethodArguments[0] = true;
+                            Matcher parameterMatcher = METHOD_PARAMETER_PATTERN.matcher(trimmedArgumentExpression);
+                            if (!parameterMatcher.find()) { // should never happen
+                                throw createGenericMalformedException(securedMethodInfo, expression);
+                            }
+
+                            // this is the index of the parameter we care about
+                            int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1), expression);
+
+                            DotName expectedType = securedMethodInfo.parameterType(parameterIndex).name();
+                            if (!matchingBeanMethod.parameterType(i).name().equals(expectedType)) {
+                                throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
+                                        + "' found in expression '" + trimmedArgumentExpression
+                                        + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                        + " of class "
+                                        + securedMethodInfo.declaringClass() + " is not of type " + expectedType);
+                            }
+
+                            /*
+                             * the check method from AbstractBeanMethodSecurityCheck contains all parameters in an object array
+                             * so we need to use that to read the value at runtime
+                             */
+                            argHandles.add(bc.localVar("methodArg" + parameterIndex,
+                                    bc.get(methodArgsParam.elem(parameterIndex))));
+                        } else if (trimmedArgumentExpression
+                                .matches("(authentication.)?principal.username")) { // username use case
+                            LocalVar principal = bc.localVar("principal", bc.invokeInterface(
+                                    MethodDesc.of(SecurityIdentity.class, "getPrincipal", Principal.class),
+                                    securityIdentityParam));
+
+                            if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
+                                throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
+                                        + "' found in expression '" + trimmedArgumentExpression
+                                        + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                        + " of class "
+                                        + securedMethodInfo.declaringClass() + " is not of type String");
+                            }
+
+                            LocalVar username = bc.localVar("username", bc
+                                    .invokeInterface(MethodDesc.of(Principal.class, "getName", String.class), principal));
+                            argHandles.add(username);
+                        } else {
                             throw createGenericMalformedException(securedMethodInfo, expression);
                         }
-
-                        // this is the index of the parameter we care about
-                        int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1), expression);
-
-                        DotName expectedType = securedMethodInfo.parameterType(parameterIndex).name();
-                        if (!matchingBeanMethod.parameterType(i).name().equals(expectedType)) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type " + expectedType);
-                        }
-
-                        /*
-                         * the check method from AbstractBeanMethodSecurityCheck contains all parameters in an object array
-                         * so we need to use that to read the value at runtime
-                         */
-                        ResultHandle methodArgsArrays = check.getMethodParam(1);
-                        argHandles[i] = check.readArrayValue(methodArgsArrays, parameterIndex);
-                    } else if (trimmedArgumentExpression.matches("(authentication.)?principal.username")) { // username use case
-                        ResultHandle securityIdentity = check.getMethodParam(0);
-                        ResultHandle principal = check.invokeInterfaceMethod(
-                                ofMethod(SecurityIdentity.class, "getPrincipal", Principal.class), securityIdentity);
-
-                        if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type String");
-                        }
-
-                        ResultHandle username = check
-                                .invokeInterfaceMethod(ofMethod(Principal.class, "getName", String.class), principal);
-                        argHandles[i] = username;
-                    } else {
-                        throw createGenericMalformedException(securedMethodInfo, expression);
                     }
-                }
 
-                ResultHandle result;
-                if (Modifier.isInterface(matchingBeanMethod.declaringClass().flags())) {
-                    result = check.invokeInterfaceMethod(MethodDescriptor.of(matchingBeanMethod), castedBean, argHandles);
-                } else {
-                    result = check.invokeVirtualMethod(MethodDescriptor.of(matchingBeanMethod), castedBean, argHandles);
-                }
+                    Expr result;
+                    if (Modifier.isInterface(matchingBeanMethod.declaringClass().flags())) {
+                        result = bc.invokeInterface(methodDescOf(matchingBeanMethod), castedBean, argHandles);
+                    } else {
+                        result = bc.invokeVirtual(methodDescOf(matchingBeanMethod), castedBean, argHandles);
+                    }
 
-                check.returnValue(result);
+                    bc.return_(result);
+                });
+            });
+
+            if (checkRequiresMethodArguments[0]) {
+                cc.method("requiresMethodArguments", rmc -> {
+                    rmc.public_();
+                    rmc.returning(boolean.class);
+                    rmc.body(bc -> {
+                        bc.return_(true);
+                    });
+                });
             }
-
-            if (checkRequiresMethodArguments) {
-                try (MethodCreator check = cc.getMethodCreator("requiresMethodArguments", boolean.class)
-                        .setModifiers(Modifier.PUBLIC)) {
-                    check.returnBoolean(true);
-                }
-            }
-        }
+        });
 
         beansReferencedInPreAuthorized.add(beanClassInfo.name().toString());
         alreadyGeneratedClasses.put(cacheKey, generatedClassName);
@@ -225,7 +254,7 @@ class BeanMethodInvocationGenerator {
     private String getParamTypesDescriptor(MethodInfo securedMethodInfo) {
         StringBuilder sb = new StringBuilder("(");
         for (Type type : securedMethodInfo.parameterTypes()) {
-            sb.append(DescriptorUtils.objectToDescriptor(type.name().toString()));
+            sb.append(classDescOf(type).descriptorString());
         }
         sb.append(")");
         return sb.toString();

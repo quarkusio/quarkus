@@ -108,6 +108,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final Class<?> SINGLETON_SET_CLASS = Collections.singleton(1).getClass();
     private static final Class<?> SINGLETON_MAP_CLASS = Collections.singletonMap(1, 1).getClass();
 
+    private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
+    private static final boolean REPRODUCIBILITY_CHECK = System.getProperty(REPRODUCIBILITY_CHECK_PROPERTY_NAME) != null;
+
     // Global counter for proxy class name suffixes. These are build time artifacts
     // that don't affect the generated output bytecode, so non-deterministic ordering is fine.
     private static final AtomicInteger COUNT = new AtomicInteger();
@@ -1150,6 +1153,30 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //been deserialized
         List<SerializationStep> setupSteps = new ArrayList<>();
         List<SerializationStep> ctorSetupSteps = new ArrayList<>();
+
+        if (REPRODUCIBILITY_CHECK) {
+            try {
+                if (param instanceof Set<?> set && set.getClass() == HashSet.class) {
+                    for (Object object : set) {
+                        if (object.getClass().getMethod("hashCode").getDeclaringClass() == Object.class) {
+                            throw new IllegalArgumentException("Object of class " + object.getClass().getName()
+                                    + " has non-deterministic hash code, it cannot be passed"
+                                    + " in a HashSet through the recorder boundary: " + object);
+                        }
+                    }
+                } else if (param instanceof Map<?, ?> map && map.getClass() == HashMap.class) {
+                    for (Object object : map.keySet()) {
+                        if (object.getClass().getMethod("hashCode").getDeclaringClass() == Object.class) {
+                            throw new IllegalArgumentException("Object of class " + object.getClass().getName()
+                                    + " has non-deterministic hash code, it cannot be passed"
+                                    + " as a HashMap key through the recorder boundary: " + object);
+                        }
+                    }
+                }
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         boolean relaxedOk = false;
         if (param instanceof Collection) {

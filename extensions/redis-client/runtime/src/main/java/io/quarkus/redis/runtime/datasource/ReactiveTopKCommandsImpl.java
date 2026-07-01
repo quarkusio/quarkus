@@ -10,7 +10,7 @@ import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
         implements ReactiveTopKCommands<K, V>, ReactiveRedisCommands {

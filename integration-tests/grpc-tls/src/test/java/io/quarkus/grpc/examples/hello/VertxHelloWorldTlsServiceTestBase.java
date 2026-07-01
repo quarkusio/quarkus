@@ -11,8 +11,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.grpc.client.GrpcClient;
-import io.vertx.grpc.client.GrpcClientChannel;
+import io.vertx.grpcio.client.GrpcIoClient;
+import io.vertx.grpcio.client.GrpcIoClientChannel;
 
 abstract class VertxHelloWorldTlsServiceTestBase extends HelloWorldTlsServiceTestBase {
 
@@ -22,7 +22,7 @@ abstract class VertxHelloWorldTlsServiceTestBase extends HelloWorldTlsServiceTes
     }
 
     private Vertx _vertx;
-    private GrpcClient client;
+    private GrpcIoClient client;
 
     @BeforeEach
     public void init() throws Exception {
@@ -36,8 +36,8 @@ abstract class VertxHelloWorldTlsServiceTestBase extends HelloWorldTlsServiceTes
         }
         options.setTrustOptions(new PemTrustOptions().addCertValue(buffer));
         _vertx = vertx();
-        client = GrpcClient.client(_vertx, options);
-        channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(8444, "localhost"));
+        client = GrpcIoClient.client(_vertx, options);
+        channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(8444, "localhost"));
     }
 
     @Override

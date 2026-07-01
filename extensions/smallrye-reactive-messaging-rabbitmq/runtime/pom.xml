@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-rabbitmq</artifactId>
+            <artifactId>smallrye-reactive-messaging-rabbitmq-og</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

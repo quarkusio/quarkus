@@ -73,6 +73,11 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
+    public Uni<Void> flush(Class<?> entityClass) {
+        throw new UnsupportedOperationException("Managed operations not supported");
+    }
+
+    @Override
     public Uni<Void> persist(Iterable<?> entities) {
         throw new UnsupportedOperationException("Managed operations not supported");
     }

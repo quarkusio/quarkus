@@ -81,7 +81,7 @@ public class Testflow {
                     .putHeader(HttpHeaders.ACCEPT_ENCODING.toString(), acceptEncoding)
                     .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
                     .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
-                    .send(ar -> {
+                    .send().onComplete(ar -> {
                         if (ar.succeeded()) {
                             future.complete(ar.result());
                         } else {
@@ -136,7 +136,7 @@ public class Testflow {
                     .putHeader(HttpHeaders.CONTENT_ENCODING.toString(), contentEncoding)
                     .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
                     .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
-                    .sendBuffer(compress(contentEncoding, TEXT), ar -> {
+                    .sendBuffer(compress(contentEncoding, TEXT)).onComplete(ar -> {
                         if (ar.succeeded()) {
                             future.complete(ar.result());
                         } else {

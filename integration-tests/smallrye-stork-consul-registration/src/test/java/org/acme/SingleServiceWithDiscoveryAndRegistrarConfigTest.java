@@ -1,9 +1,12 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.matchesPattern;
 
 import java.util.Map;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -23,6 +26,7 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestProfile(SingleServiceWithDiscoveryAndRegistrarConfigTest.SingleServiceWithDiscoveryAndRegistrarConfigProfile.class)
 @QuarkusTestResource(ConsulContainerWithFixedPortsTestResource.class)
+@Disabled("Require a Stork v3 update")
 public class SingleServiceWithDiscoveryAndRegistrarConfigTest {
 
     public static class SingleServiceWithDiscoveryAndRegistrarConfigProfile implements QuarkusTestProfile {
@@ -42,10 +46,11 @@ public class SingleServiceWithDiscoveryAndRegistrarConfigTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/red-service")
                 .then()
                 .statusCode(200)
-                .body(containsString("\"Service\": \"red-service\""));
+                .body(containsString("\"ServiceName\": \"red-service\""))
+                .body("ServiceID", hasItem(matchesPattern("^red-service::[0-9.]+::8080")));
 
     }
 

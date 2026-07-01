@@ -5,7 +5,7 @@ import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
 import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalCuckooCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalCuckooCommands<K, V> {

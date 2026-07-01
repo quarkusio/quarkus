@@ -29,6 +29,7 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
@@ -99,14 +100,20 @@ public class MainHttpServerTlsPemTrustStoreCertificateReloadTest {
                 .setDefaultHost(url.getHost())
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-A-ca.crt"));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        HttpClientAgent httpClient = vertx.createHttpClient(options);
+        String response1;
+        try {
+            response1 = httpClient
+                    .request(HttpMethod.GET, "/hello")
+                    .flatMap(HttpClientRequest::send)
+                    .flatMap(HttpClientResponse::body)
+                    .map(Buffer::toString)
+                    .toCompletionStage().toCompletableFuture().join();
 
-        assertThat(response1).startsWith("Hello ");
+            assertThat(response1).startsWith("Hello ");
+        } finally {
+            httpClient.close().await();
+        }
 
         // Update certs
         Files.copy(new File("target/certificates/reload-B.crt").toPath(),
@@ -123,14 +130,19 @@ public class MainHttpServerTlsPemTrustStoreCertificateReloadTest {
         var options2 = new HttpClientOptions(options)
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-B-ca.crt"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        HttpClientAgent client = vertx.createHttpClient(options2);
+        try {
+            var response2 = client
+                    .request(HttpMethod.GET, "/hello")
+                    .flatMap(HttpClientRequest::send)
+                    .flatMap(HttpClientResponse::body)
+                    .map(Buffer::toString)
+                    .toCompletionStage().toCompletableFuture().join();
 
-        assertThat(response1).isNotEqualTo(response2);
+            assertThat(response1).isNotEqualTo(response2);
+        } finally {
+            client.close().await();
+        }
     }
 
     public static class MyBean {

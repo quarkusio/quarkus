@@ -12,8 +12,10 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
@@ -49,7 +51,7 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            mSSQLClient.query("SELECT 1").execute(ar -> {
+            mSSQLClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -69,7 +71,7 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            mSSQLClient.query("SELECT 1").execute(ar -> {
+            mSSQLClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -81,24 +83,26 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
     }
 
     @Singleton
-    public static class DefaultMSSQLPoolCreator implements MSSQLPoolCreator {
+    public static class DefaultMSSQLPoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(12345, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
+            MSSQLConnectOptions options = (MSSQLConnectOptions) input.connectOptionsList().get(0);
+            assertEquals(12345, options.getPort()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(), options.setHost("localhost").setPort(1435),
                     input.poolOptions());
         }
     }
 
     @Singleton
     @ReactiveDataSource("hibernate")
-    public static class HibernateMSSQLPoolCreator implements MSSQLPoolCreator {
+    public static class HibernateMSSQLPoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(55555, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
+            MSSQLConnectOptions options = (MSSQLConnectOptions) input.connectOptionsList().get(0);
+            assertEquals(55555, options.getPort()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(), options.setHost("localhost").setPort(1435),
                     input.poolOptions());
         }
     }

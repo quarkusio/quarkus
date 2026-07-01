@@ -19,7 +19,7 @@ public class VertxGraphqlRecorder {
         GraphiQLHandlerOptions options = new GraphiQLHandlerOptions();
         options.setEnabled(true);
 
-        Handler<RoutingContext> handler = GraphiQLHandler.create(vertx.get(), options);
+        GraphiQLHandler handler = GraphiQLHandler.create(vertx.get(), options);
 
         return new Handler<RoutingContext>() {
             @Override
@@ -33,7 +33,7 @@ public class VertxGraphqlRecorder {
                     return;
                 }
 
-                handler.handle(event);
+                handler.router().handleContext(event);
             }
         };
     }

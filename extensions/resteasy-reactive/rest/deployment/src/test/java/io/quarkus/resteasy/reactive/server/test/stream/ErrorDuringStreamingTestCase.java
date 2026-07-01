@@ -87,7 +87,7 @@ public class ErrorDuringStreamingTestCase {
                 .onSuccess(new Handler<>() {
                     @Override
                     public void handle(HttpClientRequest event) {
-                        event.connect().onFailure(failure)
+                        event.send().onFailure(failure)
                                 .onSuccess(response -> {
                                     response
                                             .handler(bodyConsumer::accept)

@@ -51,7 +51,8 @@ public class SqlClientInstrumenterVertxTracer implements
             return true;
         }
 
-        return "sql".equals(tagExtractor.extract(request).get("db.type"));
+        String dbSystem = tagExtractor.extract(request).get("db.system");
+        return dbSystem != null && !"redis".equals(dbSystem);
     }
 
     @Override
@@ -114,11 +115,11 @@ public class SqlClientInstrumenterVertxTracer implements
         }
 
         public String rawStatement() {
-            return attributes.get("db.statement");
+            return attributes.get("db.query.text");
         }
 
         public String system() {
-            return attributes.get("db.instance");
+            return attributes.get("db.system");
         }
 
         @Deprecated
@@ -127,20 +128,20 @@ public class SqlClientInstrumenterVertxTracer implements
         }
 
         public String instance() {
-            return attributes.get("db.instance");
+            return attributes.get("db.namespace");
         }
 
         @Deprecated
         public String connectionString() {
-            return attributes.get("peer.address");
+            return attributes.get("network.peer.address");
         }
 
         public String peerAddress() {
-            return VertxUtil.extractHostname(attributes.get("peer.address"));
+            return VertxUtil.extractHostname(attributes.get("network.peer.address"));
         }
 
         public Integer peerPort() {
-            return VertxUtil.extractPort(attributes.get("peer.address"));
+            return VertxUtil.extractPort(attributes.get("network.peer.address"));
         }
     }
 

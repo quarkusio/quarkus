@@ -4,7 +4,7 @@ import java.util.Map;
 
 import jakarta.persistence.LockModeType;
 
-public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?, ?>, Count, Confirmation, Id> {
+public interface PanacheRepositoryQueries<EntityResult, EntityList, Query extends PanacheQuery<?, ?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
 
     // Queries
 

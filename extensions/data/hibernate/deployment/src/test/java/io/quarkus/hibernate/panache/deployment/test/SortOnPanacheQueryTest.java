@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import jakarta.data.Order;
 import jakarta.data.Sort;
+import jakarta.data.page.PageRequest;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
@@ -64,33 +65,19 @@ public class SortOnPanacheQueryTest {
     }
 
     @Transactional
-    void findAllWithNullSort() {
+    void findAllWithNoSort() {
         List<MyEntity> unsorted = MyEntity_.managedBlocking().findAll()
                 .sort((Order<? super MyEntity>) null)
                 .list();
         assertThat(unsorted).hasSize(5);
-    }
 
-    @Transactional
-    void findAllWithSortShortcut() {
-        List<MyEntity> sorted = MyEntity_.managedBlocking().findAll()
-                .sort(Sort.asc("foo"))
-                .list();
-        assertThat(sorted.get(0).foo).isEqualTo("foo0");
-    }
-
-    @Transactional
-    void findAllWithEmptyOrder() {
-        List<MyEntity> unsorted = MyEntity_.managedBlocking().findAll()
-                .sort(Order.by())
+        unsorted = MyEntity_.managedBlocking().findAll()
+                .sort((Sort<? super MyEntity>) null)
                 .list();
         assertThat(unsorted).hasSize(5);
-    }
 
-    @Transactional
-    void findAllWithNullSortShortcut() {
-        List<MyEntity> unsorted = MyEntity_.managedBlocking().findAll()
-                .sort((Sort<? super MyEntity>) null)
+        unsorted = MyEntity_.managedBlocking().findAll()
+                .sort(Order.by())
                 .list();
         assertThat(unsorted).hasSize(5);
     }
@@ -103,6 +90,29 @@ public class SortOnPanacheQueryTest {
                 .map(e -> e.foo)
                 .collect(Collectors.toList());
         assertThat(names).containsExactly("foo0", "foo1", "foo2", "foo3", "foo4");
+    }
+
+    @Transactional
+    void findAllWithPageRequestAndSort() {
+        List<MyEntity> page = MyEntity_.managedBlocking().findAll()
+                .pages().request(PageRequest.ofPage(1, 2, false))
+                .sort(Sort.asc("foo"))
+                .list();
+        assertThat(page).hasSize(2);
+        assertThat(page.get(0).foo).isEqualTo("foo0");
+        assertThat(page.get(1).foo).isEqualTo("foo1");
+    }
+
+    @Transactional
+    void findAllWithPageRequestAndEmptyOrder() {
+        PanacheBlockingQuery<MyEntity> query = MyEntity_.managedBlocking().findAll()
+                .pages().request(PageRequest.ofPage(2, 2, false));
+        Order<? super MyEntity> order = Order.by();
+        if (!order.sorts().isEmpty()) {
+            query = query.sort(order);
+        }
+        List<MyEntity> page = query.list();
+        assertThat(page).hasSize(2);
     }
 
     @Transactional
@@ -126,10 +136,9 @@ public class SortOnPanacheQueryTest {
         findAllWithSort();
         findAllWithSortDesc();
         findWithSort();
-        findAllWithNullSort();
-        findAllWithEmptyOrder();
-        findAllWithSortShortcut();
-        findAllWithNullSortShortcut();
+        findAllWithNoSort();
+        findAllWithPageRequestAndSort();
+        findAllWithPageRequestAndEmptyOrder();
         streamWithSort();
         replaceSort();
         clear();

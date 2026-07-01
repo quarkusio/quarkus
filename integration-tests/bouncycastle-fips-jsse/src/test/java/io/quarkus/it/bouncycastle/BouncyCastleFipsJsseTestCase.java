@@ -50,7 +50,7 @@ public class BouncyCastleFipsJsseTestCase {
         try {
             WebClientOptions options = createWebClientOptions();
             WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
+            HttpResponse<Buffer> resp = webClient.get("/jsse/listProviders").send().await()
                     .indefinitely();
             String providers = resp.bodyAsString();
             assertTrue(providers.contains("BCFIPS,BCJSSE"));

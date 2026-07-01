@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.runtime;
 
-import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.denyAll;
-
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -56,11 +54,11 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
         if (event.remoteAddress() == null) {
             // client address may not be available with virtual http channel
             LOGGER.debug("Client address is not available, 'Forwarded' and 'X-Forwarded' headers are going to be ignored");
-            handleForwardedServerRequest(event, denyAll());
+            handleForwardedServerRequest(event, TrustedProxyCheck.DENY_ALL);
         } else if (event.remoteAddress().isDomainSocket()) {
             // we do not support domain socket proxy checks, ignore the headers
             LOGGER.debug("Domain socket are not supported, 'Forwarded' and 'X-Forwarded' headers are going to be ignored");
-            handleForwardedServerRequest(event, denyAll());
+            handleForwardedServerRequest(event, TrustedProxyCheck.DENY_ALL);
         } else {
             // create proxy check, then handle request
             if (proxyCheckBuilder.hasHostNames()) {
@@ -111,7 +109,7 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
                 resolveProxyIpAndHandleRequest(event, builder);
             } else {
                 // ignore headers as there are no proxy checks
-                handleForwardedServerRequest(event, denyAll());
+                handleForwardedServerRequest(event, TrustedProxyCheck.DENY_ALL);
             }
         }
     }
@@ -170,12 +168,12 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
                                 proxyCheck = builder.build(proxyIPs, event.remoteAddress().port());
                             } else {
                                 logInvalidIpAddress(hostName);
-                                proxyCheck = denyAll();
+                                proxyCheck = TrustedProxyCheck.DENY_ALL;
                             }
                         } else {
                             // we can't cope without IP => ignore headers
                             logDnsLookupFailure(hostName);
-                            proxyCheck = denyAll();
+                            proxyCheck = TrustedProxyCheck.DENY_ALL;
                         }
 
                         handleForwardedServerRequest(event, proxyCheck);

@@ -77,6 +77,11 @@ public class StatelessBlockingOperations implements PanacheBlockingOperations {
     }
 
     @Override
+    public Void flush(Class<?> entityClass) {
+        throw new UnsupportedOperationException("Managed operations not supported");
+    }
+
+    @Override
     public Void persist(Iterable<?> entities) {
         throw new UnsupportedOperationException("Managed operations not supported");
     }

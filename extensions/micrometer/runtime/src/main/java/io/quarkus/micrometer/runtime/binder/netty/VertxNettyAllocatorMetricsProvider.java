@@ -5,7 +5,8 @@ import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.netty.buffer.ByteBufAllocatorMetricProvider;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 
 @Singleton
 public class VertxNettyAllocatorMetricsProvider {
@@ -31,7 +32,7 @@ public class VertxNettyAllocatorMetricsProvider {
     @Singleton
     public MeterBinder vertxUnpooledByteBufAllocatorMetrics() {
         return new NettyAllocatorMetrics(VERTX_UNPOOLED_ALLOCATOR_NAME,
-                (ByteBufAllocatorMetricProvider) VertxByteBufAllocator.UNPOOLED_ALLOCATOR);
+                (ByteBufAllocatorMetricProvider) UnpooledByteBufAllocator.DEFAULT);
     }
 
 }

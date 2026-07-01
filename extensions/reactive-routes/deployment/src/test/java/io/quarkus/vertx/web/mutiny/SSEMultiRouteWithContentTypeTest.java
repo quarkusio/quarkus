@@ -56,10 +56,6 @@ public class SSEMultiRouteWithContentTypeTest {
                 .body(is("data: Buffer\nid: 0\n\ndata: Buffer\nid: 1\n\ndata: Buffer.\nid: 2\n\n"))
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/mutiny-buffer").then().statusCode(200)
-                .body(is("data: Buffer\nid: 0\n\ndata: Mutiny\nid: 1\n\n"))
-                .header("content-type", is("text/event-stream"));
-
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
         when().get("/people").then().statusCode(200)
@@ -146,12 +142,6 @@ public class SSEMultiRouteWithContentTypeTest {
         Multi<Buffer> buffers() {
             return Multi.createFrom()
                     .items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"), Buffer.buffer("Buffer."));
-        }
-
-        @Route(path = "mutiny-buffer", produces = EVENT_STREAM)
-        Multi<io.vertx.mutiny.core.buffer.Buffer> bufferMutiny() {
-            return Multi.createFrom().items(io.vertx.mutiny.core.buffer.Buffer.buffer("Buffer"),
-                    io.vertx.mutiny.core.buffer.Buffer.buffer("Mutiny"));
         }
 
         @Route(path = "void", produces = EVENT_STREAM)

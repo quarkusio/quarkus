@@ -2015,7 +2015,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2032,7 +2032,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2195,7 +2195,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2213,7 +2213,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2231,7 +2231,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2248,7 +2248,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2267,7 +2267,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2285,7 +2285,7 @@
       "status" : "experimental",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2321,7 +2321,7 @@
       "status" : "stable",
       "codestart" : {
         "name" : "resteasy",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -2331,23 +2331,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common" ]
     },
     "artifact" : "io.quarkus:quarkus-resteasy::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "Scala",
-    "description" : "Write your services in Scala",
-    "metadata" : {
-      "keywords" : [ "scala" ],
-      "categories" : [ "alt-languages" ],
-      "status" : "preview",
-      "codestart" : {
-        "name" : "scala",
-        "kind" : "core",
-        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
-      },
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
-    },
-    "artifact" : "io.quarkus:quarkus-scala::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "Scheduler - tasks",
@@ -2707,7 +2690,7 @@
       "status" : "stable",
       "codestart" : {
         "name" : "spring-web",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final"
       },
       "built-with-quarkus-core" : "2.0.3.Final",
@@ -7257,8 +7240,7 @@
         "compiler-plugin-version" : "3.8.1",
         "surefire-plugin-version" : "3.0.0",
         "kotlin-version" : "1.4.32",
-        "scala-version" : "2.12.13",
-        "scala-plugin-version" : "4.4.0",
+
         "quarkus-core-version" : "2.0.3.Final",
         "maven-plugin-groupId" : "io.quarkus",
         "maven-plugin-artifactId" : "quarkus-maven-plugin",
@@ -7268,7 +7250,7 @@
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
         "maven-wrapper-version" : "3.3.4",
-        "gradle-wrapper-version" : "9.5.1"
+        "gradle-wrapper-version" : "9.6.0"
       }
     },
     "codestarts-artifacts" : [ "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final" ],

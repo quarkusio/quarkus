@@ -63,8 +63,10 @@ public class DependencyDataCollector {
      * for this project.
      */
     public static boolean declaredDependencyCollectorEnabled(Project project) {
-        final Object value = project.getProperties().get(ENABLE_DECLARED_DEPENDENCY_COLLECTOR);
-        return value != null && Boolean.parseBoolean(String.valueOf(value));
+        // gradleProperty instead of Project.getProperties().get(...), which is not allowed under
+        // Isolated Projects.
+        final String value = project.getProviders().gradleProperty(ENABLE_DECLARED_DEPENDENCY_COLLECTOR).getOrNull();
+        return value != null && Boolean.parseBoolean(value);
     }
 
     /**

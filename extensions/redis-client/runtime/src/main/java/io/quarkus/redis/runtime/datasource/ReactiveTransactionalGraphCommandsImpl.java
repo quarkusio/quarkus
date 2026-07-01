@@ -5,7 +5,7 @@ import java.time.Duration;
 import io.quarkus.redis.datasource.graph.ReactiveTransactionalGraphCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalGraphCommandsImpl<K> extends AbstractTransactionalCommands
         implements ReactiveTransactionalGraphCommands<K> {

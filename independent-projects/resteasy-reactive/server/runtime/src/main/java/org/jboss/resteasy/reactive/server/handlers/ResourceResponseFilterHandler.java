@@ -10,9 +10,15 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 public class ResourceResponseFilterHandler implements ServerRestHandler {
 
     private final ContainerResponseFilter filter;
+    private final boolean cancellable;
 
-    public ResourceResponseFilterHandler(ContainerResponseFilter filter) {
+    public ResourceResponseFilterHandler(ContainerResponseFilter filter, boolean cancellable) {
         this.filter = filter;
+        this.cancellable = cancellable;
+    }
+
+    public boolean isCancellable() {
+        return cancellable;
     }
 
     @Override

@@ -8,7 +8,6 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
-import static java.util.Arrays.asList;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -30,8 +29,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.transaction.Transaction;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
@@ -42,7 +39,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -61,8 +57,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -75,7 +69,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
@@ -94,7 +87,6 @@ import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcIntercepto
 import io.quarkus.grpc.runtime.supports.context.RoutingContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.exc.DefaultExceptionHandlerProvider;
 import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
-import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -112,12 +104,6 @@ public class GrpcServerProcessor {
     private static final Set<String> BLOCKING_SKIPPED_METHODS = Set.of("bindService", "<init>", "<clinit>", "withCompression");
 
     private static final Logger log = Logger.getLogger(GrpcServerProcessor.class);
-
-    private static final String SSL_PREFIX = "quarkus.grpc.server.ssl.";
-    private static final String CERTIFICATE = SSL_PREFIX + "certificate";
-    private static final String KEY = SSL_PREFIX + "key";
-    private static final String KEY_STORE = SSL_PREFIX + "key-store";
-    private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
@@ -754,21 +740,6 @@ public class GrpcServerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsProduction.class)
-    KubernetesPortBuildItem registerGrpcServiceInKubernetes(List<BindableServiceBuildItem> bindables) {
-        if (!bindables.isEmpty()) {
-            boolean useSeparateServer = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.use-separate-server",
-                    Boolean.class)
-                    .orElse(true);
-            if (useSeparateServer) {
-                // Only expose the named port "grpc" if the gRPC server is exposed using a separate server.
-                // TODO - Querying a runtime configuration during deployment
-                return KubernetesPortBuildItem.fromRuntimeConfiguration("grpc", "quarkus.grpc.server.port", 9000, true);
-            }
-        }
-        return null;
-    }
-
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             Capabilities capabilities,
@@ -947,7 +918,7 @@ public class GrpcServerProcessor {
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
                     // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
                     // sure that exceptions raised during proactive authentication or HTTP authorization are handled
-                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue);
+                    recorder.addMainRouterErrorHandler(routerRuntimeValue);
                 }
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();
@@ -969,14 +940,6 @@ public class GrpcServerProcessor {
         return null;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    void definializeGrpcFieldsForDevMode(BuildProducer<BytecodeTransformerBuildItem> transformers) {
-        transformers.produce(new BytecodeTransformerBuildItem("io.grpc.internal.InternalHandlerRegistry",
-                new FieldDefinalizingVisitor("services", "methods")));
-        transformers.produce(new BytecodeTransformerBuildItem(ServerImpl.class.getName(),
-                new FieldDefinalizingVisitor("interceptors")));
-    }
-
     @BuildStep
     void addHealthChecks(GrpcServerBuildTimeConfig config,
             List<BindableServiceBuildItem> bindables,
@@ -995,15 +958,6 @@ public class GrpcServerProcessor {
         }
         if (healthEnabled || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));
-        }
-    }
-
-    @BuildStep
-    void registerSslResources(BuildProducer<NativeImageResourceBuildItem> resourceBuildItem) {
-        Config config = ConfigProvider.getConfig();
-        for (String sslProperty : asList(CERTIFICATE, KEY, KEY_STORE, TRUST_STORE)) {
-            config.getOptionalValue(sslProperty, String.class)
-                    .ifPresent(value -> ResourceRegistrationUtils.registerResourceForProperty(resourceBuildItem, value));
         }
     }
 

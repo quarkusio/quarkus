@@ -6,8 +6,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerFileUpload;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
-import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestWrapper;
 
 public class ResumingRequestWrapper extends HttpServerRequestWrapper {
 
@@ -80,15 +80,6 @@ public class ResumingRequestWrapper extends HttpServerRequestWrapper {
     @Override
     public HttpServerRequest endHandler(Handler<Void> handler) {
         delegate.endHandler(handler);
-        if (!userSetState) {
-            delegate.resume();
-        }
-        return this;
-    }
-
-    @Override
-    public HttpServerRequest bodyHandler(Handler<Buffer> handler) {
-        delegate.bodyHandler(handler);
         if (!userSetState) {
             delegate.resume();
         }

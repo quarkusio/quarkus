@@ -5,8 +5,9 @@ import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 /**
@@ -51,11 +52,20 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     }
 
     /**
-     * Returns the (Vert.x) SSL options.
+     * Returns the server-side SSL options.
      *
-     * @return the {@link SSLOptions}, {@code null} if not configured.
+     * @return the {@link ServerSSLOptions}, {@code null} if not configured.
      */
-    public SSLOptions getSSLOptions() {
+    public ServerSSLOptions getServerSSLOptions() {
+        return null;
+    }
+
+    /**
+     * Returns the client-side SSL options.
+     *
+     * @return the {@link ClientSSLOptions}, {@code null} if not configured.
+     */
+    public ClientSSLOptions getClientSSLOptions() {
         return null;
     }
 

@@ -1,7 +1,6 @@
 package io.quarkus.vertx;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
 
@@ -21,18 +20,11 @@ public class MutinyCodecTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class, MyNonLocalBean.class,
+                    .create(JavaArchive.class).addClasses(MyBean.class,
                             MyPetCodec.class, Person.class, Pet.class));
 
     @Inject
     MyBean bean;
-
-    /**
-     * Bean setting the consumption to be non-local.
-     * So, the user must configure the codec explicitly.
-     */
-    @Inject
-    MyNonLocalBean nonLocalBean;
 
     @Inject
     Vertx vertx;
@@ -51,14 +43,6 @@ public class MutinyCodecTest {
                 .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
-    }
-
-    @Test
-    public void testWithUserCodecNonLocal() {
-        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
-        assertEquals("Non Local Hello NEO", hello);
     }
 
     static class Greeting {
@@ -88,14 +72,4 @@ public class MutinyCodecTest {
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
     }
-
-    static class MyNonLocalBean {
-        @ConsumeEvent(value = "nl-pet", codec = MyPetCodec.class, local = false)
-        public Uni<String> hello(Pet p) {
-            return Uni.createFrom().item(
-                    () -> "Non Local Hello " + p.getName())
-                    .emitOn(Infrastructure.getDefaultExecutor());
-        }
-    }
-
 }

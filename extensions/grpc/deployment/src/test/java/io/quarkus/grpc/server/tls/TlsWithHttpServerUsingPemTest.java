@@ -31,8 +31,6 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithHttpServerUsingPemTest {
 
     static String configuration = """
-            quarkus.grpc.server.use-separate-server=false
-
             quarkus.http.ssl.certificate.files=target/certs/grpc.crt
             quarkus.http.ssl.certificate.key-files=target/certs/grpc.key
             quarkus.http.insecure-requests=disabled

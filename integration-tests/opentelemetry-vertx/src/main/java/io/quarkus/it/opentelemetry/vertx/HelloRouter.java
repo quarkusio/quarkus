@@ -31,7 +31,7 @@ public class HelloRouter {
         router.post("/hello").handler(BodyHandler.create()).handler(new Handler<RoutingContext>() {
             @Override
             public void handle(final RoutingContext rc) {
-                rc.response().end("hello " + rc.getBodyAsString());
+                rc.response().end("hello " + rc.body().asString());
             }
         });
 

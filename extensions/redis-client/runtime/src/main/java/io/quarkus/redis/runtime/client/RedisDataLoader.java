@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
-import io.vertx.mutiny.redis.client.Request;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
 
 public class RedisDataLoader {
 

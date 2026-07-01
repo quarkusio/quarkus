@@ -10,6 +10,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -27,6 +28,14 @@ public class DependencyUtils {
     public static ArtifactKey getKey(Artifact artifact) {
         return ArtifactKey.of(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension());
+    }
+
+    public static ArtifactKey getKey(Exclusion exclusion) {
+        if ("*".equals(exclusion.getGroupId()) || "*".equals(exclusion.getArtifactId())) {
+            throw new IllegalStateException("Wildcard exclusions are not supported here");
+        }
+        return ArtifactKey.of(exclusion.getGroupId(), exclusion.getArtifactId(),
+                exclusion.getClassifier(), exclusion.getExtension());
     }
 
     public static ArtifactCoords getCoords(Artifact artifact) {
@@ -52,15 +61,21 @@ public class DependencyUtils {
 
     public static List<Dependency> mergeDependencies(List<Dependency> dominant, List<Dependency> recessive,
             Map<ArtifactKey, Dependency> managedVersions, Set<String> excludedScopes) {
+        return mergeDependencies(dominant, recessive, Set.of(), managedVersions, excludedScopes);
+    }
+
+    public static List<Dependency> mergeDependencies(List<Dependency> dominant, List<Dependency> recessive,
+            Set<ArtifactKey> excluded, // Not using org.eclipse.aether.graph.Exclusion here because we're not changing transitive deps
+            Map<ArtifactKey, Dependency> managedVersions, Set<String> excludedScopes) {
         if (dominant.isEmpty() && recessive.isEmpty()) {
             return List.of();
         }
         final List<Dependency> result = new ArrayList<>(dominant.size() + recessive.size());
         final Map<ArtifactKey, Dependency> dominantMap = new HashMap<>(dominant.size());
         for (Dependency dep : dominant) {
-            if (!excludedScopes.contains(dep.getScope())) {
+            final ArtifactKey key = getKey(dep.getArtifact());
+            if (!excludedScopes.contains(dep.getScope()) && !excluded.contains(key)) {
                 result.add(dep);
-                final ArtifactKey key = getKey(dep.getArtifact());
                 if (!managedVersions.containsKey(key)) {
                     dominantMap.put(key, dep);
                 }
@@ -69,7 +84,7 @@ public class DependencyUtils {
         for (Dependency dep : recessive) {
             if (!excludedScopes.contains(dep.getScope())) {
                 final ArtifactKey key = getKey(dep.getArtifact());
-                if (!dominantMap.containsKey(key)) {
+                if (!dominantMap.containsKey(key) && !excluded.contains(key)) {
                     if (dep.getArtifact().getVersion() == null) {
                         final Dependency managed = managedVersions.get(key);
                         if (managed != null) {

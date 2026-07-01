@@ -74,7 +74,7 @@ class Http2DisabledTest {
 
         client
                 .get(port, "localhost", "/ping")
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         result.complete(ar.result());
                     } else {

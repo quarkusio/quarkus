@@ -12,7 +12,8 @@ import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Uni;
 
 public interface PanacheReactiveQuery<Entity>
-        extends PanacheQuery<Uni<Entity>, Entity, Uni<List<Entity>>, Uni<Boolean>, Uni<Long>> {
+        extends
+        PanacheQuery<PanacheReactiveQuery<Entity>, Uni<Entity>, Entity, Uni<List<Entity>>, Uni<PanacheReactiveQuery<Entity>>, Uni<Boolean>, Uni<Long>> {
 
     @Override
     PanacheReactiveQuery<Entity> sort(Order<? super Entity> order);
@@ -46,5 +47,5 @@ public interface PanacheReactiveQuery<Entity>
      *         <code>type</code>
      * @throws PanacheQueryException if this represents an already-projected query
      */
-    public <T> PanacheQuery<Uni<T>, T, Uni<List<T>>, Boolean, Long> project(Class<T> type);
+    public <T> PanacheReactiveQuery<T> project(Class<T> type);
 }

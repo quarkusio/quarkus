@@ -90,10 +90,6 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
         }
     }
 
-    private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {
-        return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
-    }
-
     private Tag address(ClientRequestContext requestContext) {
         String host = requestContext.getUri().getHost();
         int port = requestContext.getUri().getPort();
@@ -101,6 +97,10 @@ public class ResteasyClientMetricsFilter implements ClientRequestFilter, ClientR
             return Tag.of("address", "none");
         }
         return Tag.of("address", port > 0 ? host + ":" + port : host);
+    }
+
+    private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {
+        return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
     }
 
     private Tag clientName(ClientRequestContext requestContext) {

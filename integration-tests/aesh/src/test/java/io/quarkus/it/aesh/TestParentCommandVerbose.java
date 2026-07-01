@@ -19,7 +19,7 @@ public class TestParentCommandVerbose {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("cli-verbose-app",
             CliParentCommand.class, VersionSubCommand.class)
-            .setCommandLineParameters("version");
+            .setCommandLineParameters("tpcv-version");
 
     @Test
     public void testParentSubCommandVersion() {
@@ -27,7 +27,7 @@ public class TestParentCommandVerbose {
         Assertions.assertThat(config.getExitCode()).isZero();
     }
 
-    @CommandDefinition(name = "cli", description = "CLI-like parent command", groupCommands = { VersionSubCommand.class })
+    @CommandDefinition(name = "tpcv-cli", description = "CLI-like parent command", groupCommands = { VersionSubCommand.class })
     public static class CliParentCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'v', name = "verbose", description = "Enable verbose output", hasValue = false)
@@ -44,7 +44,7 @@ public class TestParentCommandVerbose {
         }
     }
 
-    @CommandDefinition(name = "version", description = "Show version")
+    @CommandDefinition(name = "tpcv-version", description = "Show version")
     public static class VersionSubCommand implements Command<CommandInvocation> {
 
         @ParentCommand

@@ -216,8 +216,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             }
         } else {
             final boolean idToken = isIdToken(request);
-            Uni<TokenVerificationResult> result = verifyTokenUni(requestData, resolvedContext, request.getToken(), idToken,
-                    idToken, false, userInfo);
+            final TokenType tokenType = idToken ? TokenType.ID_TOKEN : TokenType.BEARER_ACCESS_TOKEN;
+            Uni<TokenVerificationResult> result = verifyTokenUni(requestData, resolvedContext, request.getToken(), tokenType,
+                    idToken, userInfo);
             if (!idToken) {
                 if (resolvedContext.oidcConfig().token().binding().certificate()) {
                     result = result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
@@ -642,19 +643,19 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 codeAccessToken = OidcUtils.decryptToken(resolvedContext, codeAccessToken);
                 requestData.put(OidcConstants.ACCESS_TOKEN_VALUE, codeAccessToken);
             }
-            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false,
-                    false, true, userInfo);
+            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken),
+                    TokenType.CODE_FLOW_ACCESS_TOKEN, false, userInfo);
         } else {
             return NULL_CODE_ACCESS_TOKEN_UNI;
         }
     }
 
     private Uni<TokenVerificationResult> verifyTokenUni(Map<String, Object> requestData, TenantConfigContext resolvedContext,
-            TokenCredential tokenCred, boolean idToken, boolean enforceAudienceVerification, boolean codeFlowAccessToken,
+            TokenCredential tokenCred, TokenType tokenType, boolean enforceAudienceVerification,
             UserInfo userInfo) {
         final String token = tokenCred.getToken();
         Long expiresIn = null;
-        if (codeFlowAccessToken) {
+        if (tokenType == TokenType.CODE_FLOW_ACCESS_TOKEN) {
             expiresIn = ((AuthorizationCodeTokens) requestData.get(AuthorizationCodeTokens.class.getName()))
                     .getAccessTokenExpiresIn();
         }
@@ -676,12 +677,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
             }
             LOG.debug("Starting the opaque token introspection");
-            return introspectTokenUni(resolvedContext, token, idToken, expiresIn, false);
+            return introspectTokenUni(resolvedContext, token, tokenType, expiresIn, false);
         } else if (resolvedContext.provider().getMetadata().getJsonWebKeySetUri() == null
                 || resolvedContext.oidcConfig().token().requireJwtIntrospectionOnly()) {
             // Verify JWT token with the remote introspection
             LOG.debug("Starting the JWT token introspection");
-            return introspectTokenUni(resolvedContext, token, idToken, expiresIn, false);
+            return introspectTokenUni(resolvedContext, token, tokenType, expiresIn, false);
         } else if (resolvedContext.oidcConfig().jwks().resolveEarly()) {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             final String nonce = tokenCred instanceof IdTokenCredential ? (String) requestData.get(OidcConstants.NONCE) : null;
@@ -693,16 +694,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             } catch (Throwable t) {
                 if (t.getCause() instanceof UnresolvableKeyException) {
                     LOG.debug("No matching JWK key is found, refreshing and repeating the token verification");
-                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, idToken, enforceAudienceVerification,
+                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, tokenType, enforceAudienceVerification,
                             resolvedContext.oidcConfig().token().subjectRequired(), nonce, expiresIn);
                 } else {
-                    LOG.debugf("Token verification has failed: %s", t.getMessage());
                     return Uni.createFrom().failure(t);
                 }
             }
         } else {
             final String nonce = (String) requestData.get(OidcConstants.NONCE);
-            return resolveJwksAndVerifyTokenUni(resolvedContext, tokenCred, enforceAudienceVerification,
+            return resolveJwksAndVerifyTokenUni(resolvedContext, tokenCred, tokenType, enforceAudienceVerification,
                     resolvedContext.oidcConfig().token().subjectRequired(), nonce, expiresIn);
         }
     }
@@ -717,23 +717,22 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> refreshJwksAndVerifyTokenUni(TenantConfigContext resolvedContext, String token,
-            boolean idToken,
+            TokenType tokenType,
             boolean enforceAudienceVerification, boolean subjectRequired, String nonce, Long expiresIn) {
         return resolvedContext.provider()
                 .refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
-                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, idToken, expiresIn, true));
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, tokenType, expiresIn, true));
     }
 
     private Uni<TokenVerificationResult> resolveJwksAndVerifyTokenUni(TenantConfigContext resolvedContext,
-            TokenCredential tokenCred,
+            TokenCredential tokenCred, TokenType tokenType,
             boolean enforceAudienceVerification, boolean subjectRequired, String nonce, Long expiresIn) {
         return resolvedContext.provider()
                 .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce,
                         (tokenCred instanceof IdTokenCredential))
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
-                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(),
-                        isIdToken(tokenCred), expiresIn, true));
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), tokenType, expiresIn, true));
     }
 
     private static boolean fallbackToIntrospectionIfNoMatchingKey(Throwable f, TenantConfigContext resolvedContext) {
@@ -751,28 +750,30 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, final String token,
-            boolean idToken, Long expiresIn, boolean fallbackFromJwkMatch) {
+            TokenType tokenType, Long expiresIn, boolean fallbackFromJwkMatch) {
         TokenIntrospectionCache tokenIntrospectionCache = tenantResolver.getTokenIntrospectionCache();
         Uni<TokenIntrospection> tokenIntrospectionUni = tokenIntrospectionCache == null ? null
                 : tokenIntrospectionCache
                         .getIntrospection(token, resolvedContext.oidcConfig(), getIntrospectionRequestContext);
         if (tokenIntrospectionUni == null) {
-            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token, idToken, expiresIn, fallbackFromJwkMatch);
+            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token, tokenType, expiresIn,
+                    fallbackFromJwkMatch);
         } else {
             tokenIntrospectionUni = tokenIntrospectionUni.onItem().ifNull()
                     .switchTo(new Supplier<Uni<? extends TokenIntrospection>>() {
                         @Override
                         public Uni<TokenIntrospection> get() {
-                            return newTokenIntrospectionUni(resolvedContext, token, idToken, expiresIn, fallbackFromJwkMatch);
+                            return newTokenIntrospectionUni(resolvedContext, token, tokenType, expiresIn, fallbackFromJwkMatch);
                         }
                     });
         }
         return tokenIntrospectionUni.onItem().transform(t -> new TokenVerificationResult(null, t));
     }
 
-    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token, boolean idToken,
+    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token,
+            TokenType tokenType,
             Long expiresIn, boolean fallbackFromJwkMatch) {
-        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider().introspectToken(token, idToken, expiresIn,
+        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider().introspectToken(token, tokenType, expiresIn,
                 fallbackFromJwkMatch);
         if (tenantResolver.getTokenIntrospectionCache() == null
                 || !resolvedContext.oidcConfig().allowTokenIntrospectionCache()) {

@@ -41,7 +41,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if (context.request().path().contains("callback-before-wrong-redirect")) {
             List<String> stateParam = context.queryParam("state");
             if (stateParam.size() == 1 &&
-                    context.getCookie("q_auth_tenant-before-wrong-redirect_" + stateParam.get(0)) != null) {
+                    context.request().getCookie("q_auth_tenant-before-wrong-redirect_" + stateParam.get(0)) != null) {
                 // trigger the code to access token exchange failure due to a redirect uri mismatch
                 config.authentication.setRedirectPath("wrong-path");
             }

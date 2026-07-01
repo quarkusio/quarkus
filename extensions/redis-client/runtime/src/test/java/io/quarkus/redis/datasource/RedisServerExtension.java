@@ -9,12 +9,13 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 @SuppressWarnings("resource")
 public class RedisServerExtension implements BeforeAllCallback, AfterAllCallback {
@@ -41,6 +42,8 @@ public class RedisServerExtension implements BeforeAllCallback, AfterAllCallback
     }
 
     private static boolean init() {
+        // Force registration of context locals
+        VertxContext.isOnDuplicatedContext();
         if (!server.isRunning()) {
             server.start();
             vertx = Vertx.vertx();

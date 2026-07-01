@@ -685,18 +685,18 @@ Pool additional1Client;
 
 @Inject
 @ReactiveDataSource("additional2")
-MySQLPool additional2Client;
+Pool additional2Client;
 ----
 <1> Injecting the client for the default datasource does not require anything special.
 <2> For a named datasource, you use the `@ReactiveDataSource` CDI qualifier with the datasource name as its value.
 
-== UNIX Domain Socket connections
+== Unix Domain Socket connections
 
-The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
+The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a Unix Domain Socket.
 
-First make sure that xref:vertx-reference.adoc#native-transport[native transport support] is enabled.
+Unix Domain Sockets are supported in both JVM and native modes.
 
-Then configure the database connection url.
+Configure the database connection url as described below.
 This step depends on the database type.
 
 === PostgreSQL
@@ -780,57 +780,113 @@ For example, you could ensure connections are recycled after 60 minutes:
 quarkus.datasource.reactive.max-lifetime=PT60M
 ----
 
+== Pool `connection-timeout`
+
+The `connection-timeout` controls how long a request waits for a connection from the pool before failing.
+
+NOTE: The default connection timeout is 30 seconds (`30S`).
+
+For example, you could set a 5-second timeout:
+
+[source,properties]
+----
+quarkus.datasource.reactive.connection-timeout=5S
+----
+
+== Pool `max-wait-queue-size`
+
+You can limit how many requests wait in the queue when all pool connections are in use.
+Further requests are rejected immediately when the queue is full.
+
+NOTE: By default, the wait queue is unbounded.
+
+[source,properties]
+----
+quarkus.datasource.reactive.max-wait-queue-size=100
+----
+
+== Pool `pool-cleaner-period`
+
+The `pool-cleaner-period` controls how often the pool checks for idle connections eligible for removal.
+This works in conjunction with `idle-timeout`.
+
+NOTE: The default pool cleaner period is 1 second.
+
+[source,properties]
+----
+quarkus.datasource.reactive.pool-cleaner-period=5S
+----
+
+== TLS configuration
+
+All reactive SQL clients support TLS configuration through the Quarkus TLS registry.
+You can reference a named TLS configuration using the `tls-configuration-name` property:
+
+[source,properties]
+----
+quarkus.tls.my-db-tls.trust-store.pem.certs=server.crt
+quarkus.datasource.reactive.tls-configuration-name=my-db-tls
+----
+
+When a named TLS configuration is set, SSL is automatically enabled for the connection.
+For databases that support SSL modes (PostgreSQL and MariaDB/MySQL), the SSL mode is set to `require`/`required`.
+For IBM Db2 and Microsoft SQL Server, the `ssl` flag is set to `true`.
+
+NOTE: When a named TLS configuration is set, manual SSL properties (`trust-certificate-*`, `key-certificate-*`, `trust-all`, `hostname-verification-algorithm`) are ignored.
+
+For more information about the TLS registry, see the xref:tls-registry-reference.adoc[TLS Registry Reference guide].
+
+=== Direct SSL negotiation (PostgreSQL 17+)
+
+PostgreSQL 17 introduced direct SSL: the TLS handshake starts immediately on connect, with no prior SSL request/response round-trip.
+This reduces connection latency and enables standard TLS proxies (nginx, haproxy) to terminate the connection.
+
+Configure it with the `ssl-negotiation` property:
+
+[source,properties]
+----
+quarkus.datasource.reactive.postgresql.ssl-negotiation=direct
+quarkus.datasource.reactive.postgresql.ssl-mode=require
+----
+
+The `ssl-negotiation` property accepts two values:
+
+* `postgres` (default) — traditional negotiation, compatible with all PostgreSQL versions.
+* `direct` — direct SSL, requires PostgreSQL 17 or later.
+
 == Customizing pool creation
 
 Sometimes, the database connection pool cannot be configured only by declaration.
 
 For example, you might have to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
 
-In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
-
-[cols="30,70"]
-|===
-|Database |Pool creator class name
-
-|IBM Db2
-|`io.quarkus.reactive.db2.client.DB2PoolCreator`
-
-|MariaDB/MySQL
-|`io.quarkus.reactive.mysql.client.MySQLPoolCreator`
-
-|Microsoft SQL Server
-|`io.quarkus.reactive.mssql.client.MSSQLPoolCreator`
-
-|Oracle
-|`io.quarkus.reactive.oracle.client.OraclePoolCreator`
-
-|PostgreSQL
-|`io.quarkus.reactive.pg.client.PgPoolCreator`
-|===
-
-Here's an example for PostgreSQL:
+In this case, you can customize pool creation by creating a class implementing `io.quarkus.reactive.datasource.PoolCreator`:
 
 [source,java]
 ----
 import jakarta.inject.Singleton;
 
-import io.quarkus.reactive.pg.client.PgPoolCreator;
-import io.vertx.pgclient.PgConnectOptions;
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
 
 @Singleton
-public class CustomPgPoolCreator implements PgPoolCreator {
+public class CustomPoolCreator implements PoolCreator {
 
     @Override
     public Pool create(Input input) {
-        PgConnectOptions connectOptions = input.pgConnectOptions();
+        SqlConnectOptions connectOptions = input.connectOptionsList().get(0);
         PoolOptions poolOptions = input.poolOptions();
         // Customize connectOptions, poolOptions or both, as required
         return Pool.pool(input.vertx(), connectOptions, poolOptions);
     }
 }
 ----
+
+For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-name")`.
+
+TIP: `PoolCreator` is also the way to set Vert.x options that cannot be expressed as configuration properties, such as `SqlConnectOptions.setPreparedStatementCacheSqlFilter(Predicate<String>)`.
 
 == Pipelining
 

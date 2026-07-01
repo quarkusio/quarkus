@@ -6,23 +6,139 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.Limit;
 import jakarta.data.Order;
+import jakarta.data.page.PageRequest;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.SharedSessionContract;
-import org.hibernate.query.Page;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<Entity> {
 
     final CommonPanacheQueryImpl<Entity> delegate;
+    final Limits<PanacheBlockingQuery<Entity>> limitingDelegate = new Limits<PanacheBlockingQuery<Entity>>() {
+        @Override
+        public Limit limit() {
+            io.quarkus.panache.common.Range range = delegate.range();
+            // convert 0-based range to 1-based Jakarta Data Limit
+            return Limit.range(range.getStartIndex() + 1, range.getLastIndex() + 1);
+        }
 
-    PanacheBlockingQueryImpl(SharedSessionContract session, String query, String originalQuery, String orderBy,
+        @Override
+        public PanacheBlockingQuery<Entity> limit(Limit limit) {
+            // startAt is 1-based in Jakarta Data, convert to 0-based; end is inclusive, hence -1 on size
+            delegate.range((int) (limit.startAt() - 1), (int) (limit.startAt() + limit.maxResults() - 2));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> limit(int max) {
+            if (max == 0) {
+                throw new IllegalArgumentException("Limiting to 0 values is not supported");
+            }
+            // end is inclusive, hence -1 on size
+            delegate.range(0, max - 1);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> limit(long start, int max) {
+            // end is inclusive, hence -1 on size
+            delegate.range((int) start, (int) (start + max - 1));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> limitFrom(long start) {
+            // end is inclusive, hence -1 on size
+            // default page size of Jakarta Data is 10 (see PageRequest)
+            delegate.range((int) start, (int) (start + 10 - 1));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> range(long start, long end) {
+            delegate.range((int) start, (int) end);
+            return PanacheBlockingQueryImpl.this;
+        }
+    };
+    final Pages<PanacheBlockingQuery<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> pagesDelegate = new Pages<PanacheBlockingQuery<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long>() {
+        @Override
+        public PageRequest request() {
+            Page page = delegate.page();
+            // FIXME: let's hope they fix their page indices to 0-based
+            return PageRequest.ofPage(page.index + 1, page.size, false);
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> request(PageRequest request) {
+            // FIXME: let's hope they fix their page indices to 0-based
+            delegate.page((int) (request.page() - 1), request.size());
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> page(long pageIndex, int pageSize) {
+            delegate.page((int) pageIndex, pageSize);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> cursor(long pageIndex, int pageSize) {
+            delegate.cursor((int) pageIndex, pageSize);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> next() {
+            delegate.nextPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> previous() {
+            delegate.previousPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> first() {
+            delegate.firstPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public PanacheBlockingQuery<Entity> last() {
+            delegate.lastPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public Boolean hasNext() {
+            return delegate.hasNextPage();
+        }
+
+        @Override
+        public Boolean hasPrevious() {
+            return delegate.hasPreviousPage();
+        }
+
+        @Override
+        public Long count() {
+            return (long) delegate.pageCount();
+        }
+    };
+
+    PanacheBlockingQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery,
+            Sort sort,
             Object paramsArrayOrMap) {
-        delegate = new CommonPanacheQueryImpl<Entity>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        delegate = new CommonPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     PanacheBlockingQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {
@@ -30,70 +146,8 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
     }
 
     @Override
-    public PanacheBlockingQueryImpl<Entity> page(Page page) {
-        delegate.page(page.getNumber(), page.getSize());
-        return this;
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> page(int pageIndex, int pageSize) {
-        delegate.page(pageIndex, pageSize);
-        return this;
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> nextPage() {
-        delegate.nextPage();
-        return this;
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> previousPage() {
-        delegate.previousPage();
-        return this;
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> firstPage() {
-        delegate.firstPage();
-        return this;
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> lastPage() {
-        delegate.lastPage();
-        return this;
-    }
-
-    @Override
-    public Boolean hasNextPage() {
-        return delegate.hasNextPage();
-    }
-
-    @Override
-    public Boolean hasPreviousPage() {
-        return delegate.hasPreviousPage();
-    }
-
-    @Override
-    public Long pageCount() {
-        return (long) delegate.pageCount();
-    }
-
-    @Override
-    public Page page() {
-        return Page.page(delegate.page().size, delegate.page().index);
-    }
-
-    @Override
-    public PanacheBlockingQueryImpl<Entity> range(int startIndex, int lastIndex) {
-        delegate.range(startIndex, lastIndex);
-        return this;
-    }
-
-    @Override
     public PanacheBlockingQueryImpl<Entity> sort(Order<? super Entity> order) {
-        delegate.sort(PanacheJpaUtil.toOrderBy(PanacheJpaUtil.toSort(order)));
+        delegate.sort(PanacheJpaUtil.toSort(order));
         return this;
     }
 
@@ -142,6 +196,16 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
     }
 
     @Override
+    public Limits<PanacheBlockingQuery<Entity>> limits() {
+        return limitingDelegate;
+    }
+
+    @Override
+    public Pages<PanacheBlockingQuery<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> pages() {
+        return pagesDelegate;
+    }
+
+    @Override
     public <NewEntity> PanacheBlockingQueryImpl<NewEntity> project(Class<NewEntity> type) {
         return new PanacheBlockingQueryImpl<>(delegate.project(type));
     }
@@ -160,5 +224,4 @@ public class PanacheBlockingQueryImpl<Entity> implements PanacheBlockingQuery<En
     public Optional<Entity> singleResultOptional() {
         return delegate.singleResultOptional();
     }
-
 }

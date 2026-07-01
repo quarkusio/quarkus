@@ -12,8 +12,10 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.oracleclient.OracleConnectOptions;
 import io.vertx.sqlclient.Pool;
 
 public class MultipleDataSourcesAndOraclePoolCreatorsTest {
@@ -49,7 +51,7 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            oracleClient.query("SELECT 1 FROM DUAL").execute(ar -> {
+            oracleClient.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -69,7 +71,7 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            oracleClient.query("SELECT 1 FROM DUAL").execute(ar -> {
+            oracleClient.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -81,24 +83,26 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
     }
 
     @Singleton
-    public static class DefaultOraclePoolCreator implements OraclePoolCreator {
+    public static class DefaultOraclePoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(12345, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
+            OracleConnectOptions oracleConnectOptions = (OracleConnectOptions) input.connectOptionsList().get(0);
+            assertEquals(12345, oracleConnectOptions.getPort()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(), oracleConnectOptions.setHost("localhost").setPort(1521),
                     input.poolOptions());
         }
     }
 
     @Singleton
     @ReactiveDataSource("hibernate")
-    public static class HibernateOraclePoolCreator implements OraclePoolCreator {
+    public static class HibernateOraclePoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(55555, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
-            return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
+            OracleConnectOptions oracleConnectOptions = (OracleConnectOptions) input.connectOptionsList().get(0);
+            assertEquals(55555, oracleConnectOptions.getPort()); // validate that the bean has been called for the proper datasource
+            return Pool.pool(input.vertx(), oracleConnectOptions.setHost("localhost").setPort(1521),
                     input.poolOptions());
         }
     }

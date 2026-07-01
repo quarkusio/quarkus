@@ -1,6 +1,9 @@
 package io.quarkus.aesh.runtime;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
@@ -66,6 +69,23 @@ public class CliRunner implements QuarkusApplication {
                     .commandRegistryBuilder((AeshCommandRegistryBuilder) registryBuilder)
                     .settings(settings)
                     .prompt(configuration.prompt());
+
+            // Wire test connection and listener if set by the test framework.
+            // The AeshTestThread carries the streams and signal queue directly,
+            // avoiding System.getProperties() which breaks libraries like Narayana
+            // that iterate all property names.
+            InputStream testInput = AeshTestConnectionHolder.getInput();
+            OutputStream testOutput = AeshTestConnectionHolder.getOutput();
+            LinkedBlockingQueue<Object> signalQueue = AeshTestConnectionHolder.getSignalQueue();
+
+            if (testInput != null && testOutput != null) {
+                LOG.debug("Test mode: using stream-based connection");
+                runner.connection(new AeshStreamConnection(testInput, testOutput));
+
+                if (signalQueue != null) {
+                    runner.onCommandComplete(result -> signalQueue.offer("done"));
+                }
+            }
 
             if (configuration.addExitCommand()) {
                 runner.addExitCommand();

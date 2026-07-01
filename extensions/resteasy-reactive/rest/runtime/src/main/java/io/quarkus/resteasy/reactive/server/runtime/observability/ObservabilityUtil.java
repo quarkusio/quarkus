@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.observability;
 
-import io.vertx.core.Context;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.ext.web.RoutingContext;
 
 final class ObservabilityUtil {
@@ -10,14 +10,17 @@ final class ObservabilityUtil {
     }
 
     static void setUrlPathTemplate(RoutingContext routingContext, String templatePath) {
-        getRequestContext(routingContext).putLocal("UrlPathTemplate", templatePath);
+        if (VertxContext.isOnDuplicatedContext()) {
+            ContextLocals.put("UrlPathTemplate", templatePath);
+        } else {
+            routingContext.put("UrlPathTemplate", templatePath);
+        }
     }
 
     static String getUrlPathTemplate(RoutingContext routingContext) {
-        return getRequestContext(routingContext).getLocal("UrlPathTemplate");
-    }
-
-    private static Context getRequestContext(RoutingContext routingContext) {
-        return ((HttpServerRequestInternal) (routingContext.request())).context();
+        if (VertxContext.isOnDuplicatedContext()) {
+            return ContextLocals.<String> get("UrlPathTemplate").orElse(null);
+        }
+        return routingContext.get("UrlPathTemplate");
     }
 }

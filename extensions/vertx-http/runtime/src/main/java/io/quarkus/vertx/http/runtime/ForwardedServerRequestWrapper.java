@@ -1,17 +1,12 @@
 package io.quarkus.vertx.http.runtime;
 
-import java.util.Map;
 import java.util.Set;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
-import javax.security.cert.X509Certificate;
 
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.DecoderResult;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -26,8 +21,8 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
-import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestWrapper;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
@@ -237,12 +232,6 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     }
 
     @Override
-    @Deprecated
-    public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
-        return delegate.peerCertificateChain();
-    }
-
-    @Override
     public SSLSession sslSession() {
         return delegate.sslSession();
     }
@@ -271,11 +260,6 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     @Override
     public String scheme() {
         return forwardedParser.scheme();
-    }
-
-    @Override
-    public String host() {
-        return forwardedParser.host();
     }
 
     @Override
@@ -354,12 +338,6 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     }
 
     @Override
-    @Deprecated
-    public Map<String, Cookie> cookieMap() {
-        return delegate.cookieMap();
-    }
-
-    @Override
     public Cookie getCookie(String name, String domain, String path) {
         return delegate.getCookie(name, domain, path);
     }
@@ -375,18 +353,8 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     }
 
     @Override
-    public HttpServerRequest body(Handler<AsyncResult<Buffer>> handler) {
-        return delegate.body(handler);
-    }
-
-    @Override
     public Future<Buffer> body() {
         return delegate.body();
-    }
-
-    @Override
-    public void end(Handler<AsyncResult<Void>> handler) {
-        delegate.end(handler);
     }
 
     @Override
@@ -395,18 +363,8 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     }
 
     @Override
-    public void toNetSocket(Handler<AsyncResult<NetSocket>> handler) {
-        delegate.toNetSocket(handler);
-    }
-
-    @Override
     public Future<NetSocket> toNetSocket() {
         return delegate.toNetSocket();
-    }
-
-    @Override
-    public void toWebSocket(Handler<AsyncResult<ServerWebSocket>> handler) {
-        delegate.toWebSocket(handler);
     }
 
     @Override
@@ -415,7 +373,7 @@ public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper impl
     }
 
     @Override
-    public Context context() {
+    public io.vertx.core.internal.ContextInternal context() {
         return delegate.context();
     }
 

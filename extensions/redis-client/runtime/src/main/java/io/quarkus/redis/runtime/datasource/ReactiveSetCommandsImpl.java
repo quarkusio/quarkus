@@ -12,7 +12,7 @@ import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.set.ReactiveSScanCursor;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveSetCommandsImpl<K, V> extends AbstractSetCommands<K, V> implements ReactiveSetCommands<K, V> {
 

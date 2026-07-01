@@ -10,7 +10,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 
 /**
  * A bounded (direct) buffer container that can keep on accepting data till {@link #capacity} is exhausted.
@@ -197,7 +197,7 @@ final class AppendBuffer {
         var others = otherBuffers;
         CompositeByteBuf batch;
         if (anyHeap) {
-            batch = new CompositeByteBuf(VertxByteBufAllocator.UNPOOLED_ALLOCATOR, false, 1 + others.size());
+            batch = new CompositeByteBuf(VertxByteBufAllocator.DEFAULT, false, 1 + others.size());
         } else {
             // This should be the allocator picked by Netty
             batch = PooledByteBufAllocator.DEFAULT.compositeBuffer(1 + others.size());

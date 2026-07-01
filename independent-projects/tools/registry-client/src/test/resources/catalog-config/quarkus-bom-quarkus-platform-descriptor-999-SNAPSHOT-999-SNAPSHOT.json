@@ -1183,7 +1183,7 @@
       "status" : "stable",
       "codestart" : {
         "name" : "resteasy",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.resteasy." ],
@@ -1612,7 +1612,7 @@
       "status" : "stable",
       "codestart" : {
         "name" : "spring-web",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "built-with-quarkus-core" : "999-SNAPSHOT",
@@ -2039,7 +2039,7 @@
       "guide" : "https://quarkus.io/guides/resteasy-reactive",
       "codestart" : {
         "name" : "resteasy-reactive",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.resteasy-reactive." ],
@@ -2073,7 +2073,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "built-with-quarkus-core" : "999-SNAPSHOT",
@@ -2091,7 +2091,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "built-with-quarkus-core" : "999-SNAPSHOT",
@@ -2109,7 +2109,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.rest-client-reactive." ],
@@ -2131,7 +2131,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.rest-client-reactive." ],
@@ -2149,7 +2149,7 @@
       "status" : "stable",
       "codestart" : {
         "name" : "resteasy-reactive-qute",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.resteasy-reactive.", "quarkus.qute." ],
@@ -2169,7 +2169,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.resteasy-reactive." ],
@@ -2189,7 +2189,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "config" : [ "quarkus.resteasy-reactive.", "quarkus.jackson." ],
@@ -2219,7 +2219,7 @@
       "codestart" : {
         "name" : "resteasy-reactive",
         "kind" : "core",
-        "languages" : [ "java", "kotlin", "scala" ],
+        "languages" : [ "java", "kotlin" ],
         "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
       },
       "built-with-quarkus-core" : "999-SNAPSHOT",
@@ -2494,23 +2494,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
     },
     "artifact" : "io.quarkus:quarkus-neo4j::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
-    "name" : "Scala",
-    "description" : "Write your services in Scala",
-    "metadata" : {
-      "keywords" : [ "scala" ],
-      "categories" : [ "alt-languages" ],
-      "status" : "preview",
-      "codestart" : {
-        "name" : "scala",
-        "kind" : "core",
-        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
-      },
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
-    },
-    "artifact" : "io.quarkus:quarkus-scala::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
     "name" : "JGit",
@@ -3019,8 +3002,7 @@
         "compiler-plugin-version" : "3.8.1",
         "surefire-plugin-version" : "3.0.0",
         "kotlin-version" : "1.5.31",
-        "scala-version" : "2.12.13",
-        "scala-plugin-version" : "4.4.0",
+
         "quarkus-core-version" : "999-SNAPSHOT",
         "maven-plugin-groupId" : "io.quarkus",
         "maven-plugin-artifactId" : "quarkus-maven-plugin",
@@ -3030,7 +3012,7 @@
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
         "maven-wrapper-version" : "3.3.4",
-        "gradle-wrapper-version" : "9.5.1"
+        "gradle-wrapper-version" : "9.6.0"
       }
     },
     "codestarts-artifacts" : [ "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT" ]

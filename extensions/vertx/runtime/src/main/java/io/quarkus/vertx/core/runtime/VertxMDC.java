@@ -9,16 +9,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.jboss.logmanager.MDCProvider;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 public enum VertxMDC implements MDCProvider {
     INSTANCE;
+
+    public static final ContextLocal<ConcurrentHashMap<String, Object>> MDC_LOCAL = VertxMDCServiceProvider.MDC_LOCAL;
 
     final InheritableThreadLocal<Map<String, Object>> inheritableThreadLocalMap = new InheritableThreadLocal<>() {
         @Override
@@ -37,7 +38,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Get the value for a key, or {@code null} if there is no mapping.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -52,7 +53,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Get the value for a key, or {@code null} if there is no mapping.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -93,7 +94,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -109,7 +110,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -156,7 +157,7 @@ public enum VertxMDC implements MDCProvider {
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
-     *
+     * <p>
      * Will look up the contextual data map just once.
      *
      * @param map contents to add
@@ -169,7 +170,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Removes a key.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -184,7 +185,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Removes a key.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -223,7 +224,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Get a copy of the MDC map. This is a relatively expensive operation.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -237,7 +238,7 @@ public enum VertxMDC implements MDCProvider {
 
     /**
      * Get a copy of the MDC map. This is a relatively expensive operation.
-     *
+     * <p>
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -317,51 +318,22 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
-     * Should be used before adding data to the VertxMCD context on a new thread.
+     * Removes the specified MDC keys from the context's MDC map in place.
+     * Non-discard keys are preserved. This method is safe for concurrent use
+     * when multiple threads share the same Vert.x context.
      *
-     * @param vertxContext
-     */
-    void clearVertxMdcFromContext(Context vertxContext) {
-        if (vertxContext != null) {
-            vertxContext.removeLocal(VertxMDC.class.getName());
-        }
-    }
-
-    /**
-     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
-     * Also copies to the new reference any previous data not in the set of MDC keys to discard.
-     *
-     * @param vertxContext
-     * @param discardMdcKeys Entries not to be copied over to the new MDC
+     * @param vertxContext the Vert.x context
+     * @param discardMdcKeys keys to remove from the MDC
      */
     public void reinitializeVertxMdc(Context vertxContext, Set<String> discardMdcKeys) {
-        if (vertxContext == null || vertxContext.getLocal(VertxMDC.class.getName()) == null) {
-            // nothing to do
+        if (vertxContext == null || discardMdcKeys == null || discardMdcKeys.isEmpty()) {
             return;
         }
-
-        if (VertxMDC.INSTANCE.isEmpty(vertxContext)) {
-            // clear the object ref to force a new one and prevent crosstalk
-            VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
+        ConcurrentHashMap<String, Object> data = vertxContext.getLocal(MDC_LOCAL);
+        if (data == null) {
             return;
         }
-
-        final Map<String, Object> carryover = new HashMap<>();
-        final boolean hasDiscardKeys = discardMdcKeys == null || discardMdcKeys.isEmpty();
-        for (Map.Entry<String, Object> entry : VertxMDC.INSTANCE.getEntrySet()) {
-            final String key = entry.getKey();
-            final Object value = entry.getValue();
-            // Not taking chances with null values
-            if (key != null && value != null && (hasDiscardKeys || !discardMdcKeys.contains(key))) {
-                carryover.put(key, value);
-            }
-        }
-
-        // clear the object ref to force a new one and prevent crosstalk
-        VertxMDC.INSTANCE.clearVertxMdcFromContext(vertxContext);
-        // Preserving relevant data
-        VertxMDC.INSTANCE.putAll(carryover, vertxContext);
+        discardMdcKeys.forEach(data::remove);
     }
 
     /**
@@ -383,19 +355,16 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Gets the current Contextual Data Map from the current Vert.x Context if it is not null or the default
+     * Gets the current MDC map from the current Vert.x Context if it is not null or the default
      * ThreadLocal Data Map for use in non Vert.x Threads.
      *
      * @return the current Contextual Data Map.
      */
-    @SuppressWarnings({ "unchecked" })
     private Map<String, Object> contextualDataMap(Context ctx) {
         if (ctx == null) {
             return inheritableThreadLocalMap.get();
         }
 
-        ConcurrentMap<Object, Object> lcd = Objects.requireNonNull((ContextInternal) ctx).localContextData();
-        return (ConcurrentMap<String, Object>) lcd.computeIfAbsent(VertxMDC.class.getName(),
-                k -> new ConcurrentHashMap<String, Object>());
+        return ctx.getLocal(MDC_LOCAL, ConcurrentHashMap::new);
     }
 }

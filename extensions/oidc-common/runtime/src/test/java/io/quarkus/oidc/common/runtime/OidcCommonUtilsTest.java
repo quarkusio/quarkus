@@ -12,9 +12,9 @@ import java.util.StringTokenizer;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.mutiny.core.MultiMap;
 
 public class OidcCommonUtilsTest {
 

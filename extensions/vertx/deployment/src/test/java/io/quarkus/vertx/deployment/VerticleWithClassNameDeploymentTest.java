@@ -43,8 +43,7 @@ public class VerticleWithClassNameDeploymentTest {
         public void init(@Observes StartupEvent ev) throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             vertx.deployVerticle(MyVerticle.class.getName(),
-                    new DeploymentOptions().setInstances(2),
-                    ar -> latch.countDown());
+                    new DeploymentOptions().setInstances(2)).onComplete(ar -> latch.countDown());
             latch.await();
         }
     }
@@ -55,7 +54,7 @@ public class VerticleWithClassNameDeploymentTest {
         public void start(Promise<Void> done) {
             vertx.createHttpServer()
                     .requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
-                    .listen(8080, ar -> done.handle(ar.mapEmpty()));
+                    .listen(8080).onComplete(ar -> done.handle(ar.mapEmpty()));
         }
 
     }

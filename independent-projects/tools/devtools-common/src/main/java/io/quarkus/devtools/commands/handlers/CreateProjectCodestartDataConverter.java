@@ -29,8 +29,7 @@ public enum CreateProjectCodestartDataConverter implements DataKey {
     QUARKUS_GRADLE_PLUGIN_ID(PlatformPropertiesKey.QUARKUS_GRADLE_PLUGIN_ID),
     QUARKUS_GRADLE_PLUGIN_VERSION(PlatformPropertiesKey.QUARKUS_GRADLE_PLUGIN_VERSION),
     KOTLIN_VERSION(PlatformPropertiesKey.KOTLIN_VERSION),
-    SCALA_VERSION(PlatformPropertiesKey.SCALA_VERSION),
-    SCALA_MAVEN_PLUGIN_VERSION(PlatformPropertiesKey.SCALA_MAVEN_PLUGIN_VERSION),
+
     MAVEN_COMPILER_PLUGIN_VERSION(PlatformPropertiesKey.MAVEN_COMPILER_PLUGIN_VERSION),
     MAVEN_SUREFIRE_PLUGIN_VERSION(PlatformPropertiesKey.MAVEN_SUREFIRE_PLUGIN_VERSION),
 
@@ -93,9 +92,7 @@ public enum CreateProjectCodestartDataConverter implements DataKey {
         String QUARKUS_MAVEN_PLUGIN_VERSION = "maven-plugin-version";
         String QUARKUS_GRADLE_PLUGIN_VERSION = "gradle-plugin-version";
         String KOTLIN_VERSION = "kotlin-version";
-        String SCALA_VERSION = "scala-version";
         String QUARKUS_GRADLE_PLUGIN_ID = "gradle-plugin-id";
-        String SCALA_MAVEN_PLUGIN_VERSION = "scala-plugin-version";
         String MAVEN_COMPILER_PLUGIN_VERSION = "compiler-plugin-version";
         String MAVEN_SUREFIRE_PLUGIN_VERSION = "surefire-plugin-version";
     }

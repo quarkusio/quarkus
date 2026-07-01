@@ -1,25 +1,25 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
-import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
-import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.deployment.DotNames.VOID_BOXED;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
 import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -29,42 +29,47 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.KotlinUtils;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
-import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
-import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
-import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.kafka.ExactlyOnceInvoker;
 import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
-import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveExactlyOnceInvoker;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
+import io.smallrye.reactive.messaging.MediatorConfiguration;
+import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
+import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordBatchMetadata;
+import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging-kafka.deployment.processor");
-
-    public static final String CHECKPOINT_STATE_STORE_MESSAGE = "Quarkus detected the use of `%s` for the" +
-            " Kafka checkpoint commit strategy but the extension has not been added. Consider adding '%s'.";
-
-    private static final String CHECKPOINT_ENTITY_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity";
-    private static final String CHECKPOINT_ENTITY_ID_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntityId";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -125,56 +130,228 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     @BuildStep
-    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            Capabilities capabilities) {
-        if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
-            Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
-            checkpointStateType.ifPresent(
-                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s)
-                            .reason(getClass().getName())
-                            .methods().fields().build()));
-            if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
-                additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, REDIS_STATE_STORE, "quarkus-redis-client");
+    public void exactlyOnceProcessing(
+            CombinedIndexBuildItem combinedIndex,
+            List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
+            BuildProducer<InjectedEmitterBuildItem> emitters) {
+
+        DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
+
+        for (AnnotationInstance annotation : combinedIndex.getIndex().getAnnotations(DotNames.EXACTLY_ONCE)) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
             }
+            MethodInfo method = annotation.target().asMethod();
+            String methodName = method.declaringClass().name() + "#" + method.name();
+
+            AnnotationInstance incoming = method.annotation(DotNames.INCOMING);
+            AnnotationInstance outgoing = method.annotation(DotNames.OUTGOING);
+
+            if (incoming == null || outgoing == null) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName + " requires both @Incoming and @Outgoing annotations");
+            }
+
+            if (method.parametersCount() == 0) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName + " requires at least one parameter");
+            }
+
+            for (Type paramType : method.parameterTypes()) {
+                if (paramType.name().equals(DotNames.MESSAGE)) {
+                    throw new IllegalArgumentException(
+                            "@ExactlyOnce on method " + methodName
+                                    + " does not support Message parameters, use payload types instead");
+                }
+            }
+
+            if (method.returnType().name().equals(DotNames.VOID)
+                    || method.returnType().name().equals(VOID_BOXED)) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + " must return a value to produce to the outgoing channel");
+            }
+
+            if (method.hasAnnotation(DotNames.BLOCKING) || method.hasAnnotation(DotNames.SMALLRYE_BLOCKING)) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + " cannot be combined with @Blocking");
+            }
+
+            DotName returnTypeName = method.returnType().name();
+            boolean reactive = DotNames.UNI.equals(returnTypeName) || DotNames.MULTI.equals(returnTypeName)
+                    || DotNames.COMPLETION_STAGE.equals(returnTypeName);
+
+            if (reactive && method.returnType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                DotName typeArg = method.returnType().asParameterizedType().arguments().get(0).name();
+                if (typeArg.equals(VOID_BOXED)) {
+                    throw new IllegalArgumentException(
+                            "@ExactlyOnce on method " + methodName
+                                    + " must return a value to produce to the outgoing channel");
+                }
+            }
+
+            if (method.hasAnnotation(DotNames.WITH_TRANSACTION) && !reactive) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + " cannot combine @WithTransaction with a synchronous return type"
+                                + ", use @Transactional instead");
+            }
+
+            if (method.hasAnnotation(DotNames.TRANSACTIONAL) && method.hasAnnotation(DotNames.WITH_TRANSACTION)) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + " cannot combine @Transactional with @WithTransaction");
+            }
+
+            boolean isSuspend = method.parameterTypes().stream()
+                    .anyMatch(t -> t.name().equals(DotNames.CONTINUATION));
+            if (isSuspend) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + " does not support Kotlin suspend functions");
+            }
+
+            String incomingChannel = incoming.value().asString();
+            String outgoingChannel = outgoing.value().asString();
+
+            if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, true, incomingChannel)) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + ": incoming channel '" + incomingChannel + "' is not managed by the Kafka connector");
+            }
+            if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, false, outgoingChannel)) {
+                throw new IllegalArgumentException(
+                        "@ExactlyOnce on method " + methodName
+                                + ": outgoing channel '" + outgoingChannel + "' is not managed by the Kafka connector");
+            }
+
+            LOGGER.infof("Exactly-once processing detected on method %s#%s, " +
+                    "configuring channels '%s' (incoming) and '%s' (outgoing)",
+                    method.declaringClass().name(), method.name(), incomingChannel, outgoingChannel);
+
+            // Auto-configure outgoing channel for transactions
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelOutgoingPropertyName(outgoingChannel, "transactional.id"),
+                    "${quarkus.application.name}-" + outgoingChannel);
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelOutgoingPropertyName(outgoingChannel, "enable.idempotence"), "true");
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelOutgoingPropertyName(outgoingChannel, "acks"), "all");
+
+            // Auto-configure incoming channel for exactly-once
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelIncomingPropertyName(incomingChannel, "commit-strategy"), "ignore");
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelIncomingPropertyName(incomingChannel, "isolation.level"), "read_committed");
+            produceRuntimeConfigurationDefaultBuildItem(discoveryState, defaultConfigProducer,
+                    getChannelIncomingPropertyName(incomingChannel, "failure-strategy"), "fail");
+
+            // Register a KafkaTransactions emitter for the outgoing channel
+            emitters.produce(InjectedEmitterBuildItem.of(outgoingChannel,
+                    DotNames.KAFKA_TRANSACTIONS_EMITTER.toString(),
+                    null, -1, false, -1));
         }
     }
 
     @BuildStep
-    public void checkpointHibernateReactive(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
-        if (hasStateStoreConfig(HIBERNATE_REACTIVE_STATE_STORE, ConfigProvider.getConfig())) {
-            if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(HibernateReactiveStateStore.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_REACTIVE_STATE_STORE, "quarkus-hibernate-reactive");
+    public void generateExactlyOnceInvokers(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<CustomInvokerBuildItem> customInvokers,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+
+        for (AnnotationInstance annotation : combinedIndex.getIndex().getAnnotations(DotNames.EXACTLY_ONCE)) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
             }
+            MethodInfo method = annotation.target().asMethod();
+
+            String generatedName = generateExactlyOnceInvoker(method, classOutput);
+            String invokerClassName = generatedName.replace('/', '.');
+
+            customInvokers.produce(CustomInvokerBuildItem
+                    .builder(CustomInvokerBuildItem.mediatorMethodId(method), invokerClassName)
+                    .shape(Shape.SUBSCRIBER)
+                    .production(MediatorConfiguration.Production.NONE)
+                    .acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+                    .syntheticParameterTypes(List.of(
+                            IncomingKafkaRecordMetadata.class.getName(),
+                            IncomingKafkaRecordBatchMetadata.class.getName()))
+                    .build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClassName).build());
         }
     }
 
-    @BuildStep
-    public void checkpointHibernateOrm(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
-        if (hasStateStoreConfig(HIBERNATE_ORM_STATE_STORE, ConfigProvider.getConfig())) {
-            if (capabilities.isPresent(Capability.HIBERNATE_ORM)) {
-                additionalBean.produce(new AdditionalBeanBuildItem(HibernateOrmStateStore.Factory.class));
-            } else {
-                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_ORM_STATE_STORE, "quarkus-hibernate-orm");
+    private String generateExactlyOnceInvoker(MethodInfo method, ClassOutput classOutput) {
+        AnnotationInstance outgoing = method.annotation(DotNames.OUTGOING);
+        String outgoingChannel = outgoing != null ? outgoing.value().asString() : "";
+
+        DotName returnTypeName = method.returnType().name();
+        boolean reactive = DotNames.UNI.equals(returnTypeName) || DotNames.MULTI.equals(returnTypeName)
+                || DotNames.COMPLETION_STAGE.equals(returnTypeName);
+
+        String superClass;
+        if (reactive) {
+            superClass = ReactiveExactlyOnceInvoker.class.getName();
+        } else {
+            superClass = ExactlyOnceInvoker.class.getName();
+        }
+
+        String baseName = method.declaringClass().name().withoutPackagePrefix();
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
+        for (Type i : method.parameterTypes()) {
+            sigBuilder.append(i.name().toString());
+        }
+        String targetPackage = method.declaringClass().name().packagePrefix().replace('.', '/') + "/";
+        String generatedName = targetPackage + baseName
+                + "_ExactlyOnceInvoker_" + method.name() + "_"
+                + HashUtil.sha1(sigBuilder.toString());
+
+        try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(superClass)
+                .build()) {
+
+            String beanInstanceType = method.declaringClass().name().toString();
+            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", beanInstanceType)
+                    .getFieldDescriptor();
+
+            try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
+                ctor.setModifiers(Modifier.PUBLIC);
+                ctor.invokeSpecialMethod(
+                        MethodDescriptor.ofConstructor(superClass, String.class),
+                        ctor.getThis(), ctor.load(outgoingChannel));
+                ctor.writeInstanceField(beanInstanceField, ctor.getThis(), ctor.getMethodParam(0));
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator invokeBean = invoker.getMethodCreator(
+                    MethodDescriptor.ofMethod(generatedName, "invokeBean", Object.class, Object[].class))) {
+                invokeBean.setModifiers(Modifier.PROTECTED);
+
+                int parametersCount = method.parametersCount();
+                String[] argTypes = new String[parametersCount];
+                ResultHandle[] args = new ResultHandle[parametersCount];
+                for (int i = 0; i < parametersCount; i++) {
+                    args[i] = invokeBean.readArrayValue(invokeBean.getMethodParam(0), i);
+                    argTypes[i] = method.parameterType(i).name().toString();
+                }
+                ResultHandle result = invokeBean.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(beanInstanceType, method.name(),
+                                method.returnType().name().toString(), argTypes),
+                        invokeBean.readInstanceField(beanInstanceField, invokeBean.getThis()), args);
+                if (DotNames.VOID.equals(method.returnType().name())) {
+                    invokeBean.returnValue(invokeBean.loadNull());
+                } else {
+                    invokeBean.returnValue(result);
+                }
             }
         }
-    }
-
-    @BuildStep
-    public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        // Only added to persistence units actually using this class, using Jandex-based discovery,
-        // so we pass empty sets of PUs.
-        // The build items tell the Hibernate extension to process the classes at build time:
-        // add to Jandex index, bytecode enhancement, proxy generation, ...
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME,
-                Set.of()));
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME,
-                Set.of()));
+        return generatedName;
     }
 
     /**
@@ -188,12 +365,15 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection) {
 
         DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
         if (buildTimeConfig.serializerAutodetectionEnabled()) {
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.serializerGenerationEnabled() ? generatedClass : null, reflection);
+                    buildTimeConfig.serializerGenerationEnabled() ? generatedClass : null,
+                    generatedResources, generatedServiceProviders, reflection);
         }
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
@@ -224,6 +404,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection) {
         Map<String, String> alreadyGeneratedSerializers = new HashMap<>();
         Map<String, String> alreadyGeneratedDeserializers = new HashMap<>();
@@ -237,8 +419,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             Type incomingType = getIncomingTypeFromMethod(method);
 
-            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
-                    alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
         }
 
         for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING)) {
@@ -257,7 +439,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                 handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
-            }, generatedClass, reflection, alreadyGeneratedSerializers);
+            }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
         }
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnInjectionPoints(DotNames.CHANNEL)) {
@@ -274,8 +456,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
 
-            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
-                    alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
             processKafkaTransactions(discovery, config, channelName, injectionPointType);
 
@@ -287,11 +469,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                             getChannelOutgoingPropertyName(channelName, "key.serializer"), keySerializer);
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
                             getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
-                }, generatedClass, reflection, alreadyGeneratedSerializers);
+                }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
                 extractKeyValueType(replyType, (key, value, isBatchType) -> {
-                    Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
+                    Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass,
+                            generatedResources, generatedServiceProviders, reflection,
                             alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
-                    Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass, reflection,
+                    Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass,
+                            generatedResources, generatedServiceProviders, reflection,
                             alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
@@ -309,7 +493,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                             getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                     handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
-                }, generatedClass, reflection, alreadyGeneratedSerializers);
+                }, generatedClass, generatedResources, generatedServiceProviders, reflection, alreadyGeneratedSerializers);
             }
         }
     }
@@ -333,12 +517,17 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processIncomingType(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Type incomingType, String channelName,
-            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedDeserializers, Map<String, String> alreadyGeneratedSerializers) {
         extractKeyValueType(incomingType, (key, value, isBatchType) -> {
-            Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
+            Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass,
+                    generatedResources, generatedServiceProviders, reflection,
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
-            Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass, reflection,
+            Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass,
+                    generatedResources, generatedServiceProviders, reflection,
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
             produceRuntimeConfigurationDefaultBuildItem(discovery, config,
@@ -552,11 +741,14 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
             BiConsumer<Result, Result> serializerAcceptor, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, String> alreadyGeneratedSerializer) {
         extractKeyValueType(outgoingType, (key, value, isBatch) -> {
-            Result keySerializer = serializerFor(discovery, key, generatedClass, reflection,
-                    alreadyGeneratedSerializer);
-            Result valueSerializer = serializerFor(discovery, value, generatedClass, reflection,
+            Result keySerializer = serializerFor(discovery, key, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection, alreadyGeneratedSerializer);
+            Result valueSerializer = serializerFor(discovery, value, generatedClass, generatedResources,
+                    generatedServiceProviders, reflection,
                     alreadyGeneratedSerializer);
             serializerAcceptor.accept(keySerializer, valueSerializer);
         });
@@ -871,6 +1063,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             boolean key,
             String channelName,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedDeserializers,
             Map<String, String> alreadyGeneratedSerializers) {
@@ -885,7 +1079,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Check if already generated
             String generatedDeserializerClassName = alreadyGeneratedDeserializers.get(type.name().toString());
             if (generatedDeserializerClassName == null) {
-                generatedDeserializerClassName = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
+                generatedDeserializerClassName = JacksonSerdeGenerator.generateDeserializer(generatedClass, generatedResources,
+                        generatedServiceProviders, type);
                 alreadyGeneratedDeserializers.put(type.name().toString(), generatedDeserializerClassName);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
                 // Deserializers are access by reflection.
@@ -896,7 +1091,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
             // if the channel has a DLQ config generate a serializer as well
             if (hasDLQConfig(channelName, discovery.getConfig())) {
-                Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
+                Result serializer = serializerFor(discovery, type, generatedClass, generatedResources,
+                        generatedServiceProviders, reflection, alreadyGeneratedSerializers);
                 if (serializer != null) {
                     result = Result.of(generatedDeserializerClassName)
                             .with(key, "dead-letter-queue.key.serializer", serializer.value)
@@ -911,6 +1107,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, true);
@@ -924,7 +1122,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             // Check if already generated
             String generatedSerializerClassName = alreadyGeneratedSerializers.get(type.name().toString());
             if (generatedSerializerClassName == null) {
-                generatedSerializerClassName = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
+                generatedSerializerClassName = JacksonSerdeGenerator.generateSerializer(generatedClass, generatedResources,
+                        generatedServiceProviders, type);
                 alreadyGeneratedSerializers.put(type.name().toString(), generatedSerializerClassName);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
                 // Serializers are access by reflection.

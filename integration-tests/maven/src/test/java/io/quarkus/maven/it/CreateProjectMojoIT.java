@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -599,8 +599,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    private InvocationResult setup(Properties params)
-            throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
+    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException {
 
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
@@ -615,8 +614,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         request.setProperties(params);
 
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
-                InvokerLogger.DEBUG);
+        PrintStreamLogger logger = new PrintStreamLogger(
+                new PrintStream(new FileOutputStream(log), false, StandardCharsets.UTF_8), InvokerLogger.DEBUG);
         invoker.setLogger(logger);
         return invoker.execute(request);
     }

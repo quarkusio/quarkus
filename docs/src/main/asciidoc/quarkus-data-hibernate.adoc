@@ -94,15 +94,20 @@ annotationProcessor 'org.hibernate.orm:hibernate-processor'
 
 TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[supported JDBC drivers].
 
-Make sure you configure your datasource in your `application.properties` (although you don't have to in DEV
-mode: if you don't, a dev service will be provided for you):
+Add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
+.Example `{config-file}`
 ----
+quarkus.datasource.db-kind = postgresql <1>
+
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
 %prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 == Our first entity
 
@@ -439,8 +444,6 @@ List<Cat> byNameThenBirth = repo.findAll()
         .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
         .list();
 ----
-
-Pass `null` or an empty `Order.by()` to leave the query unsorted.
 
 == About entity identifiers
 
@@ -1245,18 +1248,22 @@ For `Sort` and `Order`, prefix the property name with `-` to indicate descending
 
 When binding sort parameters from REST endpoints to `PanacheQuery`, prefer `Order<Cat>` over
 `Sort<Cat>`. A missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty
-`Order.by()` for `Order<Cat>`, which matches the usual "no sort requested" case without null
-checks. Both types are accepted by `PanacheQuery.sort()` — pass `null` or an empty
-`Order.by()` to leave the query unsorted:
+`Order.by()` for `Order<Cat>`. Only call `sort()` when the client requested sorting:
 
 [source,java]
 ----
 import jakarta.data.Order;
 import jakarta.ws.rs.GET;
 
+import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+
 @GET
 public List<Cat> list(Order<Cat> order) {
-    return Cat_.managedBlocking().findAll().sort(order).list();
+    PanacheBlockingQuery<Cat> query = Cat_.managedBlocking().findAll();
+    if (!order.sorts().isEmpty()) {
+        query = query.sort(order);
+    }
+    return query.list();
 }
 ----
 
@@ -1285,16 +1292,19 @@ The `totalElements` and `totalPages` fields are only included when the `PageRequ
 === Example endpoint
 
 Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
-list of cats. Define a `@Find` method on your repository that accepts `PageRequest` and `Order`:
+list of cats. Paging and sorting are configured on the `PanacheQuery` returned by `findAll()`:
 
 [source,java]
 ----
 import jakarta.data.Order;
-import jakarta.data.page.Page;
 import jakarta.data.page.PageRequest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+
+import java.util.List;
+
+import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
 
 @Path("cats")
 public class CatResource {
@@ -1303,8 +1313,12 @@ public class CatResource {
     Cat.Repo repo;
 
     @GET
-    public Page<Cat> list(PageRequest pageRequest, Order<Cat> order) { // <1>
-        return repo.findAll(pageRequest, order);
+    public List<Cat> list(PageRequest pageRequest, Order<Cat> order) { // <1>
+        PanacheBlockingQuery<Cat> query = repo.findAll().pages().request(pageRequest);
+        if (!order.sorts().isEmpty()) {
+            query = query.sort(order);
+        }
+        return query.list();
     }
 }
 ----

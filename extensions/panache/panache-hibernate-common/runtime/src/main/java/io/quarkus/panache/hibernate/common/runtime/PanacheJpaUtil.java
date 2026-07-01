@@ -1,10 +1,14 @@
 package io.quarkus.panache.hibernate.common.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 import jakarta.data.Order;
 import jakarta.data.Sort;
+
+import org.hibernate.query.SortDirection;
 
 import io.quarkus.panache.common.exception.PanacheQueryException;
 
@@ -249,6 +253,29 @@ public class PanacheJpaUtil {
         }
 
         return result;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static List<org.hibernate.query.Order<?>> toHibernateOrders(Class<?> entityClass,
+            io.quarkus.panache.common.Sort sort) {
+        if (sort == null || sort.getColumns().isEmpty()) {
+            return List.of();
+        }
+        List<org.hibernate.query.Order<?>> orders = new ArrayList<>();
+        for (io.quarkus.panache.common.Sort.Column column : sort.getColumns()) {
+            SortDirection direction = column.getDirection() == io.quarkus.panache.common.Sort.Direction.Ascending
+                    ? SortDirection.ASCENDING
+                    : SortDirection.DESCENDING;
+            org.hibernate.query.Order<?> order = org.hibernate.query.Order.by((Class) entityClass, column.getName(),
+                    direction, column.isIgnoreCase());
+            if (column.getNullPrecedence() == io.quarkus.panache.common.Sort.NullPrecedence.NULLS_FIRST) {
+                order = order.withNullsFirst();
+            } else if (column.getNullPrecedence() == io.quarkus.panache.common.Sort.NullPrecedence.NULLS_LAST) {
+                order = order.withNullsLast();
+            }
+            orders.add(order);
+        }
+        return orders;
     }
 
     private static StringBuilder escapeColumnName(String columnName) {

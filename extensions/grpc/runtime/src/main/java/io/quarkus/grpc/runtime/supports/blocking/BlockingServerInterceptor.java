@@ -260,7 +260,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                     return;
                 }
                 reorderForRequestBeforeHalfClose(incomingEvents);
-                if (unary && !messageReceived && unaryQueueLacksMessage(incomingEvents)) {
+                if (unary && !messageReceived) {
                     return;
                 }
                 first = incomingEvents.poll();
@@ -407,7 +407,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                     return;
                 }
                 reorderForRequestBeforeHalfClose(incomingEvents);
-                if (unary && !messageReceived && unaryQueueLacksMessage(incomingEvents)) {
+                if (unary && !messageReceived) {
                     return;
                 }
                 first = incomingEvents.poll();
@@ -499,19 +499,6 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         public void onReady() {
             scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onReady));
         }
-    }
-
-    /**
-     * Returns {@code true} when the queue does not yet contain an {@code onMessage} event.
-     * The caller must hold the queue's monitor.
-     */
-    private static <ReqT> boolean unaryQueueLacksMessage(Deque<ReplayEvent<ReqT>> queue) {
-        for (ReplayEvent<ReqT> event : queue) {
-            if (event.kind == EventKind.MESSAGE) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**

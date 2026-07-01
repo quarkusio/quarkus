@@ -6,10 +6,7 @@ import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_SERVIC
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -173,22 +170,7 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
     }
 
     private Uni<ServiceInstance> pickServerInstance(Service service, boolean measureTime) {
-        return Uni.createFrom()
-                .deferred(() -> {
-                    if (services.isEmpty()) {
-                        return service.getInstances()
-                                .invoke(l -> l.forEach(s -> services.put(s.getId(), s)));
-                    } else {
-                        List<ServiceInstance> list = new ArrayList<>(services.values());
-                        return Uni.createFrom().item(list);
-                    }
-                })
-                .map(ArrayList::new) // make it mutable
-                .invoke(list -> {
-                    // list should not be empty + sort by id
-                    list.sort(Comparator.comparing(ServiceInstance::getId));
-                })
-                .map(list -> service.selectInstanceAndRecordStart(list, measureTime));
+        return service.selectInstanceAndRecordStart(measureTime);
     }
 
     private void checkSocketAddress(Context context) {

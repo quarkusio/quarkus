@@ -1,22 +1,23 @@
 package io.quarkus.stork;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.smallrye.stork.api.observability.ObservationCollector;
 import io.vertx.core.Vertx;
 
-@Singleton
 public class QuarkusStorkObservableInfrastructure extends QuarkusStorkInfrastructure {
 
-    private final ObservationCollector observationCollector;
-
-    public QuarkusStorkObservableInfrastructure(Vertx vertx, ObservationCollector observationCollector) {
+    public QuarkusStorkObservableInfrastructure(Vertx vertx) {
         super(vertx);
-        this.observationCollector = observationCollector;
     }
 
     @Override
     public ObservationCollector getObservationCollector() {
-        return observationCollector;
+        Instance<ObservationCollector> instance = CDI.current().select(ObservationCollector.class);
+        if (instance.isResolvable()) {
+            return instance.get();
+        }
+        return super.getObservationCollector();
     }
 }

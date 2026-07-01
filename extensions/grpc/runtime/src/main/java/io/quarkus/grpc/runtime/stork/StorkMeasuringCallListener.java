@@ -8,10 +8,17 @@ import io.grpc.Status;
 class StorkMeasuringCallListener<RespT>
         extends ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT> {
     final StorkMeasuringCollector collector;
+    final Runnable onClose;
 
     public StorkMeasuringCallListener(ClientCall.Listener<RespT> responseListener, StorkMeasuringCollector collector) {
+        this(responseListener, collector, null);
+    }
+
+    public StorkMeasuringCallListener(ClientCall.Listener<RespT> responseListener, StorkMeasuringCollector collector,
+            Runnable onClose) {
         super(responseListener);
         this.collector = collector;
+        this.onClose = onClose;
     }
 
     @Override
@@ -26,7 +33,13 @@ class StorkMeasuringCallListener<RespT>
         if (!status.isOk()) {
             error = status.asException(trailers);
         }
-        collector.recordEnd(error);
+        try {
+            collector.recordEnd(error);
+        } finally {
+            if (onClose != null) {
+                onClose.run();
+            }
+        }
         super.onClose(status, trailers);
     }
 }

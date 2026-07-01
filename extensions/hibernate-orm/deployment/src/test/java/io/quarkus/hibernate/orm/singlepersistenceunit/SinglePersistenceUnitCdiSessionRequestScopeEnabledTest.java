@@ -16,13 +16,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class SinglePersistenceUnitCdiSessionTest {
+public class SinglePersistenceUnitCdiSessionRequestScopeEnabledTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application.properties"))
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "true");
 
     @Inject
     Session session;

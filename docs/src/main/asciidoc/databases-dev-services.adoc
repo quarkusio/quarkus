@@ -82,6 +82,33 @@ By capturing the logs, they become visible amongst other log statements:
 quarkus.datasource.devservices.show-logs=true
 ----
 
+[[shared]]
+== Sharing Dev Services across applications
+
+When running multiple Quarkus applications in dev mode on the same machine,
+you can share a single database container between them,
+similar to the `quarkus.*.devservices.shared` option for Kafka, Redis, and other Dev Services.
+
+Enable sharing on each application that should use the same database:
+
+[source,properties]
+----
+quarkus.datasource.devservices.shared=true
+# optional - defaults to "default" for the default datasource:
+# quarkus.datasource.devservices.service-name=my-shared-db
+----
+
+The first application to start creates the container, with a database-specific dev service label set to the configured service name.
+Subsequent applications with matching `shared` and `service-name` configuration discover and connect to the existing container.
+
+Container sharing only applies in dev mode.
+
+[WARNING]
+====
+All applications sharing a database will use the same schema and data.
+Configure schema management (e.g. xref:flyway.adoc[Flyway]) carefully to avoid conflicts.
+====
+
 == Automatic Image Selection
 
 The container image used by Dev Services is determined by the database kind of your xref:datasource.adoc[datasource],

@@ -37,5 +37,9 @@ public interface ShutdownContext {
                 log.error("Failed to close " + closeable, e);
             }
         }
+
+        public String getShutdownInfo() {
+            return closeable.getClass().getName();
+        }
     }
 }

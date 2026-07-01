@@ -3,6 +3,7 @@ package io.quarkus.infinispan.client.deployment.devservices;
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 import static org.infinispan.testcontainers.InfinispanContainer.DEFAULT_USERNAME;
 
 import java.time.Duration;
@@ -34,6 +35,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
 import io.quarkus.infinispan.client.runtime.InfinispanClientsBuildTimeConfig;
@@ -133,11 +135,12 @@ public class InfinispanDevServiceProcessor {
             log.infof("Applying Dev Services config %s", namedDevServiceConfig);
 
             return infinispanContainerLocator
-                    .locateContainer(namedDevServiceConfig.serviceName(), namedDevServiceConfig.shared(), launchMode)
+                    .locateContainer(namedDevServiceConfig.serviceName(), namedDevServiceConfig.shared(), launchMode,
+                            expectedPortConfig(namedDevServiceConfig.port()))
                     .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                             List.of(namedDevServiceConfig.imageName().orElseGet(() -> getDefaultImageNameFor("infinispan")),
                                     "infinispan", "datagrid"),
-                            DEFAULT_INFINISPAN_PORT, launchMode, useSharedNetwork))
+                            DEFAULT_INFINISPAN_PORT, launchMode, useSharedNetwork, namedDevServiceConfig.port()))
                     .map(containerAddress -> {
                         RunningContainer container = containerAddress.getRunningContainer();
                         String username = container != null ? container.tryGetEnv("USER").orElse(DEFAULT_USERNAME)
@@ -253,6 +256,7 @@ public class InfinispanDevServiceProcessor {
             withCommand(command);
 
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "infinispan");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

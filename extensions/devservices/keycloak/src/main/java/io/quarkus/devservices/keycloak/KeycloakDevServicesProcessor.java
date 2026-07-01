@@ -3,6 +3,7 @@ package io.quarkus.devservices.keycloak;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.getDevServicesConfigurator;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.createWebClient;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswordAccessToken;
@@ -64,6 +65,7 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -150,9 +152,10 @@ public class KeycloakDevServicesProcessor {
 
         final String serviceConfigHashCode = getServiceConfigIdentifier(config);
         DevServicesResultBuildItem devServicesResultBuildItem = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR
-                .locateContainer(config.serviceName(), config.shared(), LaunchMode.current())
+                .locateContainer(config.serviceName(), config.shared(), LaunchMode.current(),
+                        expectedPortConfig(config.port()))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
-                        KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
+                        KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork, config.port()))
                 .map(containerAddress -> {
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
@@ -563,6 +566,7 @@ public class KeycloakDevServicesProcessor {
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
                 withLabel(DEV_SERVICE_LABEL, containerLabelValue);
                 withLabel(QUARKUS_DEV_SERVICE, containerLabelValue);
+                Labels.addPortConfigLabel(this, fixedExposedPort);
             }
 
             if (javaOpts.isPresent()) {

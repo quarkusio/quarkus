@@ -96,7 +96,9 @@ public class MySQLDevServicesProcessor {
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mysql")),
                         "mysql");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, MYSQL_PORT, launchMode, useSharedNetwork)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, MYSQL_PORT, launchMode, useSharedNetwork,
+                                containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
@@ -116,6 +118,7 @@ public class MySQLDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

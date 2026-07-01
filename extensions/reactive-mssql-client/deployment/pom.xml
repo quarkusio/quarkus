@@ -143,6 +143,31 @@
             </activation>
             <build>
                 <plugins>
+                    <!-- Workaround for https://github.com/microsoft/mssql-docker/issues/954:
+                         SQL Server 2025 crashes when the visible CPU count is not a power of 2.
+                         Compute the largest power-of-2 cpu count and expose it via docker.cpuset
+                         before docker-maven-plugin starts the container in the compile phase. -->
+                    <plugin>
+                        <groupId>org.codehaus.gmavenplus</groupId>
+                        <artifactId>gmavenplus-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>execute</goal>
+                                </goals>
+                                <configuration>
+                                    <scripts>
+                                        <script>
+                                            int n = Runtime.getRuntime().availableProcessors()
+                                            int safe = Integer.highestOneBit(n)
+                                            project.properties['docker.cpuset'] = "0-" + (safe - 1)
+                                        </script>
+                                    </scripts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
@@ -152,6 +177,7 @@
                                     <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssql</alias>
                                     <run>
+                                        <cpuSet>${docker.cpuset}</cpuSet>
                                         <ports>
                                             <port>1435:1433</port>
                                         </ports>

@@ -32,7 +32,8 @@ public class AeshWebSocketConcurrentSessionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class));
+            .withApplicationRoot(jar -> jar.addClasses(
+                    AeshWebSocketTestHelper.class, HelloCommand.class));
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;
@@ -62,19 +63,24 @@ public class AeshWebSocketConcurrentSessionsTest {
                         return;
                     }
                     var ws = ar.result();
-
-                    ws.textMessageHandler(msg -> {
-                        if (msg.contains("Hello World!")) {
-                            results.add(msg);
-                            allDone.countDown();
+                    // Each session gets its own output buffer for reliable prompt detection
+                    StringBuilder sessionOutput = new StringBuilder();
+                    CountDownLatch sessionLatch = new CountDownLatch(1);
+                    AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!",
+                            sessionOutput, sessionLatch);
+                    // When this session's command completes, add to shared results
+                    new Thread(() -> {
+                        try {
+                            if (sessionLatch.await(30, TimeUnit.SECONDS)) {
+                                results.add(sessionOutput.toString());
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         }
-                    });
+                        allDone.countDown();
+                    }).start();
 
-                    // Initialize terminal then send command
                     ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-                    vertx.setTimer(500, id -> {
-                        ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
-                    });
                 });
             }
 

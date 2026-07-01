@@ -21,6 +21,6 @@ public class UriInfoMatrixParamResource {
                 + " q2: " + q2
                 + " query params: " + uriInfo.getQueryParameters()
                 + " segments: " + uriInfo.getPathSegments()
-                + " matrix params: " + uriInfo.getPathSegments().get(0).getMatrixParameters();
+                + " matrix params: " + uriInfo.getPathSegments().get(1).getMatrixParameters();
     }
 }

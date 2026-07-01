@@ -74,7 +74,21 @@ public class UriInfoImpl implements UriInfo {
         if (!decode) {
             throw encodedNotSupported();
         }
-        return currentRequest.getPathSegments();
+        List<PathSegment> segments = currentRequest.getPathSegments();
+        String prefix = currentRequest.getDeployment().getPrefix();
+        if (prefix.isEmpty()) {
+            return segments;
+        }
+        int skip = 0;
+        for (String part : prefix.split("/")) {
+            if (!part.isEmpty()) {
+                skip++;
+            }
+        }
+        if (skip > 0 && segments.size() > skip) {
+            return segments.subList(skip, segments.size());
+        }
+        return segments;
     }
 
     @Override

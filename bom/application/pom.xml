@@ -36,7 +36,7 @@
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
-        <microprofile-config-api.version>3.1.1-RC1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
+        <microprofile-config-api.version>3.1.1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
         <microprofile-fault-tolerance-api.version>4.1.2</microprofile-fault-tolerance-api.version>
@@ -98,7 +98,7 @@
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.4.Final</narayana.version>
         <narayana-lra.version>1.2.0.Final</narayana-lra.version>
-        <agroal.version>3.2</agroal.version>
+        <agroal.version>3.2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>9.4.1</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -120,15 +120,15 @@
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.11</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.8</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.9</mariadb-jdbc.version>
         <mysql-jdbc.version>9.7.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.2.0.0</oracle-jdbc.version> <!-- Keep in synch. with Oracle Test Pilot CI workflow: ci-actions-incremental.yml -->
-        <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
+        <db2-jdbc.version>12.1.5.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.1.0</junit.jupiter.version>
+        <junit.jupiter.version>6.1.1</junit.jupiter.version>
         <infinispan.version>16.0.13</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
@@ -155,7 +155,7 @@
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
-        <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>4.1.9</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -178,7 +178,7 @@
         <mockito.version>5.21.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.3.2</quarkus-security.version>
-        <keycloak-client.version>26.0.9</keycloak-client.version>
+        <keycloak-client.version>26.0.10</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>4.2.0</checker-qual.version>
         <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
@@ -200,8 +200,8 @@
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
         <aesh.version>2.8.2</aesh.version>
-        <aesh-readline.version>2.6</aesh-readline.version>
-        <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
+        <aesh-readline.version>2.6.3</aesh-readline.version>
+        <jline.version>4.2.1</jline.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.9.1</strimzi-oauth.nimbus.version>
@@ -6524,9 +6524,9 @@
                 <version>${aesh-readline.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.fusesource.jansi</groupId>
+                <groupId>org.jline</groupId>
                 <artifactId>jansi</artifactId>
-                <version>${jansi.version}</version>
+                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.aesh</groupId>

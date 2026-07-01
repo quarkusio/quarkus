@@ -189,6 +189,22 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("address")));
     }
 
+    // --- @JsonUnwrapped + @JsonIgnoreProperties ---
+
+    @Test
+    public void testUnwrappedIgnoreProperties() {
+        RestAssured.get("/generated/unwrapped-ignore-props")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("id", Matchers.is("u1"))
+                .body("name", Matchers.is("Alice"))
+                .body("email", Matchers.is("alice@example.com"))
+                .body(not(containsString("password")))
+                .body(not(containsString("secret123")))
+                .body(not(containsString("user")));
+    }
+
     // --- @JsonAnySetter + @JsonIgnoreProperties + @JsonProperty ---
 
     @Test
@@ -575,6 +591,18 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("child", not(hasKey("parent")));
     }
 
+    // --- @JsonFormat with date pattern ---
+
+    @Test
+    public void testFormatDatePatternSerialization() {
+        RestAssured.get("/generated/date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-test"))
+                .body("date", Matchers.is("2025-06-15"));
+    }
+
     // --- @JsonFormat ---
 
     @Test
@@ -710,6 +738,32 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("value", Matchers.is(7))
                 .body("label", Matchers.is("from-json"));
+    }
+
+    // --- @JsonProperty with special characters (hyphens, dots) ---
+
+    @Test
+    public void testSpecialCharPropertySerialization() {
+        RestAssured.get("/generated/special-char-property")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("'ROUND-0.2'", Matchers.is(1))
+                .body("normal_name", Matchers.is("test"));
+    }
+
+    @Test
+    public void testSpecialCharPropertyRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"ROUND-0.2\":5,\"normal_name\":\"hello\"}")
+                .when()
+                .post("/generated/special-char-property")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("'ROUND-0.2'", Matchers.is(5))
+                .body("normal_name", Matchers.is("hello"));
     }
 
     // --- @JsonRawValue ---

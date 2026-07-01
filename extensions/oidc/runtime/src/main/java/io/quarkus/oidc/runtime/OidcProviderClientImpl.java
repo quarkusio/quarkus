@@ -192,7 +192,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                                         return oidcProvider.refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
                                                 .onItem().transform(v -> new UserInfo(v.localVerificationResult().encode()));
                                     } else {
-                                        LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
+                                        LOG.warnf("Signed UserInfo verification has failed: %s", t.getMessage());
                                         return Uni.createFrom().failure(t);
                                     }
                                 }

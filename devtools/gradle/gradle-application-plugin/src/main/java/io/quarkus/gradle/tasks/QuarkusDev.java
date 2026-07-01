@@ -94,6 +94,10 @@ public abstract class QuarkusDev extends QuarkusTask {
     private final Configuration quarkusDevConfiguration;
     private final SourceSet mainSourceSet;
     private final ObjectFactory objectFactory;
+    // Captured at configuration time so the task action does not call Task.getProject() at execution time, which is
+    // deprecated and removed in Gradle 10. This task is not compatible with the configuration cache, so holding a
+    // Project reference is acceptable (it is never serialized).
+    private final transient Project project;
 
     private final CompilerOptions compilerOptions = new CompilerOptions();
     private final ExtensionDevModeJvmOptionFilter extensionJvmOptions = new ExtensionDevModeJvmOptionFilter();
@@ -124,14 +128,15 @@ public abstract class QuarkusDev extends QuarkusTask {
             Configuration quarkusDevConfiguration,
             @SuppressWarnings("unused") QuarkusPluginExtension extension) {
         super(name);
+        this.project = getProject();
         this.quarkusDevConfiguration = quarkusDevConfiguration;
-        mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
+        mainSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        objectFactory = getProject().getObjects();
+        objectFactory = project.getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
+        workingDirectory.convention(projectDir);
 
         environmentVariables = objectFactory.mapProperty(String.class, String.class);
 
@@ -202,7 +207,7 @@ public abstract class QuarkusDev extends QuarkusTask {
      */
     @Deprecated
     public void setWorkingDir(String workingDir) {
-        workingDirectory.set(getProject().file(workingDir));
+        workingDirectory.set(projectDir.toPath().resolve(workingDir).toFile());
     }
 
     @Input
@@ -424,7 +429,6 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     private DevModeCommandLine newLauncher(final AnalyticsService analyticsService) throws Exception {
-        final Project project = getProject();
         final JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
 
         String java = null;
@@ -482,14 +486,13 @@ public abstract class QuarkusDev extends QuarkusTask {
         builder.extensionDevModeConfig(appModel.getExtensionDevModeConfig())
                 .extensionDevModeJvmOptionFilter(extensionJvmOptions);
 
-        builder.jvmArgs("-Dgradle.project.path="
-                + getProject().getLayout().getProjectDirectory().getAsFile().getAbsolutePath());
+        builder.jvmArgs("-Dgradle.project.path=" + projectDir.getAbsolutePath());
 
         analyticsService.sendAnalytics(
                 DEV_MODE,
                 appModel,
-                Map.of(GRADLE_VERSION, getProject().getGradle().getGradleVersion()),
-                getProject().getLayout().getBuildDirectory().getAsFile().get());
+                Map.of(GRADLE_VERSION, GradleVersion.current().getVersion()),
+                buildDir);
 
         final Set<ArtifactKey> projectDependencies = new HashSet<>();
         for (ResolvedDependency localDep : DependenciesFilter.getReloadableModules(appModel)) {
@@ -571,7 +574,7 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private void addQuarkusDevModeDeps(DevModeCommandLineBuilder builder, ApplicationModel appModel) {
 
-        final ConfigurationContainer configContainer = getProject().getConfigurations();
+        final ConfigurationContainer configContainer = project.getConfigurations();
         var devModeDependencyConfiguration = configContainer
                 .findByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         if (devModeDependencyConfiguration == null) {
@@ -579,7 +582,7 @@ public abstract class QuarkusDev extends QuarkusTask {
                     ToolingUtils.toPlatformConfigurationName(
                             ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT)));
             final boolean disableComponentVariants = ApplicationDeploymentClasspathBuilder
-                    .isDisableComponentVariants(getProject());
+                    .isDisableComponentVariants(project);
             configContainer.register(
                     ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION,
                     configuration -> {
@@ -645,7 +648,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         if (devModeVersion == null) {
             throw new GradleException("Classpath resource " + pomPropsPath + " is missing version");
         }
-        return getProject().getDependencies()
+        return project.getDependencies()
                 .create(String.format("%s:%s:%s", devModeGroupId, devModeArtifactId, devModeVersion));
     }
 
@@ -661,7 +664,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         if (coreDeployment == null) {
             throw new GradleException("Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
         }
-        return getProject().getDependencies()
+        return project.getDependencies()
                 .create(String.format("%s:%s:%s", coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
                         coreDeployment.getVersion()));
     }
@@ -796,7 +799,7 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private java.util.Optional<JavaCompile> getJavaCompileTask() {
         return java.util.Optional
-                .ofNullable((JavaCompile) getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
+                .ofNullable((JavaCompile) project.getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
     }
 
     public void shouldPropagateJavaCompilerArgs(boolean shouldPropagateJavaCompilerArgs) {

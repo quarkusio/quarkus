@@ -7,25 +7,24 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: core
-:extension-status: "experimental"
+:extension-status: experimental
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
 :topics: tooling
 
 You can update or upgrade your {project-name} projects to the latest version of {project-name} by using an update command.
 
 The update command primarily employs OpenRewrite recipes to automate updates for most project dependencies, source code, and documentation.
-Although these recipes update many migration items, they do not cover all the items detailed in the {quarkus-migration-guide}.
+
+[IMPORTANT]
+====
+The update command automates only a subset of the migration.
+Always review the {quarkus-migration-guide} for your target version to identify any additional steps that require manual changes.
+====
 
 Post-update, if expected updates are missing, consider the following reasons:
 
 - The recipe might not include a specific item in your project.
 - Your project might use an extension that is incompatible with the latest {project-name} version.
-
-[IMPORTANT]
-====
-For projects that use Hibernate ORM or Hibernate Reactive, review the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[Hibernate ORM 5 to 6 migration] quick reference.
-The following update command covers only a subset of this guide.
-====
 
 == Prerequisites
 
@@ -73,7 +72,12 @@ ifdef::devtools-wrapped[+]
 
 . Use a diff tool to inspect all changes.
 
-. Review the {quarkus-migration-guide} for items that were not updated by the update command.
-If your project has such items, implement the additional steps advised in these topics.
+. Review the {quarkus-migration-guide} for your target version and apply any additional steps not covered by the update command.
 
 . Ensure the project builds without errors, all tests pass, and the application functions as required before deploying to production.
+
+== Update recipes
+
+The OpenRewrite recipes used by the update command are maintained in the https://github.com/quarkusio/quarkus-updates[Quarkus Updates] repository.
+If you find that a recipe is missing or incorrect, you can contribute improvements there.
+Refer to the https://github.com/quarkusio/quarkus-updates/blob/main/README.md[README.md] and the https://github.com/quarkusio/quarkus-updates/blob/main/CONTRIBUTING.md[CONTRIBUTING.md] guide for detailed instructions on how to write and test recipes.

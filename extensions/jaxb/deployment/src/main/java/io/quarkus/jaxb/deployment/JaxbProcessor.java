@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBContextFactory;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.annotation.XmlAccessOrder;
 import jakarta.xml.bind.annotation.XmlAccessType;
@@ -338,7 +339,10 @@ public class JaxbProcessor {
 
         providerItem
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
-                        "org.glassfish.jaxb.runtime.v2.ContextFactory"));
+                        org.glassfish.jaxb.runtime.v2.ContextFactory.class.getName()));
+        providerItem
+                .produce(new ServiceProviderBuildItem(JAXBContextFactory.class.getName(),
+                        org.glassfish.jaxb.runtime.v2.JAXBContextFactory.class.getName()));
     }
 
     @BuildStep

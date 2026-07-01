@@ -1005,6 +1005,11 @@ when the client isn't going to use the response anyway.
 If instead of cancelling the pipeline, it should be completed regardless of the state of the HTTP connection, Quarkus REST provides the `org.jboss.resteasy.reactive.server.Cancellable` annotation
 which can be applied to REST classes or methods to control the cancellation behavior.
 
+NOTE: When a client drops the connection, `ContainerResponseFilter` implementations are normally skipped.
+If you need a `ContainerResponseFilter` to run even when the connection is closed, annotate the filter class with `@Cancellable(false)`.
+Only filters explicitly marked as non-cancellable will run; other response filters are still skipped.
+For declarative response filters, use `@ServerResponseFilter(cancellable = false)` to achieve the same effect.
+
 === Streaming support
 
 If you want to stream your response element by element, you can make your endpoint method return a

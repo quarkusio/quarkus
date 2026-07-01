@@ -124,6 +124,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
         postCloseCmd.add("-XX:AOTMode=create");
         postCloseCmd.add("-XX:AOTConfiguration=%s".formatted(aotConf));
         postCloseCmd.add("-XX:AOTCache=%s".formatted(aotFile));
+        postCloseCmd.addAll(additionalRecordingArgs);
 
         return new RecordingConfig(recordingArgs, postCloseCmd, Optional.of(aotFile), "AOT file");
     }

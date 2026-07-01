@@ -245,9 +245,9 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
-            PropertyNamesMatcher buildTimeNamesMatcher = propertyNamesMatcher(buildTimeMappings);
-            PropertyNamesMatcher buildTimeRunTimeNamesMatcher = propertyNamesMatcher(buildTimeRunTimeMappings);
-            PropertyNamesMatcher runTimeNamesMatcher = propertyNamesMatcher(runTimeMappings);
+            PropertyNamesMatcher<?> buildTimeNamesMatcher = propertyNamesMatcher(buildTimeMappings);
+            PropertyNamesMatcher<?> buildTimeRunTimeNamesMatcher = propertyNamesMatcher(buildTimeRunTimeMappings);
+            PropertyNamesMatcher<?> runTimeNamesMatcher = propertyNamesMatcher(runTimeMappings);
 
             Set<String> prefixes = new HashSet<>();
             prefixes.addAll(buildTimeMappings.stream().map(ConfigClass::getPrefix).toList());
@@ -603,6 +603,42 @@ public final class BuildTimeConfigurationReader {
 
         public ConfigTrackingInterceptor.ReadOptionsProvider getReadOptionsProvider() {
             return readOptionsProvider;
+        }
+
+        public boolean isBuildTimeRuntimeMapping(final Class<?> type) {
+            for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+                if (buildTimeRunTimeMapping.getType().equals(type)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean isRuntimeMapping(final Class<?> type) {
+            for (ConfigClass runtimeMapping : runTimeMappings) {
+                if (runtimeMapping.getType().equals(type)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public ConfigClass getBuildTimeRuntimeMapping(final Class<?> type) {
+            for (ConfigClass buildTimeRuntimeMapping : buildTimeRunTimeMappings) {
+                if (buildTimeRuntimeMapping.getType().equals(type)) {
+                    return buildTimeRuntimeMapping;
+                }
+            }
+            return null;
+        }
+
+        public ConfigClass getRuntimeMapping(final Class<?> type) {
+            for (ConfigClass runtimeMapping : runTimeMappings) {
+                if (runtimeMapping.getType().equals(type)) {
+                    return runtimeMapping;
+                }
+            }
+            return null;
         }
 
         static class Builder {

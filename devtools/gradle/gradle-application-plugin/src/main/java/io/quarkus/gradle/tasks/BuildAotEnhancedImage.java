@@ -74,6 +74,7 @@ public abstract class BuildAotEnhancedImage extends QuarkusBuildTask {
         workQueue.submit(BuildAotEnhancedImageWorker.class, params -> {
             params.getBuildSystemProperties().putAll(buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
             params.getForkedSystemProperties().putAll(quarkusProperties);
+            params.getProcessIsolated().set(isWorkerProcessIsolated());
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDirectory);
             params.getAppModel().set(appModel);

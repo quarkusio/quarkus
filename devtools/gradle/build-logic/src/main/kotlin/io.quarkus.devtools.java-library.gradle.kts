@@ -39,7 +39,8 @@ tasks.named<Test>(JavaPlugin.TEST_TASK_NAME) {
     }
 
     // propagate the custom local maven repo, in case it's configured
-    if (System.getProperties().containsKey("maven.repo.local")) {
-        systemProperty("maven.repo.local", System.getProperty("maven.repo.local"))
-    }
+	val mavenRepoLocal = providers.systemProperty("maven.repo.local")
+	if (mavenRepoLocal.isPresent) {
+		systemProperty("maven.repo.local", mavenRepoLocal.get())
+	}
 }

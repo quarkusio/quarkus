@@ -126,7 +126,8 @@ class CalcCommand implements Command<CommandInvocation> {
 }
 ----
 
-With two commands, console mode is auto-detected:
+With two commands, console mode is auto-detected. Without arguments, the interactive
+REPL starts:
 
 [source,shell]
 ----
@@ -137,6 +138,17 @@ Hello Aesh!
 Result: 8
 [quarkus]$ exit
 ----
+
+If command-line arguments are provided, the command is executed once and the application
+exits -- just like runtime mode:
+
+[source,shell]
+----
+$ java -jar myapp.jar greet --name=Aesh
+Hello Aesh!
+----
+
+This allows console mode applications to be used both interactively and in scripts.
 
 The prompt, exit command, and other console settings are configurable via `quarkus.aesh.*` properties.
 
@@ -628,6 +640,55 @@ public class MyCliSettings implements CliSettings {
 ----
 
 Multiple `CliSettings` beans can be registered. They are applied in arbitrary order, so avoid conflicting settings across implementations.
+
+== Command execution listener
+
+Implement `CommandExecutionListener` as a CDI bean to receive a callback after each command completes.
+This is useful for logging, metrics, or audit trails:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.aesh.command.CommandExecutionListener;
+import org.aesh.command.CommandResult;
+
+@ApplicationScoped
+public class CommandLogger implements CommandExecutionListener {
+
+    @Override
+    public void onCommandComplete(String commandLine, CommandResult result, long executionTimeMs) {
+        System.out.println("Executed: " + commandLine + " in " + executionTimeMs + "ms");
+    }
+}
+----
+
+The listener fires in both console mode (after each REPL command) and when arguments are provided on the command line.
+
+== Command not found handler
+
+Implement `CommandNotFoundHandler` as a CDI bean to customize the error message when an unknown command is typed:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.aesh.command.CommandNotFoundHandler;
+import org.aesh.command.shell.Shell;
+
+@ApplicationScoped
+public class MyNotFoundHandler implements CommandNotFoundHandler {
+
+    @Override
+    public void handleCommandNotFound(String line, Shell shell) {
+        shell.writeln("Unknown command: " + line + ". Type 'help' for available commands.");
+    }
+}
+----
 
 == Build-time validation
 

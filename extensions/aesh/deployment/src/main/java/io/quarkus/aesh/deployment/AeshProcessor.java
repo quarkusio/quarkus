@@ -12,6 +12,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -40,6 +41,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -48,6 +50,8 @@ class AeshProcessor {
 
     private static final DotName AESH_COMMAND = DotName.createSimple("org.aesh.command.Command");
     private static final DotName COMMAND_DEFINITION = DotName.createSimple("org.aesh.command.CommandDefinition");
+    private static final DotName GROUP_COMMAND = DotName.createSimple("org.aesh.command.GroupCommand");
+    private static final DotName INJECT = DotName.createSimple("jakarta.inject.Inject");
     private static final DotName QUARKUS_MAIN = DotName.createSimple(QuarkusMain.class.getName());
     private static final DotName PARENT_COMMAND = DotName.createSimple("org.aesh.command.option.ParentCommand");
 
@@ -56,24 +60,35 @@ class AeshProcessor {
         return new FeatureBuildItem(Feature.AESH);
     }
 
+    @BuildStep
+    ModuleEnableNativeAccessBuildItem enableNativeAccess() {
+        // terminal-tty uses java.lang.foreign.Linker (FFM API) for native terminal access
+        return new ModuleEnableNativeAccessBuildItem("org.aesh.terminal.tty");
+    }
+
     /**
      * Discovers command classes from the application index only.
      * Only commands defined in the user's application are considered --
      * commands from third-party dependencies are not automatically registered.
+     * <p>
+     * After discovering all commands, enriches group commands that implement
+     * {@code GroupCommand} by detecting {@code @Inject} fields whose types
+     * are also discovered command classes. This handles the {@code getCommands()}
+     * pattern where sub-commands are injected via CDI rather than declared
+     * in the {@code groupCommands} annotation attribute.
      */
     @BuildStep
     void discoverCommands(ApplicationIndexBuildItem applicationIndex,
+            CombinedIndexBuildItem combinedIndex,
             BuildProducer<AeshCommandBuildItem> commands) {
         IndexView appIndex = applicationIndex.getIndex();
-        Set<DotName> discovered = new HashSet<>();
-        discoverFromIndex(appIndex, discovered, commands);
-    }
+        IndexView fullIndex = combinedIndex.getIndex();
 
-    private void discoverFromIndex(IndexView index, Set<DotName> discovered,
-            BuildProducer<AeshCommandBuildItem> commands) {
-        // Process @CommandDefinition classes (which may also define group commands
-        // via the groupCommands attribute, added in aesh 3.10)
-        for (AnnotationInstance ann : index.getAnnotations(COMMAND_DEFINITION)) {
+        // Pass 1: discover all @CommandDefinition classes
+        List<CommandCandidate> candidates = new ArrayList<>();
+        Set<DotName> discovered = new HashSet<>();
+
+        for (AnnotationInstance ann : appIndex.getAnnotations(COMMAND_DEFINITION)) {
             if (ann.target().kind() != AnnotationTarget.Kind.CLASS) {
                 continue;
             }
@@ -85,12 +100,62 @@ class AeshProcessor {
 
             String commandName = getAnnotationStringValue(ann, "name", "");
             String description = getAnnotationStringValue(ann, "description", "");
-            List<String> subCommandClassNames = extractGroupSubCommands(ann);
+            List<String> subCommandClassNames = new ArrayList<>(extractGroupSubCommands(ann));
             boolean isGroup = !subCommandClassNames.isEmpty();
 
-            commands.produce(new AeshCommandBuildItem(
+            candidates.add(new CommandCandidate(
                     className.toString(), commandName, description,
-                    isGroup, subCommandClassNames));
+                    isGroup, subCommandClassNames, classInfo));
+        }
+
+        // Pass 2: detect @Inject fields on GroupCommand implementations
+        // whose types are discovered command classes
+        Set<String> discoveredClassNames = candidates.stream()
+                .map(c -> c.className)
+                .collect(Collectors.toSet());
+
+        for (CommandCandidate candidate : candidates) {
+            if (implementsInterface(candidate.classInfo, GROUP_COMMAND, fullIndex)) {
+                for (FieldInfo field : candidate.classInfo.fields()) {
+                    if (field.hasAnnotation(INJECT)) {
+                        String fieldTypeName = field.type().name().toString();
+                        if (discoveredClassNames.contains(fieldTypeName)
+                                && !candidate.subCommandClassNames.contains(fieldTypeName)) {
+                            candidate.subCommandClassNames.add(fieldTypeName);
+                            candidate.isGroup = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Produce build items
+        for (CommandCandidate candidate : candidates) {
+            commands.produce(new AeshCommandBuildItem(
+                    candidate.className, candidate.commandName, candidate.description,
+                    candidate.isGroup, candidate.subCommandClassNames));
+        }
+    }
+
+    /**
+     * Intermediate holder for command data during the two-pass discovery.
+     */
+    private static class CommandCandidate {
+        final String className;
+        final String commandName;
+        final String description;
+        boolean isGroup;
+        final List<String> subCommandClassNames;
+        final ClassInfo classInfo;
+
+        CommandCandidate(String className, String commandName, String description,
+                boolean isGroup, List<String> subCommandClassNames, ClassInfo classInfo) {
+            this.className = className;
+            this.commandName = commandName;
+            this.description = description;
+            this.isGroup = isGroup;
+            this.subCommandClassNames = subCommandClassNames;
+            this.classInfo = classInfo;
         }
     }
 
@@ -232,9 +297,12 @@ class AeshProcessor {
                 DotName.createSimple("org.aesh.command.activator.OptionActivator"),
                 DotName.createSimple("org.aesh.command.result.ResultHandler"),
                 DotName.createSimple("org.aesh.command.renderer.OptionRenderer")));
-        // Also keep user implementations of the Quarkus CliSettings customizer
+        // Also keep user implementations of global aesh interfaces that are
+        // discovered via CDI Instance<> lookup (not via annotation attributes).
         unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(
-                DotName.createSimple(io.quarkus.aesh.runtime.CliSettings.class.getName())));
+                DotName.createSimple(io.quarkus.aesh.runtime.CliSettings.class.getName()),
+                DotName.createSimple("org.aesh.command.CommandExecutionListener"),
+                DotName.createSimple("org.aesh.command.CommandNotFoundHandler")));
     }
 
     /**
@@ -415,5 +483,23 @@ class AeshProcessor {
     private String getAnnotationStringValue(AnnotationInstance annotation, String name, String defaultValue) {
         AnnotationValue value = annotation.value(name);
         return value != null ? value.asString() : defaultValue;
+    }
+
+    /**
+     * Checks whether the given class implements the specified interface,
+     * walking up the class hierarchy.
+     */
+    private boolean implementsInterface(ClassInfo classInfo, DotName interfaceName, IndexView index) {
+        if (classInfo.interfaceNames().contains(interfaceName)) {
+            return true;
+        }
+        DotName superName = classInfo.superName();
+        if (superName != null && !superName.equals(DotName.createSimple("java.lang.Object"))) {
+            ClassInfo superClass = index.getClassByName(superName);
+            if (superClass != null) {
+                return implementsInterface(superClass, interfaceName, index);
+            }
+        }
+        return false;
     }
 }

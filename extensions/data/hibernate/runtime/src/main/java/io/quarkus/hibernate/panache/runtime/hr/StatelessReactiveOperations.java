@@ -4,14 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;
 import io.quarkus.hibernate.panache.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Uni;
 
 public class StatelessReactiveOperations implements PanacheReactiveOperations {
@@ -125,18 +123,8 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
-    public PanacheReactiveQuery<?> find(Class<?> entityClass, String query, Order<?> order, Object... params) {
-        return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
-    }
-
-    @Override
     public PanacheReactiveQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
         return DELEGATE.find(entityClass, query, params);
-    }
-
-    @Override
-    public PanacheReactiveQuery<?> find(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
-        return DELEGATE.find(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -145,18 +133,8 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
-    public PanacheReactiveQuery<?> findAll(Class<?> entityClass, Order<?> order) {
-        return DELEGATE.findAll(entityClass, PanacheJpaUtil.toSort(order));
-    }
-
-    @Override
     public Uni<List<?>> list(Class<?> entityClass, String query, Object... params) {
         return DELEGATE.list(entityClass, query, params);
-    }
-
-    @Override
-    public Uni<List<?>> list(Class<?> entityClass, String query, Order<?> order, Object... params) {
-        return DELEGATE.list(entityClass, query, PanacheJpaUtil.toSort(order), params);
     }
 
     @Override
@@ -165,18 +143,8 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     }
 
     @Override
-    public Uni<List<?>> list(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params) {
-        return DELEGATE.list(entityClass, query, PanacheJpaUtil.toSort(order), params);
-    }
-
-    @Override
     public Uni<List<?>> listAll(Class<?> entityClass) {
         return DELEGATE.listAll(entityClass);
-    }
-
-    @Override
-    public Uni<List<?>> listAll(Class<?> entityClass, Order<?> order) {
-        return DELEGATE.listAll(entityClass, PanacheJpaUtil.toSort(order));
     }
 
     @Override

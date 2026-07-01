@@ -74,6 +74,7 @@ import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
@@ -272,6 +273,7 @@ public class SmallRyeReactiveMessagingProcessor {
             List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
             List<InjectedEmitterBuildItem> emitterFields,
             List<InjectedChannelBuildItem> channelFields,
+            List<CustomInvokerBuildItem> customInvokers,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -287,6 +289,11 @@ public class SmallRyeReactiveMessagingProcessor {
                 .map(ConnectorManagedChannelBuildItem::getName)
                 .collect(Collectors.toSet());
 
+        Map<String, CustomInvokerBuildItem> customInvokerMap = new HashMap<>();
+        for (CustomInvokerBuildItem item : customInvokers) {
+            customInvokerMap.put(item.getMethodId(), item);
+        }
+
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
         List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
         Map<String, EmitterConfiguration> emittersConfigurations = new HashMap<>();
@@ -300,6 +307,9 @@ public class SmallRyeReactiveMessagingProcessor {
         for (MediatorBuildItem mediatorMethod : mediatorMethods) {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
+
+            String methodId = CustomInvokerBuildItem.mediatorMethodId(methodInfo);
+            CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
 
             if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
                 // Just in case both annotation are used, use @Blocking value.
@@ -333,11 +343,12 @@ public class SmallRyeReactiveMessagingProcessor {
                                 Thread.currentThread().getContextClassLoader(), conf.strict(),
                                 consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
                                         ? conf.blockingSignaturesExecutionMode()
-                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP); // disable execution mode setting for inner channels
+                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP,
+                                customInvoker); // disable execution mode setting for inner channels
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
-                        gizmo);
+                        gizmo, customInvokerMap);
                 /*
                  * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
                  * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
@@ -401,7 +412,14 @@ public class SmallRyeReactiveMessagingProcessor {
      */
     private String generateInvoker(BeanInfo bean, MethodInfo method, boolean isSuspendMethod,
             QuarkusMediatorConfiguration mediatorConfiguration,
-            Gizmo gizmo) {
+            Gizmo gizmo, Map<String, CustomInvokerBuildItem> customInvokerMap) {
+
+        String methodId = CustomInvokerBuildItem.mediatorMethodId(method);
+        CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
+        if (customInvoker != null) {
+            return customInvoker.getInvokerClassName();
+        }
+
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
             baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"

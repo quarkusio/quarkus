@@ -111,6 +111,7 @@
                 <module>microprofile-opentelemetry</module>
                 <module>microprofile-lra</module>
                 <module>resteasy-reactive</module>
+                <module>jakarta-rest</module>
             </modules>
         </profile>
     </profiles>

@@ -123,7 +123,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <oracle.version>${oracle.version}</oracle.version>
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
@@ -133,7 +133,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <oracle.version>${oracle.version}</oracle.version>
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>

@@ -93,7 +93,7 @@
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
                     <systemPropertyVariables combine.children="append">
-                        <mssql.version>${mssql.version}</mssql.version>
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

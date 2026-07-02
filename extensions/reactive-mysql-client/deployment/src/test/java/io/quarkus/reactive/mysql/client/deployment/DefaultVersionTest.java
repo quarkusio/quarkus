@@ -10,27 +10,27 @@ public class DefaultVersionTest {
 
     @Test
     void mysqlDefaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("mysql.version");
+        String expectedVersion = System.getProperty("mysql.default.version");
         assertThat(expectedVersion)
-                .as("mysql.version system property should be set by maven-surefire-plugin")
+                .as("mysql.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("mysql");
         assertThat(actualVersion)
-                .as("MySQL default version should match the mysql.version Maven property")
+                .as("MySQL default version should match the mysql.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 
     @Test
     void mariadbDefaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("mariadb.version");
+        String expectedVersion = System.getProperty("mariadb.default.version");
         assertThat(expectedVersion)
-                .as("mariadb.version system property should be set by maven-surefire-plugin")
+                .as("mariadb.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("mariadb");
         assertThat(actualVersion)
-                .as("MariaDB default version should match the mariadb.version Maven property")
+                .as("MariaDB default version should match the mariadb.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 }

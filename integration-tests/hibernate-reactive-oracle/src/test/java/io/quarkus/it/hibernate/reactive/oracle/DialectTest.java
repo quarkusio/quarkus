@@ -18,10 +18,10 @@ public class DialectTest {
         // the dialect version should match that, not the default.
         String version = System.getProperty("oracle.db-version");
         if (version == null || version.isEmpty()) {
-            version = System.getProperty("oracle.version");
+            version = System.getProperty("oracle.default.version");
         }
         assertThat(version)
-                .as("oracle.db-version or oracle.version system property should be set by maven-surefire-plugin")
+                .as("oracle.db-version or oracle.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
         return version;
     }

@@ -99,7 +99,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
@@ -109,7 +109,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>

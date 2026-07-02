@@ -10,14 +10,14 @@ public class DefaultVersionTest {
 
     @Test
     void defaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("db2.version");
+        String expectedVersion = System.getProperty("db2.default.version");
         assertThat(expectedVersion)
-                .as("db2.version system property should be set by maven-surefire-plugin")
+                .as("db2.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("db2");
         assertThat(actualVersion)
-                .as("DB2 default version should match the db2.version Maven property")
+                .as("DB2 default version should match the db2.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 }

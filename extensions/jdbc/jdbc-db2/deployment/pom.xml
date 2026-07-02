@@ -93,7 +93,7 @@
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
                     <systemPropertyVariables combine.children="append">
-                        <db2.version>${db2.version}</db2.version>
+                        <db2.default.version>${db2.default.version}</db2.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

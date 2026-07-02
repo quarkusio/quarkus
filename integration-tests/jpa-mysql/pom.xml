@@ -104,7 +104,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -113,7 +113,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

@@ -43,12 +43,12 @@ public interface DataSourceBuildTimeConfig {
      * or simply a warning in case the database cannot be reached.
      *
      * If not set, the default depends on the `db-kind`:
-     * * DB2: `{db2-version}`
-     * * MariaDB: `{mariadb-version}`
-     * * Microsoft SQL Server: `{mssql-version}`
-     * * MySQL: `{mysql-version}`
-     * * Oracle: `{oracle-version}`
-     * * PostgreSQL: `{postgres-version}`
+     * * DB2: `{db2-default-version}`
+     * * MariaDB: `{mariadb-default-version}`
+     * * Microsoft SQL Server: `{mssql-default-version}`
+     * * MySQL: `{mysql-default-version}`
+     * * Oracle: `{oracle-default-version}`
+     * * PostgreSQL: `{postgres-default-version}`
      *
      * If you are connecting to an older database version, you must explicitly set this property
      * to match your actual database version to avoid runtime errors.

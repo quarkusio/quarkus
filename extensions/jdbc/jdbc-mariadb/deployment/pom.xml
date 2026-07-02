@@ -82,7 +82,7 @@
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
                     <systemPropertyVariables combine.children="append">
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

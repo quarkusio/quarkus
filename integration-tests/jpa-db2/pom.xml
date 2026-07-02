@@ -109,7 +109,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <db2.version>${db2.version}</db2.version>
+                        <db2.default.version>${db2.default.version}</db2.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -118,7 +118,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <db2.version>${db2.version}</db2.version>
+                        <db2.default.version>${db2.default.version}</db2.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

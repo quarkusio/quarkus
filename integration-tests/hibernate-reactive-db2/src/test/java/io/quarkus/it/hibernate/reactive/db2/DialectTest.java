@@ -14,9 +14,9 @@ import io.restassured.RestAssured;
 public class DialectTest {
 
     private static String getExpectedVersion() {
-        String version = System.getProperty("db2.version");
+        String version = System.getProperty("db2.default.version");
         assertThat(version)
-                .as("db2.version system property should be set by maven-surefire-plugin")
+                .as("db2.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
         return version;
     }

@@ -10,14 +10,14 @@ public class DefaultVersionTest {
 
     @Test
     void defaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("mssql.version");
+        String expectedVersion = System.getProperty("mssql.default.version");
         assertThat(expectedVersion)
-                .as("mssql.version system property should be set by maven-surefire-plugin")
+                .as("mssql.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("mssql");
         assertThat(actualVersion)
-                .as("MSSQL default version should match the mssql.version Maven property")
+                .as("MSSQL default version should match the mssql.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 }

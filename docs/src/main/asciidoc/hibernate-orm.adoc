@@ -178,12 +178,12 @@ it is selected automatically based on the datasource.
 
 Quarkus defaults to the latest, or close to latest, database version:
 
-* IBM Db2 {db2-version}
-* MariaDB {mariadb-version}
-* Microsoft SQL Server {mssql-version}
-* MySQL {mysql-version}
-* Oracle Database {oracle-version}
-* PostgreSQL {postgres-version}
+* IBM Db2 {db2-default-version}
+* MariaDB {mariadb-default-version}
+* Microsoft SQL Server {mssql-default-version}
+* MySQL {mysql-default-version}
+* Oracle Database {oracle-default-version}
+* PostgreSQL {postgres-default-version}
 
 These defaults enable all available features and best performance when using these versions.
 They also match the xref:databases-dev-services.adoc[Dev Services] container versions.

@@ -85,7 +85,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables combine.children="append">
-                        <db2.version>${db2.version}</db2.version>
+                        <db2.default.version>${db2.default.version}</db2.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

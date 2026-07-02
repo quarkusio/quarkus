@@ -14,9 +14,9 @@ import io.restassured.RestAssured;
 public class DialectTest {
 
     private static String getExpectedVersion() {
-        String version = System.getProperty("postgres.version");
+        String version = System.getProperty("postgres.default.version");
         assertThat(version)
-                .as("postgres.version system property should be set by maven-surefire-plugin")
+                .as("postgres.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
         return version;
     }

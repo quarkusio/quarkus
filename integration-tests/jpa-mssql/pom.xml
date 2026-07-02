@@ -113,7 +113,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mssql.version>${mssql.version}</mssql.version>
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -122,7 +122,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mssql.version>${mssql.version}</mssql.version>
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

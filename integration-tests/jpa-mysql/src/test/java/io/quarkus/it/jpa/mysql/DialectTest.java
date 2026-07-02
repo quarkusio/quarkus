@@ -14,9 +14,9 @@ import io.restassured.RestAssured;
 public class DialectTest {
 
     private static String getExpectedVersion() {
-        String version = System.getProperty("mysql.version");
+        String version = System.getProperty("mysql.default.version");
         assertThat(version)
-                .as("mysql.version system property should be set by maven-surefire-plugin")
+                .as("mysql.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
         return version;
     }

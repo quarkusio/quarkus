@@ -152,7 +152,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <postgres.version>${postgres.version}</postgres.version>
+                        <postgres.default.version>${postgres.default.version}</postgres.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -161,7 +161,7 @@
                 <configuration>
                     <skip>false</skip>
                     <systemPropertyVariables combine.children="append">
-                        <postgres.version>${postgres.version}</postgres.version>
+                        <postgres.default.version>${postgres.default.version}</postgres.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

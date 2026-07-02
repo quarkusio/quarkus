@@ -103,7 +103,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
@@ -113,7 +113,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>

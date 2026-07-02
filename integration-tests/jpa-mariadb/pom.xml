@@ -108,7 +108,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -117,7 +117,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

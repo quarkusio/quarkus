@@ -87,7 +87,7 @@
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

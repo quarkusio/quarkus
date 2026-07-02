@@ -10,14 +10,14 @@ public class DefaultVersionTest {
 
     @Test
     void defaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("mariadb.version");
+        String expectedVersion = System.getProperty("mariadb.default.version");
         assertThat(expectedVersion)
-                .as("mariadb.version system property should be set by maven-surefire-plugin")
+                .as("mariadb.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("mariadb");
         assertThat(actualVersion)
-                .as("MariaDB default version should match the mariadb.version Maven property")
+                .as("MariaDB default version should match the mariadb.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 }

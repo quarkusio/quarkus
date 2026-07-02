@@ -10,14 +10,14 @@ public class DefaultVersionTest {
 
     @Test
     void defaultVersionMatchesPomProperty() {
-        String expectedVersion = System.getProperty("oracle.version");
+        String expectedVersion = System.getProperty("oracle.default.version");
         assertThat(expectedVersion)
-                .as("oracle.version system property should be set by maven-surefire-plugin")
+                .as("oracle.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
 
         String actualVersion = DatabaseVersionLoader.loadDefaultVersion("oracle");
         assertThat(actualVersion)
-                .as("Oracle default version should match the oracle.version Maven property")
+                .as("Oracle default version should match the oracle.default.version Maven property")
                 .isEqualTo(expectedVersion);
     }
 }

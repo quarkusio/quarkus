@@ -131,7 +131,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <oracle.version>${oracle.version}</oracle.version>
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

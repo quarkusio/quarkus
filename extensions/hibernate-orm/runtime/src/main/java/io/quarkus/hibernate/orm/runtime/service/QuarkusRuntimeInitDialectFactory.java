@@ -67,15 +67,15 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
                     && buildTimeDbVersion.getMajor() != DatabaseVersion.NO_VERSION
                     && !isEmbeddedDatabase(dialect)) {
                 LOG.warnf("Persistence unit '%1$s' is configured to start offline"
-                                + " but is using a default database version ('%2$s') rather than an explicitly configured one."
-                                + " This may cause Hibernate ORM to behave incorrectly if the actual database version differs."
-                                + " Consider setting '%3$s' explicitly to match your database version.",
+                        + " but is using a default database version ('%2$s') rather than an explicitly configured one."
+                        + " This may cause Hibernate ORM to behave incorrectly if the actual database version differs."
+                        + " Consider setting '%3$s' explicitly to match your database version.",
                         persistenceUnitName,
                         DialectVersions.toString(buildTimeDbVersion),
                         DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"));
-            }
-            else {
-                LOG.debugf("Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
+            } else {
+                LOG.debugf(
+                        "Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
                         persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
             }
             return;

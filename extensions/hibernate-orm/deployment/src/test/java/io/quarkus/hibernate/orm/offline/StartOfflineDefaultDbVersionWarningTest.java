@@ -42,7 +42,7 @@ public class StartOfflineDefaultDbVersionWarningTest {
                     .anySatisfy(record -> {
                         assertThat(record.getLevel()).isEqualTo(Level.WARNING);
                         assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains("start-offline mode")
+                                .contains("configured to start offline")
                                 .contains("default database version")
                                 .contains("quarkus.datasource.db-version");
                     }));

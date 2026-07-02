@@ -14,9 +14,9 @@ import io.restassured.RestAssured;
 public class DialectTest {
 
     private static String getExpectedVersion() {
-        String version = System.getProperty("mariadb.version");
+        String version = System.getProperty("mariadb.default.version");
         assertThat(version)
-                .as("mariadb.version system property should be set by maven-surefire-plugin")
+                .as("mariadb.default.version system property should be set by maven-surefire-plugin")
                 .isNotNull();
         return version;
     }

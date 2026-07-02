@@ -138,8 +138,8 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
-                        <mysql.version>${mysql.version}</mysql.version>
-                        <mariadb.version>${mariadb.version}</mariadb.version>
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
+                        <mariadb.default.version>${mariadb.default.version}</mariadb.default.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

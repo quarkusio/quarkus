@@ -780,6 +780,43 @@ For example, you could ensure connections are recycled after 60 minutes:
 quarkus.datasource.reactive.max-lifetime=PT60M
 ----
 
+== Pool `connection-timeout`
+
+The `connection-timeout` controls how long a request waits for a connection from the pool before failing.
+
+NOTE: The default connection timeout is 30 seconds (`30S`).
+
+For example, you could set a 5-second timeout:
+
+[source,properties]
+----
+quarkus.datasource.reactive.connection-timeout=5S
+----
+
+== Pool `max-wait-queue-size`
+
+You can limit how many requests wait in the queue when all pool connections are in use.
+Further requests are rejected immediately when the queue is full.
+
+NOTE: By default, the wait queue is unbounded.
+
+[source,properties]
+----
+quarkus.datasource.reactive.max-wait-queue-size=100
+----
+
+== Pool `pool-cleaner-period`
+
+The `pool-cleaner-period` controls how often the pool checks for idle connections eligible for removal.
+This works in conjunction with `idle-timeout`.
+
+NOTE: The default pool cleaner period is 1 second.
+
+[source,properties]
+----
+quarkus.datasource.reactive.pool-cleaner-period=5S
+----
+
 == TLS configuration
 
 All reactive SQL clients support TLS configuration through the Quarkus TLS registry.
@@ -798,6 +835,24 @@ For IBM Db2 and Microsoft SQL Server, the `ssl` flag is set to `true`.
 NOTE: When a named TLS configuration is set, manual SSL properties (`trust-certificate-*`, `key-certificate-*`, `trust-all`, `hostname-verification-algorithm`) are ignored.
 
 For more information about the TLS registry, see the xref:tls-registry-reference.adoc[TLS Registry Reference guide].
+
+=== Direct SSL negotiation (PostgreSQL 17+)
+
+PostgreSQL 17 introduced direct SSL: the TLS handshake starts immediately on connect, with no prior SSL request/response round-trip.
+This reduces connection latency and enables standard TLS proxies (nginx, haproxy) to terminate the connection.
+
+Configure it with the `ssl-negotiation` property:
+
+[source,properties]
+----
+quarkus.datasource.reactive.postgresql.ssl-negotiation=direct
+quarkus.datasource.reactive.postgresql.ssl-mode=require
+----
+
+The `ssl-negotiation` property accepts two values:
+
+* `postgres` (default) — traditional negotiation, compatible with all PostgreSQL versions.
+* `direct` — direct SSL, requires PostgreSQL 17 or later.
 
 == Customizing pool creation
 
@@ -830,6 +885,8 @@ public class CustomPoolCreator implements PoolCreator {
 ----
 
 For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-name")`.
+
+TIP: `PoolCreator` is also the way to set Vert.x options that cannot be expressed as configuration properties, such as `SqlConnectOptions.setPreparedStatementCacheSqlFilter(Predicate<String>)`.
 
 == Pipelining
 

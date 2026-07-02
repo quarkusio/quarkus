@@ -106,7 +106,7 @@ public class CreateJBangMojo extends AbstractMojo {
         final MessageWriter log = new MojoMessageWriter(getLog());
         ExtensionCatalog catalog;
         try {
-            catalog = CreateProjectMojo.resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion,
+            catalog = CreateProjectMojo.resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, null,
                     QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException("Failed to resolve Quarkus extension catalog", e);

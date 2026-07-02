@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.Base58;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 import com.github.dockerjava.api.command.CreateNetworkCmd;
 
@@ -58,9 +59,23 @@ public final class ConfigureUtil {
         return container;
     }
 
+    /**
+     * The process UUID label marks containers as owned by the current JVM so that
+     * {@link ContainerLocator} does not rediscover them; reuse within a process is
+     * handled by {@link io.quarkus.deployment.builditem.DevServicesRegistryBuildItem}.
+     * <p>
+     * When Testcontainers reuse is enabled for a container, the label must be omitted
+     * so the Docker create command hash stays stable across JVM restarts.
+     */
+    public static boolean shouldConfigureProcessUuidLabel(GenericContainer<?> container) {
+        return !(TestcontainersConfiguration.getInstance().environmentSupportsReuse()
+                && container.isShouldBeReused());
+    }
+
     public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode) {
-        // Configure the labels for the container
-        container.withLabel(QUARKUS_PROCESS_UUID, RunningDevServicesRegistry.APPLICATION_UUID);
+        if (shouldConfigureProcessUuidLabel(container)) {
+            container.withLabel(QUARKUS_PROCESS_UUID, RunningDevServicesRegistry.APPLICATION_UUID);
+        }
         container.withLabel(QUARKUS_LAUNCH_MODE, launchMode.toString());
     }
 

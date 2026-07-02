@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 
 import jakarta.ws.rs.Consumes;
@@ -312,6 +315,17 @@ public class GeneratedAnnotationResource {
         return parent;
     }
 
+    // --- DateFormatBean: @JsonFormat with date pattern ---
+
+    @GET
+    @Path("/date-format")
+    public DateFormatBean getDateFormat() {
+        DateFormatBean bean = new DateFormatBean();
+        bean.setName("date-test");
+        bean.setDate(Date.from(LocalDate.of(2025, 6, 15).atStartOfDay().toInstant(ZoneOffset.UTC)));
+        return bean;
+    }
+
     // --- FormatBean: @JsonFormat ---
 
     @GET
@@ -418,6 +432,21 @@ public class GeneratedAnnotationResource {
     @Path("/package-protected")
     @Consumes(MediaType.APPLICATION_JSON)
     public PackageProtectedBean echoPackageProtected(PackageProtectedBean bean) {
+        return bean;
+    }
+
+    // --- UnwrappedIgnorePropertiesBean: @JsonUnwrapped + @JsonIgnoreProperties ---
+
+    @GET
+    @Path("/unwrapped-ignore-props")
+    public UnwrappedIgnorePropertiesBean getUnwrappedIgnoreProps() {
+        UnwrappedIgnorePropertiesBean bean = new UnwrappedIgnorePropertiesBean();
+        bean.setId("u1");
+        UnwrappedIgnorePropertiesBean.User user = new UnwrappedIgnorePropertiesBean.User();
+        user.setName("Alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("secret123");
+        bean.setUser(user);
         return bean;
     }
 

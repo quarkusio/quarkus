@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.panache.PanacheRepositoryQueries;
@@ -65,6 +66,19 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
     Stream<Entity> stream(String query, Order<?> order, Object... params);
 
     /**
+     * Find entities matching a query and the given sort option, with optional indexed parameters.
+     * This is a shortcut for <code>stream(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params optional sequence of indexed parameters
+     * @return a {@link Stream} containing all results, without paging
+     */
+    default Stream<Entity> stream(String query, Sort<?> sort, Object... params) {
+        return stream(query, Order.by(sort), params);
+    }
+
+    /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
      * It requires a transaction to work.
@@ -98,6 +112,19 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
     Stream<Entity> stream(String query, Order<?> order, Map<String, Object> params);
 
     /**
+     * Find entities matching a query and the given sort option, with named parameters.
+     * This is a shortcut for <code>stream(query, Order.by(sort), params)</code>.
+     *
+     * @param query a {@link io.quarkus.hibernate.panache query string}
+     * @param sort the sort strategy to use
+     * @param params {@link Map} of named parameters
+     * @return a {@link Stream} containing all results, without paging
+     */
+    default Stream<Entity> stream(String query, Sort<?> sort, Map<String, Object> params) {
+        return stream(query, Order.by(sort), params);
+    }
+
+    /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().stream()</code>.
      * It requires a transaction to work.
@@ -109,6 +136,17 @@ public interface PanacheRepositoryBlockingQueries<Entity, Id>
      * @see #listAll()
      */
     Stream<Entity> streamAll(Order<?> order);
+
+    /**
+     * Find all entities of this type, in the given order.
+     * This is a shortcut for <code>streamAll(Order.by(sort))</code>.
+     *
+     * @param sort the sort order to use
+     * @return a {@link Stream} containing all results, without paging
+     */
+    default Stream<Entity> streamAll(Sort<?> sort) {
+        return streamAll(Order.by(sort));
+    }
 
     /**
      * Find all entities of this type, in the given order.

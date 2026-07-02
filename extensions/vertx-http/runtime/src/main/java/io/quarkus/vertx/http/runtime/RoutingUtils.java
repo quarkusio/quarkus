@@ -29,7 +29,7 @@ public final class RoutingUtils {
      */
     public static void assumeCdiRequestContext(RoutingContext ctx, String newOwner) {
         var previousOwner = ctx.data().put(CURRENT_CDI_REQUEST_CTX_OWNER, Objects.requireNonNull(newOwner));
-        if (previousOwner != null && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled() && previousOwner != null && !newOwner.equals(previousOwner)) {
             LOG.debugf("CDI request context owner has changed from '%s' to '%s'", previousOwner, newOwner);
         }
     }

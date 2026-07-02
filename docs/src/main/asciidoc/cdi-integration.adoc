@@ -726,6 +726,36 @@ void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceA
 }
 ----
 
+[[suppress_condition_generator]]
+== Use Case - Custom Bean Suppression for Programmatic Lookup
+
+Suppressed beans cannot be obtained by programmatic lookup via `jakarta.enterprise.inject.Instance` and `io.quarkus.arc.All`.
+Quarkus provides built-in support for declarative suppression through the `@LookupIfProperty` and `@LookupUnlessProperty` annotations.
+However, sometimes you need custom logic that cannot be expressed with annotations, for example when the suppression depends on dynamic configuration property names.
+
+The `SuppressConditionGeneratorBuildItem` can be used to contribute custom logic to the generated method body of `InjectableBean#isSuppressed()`.
+The generator receives a `SuppressConditionGeneration` context that provides the bean metadata, the generated class, and the method body of the `isSuppressed()` method.
+The generator should use the Gizmo2 API to generate code that calls `BlockCreator#returnTrue()` if the bean should be suppressed.
+It is perfectly fine not to contribute any bytecode if the bean does not meet certain requirements, e.g. does not implement a specific interface or is not annotated with a specific annotation.
+Multiple generators are composed together - a bean is suppressed if any generator returns true from the method body.
+
+.`SuppressConditionGeneratorBuildItem` Example
+[source,java]
+----
+@BuildStep
+void suppressMyBeans(BuildProducer<SuppressConditionGeneratorBuildItem> generators) {
+    generators.produce(new SuppressConditionGeneratorBuildItem(generation -> {
+        BeanInfo bean = generation.bean();
+        if (bean.getTarget().isPresent()
+                && bean.getTarget().get().asClass().hasAnnotation(DotName.createSimple(MyAnnotation.class))) { // <1>
+            generation.method().returnTrue(); // <2>
+        }
+    }));
+}
+----
+<1> Only apply suppression to beans annotated with `@MyAnnotation`.
+<2> Use `BlockCreator#returnTrue()` to suppress the bean.
+
 [[build_metadata]]
 == Available Build Time Metadata
 

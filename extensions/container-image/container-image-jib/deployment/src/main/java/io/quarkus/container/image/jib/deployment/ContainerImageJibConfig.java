@@ -21,10 +21,10 @@ public interface ContainerImageJibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24}
+     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi10/openjdk-25-runtime:1.24}
      * is used as the default.
      * Otherwise, when the application is built against Java 21 to Java 24,
-     * {@code registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24}
+     * {@code registry.access.redhat.com/ubi10/openjdk-21-runtime:1.24}
      * is used as the default.
      * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17-runtime:1.24} is used as the default.
      */
@@ -32,8 +32,8 @@ public interface ContainerImageJibConfig {
 
     /**
      * The base image to be used when a container image is being produced for the native binary build.
-     * The default is "quay.io/quarkus/ubi9-quarkus-micro-image:2.0". You can also use
-     * "registry.access.redhat.com/ubi9/ubi-minimal" which is a bigger base image, but provide more built-in utilities
+     * The default is "quay.io/quarkus/ubi10-quarkus-micro-image:2.0". You can also use
+     * "registry.access.redhat.com/ubi10/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
     @WithDefault(ContainerImages.QUARKUS_MICRO_IMAGE)

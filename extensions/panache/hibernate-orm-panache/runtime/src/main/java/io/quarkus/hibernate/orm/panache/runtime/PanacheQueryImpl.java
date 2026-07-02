@@ -14,14 +14,15 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(SharedSessionContract session, String query, String originalQuery, String orderBy,
+    PanacheQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery, Sort sort,
             Object paramsArrayOrMap) {
-        this.delegate = new CommonPanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        this.delegate = new CommonPanacheQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     protected PanacheQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {

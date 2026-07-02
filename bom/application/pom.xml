@@ -29,7 +29,7 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.16.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.60.1-->
+        <opentelemetry-instrumentation.version>2.28.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.62.0-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>6.0.0.Alpha4</quarkus-http.version>
         <micrometer.version>1.17.0</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
@@ -37,7 +37,7 @@
         <latencyutils.version>2.0.3</latencyutils.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>25.0</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
-        <microprofile-config-api.version>3.1.1-RC1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
+        <microprofile-config-api.version>3.1.1</microprofile-config-api.version> <!-- keep in sync with smallrye-config -->
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
         <microprofile-fault-tolerance-api.version>4.1.2</microprofile-fault-tolerance-api.version>
@@ -51,7 +51,7 @@
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
-        <smallrye-graphql.version>3.0.0.Beta3</smallrye-graphql.version>
+        <smallrye-graphql.version>3.0.0.Beta4</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
@@ -126,10 +126,10 @@
         <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.26.2.0.0</oracle-jdbc.version> <!-- Keep in synch. with Oracle Test Pilot CI workflow: ci-actions-incremental.yml -->
-        <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
+        <db2-jdbc.version>12.1.5.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.1.0</junit.jupiter.version>
+        <junit.jupiter.version>6.1.1</junit.jupiter.version>
         <infinispan.version>16.0.13</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
@@ -156,7 +156,7 @@
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
-        <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>4.1.8</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -179,7 +179,7 @@
         <mockito.version>5.21.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.3.2</quarkus-security.version>
-        <keycloak-client.version>26.0.9</keycloak-client.version>
+        <keycloak-client.version>26.0.10</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>4.2.0</checker-qual.version>
         <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
@@ -200,9 +200,9 @@
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
-        <aesh.version>3.15.1</aesh.version>
-        <aesh-readline.version>3.15.1</aesh-readline.version>
-        <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with dekorate -->
+        <aesh.version>3.16.1</aesh.version>
+        <aesh-readline.version>3.16.1</aesh-readline.version>
+        <jline.version>4.2.1</jline.version> <!-- Keep in sync with dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.9.1</strimzi-oauth.nimbus.version>
@@ -3366,16 +3366,7 @@
                 <artifactId>quarkus-openshift-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-scala</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-scala-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-narayana-stm</artifactId>
@@ -4269,11 +4260,6 @@
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-compiler</artifactId>
                 <version>${scala.version}</version>
             </dependency>
             <dependency>
@@ -6177,11 +6163,6 @@
                 <version>${awaitility.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.awaitility</groupId>
-                <artifactId>awaitility-scala</artifactId>
-                <version>${awaitility.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>de.flapdoodle.embed</groupId>
                 <artifactId>de.flapdoodle.embed.mongo</artifactId>
                 <version>${flapdoodle.mongo.version}</version>
@@ -6606,9 +6587,9 @@
                 <version>${aesh-readline.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.fusesource.jansi</groupId>
+                <groupId>org.jline</groupId>
                 <artifactId>jansi</artifactId>
-                <version>${jansi.version}</version>
+                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.aesh</groupId>

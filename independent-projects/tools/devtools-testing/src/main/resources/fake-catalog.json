@@ -63,8 +63,7 @@
           "name": "resteasy-reactive",
           "languages": [
             "java",
-            "kotlin",
-            "scala"
+            "kotlin"
           ],
           "artifact": "io.quarkus:fake-artifact"
         },
@@ -82,7 +81,7 @@
         "codestart" : {
           "name" : "resteasy-reactive",
           "kind" : "core",
-          "languages" : [ "java", "kotlin", "scala" ],
+          "languages" : [ "java", "kotlin" ],
           "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-FAKE"
         },
         "minimum-java-version" : "11",
@@ -110,7 +109,7 @@
         "codestart" : {
           "name" : "resteasy-reactive",
           "kind" : "core",
-          "languages" : [ "java", "kotlin", "scala" ],
+          "languages" : [ "java", "kotlin" ],
           "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-FAKE"
         },
         "minimum-java-version" : "11",
@@ -181,8 +180,7 @@
           "name": "resteasy",
           "languages": [
             "java",
-            "kotlin",
-            "scala"
+            "kotlin"
           ],
           "artifact": "io.quarkus:fake-artifact"
         },
@@ -210,8 +208,7 @@
           "name": "spring-web",
           "languages": [
             "java",
-            "kotlin",
-            "scala"
+            "kotlin"
           ],
           "artifact": "io.quarkus:fake-artifact"
         },
@@ -246,29 +243,7 @@
         "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
     },
-    {
-      "name": "Scala",
-      "description": "Write your services in Scala",
-      "metadata": {
-        "keywords": [
-          "scala"
-        ],
-        "categories": [
-          "alt-languages"
-        ],
-        "status": "preview",
-        "codestart": {
-          "name": "scala",
-          "kind": "core",
-          "artifact": "io.quarkus:fake-artifact"
-        },
-        "built-with-quarkus-core": "999-FAKE"
-      },
-      "artifact": "io.quarkus:quarkus-scala::jar:999-FAKE",
-      "origins": [
-        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
-      ]
-    },
+
     {
       "name": "Uncategorized extension",
       "description": "Some uncategorized extension",
@@ -429,10 +404,10 @@
     "project": {
       "default-codestart": "resteasy-reactive",
       "codestart-data": {
-        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.23",
-        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.23",
-        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.7",
-        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi10/openjdk-{java.version}-runtime:1.24",
+        "dockerfile.jvm.from": "registry.access.redhat.com/ubi10/openjdk-${recommended-java-version}-runtime:1.24",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi10/ubi-minimal:10.2",
+        "dockerfile.native-micro": "quay.io/quarkus/ubi10-quarkus-micro-image:2.0"
       },
       "properties": {
         "doc-root": "https://quarkus.io",
@@ -440,8 +415,7 @@
         "compiler-plugin-version": "3.8.1",
         "surefire-plugin-version": "3.0.0",
         "kotlin-version": "1.4.31",
-        "scala-version": "2.12.13",
-        "scala-plugin-version": "4.4.0",
+
         "quarkus-core-version": "999-FAKE",
         "maven-plugin-groupId": "io.quarkus",
         "maven-plugin-artifactId": "quarkus-maven-plugin",

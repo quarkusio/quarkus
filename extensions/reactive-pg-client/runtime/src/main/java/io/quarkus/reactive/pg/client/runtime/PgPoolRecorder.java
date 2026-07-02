@@ -34,8 +34,6 @@ import io.vertx.sqlclient.SqlConnectOptions;
 @Recorder
 public class PgPoolRecorder {
 
-    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
-
     private static final TypeLiteral<Instance<PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
@@ -111,8 +109,7 @@ public class PgPoolRecorder {
         pgConnectOptionsList.forEach(pgConnectOptions -> {
             ReactivePoolUtil.configureCredentials(pgConnectOptions, dataSourceRuntimeConfig);
 
-            pgConnectOptions.setCachePreparedStatements(
-                    dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
+            ReactivePoolUtil.configurePreparedStatementCache(pgConnectOptions, dataSourceReactiveRuntimeConfig);
 
             if (dataSourceReactivePostgreSQLConfig.pipeliningLimit().isPresent()) {
                 pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit().getAsInt());
@@ -130,6 +127,10 @@ public class PgPoolRecorder {
             } else if (dataSourceReactiveRuntimeConfig.tlsConfigurationName().isPresent()) {
                 // Auto-enable SSL mode when a named TLS configuration is set
                 pgConnectOptions.setSslMode(SslMode.REQUIRE);
+            }
+
+            if (dataSourceReactivePostgreSQLConfig.sslNegotiation().isPresent()) {
+                pgConnectOptions.setSslNegotiation(dataSourceReactivePostgreSQLConfig.sslNegotiation().get());
             }
 
             pgConnectOptions.setUseLayer7Proxy(dataSourceReactivePostgreSQLConfig.useLayer7Proxy());

@@ -241,7 +241,7 @@ jobs:
       # Note: gh needs the repository around to be able to resolve it
       - name: Checkout repository
         if: github.event_name == 'schedule' && github.ref_name == 'main'
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.2
       - name: Download previous scheduled build SHA
         if: github.event_name == 'schedule' && github.ref_name == 'main'
         id: download-previous-sha
@@ -324,7 +324,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -377,7 +377,7 @@ jobs:
       - name: Verify oracle-test-pilot-native-tests.json
         run: ./.github/verify-tests-json.sh oracle-test-pilot-native-tests.json integration-tests/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
@@ -512,7 +512,7 @@ jobs:
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
@@ -602,7 +602,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -667,7 +667,7 @@ jobs:
           restore-keys: |
             develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "${{ matrix.java.name }}"
@@ -785,7 +785,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -812,7 +812,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
@@ -899,7 +899,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -926,7 +926,7 @@ jobs:
         if: ${{ !startsWith(matrix.java.os-name, 'windows') }}
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
@@ -1004,7 +1004,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1026,7 +1026,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
@@ -1113,7 +1113,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1135,7 +1135,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -1202,7 +1202,7 @@ jobs:
 #        run: |
 #          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
 #          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
-#      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+#      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 #      - name: Restore Maven Repository
 #        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
 #        with:
@@ -1224,7 +1224,7 @@ jobs:
 #          distribution: temurin
 #          java-version: ${{ matrix.java.java-version }}
 #      - name: Setup Develocity Build Scan capture
-#        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+#        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
 #        with:
 #          capture-strategy: ON_DEMAND
 #          job-name: "Quickstarts - JDK ${{matrix.java.name}}"
@@ -1318,7 +1318,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Platform Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1340,7 +1340,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Platform Tests - JDK ${{matrix.java.name}}"
@@ -1407,7 +1407,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1435,7 +1435,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -1483,7 +1483,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -1512,7 +1512,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
@@ -1585,7 +1585,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         if: ${{ !startsWith(matrix.os-name, 'windows') }}
@@ -1633,7 +1633,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
@@ -1781,7 +1781,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-jdk-${{matrix.java-version}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1803,7 +1803,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
@@ -1813,7 +1813,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
+        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1847,7 +1847,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
+        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete
@@ -1890,7 +1890,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-native" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - Native" >> "$GITHUB_ENV"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Restore Maven Repository
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
@@ -1921,7 +1921,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@974e8dbcbda40db6828fc35f349c80a7c0e71529 # v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Oracle Test Pilot ${{matrix.category}} - Native"
@@ -1931,7 +1931,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
+        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1968,7 +1968,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@aec84678697e1648ddb8e8a480cf3ceda746ce5c # v1.0.24
+        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete

@@ -7,7 +7,9 @@ import io.quarkus.hibernate.panache.PanacheQuery;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.smallrye.mutiny.Uni;
 
-public interface PanacheReactiveQuery<Entity> extends PanacheQuery<Uni<Entity>, Uni<List<Entity>>, Uni<Boolean>, Uni<Long>> {
+public interface PanacheReactiveQuery<Entity>
+        extends
+        PanacheQuery<PanacheReactiveQuery<Entity>, Uni<Entity>, Uni<List<Entity>>, Uni<PanacheReactiveQuery<Entity>>, Uni<Boolean>, Uni<Long>> {
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following
@@ -33,5 +35,5 @@ public interface PanacheReactiveQuery<Entity> extends PanacheQuery<Uni<Entity>, 
      *         <code>type</code>
      * @throws PanacheQueryException if this represents an already-projected query
      */
-    public <T> PanacheQuery<Uni<T>, Uni<List<T>>, Boolean, Long> project(Class<T> type);
+    public <T> PanacheReactiveQuery<T> project(Class<T> type);
 }

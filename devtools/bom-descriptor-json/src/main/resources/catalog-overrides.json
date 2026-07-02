@@ -150,10 +150,10 @@
     "project": {
       "default-codestart": "rest",
       "codestart-data": {
-        "tooling-dockerfiles.dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}-runtime:1.24",
-        "tooling-dockerfiles.dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24",
-        "tooling-dockerfiles.dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.7",
-        "tooling-dockerfiles.dockerfile.native-micro.from": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+        "tooling-dockerfiles.dockerfile.jvm.from-template": "registry.access.redhat.com/ubi10/openjdk-{java.version}-runtime:1.24",
+        "tooling-dockerfiles.dockerfile.jvm.from": "registry.access.redhat.com/ubi10/openjdk-21-runtime:1.24",
+        "tooling-dockerfiles.dockerfile.native.from": "registry.access.redhat.com/ubi10/ubi-minimal:10.2",
+        "tooling-dockerfiles.dockerfile.native-micro.from": "quay.io/quarkus/ubi10-quarkus-micro-image:2.0"
       },
       "properties": {
         "doc-root": "https://quarkus.io",
@@ -161,8 +161,7 @@
         "compiler-plugin-version": "${compiler-plugin.version}",
         "surefire-plugin-version": "${version.surefire.plugin}",
         "kotlin-version": "${kotlin.version}",
-        "scala-version": "${scala.version}",
-        "scala-plugin-version": "${scala-plugin.version}",
+
         "quarkus-core-version": "${project.version}",
         "maven-plugin-groupId": "${project.groupId}",
         "maven-plugin-artifactId": "quarkus-maven-plugin",

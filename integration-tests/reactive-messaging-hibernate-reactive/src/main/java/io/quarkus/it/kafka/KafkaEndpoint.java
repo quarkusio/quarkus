@@ -18,6 +18,12 @@ public class KafkaEndpoint {
     KafkaReceivers receivers;
 
     @Inject
+    ExactlyOnceFruitProcessor exactlyOnceFruitProcessor;
+
+    @Inject
+    ExactlyOnceFruitConsumer exactlyOnceFruitConsumer;
+
+    @Inject
     Mutiny.SessionFactory sf;
 
     @GET
@@ -46,6 +52,27 @@ public class KafkaEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Pet> getConsumedPets() {
         return receivers.getConsumedPets();
+    }
+
+    @GET
+    @Path("/exactly-once-fruit-processed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getExactlyOnceFruitProcessed() {
+        return exactlyOnceFruitProcessor.getProcessed();
+    }
+
+    @GET
+    @Path("/exactly-once-fruit-results")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getExactlyOnceFruitResults() {
+        return exactlyOnceFruitConsumer.getResults();
+    }
+
+    @GET
+    @Path("/exactly-once-fruits")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<List<ExactlyOnceFruit>> getExactlyOnceFruits() {
+        return sf.withSession(s -> ExactlyOnceFruit.listAll());
     }
 
 }

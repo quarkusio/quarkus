@@ -23,12 +23,12 @@ jobs:
       packages: read
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: quarkusio/quarkusio.github.io
           fetch-depth: 5000
           fetch-tags: false
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: quarkusio/quarkus
           path: quarkus-main
@@ -67,7 +67,7 @@ jobs:
           rm -rf documentation-temp
           rm -rf quarkus-main
       - name: Set up ruby
-        uses: ruby/setup-ruby@12fd324f1d0b43274fdc8130f6980590a667c455 # v1.312.0
+        uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
         with:
           ruby-version: 3.2.3
       - name: Cache Ruby gems

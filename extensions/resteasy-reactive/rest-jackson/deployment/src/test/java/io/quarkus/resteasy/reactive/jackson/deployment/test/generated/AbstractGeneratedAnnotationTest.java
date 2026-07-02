@@ -189,6 +189,22 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("address")));
     }
 
+    // --- @JsonUnwrapped + @JsonIgnoreProperties ---
+
+    @Test
+    public void testUnwrappedIgnoreProperties() {
+        RestAssured.get("/generated/unwrapped-ignore-props")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("id", Matchers.is("u1"))
+                .body("name", Matchers.is("Alice"))
+                .body("email", Matchers.is("alice@example.com"))
+                .body(not(containsString("password")))
+                .body(not(containsString("secret123")))
+                .body(not(containsString("user")));
+    }
+
     // --- @JsonAnySetter + @JsonIgnoreProperties + @JsonProperty ---
 
     @Test
@@ -573,6 +589,18 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("parentName", Matchers.is("parent"))
                 .body("child.childName", Matchers.is("child"))
                 .body("child", not(hasKey("parent")));
+    }
+
+    // --- @JsonFormat with date pattern ---
+
+    @Test
+    public void testFormatDatePatternSerialization() {
+        RestAssured.get("/generated/date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-test"))
+                .body("date", Matchers.is("2025-06-15"));
     }
 
     // --- @JsonFormat ---

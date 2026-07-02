@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,7 +45,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     private static final String COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID = "com.redhat.quarkus.platform";
     private static final String QUARKUS_BOM = "quarkus-bom";
     private static final String QUARKUS_UNIVERSE_BOM = "quarkus-universe-bom";
-    private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-kotlin", "quarkus-scala");
+    private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-kotlin");
     private final Map<String, Extension> extensionsMapping;
 
     public enum AppContent implements DataKey {
@@ -63,8 +62,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public enum Language implements DataKey {
         JAVA,
-        KOTLIN,
-        SCALA
+        KOTLIN
     }
 
     public enum Tooling implements DataKey {
@@ -204,8 +202,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
         return getSelectedExtensionsAsStream(projectInput)
-                .map(ExtensionProcessor::getCodestartName)
-                .filter(Objects::nonNull)
+                .flatMap(e -> ExtensionProcessor.getCodestartNames(e).stream())
                 .collect(Collectors.toSet());
     }
 

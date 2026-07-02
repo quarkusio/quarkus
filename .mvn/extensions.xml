@@ -2,7 +2,7 @@
     <extension>
         <groupId>com.gradle</groupId>
         <artifactId>develocity-maven-extension</artifactId>
-        <version>2.4.1</version>
+        <version>2.4.2</version>
     </extension>
     <extension>
         <groupId>com.gradle</groupId>
@@ -22,16 +22,16 @@
     <extension>
         <groupId>eu.maveniverse.maven.scalpel</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.3.4</version>
+        <version>0.3.7</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.nisse</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.2</version>
+        <version>0.9.3</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.8</version>
+        <version>0.9.9</version>
     </extension>
 </extensions>

@@ -11,7 +11,8 @@ import io.smallrye.common.annotation.Experimental;
  * identifier. The ordering of enrichers can be defined with {@link RelativeOrder}.
  * <p>
  * This SPI is called once per emission (i.e., per call to {@link Signal#publish(Object)}, {@link Signal#send(Object)}, or
- * {@link Signal#request(Object, Class)}), not per receiver.
+ * {@link Signal#request(Object, Class)}), not per receiver. The enricher is executed synchronously on the thread that
+ * emits the signal, before any receiver is invoked.
  *
  * @see RelativeOrder
  */

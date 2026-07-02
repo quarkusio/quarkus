@@ -32,6 +32,11 @@ public class ContainerImages {
     public static final String UBI9_VERSION = "9.7";
 
     /**
+     * UBI 10 version
+     */
+    public static final String UBI10_VERSION = "10.2";
+
+    /**
      * Version used for more UBI8 Java images.
      */
     public static final String UBI8_JAVA_VERSION = "1.23";
@@ -42,9 +47,19 @@ public class ContainerImages {
     public static final String UBI9_JAVA_VERSION = "1.24";
 
     /**
+     * Version used for more UBI10 Java images.
+     */
+    public static final String UBI10_JAVA_VERSION = "1.24";
+
+    /**
      * Version uses for the native builder image.
      */
     public static final String NATIVE_BUILDER_VERSION = "jdk-25";
+
+    /**
+     * Version uses for the native builder image.
+     */
+    public static final String UBI10_NATIVE_BUILDER_VERSION = "jdk-25";
 
     // === Runtime images for containers (native)
 
@@ -58,6 +73,11 @@ public class ContainerImages {
     public static final String UBI9_MINIMAL_VERSION = UBI9_VERSION;
     public static final String UBI9_MINIMAL = UBI9_MINIMAL_IMAGE_NAME + ":" + UBI9_MINIMAL_VERSION;
 
+    // UBI 10 Minimal - https://catalog.redhat.com/en/software/containers/ubi10-minimal/66f16af45db83414cddcfc99
+    public static final String UBI10_MINIMAL_IMAGE_NAME = "registry.access.redhat.com/ubi10/ubi-minimal";
+    public static final String UBI10_MINIMAL_VERSION = UBI10_VERSION;
+    public static final String UBI10_MINIMAL = UBI10_MINIMAL_IMAGE_NAME + ":" + UBI10_MINIMAL_VERSION;
+
     // UBI 8 Quarkus Micro image - https://quay.io/repository/quarkus/quarkus-micro-image?tab=tags
     public static final String UBI8_QUARKUS_MICRO_IMAGE_NAME = "quay.io/quarkus/quarkus-micro-image";
     public static final String UBI8_QUARKUS_MICRO_VERSION = "2.0";
@@ -68,10 +88,15 @@ public class ContainerImages {
     public static final String UBI9_QUARKUS_MICRO_VERSION = "2.0";
     public static final String UBI9_QUARKUS_MICRO_IMAGE = UBI9_QUARKUS_MICRO_IMAGE_NAME + ":" + UBI9_QUARKUS_MICRO_VERSION;
 
+    // UBI 10 Quarkus Micro image - https://quay.io/repository/quarkus/ubi10-quarkus-micro-image?tab=tags
+    public static final String UBI10_QUARKUS_MICRO_IMAGE_NAME = "quay.io/quarkus/ubi10-quarkus-micro-image";
+    public static final String UBI10_QUARKUS_MICRO_VERSION = "2.0";
+    public static final String UBI10_QUARKUS_MICRO_IMAGE = UBI10_QUARKUS_MICRO_IMAGE_NAME + ":" + UBI10_QUARKUS_MICRO_VERSION;
+
     // default Quarkus Micro image - https://quay.io/repository/quarkus/quarkus-micro-image?tab=tags
-    public static final String QUARKUS_MICRO_IMAGE_NAME = UBI9_QUARKUS_MICRO_IMAGE_NAME;
-    public static final String QUARKUS_MICRO_VERSION = UBI9_QUARKUS_MICRO_VERSION;
-    public static final String QUARKUS_MICRO_IMAGE = UBI9_QUARKUS_MICRO_IMAGE;
+    public static final String QUARKUS_MICRO_IMAGE_NAME = UBI10_QUARKUS_MICRO_IMAGE_NAME;
+    public static final String QUARKUS_MICRO_VERSION = UBI10_QUARKUS_MICRO_VERSION;
+    public static final String QUARKUS_MICRO_IMAGE = UBI10_QUARKUS_MICRO_IMAGE;
 
     // === Runtime images for containers (JVM)
     private static final Pattern RUN_JAVA_IMAGE_MATCHER = Pattern
@@ -97,10 +122,20 @@ public class ContainerImages {
     public static final String UBI9_JAVA_21_VERSION = UBI9_JAVA_VERSION;
     public static final String UBI9_JAVA_21 = UBI9_JAVA_21_IMAGE_NAME + ":" + UBI9_JAVA_21_VERSION;
 
+    // UBI 10 OpenJDK 21 Runtime - https://catalog.redhat.com/en/software/containers/ubi10/openjdk-21-runtime/690ca3b700d71ac7397b98c6
+    public static final String UBI10_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi10/openjdk-21-runtime";
+    public static final String UBI10_JAVA_21_VERSION = UBI10_JAVA_VERSION;
+    public static final String UBI10_JAVA_21 = UBI10_JAVA_21_IMAGE_NAME + ":" + UBI10_JAVA_21_VERSION;
+
     // UBI 9 OpenJDK 25 Runtime - https://catalog.redhat.com/en/software/containers/ubi9/openjdk-25-runtime/69204990c46419100ce30a5b
     public static final String UBI9_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-25-runtime";
     public static final String UBI9_JAVA_25_VERSION = UBI9_JAVA_VERSION;
     public static final String UBI9_JAVA_25 = UBI9_JAVA_25_IMAGE_NAME + ":" + UBI9_JAVA_25_VERSION;
+
+    // UBI 10 OpenJDK 25 Runtime - https://catalog.redhat.com/en/software/containers/ubi10/openjdk-25-runtime/690ca3e4c827022925ed2db5
+    public static final String UBI10_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi10/openjdk-25-runtime";
+    public static final String UBI10_JAVA_25_VERSION = UBI10_JAVA_VERSION;
+    public static final String UBI10_JAVA_25 = UBI10_JAVA_25_IMAGE_NAME + ":" + UBI10_JAVA_25_VERSION;
 
     // === Source To Image images
 
@@ -116,24 +151,30 @@ public class ContainerImages {
     public static final String UBI9_QUARKUS_BINARY_S2I = UBI9_QUARKUS_BINARY_S2I_IMAGE_NAME + ":"
             + UBI9_QUARKUS_BINARY_S2I_VERSION;
 
+    // UBI 10 Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi10-quarkus-native-binary-s2i?tab=tags
+    public static final String UBI10_QUARKUS_BINARY_S2I_IMAGE_NAME = "quay.io/quarkus/ubi10-quarkus-native-binary-s2i";
+    public static final String UBI10_QUARKUS_BINARY_S2I_VERSION = "2.0";
+    public static final String UBI10_QUARKUS_BINARY_S2I = UBI10_QUARKUS_BINARY_S2I_IMAGE_NAME + ":"
+            + UBI10_QUARKUS_BINARY_S2I_VERSION;
+
     // default Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi9-quarkus-native-binary-s2i?tab=tags
-    public static final String QUARKUS_BINARY_S2I_IMAGE_NAME = UBI9_QUARKUS_BINARY_S2I_IMAGE_NAME;
-    public static final String QUARKUS_BINARY_S2I_VERSION = UBI9_QUARKUS_BINARY_S2I_VERSION;
-    public static final String QUARKUS_BINARY_S2I = UBI9_QUARKUS_BINARY_S2I;
+    public static final String QUARKUS_BINARY_S2I_IMAGE_NAME = UBI10_QUARKUS_BINARY_S2I_IMAGE_NAME;
+    public static final String QUARKUS_BINARY_S2I_VERSION = UBI10_QUARKUS_BINARY_S2I_VERSION;
+    public static final String QUARKUS_BINARY_S2I = UBI10_QUARKUS_BINARY_S2I;
 
     // Java 17 Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-17/61ee7c26ed74b2ffb22b07f6
     public static final String S2I_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17";
     public static final String S2I_JAVA_17_VERSION = UBI9_JAVA_VERSION;
     public static final String S2I_JAVA_17 = S2I_JAVA_17_IMAGE_NAME + ":" + S2I_JAVA_17_VERSION;
 
-    // Java Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-21/6501cdb5c34ae048c44f7814
-    public static final String S2I_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-21";
-    public static final String S2I_JAVA_21_VERSION = UBI9_JAVA_VERSION;
+    // Java Source To Image - https://catalog.redhat.com/en/software/containers/ubi10/openjdk-21/690ca3318f730aed0b1497fd
+    public static final String S2I_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi10/openjdk-21";
+    public static final String S2I_JAVA_21_VERSION = UBI10_JAVA_VERSION;
     public static final String S2I_JAVA_21 = S2I_JAVA_21_IMAGE_NAME + ":" + S2I_JAVA_21_VERSION;
 
-    // Java Source To Image - https://catalog.redhat.com/en/software/containers/ubi9/openjdk-25/69204893fc0d23c633bf5c29
-    public static final String S2I_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-25";
-    public static final String S2I_JAVA_25_VERSION = UBI9_JAVA_VERSION;
+    // Java Source To Image - https://catalog.redhat.com/en/software/containers/ubi10/openjdk-25/690ca440f43a9c6b120b2970
+    public static final String S2I_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi10/openjdk-25";
+    public static final String S2I_JAVA_25_VERSION = UBI10_JAVA_VERSION;
     public static final String S2I_JAVA_25 = S2I_JAVA_25_IMAGE_NAME + ":" + S2I_JAVA_25_VERSION;
 
     // === Native Builder images
@@ -148,6 +189,11 @@ public class ContainerImages {
     public static final String UBI9_MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
     public static final String UBI9_MANDREL_BUILDER = UBI9_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI9_MANDREL_BUILDER_VERSION;
 
+    // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi10-quarkus-mandrel-builder-image?tab=tags
+    public static final String UBI10_MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi10-quarkus-mandrel-builder-image";
+    public static final String UBI10_MANDREL_BUILDER_VERSION = UBI10_NATIVE_BUILDER_VERSION;
+    public static final String UBI10_MANDREL_BUILDER = UBI10_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI10_MANDREL_BUILDER_VERSION;
+
     // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-graalvmce-builder-image?tab=tags
     public static final String UBI8_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image";
     public static final String UBI8_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
@@ -158,13 +204,18 @@ public class ContainerImages {
     public static final String UBI9_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
     public static final String UBI9_GRAALVM_BUILDER = UBI9_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI9_GRAALVM_BUILDER_VERSION;
 
+    // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi10-quarkus-graalvmce-builder-image?tab=tags
+    public static final String UBI10_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi10-quarkus-graalvmce-builder-image";
+    public static final String UBI10_GRAALVM_BUILDER_VERSION = UBI10_NATIVE_BUILDER_VERSION;
+    public static final String UBI10_GRAALVM_BUILDER = UBI10_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI10_GRAALVM_BUILDER_VERSION;
+
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         if (version.isJava25OrHigher() == Status.TRUE) {
-            return UBI9_JAVA_25;
+            return UBI10_JAVA_25;
         }
 
         if (version.isJava21OrHigher() == Status.TRUE) {
-            return UBI9_JAVA_21;
+            return UBI10_JAVA_21;
         }
 
         return UBI9_JAVA_17;

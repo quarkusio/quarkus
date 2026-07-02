@@ -159,7 +159,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      * Add explicitly specified and sourceType-implied extensions
      *
      * @param extensions Explicitly specified extensions
-     * @param sourceType Type of source (Kotlin, Java, Scala)
+     * @param sourceType Type of source (Kotlin, Java)
      */
     public void setSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {
         extensions = CreateProjectHelper.sanitizeExtensions(extensions);

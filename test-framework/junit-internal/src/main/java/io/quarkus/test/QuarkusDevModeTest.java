@@ -394,7 +394,12 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
-        RestAssuredStateManager.clearState();
+
+        // Only reset if we actually set something. ValueRegistry can be null if Quarkus failed to start
+        if (Optional.ofNullable(ValueRegistryInjector.get(context))
+                .map(valueRegistry -> valueRegistry.containsKey(LOCAL_BASE_URI)).orElse(false)) {
+            RestAssuredStateManager.clearState();
+        }
         ThreadLocalConfigSourceProvider.reset();
         ConfigInjector.clear(context);
         ValueRegistryInjector.clear(context);

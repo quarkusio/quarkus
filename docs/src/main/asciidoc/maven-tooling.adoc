@@ -63,6 +63,10 @@ If you are using the Maven command, the following table lists the attributes you
 | The version currently recommended by the xref:extension-registry-user.adoc[Quarkus Extension Registry]
 | The version of the platform you want the project to use. It can also accept a version range, in which case the latest from the specified range will be used.
 
+| `stream`
+| _Not set_
+| A target platform stream, for example `3.15` or `io.quarkus.platform:3.15`. When specified, the extension registry client will be used to resolve the platform BOM corresponding to the given stream. Cannot be combined with `platformGroupId`, `platformArtifactId`, or `platformVersion`.
+
 | `javaVersion`
 | 17
 | The version of Java you want the project to use.
@@ -519,17 +523,17 @@ Note that in this case the build itself runs in a Docker container too, so you d
 
 [TIP]
 ====
-By default, the native executable will be generated using the `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
+By default, the native executable will be generated using the `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
 
 If you want to build a native executable with a different Docker image (for instance to use a different GraalVM version),
 use the `-Dquarkus.native.builder-image=<image name>` build argument.
 
-The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io].
+The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi10-quarkus-mandrel-builder-image?tab=tags[quay.io].
 Be aware that a given Quarkus version might not be compatible with all the images available.
 
-Starting from Quarkus 3.19, the _builder_ image is based on UBI 9, and thus requires an UBI 9 base image if you want to run the native executable in a container.
-You can switch back to UBI 8, by setting the `quarkus.native.builder-image` property to one of the available image from the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
-For example ``quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}` is using UBI 8, and so the resulting native executable will be compatible with UBI 8 base images.
+The _builder_ image is based on UBI 10, and thus requires an UBI 10 base image if you want to run the native executable in a container.
+You can switch to an older UBI version by setting the `quarkus.native.builder-image` property to one of the available images from the https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 9)] or the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 8)].
+For example `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` is using UBI 9, and so the resulting native executable will be compatible with UBI 9 base images.
 
 ====
 

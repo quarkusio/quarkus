@@ -3,14 +3,19 @@ package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.filter.FilteringGeneratorDelegate;
+import com.fasterxml.jackson.core.filter.TokenFilter;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
@@ -29,6 +34,19 @@ import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigE
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
+
+    public static void serializeFormattedDate(Object value, String pattern, String timezone,
+            JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        if (timezone != null) {
+            sdf.setTimeZone(TimeZone.getTimeZone(timezone));
+        }
+        generator.writeString(sdf.format(value));
+    }
 
     public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {
         if (activeView == null) {
@@ -219,9 +237,17 @@ public class JacksonMapperUtil {
     }
 
     public static void serializeUnwrapped(Object value, JsonGenerator generator,
-            SerializerProvider serializerProvider) throws IOException {
+            SerializerProvider serializerProvider, Set<String> ignoredProperties) throws IOException {
         if (value == null) {
             return;
+        }
+        if (!ignoredProperties.isEmpty()) {
+            generator = new FilteringGeneratorDelegate(generator, new TokenFilter() {
+                @Override
+                public TokenFilter includeProperty(String name) {
+                    return ignoredProperties.contains(name) ? null : TokenFilter.INCLUDE_ALL;
+                }
+            }, TokenFilter.Inclusion.INCLUDE_ALL_AND_PATH, true);
         }
         JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
         if (serializer instanceof GeneratedSerializer gs) {

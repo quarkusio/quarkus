@@ -55,9 +55,8 @@ updates:
       - dependency-name: io.strimzi:strimzi-test-container
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*
-      # Scala
+      # Scala (used by Kafka)
       - dependency-name: org.scala-lang:*
-      - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
       - dependency-name: io.smallrye:*
       - dependency-name: io.smallrye.beanbag:*

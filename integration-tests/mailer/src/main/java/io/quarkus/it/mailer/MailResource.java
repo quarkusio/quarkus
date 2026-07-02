@@ -49,6 +49,9 @@ public class MailResource {
     @MailerName("tls-registry-trust-all")
     Mailer tlsRegistryMailerWithTrustAll;
 
+    @MailerName("custom-credentials-provider")
+    Mailer mailerWithCustomCredentialsProvider;
+
     private Mailer select(String name) {
         if (name == null) {
             return defaultMailer;
@@ -232,4 +235,21 @@ public class MailResource {
         return "ok";
     }
 
+    @Inject
+    ChangingCredentialsProvider credentialsProvider;
+
+    /**
+     * Send a simple text email with a mailer that uses a credentials provider.
+     */
+    @GET
+    @Path("/custom-credentials-provider")
+    public String sendSimpleTextWithChangingCredentials() {
+        mailerWithCustomCredentialsProvider.send(Mail.withText("nobody@quarkus.io",
+                "simple test email",
+                "This is a simple test email.\nRegards,\nRoger the robot"));
+        mailerWithCustomCredentialsProvider.send(Mail.withText("nobody@quarkus.io",
+                "simple test email",
+                "This is a simple test email.\nRegards,\nRoger the robot"));
+        return String.valueOf(credentialsProvider.count());
+    }
 }

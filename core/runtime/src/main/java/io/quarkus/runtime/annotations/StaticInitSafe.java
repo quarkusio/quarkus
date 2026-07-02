@@ -37,7 +37,7 @@ import java.lang.annotation.Target;
  *
  * Please check <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/initial.html">Initializing Fields</a> for
  * more information about static blocks.
- *
+ * <p>
  * Since Config initializes first, some ConfigSources may not be suited to be initialized at static init. Consider the
  * previous code example and a ConfigSource that requires database access. In this case, it is impossible to properly
  * initialize such ConfigSource, because the database services are not yet available so the ConfigSource in unusable.

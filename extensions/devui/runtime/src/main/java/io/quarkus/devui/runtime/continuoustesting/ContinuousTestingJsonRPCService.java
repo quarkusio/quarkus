@@ -3,6 +3,7 @@ package io.quarkus.devui.runtime.continuoustesting;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -30,7 +31,14 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
 
     @Override
     public void accept(final ContinuousTestingSharedStateManager.State state) {
-        final var results = DevConsoleManager.<TestRunResultsInterface> invoke("devui-continuous-testing_getResults");
+        TestRunResultsInterface results = null;
+        if (state.lastRun > 0) { // Skip expected INITIAL_STATE
+            try {
+                results = DevConsoleManager.invoke("devui-continuous-testing_getResults");
+            } catch (NoSuchElementException e) {
+                // Action not yet registered, can happen during dev mode restart between test classes
+            }
+        }
         final List<Item> passedTests = new LinkedList<>();
         final List<Item> failedTests = new LinkedList<>();
         final List<Item> skippedTests = new LinkedList<>();

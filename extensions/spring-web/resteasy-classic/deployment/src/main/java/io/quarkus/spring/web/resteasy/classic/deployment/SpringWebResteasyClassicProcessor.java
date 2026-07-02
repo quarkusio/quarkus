@@ -25,8 +25,6 @@ import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.jboss.resteasy.spi.metadata.SpringResourceBuilder;
-import org.jboss.resteasy.spring.web.ResponseEntityFeature;
-import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -41,6 +39,8 @@ import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizerBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
+import io.quarkus.spring.web.resteasy.classic.runtime.ResponseEntityFeature;
+import io.quarkus.spring.web.resteasy.classic.runtime.ResponseStatusFeature;
 import io.quarkus.spring.web.runtime.common.ResponseStatusExceptionMapper;
 import io.quarkus.undertow.deployment.IgnoredServletContainerInitializerBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;

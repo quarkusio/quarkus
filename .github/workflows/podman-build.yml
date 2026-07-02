@@ -26,9 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAVEN_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=1g"
-    # Skip main in forks
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
-    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
+    if: "( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \

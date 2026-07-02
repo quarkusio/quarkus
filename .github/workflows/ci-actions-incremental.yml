@@ -103,7 +103,7 @@ on:
 
 concurrency:
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Workaround testsuite locale issue
@@ -160,8 +160,7 @@ jobs:
     name: "CI Sanity Check"
     needs: [ approval ]
     runs-on: ubuntu-latest
-    # Skip main in forks
-    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
+    if: true
     steps:
       - name: Build
         run: sleep 30
@@ -169,9 +168,8 @@ jobs:
     name: "Configure jobs"
     needs: [ approval ]
     runs-on: ubuntu-latest
-    # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
-    if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
+    if: (
            github.event_name != 'pull_request' || (
              github.event.pull_request.draft == false &&
              github.event.pull_request.state != 'closed' &&
@@ -242,10 +240,10 @@ jobs:
       # - we compare it with current and skip the build if there are no changes
       # Note: gh needs the repository around to be able to resolve it
       - name: Checkout repository
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Download previous scheduled build SHA
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
         id: download-previous-sha
         continue-on-error: true
         run: |
@@ -275,7 +273,7 @@ jobs:
           # Default: always run CI for non-scheduled events
           if [ "${{ github.event_name }}" != "schedule" ] || \
              [ "${{ github.ref_name }}" != "main" ] || \
-             [ "${{ github.repository }}" != "quarkusio/quarkus" ]; then
+             false ]; then
             echo "Not a scheduled main run - CI will proceed"
             echo "run-ci-build=true" >> $GITHUB_OUTPUT
             exit 0
@@ -298,10 +296,10 @@ jobs:
             echo "run-ci-build=true" >> $GITHUB_OUTPUT
           fi
       - name: Save current build SHA for next run
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
         run: echo "${{ github.sha }}" > main-last-build-sha.txt
       - name: Upload build SHA artifact
-        if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: main-last-build-sha
@@ -364,7 +362,7 @@ jobs:
           ./mvnw -T2C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -q dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         with:
           path: ~/.m2/.develocity/build-cache
           key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
@@ -662,7 +660,7 @@ jobs:
         run: tar -xzf m2-content.tgz -C ~
       - name: Cache Develocity local cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         with:
           path: ~/.m2/.develocity/build-cache
           key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
@@ -1355,10 +1353,6 @@ jobs:
         with:
           result-encoding: string
           script: |
-            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
-              return 'main'
-            }
-
             const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
             if (branch == 'main') {
               return 'main'
@@ -1708,7 +1702,7 @@ jobs:
 
   native-tests-stats-upload:
     name: Upload build stats to collector
-    if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
+    if: ${{ always() && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
     needs:
       - native-tests
     runs-on: ubuntu-latest
@@ -1773,7 +1767,7 @@ jobs:
     permissions:
       contents: read
     needs: [configure, build-jdk17, calculate-test-jobs]
-    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
+    if: needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
     timeout-minutes: ${{matrix.timeout}}
@@ -1882,7 +1876,7 @@ jobs:
     permissions:
       contents: read
     needs: [configure, build-jdk17, calculate-test-jobs]
-    if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
+    if: needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
     timeout-minutes: ${{matrix.timeout}}

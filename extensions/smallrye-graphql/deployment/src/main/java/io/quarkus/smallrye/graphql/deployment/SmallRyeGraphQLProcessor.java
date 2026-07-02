@@ -232,7 +232,8 @@ public class SmallRyeGraphQLProcessor {
                 DotName.createSimple("io.smallrye.mutiny.Multi"),
                 DotName.createSimple("java.util.concurrent.CompletionStage"),
                 DotName.createSimple("java.util.concurrent.CompletableFuture"),
-                DotName.createSimple("org.reactivestreams.Publisher"));
+                DotName.createSimple("org.reactivestreams.Publisher"),
+                DotName.createSimple("java.util.concurrent.Flow.Publisher"));
 
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override

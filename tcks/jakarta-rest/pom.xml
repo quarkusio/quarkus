@@ -16,7 +16,22 @@
     <properties>
         <jakarta-rest-tck.version>4.0.1</jakarta-rest-tck.version>
         <enforcer.skip>true</enforcer.skip>
+        <skipITs>true</skipITs>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>run-jakarta-rest-tck</id>
+            <activation>
+                <property>
+                    <name>run-jakarta-rest-tck</name>
+                </property>
+            </activation>
+            <properties>
+                <skipITs>false</skipITs>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencyManagement>
         <dependencies>

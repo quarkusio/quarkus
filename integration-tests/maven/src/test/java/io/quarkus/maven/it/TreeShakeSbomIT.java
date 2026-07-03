@@ -1,10 +1,12 @@
 package io.quarkus.maven.it;
 
+import static io.quarkus.maven.it.CycloneDxTestUtils.parseCompressedEmbeddedSbom;
 import static io.quarkus.maven.it.CycloneDxTestUtils.parseSbom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,20 @@ public class TreeShakeSbomIT extends MojoTestBase {
         assertThat(invoker.log()).containsIgnoringCase("BUILD SUCCESS");
 
         Bom bom = parseSbom(new File(testDir, "app"), "quarkus-run-cyclonedx.json");
+        assertPedigreeContains(bom, "org.acme", "lib", "org/acme/lib/UnusedHelper.class");
+    }
+
+    @Test
+    void testEmbeddedSbomPedigree() throws Exception {
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = invoker.execute(
+                List.of("clean", "package", "-DskipTests"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(invoker.log()).containsIgnoringCase("BUILD SUCCESS");
+
+        Path generatedJar = testDir.toPath()
+                .resolve("app/target/quarkus-app/quarkus/generated-bytecode.jar");
+        Bom bom = parseCompressedEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
         assertPedigreeContains(bom, "org.acme", "lib", "org/acme/lib/UnusedHelper.class");
     }
 

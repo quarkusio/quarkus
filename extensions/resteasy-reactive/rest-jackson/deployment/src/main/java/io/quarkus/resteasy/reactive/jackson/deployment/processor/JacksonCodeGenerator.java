@@ -223,7 +223,9 @@ public abstract class JacksonCodeGenerator {
     }
 
     private static boolean vetoedClassName(String className) {
-        return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
+        return className.startsWith("java.") || className.startsWith("jakarta.")
+                || className.startsWith("io.vertx.core.json.")
+                || className.startsWith("com.fasterxml.jackson.databind.");
     }
 
     private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {

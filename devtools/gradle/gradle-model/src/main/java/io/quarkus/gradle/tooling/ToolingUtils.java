@@ -2,9 +2,16 @@ package io.quarkus.gradle.tooling;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -23,6 +30,7 @@ import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.HashUtil;
 
 public class ToolingUtils {
 
@@ -209,5 +217,47 @@ public class ToolingUtils {
             return result.get();
         }
         return null;
+    }
+
+    /**
+     * Hash of the content of a file or directory, used as a stable version of a file dependency.
+     */
+    public static String contentHash(File file) {
+        try {
+            if (file.isDirectory()) {
+                final Path root = file.toPath();
+                final StringBuilder sb = new StringBuilder();
+                try (Stream<Path> stream = Files.walk(root)) {
+                    // normalize separators and sort so the hash is identical across operating systems
+                    stream.filter(Files::isRegularFile)
+                            .map(p -> root.relativize(p).toString().replace('\\', '/'))
+                            .sorted()
+                            .forEach(relativePath -> sb.append(relativePath).append(':')
+                                    .append(sha1(root.resolve(relativePath))).append('\n'));
+                }
+                return HashUtil.sha1(sb.toString());
+            }
+            return sha1(file.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to hash content of " + file, e);
+        }
+    }
+
+    private static String sha1(Path file) {
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+        try (InputStream in = Files.newInputStream(file)) {
+            final byte[] buffer = new byte[8192];
+            for (int read = in.read(buffer); read >= 0; read = in.read(buffer)) {
+                digest.update(buffer, 0, read);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to hash content of " + file, e);
+        }
+        return HexFormat.of().formatHex(digest.digest());
     }
 }

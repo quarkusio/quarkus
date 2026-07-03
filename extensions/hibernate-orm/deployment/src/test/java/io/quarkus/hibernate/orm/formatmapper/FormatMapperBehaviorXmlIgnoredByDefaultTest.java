@@ -12,21 +12,21 @@ import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class FormatMapperBehaviorXmlFailsByDefaultTest {
+public class FormatMapperBehaviorXmlIgnoredByDefaultTest {
     @RegisterExtension
     static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyXmlEntity.class)
                     .addClasses(SchemaUtil.class, SmokeTestUtils.class))
-            .withConfigurationResource("application.properties")
-            .assertException(ex -> assertThat(ex).hasCauseInstanceOf(IllegalStateException.class)
-                    .cause()
-                    .hasMessageContaining("set \"quarkus.hibernate-orm.mapping.format.global=ignore\""));
+            .withConfigurationResource("application.properties");
 
     @Inject
     SessionFactory sessionFactory;
 
     @Test
     void smoke() {
+        assertThat(SchemaUtil.getColumnNames(sessionFactory, MyXmlEntity.class))
+                .contains("properties", "amount1", "amount2")
+                .doesNotContain("amountDifference");
     }
 }

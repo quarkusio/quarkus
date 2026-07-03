@@ -2,6 +2,9 @@ package io.quarkus.hibernate.orm.formatmapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.inject.Inject;
+
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,12 +18,15 @@ public class FormatMapperBehaviorJsonObjectMapperCustomizerTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyJsonEntity.class, MyObjectMapperCustomizer.class)
                     .addClasses(SchemaUtil.class, SmokeTestUtils.class))
-            .withConfigurationResource("application.properties")
-            .assertException(ex -> assertThat(ex).hasCauseInstanceOf(IllegalStateException.class)
-                    .cause()
-                    .hasMessageContaining("set \"quarkus.hibernate-orm.mapping.format.global=ignore\""));
+            .withConfigurationResource("application.properties");
+
+    @Inject
+    SessionFactory sessionFactory;
 
     @Test
     void smoke() {
+        assertThat(SchemaUtil.getColumnNames(sessionFactory, MyJsonEntity.class))
+                .contains("properties", "amount1", "amount2")
+                .doesNotContain("amountDifference");
     }
 }

@@ -59,7 +59,7 @@ public enum BuiltinFormatMapperBehaviour {
                         + "\nAs these facilities are primarily meant for REST endpoints, and they might have been customized for such use, "
                         + "this may lead to undesired behavior, up to and including data loss. "
                         + "\nTo address this:"
-                        + "\n\t- If the application does not customize the %2$s serialization/deserialization, set \"quarkus.hibernate-orm.mapping.format.global=ignore\". This will be the default in future versions of Quarkus. "
+                        + "\n\t- If the application does not customize the %2$s serialization/deserialization, set \"quarkus.hibernate-orm.mapping.format.global=ignore\". "
                         + "\n\t- Otherwise, define a custom `FormatMapper` bean annotated with "
                         + (TYPE_JSON.equals(type) ? "@JsonFormat" : "@XmlFormat")
                         + " and @PersistenceUnitExtension"

@@ -231,10 +231,11 @@ public interface HibernateOrmConfig {
             /**
              * How the default JSON/XML format mappers are configured.
              *
-             * Only available to mitigate migration from the current Quarkus-preconfigured format mappers (that will be removed
-             * in the future version).
+             * This setting is deprecated without an alternative. It will be removed in the future version of Quarkus.
+             * Applications relying on JSON/XML attributes should configure their own mappers.
              */
-            @WithDefault("fail")
+            @WithDefault("ignore")
+            @Deprecated
             BuiltinFormatMapperBehaviour global();
         }
     }

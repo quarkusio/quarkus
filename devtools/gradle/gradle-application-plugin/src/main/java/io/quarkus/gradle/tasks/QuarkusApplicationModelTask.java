@@ -23,7 +23,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -263,7 +262,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 }
             }
             // content-based version: stable across rebuilds, unlike a timestamp
-            final String version = contentHash(f);
+            final String version = ToolingUtils.contentHash(f);
             final ResolvedDependencyBuilder artifactBuilder = ResolvedDependencyBuilder.newInstance()
                     .setGroupId(group)
                     .setArtifactId(name)
@@ -275,25 +274,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     .setDeploymentCp();
             processQuarkusDependency(artifactBuilder, modelBuilder);
             modelBuilder.addDependency(artifactBuilder);
-        }
-    }
-
-    private static String contentHash(File file) {
-        try {
-            if (file.isDirectory()) {
-                final Path root = file.toPath();
-                final StringBuilder sb = new StringBuilder();
-                try (Stream<Path> stream = Files.walk(root)) {
-                    for (Path p : stream.filter(Files::isRegularFile).sorted().collect(toList())) {
-                        sb.append(root.relativize(p).toString().replace('\\', '/')).append(':')
-                                .append(HashUtil.sha1(Files.readAllBytes(p))).append('\n');
-                    }
-                }
-                return HashUtil.sha1(sb.toString());
-            }
-            return HashUtil.sha1(Files.readAllBytes(file.toPath()));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to hash content of " + file, e);
         }
     }
 

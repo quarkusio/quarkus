@@ -6,9 +6,8 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.co
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonFormatterCustomizationCheck;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.resolveFormatMappers;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
 import java.util.ArrayList;
@@ -56,10 +55,9 @@ import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.FormatMappers;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactivePersistenceUnitProviderHelper;
@@ -241,14 +239,7 @@ public final class HibernateReactiveProcessor {
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(capabilities,
-                jsonMapper);
+        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
 
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
         Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
@@ -269,12 +260,12 @@ public final class HibernateReactiveProcessor {
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
                         hibernateOrmConfig.mapping().format().global(),
-                        jsonFormatterCustomizationCheck,
+                        formatMappers.jsonFormatterCustomizationCheck(),
                         persistenceUnitConfig.unsupportedProperties()),
                 null,
                 model.xmlMappings(),
                 false,
-                isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
+                isHibernateValidatorPresent(capabilities), formatMappers.jsonMapper(), formatMappers.xmlMapper()));
     }
 
     @BuildStep

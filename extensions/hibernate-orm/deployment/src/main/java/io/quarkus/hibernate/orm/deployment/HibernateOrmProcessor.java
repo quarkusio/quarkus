@@ -5,10 +5,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureProperties;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonFormatterCustomizationCheck;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.resolveFormatMappers;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofClassAnnotation;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
@@ -134,6 +132,7 @@ import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.FormatMappers;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
@@ -145,8 +144,6 @@ import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterStateManagementForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -1302,7 +1299,8 @@ public final class HibernateOrmProcessor {
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
-        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
+        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig,
+                unremovableBeans);
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
@@ -1365,21 +1363,6 @@ public final class HibernateOrmProcessor {
         }
 
         return supportedDatabaseKind;
-    }
-
-    private static FormatMappers resolveFormatMappers(Capabilities capabilities, HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        return new FormatMappers(jsonMapper, xmlMapper, jsonFormatterCustomizationCheck(capabilities, jsonMapper));
-    }
-
-    private record FormatMappers(Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,

@@ -31,6 +31,7 @@ import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -62,6 +63,21 @@ public final class HibernateProcessorUtil {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private HibernateProcessorUtil() {
+    }
+
+    public record FormatMappers(Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper,
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
+    }
+
+    public static FormatMappers resolveFormatMappers(Capabilities capabilities, HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        return new FormatMappers(jsonMapper, xmlMapper, jsonFormatterCustomizationCheck(capabilities, jsonMapper));
     }
 
     public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {

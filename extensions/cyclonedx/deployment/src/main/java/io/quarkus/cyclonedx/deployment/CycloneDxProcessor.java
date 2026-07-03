@@ -4,7 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 import io.quarkus.bootstrap.app.DependencyInfoProvider;
@@ -18,9 +20,12 @@ import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.sbom.SbomBuildItem;
 import io.quarkus.deployment.sbom.SbomContributionBuildItem;
+import io.quarkus.deployment.sbom.SbomGeneratedResourceBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.sbom.CoreSbomContributionConfig;
 import io.quarkus.sbom.SbomContribution;
 
@@ -93,45 +98,62 @@ public class CycloneDxProcessor {
     }
 
     /**
-     * Embeds a dependency SBOM as a compressed resource inside the application artifact.
+     * Generates the embedded dependency SBOM resource.
      * <p>
      * Assembles the core application contribution from {@link CurateOutcomeBuildItem}
      * (without distribution paths, since the embedded SBOM describes dependencies rather
-     * than the distribution layout) and merges it with extension contributions from
+     * than the distribution layout), applies tree-shake pedigree notes from
+     * {@link JarTreeShakeBuildItem}, and merges with extension contributions from
      * {@link SbomContributionBuildItem}.
      * <p>
-     * This step does not depend on {@link ArtifactResultBuildItem}, avoiding a build cycle
-     * with the jar packaging steps.
+     * This step produces {@link SbomGeneratedResourceBuildItem} instead of
+     * {@link GeneratedResourceBuildItem} to avoid a build-step cycle with tree-shake
+     * root collection. The JAR build step merges these into the generated resources
+     * passed to JAR builders. It does not produce {@link EmbeddedSbomMetadataBuildItem}
+     * either, since that feeds into endpoint registration and would create a separate
+     * cycle through the main class build step; see {@link #embedDependencySbomMetadata}.
      *
-     * @param generatedResourceBuildItem producer for the embedded SBOM resource
-     * @param embeddedSbomMetadataProducer producer for embedded SBOM metadata
+     * @param sbomResourceProducer producer for the embedded SBOM resource
      * @param cdxConfig CycloneDX SBOM configuration
      * @param curateOutcomeBuildItem application dependency model
      * @param appModelProviderBuildItem application model provider for POM metadata resolution
+     * @param treeShakeResult tree-shake results used to compute pedigree notes for shaken dependencies
      * @param embeddedSbomRequests explicit requests to embed an SBOM
      * @param sbomContributions extension SBOM contributions (npm, PyPI, etc.)
      */
     @BuildStep
-    public void embedDependencySbom(BuildProducer<GeneratedResourceBuildItem> generatedResourceBuildItem,
-            BuildProducer<EmbeddedSbomMetadataBuildItem> embeddedSbomMetadataProducer,
+    public void generateEmbeddedSbom(BuildProducer<SbomGeneratedResourceBuildItem> sbomResourceProducer,
             CycloneDxConfig cdxConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
+            JarTreeShakeBuildItem treeShakeResult,
             List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests,
             List<SbomContributionBuildItem> sbomContributions) {
-        if (!cdxConfig.enabled() || !cdxConfig.embedded().enabled() && embeddedSbomRequests.isEmpty()) {
+        if (!isEmbeddedSbomEnabled(cdxConfig, embeddedSbomRequests)) {
             return;
         }
 
-        final CycloneDxConfig.EmbeddedSbomConfig dependencySbomConfig = cdxConfig.embedded();
-        final String resourceName = dependencySbomConfig.resourceName();
-        if (resourceName == null || resourceName.isEmpty()) {
-            throw new IllegalArgumentException("resourceName is not configured for the embedded dependency SBOM");
+        byte[] sbomBytes = generateEmbeddedSbomBytes(cdxConfig, curateOutcomeBuildItem, appModelProviderBuildItem,
+                computePedigrees(treeShakeResult), sbomContributions);
+        String effectiveResourceName = effectiveResourceName(cdxConfig.embedded());
+        if (cdxConfig.embedded().compress()) {
+            sbomBytes = gzip(sbomBytes);
         }
 
-        SbomContribution coreContribution = new CoreSbomContributionConfig()
+        sbomResourceProducer.produce(new SbomGeneratedResourceBuildItem(effectiveResourceName, sbomBytes));
+    }
+
+    private byte[] generateEmbeddedSbomBytes(CycloneDxConfig cdxConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            AppModelProviderBuildItem appModelProviderBuildItem,
+            Map<ArtifactKey, String> pedigrees,
+            List<SbomContributionBuildItem> sbomContributions) {
+        final String resourceName = cdxConfig.embedded().resourceName();
+
+        CoreSbomContributionConfig config = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                .toSbomContribution();
+                .setPedigrees(pedigrees);
+        SbomContribution coreContribution = config.toSbomContribution();
 
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);
         List<String> result = CycloneDxSbomGenerator.newInstance()
@@ -148,18 +170,64 @@ public class CycloneDxProcessor {
                     "Embedded dependency SBOM has more than 1 result for configured resource " + resourceName);
         }
 
-        byte[] sbomBytes = result.get(0).getBytes(StandardCharsets.UTF_8);
-        final boolean compressed = dependencySbomConfig.compress();
-        String effectiveResourceName = resourceName;
-        if (compressed) {
-            sbomBytes = gzip(sbomBytes);
-            if (!resourceName.endsWith(".gz")) {
-                effectiveResourceName = resourceName + ".gz";
+        return result.get(0).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Produces {@link EmbeddedSbomMetadataBuildItem} for the embedded SBOM.
+     * <p>
+     * Separated from {@link #generateEmbeddedSbom} so that metadata production does not
+     * depend on {@link JarTreeShakeBuildItem}, avoiding a build-step cycle through
+     * endpoint registration and the main class build step.
+     */
+    @BuildStep
+    public void embedDependencySbomMetadata(
+            BuildProducer<EmbeddedSbomMetadataBuildItem> embeddedSbomMetadataProducer,
+            CycloneDxConfig cdxConfig,
+            List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests) {
+        if (!isEmbeddedSbomEnabled(cdxConfig, embeddedSbomRequests)) {
+            return;
+        }
+        final CycloneDxConfig.EmbeddedSbomConfig embeddedConfig = cdxConfig.embedded();
+        embeddedSbomMetadataProducer
+                .produce(new EmbeddedSbomMetadataBuildItem(effectiveResourceName(embeddedConfig), embeddedConfig.compress()));
+    }
+
+    private static boolean isEmbeddedSbomEnabled(CycloneDxConfig cdxConfig,
+            List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests) {
+        if (!cdxConfig.enabled()) {
+            return false;
+        }
+        if (!cdxConfig.embedded().enabled() && embeddedSbomRequests.isEmpty()) {
+            return false;
+        }
+        final String resourceName = cdxConfig.embedded().resourceName();
+        if (resourceName == null || resourceName.isEmpty()) {
+            throw new IllegalArgumentException("resourceName is not configured for the embedded dependency SBOM");
+        }
+        return true;
+    }
+
+    private static String effectiveResourceName(CycloneDxConfig.EmbeddedSbomConfig config) {
+        String resourceName = config.resourceName();
+        if (config.compress() && !resourceName.endsWith(".gz")) {
+            return resourceName + ".gz";
+        }
+        return resourceName;
+    }
+
+    private static Map<ArtifactKey, String> computePedigrees(JarTreeShakeBuildItem treeShakeResult) {
+        if (!treeShakeResult.isClassesShaken()) {
+            return null;
+        }
+        Map<ArtifactKey, String> pedigrees = new HashMap<>();
+        for (ArtifactKey key : treeShakeResult.getRemovedClasses().keySet()) {
+            String pedigree = treeShakeResult.computePedigree(key);
+            if (pedigree != null) {
+                pedigrees.put(key, pedigree);
             }
         }
-
-        generatedResourceBuildItem.produce(new GeneratedResourceBuildItem(effectiveResourceName, sbomBytes));
-        embeddedSbomMetadataProducer.produce(new EmbeddedSbomMetadataBuildItem(effectiveResourceName, compressed));
+        return pedigrees.isEmpty() ? null : pedigrees;
     }
 
     private static byte[] gzip(byte[] data) {

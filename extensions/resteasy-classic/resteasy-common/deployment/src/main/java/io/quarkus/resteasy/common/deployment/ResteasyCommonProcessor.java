@@ -83,7 +83,10 @@ public class ResteasyCommonProcessor {
 
     private static final DotName QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
-    private static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    private static final DotName QUARKUS_JSON_MAPPER_CONTEXT_RESOLVER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusJsonMapperContextResolver");
+    private static final DotName OBJECT_MAPPER = DotName.createSimple("tools.jackson.databind.ObjectMapper");
+    private static final DotName JSON_MAPPER = DotName.createSimple("tools.jackson.databind.json.JsonMapper");
     private static final DotName QUARKUS_JACKSON_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer");
 
@@ -305,6 +308,8 @@ public class ResteasyCommonProcessor {
 
         if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)) {
             registerJsonContextResolver(OBJECT_MAPPER, QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
+                    jaxrsProvider, additionalBean, unremovable);
+            registerJsonContextResolver(JSON_MAPPER, QUARKUS_JSON_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
                     jaxrsProvider, additionalBean, unremovable);
             if (resteasyJsonConfig.jsonDefault()) {
                 jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JACKSON_SERIALIZER.toString()));

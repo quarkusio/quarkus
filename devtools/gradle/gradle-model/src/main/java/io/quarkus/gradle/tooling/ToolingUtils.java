@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -230,16 +231,17 @@ public class ToolingUtils {
                 try (Stream<Path> stream = Files.walk(root)) {
                     // normalize separators and sort so the hash is identical across operating systems
                     stream.filter(Files::isRegularFile)
-                            .map(p -> root.relativize(p).toString().replace('\\', '/'))
-                            .sorted()
-                            .forEach(relativePath -> sb.append(relativePath).append(':')
-                                    .append(sha1(root.resolve(relativePath))).append('\n'));
+                            .map(p -> Map.entry(root.relativize(p).toString().replace('\\', '/'), p))
+                            .sorted(Map.Entry.comparingByKey())
+                            .forEach(e -> sb.append(e.getKey()).append(':')
+                                    .append(sha1(e.getValue())).append('\n'));
                 }
                 return HashUtil.sha1(sb.toString());
             }
             return sha1(file.toPath());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to hash content of " + file, e);
+        } catch (IOException | UncheckedIOException e) {
+            // never fail the model build on an unreadable file, like lastModified() never did
+            return String.valueOf(file.lastModified());
         }
     }
 

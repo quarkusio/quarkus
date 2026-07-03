@@ -39,6 +39,12 @@
                     <dependenciesToScan>
                         <dependency>jakarta.ws.rs:jakarta-restful-ws-tck</dependency>
                     </dependenciesToScan>
+
+                    <properties>
+                        <configurationParameters>
+                            junit.jupiter.extensions.autodetection.enabled=true
+                        </configurationParameters>
+                    </properties>
                     <systemPropertyVariables>
                         <servlet_adaptor>io.quarkus.rest.QuarkusRestServlet</servlet_adaptor>
                         <webServerHost>localhost</webServerHost>
@@ -68,6 +74,12 @@
     </build>
 
     <dependencies>
+        <!-- JUnit Jupiter API (for ExecutionCondition to disable tests) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+
         <!-- Quarkus Arquillian adapter -->
         <dependency>
             <groupId>io.quarkus</groupId>

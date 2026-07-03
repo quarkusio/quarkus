@@ -5278,10 +5278,16 @@
                 <artifactId>resteasy-jaxb-provider</artifactId>
                 <version>${resteasy.version}</version>
             </dependency>
+            <!-- TODO: to be removed -->
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jackson2-provider</artifactId>
                 <version>${resteasy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.resteasy.providers</groupId>
+                <artifactId>resteasy-jackson-provider</artifactId>
+                <version>1.0.0.Alpha1</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

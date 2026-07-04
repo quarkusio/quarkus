@@ -74,6 +74,7 @@ public abstract class JacksonCodeGenerator {
     private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
 
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
@@ -353,7 +354,8 @@ public abstract class JacksonCodeGenerator {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
-                        || fieldInfo.hasAnnotation(JsonProperty.class))) {
+                        || fieldInfo.hasAnnotation(JsonProperty.class)
+                        || classInfo.hasDeclaredAnnotation(KOTLIN_METADATA))) {
             return namedAccessor;
         }
         String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());
@@ -463,8 +465,9 @@ public abstract class JacksonCodeGenerator {
         return null;
     }
 
-    protected FieldSpecs fieldSpecsFromFieldParam(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
-        return new FieldSpecs(paramInfo, namingStrategy);
+    protected FieldSpecs fieldSpecsFromFieldParam(ClassInfo classInfo, MethodParameterInfo paramInfo,
+            PropertyNamingStrategy namingStrategy) {
+        return new FieldSpecs(classInfo, paramInfo, namingStrategy);
     }
 
     protected static class FieldSpecs {
@@ -509,7 +512,14 @@ public abstract class JacksonCodeGenerator {
             this.aliases = jsonAliases();
         }
 
-        FieldSpecs(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+        FieldSpecs(ClassInfo classInfo, MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+            if (classInfo != null) {
+                FieldInfo field = classInfo.field(paramInfo.name());
+                if (field != null) {
+                    this.fieldInfo = field;
+                    readAnnotations(field);
+                }
+            }
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
@@ -594,6 +604,12 @@ public abstract class JacksonCodeGenerator {
                 return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
             }
             return methodName;
+        }
+
+        boolean isAutoDetectedGetter() {
+            return fieldInfo == null && methodInfo != null
+                    && annotations.get(JsonProperty.class.getName()) == null
+                    && annotations.get(JsonGetter.class.getName()) == null;
         }
 
         boolean isIgnoredField() {

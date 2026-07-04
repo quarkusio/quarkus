@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
@@ -741,6 +742,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/polymorphic-item-ser")
     public PolymorphicItemResponse polymorphicItemSer() {
         return new PolymorphicItemResponse(new PolymorphicItem.TypeA("hello"));
+    }
+
+    @POST
+    @Path("/object-node")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ObjectNode objectNode(ObjectNode body) {
+        return body;
     }
 
     @GET

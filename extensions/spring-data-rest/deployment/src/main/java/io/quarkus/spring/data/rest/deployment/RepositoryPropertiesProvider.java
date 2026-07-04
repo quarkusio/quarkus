@@ -28,16 +28,16 @@ public class RepositoryPropertiesProvider extends ResourcePropertiesProvider {
 
     protected Map<String, Predicate<MethodInfo>> getMethodPredicates() {
         Map<String, Predicate<MethodInfo>> methodPredicates = new HashMap<>();
-        methodPredicates.put("list", methodInfo -> methodInfo.name().equals(LIST.getName()));
-        methodPredicates.put("listIterable", methodInfo -> methodInfo.name().equals(LIST_ITERABLE.getName()));
-        methodPredicates.put("listPaged", methodInfo -> methodInfo.name().equals(LIST_PAGED.getName())
+        methodPredicates.put("list", methodInfo -> methodInfo.name().equals(LIST.name()));
+        methodPredicates.put("listIterable", methodInfo -> methodInfo.name().equals(LIST_ITERABLE.name()));
+        methodPredicates.put("listPaged", methodInfo -> methodInfo.name().equals(LIST_PAGED.name())
                 && methodInfo.parametersCount() == 1
                 && methodInfo.parameterType(0).name().equals(PAGEABLE));
-        methodPredicates.put("addAll", methodInfo -> methodInfo.name().equals(SAVE_LIST.getName()));
-        methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.getName()));
-        methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.getName()));
-        methodPredicates.put("update", methodInfo -> methodInfo.name().equals(UPDATE.getName()));
-        methodPredicates.put("delete", methodInfo -> methodInfo.name().equals(DELETE.getName()));
+        methodPredicates.put("addAll", methodInfo -> methodInfo.name().equals(SAVE_LIST.name()));
+        methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.name()));
+        methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.name()));
+        methodPredicates.put("update", methodInfo -> methodInfo.name().equals(UPDATE.name()));
+        methodPredicates.put("delete", methodInfo -> methodInfo.name().equals(DELETE.name()));
         return methodPredicates;
     }
 }

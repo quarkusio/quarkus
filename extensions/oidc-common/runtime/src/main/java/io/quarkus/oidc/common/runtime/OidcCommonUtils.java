@@ -64,15 +64,16 @@ import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 
@@ -227,6 +228,7 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
+            PoolOptions poolOptions,
             TlsConfigSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy(), proxyConfigurationRegistry);
@@ -236,7 +238,7 @@ public class OidcCommonUtils {
 
         OptionalInt maxPoolSize = oidcConfig.maxPoolSize();
         if (maxPoolSize.isPresent()) {
-            options.setMaxPoolSize(maxPoolSize.getAsInt());
+            poolOptions.setHttp1MaxSize(maxPoolSize.getAsInt());
         }
 
         options.setConnectTimeout((int) oidcConfig.connectionTimeout().toMillis());
@@ -456,6 +458,21 @@ public class OidcCommonUtils {
 
     public static boolean isClientSecretPostJwtAuthRequired(Credentials creds) {
         return clientSecretMethod(creds) == Secret.Method.POST_JWT;
+    }
+
+    public static void validateCredentialsForAllEndpoints(Credentials creds) {
+        if (!creds.forAllEndpoints()) {
+            return;
+        }
+        if (isClientSecretBasicAuthRequired(creds)) {
+            return;
+        }
+        if (creds.jwt().source() == Source.BEARER && creds.jwt().tokenPath().isPresent()) {
+            return;
+        }
+        throw new ConfigurationException(
+                "Client credentials cannot be sent to all OIDC endpoints because only "
+                        + "'client_secret_basic' or JWT bearer ('jwt.source=bearer') authentication methods are supported");
     }
 
     public static boolean isJwtAssertion(Credentials creds) {
@@ -978,17 +995,15 @@ public class OidcCommonUtils {
         });
     }
 
-    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig,
-            Function<String, RuntimeException> exceptionCreator) {
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig) {
         var jwtConfig = credentialsConfig.jwt();
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
                     jwtConfig.source());
-            if (clientAssertionProvider.getClientAssertion() == null) {
-                throw exceptionCreator
-                        .apply("Cannot find a valid "
-                                + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")
-                                + " token at path: " + jwtConfig.tokenPath().get());
+            if (clientAssertionProvider.getAvailableClientAssertion() == null) {
+                LOG.warnf("Cannot find a valid %s token at path: %s, deferring token loading to request time",
+                        jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer",
+                        jwtConfig.tokenPath().get());
             }
             return clientAssertionProvider;
         }

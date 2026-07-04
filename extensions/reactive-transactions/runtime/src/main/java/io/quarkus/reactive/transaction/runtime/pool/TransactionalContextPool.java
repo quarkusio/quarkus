@@ -2,16 +2,13 @@ package io.quarkus.reactive.transaction.runtime.pool;
 
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
-import java.util.function.Function;
-
 import org.jboss.logging.Logger;
 
-import io.vertx.core.AsyncResult;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PrepareOptions;
 import io.vertx.sqlclient.PreparedQuery;
@@ -37,18 +34,6 @@ public class TransactionalContextPool implements Pool {
     }
 
     @Override
-    public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
-        if (!shouldOpenTransaction()) {
-            delegate.getConnection(handler);
-        } else {
-            getOrCreateConnectionHolder()
-                    .getConnection()
-                    .map(conn -> (SqlConnection) conn)
-                    .onComplete(handler);
-        }
-    }
-
-    @Override
     public Future<SqlConnection> getConnection() {
         if (!shouldOpenTransaction()) {
             return delegate.getConnection();
@@ -64,11 +49,10 @@ public class TransactionalContextPool implements Pool {
      * The holder ensures only one connection is created even with concurrent access.
      */
     private ConnectionHolder getOrCreateConnectionHolder() {
-        Context context = Vertx.currentContext();
-        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
         if (holder == null) {
             holder = new ConnectionHolder(delegate);
-            context.putLocal(CURRENT_CONNECTION_KEY, holder);
+            ContextLocals.put(CURRENT_CONNECTION_KEY, holder);
         }
         return holder;
     }
@@ -78,7 +62,7 @@ public class TransactionalContextPool implements Pool {
         if (context == null) {
             return null;
         }
-        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
         if (holder == null) {
             return null;
         }
@@ -96,7 +80,7 @@ public class TransactionalContextPool implements Pool {
         if (context == null) {
             return null;
         }
-        ConnectionHolder holder = context.getLocal(CURRENT_CONNECTION_KEY);
+        ConnectionHolder holder = ContextLocals.get(CURRENT_CONNECTION_KEY, null);
         if (holder == null) {
             return null;
         }
@@ -106,7 +90,7 @@ public class TransactionalContextPool implements Pool {
                     SqlConnection delegateConnection = wrappedConnection.getDelegate();
                     return delegateConnection.close();
                 })
-                .andThen(ar -> context.removeLocal(CURRENT_CONNECTION_KEY));
+                .andThen(ar -> ContextLocals.remove(CURRENT_CONNECTION_KEY));
     }
 
     private boolean shouldOpenTransaction() {
@@ -115,8 +99,8 @@ public class TransactionalContextPool implements Pool {
 
         // Vert.x context during DB Validation in startup is null
         // When using reactive in a @Transactional method, the context is surely duplicated
-        if (context != null && ((ContextInternal) context).isDuplicate()) {
-            Object createTransaction = context.getLocal(TRANSACTIONAL_METHOD_KEY);
+        if (VertxContext.isOnDuplicatedContext()) {
+            Object createTransaction = ContextLocals.get(TRANSACTIONAL_METHOD_KEY, null);
             return createTransaction != null && (boolean) createTransaction;
         } else {
             LOG.tracef("Vert.x context is either null or non duplicated, won't create a new transaction");
@@ -132,25 +116,6 @@ public class TransactionalContextPool implements Pool {
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
         return delegate.preparedQuery(sql);
-    }
-
-    @Override
-    public void close(Handler<AsyncResult<Void>> handler) {
-        delegate.close(handler);
-    }
-
-    @Override
-    @Deprecated
-    public Pool connectHandler(Handler<SqlConnection> handler) {
-        // Deprecated, and not needed by Reactive, and no idea how it affects auto-transactions.
-        throw new UnsupportedOperationException("This operation is not supported");
-    }
-
-    @Override
-    @Deprecated
-    public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
-        // Deprecated, and not needed by Reactive, and no idea how it affects auto-transactions.
-        throw new UnsupportedOperationException("This operation is not supported");
     }
 
     @Override

@@ -1,6 +1,6 @@
 package io.quarkus.vertx.http;
 
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
 
 /**
  * Quarkus fires a CDI event of this type asynchronously when the HTTP server starts listening
@@ -16,6 +16,6 @@ import io.vertx.core.http.HttpServerOptions;
  * }
  * </pre>
  */
-public record HttpServerStart(HttpServerOptions options) {
+public record HttpServerStart(HttpServerConfig config) {
 
 }

@@ -68,11 +68,8 @@
             <activation>
                 <jdk>[21,)</jdk>
             </activation>
-
             <properties>
-                <maven.compiler.target>21</maven.compiler.target>
-                <maven.compiler.source>21</maven.compiler.source>
-                <maven.compiler.release>21</maven.compiler.release>
+                <maven.compiler.testRelease>21</maven.compiler.testRelease>
             </properties>
             <build>
                 <plugins>

@@ -28,6 +28,7 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -91,7 +92,14 @@ public class MockEventServer implements Closeable {
         router = Router.router(vertx);
         setupRoutes();
         try {
-            this.httpServer.requestHandler(router).listen().toCompletionStage().toCompletableFuture().get();
+            SocketAddress address;
+            if (options.getPort() <= 0) {
+                // Make sure "30" is not an identifier used anywhere
+                address = SocketAddress.sharedRandomPort(30, options.getHost());
+            } else {
+                address = SocketAddress.inetSocketAddress(options.getPort(), options.getHost());
+            }
+            this.httpServer.requestHandler(router).listen(address).toCompletionStage().toCompletableFuture().get();
             log.info("Mock Lambda Event Server Started");
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
@@ -205,7 +213,7 @@ public class MockEventServer implements Closeable {
     }
 
     protected Buffer processEventBody(RoutingContext request) {
-        return request.getBody();
+        return request.body().buffer();
     }
 
     public void handleResponse(RoutingContext ctx) {
@@ -217,7 +225,7 @@ public class MockEventServer implements Closeable {
             return;
         }
         log.debugf("Sending response %s", requestId);
-        Buffer buffer = ctx.getBody();
+        Buffer buffer = ctx.body().buffer();
         processResponse(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
         ctx.end();
@@ -266,7 +274,7 @@ public class MockEventServer implements Closeable {
             return;
         }
         log.debugf("Sending response %s", requestId);
-        Buffer buffer = ctx.getBody();
+        Buffer buffer = ctx.body().buffer();
         processError(ctx, pending, buffer);
         ctx.response().setStatusCode(204);
         ctx.end();

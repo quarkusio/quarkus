@@ -20,18 +20,16 @@ import io.smallrye.certs.junit5.Certificates;
 class TlsWithJKSTrustStoreAndTlsRegistryTest {
 
     private static final String configuration = """
-            quarkus.tls.trust-store.jks.path=target/certs/grpc-client-truststore.jks
-            quarkus.tls.trust-store.jks.password=password
+             quarkus.tls.trust-store.jks.path=target/certs/grpc-client-truststore.jks
+             quarkus.tls.trust-store.jks.password=password
 
-            quarkus.grpc.clients.hello.host=localhost
-            quarkus.grpc.clients.hello.port=9001
-            quarkus.grpc.clients.hello.plain-text=false
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
+             quarkus.grpc.clients.hello.host=localhost
+             quarkus.grpc.clients.hello.plain-text=false
 
-            # Legacy server
-            quarkus.grpc.server.ssl.certificate=target/certs/grpc.crt
-            quarkus.grpc.server.ssl.key=target/certs/grpc.key
-            """;
+            quarkus.tls.http.key-store.pem.0.cert=target/certs/grpc.crt
+            quarkus.tls.http.key-store.pem.0.key=target/certs/grpc.key
+            quarkus.http.tls-configuration-name=http
+             """;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(

@@ -25,15 +25,16 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -135,6 +136,7 @@ public class SpringWebProcessor {
     @BuildStep
     public void exceptionHandlingSupport(CombinedIndexBuildItem index,
             BuildProducer<GeneratedClassBuildItem> generatedExceptionMappers,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
             BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
@@ -154,7 +156,7 @@ public class SpringWebProcessor {
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView indexView = index.getIndex();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedExceptionMappers, generatedResources, true);
         generateMappersForResponseStatusOnException(providersProducer, exceptionMapperProducer, indexView, classOutput,
                 typesUtil,
                 isResteasyClassicAvailable);

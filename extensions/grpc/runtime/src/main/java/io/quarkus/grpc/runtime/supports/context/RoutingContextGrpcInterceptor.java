@@ -1,5 +1,7 @@
 package io.quarkus.grpc.runtime.supports.context;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.Prioritized;
 
@@ -13,6 +15,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
@@ -27,9 +30,10 @@ public class RoutingContextGrpcInterceptor implements ServerInterceptor, Priorit
             ServerCallHandler<ReqT, RespT> next) {
 
         Context currentContext = Vertx.currentContext();
-        RoutingContext routingContext = currentContext.getLocal(RoutingContext.class.getName());
+        var local = currentContext.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+        RoutingContext routingContext = (RoutingContext) local.get(RoutingContext.class.getName());
 
-        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(
+        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(
                 next.startCall(call, headers)) {
 
             private void invoke(Runnable runnable) {

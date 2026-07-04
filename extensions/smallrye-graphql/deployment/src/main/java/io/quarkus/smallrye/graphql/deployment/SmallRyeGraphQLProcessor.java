@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,10 +31,12 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.KnownCompatibleBeanArchiveBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -61,6 +64,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
@@ -77,6 +82,8 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
+import io.quarkus.vertx.http.deployment.spi.WebDependencyJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
@@ -120,14 +127,19 @@ import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.DirectiveType;
+import io.smallrye.graphql.schema.model.EnumType;
+import io.smallrye.graphql.schema.model.EnumValue;
 import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.ParametrizedTypeEntry;
 import io.smallrye.graphql.schema.model.Reference;
+import io.smallrye.graphql.schema.model.ReferenceType;
 import io.smallrye.graphql.schema.model.Scalars;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.schema.model.UnionType;
+import io.smallrye.graphql.schema.model.Wrapper;
 import io.smallrye.graphql.spi.EventingService;
 import io.smallrye.graphql.spi.LookupService;
 import io.smallrye.graphql.spi.config.Config;
@@ -198,6 +210,70 @@ public class SmallRyeGraphQLProcessor {
         // Make ArC discover the beans marked with the @GraphQLApi qualifier
         beanDefiningAnnotationProducer
                 .produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API, BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    void autoTransactional(Capabilities capabilities,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+        if (!capabilities.isPresent(Capability.TRANSACTIONS)) {
+            return;
+        }
+
+        // Don't add @Transactional when Hibernate Reactive is present — it would
+        // interfere with reactive session management
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            return;
+        }
+
+        DotName transactional = DotName.createSimple("jakarta.transaction.Transactional");
+
+        Set<DotName> reactiveTypes = Set.of(
+                DotName.createSimple("io.smallrye.mutiny.Uni"),
+                DotName.createSimple("io.smallrye.mutiny.Multi"),
+                DotName.createSimple("java.util.concurrent.CompletionStage"),
+                DotName.createSimple("java.util.concurrent.CompletableFuture"),
+                DotName.createSimple("org.reactivestreams.Publisher"),
+                DotName.createSimple("java.util.concurrent.Flow.Publisher"));
+
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                var method = ctx.getTarget().asMethod();
+
+                if (!method.declaringClass().hasAnnotation(Annotations.GRAPHQL_API)) {
+                    return;
+                }
+
+                boolean isGraphQLMethod = method.hasAnnotation(Annotations.QUERY)
+                        || method.hasAnnotation(Annotations.MUTATION)
+                        || method.hasAnnotation(Annotations.SUBCRIPTION)
+                        || method.hasAnnotation(Annotations.NAME)
+                        || method.hasAnnotation(Annotations.RESOLVER)
+                        || method.hasAnnotation(Annotations.SOURCE);
+                if (!isGraphQLMethod) {
+                    return;
+                }
+
+                if (reactiveTypes.contains(method.returnType().name())) {
+                    return;
+                }
+
+                if (method.hasAnnotation(transactional)) {
+                    return;
+                }
+
+                if (method.hasAnnotation(Annotations.NON_BLOCKING)) {
+                    return;
+                }
+
+                ctx.transform().add(transactional).done();
+            }
+        }));
     }
 
     @BuildStep
@@ -368,6 +444,20 @@ public class SmallRyeGraphQLProcessor {
         graphQLDevUILogProducer.produce(new GraphQLDevUILogBuildItem(publisher));
     }
 
+    @BuildStep
+    void buildSchema(
+            BuildProducer<SmallRyeGraphQLSchemaBuildItem> schemaBuildItemProducer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
+            SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
+            SmallRyeGraphQLConfig graphQLConfig) {
+
+        activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
+        graphQLConfig.extraScalars().ifPresent(this::registerExtraScalarsInSchema);
+        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
+                Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy()));
+        schemaBuildItemProducer.produce(new SmallRyeGraphQLSchemaBuildItem(schema));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void buildExecutionService(
@@ -375,16 +465,12 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
             BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
             SmallRyeGraphQLRecorder recorder,
-            SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
+            SmallRyeGraphQLSchemaBuildItem schemaBuildItem,
             BeanContainerBuildItem beanContainer,
-            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             SmallRyeGraphQLConfig graphQLConfig,
             Optional<GraphQLDevUILogBuildItem> graphQLDevUILogBuildItem) {
 
-        activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
-        graphQLConfig.extraScalars().ifPresent(this::registerExtraScalarsInSchema);
-        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
-                Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy()));
+        Schema schema = schemaBuildItem.getSchema();
 
         Optional publisher = Optional.empty();
         if (graphQLDevUILogBuildItem.isPresent()) {
@@ -416,6 +502,377 @@ public class SmallRyeGraphQLProcessor {
                     Scalars.addJson();
             }
         }
+    }
+
+    @BuildStep
+    void generateJsClient(
+            SmallRyeGraphQLConfig graphQLConfig,
+            SmallRyeGraphQLSchemaBuildItem schemaBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            BuildProducer<GeneratedStaticResourceBuildItem> staticResourceProducer) {
+
+        if (!graphQLConfig.jsClient().enabled()) {
+            return;
+        }
+
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        try (InputStream is = tccl.getResourceAsStream("graphql/graphql-client.js")) {
+            if (is == null) {
+                throw new IllegalStateException("graphql/graphql-client.js not found on classpath");
+            }
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-graphql/graphql-client.js",
+                            IoUtil.readBytes(is)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        try (InputStream is = tccl.getResourceAsStream("graphql/graphql-client.d.ts")) {
+            if (is == null) {
+                throw new IllegalStateException("graphql/graphql-client.d.ts not found on classpath");
+            }
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-graphql/graphql-client.d.ts",
+                            IoUtil.readBytes(is)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        Schema schema = schemaBuildItem.getSchema();
+        String resolvedPath = httpRootPathBuildItem.resolvePath(graphQLConfig.rootPath());
+        String proxyJs = generateGraphQLProxy(schema, resolvedPath);
+        staticResourceProducer.produce(
+                new GeneratedStaticResourceBuildItem(
+                        "/_static/quarkus-graphql-api/graphql-api.js",
+                        proxyJs.getBytes(StandardCharsets.UTF_8)));
+
+        String proxyDts = generateGraphQLDeclarations(schema);
+        staticResourceProducer.produce(
+                new GeneratedStaticResourceBuildItem(
+                        "/_static/quarkus-graphql-api/graphql-api.d.ts",
+                        proxyDts.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @BuildStep
+    void registerGraphQLWebDependency(
+            SmallRyeGraphQLConfig graphQLConfig,
+            CurateOutcomeBuildItem curateOutcome,
+            BuildProducer<WebDependencyJarBuildItem> webDependencyProducer) {
+
+        if (!graphQLConfig.jsClient().enabled()) {
+            return;
+        }
+
+        curateOutcome.getApplicationModel().getDependencies().stream()
+                .filter(dep -> dep.getGroupId().equals("io.quarkus")
+                        && dep.getArtifactId().equals("quarkus-smallrye-graphql"))
+                .findFirst()
+                .ifPresent(dep -> webDependencyProducer.produce(new WebDependencyJarBuildItem(
+                        dep.getKey(),
+                        dep.getResolvedPaths().getSinglePath(),
+                        Map.of(
+                                "@quarkus/graphql", "/_static/quarkus-graphql/graphql-client.js",
+                                "@quarkus/graphql/", "/_static/quarkus-graphql/",
+                                "@quarkus/graphql-api", "/_static/quarkus-graphql-api/graphql-api.js"))));
+    }
+
+    private String generateGraphQLProxy(Schema schema, String endpointPath) {
+        StringBuilder js = new StringBuilder();
+        js.append("import { GraphQLClient } from '@quarkus/graphql';\n\n");
+        js.append("export const client = new GraphQLClient({ endpoint: '")
+                .append(escapeJs(endpointPath)).append("' });\n\n");
+
+        generateOperationExports(js, "Queries", "query", schema.getQueries(), schema);
+        generateOperationExports(js, "Mutations", "mutation", schema.getMutations(), schema);
+        generateOperationExports(js, "Subscriptions", "subscription", schema.getSubscriptions(), schema);
+
+        return js.toString();
+    }
+
+    private void generateOperationExports(StringBuilder js, String exportName, String operationKeyword,
+            Set<Operation> operations, Schema schema) {
+        if (operations == null || operations.isEmpty()) {
+            js.append("export const ").append(exportName).append(" = {};\n\n");
+            return;
+        }
+
+        js.append("export const ").append(exportName).append(" = {\n");
+        List<Operation> sorted = operations.stream()
+                .sorted(Comparator.comparing(Operation::getName))
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < sorted.size(); i++) {
+            Operation op = sorted.get(i);
+            String queryString = generateQueryString(op, operationKeyword, schema);
+            String clientMethod = "subscription".equals(operationKeyword) ? "subscribe"
+                    : "mutation".equals(operationKeyword) ? "mutate" : "query";
+            js.append("    ").append(escapeJs(op.getName()))
+                    .append(": (variables) => client.").append(clientMethod).append("('")
+                    .append(escapeJs(queryString)).append("', variables)");
+            if (i < sorted.size() - 1) {
+                js.append(",");
+            }
+            js.append("\n");
+        }
+        js.append("};\n\n");
+    }
+
+    private String generateQueryString(Operation op, String operationKeyword, Schema schema) {
+        StringBuilder qs = new StringBuilder();
+        qs.append(operationKeyword).append(" ").append(op.getName());
+
+        if (op.hasArguments()) {
+            qs.append("(");
+            List<Argument> args = op.getArguments();
+            for (int i = 0; i < args.size(); i++) {
+                Argument arg = args.get(i);
+                qs.append("$").append(arg.getName()).append(": ").append(graphqlTypeName(arg));
+                if (i < args.size() - 1) {
+                    qs.append(", ");
+                }
+            }
+            qs.append(")");
+        }
+
+        qs.append(" { ").append(op.getName());
+
+        if (op.hasArguments()) {
+            qs.append("(");
+            List<Argument> args = op.getArguments();
+            for (int i = 0; i < args.size(); i++) {
+                Argument arg = args.get(i);
+                qs.append(arg.getName()).append(": $").append(arg.getName());
+                if (i < args.size() - 1) {
+                    qs.append(", ");
+                }
+            }
+            qs.append(")");
+        }
+
+        Reference returnRef = op.getReference();
+        if (returnRef != null && needsSelectionSet(returnRef)) {
+            String selectionSet = generateSelectionSet(returnRef, schema);
+            if (!selectionSet.isEmpty()) {
+                qs.append(" { ").append(selectionSet).append("}");
+            }
+        }
+
+        qs.append(" }");
+        return qs.toString();
+    }
+
+    private boolean needsSelectionSet(Reference ref) {
+        ReferenceType type = ref.getType();
+        return type == ReferenceType.TYPE || type == ReferenceType.INTERFACE;
+    }
+
+    private String generateSelectionSet(Reference ref, Schema schema) {
+        Type type = schema.getTypes().get(ref.getName());
+        if (type == null || type.getFields() == null || type.getFields().isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Field> entry : new java.util.TreeMap<>(type.getFields()).entrySet()) {
+            Field field = entry.getValue();
+            Reference fieldRef = field.getReference();
+            if (fieldRef != null) {
+                ReferenceType fieldType = fieldRef.getType();
+                if (fieldType == ReferenceType.SCALAR || fieldType == ReferenceType.ENUM) {
+                    sb.append(field.getName()).append(" ");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private String graphqlTypeName(Field field) {
+        Reference ref = field.getReference();
+        String baseName = ref.getName();
+
+        if (field.hasWrapper()) {
+            Wrapper wrapper = field.getWrapper();
+            if (wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.COLLECTION
+                    || wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.ARRAY) {
+                String inner = baseName;
+                if (wrapper.isWrappedTypeNotNull()) {
+                    inner += "!";
+                }
+                baseName = "[" + inner + "]";
+            }
+        }
+
+        if (field.isNotNull()) {
+            baseName += "!";
+        }
+
+        return baseName;
+    }
+
+    private static String escapeJs(String value) {
+        return value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private String generateGraphQLDeclarations(Schema schema) {
+        StringBuilder ts = new StringBuilder();
+        ts.append("import { GraphQLClient, Subscription } from '@quarkus/graphql';\n\n");
+        ts.append("export declare const client: GraphQLClient;\n");
+
+        if (schema.getEnums() != null) {
+            for (Map.Entry<String, EnumType> entry : new java.util.TreeMap<>(schema.getEnums()).entrySet()) {
+                EnumType enumType = entry.getValue();
+                if (enumType.hasValues()) {
+                    ts.append("\nexport type ").append(enumType.getName()).append(" = ");
+                    List<EnumValue> values = new ArrayList<>(enumType.getValues());
+                    for (int i = 0; i < values.size(); i++) {
+                        ts.append("'").append(values.get(i).getValue()).append("'");
+                        if (i < values.size() - 1) {
+                            ts.append(" | ");
+                        }
+                    }
+                    ts.append(";\n");
+                }
+            }
+        }
+
+        if (schema.getTypes() != null) {
+            for (Map.Entry<String, Type> entry : new java.util.TreeMap<>(schema.getTypes()).entrySet()) {
+                generateTypeInterface(ts, entry.getKey(), entry.getValue().getFields());
+            }
+        }
+
+        if (schema.getInputs() != null) {
+            for (Map.Entry<String, InputType> entry : new java.util.TreeMap<>(schema.getInputs()).entrySet()) {
+                generateTypeInterface(ts, entry.getKey(), entry.getValue().getFields());
+            }
+        }
+
+        generateOperationDeclarations(ts, "Queries", schema.getQueries(), schema, false);
+        generateOperationDeclarations(ts, "Mutations", schema.getMutations(), schema, false);
+        generateOperationDeclarations(ts, "Subscriptions", schema.getSubscriptions(), schema, true);
+
+        return ts.toString();
+    }
+
+    private void generateTypeInterface(StringBuilder ts, String name, Map<String, Field> fields) {
+        ts.append("\nexport interface ").append(name).append(" {\n");
+        if (fields != null) {
+            for (Map.Entry<String, Field> fieldEntry : new java.util.TreeMap<>(fields).entrySet()) {
+                Field field = fieldEntry.getValue();
+                String tsType = typescriptType(field);
+                ts.append("    ").append(field.getName()).append(": ").append(tsType).append(";\n");
+            }
+        }
+        ts.append("}\n");
+    }
+
+    private void generateOperationDeclarations(StringBuilder ts, String exportName, Set<Operation> operations,
+            Schema schema, boolean isSubscription) {
+        ts.append("\nexport declare const ").append(exportName).append(": {\n");
+        if (operations != null && !operations.isEmpty()) {
+            List<Operation> sorted = operations.stream()
+                    .sorted(Comparator.comparing(Operation::getName))
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < sorted.size(); i++) {
+                Operation op = sorted.get(i);
+                ts.append("    ").append(op.getName()).append(": (");
+
+                if (op.hasArguments()) {
+                    ts.append("variables: { ");
+                    List<Argument> args = op.getArguments();
+                    for (int j = 0; j < args.size(); j++) {
+                        Argument arg = args.get(j);
+                        ts.append(arg.getName()).append(": ").append(typescriptType(arg));
+                        if (j < args.size() - 1) {
+                            ts.append("; ");
+                        }
+                    }
+                    ts.append(" }");
+                } else {
+                    ts.append("variables?: Record<string, never>");
+                }
+
+                String returnType = typescriptReturnType(op, schema);
+                if (isSubscription) {
+                    ts.append(") => Subscription");
+                } else {
+                    ts.append(") => Promise<").append(returnType).append(">");
+                }
+
+                if (i < sorted.size() - 1) {
+                    ts.append(";");
+                }
+                ts.append("\n");
+            }
+        }
+        ts.append("};\n");
+    }
+
+    private String typescriptReturnType(Operation op, Schema schema) {
+        Reference ref = op.getReference();
+        if (ref == null) {
+            return "unknown";
+        }
+        String baseType = typescriptBaseType(ref);
+        if (op.hasWrapper()) {
+            Wrapper wrapper = op.getWrapper();
+            if (wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.COLLECTION
+                    || wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.ARRAY) {
+                return baseType + "[]";
+            }
+        }
+        return baseType;
+    }
+
+    private String typescriptType(Field field) {
+        Reference ref = field.getReference();
+        if (ref == null) {
+            return "unknown";
+        }
+        String baseType = typescriptBaseType(ref);
+
+        if (field.hasWrapper()) {
+            Wrapper wrapper = field.getWrapper();
+            if (wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.COLLECTION
+                    || wrapper.getWrapperType() == io.smallrye.graphql.schema.model.WrapperType.ARRAY) {
+                baseType = baseType + "[]";
+            }
+        }
+
+        if (!field.isNotNull()) {
+            baseType += " | null";
+        }
+
+        return baseType;
+    }
+
+    private static final Map<String, String> GRAPHQL_TO_TS = Map.ofEntries(
+            Map.entry("String", "string"),
+            Map.entry("ID", "string"),
+            Map.entry("Boolean", "boolean"),
+            Map.entry("Int", "number"),
+            Map.entry("Float", "number"),
+            Map.entry("BigInteger", "number"),
+            Map.entry("BigDecimal", "number"),
+            Map.entry("Date", "string"),
+            Map.entry("DateTime", "string"),
+            Map.entry("Time", "string"),
+            Map.entry("Period", "string"),
+            Map.entry("Duration", "string"));
+
+    private String typescriptBaseType(Reference ref) {
+        String name = ref.getName();
+        String mapped = GRAPHQL_TO_TS.get(name);
+        if (mapped != null) {
+            return mapped;
+        }
+        if (ref.getType() == ReferenceType.SCALAR) {
+            return "unknown";
+        }
+        return name;
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -651,11 +1108,9 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getAllReferenceClasses(Reference reference) {
         Set<String> classes = new HashSet<>();
         classes.add(reference.getClassName());
-        if (reference.getClassParametrizedTypes() != null && !reference.getClassParametrizedTypes().isEmpty()) {
-
-            Collection<Reference> parametrized = reference.getClassParametrizedTypes().values();
-            for (Reference r : parametrized) {
-                classes.addAll(getAllReferenceClasses(r));
+        if (reference.hasParametrizedTypes()) {
+            for (ParametrizedTypeEntry entry : reference.getParametrizedTypes().values()) {
+                classes.addAll(getAllReferenceClasses(entry.getReference()));
             }
         }
         return classes;

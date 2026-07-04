@@ -69,6 +69,20 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
         Jwt jwt();
 
         /**
+         * If true, client credentials are also sent to OIDC discovery and JWKS endpoints, which normally
+         * do not require authentication.
+         * Enable this when the OIDC provider enforces authenticated access to these endpoints.
+         * <p>
+         * One of the following authentication methods must be used when this property is enabled:
+         * <ul>
+         * <li>{@code client_secret_basic} — {@code Authorization: Basic} header</li>
+         * <li>JWT bearer ({@code jwt.source=bearer}) — {@code Authorization: Bearer} header</li>
+         * </ul>
+         */
+        @WithDefault("false")
+        boolean forAllEndpoints();
+
+        /**
          * Supports the client authentication methods that involve sending a client secret.
          *
          * @see <a href=

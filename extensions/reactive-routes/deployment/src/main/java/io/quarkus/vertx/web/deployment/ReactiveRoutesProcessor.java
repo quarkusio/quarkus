@@ -98,6 +98,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -148,6 +149,11 @@ class ReactiveRoutesProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.REACTIVE_ROUTES);
+    }
+
+    @BuildStep
+    ReinitializeVertxJsonBuildItem vertxJsonReinitialization() {
+        return new ReinitializeVertxJsonBuildItem();
     }
 
     @BuildStep
@@ -796,9 +802,7 @@ class ReactiveRoutesProcessor {
                             }
                         });
                         tc.catch_(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION, "e", (b1, e) -> {
-                            boolean forceJsonEncoding = !descriptor.isPayloadString()
-                                    && !descriptor.isPayloadBuffer()
-                                    && !descriptor.isPayloadMutinyBuffer();
+                            boolean forceJsonEncoding = !descriptor.isPayloadString() && !descriptor.isPayloadBuffer();
                             b1.invokeStatic(Methods.VALIDATION_HANDLE_VIOLATION, e, routingContext,
                                     Const.of(forceJsonEncoding));
                             b1.return_();
@@ -938,8 +942,6 @@ class ReactiveRoutesProcessor {
             bc.invokeStatic(Methods.MULTI_SUBSCRIBE_VOID, res, routingContext);
         } else if (descriptor.isPayloadBuffer()) {
             bc.invokeStatic(Methods.MULTI_SUBSCRIBE_BUFFER, res, routingContext);
-        } else if (descriptor.isPayloadMutinyBuffer()) {
-            bc.invokeStatic(Methods.MULTI_SUBSCRIBE_MUTINY_BUFFER, res, routingContext);
         } else if (descriptor.isPayloadString()) {
             bc.invokeStatic(Methods.MULTI_SUBSCRIBE_STRING, res, routingContext);
         } else { // Multi<Object> - encode to json.
@@ -962,8 +964,6 @@ class ReactiveRoutesProcessor {
             bc.invokeStatic(Methods.MULTI_SUBSCRIBE_VOID, res, routingContext);
         } else if (descriptor.isPayloadBuffer()) {
             bc.invokeStatic(Methods.MULTI_SSE_SUBSCRIBE_BUFFER, res, routingContext);
-        } else if (descriptor.isPayloadMutinyBuffer()) {
-            bc.invokeStatic(Methods.MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER, res, routingContext);
         } else if (descriptor.isPayloadString()) {
             bc.invokeStatic(Methods.MULTI_SSE_SUBSCRIBE_STRING, res, routingContext);
         } else { // Multi<Object> - encode to json.
@@ -986,7 +986,7 @@ class ReactiveRoutesProcessor {
             bc.invokeStatic(Methods.MULTI_SUBSCRIBE_VOID, res, routingContext);
         } else if (descriptor.isPayloadString()) {
             bc.invokeStatic(Methods.MULTI_NDJSON_SUBSCRIBE_STRING, res, routingContext);
-        } else if (descriptor.isPayloadBuffer() || descriptor.isPayloadMutinyBuffer()) {
+        } else if (descriptor.isPayloadBuffer()) {
             bc.invokeStatic(Methods.MULTI_JSON_FAIL, routingContext);
         } else { // Multi<Object> - encode to json.
             bc.invokeStatic(Methods.MULTI_NDJSON_SUBSCRIBE_OBJECT, res, routingContext);
@@ -1009,7 +1009,7 @@ class ReactiveRoutesProcessor {
             bc.invokeStatic(Methods.MULTI_JSON_SUBSCRIBE_VOID, res, routingContext);
         } else if (descriptor.isPayloadString()) {
             bc.invokeStatic(Methods.MULTI_JSON_SUBSCRIBE_STRING, res, routingContext);
-        } else if (descriptor.isPayloadBuffer() || descriptor.isPayloadMutinyBuffer()) {
+        } else if (descriptor.isPayloadBuffer()) {
             bc.invokeStatic(Methods.MULTI_JSON_FAIL, routingContext);
         } else { // Multi<Object> - encode to json.
             bc.invokeStatic(Methods.MULTI_JSON_SUBSCRIBE_OBJECT, res, routingContext);
@@ -1141,10 +1141,6 @@ class ReactiveRoutesProcessor {
             BlockCreator bc, Expr this_, FieldDesc validatorField) {
         if (descriptor.isPayloadString() || descriptor.isPayloadBuffer()) {
             return result;
-        }
-
-        if (descriptor.isPayloadMutinyBuffer()) {
-            return bc.invokeVirtual(Methods.MUTINY_GET_DELEGATE, result);
         }
 
         // Encode to Json
@@ -1379,14 +1375,15 @@ class ReactiveRoutesProcessor {
                     public Expr get(MethodParameterInfo methodParam, Set<AnnotationInstance> annotations, Var routingContext,
                             BlockCreator bc, BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         Type paramType = methodParam.type();
+                        Expr body = bc.invokeInterface(Methods.BODY, routingContext);
                         if (paramType.name().equals(DotName.STRING_NAME)) {
-                            return bc.invokeInterface(Methods.GET_BODY_AS_STRING, routingContext);
+                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_STRING, body);
                         } else if (paramType.name().equals(DotNames.BUFFER)) {
-                            return bc.invokeInterface(Methods.GET_BODY, routingContext);
+                            return bc.invokeInterface(Methods.REQUEST_BODY_BUFFER, body);
                         } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
-                            return bc.invokeInterface(Methods.GET_BODY_AS_JSON, routingContext);
+                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body);
                         } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
-                            return bc.invokeInterface(Methods.GET_BODY_AS_JSON_ARRAY, routingContext);
+                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_ARRAY, body);
                         }
                         // This should never happen
                         throw new IllegalArgumentException("Unsupported param type: " + paramType);
@@ -1405,8 +1402,9 @@ class ReactiveRoutesProcessor {
                             BlockCreator b0, BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         Type paramType = methodParam.type();
                         registerForReflection(paramType, reflectiveHierarchy);
+                        Expr body = b0.invokeInterface(Methods.BODY, routingContext);
                         LocalVar bodyAsJson = b0.localVar("bodyAsJson",
-                                b0.invokeInterface(Methods.GET_BODY_AS_JSON, routingContext));
+                                b0.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body));
                         LocalVar result = b0.localVar("result", Const.ofDefault(Object.class));
                         b0.ifNotNull(bodyAsJson, b1 -> {
                             // TODO load `paramType` class from TCCL

@@ -27,10 +27,7 @@ class TlsWithJKSTrustStoreWithHttpServerTest {
             quarkus.grpc.clients.hello.tls.trust-certificate-jks.path=target/certs/grpc-client-truststore.jks
             quarkus.grpc.clients.hello.tls.trust-certificate-jks.password=password
             quarkus.grpc.clients.hello.tls.enabled=true
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
 
-            quarkus.grpc.server.use-separate-server=false
-            quarkus.grpc.server.plain-text=false # Force the client to use TLS for the tests
 
             quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-keystore.jks
             quarkus.http.ssl.certificate.key-store-password=password

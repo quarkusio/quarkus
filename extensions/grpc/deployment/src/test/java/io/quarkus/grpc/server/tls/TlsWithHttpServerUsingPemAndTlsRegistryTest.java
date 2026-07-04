@@ -31,8 +31,6 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithHttpServerUsingPemAndTlsRegistryTest {
 
     static String configuration = """
-            quarkus.grpc.server.use-separate-server=false
-
             quarkus.tls.key-store.pem.0.cert=target/certs/grpc.crt
             quarkus.tls.key-store.pem.0.key=target/certs/grpc.key
 

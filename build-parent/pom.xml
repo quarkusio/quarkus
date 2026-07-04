@@ -23,10 +23,7 @@
         <kotlin.version>2.4.0</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.2.0</dokka.version>
-        <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.9</scala-maven-plugin.version>
-        <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
-        <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
+
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
@@ -34,14 +31,14 @@
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>5.1.0</htmlunit.version>
+        <htmlunit.version>5.2.0</htmlunit.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.28.0</commonmark.version>
+        <commonmark.version>0.29.0</commonmark.version>
         <jgit.version>7.7.0.202606012155-r</jgit.version>
 
         <!-- Arquillian BOM -->
@@ -63,7 +60,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.16</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.5.1</gradle-wrapper.version>
+        <gradle-wrapper.version>9.6.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -90,7 +87,7 @@
         <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
         <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2025-latest</mssql.image>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
         <mysql.image>docker.io/library/mysql:9.5</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -100,7 +97,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.6.2</keycloak.server.version>
+        <keycloak.server.version>26.6.4</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
@@ -535,6 +532,7 @@
                             <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
+                                    <banDuplicatePomDependencyVersions/>
                                     <dependencyConvergence/>
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>

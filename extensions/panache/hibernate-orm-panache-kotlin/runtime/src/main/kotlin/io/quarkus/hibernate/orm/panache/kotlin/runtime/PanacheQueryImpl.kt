@@ -4,6 +4,7 @@ import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
+import io.quarkus.panache.common.Sort
 import jakarta.persistence.LockModeType
 import java.util.stream.Stream
 import org.hibernate.Session
@@ -13,13 +14,21 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
 
     internal constructor(
         session: Session?,
+        entityClass: Class<*>?,
         hqlQuery: String?,
         originalQuery: String?,
-        orderBy: String?,
+        sort: Sort?,
         paramsArrayOrMap: Any?,
     ) {
         delegate =
-            CommonPanacheQueryImpl(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
+            CommonPanacheQueryImpl(
+                session,
+                entityClass,
+                hqlQuery,
+                originalQuery,
+                sort,
+                paramsArrayOrMap,
+            )
     }
 
     private constructor(delegate: CommonPanacheQueryImpl<Entity>) {

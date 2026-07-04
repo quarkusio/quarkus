@@ -76,8 +76,8 @@ public class OidcDPopNonceTest {
             String wwwAuthenticate = textPage.getWebResponse()
                     .getResponseHeaderValue(HttpHeaderNames.WWW_AUTHENTICATE.toString());
             assertNotNull(wwwAuthenticate);
-            assertTrue(wwwAuthenticate.contains("DPoP error=\"invalid_dpop_proof\""),
-                    () -> "Expected 'DPoP error=\"invalid_dpop_proof\"', but got: " + wwwAuthenticate);
+            assertTrue(wwwAuthenticate.contains("DPoP error=\"use_dpop_nonce\""),
+                    () -> "Expected 'DPoP error=\"use_dpop_nonce\"', but got: " + wwwAuthenticate);
             String dpopNonce = textPage.getWebResponse().getResponseHeaderValue(OidcConstants.DPOP_NONCE);
             assertEquals(expectedNonce, dpopNonce);
             String cacheControl = textPage.getWebResponse().getResponseHeaderValue(HttpHeaders.CACHE_CONTROL.toString());

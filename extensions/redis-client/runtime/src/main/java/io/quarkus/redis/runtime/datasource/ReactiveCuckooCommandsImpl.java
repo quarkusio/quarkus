@@ -9,7 +9,7 @@ import io.quarkus.redis.datasource.cuckoo.CfInsertArgs;
 import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
 import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveCuckooCommandsImpl<K, V> extends AbstractCuckooCommands<K, V>
         implements ReactiveCuckooCommands<K, V>, ReactiveRedisCommands {

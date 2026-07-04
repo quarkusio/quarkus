@@ -365,6 +365,64 @@ $ java -jar myapp.jar info
 CLI App v1.0
 ----
 
+==== Programmatic sub-commands with GroupCommand
+
+Instead of declaring sub-commands in the `groupCommands` annotation attribute, you can implement the `GroupCommand` interface and override `getCommands()` to register sub-commands programmatically.
+This is useful when sub-commands need constructor arguments or when the set of sub-commands is determined at runtime:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import java.util.List;
+
+import jakarta.inject.Inject;
+
+import org.aesh.command.Command;
+import org.aesh.command.CommandDefinition;
+import org.aesh.command.CommandResult;
+import org.aesh.command.GroupCommand;
+import org.aesh.command.invocation.CommandInvocation;
+
+@CommandDefinition(name = "tools", description = "Developer tools")
+public class ToolsCommand implements GroupCommand<CommandInvocation> { // <1>
+
+    @Inject
+    StatusCommand statusSub; // <2>
+
+    @Override
+    public List<Command<CommandInvocation>> getCommands() { // <3>
+        return List.of(statusSub);
+    }
+
+    @Override
+    public CommandResult execute(CommandInvocation invocation) {
+        invocation.println("Use a sub-command: status");
+        return CommandResult.SUCCESS;
+    }
+}
+
+@CommandDefinition(name = "status", description = "Show status")
+class StatusCommand implements Command<CommandInvocation> {
+
+    @Inject
+    StatusService statusService; // <4>
+
+    @Override
+    public CommandResult execute(CommandInvocation invocation) {
+        invocation.println(statusService.getStatus());
+        return CommandResult.SUCCESS;
+    }
+}
+----
+<1> Implement `GroupCommand` instead of plain `Command`. Do not use `groupCommands` in the annotation -- the sub-commands come from `getCommands()` instead.
+<2> Inject the sub-command via CDI so that `@Inject` fields in the sub-command are properly populated.
+<3> Return CDI-managed instances from `getCommands()`. Aesh uses these instances directly, preserving CDI injection.
+<4> CDI injection works in sub-commands because they are managed by CDI, not created with `new`.
+
+IMPORTANT: Sub-commands returned by `getCommands()` must be injected via `@Inject` (not created with `new`) if they need CDI services.
+Creating sub-commands with `new` bypasses CDI, and `@Inject` fields will not be populated.
+
 == Custom option completers, converters, and validators
 
 Aesh supports custom implementations for tab-completion, type conversion, option validation, and more.
@@ -882,6 +940,84 @@ Available when a remote transport extension (`quarkus-aesh-websocket` or `quarku
 ==== Terminal page
 
 Available when the `quarkus-aesh-websocket` extension is present. Embeds an interactive terminal directly in the Dev UI using https://xtermjs.org/[xterm.js]. Click **Connect** to open a WebSocket connection to the terminal endpoint and interact with your CLI commands from the browser. The terminal supports the same features as the standalone terminal page (color, resize, unicode).
+
+== Testing
+
+Aesh commands can be tested with `@QuarkusMainTest` from the xref:command-mode-reference.adoc[Command Mode reference guide].
+The approach differs depending on the execution mode.
+
+=== Testing runtime mode commands
+
+Runtime mode commands execute once and exit.
+Use `@Launch` to run them with specific arguments and assert on the output:
+
+[source,java]
+----
+@QuarkusMainTest
+public class CliTest {
+
+    @Test
+    @Launch({"--name=Alice"})
+    void testGreet(LaunchResult result) {
+        assertThat(result.getOutput()).contains("Hello Alice!");
+        assertThat(result.exitCode()).isEqualTo(0);
+    }
+
+    @Test
+    void testMultipleLaunches(QuarkusMainLauncher launcher) {
+        LaunchResult first = launcher.launch("--name=Alice");
+        assertThat(first.getOutput()).contains("Hello Alice!");
+
+        LaunchResult second = launcher.launch("--name=Bob");
+        assertThat(second.getOutput()).contains("Hello Bob!");
+    }
+}
+----
+
+=== Testing console mode commands (REPL)
+
+Console mode commands run in an interactive shell.
+Use `AeshLauncher` to start a REPL session, send commands, and assert on their output:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-aesh</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,java]
+----
+@QuarkusMainTest
+public class ReplTest {
+
+    @Test
+    void testInteractiveSession(AeshLauncher launcher) {
+        launcher.launch();
+
+        String output = launcher.executeCommand("greet --name=Alice");
+        assertThat(output).contains("Hello Alice!");
+
+        output = launcher.executeCommand("calc -a 5 -b 3");
+        assertThat(output).contains("Result: 8");
+
+        launcher.exit();
+    }
+}
+----
+
+`AeshLauncher` provides:
+
+* `launch(String... args)` -- starts the REPL on a background thread
+* `executeCommand(String command)` -- sends a command and blocks until it completes (10 second default timeout)
+* `executeCommand(String command, Duration timeout)` -- same with a custom timeout
+* `getErrorOutput()` -- returns any error output from the session
+* `exit()` -- sends the exit command and waits for clean shutdown
+
+NOTE: The exit command must be enabled for `AeshLauncher` to shut down cleanly.
+Set `quarkus.aesh.add-exit-command=true` in `application.properties` (or `src/test/resources/application.properties`).
 
 == Packaging your application
 

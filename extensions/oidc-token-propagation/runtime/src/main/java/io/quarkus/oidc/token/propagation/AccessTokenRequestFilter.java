@@ -6,6 +6,8 @@ import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationC
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -25,6 +27,7 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 
 public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     // note: We can't use constructor injection for these fields because they are registered by RESTEasy
@@ -119,7 +122,9 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     private static TokenCredential getTokenCredentialFromContext() {
         VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
-        return Vertx.currentContext().getLocal(TokenCredential.class.getName());
+        ConcurrentMap<Object, Object> locals = ((ContextInternal) Vertx.currentContext())
+                .getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
+        return (TokenCredential) locals.get(TokenCredential.class.getName());
     }
 
     private boolean skipPropagation(ClientRequestContext requestContext) {

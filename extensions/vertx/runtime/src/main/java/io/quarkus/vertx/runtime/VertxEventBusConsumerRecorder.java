@@ -39,8 +39,8 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxInternal;
 
 @Recorder
 public class VertxEventBusConsumerRecorder {
@@ -99,7 +99,6 @@ public class VertxEventBusConsumerRecorder {
             for (EventConsumerInfo info : messageConsumerConfigurations) {
                 EventConsumerInvoker invoker = new EventConsumerInvoker(info.invoker.getValue(), info.splitHeadersBodyParams);
                 String address = lookUpPropertyValue(info.annotation.value());
-                boolean local = info.annotation.local();
                 boolean blocking = info.annotation.blocking() || info.blockingAnnotation || info.runOnVirtualThreadAnnotation;
                 boolean runOnVirtualThread = info.runOnVirtualThreadAnnotation;
                 boolean ordered = info.annotation.ordered();
@@ -110,12 +109,7 @@ public class VertxEventBusConsumerRecorder {
                 context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void x) {
-                        MessageConsumer<Object> consumer;
-                        if (local) {
-                            consumer = eventBus.localConsumer(address);
-                        } else {
-                            consumer = eventBus.consumer(address);
-                        }
+                        MessageConsumer<Object> consumer = eventBus.localConsumer(address);
 
                         consumer.handler(new Handler<Message<Object>>() {
                             @Override
@@ -176,7 +170,7 @@ public class VertxEventBusConsumerRecorder {
                             }
                         });
 
-                        consumer.completionHandler(new Handler<AsyncResult<Void>>() {
+                        consumer.completion().onComplete(new Handler<AsyncResult<Void>>() {
                             @Override
                             public void handle(AsyncResult<Void> ar) {
                                 latch.countDown();
@@ -215,7 +209,7 @@ public class VertxEventBusConsumerRecorder {
     void unregisterMessageConsumers() {
         CountDownLatch latch = new CountDownLatch(messageConsumers.size());
         for (MessageConsumer<?> messageConsumer : messageConsumers) {
-            messageConsumer.unregister(ar -> {
+            messageConsumer.unregister().onComplete(ar -> {
                 latch.countDown();
                 if (ar.failed()) {
                     LOGGER.warn("Message consumer unregistration failed", ar.cause());

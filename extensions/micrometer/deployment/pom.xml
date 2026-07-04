@@ -52,6 +52,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry-deployment</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.common</groupId>
+                    <artifactId>smallrye-common-vertx-context</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Needed for the JSON meter registry -->
         <dependency>

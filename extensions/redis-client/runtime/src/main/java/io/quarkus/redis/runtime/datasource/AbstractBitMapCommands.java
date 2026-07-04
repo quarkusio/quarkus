@@ -9,8 +9,8 @@ import java.util.List;
 
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractBitMapCommands<K> extends AbstractRedisCommands {
 

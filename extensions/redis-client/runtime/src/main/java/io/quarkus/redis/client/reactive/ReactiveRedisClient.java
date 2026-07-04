@@ -7,7 +7,7 @@ import java.util.List;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 /**
  * A Redis client offering reactive Redis commands.

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
-import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 
 public class SendMultiBufferTest {
 
@@ -27,7 +27,7 @@ public class SendMultiBufferTest {
 
     @Test
     public void test() throws FileNotFoundException {
-        Multi<io.vertx.mutiny.core.buffer.Buffer> multi = Multi.createFrom().emitter(e -> {
+        Multi<Buffer> multi = Multi.createFrom().emitter(e -> {
             for (int i = 0; i < 1000; i++) {
                 e.emit(Buffer.buffer(String.format("%03d", i)));
             }
@@ -45,7 +45,7 @@ public class SendMultiBufferTest {
 
         @POST
         @Path("count")
-        long count(Multi<io.vertx.mutiny.core.buffer.Buffer> multi);
+        long count(Multi<Buffer> multi);
     }
 
     @Path("test")

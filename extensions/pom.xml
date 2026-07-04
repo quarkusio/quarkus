@@ -43,6 +43,7 @@
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
+        <module>http3</module>
         <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
@@ -76,7 +77,7 @@
         <module>smallrye-reactive-messaging-kafka</module>
         <module>smallrye-reactive-messaging-amqp</module>
         <module>smallrye-reactive-messaging-pulsar</module>
-        <module>smallrye-reactive-messaging-mqtt</module>
+<!--        <module>smallrye-reactive-messaging-mqtt</module>-->
         <module>smallrye-reactive-messaging-rabbitmq</module>
         <module>smallrye-context-propagation</module>
         <module>reactive-datasource</module>
@@ -189,7 +190,6 @@
 
         <!-- Additional languages -->
         <module>kotlin</module>
-        <module>scala</module>
 
         <!-- Kubernetes -->
         <module>container-image</module>

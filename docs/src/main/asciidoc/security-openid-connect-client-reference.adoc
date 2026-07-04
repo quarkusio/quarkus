@@ -53,7 +53,9 @@ quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
 
 `OidcClient` will discover that the token endpoint URL is `http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens`.
 
-Alternatively, if the discovery endpoint is unavailable or you want to avoid an extra round-trip to it, you can disable discovery and configure the token endpoint address with a relative path.
+If the OIDC provider requires authentication to access the discovery endpoint, you can configure `OidcClient` to send credentials with the discovery request, as described in <<oidc-client-authenticated-discovery-endpoint>>.
+
+If the discovery endpoint is unavailable or you want to avoid an extra round-trip to it, you can disable discovery and configure the token endpoint address with a relative path.
 
 For example:
 
@@ -531,6 +533,54 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
     }
 }
 ----
+
+Additionally, if you want to do a programmatic lookup of an `OidcClient`,
+use the `NamedOidcClient.Literal` qualifier to select it instead of relying on a static `@NamedOidcClient` injection point:
+
+[source,java]
+----
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.oidc.client.NamedOidcClient;
+import io.quarkus.oidc.client.OidcClient;
+import io.smallrye.mutiny.Uni;
+
+@Path("/clients")
+public class OidcClientResource {
+
+    @Inject
+    @Any
+    Instance<OidcClient> clients; // <1>
+
+    @GET
+    @Path("{name}/user-name")
+    public Uni<String> getUserName(@PathParam("name") String name) {
+        OidcClient client = clients.select(NamedOidcClient.Literal.of(name)).get();
+        return client.getTokens().onItem().transform(tokens -> tokens.getAccessToken());
+    }
+
+    @GET
+    @Path("{name}/access-token")
+    public Uni<String> getAccessToken(@PathParam("name") String name) {
+        // Alternatively, look the OidcClient up directly from the CDI container
+        OidcClient client = Arc.container().instance(OidcClient.class, NamedOidcClient.Literal.of(name)).get(); // <2>
+        return client.getTokens().onItem().transform(tokens -> tokens.getAccessToken());
+    }
+}
+----
+<1> Inject with `@Any` so that all the named `OidcClient` beans are available for selection by the `NamedOidcClient.Literal` qualifier.
+<2> `Arc.container()` resolves the bean directly without an injected `Instance`, passing the `NamedOidcClient.Literal` qualifier to select the wanted `OidcClient`.
+
+[NOTE]
+====
+Prefer the static `@NamedOidcClient` injection point whenever the client name is known in advance.
+====
 
 [[rest-client-oidc-filter]]
 === Use OidcClient in RestClient Reactive ClientFilter
@@ -1022,6 +1072,7 @@ quarkus.oidc-client.credentials.jwt.subject=custom-subject
 quarkus.oidc-client.credentials.jwt.issuer=custom-issuer
 ----
 
+[[oidc-client-jwt-bearer]]
 ==== JWT Bearer
 
 link:https://www.rfc-editor.org/rfc/rfc7523[RFC7523] explains how JWT Bearer tokens can be used to authenticate clients.
@@ -1169,6 +1220,17 @@ quarkus.tls.oidc-client.trust-store.p12.password=${trust-store-password}
 # Add more truststore properties if needed:
 #quarkus.tls.oidc-client.trust-store.p12.alias=certAlias
 ----
+
+[[oidc-client-authenticated-discovery-endpoint]]
+==== Authenticated access to the discovery endpoint
+
+The OIDC discovery endpoint is typically public.
+Some OIDC providers may enforce authenticated access to this endpoint.
+For example, the Kubernetes API server acts as an OIDC provider for service account tokens and requires a bearer access token to access its discovery endpoint.
+
+To send client credentials to the discovery endpoint, set `quarkus.oidc-client.credentials.for-all-endpoints=true`.
+Since the discovery endpoint is accessed with an HTTP GET request, only authentication methods that use the HTTP `Authorization` header are effective, such as `client_secret_basic` and <<oidc-client-jwt-bearer,JWT bearer>>.
+Alternatively, you can use <<oidc-client-ref-oidc-request-filters,OidcRequestFilter>> to customize the authentication.
 
 === OIDC Client SPI
 

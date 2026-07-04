@@ -9,9 +9,9 @@ include::_attributes.adoc[]
 :topics: docker,podman,images
 
 To ease the containerization of native executables, Quarkus provides a base image providing the requirements to run these executables.
-The `ubi9-quarkus-micro-image:2.0` image is:
+The `ubi10-quarkus-micro-image:2.0` image is:
 
-* small (based on `ubi9-micro`)
+* small (based on `ubi10-micro`)
 * designed for containers
 * contains the right set of dependencies (glibc, libstdc++, zlib)
 * support upx-compressed executables (more details on the xref:upx.adoc[enabling compression documentation])
@@ -22,7 +22,7 @@ In your `Dockerfile`, just use:
 
 [source, dockerfile]
 ----
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi10-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --chmod=0755 target/*-runner /work/application
 EXPOSE 8080
@@ -48,11 +48,11 @@ Headless graphics, PDF documents, QR code images etc. manipulation is natively s
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as nativelibs
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2 as nativelibs
 RUN microdnf install -y freetype fontconfig expat
 
 # Second stage - copy the dependencies
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi10-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --from=nativelibs \
    /lib64/libz.so.1 \
@@ -100,7 +100,7 @@ ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
 
 == Alternative - Using ubi-minimal
 
-If the micro image does not suit your requirements, you can use https://catalog.redhat.com/software/containers/ubi9-minimal/61832888c0d15aff4912fe0d[ubi9-minimal].
+If the micro image does not suit your requirements, you can use https://catalog.redhat.com/en/software/containers/ubi10-minimal/66f16af45db83414cddcfc99[ubi10-minimal].
 It's a bigger image, but contains more utilities and is closer to a full Linux distribution.
 Typically, it contains a package manager (`microdnf`), so you can install packages more easily.
 
@@ -108,7 +108,7 @@ To use this base image, use the following `Dockerfile`:
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
@@ -125,7 +125,7 @@ To make documents processing, graphics, PDFs, etc. available for the application
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2
 RUN microdnf install -y freetype fontconfig \
     && microdnf clean all
 

@@ -732,7 +732,7 @@ Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
 The link:++https://vertx.io/docs/vertx-core/java/#event_bus++[Vert.x Event Bus] uses link:++https://vertx.io/docs/vertx-core/java/#_message_codecs++[codecs] to _serialize_ and _deserialize_ message objects.
 Quarkus provides a default codec for local delivery.
-This codec is automatically used for return types and message body parameters of local consumers, i.e. methods annotated with `@ConsumeEvent` where `ConsumeEvent#local() == true` (which is the default).
+This codec is automatically used for return types and message body parameters of methods annotated with `@ConsumeEvent`.
 
 So that you can exchange the message objects as follows:
 
@@ -1078,22 +1078,18 @@ class MyVerticle extends AbstractVerticle {
 In this example a scheduler is created by capturing the context of the Vert.x event-loop that calls `asyncStart()`.
 The `delayIt` operator uses that scheduler, and we can check that the context that we get in `invoke` is a Vert.x duplicated context where the data for key `"foo"` has been propagated.
 
-== Use a Unix domain socket
+== Use a Unix Domain Socket
 
-Listening on a Unix domain socket allows us to dispense with the overhead of TCP
+Listening on a Unix Domain Socket allows us to dispense with the overhead of TCP
 if the connection to the quarkus service is established from the same host.
 This can happen if access to the service goes through a proxy which is often the case
 if you're setting up a service mesh with a proxy like Envoy.
 
-IMPORTANT: This will only work on platforms that support <<native-transport>>.
-
-Enable the appropriate <<native-transport>> and set the following environment property:
+Unix Domain Sockets are supported in both JVM and native modes.
 
 ----
 quarkus.http.domain-socket=/var/run/io.quarkus.app.socket
 quarkus.http.domain-socket-enabled=true
-
-quarkus.vertx.prefer-native-transport=true
 ----
 
 By itself this will not disable the tcp socket which by default will open on
@@ -1105,9 +1101,6 @@ quarkus.http.host-enabled=false
 
 These properties can be set through Java's `-D` command line parameter or
 on `application.properties`.
-
-IMPORTANT: Do not forget to add the native transport dependency.
-See <<native-transport>> for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 

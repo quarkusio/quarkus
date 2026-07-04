@@ -157,8 +157,8 @@ public class VertxHttpFacade implements HttpRequest, HttpResponse {
             @Override
             public InputStream getInputStream(boolean buffered) {
                 try {
-                    if (routingContext.getBody() != null) {
-                        return new ByteArrayInputStream(routingContext.getBody().getBytes());
+                    if (routingContext.body() != null) {
+                        return new ByteArrayInputStream(routingContext.body().buffer().getBytes());
                     }
                     if (routingContext.request().isEnded()) {
                         return new ByteArrayInputStream(new byte[0]);

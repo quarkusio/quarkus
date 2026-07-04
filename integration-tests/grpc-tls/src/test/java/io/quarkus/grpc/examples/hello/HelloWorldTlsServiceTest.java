@@ -1,29 +1,18 @@
 package io.quarkus.grpc.examples.hello;
 
-import java.io.File;
+import jakarta.inject.Inject;
 
-import javax.net.ssl.SSLException;
-
-import org.junit.jupiter.api.BeforeEach;
-
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.test.junit.QuarkusTest;
+import io.vertx.core.Vertx;
 
 @QuarkusTest
-class HelloWorldTlsServiceTest extends HelloWorldTlsServiceTestBase {
+class HelloWorldTlsServiceTest extends VertxHelloWorldTlsServiceTestBase {
 
-    @BeforeEach
-    public void init() throws SSLException {
-        SslContextBuilder builder = GrpcSslContexts.forClient();
-        builder.trustManager(new File("target/certs/grpc-tls-ca.crt"));
-        SslContext context = builder.build();
+    @Inject
+    Vertx vertx;
 
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
-                .sslContext(context)
-                .build();
+    @Override
+    Vertx vertx() {
+        return vertx;
     }
-
 }

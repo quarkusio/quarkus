@@ -15,7 +15,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Vertx;
+import io.smallrye.common.vertx.ContextLocals;
 
 @Path("/filter")
 public class FilteredResource {
@@ -47,8 +47,8 @@ public class FilteredResource {
         assert requestContextActive.get();
 
         // DC
-        assert Vertx.currentContext().getLocal("filter").equals("test");
-        Vertx.currentContext().putLocal("test", "test test");
+        assert "test".equals(ContextLocals.get("filter", null));
+        ContextLocals.put("test", "test test");
 
         // MDC
         assert MDC.get("mdc").equals("test");

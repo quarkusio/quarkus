@@ -47,6 +47,8 @@ public class CreateProject {
         String NO_DOCKERFILES = "codegen.no-dockerfiles";
         String NO_BUILDTOOL_WRAPPER = "codegen.no-buildtool-wrapper";
         String NO_CODE = "codegen.no-code";
+        // Used by code.quarkus.io and Roq CLI to generate config in config/ instead of src/main/resources/
+        String USE_CONFIG_DIR = "codegen.use-config-dir";
         String EXAMPLE = "codegen.example";
         String EXTRA_CODESTARTS = "codegen.extra-codestarts";
 
@@ -196,6 +198,15 @@ public class CreateProject {
 
     public CreateProject noDockerfiles() {
         return noDockerfiles(true);
+    }
+
+    public CreateProject useConfigDir(boolean value) {
+        setValue(USE_CONFIG_DIR, value);
+        return this;
+    }
+
+    public CreateProject useConfigDir() {
+        return useConfigDir(true);
     }
 
     public CreateProject data(String dataAsString) {

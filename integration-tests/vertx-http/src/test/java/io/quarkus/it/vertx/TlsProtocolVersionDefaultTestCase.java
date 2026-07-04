@@ -30,9 +30,9 @@ public class TlsProtocolVersionDefaultTestCase {
     void testWithWebClientRequestingMultipleTlsVersions() {
         // The Web client is requesting TLS 1.2 or 1.3, the server is exposing 1.3 - all good
         WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
-                .setKeyStoreOptions(
+                .setKeyCertOptions(
                         new JksOptions().setPath("src/test/resources/client-keystore-1.jks").setPassword("password"))
-                .setTrustStoreOptions(
+                .setTrustOptions(
                         new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"))
                 .setVerifyHost(false));
         var resp = client.getAbs(url).sendAndAwait();
@@ -44,9 +44,9 @@ public class TlsProtocolVersionDefaultTestCase {
         // The Web client is requesting TLS 1.3, the server is exposing 1.3 - all good
         WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
                 .setEnabledSecureTransportProtocols(Set.of("TLSv1.3"))
-                .setKeyStoreOptions(
+                .setKeyCertOptions(
                         new JksOptions().setPath("src/test/resources/client-keystore-1.jks").setPassword("password"))
-                .setTrustStoreOptions(
+                .setTrustOptions(
                         new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"))
                 .setVerifyHost(false));
         var resp = client.getAbs(url).sendAndAwait();
@@ -58,13 +58,13 @@ public class TlsProtocolVersionDefaultTestCase {
         // The Web client is requesting TLS 1.2, the server is exposing 1.3 - KO
         WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
                 .setEnabledSecureTransportProtocols(Set.of("TLSv1.2"))
-                .setKeyStoreOptions(
+                .setKeyCertOptions(
                         new JksOptions().setPath("src/test/resources/client-keystore-1.jks").setPassword("password"))
-                .setTrustStoreOptions(
+                .setTrustOptions(
                         new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"))
                 .setVerifyHost(false));
         Throwable exception = Assertions.assertThrows(CompletionException.class, () -> client.getAbs(url).sendAndAwait());
-        Assertions.assertTrue(exception.getCause() instanceof SSLHandshakeException);
+        Assertions.assertInstanceOf(SSLHandshakeException.class, exception.getCause());
     }
 
     @Test
@@ -72,12 +72,12 @@ public class TlsProtocolVersionDefaultTestCase {
         // The Web client is requesting TLS 1.1, the server is exposing 1.2 and 1.3 - KO
         WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
                 .setEnabledSecureTransportProtocols(Set.of("TLSv1.1"))
-                .setKeyStoreOptions(
+                .setKeyCertOptions(
                         new JksOptions().setPath("src/test/resources/client-keystore-1.jks").setPassword("password"))
-                .setTrustStoreOptions(
+                .setTrustOptions(
                         new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"))
                 .setVerifyHost(false));
         Throwable exception = Assertions.assertThrows(CompletionException.class, () -> client.getAbs(url).sendAndAwait());
-        Assertions.assertTrue(exception.getCause() instanceof SSLHandshakeException);
+        Assertions.assertInstanceOf(SSLHandshakeException.class, exception.getCause());
     }
 }

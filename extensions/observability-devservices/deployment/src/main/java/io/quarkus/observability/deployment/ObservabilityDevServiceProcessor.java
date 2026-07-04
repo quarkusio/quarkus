@@ -88,6 +88,12 @@ class ObservabilityDevServiceProcessor {
             return;
         }
 
+        if (launchMode.getLaunchMode() == LaunchMode.TEST && !configuration.enabledInTests()) {
+            log.debugf("Starting new observability dev services is disabled in test mode by default. "
+                    + "Set quarkus.observability.enabled-in-tests=true to enable.");
+            return;
+        }
+
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please get a working Docker instance");
             return;

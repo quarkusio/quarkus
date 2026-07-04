@@ -407,11 +407,12 @@ class OidcDevServicesProcessor {
 
                 // this is done on delegates because closing Mutiny wrapper can result in unrelated exception
                 // when other tests (not necessarily using this dev services) run after a test using this service
-                anHttpServer.getDelegate().close(httpServerResult -> {
+
+                anHttpServer.getDelegate().close().onComplete(httpServerResult -> {
                     if (httpServerResult != null && httpServerResult.failed()) {
                         LOG.error("Failed to close HTTP Server", httpServerResult.cause());
                     }
-                    aVertx.getDelegate().close(vertxResult -> {
+                    aVertx.getDelegate().close().onComplete(vertxResult -> {
                         if (vertxResult != null && vertxResult.failed()) {
                             LOG.error("Failed to close Vertx instance", vertxResult.cause());
                         }

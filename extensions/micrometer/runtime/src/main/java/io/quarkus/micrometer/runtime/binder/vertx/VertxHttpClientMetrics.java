@@ -2,9 +2,10 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
@@ -24,7 +25,6 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
 import io.quarkus.micrometer.runtime.meters.Gauges;
-import io.vertx.core.http.WebSocket;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.ClientMetrics;
 import io.vertx.core.spi.metrics.HttpClientMetrics;
@@ -32,32 +32,22 @@ import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 
 class VertxHttpClientMetrics extends VertxTcpClientMetrics
-        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, String, LongTaskTimer.Sample, EventTiming> {
+        implements HttpClientMetrics<VertxHttpClientMetrics.RequestTracker, Void> {
     static final Logger log = Logger.getLogger(VertxHttpClientMetrics.class);
 
-    private final LongAdder queue;
     private final LongAdder pending;
-    private final Timer queueDelay;
-    private final Map<String, LongAdder> webSockets = new ConcurrentHashMap<>();
+
     private final HttpBinderConfiguration config;
     private final Meter.MeterProvider<Timer> responseTimes;
-    private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
-    private final Gauges<LongAdder> gauges;
+    private final boolean restClient;
 
-    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags,
-            HttpBinderConfiguration httpBinderConfiguration, Gauges<LongAdder> gauges) {
+    private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
+
+    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration,
+            boolean restClient, Gauges<LongAdder> gauges) {
         super(registry, prefix, tags, gauges);
         this.config = httpBinderConfiguration;
-        this.gauges = gauges;
-        queueDelay = Timer.builder("http.client.queue.delay")
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
-
-        queue = gauges.builder("http.client.queue.size", LongAdder::doubleValue)
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .register(registry);
+        this.restClient = restClient;
 
         pending = gauges.builder("http.client.pending", LongAdder::longValue)
                 .description("Number of requests waiting for a response")
@@ -91,20 +81,25 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     }
 
     @Override
-    public ClientMetrics<RequestTracker, EventTiming, HttpRequest, HttpResponse> createEndpointMetrics(
+    public ClientMetrics<RequestTracker, HttpRequest, HttpResponse> createEndpointMetrics(
             SocketAddress remoteAddress, int maxPoolSize) {
         String remote = NetworkMetrics.toString(remoteAddress);
-        return new ClientMetrics<>() {
+        return new ClientMetrics<RequestTracker, HttpRequest, HttpResponse>() {
+            private final Deque<LongTaskTimer.Sample> connectionSamples = new ConcurrentLinkedDeque<>();
+
             @Override
-            public EventTiming enqueueRequest() {
-                queue.increment();
-                return new EventTiming(queueDelay);
+            public void connected() {
+                getConnCount().increment();
+                connectionSamples.push(getConnDuration().start());
             }
 
             @Override
-            public void dequeueRequest(EventTiming event) {
-                queue.decrement();
-                event.end();
+            public void disconnected() {
+                getConnCount().decrement();
+                LongTaskTimer.Sample sample = connectionSamples.poll();
+                if (sample != null) {
+                    sample.stop();
+                }
             }
 
             @Override
@@ -113,23 +108,26 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             }
 
             @Override
-            public void requestBegin(RequestTracker requestMetric, String uri, HttpRequest request) {
-                requestMetric.request = request;
-                requestMetric.tags = tags.and(
+            public void requestBegin(RequestTracker tracker, String uri, HttpRequest request) {
+                tracker.request = request;
+                tracker.tags = tags.and(
                         Tag.of("address", remote),
                         HttpCommonTags.method(request.method().name()),
                         HttpCommonTags.uri(request.uri(), null, -1, false));
-                String path = requestMetric.getNormalizedUriPath(
+                String path = tracker.getNormalizedUriPath(
                         config.getServerMatchPatterns(),
                         config.getServerIgnorePatterns());
                 if (path != null) {
                     pending.increment();
-                    requestMetric.timer = new EventTiming(null);
+                    tracker.timer = new EventTiming(null);
                 }
             }
 
             @Override
             public void requestEnd(RequestTracker tracker, long bytesWritten) {
+                if (bytesWritten > 0) {
+                    sent.record(bytesWritten);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }
@@ -157,12 +155,17 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void responseEnd(RequestTracker tracker, long bytesRead) {
+                if (bytesRead > 0) {
+                    received.record(bytesRead);
+                }
                 if (!shouldTrack(tracker)) {
                     return;
                 }
-                // TODO determine if we should continue based on the metadata
                 if (tracker.responseEnded()) {
                     pending.decrement();
+                }
+                if (restClient) {
+                    return;
                 }
                 long duration = tracker.timer.end();
                 Tags list = tracker.tags
@@ -184,30 +187,11 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                         .withTags(list)
                         .record(duration, TimeUnit.NANOSECONDS);
             }
-        };
-    }
 
-    @Override
-    public String connected(WebSocket webSocket) {
-        String remote = webSocket.remoteAddress().toString();
-        webSockets.computeIfAbsent(remote, s -> {
-            return gauges.builder(config.getHttpClientWebSocketConnectionsName(), LongAdder::longValue)
-                    .description("The number of active web socket connections")
-                    .tags(tags.and("address", remote))
-                    .register(registry);
-        }).increment();
-        return remote;
-    }
-
-    @Override
-    public void disconnected(String remote) {
-        var adder = webSockets.get(remote);
-        if (adder != null) {
-            adder.decrement();
-            if (adder.longValue() == 0) {
-                webSockets.remove(remote);
+            @Override
+            public void close() {
             }
-        }
+        };
     }
 
     private boolean shouldTrack(RequestTracker tracker) {

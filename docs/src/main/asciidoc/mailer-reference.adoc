@@ -205,6 +205,8 @@ we will use the `src/main/resources/templates/MailingResource/hello.html` and `s
 <3> Create a mail template instance and set the recipient.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
+IMPORTANT: `MailTemplateInstance.send()` returns a `Uni<Void>` that *must be subscribed to* — otherwise no e-mail will be sent. If you return the `Uni` from a RESTEasy Reactive resource method, the framework subscribes automatically. In other contexts, make sure the `Uni` is part of a reactive pipeline that is eventually subscribed to, or use `sendAndAwait()` for a blocking alternative.
+
 Alternatively, use a Java record that implements `io.quarkus.mailer.MailTemplate`.
 The record components represent the template parameters.
 
@@ -379,6 +381,55 @@ More details about this extension and its configuration can be found in the http
 ====
 For more information about the Mailer configuration please refer to the <<configuration-reference,Configuration Reference>>.
 ====
+
+[#rotating-credentials]
+=== Rotating credentials
+
+The mailer supports dynamic credential rotation through the xref:credentials-provider.adoc[Credentials Provider] interface.
+This is useful for:
+
+* `XOAUTH2` tokens that expire and need refreshing
+* Credential rotation for security compliance
+* Integration with secret management systems (HashiCorp Vault, AWS Secrets Manager, etc.)
+
+[NOTE]
+====
+When a credentials provider is configured, the `quarkus.mailer.username` and `quarkus.mailer.password` properties are ignored.
+All credentials are fetched from the provider.
+====
+
+To ensure new credentials are picked up promptly, tune the connection pool settings:
+
+[source, properties]
+----
+# Recycle idle connections after 5 minutes
+quarkus.mailer.keep-alive-timeout=5M
+# Check for expired connections every second
+quarkus.mailer.pool-cleaner-period=1S
+----
+
+IMPORTANT: Set `keep-alive-timeout` to less than your credential TTL so that connections are recycled before credentials expire.
+
+=== Configuring XOAUTH2
+
+`XOAUTH2` is an authentication mechanism that uses OAuth 2.0 access tokens instead of passwords.
+It is commonly used with Gmail and other providers that support OAuth 2.0 for SMTP authentication.
+
+[source, properties]
+----
+quarkus.mailer.host=smtp.gmail.com
+quarkus.mailer.port=587
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.login=XOAUTH2
+quarkus.mailer.username=YOUREMAIL@gmail.com
+quarkus.mailer.password=YOUR_ACCESS_TOKEN
+----
+
+OAuth 2.0 access tokens are typically short-lived.
+To handle token refresh automatically, use a xref:credentials-provider.adoc[Credentials Provider] that fetches fresh tokens.
+
+The credentials provider must return the username as the `user` property and the OAuth 2.0 access token as the `password` property.
+See <<rotating-credentials,Rotating Credentials>> for more details on connection pool tuning.
 
 == Configuring TLS
 

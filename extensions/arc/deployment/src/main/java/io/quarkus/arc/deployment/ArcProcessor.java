@@ -463,11 +463,7 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
         beanProcessor.registerSyntheticInjectionPoints(beanRegistrationPhase.getContext());
 
-        // Initialize the type -> bean map
-        beanProcessor.getBeanDeployment().initBeanByTypeMap();
-
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();
-
         return new ObserverRegistrationPhaseBuildItem(registrationContext, beanProcessor);
     }
 
@@ -485,6 +481,7 @@ public class ArcProcessor {
         }
 
         BeanProcessor beanProcessor = observerRegistrationPhase.getBeanProcessor();
+        beanProcessor.synthesisFinished();
         synthesisFinished.produce(new SynthesisFinishedBuildItem(beanProcessor.getBeanDeployment()));
 
         Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);

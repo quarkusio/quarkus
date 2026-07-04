@@ -33,8 +33,8 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.common.annotation.Experimental;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 /**
  * Synchronous / Blocking Redis Data Source.
@@ -990,16 +990,6 @@ public interface RedisDataSource {
      * @return the response
      */
     Response execute(Command command, String... args);
-
-    /**
-     * Executes a command.
-     * This method is used to execute commands not offered by the API.
-     *
-     * @param command the command
-     * @param args the parameters, encoded as String.
-     * @return the response
-     */
-    Response execute(io.vertx.redis.client.Command command, String... args);
 
     /**
      * @return the reactive data source.

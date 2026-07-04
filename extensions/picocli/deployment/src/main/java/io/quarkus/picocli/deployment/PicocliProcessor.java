@@ -24,7 +24,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.picocli.runtime.DefaultPicocliCommandLineFactory;
 import io.quarkus.picocli.runtime.PicocliRunner;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
@@ -58,8 +57,8 @@ class PicocliProcessor {
         // (b) or declare a single constructor with at least one parameter
         autoAddScope.produce(AutoAddScopeBuildItem.builder()
                 .match((clazz, annotations, index) -> {
-                    List<MethodInfo> constructors = clazz.methods().stream().filter(m -> m.name().equals(MethodDescriptor.INIT))
-                            .collect(Collectors.toList());
+                    List<MethodInfo> constructors = clazz.methods().stream().filter(MethodInfo::isConstructor)
+                            .toList();
                     return constructors.size() == 1 && constructors.get(0).parametersCount() > 0;
                 })
                 .isAnnotatedWith(DotName.createSimple(CommandLine.Command.class.getName()))

@@ -26,6 +26,7 @@ public class GrpcCustomHttpRootPathTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addPackage(io.grpc.examples.helloworld.HelloWorldProto.class.getPackage())
                     .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,
                             HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))

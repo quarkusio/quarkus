@@ -113,7 +113,7 @@ public class SimpleRouteTest {
 
         @Route(path = "/body", methods = POST, consumes = "text/plain")
         void post(RoutingContext context) {
-            context.response().setStatusCode(200).end("Hello " + context.getBodyAsString() + "!");
+            context.response().setStatusCode(200).end("Hello " + context.body().asString() + "!");
         }
 
         @Route
@@ -153,7 +153,7 @@ public class SimpleRouteTest {
 
         @Route(path = "/hello-event-bus", methods = GET)
         void helloEventBus(RoutingExchange exchange) {
-            eventBus.request("hello", exchange.getParam("name").orElse("missing"), ar -> {
+            eventBus.request("hello", exchange.getParam("name").orElse("missing")).onComplete(ar -> {
                 if (ar.succeeded()) {
                     exchange.ok(ar.result().body().toString());
                 } else {

@@ -33,7 +33,7 @@ public abstract class BuildAotEnhancedImage extends QuarkusBuildTask {
 
     @TaskAction
     public void buildAotEnhancedImage() {
-        File buildDirectory = getProject().getLayout().getBuildDirectory().getAsFile().get();
+        File buildDirectory = buildDir;
         Path metadataFilePath = buildDirectory.toPath().resolve(QUARKUS_CONTAINER_IT_PROPERTIES);
 
         if (!Files.exists(metadataFilePath)) {
@@ -74,6 +74,7 @@ public abstract class BuildAotEnhancedImage extends QuarkusBuildTask {
         workQueue.submit(BuildAotEnhancedImageWorker.class, params -> {
             params.getBuildSystemProperties().putAll(buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
             params.getForkedSystemProperties().putAll(quarkusProperties);
+            params.getProcessIsolated().set(isWorkerProcessIsolated());
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDirectory);
             params.getAppModel().set(appModel);

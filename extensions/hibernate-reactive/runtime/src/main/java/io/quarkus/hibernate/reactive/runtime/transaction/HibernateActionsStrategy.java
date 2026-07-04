@@ -7,8 +7,11 @@ import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.reactive.transaction.runtime.ReactiveResource;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
@@ -17,7 +20,7 @@ public class HibernateActionsStrategy implements ReactiveResource {
 
     // This can be null if a method is annotated with @Transactional but doesn't inject a session
     private static Optional<String> getPersistenceUnitName(Context context) {
-        return Optional.ofNullable(context.getLocal(PERSISTENCE_UNIT_NAME_KEY));
+        return ContextLocals.get(PERSISTENCE_UNIT_NAME_KEY);
     }
 
     /**
@@ -46,9 +49,19 @@ public class HibernateActionsStrategy implements ReactiveResource {
                 .discardItems()).orElse(Uni.createFrom().voidItem())
                 .eventually(() -> {
                     // We want to make sure that we clear the state after the closing (and after the flushing) as well
-                    context.removeLocal(TRANSACTIONAL_METHOD_KEY);
-                    context.removeLocal(PERSISTENCE_UNIT_NAME_KEY);
+                    ContextLocals.remove(TRANSACTIONAL_METHOD_KEY);
+                    ContextLocals.remove(PERSISTENCE_UNIT_NAME_KEY);
                 });
 
+    }
+
+    @Override
+    public boolean isMarkedForRollback(Context context) {
+        Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
+        return optPersistenceUnitName.flatMap(s -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE
+                .currentTransaction(context, s)
+                .or(() -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.currentTransaction(context, s))
+                .map(Mutiny.Transaction::isMarkedForRollback))
+                .orElse(false);
     }
 }

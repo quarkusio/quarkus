@@ -31,6 +31,19 @@ public class FirstTest {
     }
 
     @Transactional
+    void flushManagedBlockingRepository() {
+        Assertions.assertEquals(0, MyEntity_.managedBlocking().count());
+
+        MyEntity.ManagedBlockingQueries repository = MyEntity_.managedBlockingQueries();
+        MyEntity entity = new MyEntity();
+        entity.foo = "flush";
+        repository.persist(entity);
+
+        Assertions.assertDoesNotThrow(repository::flush);
+        Assertions.assertEquals(1, repository.count());
+    }
+
+    @Transactional
     void modifyOne() {
         Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
 
@@ -151,6 +164,8 @@ public class FirstTest {
 
     @Test
     void testRepositories() {
+        clear();
+        flushManagedBlockingRepository();
         clear();
         createOne();
         modifyOne();

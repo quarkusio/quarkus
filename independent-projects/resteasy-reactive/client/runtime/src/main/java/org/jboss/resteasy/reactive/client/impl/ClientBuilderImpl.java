@@ -72,6 +72,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private boolean http2;
     private boolean alpn;
+    private boolean http3;
 
     // security settings
     private KeyStore keyStore;
@@ -177,6 +178,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilder alpn(boolean alpn) {
         this.alpn = alpn;
+        return this;
+    }
+
+    public ClientBuilder http3(boolean http3) {
+        this.http3 = http3;
         return this;
     }
 
@@ -358,7 +364,8 @@ public class ClientBuilderImpl extends ClientBuilder {
                 multiQueryParamMode,
                 loggingScope,
                 clientLogger, userAgent, tlsConfig != null ? tlsConfig.getName().orElse(null) : null,
-                clientRequestCustomizers);
+                clientRequestCustomizers,
+                http3);
 
     }
 
@@ -414,13 +421,13 @@ public class ClientBuilderImpl extends ClientBuilder {
                 JksOptions jks = new JksOptions();
                 jks.setValue(keyStore);
                 jks.setPassword(new String(keystorePassword));
-                options.setKeyStoreOptions(jks);
+                options.setKeyCertOptions(jks);
             }
             if (trustStore != null) {
                 JksOptions jks = new JksOptions();
                 jks.setValue(trustStore);
                 jks.setPassword(new String(effectiveTrustStorePassword));
-                options.setTrustStoreOptions(jks);
+                options.setTrustOptions(jks);
             }
         }
     }

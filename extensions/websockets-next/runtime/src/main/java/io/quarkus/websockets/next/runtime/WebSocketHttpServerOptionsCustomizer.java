@@ -5,38 +5,48 @@ import java.util.List;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
+import io.vertx.core.http.WebSocketServerConfig;
+import io.vertx.core.net.ServerSSLOptions;
 
 @Dependent
-public class WebSocketHttpServerOptionsCustomizer implements HttpServerOptionsCustomizer {
+public class WebSocketHttpServerOptionsCustomizer implements HttpServerConfigCustomizer {
 
     @Inject
     WebSocketsServerRuntimeConfig config;
 
     @Override
-    public void customizeHttpServer(HttpServerOptions options) {
-        customize(options);
+    public void customizeHttpServer(HttpServerConfig httpConfig) {
+        customize(httpConfig);
     }
 
     @Override
-    public void customizeHttpsServer(HttpServerOptions options) {
-        customize(options);
+    public void customizeHttpsServer(HttpServerConfig httpConfig, ServerSSLOptions sslOptions) {
+        customize(httpConfig);
     }
 
-    private void customize(HttpServerOptions options) {
-        config.supportedSubprotocols().orElse(List.of()).forEach(options::addWebSocketSubProtocol);
-        options.setPerMessageWebSocketCompressionSupported(config.perMessageCompressionSupported());
+    private void customize(HttpServerConfig httpConfig) {
+        WebSocketServerConfig wsConfig = httpConfig.getWebSocketConfig();
+        if (wsConfig == null) {
+            wsConfig = new WebSocketServerConfig();
+        }
+        List<String> subProtocols = config.supportedSubprotocols().orElse(List.of());
+        if (!subProtocols.isEmpty()) {
+            wsConfig.setSubProtocols(subProtocols);
+        }
+        wsConfig.setUsePerMessageCompression(config.perMessageCompressionSupported());
         if (config.compressionLevel().isPresent()) {
-            options.setWebSocketCompressionLevel(config.compressionLevel().getAsInt());
+            wsConfig.setCompressionLevel(config.compressionLevel().getAsInt());
         }
         if (config.maxMessageSize().isPresent()) {
-            options.setMaxWebSocketMessageSize(config.maxMessageSize().getAsInt());
+            wsConfig.setMaxMessageSize(config.maxMessageSize().getAsInt());
         }
         if (config.maxFrameSize().isPresent()) {
-            options.setMaxWebSocketFrameSize(config.maxFrameSize().getAsInt());
+            wsConfig.setMaxFrameSize(config.maxFrameSize().getAsInt());
         }
+        httpConfig.setWebSocketConfig(wsConfig);
     }
 
 }

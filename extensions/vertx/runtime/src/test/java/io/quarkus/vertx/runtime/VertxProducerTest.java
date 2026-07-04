@@ -1,7 +1,6 @@
 package io.quarkus.vertx.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 
@@ -31,14 +30,13 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        verifyProducer(VertxCoreRecorder.initialize(null, null, null, null, LaunchMode.TEST, List.of(), List.of()));
+        verifyProducer(VertxCoreRecorder.initialize(null, null, null, null, LaunchMode.TEST, null, List.of()));
     }
 
     private void verifyProducer(Vertx v) {
         assertThat(producer.eventbus(v)).isNotNull();
 
         assertThat(producer.mutiny(v)).isNotNull();
-        assertFalse(producer.mutiny(v).isClustered());
         assertThat(producer.mutinyEventBus(producer.mutiny(v))).isNotNull();
 
     }

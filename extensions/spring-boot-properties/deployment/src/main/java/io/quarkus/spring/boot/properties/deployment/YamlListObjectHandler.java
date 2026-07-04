@@ -1,5 +1,6 @@
 package io.quarkus.spring.boot.properties.deployment;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
@@ -19,12 +20,18 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.TypeArgument;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -50,7 +57,7 @@ class YamlListObjectHandler {
         this.reflectiveClasses = reflectiveClasses;
     }
 
-    public ResultHandle handle(Member member, MethodCreator configPopulator, ResultHandle configObject,
+    public Expr handle(Member member, BlockCreator bc, Expr configObject,
             String configName, String fullConfigName) {
         ClassInfo classInfo = validateType(member.type());
         validateClass(classInfo, member);
@@ -62,28 +69,14 @@ class YamlListObjectHandler {
 
         // generate a class that has a List field and getters and setter which have the proper generic type
         // this way SnakeYaml can properly populate the field
-        MethodDescriptor getterDesc;
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(wrapperClassName)
-                .build()) {
-            FieldDescriptor fieldDesc = cc.getFieldCreator(configName, List.class).setModifiers(Modifier.PRIVATE)
-                    .getFieldDescriptor();
+        String getterName = JavaBeanUtil.getGetterName(configName, classInfo.name());
+        MethodDesc getterDesc = generateWrapperClass(wrapperClassName, configName, classInfo, getterName);
 
-            MethodCreator getter = cc.getMethodCreator(JavaBeanUtil.getGetterName(configName, classInfo.name()), List.class);
-            getter.setSignature(String.format("()Ljava/util/List<L%s;>;", forSignature(classInfo)));
-            getterDesc = getter.getMethodDescriptor();
-            getter.returnValue(getter.readInstanceField(fieldDesc, getter.getThis()));
-
-            MethodCreator setter = cc.getMethodCreator(JavaBeanUtil.getSetterName(configName), void.class, List.class);
-            setter.setSignature(String.format("(Ljava/util/List<L%s;>;)V", forSignature(classInfo)));
-            setter.writeInstanceField(fieldDesc, setter.getThis(), setter.getMethodParam(0));
-            setter.returnValue(null);
-        }
         // we always generate getters and setters, so reflection is only needed on the methods
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(wrapperClassName).methods().build());
 
         // generate an MP-Config converter which looks something like this
-        // public class GeneratedInputsConverter extends io.quarkus.config.yaml.runtime.AbstractYamlObjectConverter<SomeClass_GeneratedListWrapper_fieldName> {
+        // public class GeneratedInputsConverter extends AbstractYamlObjectConverter<SomeClass_GeneratedListWrapper_fieldName> {
         //
         //     @Override
         //     Map<String, String> getFieldNameMap() {
@@ -98,15 +91,73 @@ class YamlListObjectHandler {
         //     }
         // }
         String wrapperConverterClassName = wrapperClassName + "_Converter";
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(wrapperConverterClassName)
-                .superClass(ABSTRACT_YAML_CONVERTER_CNAME)
-                .signature(
-                        String.format("L%s<L%s;>;", ABSTRACT_YAML_CONVERTER_CNAME.replace('.', '/'),
-                                wrapperClassName.replace('.', '/')))
-                .build()) {
-            MethodCreator getClazz = cc.getMethodCreator("getClazz", Class.class).setModifiers(Modifier.PROTECTED);
-            getClazz.returnValue(getClazz.loadClassFromTCCL(wrapperClassName));
+        generateConverterClass(wrapperConverterClassName, wrapperClassName, classInfo);
+
+        // use the generated converter to convert the string value into the wrapper
+        LocalVar smallryeConfig = bc.localVar("smallryeConfig", bc.cast(configObject, SmallRyeConfig.class));
+        LocalVar getValueHandle = bc.localVar("getValueHandle", bc.invokeVirtual(
+                MethodDesc.of(SmallRyeConfig.class, "getValue", Object.class, String.class, Converter.class),
+                smallryeConfig,
+                Const.of(fullConfigName),
+                bc.new_(ConstructorDesc.of(ClassDesc.of(wrapperConverterClassName)))));
+        LocalVar wrapperHandle = bc.localVar("wrapperHandle", bc.cast(getValueHandle, ClassDesc.of(wrapperClassName)));
+        //pull the actual value out of the wrapper
+        return bc.invokeVirtual(getterDesc, wrapperHandle);
+    }
+
+    private MethodDesc generateWrapperClass(String wrapperClassName, String configName, ClassInfo classInfo,
+            String getterName) {
+        Gizmo gizmo = Gizmo.create(classOutput);
+        ClassDesc wrapperClassDesc = ClassDesc.of(wrapperClassName);
+        ClassDesc elementClassDesc = ClassDesc.of(classInfo.name().toString());
+        GenericType listOfElement = GenericType.ofClass(List.class, TypeArgument.of(elementClassDesc));
+
+        gizmo.class_(wrapperClassName, cc -> {
+            cc.defaultConstructor();
+
+            FieldDesc fieldDesc = cc.field(configName, ifc -> {
+                ifc.setType(listOfElement);
+                ifc.private_();
+            });
+
+            cc.method(getterName, mc -> {
+                mc.returning(listOfElement);
+                mc.public_();
+                mc.body(b -> {
+                    b.return_(b.get(mc.this_().field(fieldDesc)));
+                });
+            });
+
+            cc.method(JavaBeanUtil.getSetterName(configName), mc -> {
+                mc.returning(void.class);
+                mc.public_();
+                var param = mc.parameter("value", listOfElement);
+                mc.body(b -> {
+                    b.set(mc.this_().field(fieldDesc), param);
+                    b.return_();
+                });
+            });
+        });
+
+        return ClassMethodDesc.of(wrapperClassDesc, getterName, List.class);
+    }
+
+    private void generateConverterClass(String wrapperConverterClassName, String wrapperClassName, ClassInfo classInfo) {
+        Gizmo gizmo = Gizmo.create(classOutput);
+        ClassDesc wrapperClassDesc = ClassDesc.of(wrapperClassName);
+        gizmo.class_(wrapperConverterClassName, cc -> {
+            cc.extends_(GenericType.ofClass(ClassDesc.of(ABSTRACT_YAML_CONVERTER_CNAME),
+                    TypeArgument.of(wrapperClassDesc)));
+
+            cc.defaultConstructor();
+
+            cc.method("getClazz", mc -> {
+                mc.returning(Class.class);
+                mc.protected_();
+                mc.body(b -> {
+                    b.return_(b.classForName(Const.of(wrapperClassName)));
+                });
+            });
 
             // generate the getFieldNameMap method by searching for fields annotated with @ConfigProperty
             List<AnnotationInstance> configPropertyInstances = classInfo.annotationsMap().get(DotNames.CONFIG_PROPERTY);
@@ -127,28 +178,22 @@ class YamlListObjectHandler {
                 }
             }
             if (!fieldNameMap.isEmpty()) {
-                MethodCreator getFieldNameMap = cc.getMethodCreator("getFieldNameMap", Map.class);
-                ResultHandle resultHandle = getFieldNameMap.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-                for (Map.Entry<String, String> entry : fieldNameMap.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey()).toList()) {
-                    getFieldNameMap.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
-                            resultHandle, getFieldNameMap.load(entry.getKey()), getFieldNameMap.load(entry.getValue()));
-                }
-                getFieldNameMap.returnValue(resultHandle);
+                cc.method("getFieldNameMap", mc -> {
+                    mc.returning(Map.class);
+                    mc.public_();
+                    mc.body(b -> {
+                        LocalVar resultHandle = b.localVar("resultHandle", b.new_(ConstructorDesc.of(HashMap.class)));
+                        for (Map.Entry<String, String> entry : fieldNameMap.entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey()).toList()) {
+                            b.invokeVirtual(
+                                    MethodDesc.of(HashMap.class, "put", Object.class, Object.class, Object.class),
+                                    resultHandle, Const.of(entry.getKey()), Const.of(entry.getValue()));
+                        }
+                        b.return_(resultHandle);
+                    });
+                });
             }
-        }
-
-        // use the generated converter to convert the string value into the wrapper
-        ResultHandle smallryeConfig = configPopulator.checkCast(configObject, SmallRyeConfig.class);
-        ResultHandle getValueHandle = configPopulator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class, String.class, Converter.class),
-                smallryeConfig,
-                configPopulator.load(fullConfigName),
-                configPopulator.newInstance(MethodDescriptor.ofConstructor(wrapperConverterClassName)));
-        ResultHandle wrapperHandle = configPopulator.checkCast(getValueHandle, wrapperClassName);
-        //pull the actual value out of the wrapper
-        return configPopulator.invokeVirtualMethod(getterDesc, wrapperHandle);
+        });
     }
 
     private void validateClass(ClassInfo classInfo, Member member) {
@@ -185,10 +230,6 @@ class YamlListObjectHandler {
             throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE);
         }
         return classInfo;
-    }
-
-    private String forSignature(ClassInfo classInfo) {
-        return classInfo.name().toString().replace('.', '/');
     }
 
     /**

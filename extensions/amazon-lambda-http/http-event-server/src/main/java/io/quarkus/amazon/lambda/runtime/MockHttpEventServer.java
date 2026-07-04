@@ -50,7 +50,7 @@ public class MockHttpEventServer extends MockEventServer {
             traceId = UUID.randomUUID().toString();
         }
         ctx.put(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY, traceId);
-        Buffer body = ctx.getBody();
+        Buffer body = ctx.body().buffer();
 
         APIGatewayV2HTTPEvent event = new APIGatewayV2HTTPEvent();
         event.setRequestContext(new APIGatewayV2HTTPEvent.RequestContext());

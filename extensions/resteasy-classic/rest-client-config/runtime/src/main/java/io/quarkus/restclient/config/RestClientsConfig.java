@@ -314,6 +314,15 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
+     * If this is true then HTTP/3 will be enabled.
+     * The target server must support HTTP/3 and the connection must use TLS.
+     * <p>
+     * This property is not applicable to the RESTEasy Classic Client.
+     */
+    @WithDefault("false")
+    boolean http3();
+
+    /**
      * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
      * <p>
      * This property is not applicable to the RESTEasy Client.
@@ -717,6 +726,14 @@ public interface RestClientsConfig {
          * If this is true then HTTP/2 will be enabled.
          */
         Optional<Boolean> http2();
+
+        /**
+         * If this is true then HTTP/3 will be enabled.
+         * The target server must support HTTP/3 and the connection must use TLS.
+         * <p>
+         * This property is not applicable to the RESTEasy Classic Client.
+         */
+        Optional<Boolean> http3();
 
         /**
          * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.

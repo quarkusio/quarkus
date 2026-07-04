@@ -10,7 +10,7 @@ public class MutinyAsyncVerticle extends AbstractVerticle {
         String address = config().getString("id");
         return vertx.eventBus().consumer(address)
                 .handler(message -> message.reply("OK-" + address))
-                .completionHandler();
+                .completion();
     }
 
 }

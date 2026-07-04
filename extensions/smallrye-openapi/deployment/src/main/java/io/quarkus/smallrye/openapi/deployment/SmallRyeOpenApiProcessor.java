@@ -48,7 +48,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.Operation;
+import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.Paths;
+import org.eclipse.microprofile.openapi.models.media.Content;
+import org.eclipse.microprofile.openapi.models.parameters.Parameter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -90,6 +95,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -126,7 +132,9 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.WebDependencyJarBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
@@ -1658,5 +1666,351 @@ public class SmallRyeOpenApiProcessor {
 
         IndexView getIndex();
 
+    }
+
+    @BuildStep
+    void generateRestJsClient(
+            SmallRyeOpenApiConfig openApiConfig,
+            List<OpenApiDocumentBuildItem> openApiDocuments,
+            BuildProducer<GeneratedStaticResourceBuildItem> staticResourceProducer) {
+
+        if (!openApiConfig.jsClient().enabled()) {
+            return;
+        }
+
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        for (String resource : List.of("rest/rest-client.js", "rest/rest-client.d.ts")) {
+            try (InputStream is = tccl.getResourceAsStream(resource)) {
+                if (is == null) {
+                    throw new IllegalStateException(resource + " not found on classpath");
+                }
+                String fileName = resource.substring(resource.lastIndexOf('/') + 1);
+                staticResourceProducer.produce(
+                        new GeneratedStaticResourceBuildItem(
+                                "/_static/quarkus-rest/" + fileName,
+                                IoUtil.readBytes(is)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        for (OpenApiDocumentBuildItem doc : openApiDocuments) {
+            if (!doc.isDefaultDocument()) {
+                continue;
+            }
+            OpenAPI model = doc.getSmallRyeOpenAPI().model();
+            String proxyJs = generateRestProxy(model);
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-rest-api/rest-api.js",
+                            proxyJs.getBytes(StandardCharsets.UTF_8)));
+            String proxyDts = generateRestProxyDts(model);
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-rest-api/rest-api.d.ts",
+                            proxyDts.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
+    @BuildStep
+    void registerRestWebDependency(
+            SmallRyeOpenApiConfig openApiConfig,
+            CurateOutcomeBuildItem curateOutcome,
+            BuildProducer<WebDependencyJarBuildItem> webDependencyProducer) {
+
+        if (!openApiConfig.jsClient().enabled()) {
+            return;
+        }
+
+        curateOutcome.getApplicationModel().getDependencies().stream()
+                .filter(dep -> dep.getGroupId().equals("io.quarkus")
+                        && dep.getArtifactId().equals("quarkus-smallrye-openapi"))
+                .findFirst()
+                .ifPresent(dep -> webDependencyProducer.produce(new WebDependencyJarBuildItem(
+                        dep.getKey(),
+                        dep.getResolvedPaths().getSinglePath(),
+                        Map.of(
+                                "@quarkus/rest", "/_static/quarkus-rest/rest-client.js",
+                                "@quarkus/rest/", "/_static/quarkus-rest/",
+                                "@quarkus/rest-api", "/_static/quarkus-rest-api/rest-api.js",
+                                "@quarkus/rest-api/", "/_static/quarkus-rest-api/"))));
+    }
+
+    private String generateRestProxy(OpenAPI model) {
+        StringBuilder js = new StringBuilder();
+        js.append("import { RestClient } from '@quarkus/rest';\n\n");
+        js.append("export const client = new RestClient();\n\n");
+
+        Paths paths = model.getPaths();
+        if (paths == null || paths.getPathItems() == null) {
+            return js.toString();
+        }
+
+        Map<String, List<OperationEntry>> byTag = new java.util.TreeMap<>();
+
+        for (Map.Entry<String, PathItem> pathEntry : paths.getPathItems().entrySet()) {
+            String path = pathEntry.getKey();
+            PathItem pathItem = pathEntry.getValue();
+            if (pathItem.getOperations() == null) {
+                continue;
+            }
+            for (Map.Entry<PathItem.HttpMethod, Operation> opEntry : pathItem.getOperations().entrySet()) {
+                PathItem.HttpMethod httpMethod = opEntry.getKey();
+                Operation op = opEntry.getValue();
+
+                String functionName = op.getOperationId();
+                if (functionName == null || functionName.isEmpty()) {
+                    functionName = httpMethod.name().toLowerCase()
+                            + sanitizePath(path);
+                }
+
+                String tag = "Default";
+                if (op.getTags() != null && !op.getTags().isEmpty()) {
+                    tag = op.getTags().get(0);
+                }
+
+                byTag.computeIfAbsent(tag, k -> new ArrayList<>())
+                        .add(new OperationEntry(functionName, httpMethod, path, op));
+            }
+        }
+
+        for (Map.Entry<String, List<OperationEntry>> tagEntry : byTag.entrySet()) {
+            String tag = sanitizeIdentifier(tagEntry.getKey());
+            List<OperationEntry> ops = tagEntry.getValue();
+            ops.sort(Comparator.comparing(e -> e.functionName));
+
+            js.append("export const ").append(tag).append(" = {\n");
+            for (int i = 0; i < ops.size(); i++) {
+                OperationEntry entry = ops.get(i);
+                generateOperationFunction(js, entry);
+                if (i < ops.size() - 1) {
+                    js.append(",");
+                }
+                js.append("\n");
+            }
+            js.append("};\n\n");
+        }
+
+        return js.toString();
+    }
+
+    private void generateOperationFunction(StringBuilder js, OperationEntry entry) {
+        Operation op = entry.operation;
+        String method = entry.httpMethod.name();
+
+        List<String> pathParamNames = new ArrayList<>();
+        List<String> queryParamNames = new ArrayList<>();
+        List<String> headerParamNames = new ArrayList<>();
+        List<String> cookieParamNames = new ArrayList<>();
+
+        if (op.getParameters() != null) {
+            for (Parameter param : op.getParameters()) {
+                if (param.getIn() == null || param.getName() == null) {
+                    continue;
+                }
+                switch (param.getIn()) {
+                    case PATH -> pathParamNames.add(param.getName());
+                    case QUERY -> queryParamNames.add(param.getName());
+                    case HEADER -> headerParamNames.add(param.getName());
+                    case COOKIE -> cookieParamNames.add(param.getName());
+                }
+            }
+        }
+
+        boolean hasBody = op.getRequestBody() != null;
+        String consumesType = null;
+        if (hasBody && op.getRequestBody().getContent() != null) {
+            Content content = op.getRequestBody().getContent();
+            if (content.getMediaTypes() != null && !content.getMediaTypes().isEmpty()) {
+                consumesType = content.getMediaTypes().keySet().iterator().next();
+            }
+        }
+
+        String producesType = null;
+        if (op.getResponses() != null) {
+            var successResp = op.getResponses().getAPIResponse("200");
+            if (successResp == null) {
+                successResp = op.getResponses().getAPIResponse("201");
+            }
+            if (successResp != null && successResp.getContent() != null
+                    && successResp.getContent().getMediaTypes() != null
+                    && !successResp.getContent().getMediaTypes().isEmpty()) {
+                producesType = successResp.getContent().getMediaTypes().keySet().iterator().next();
+            }
+        }
+
+        List<String> allParamNames = new ArrayList<>();
+        if (hasBody) {
+            allParamNames.add("body");
+        }
+        allParamNames.addAll(pathParamNames);
+        allParamNames.addAll(queryParamNames);
+        allParamNames.addAll(headerParamNames);
+        allParamNames.addAll(cookieParamNames);
+
+        js.append("    ").append(escapeJsIdentifier(entry.functionName)).append(": (");
+        if (!allParamNames.isEmpty()) {
+            js.append("{ ");
+            js.append(String.join(", ", allParamNames));
+            js.append(" } = {}");
+        }
+        js.append(") => client.request('").append(method).append("', '")
+                .append(escapeJs(entry.path)).append("', { ");
+
+        List<String> opts = new ArrayList<>();
+        if (!pathParamNames.isEmpty()) {
+            opts.add("pathParams: { " + String.join(", ", pathParamNames) + " }");
+        }
+        if (!queryParamNames.isEmpty()) {
+            opts.add("queryParams: { " + String.join(", ", queryParamNames) + " }");
+        }
+        if (!headerParamNames.isEmpty()) {
+            opts.add("headerParams: { " + String.join(", ", headerParamNames) + " }");
+        }
+        if (!cookieParamNames.isEmpty()) {
+            opts.add("cookieParams: { " + String.join(", ", cookieParamNames) + " }");
+        }
+        if (hasBody) {
+            opts.add("body");
+        }
+        if (consumesType != null && !"application/json".equals(consumesType)) {
+            opts.add("contentType: '" + escapeJs(consumesType) + "'");
+        }
+        if (producesType != null && !"application/json".equals(producesType)) {
+            opts.add("accept: '" + escapeJs(producesType) + "'");
+        }
+
+        js.append(String.join(", ", opts));
+        js.append(" })");
+    }
+
+    private String generateRestProxyDts(OpenAPI model) {
+        StringBuilder dts = new StringBuilder();
+        dts.append("import { RestClient } from '@quarkus/rest';\n\n");
+        dts.append("export declare const client: RestClient;\n\n");
+
+        Paths paths = model.getPaths();
+        if (paths == null || paths.getPathItems() == null) {
+            return dts.toString();
+        }
+
+        Map<String, List<OperationEntry>> byTag = new java.util.TreeMap<>();
+
+        for (Map.Entry<String, PathItem> pathEntry : paths.getPathItems().entrySet()) {
+            String path = pathEntry.getKey();
+            PathItem pathItem = pathEntry.getValue();
+            if (pathItem.getOperations() == null) {
+                continue;
+            }
+            for (Map.Entry<PathItem.HttpMethod, Operation> opEntry : pathItem.getOperations().entrySet()) {
+                PathItem.HttpMethod httpMethod = opEntry.getKey();
+                Operation op = opEntry.getValue();
+
+                String functionName = op.getOperationId();
+                if (functionName == null || functionName.isEmpty()) {
+                    functionName = httpMethod.name().toLowerCase()
+                            + sanitizePath(path);
+                }
+
+                String tag = "Default";
+                if (op.getTags() != null && !op.getTags().isEmpty()) {
+                    tag = op.getTags().get(0);
+                }
+
+                byTag.computeIfAbsent(tag, k -> new ArrayList<>())
+                        .add(new OperationEntry(functionName, httpMethod, path, op));
+            }
+        }
+
+        for (Map.Entry<String, List<OperationEntry>> tagEntry : byTag.entrySet()) {
+            String tag = sanitizeIdentifier(tagEntry.getKey());
+            List<OperationEntry> ops = tagEntry.getValue();
+            ops.sort(Comparator.comparing(e -> e.functionName));
+
+            dts.append("export declare const ").append(tag).append(": {\n");
+            for (OperationEntry entry : ops) {
+                generateOperationDts(dts, entry);
+            }
+            dts.append("};\n\n");
+        }
+
+        return dts.toString();
+    }
+
+    private void generateOperationDts(StringBuilder dts, OperationEntry entry) {
+        Operation op = entry.operation;
+
+        List<String> paramFields = new ArrayList<>();
+
+        if (op.getRequestBody() != null) {
+            paramFields.add("body?: unknown");
+        }
+
+        if (op.getParameters() != null) {
+            for (Parameter param : op.getParameters()) {
+                if (param.getIn() == null || param.getName() == null) {
+                    continue;
+                }
+                String tsType = param.getIn() == Parameter.In.PATH ? "string | number" : "string";
+                boolean required = param.getIn() == Parameter.In.PATH;
+                paramFields.add(param.getName() + (required ? "" : "?") + ": " + tsType);
+            }
+        }
+
+        dts.append("    ").append(escapeJsIdentifier(entry.functionName)).append(": (");
+        if (!paramFields.isEmpty()) {
+            dts.append("params: { ");
+            dts.append(String.join("; ", paramFields));
+            dts.append(" }");
+        }
+        dts.append(") => Promise<unknown>;\n");
+    }
+
+    static String sanitizePath(String path) {
+        StringBuilder sb = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char c : path.toCharArray()) {
+            if (c == '/' || c == '{' || c == '}' || c == '-' || c == '_' || c == '.') {
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                sb.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    static String sanitizeIdentifier(String name) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (sb.isEmpty() ? Character.isJavaIdentifierStart(c) : Character.isJavaIdentifierPart(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.isEmpty() ? "Default" : sb.toString();
+    }
+
+    static String escapeJsIdentifier(String name) {
+        if (name == null || name.isEmpty()) {
+            return "unnamed";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (sb.isEmpty() ? Character.isJavaIdentifierStart(c) : Character.isJavaIdentifierPart(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.isEmpty() ? "unnamed" : sb.toString();
+    }
+
+    static String escapeJs(String value) {
+        return value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private record OperationEntry(String functionName, PathItem.HttpMethod httpMethod, String path, Operation operation) {
     }
 }

@@ -8,8 +8,8 @@ import java.lang.reflect.Type;
 import io.quarkus.redis.datasource.bloom.BfInsertArgs;
 import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
 

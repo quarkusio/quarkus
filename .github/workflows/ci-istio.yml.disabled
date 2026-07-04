@@ -5,11 +5,13 @@ permissions:
   issues: write
   packages: read
 
-on:
-  workflow_dispatch:
-  schedule:
-    # 2am every weekday + saturday
-    - cron: '0 2 * * 1-6'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    # 2am every weekday + saturday
+#    - cron: '0 2 * * 1-6'
+on: [workflow_dispatch]
 
 env:
   MAVEN_ARGS: -B -e

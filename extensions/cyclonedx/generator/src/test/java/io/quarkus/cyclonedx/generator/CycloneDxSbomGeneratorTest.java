@@ -169,6 +169,38 @@ class CycloneDxSbomGeneratorTest {
     }
 
     @Test
+    void leafComponentsHaveDependencyEntries() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        ComponentDescriptor jsTokens = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "js-tokens", "4.0.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.of(
+                List.of(react, jsTokens),
+                List.of(ComponentDependencies.of(
+                        react.getBomRef(),
+                        List.of(jsTokens.getBomRef()))));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        // js-tokens is a leaf with no dependencies of its own,
+        // but it should still have an entry in the dependency graph
+        assertThat(bom.getDependencies())
+                .extracting(Dependency::getRef)
+                .contains(react.getBomRef(), jsTokens.getBomRef());
+
+        Dependency jsTokensDep = bom.getDependencies().stream()
+                .filter(d -> d.getRef().equals(jsTokens.getBomRef()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(jsTokensDep.getDependencies()).isNullOrEmpty();
+    }
+
+    @Test
     void serialNumberIsDeterministicWithOutputTimestamp() {
         Instant timestamp = Instant.parse("2025-01-15T10:00:00Z");
         ComponentDescriptor react = ComponentDescriptor.builder()
@@ -232,6 +264,40 @@ class CycloneDxSbomGeneratorTest {
         assertThat(bom.getSerialNumber())
                 .isNotNull()
                 .startsWith("urn:uuid:");
+    }
+
+    @Test
+    void nestedComponentsRenderedAsBundledComponents() {
+        ComponentDescriptor nested = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.bundled", "bundled-dep", "2.0.0", "jar", null))
+                .setBomRef("pkg:maven/org.bundled/bundled-dep@2.0.0?type=jar#bundled")
+                .build();
+
+        ComponentDescriptor parent = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("com.example", "shaded-lib", "1.0.0", "jar", null))
+                .addComponent(nested)
+                .build();
+
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(parent));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        org.cyclonedx.model.Component parentComp = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("shaded-lib"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(parentComp.getComponents())
+                .as("Parent should contain nested bundled component")
+                .hasSize(1);
+
+        org.cyclonedx.model.Component nestedComp = parentComp.getComponents().get(0);
+        assertThat(nestedComp.getName()).isEqualTo("bundled-dep");
+        assertThat(nestedComp.getGroup()).isEqualTo("org.bundled");
+        assertThat(nestedComp.getVersion()).isEqualTo("2.0.0");
     }
 
     private static Bom parseBom(String json) {

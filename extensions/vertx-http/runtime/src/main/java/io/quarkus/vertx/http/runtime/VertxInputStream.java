@@ -18,6 +18,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -46,7 +47,7 @@ public class VertxInputStream extends InputStream {
         }
     }
 
-    public VertxInputStream(RoutingContext request, long timeout, ByteBuf existing) {
+    public VertxInputStream(RoutingContext request, long timeout, Buffer existing) {
         this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
@@ -54,7 +55,7 @@ public class VertxInputStream extends InputStream {
         } else {
             limit = limitObj;
         }
-        this.pooled = existing;
+        this.pooled = ((BufferInternal) existing).getByteBuf();
     }
 
     @Override
@@ -201,13 +202,13 @@ public class VertxInputStream extends InputStream {
                             synchronized (connection) {
                                 readException = new IOException(event);
                                 if (input1 != null) {
-                                    input1.getByteBuf().release();
+                                    ((BufferInternal) input1).getByteBuf().release();
                                     input1 = null;
                                 }
                                 if (inputOverflow != null) {
                                     Buffer d = inputOverflow.poll();
                                     while (d != null) {
-                                        d.getByteBuf().release();
+                                        ((BufferInternal) d).getByteBuf().release();
                                         d = inputOverflow.poll();
                                     }
                                 }
@@ -264,7 +265,7 @@ public class VertxInputStream extends InputStream {
                 } else if (!eof) {
                     request.fetch(1);
                 }
-                return ret == null ? null : ret.getByteBuf();
+                return ret == null ? null : ((BufferInternal) ret).getByteBuf();
             }
         }
 
@@ -295,7 +296,7 @@ public class VertxInputStream extends InputStream {
 
         public int readBytesAvailable() {
             if (input1 != null) {
-                return input1.getByteBuf().readableBytes();
+                return ((BufferInternal) input1).getByteBuf().readableBytes();
             }
 
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);

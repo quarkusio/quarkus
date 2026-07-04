@@ -85,8 +85,8 @@ quarkus:
       url: jdbc:postgresql://localhost:5432/quarkus_test
 
   hibernate-orm:
-    database:
-      generation: drop-and-create
+    schema-management:
+      strategy: create
 
   oidc:
     enabled: true

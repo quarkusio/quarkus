@@ -9,7 +9,7 @@ import io.quarkus.redis.datasource.bloom.BfInsertArgs;
 import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveBloomCommandsImpl<K, V> extends AbstractBloomCommands<K, V>
         implements ReactiveBloomCommands<K, V> {

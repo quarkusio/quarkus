@@ -25,11 +25,8 @@ import graphql.GraphqlErrorBuilder;
 import graphql.execution.AbortExecutionException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.graphql.execution.ExecutionResponse;
 import io.smallrye.graphql.execution.ExecutionResponseWriter;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -68,12 +65,6 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
     @Override
     protected void doHandle(final RoutingContext ctx) {
-        // Install a per-request TaskQueue on the Vert.x context
-        Context vc = Vertx.currentContext();
-        if (vc != null && VertxContext.isDuplicatedContext(vc)) {
-            RequestScopedTaskQueue.installIfAbsent(vc);
-        }
-
         HttpServerRequest request = ctx.request();
         HttpServerResponse response = ctx.response();
 

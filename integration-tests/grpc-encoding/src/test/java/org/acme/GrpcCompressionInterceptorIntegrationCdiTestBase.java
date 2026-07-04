@@ -21,6 +21,6 @@ class GrpcCompressionInterceptorIntegrationCdiTestBase extends GrpcCompressionIn
 
     @Override
     protected int getPort() {
-        return configuration.server().useSeparateServer() ? 9001 : 8081;
+        return 8081;
     }
 }

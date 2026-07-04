@@ -1281,6 +1281,20 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void objectNode_shouldPreserveFieldNames() {
+        given()
+                .body("{\"name\":\"\",\"limit\":42}")
+                .contentType("application/json")
+                .when()
+                .post("/simple/object-node")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", is(""))
+                .body("limit", is(42));
+    }
+
+    @Test
     void sensor_metadata_shouldDeserialize() {
         given()
                 .when()

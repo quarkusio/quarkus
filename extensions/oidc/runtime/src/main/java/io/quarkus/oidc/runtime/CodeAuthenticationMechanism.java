@@ -99,7 +99,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
-        final Map<String, Cookie> cookies = context.request().cookieMap();
+        final Map<String, Cookie> cookies = OidcUtils.cookieSetToMap(context.request().cookies());
         final String sessionCookieValue = OidcUtils.getSessionCookie(context.data(), cookies, oidcTenantConfig);
 
         // If the session is already established then try to re-authenticate
@@ -210,7 +210,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String error = requestParams.get(OidcConstants.CODE_FLOW_ERROR);
             String errorDescription = requestParams.get(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
 
-            LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
+            LOG.warnf("Authentication has failed, error: %s, description: %s", error, errorDescription);
 
             if (oidcTenantConfig.authentication().errorPath().isPresent()) {
                 Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
@@ -288,7 +288,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             MultiMap queries = redirectContext.additionalQueryParams();
             if (!queries.isEmpty()) {
-                String encoded = OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(queries)).toString();
+                String encoded = OidcCommonUtils.encodeForm(queries).toString();
                 String sep = redirectUri.lastIndexOf("?") > 0 ? AMP : QUESTION_MARK;
                 redirectUri += (sep + encoded);
             }
@@ -343,7 +343,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String getRequestParametersAsQuery(RoutingContext context, MultiMap requestParams, OidcTenantConfig oidcConfig) {
         if (ResponseMode.FORM_POST == oidcConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
-            return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
+            return OidcCommonUtils.encodeForm(requestParams).toString();
         } else {
             return context.request().query();
         }
@@ -1509,7 +1509,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.debugf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
+                                            LOG.warnf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
                                             return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });

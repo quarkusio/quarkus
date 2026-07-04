@@ -94,15 +94,20 @@ annotationProcessor 'org.hibernate.orm:hibernate-processor'
 
 TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[supported JDBC drivers].
 
-Make sure you configure your datasource in your `application.properties` (although you don't have to in DEV
-mode: if you don't, a dev service will be provided for you):
+Add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
+.Example `{config-file}`
 ----
+quarkus.datasource.db-kind = postgresql <1>
+
 %prod.quarkus.datasource.username = hibernate
 %prod.quarkus.datasource.password = hibernate
 %prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 == Our first entity
 

@@ -15,10 +15,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -178,9 +180,9 @@ public class VertxInputStream extends InputStream {
         public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
             this.timeout = timeout;
-            final ConnectionBase connection = (ConnectionBase) request.connection();
+            final HttpConnection connection = request.connection();
             synchronized (connection) {
-                if (!connection.channel().isOpen()) {
+                if (connection instanceof ConnectionBase cb && !cb.channel().isOpen()) {
                     readException = new ClosedChannelException();
                 } else if (!request.isEnded()) {
                     request.pause();
@@ -202,13 +204,13 @@ public class VertxInputStream extends InputStream {
                             synchronized (connection) {
                                 readException = new IOException(event);
                                 if (input1 != null) {
-                                    input1.getByteBuf().release();
+                                    ((BufferInternal) input1).getByteBuf().release();
                                     input1 = null;
                                 }
                                 if (inputOverflow != null) {
                                     Buffer d = inputOverflow.poll();
                                     while (d != null) {
-                                        d.getByteBuf().release();
+                                        ((BufferInternal) d).getByteBuf().release();
                                         d = inputOverflow.poll();
                                     }
                                 }
@@ -265,15 +267,16 @@ public class VertxInputStream extends InputStream {
                 } else if (!eof) {
                     request.fetch(1);
                 }
-                return ret == null ? null : ret.getByteBuf();
+                return ret == null ? null : ((BufferInternal) ret).getByteBuf();
             }
         }
 
         @Override
         public void handle(Buffer event) {
             synchronized (request.connection()) {
-                if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
-                    // When using HTTP/2 H2, this indicates that we won't receive anymore data.
+                if (event.length() == 0
+                        && (request.version() == HttpVersion.HTTP_2 || request.version() == HttpVersion.HTTP_3)) {
+                    // When using HTTP/2 or HTTP/3, this indicates that we won't receive anymore data.
                     eof = true;
                     if (waiting) {
                         request.connection().notifyAll();
@@ -296,7 +299,7 @@ public class VertxInputStream extends InputStream {
 
         public int readBytesAvailable() {
             if (input1 != null) {
-                return input1.getByteBuf().readableBytes();
+                return ((BufferInternal) input1).getByteBuf().readableBytes();
             }
 
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);

@@ -36,7 +36,7 @@ public interface SmallRyeGraphQLRuntimeConfig {
      * This configuration item allows you to define comma-separated list of patterns (GraphQLType.GraphQLField).
      * These patterns are used to determine which fields should be excluded from the schema.
      * Special value {@code no-introspection} will disable introspection fields.
-     * For more info see <a href="https://smallrye.io/smallrye-graphql/docs/schema/field-visibility">graphql-java
+     * For more info see <a href="https://www.graphql-java.com/documentation/field-visibility/">graphql-java
      * documentation</a>
      */
     @WithDefault("default")

@@ -22,7 +22,7 @@ class CountriesResource(private val json: Json) {
         router.route("/call-country").blockingHandler { rc: RoutingContext ->
             val client =
                 RestClientBuilder.newBuilder()
-                    .baseUri(URI.create(rc.body.toString()))
+                    .baseUri(URI.create(rc.body().asString()))
                     .build(CountriesClient::class.java)
             val result =
                 client.country(
@@ -39,7 +39,7 @@ class CountriesResource(private val json: Json) {
         router.route("/call-not-found-countries").blockingHandler { rc: RoutingContext ->
             val client =
                 RestClientBuilder.newBuilder()
-                    .baseUri(URI.create(rc.body.toString()))
+                    .baseUri(URI.create(rc.body().asString()))
                     .build(CountriesClient::class.java)
             try {
                 client.notFoundCountries()
@@ -50,7 +50,7 @@ class CountriesResource(private val json: Json) {
         }
 
         router.route("/country").blockingHandler { rc: RoutingContext ->
-            val body = json.decodeFromString<Country>(rc.bodyAsString)
+            val body = json.decodeFromString<Country>(rc.body().asString())
             body.capital = "Sthlm"
 
             rc.response()
@@ -61,7 +61,7 @@ class CountriesResource(private val json: Json) {
         router.route("/call-countries").blockingHandler { rc: RoutingContext ->
             val client =
                 RestClientBuilder.newBuilder()
-                    .baseUri(URI.create(rc.body.toString()))
+                    .baseUri(URI.create(rc.body().asString()))
                     .build(CountriesClient::class.java)
             rc.response().setStatusCode(200).end("OK")
         }

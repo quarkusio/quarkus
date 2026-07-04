@@ -10,6 +10,9 @@ public class OpenedSessionsStateStatelessImpl extends OpenedSessionsState<Mutiny
         return sessionFactory.createStatelessSession();
     }
 
+    public OpenedSessionsStateStatelessImpl() {
+    }
+
     @Override
     protected Class<Mutiny.StatelessSession> getSessionType() {
         return Mutiny.StatelessSession.class;
@@ -23,5 +26,10 @@ public class OpenedSessionsStateStatelessImpl extends OpenedSessionsState<Mutiny
     @Override
     protected Uni<Void> flushSession(Mutiny.StatelessSession session) {
         return Uni.createFrom().voidItem();
+    }
+
+    @Override
+    protected Mutiny.Transaction currentTransaction(Mutiny.StatelessSession session) {
+        return session.currentTransaction();
     }
 }

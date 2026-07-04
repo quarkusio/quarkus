@@ -4,42 +4,44 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.ClassInfo;
 
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 class ResponseStatusOnExceptionGenerator extends AbstractExceptionMapperGenerator {
 
     private final ClassInfo exceptionClassInfo;
 
-    ResponseStatusOnExceptionGenerator(ClassInfo exceptionClassInfo, ClassOutput classOutput, boolean isResteasyClassic) {
+    ResponseStatusOnExceptionGenerator(ClassInfo exceptionClassInfo, ClassOutput classOutput,
+            boolean isResteasyClassic) {
         super(exceptionClassInfo.name(), classOutput, isResteasyClassic);
         this.exceptionClassInfo = exceptionClassInfo;
     }
 
-    void generateMethodBody(MethodCreator toResponse) {
-        ResultHandle status = toResponse
-                .load(getHttpStatusFromAnnotation(exceptionClassInfo.declaredAnnotation(RESPONSE_STATUS)));
-        ResultHandle responseBuilder = toResponse.invokeStaticMethod(
-                MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                status);
-        ResultHandle exceptionMessage = toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Throwable.class, "getMessage", String.class),
-                toResponse.getMethodParam(0));
-        toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,
+    void generateMethodBody(BlockCreator bc, Expr thisRef, Expr exceptionParam) {
+        Expr status = Const.of(getHttpStatusFromAnnotation(exceptionClassInfo.declaredAnnotation(RESPONSE_STATUS)));
+        LocalVar responseBuilder = bc.localVar("responseBuilder", bc.invokeStatic(
+                MethodDesc.of(Response.class, "status", Response.ResponseBuilder.class, int.class),
+                status));
+        Expr exceptionMessage = bc.invokeVirtual(
+                MethodDesc.of(Throwable.class, "getMessage", String.class),
+                exceptionParam);
+        bc.invokeVirtual(
+                MethodDesc.of(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,
                         Object.class),
                 responseBuilder, exceptionMessage);
-        ResultHandle httpResponseType = toResponse.load("text/plain");
-        toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
+        Expr httpResponseType = Const.of("text/plain");
+        bc.invokeVirtual(
+                MethodDesc.of(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
                         String.class),
                 responseBuilder, httpResponseType);
 
-        ResultHandle response = toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class),
+        Expr response = bc.invokeVirtual(
+                MethodDesc.of(Response.ResponseBuilder.class, "build", Response.class),
                 responseBuilder);
-        toResponse.returnValue(response);
+        bc.return_(response);
     }
 }

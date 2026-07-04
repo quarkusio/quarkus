@@ -16,11 +16,11 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.keystores.ExpiryTrustOptions;
 import io.smallrye.reactive.messaging.ClientCustomizer;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
-import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 @ApplicationScoped
@@ -39,7 +39,7 @@ public class PulsarClientConfigCustomizer implements ClientCustomizer<ClientBuil
             Optional<TlsConfiguration> maybeTlsConfig = tlsRegistry.get(tlsConfig);
             if (maybeTlsConfig.isPresent()) {
                 TlsConfiguration configuration = maybeTlsConfig.get();
-                SSLOptions sslOptions = configuration.getSSLOptions();
+                ClientSSLOptions sslOptions = configuration.getClientSSLOptions();
                 builder.tlsCiphers(sslOptions.getEnabledCipherSuites());
                 builder.tlsProtocols(sslOptions.getEnabledSecureTransportProtocols());
                 builder.allowTlsInsecureConnection(false);

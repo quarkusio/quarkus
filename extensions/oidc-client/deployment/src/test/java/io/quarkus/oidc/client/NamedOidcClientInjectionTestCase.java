@@ -41,6 +41,20 @@ public class NamedOidcClientInjectionTestCase {
         validateTokens(token1, token2);
     }
 
+    @Test
+    public void testProgrammaticNamedClientLookup() {
+        String token1 = doTestGetTokenByProgrammaticLookup("client1");
+        String token2 = doTestGetTokenByProgrammaticLookup("client2");
+        validateTokens(token1, token2);
+    }
+
+    @Test
+    public void testProgrammaticNamedClientLookupUsingArc() {
+        String token1 = doTestGetTokenByProgrammaticLookupArc("client1");
+        String token2 = doTestGetTokenByProgrammaticLookupArc("client2");
+        validateTokens(token1, token2);
+    }
+
     private void validateTokens(String token1, String token2) {
         assertThat(token1, is(not(equalTo(token2))));
         assertThat(preferredUserOf(token1), is("alice"));
@@ -59,6 +73,18 @@ public class NamedOidcClientInjectionTestCase {
 
     private String doTestGetTokenByNamedTokensProvider(String clientId) {
         String token = RestAssured.when().get("/" + clientId + "/token/singleton").body().asString();
+        assertThat(token, is(notNullValue()));
+        return token;
+    }
+
+    private String doTestGetTokenByProgrammaticLookup(String clientId) {
+        String token = RestAssured.when().get("/" + clientId + "/token/programmatic").body().asString();
+        assertThat(token, is(notNullValue()));
+        return token;
+    }
+
+    private String doTestGetTokenByProgrammaticLookupArc(String clientId) {
+        String token = RestAssured.when().get("/" + clientId + "/token/programmatic-arc").body().asString();
         assertThat(token, is(notNullValue()));
         return token;
     }

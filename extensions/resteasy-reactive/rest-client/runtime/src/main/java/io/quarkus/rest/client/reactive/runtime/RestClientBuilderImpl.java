@@ -152,7 +152,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
             @Override
             public SSLOptions getSSLOptions() {
-                return tlsConfiguration.getSSLOptions();
+                return tlsConfiguration.getClientSSLOptions();
             }
 
             @Override
@@ -624,6 +624,12 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
             clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
         } else if (restClients.http2()) {
             clientBuilder.http2(true);
+        }
+
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP3)) {
+            clientBuilder.http3((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP3));
+        } else if (restClients.http3()) {
+            clientBuilder.http3(true);
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH)) {

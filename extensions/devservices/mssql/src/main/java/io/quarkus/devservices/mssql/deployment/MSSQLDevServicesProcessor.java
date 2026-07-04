@@ -61,6 +61,12 @@ public class MSSQLDevServicesProcessor {
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
 
+                // Workaround for https://github.com/microsoft/mssql-docker/issues/954
+                // SQL Server 2025 crashes when the visible CPU count is not a power of 2.
+                int safeCpuCount = Integer.highestOneBit(Runtime.getRuntime().availableProcessors());
+                container.withCreateContainerCmdModifier(
+                        cmd -> cmd.getHostConfig().withCpusetCpus("0-" + (safeCpuCount - 1)));
+
                 String effectivePassword = containerConfig.getPassword()
                         .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
 

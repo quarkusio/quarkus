@@ -1199,15 +1199,26 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testConcurrentTokenRefresh() {
-        var result = RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+    public void testConcurrentTokenRefresh() throws InterruptedException {
+        var result1 = refreshTokenConcurrently(0, 1);
+        assertEquals(result1.accessToken1(), result1.accessToken2());
+        Thread.sleep(150); // just so that there is a small delay
+        var result2 = refreshTokenConcurrently(1, 1);
+        assertEquals(result2.accessToken1(), result2.accessToken2());
+        assertEquals(result1.accessToken1(), result2.accessToken1());
+    }
+
+    private static TenantRefreshTokenResource.ConcurrentRefreshResult refreshTokenConcurrently(int expectedCountBefore,
+            int expectedCountAfter) {
+        return RestAssured.given()
                 .queryParam("refresh_token", "refresh_token_1")
+                .queryParam("expected_count_before", expectedCountBefore)
+                .queryParam("expected_count_after", expectedCountAfter)
                 .when().get("/tenant-refresh/concurrent-token-refresh")
                 .then()
                 .statusCode(200)
                 .body(Matchers.notNullValue())
                 .extract().as(TenantRefreshTokenResource.ConcurrentRefreshResult.class);
-        assertEquals(result.accessToken1(), result.accessToken2());
     }
 
     private String getAccessToken(String userName, String clientId) {

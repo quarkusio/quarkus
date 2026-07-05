@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.quarkus.grpc.examples.stress";
+option java_outer_classname = "StressProto";
+
+package stress;
+
+service Stress {
+    rpc EchoId (IdRequest) returns (IdReply) {}
+    rpc EchoPayload (PayloadRequest) returns (PayloadReply) {}
+    rpc StreamIds (stream IdRequest) returns (stream IdReply) {}
+}
+
+message IdRequest {
+    int64 id = 1;
+}
+
+message IdReply {
+    int64 id = 1;
+}
+
+message PayloadRequest {
+    int64 id = 1;
+    bytes data = 2;
+}
+
+message PayloadReply {
+    int64 id = 1;
+    int32 size = 2;
+}

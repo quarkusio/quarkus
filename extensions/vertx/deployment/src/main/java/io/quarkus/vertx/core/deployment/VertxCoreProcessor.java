@@ -99,6 +99,7 @@ class VertxCoreProcessor {
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.PartialPooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
+                .addRuntimeInitializedClass("io.vertx.core.file.FileSystemOptions")
 
                 .addNativeImageSystemProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true")
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",

@@ -163,6 +163,13 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 <1> Value is a group id for a dependency identified by name `acme`.
 <2> Value is an artifact id for a dependency identified by name `acme`.
 
+[NOTE]
+====
+`quarkus.arc.exclude-types` affects CDI bean discovery.
+It does not remove matching classes from the application artifact.
+If a class must be fully isolated from build-time processing or native image analysis, make sure that it is not included in the native build artifact.
+====
+
 [[string-based-qualifiers]]
 == String-Based Qualifiers
 

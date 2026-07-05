@@ -495,9 +495,10 @@ Mixing both session types in the same transaction should work, but should be res
 [[transactional-different-pipelines]]
 === Using Declarative Transaction Management in different reactive pipelines
 
-When using declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in multiple methods and combining such methods with either `Uni.combine().all().unis()` or `Uni.join().all()` the same transaction might be shared by different reactive pipelines causing unpredictable behavior.
+Declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) runs each top-level reactive pipeline on a dedicated duplicated Vert.x context, so combining such methods with `Uni.combine().all().unis()` or `Uni.join().all()` is supported.
 
-For this reason, **avoid using declarative transactional management with those methods**.
+Each combined branch still uses its own transaction when annotated with `@Transactional` or `@WithTransaction`.
+Sequential calls using `.chain()` continue to share a single transaction when using `REQUIRED` semantics.
 
 [[transactional-others]]
 === Other Declarative Transactional Management limitations

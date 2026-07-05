@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,29 +22,11 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
 /**
- * Test to demonstrate transaction context leakage when combining declarative transactional methods
- * with non-transactional methods in parallel reactive chains.
+ * Verifies that declarative transactional methods combined in parallel using {@code Uni.combine().all().unis()}
+ * do not leak session state to other reactive pipelines on the same request context.
  *
- * The test shows the symptom of the problem, but not from the user perspective: the user will have problems
- * using different pipelines as described in "Using Declarative Transaction Management in different reactive pipelines"
- * in the Hibernate Reactive documentation.
- * The transaction will be shared between the pipelines and this will lead to unpredictable behavior.
- *
- * This test is disabled because it's not fixed yet. The transaction context leaks between method calls
- * when they are combined in parallel using Uni.combine().all().unis(). This is a known limitation of
- * declarative transaction management using Vert.x context-based interceptors:
- * - @Transactional (jakarta.transaction.Transactional / io.quarkus.reactive.transaction.Transactional)
- * - Panache @WithTransaction / @WithSession / @WithSessionOnDemand
- *
- * Workaround: Use programmatic transaction management (sessionFactory.withTransaction() or
- * Panache.withTransaction()) which doesn't have this problem because you explicitly control where
- * the transaction is created.
- *
- * See documentation in hibernate-reactive.adoc for details on this limitation and workarounds.
- *
- * See also <a href="https://github.com/quarkusio/quarkus/issues/52815">the issue on the Quarkus Issue tracker</a>
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/52815">Issue #52815</a>
  */
-@Disabled("Known issue: Transaction context leaks with declarative transaction management in parallel chains - not fixed yet")
 public class InterleaveTest {
 
     @RegisterExtension
@@ -61,36 +42,37 @@ public class InterleaveTest {
 
     @Test
     @RunOnVertxContext
-    public void testTransactionLeakageBetweenMethods(UniAsserter asserter) {
-        // This test demonstrates that when combining @Transactional and non-transactional methods
-        // in parallel, the transaction context leaks to the non-transactional method.
-        // The assertion in nonTransactionalMethod() will fail because it expects no session,
-        // but the session from findHero() will leak.
-        asserter.execute(() -> Uni.combine().all().unis(findHero(50L), simulateInterleavedTransactionalMethod()));
+    public void testTransactionDoesNotLeakToNonTransactionalParallelMethod(UniAsserter asserter) {
+        asserter.execute(() -> Uni.combine().all().unis(findHero(50L), nonTransactionalMethod()));
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testParallelTransactionalMethodsUseIsolatedSessions(UniAsserter asserter) {
+        asserter.assertThat(
+                () -> Uni.combine().all().unis(findHero(50L), findHeroName(50L)).asTuple(),
+                tuple -> {
+                    assertThat(tuple.getItem1().name).isEqualTo("initialName");
+                    assertThat(tuple.getItem2()).isEqualTo("initialName");
+                });
     }
 
     @Transactional
     public Uni<Hero> findHero(Long heroId) {
-
-        Uni<Hero> heroUni = session.find(Hero.class, heroId).invoke(s -> {
-            Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSessionsState = OPENED_SESSIONS_STATE
-                    .getOpenedSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
-
-            System.out.println(openedSessionsState.get());
-
-        });
-        return heroUni.chain(s -> Uni.createFrom().nothing());
+        return session.find(Hero.class, heroId);
     }
 
-    public Uni<Void> simulateInterleavedTransactionalMethod() {
+    @Transactional
+    public Uni<String> findHeroName(Long heroId) {
+        return session.find(Hero.class, heroId).map(Hero::getName);
+    }
 
+    public Uni<Void> nonTransactionalMethod() {
         Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSessionsState = OPENED_SESSIONS_STATE
                 .getOpenedSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
 
-        // This will fail as the transaction will leak here.
-        // This method shouldn't be able to access the transaction
         assertThat(openedSessionsState).isEmpty();
 
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().voidItem();
     }
 }

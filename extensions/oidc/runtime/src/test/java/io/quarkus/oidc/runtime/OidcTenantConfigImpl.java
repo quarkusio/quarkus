@@ -20,10 +20,6 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         this.tenantId = null;
     }
 
-    OidcTenantConfigImpl(String tenantId) {
-        this.tenantId = tenantId;
-    }
-
     enum ConfigMappingMethods {
         AUTH_SERVER_URL,
         DISCOVERY_PATH,
@@ -222,6 +218,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         RAR_SIMPLE,
         RAR_ARRAY,
         RAR_TYPE,
+        REFRESH_TOKEN_CACHE_TIME_TO_LIVE,
         PAR_PATH
     }
 
@@ -403,6 +400,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<Duration> refreshTokenTimeSkew() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_REFRESH_TOKEN_TIME_SKEW, true);
                 return Optional.empty();
+            }
+
+            @Override
+            public Duration refreshTokenCacheTimeToLive() {
+                invocationsRecorder.put(ConfigMappingMethods.REFRESH_TOKEN_CACHE_TIME_TO_LIVE, true);
+                return null;
             }
 
             @Override

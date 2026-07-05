@@ -6,10 +6,11 @@ import static io.quarkus.oidc.common.runtime.OidcCommonUtils.getClientAssertionP
 import java.io.Closeable;
 import java.net.SocketException;
 import java.security.Key;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -99,7 +100,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
-    private final Map<String, Uni<AuthorizationCodeTokens>> refreshTokenToTokensUni;
+    private final MemoryCache<Uni<AuthorizationCodeTokens>> refreshTokenCache;
     private final String jwtSecret;
     private volatile String clientSecret;
     private volatile String clientSecretBasicAuthScheme;
@@ -124,7 +125,12 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientSecretQueryAuthentication = clientCredentials.clientSecretQueryAuthentication;
         this.clientSecret = clientCredentials.clientSecret;
         this.jwtSecret = clientCredentials.jwtSecret;
-        this.refreshTokenToTokensUni = new ConcurrentHashMap<>();
+        Duration refreshTokenCacheTtl = oidcConfig.token().refreshTokenCacheTimeToLive();
+        if (refreshTokenCacheTtl.isZero()) {
+            this.refreshTokenCache = null;
+        } else {
+            this.refreshTokenCache = new MemoryCache<>(vertx, Optional.of(refreshTokenCacheTtl), refreshTokenCacheTtl, 10_000);
+        }
     }
 
     void setOidcProvider(OidcProvider oidcProvider) {
@@ -326,27 +332,31 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
+        if (refreshTokenCache == null) {
+            return refreshAuthorizationCodeTokensWithoutCaching(refreshToken);
+        }
+
+        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenCache.getOrComputeDeferredValue(refreshToken,
+                cacheEntry -> refreshAuthorizationCodeTokensWithoutCaching(refreshToken)
+                        .invoke(cacheEntry::startCachingPeriod)
+                        .onFailure().invoke(cacheEntry::remove)
+                        .memoize().indefinitely());
+
         var ctx = Vertx.currentContext();
-        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
-            final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
-            refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
-            refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
-            final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
-            try {
-                return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
-                        OidcEndpoint.Type.TOKEN)
-                        .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp))
-                        .onTermination().invoke(() -> refreshTokenToTokensUni.remove(rt))
-                        .memoize().indefinitely();
-            } catch (Throwable t) {
-                refreshTokenToTokensUni.remove(rt);
-                throw t;
-            }
-        });
         if (ctx != null) {
             return refreshUni.emitOn(command -> ctx.runOnContext(ignored -> command.run()));
         }
         return refreshUni;
+    }
+
+    private Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokensWithoutCaching(String refreshToken) {
+        final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
+        refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
+        return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
+                OidcEndpoint.Type.TOKEN)
+                .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
     public Uni<Boolean> revokeAccessToken(String accessToken) {
@@ -358,7 +368,10 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     public Uni<AuthorizationCodeTokens> getRefreshTokenRequest(String refreshToken) {
-        return refreshTokenToTokensUni.get(refreshToken);
+        if (refreshTokenCache == null) {
+            return null;
+        }
+        return refreshTokenCache.get(refreshToken);
     }
 
     private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {

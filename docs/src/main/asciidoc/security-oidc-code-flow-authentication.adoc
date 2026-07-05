@@ -1636,6 +1636,10 @@ If the `quarkus.oidc.token.refresh-expired` is set to `true`, then the expired I
 This refresh token might also be recycled (refreshed) itself as part of this process.
 As a result, the new session cookie is created, and the session is extended.
 
+When multiple concurrent requests arrive with the same expired session and an OIDC provider restricts how many times a refresh token can be used, duplicate refresh attempts may be rejected.
+Set `quarkus.oidc.token.refresh-token-cache-time-to-live` to a short duration (for example, `5S`) to cache the tokens returned in the refresh token grant response so that only one request performs the refresh and the others reuse it.
+Avoid setting this property unless concurrent refresh requests are expected and the provider restricts refresh token reuse.
+
 [NOTE]
 ====
 In instances where the user is not very active, you can use the `quarkus.oidc.authentication.session-age-extension` property to help handle expired ID tokens.

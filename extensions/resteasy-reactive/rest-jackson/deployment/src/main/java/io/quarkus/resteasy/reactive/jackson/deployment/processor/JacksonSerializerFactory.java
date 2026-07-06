@@ -469,9 +469,11 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
             MethodDescriptor serializeUnwrapped = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
                     "serializeUnwrapped", void.class, Object.class, JsonGenerator.class,
-                    SerializerProvider.class, Set.class);
+                    SerializerProvider.class, Set.class, String.class, String.class);
             bytecode.invokeStaticMethod(serializeUnwrapped, arg, ctx.jsonGenerator, ctx.serializerProvider,
-                    ignoreProperties(fieldSpecs, bytecode));
+                    ignoreProperties(fieldSpecs, bytecode),
+                    bytecode.load(fieldSpecs.unwrappedPrefix()),
+                    bytecode.load(fieldSpecs.unwrappedSuffix()));
         } else {
             String pkgName = classInfo.name().packagePrefixName().toString();
             generatedFields.computeIfAbsent(pkgName, pkg -> new HashMap<>())

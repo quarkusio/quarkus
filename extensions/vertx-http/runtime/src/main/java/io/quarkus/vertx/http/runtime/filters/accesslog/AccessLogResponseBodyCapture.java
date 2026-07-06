@@ -17,11 +17,8 @@ public final class AccessLogResponseBodyCapture {
             return;
         }
         int remaining = maxSize - captured.length();
-        if (data.length() <= remaining) {
-            captured.appendBuffer(data);
-        } else {
-            captured.appendBuffer(data.getBuffer(0, remaining));
-        }
+        int toCapture = Math.min(data.length(), remaining);
+        captured.appendBytes(data.getBytes(0, toCapture));
     }
 
     public void capture(String data) {

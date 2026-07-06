@@ -59,6 +59,71 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("login-jwt-wrong-dpop-http-method-with-nonce/{nonce}")
+    public Response loginJwtWrongDpopHttpMethodWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-wrong-dpop-http-method-with-nonce/" + nonce);
+    }
+
+    @GET
+    @Path("callback-jwt-wrong-dpop-http-method-with-nonce/{nonce}")
+    public Response callbackWrongDpopHttpMethodWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-wrong-dpop-http-method-with-nonce/" + nonce, "POST",
+                "dpop-jwt", "dpop-jwt", false, false, false, nonce);
+    }
+
+    @GET
+    @Path("login-jwt-wrong-dpop-http-uri-with-nonce/{nonce}")
+    public Response loginJwtWrongDpopHttpUriWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-wrong-dpop-http-uri-with-nonce/" + nonce);
+    }
+
+    @GET
+    @Path("callback-jwt-wrong-dpop-http-uri-with-nonce/{nonce}")
+    public Response callbackWrongDpopHttpUriWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-wrong-dpop-http-uri-with-nonce/" + nonce, "GET",
+                "dpop-jwt-wrong-uri", "dpop-jwt", false, false, false, nonce);
+    }
+
+    @GET
+    @Path("login-jwt-wrong-dpop-signature-with-nonce/{nonce}")
+    public Response loginJwtWrongDpopSignatureWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-wrong-dpop-signature-with-nonce/" + nonce);
+    }
+
+    @GET
+    @Path("callback-jwt-wrong-dpop-signature-with-nonce/{nonce}")
+    public Response callbackWrongDpopSignatureWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-wrong-dpop-signature-with-nonce/" + nonce, "GET",
+                "dpop-jwt", "dpop-jwt", true, false, false, nonce);
+    }
+
+    @GET
+    @Path("login-jwt-wrong-dpop-jwk-key-with-nonce/{nonce}")
+    public Response loginJwtWrongDpopJwkKeyWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-wrong-dpop-jwk-key-with-nonce/" + nonce);
+    }
+
+    @GET
+    @Path("callback-jwt-wrong-dpop-jwk-key-with-nonce/{nonce}")
+    public Response callbackWrongDpopJwkKeyWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-wrong-dpop-jwk-key-with-nonce/" + nonce, "GET",
+                "dpop-jwt-wrong-uri", "dpop-jwt", false, true, false, nonce);
+    }
+
+    @GET
+    @Path("login-jwt-wrong-dpop-token-hash-with-nonce/{nonce}")
+    public Response loginJwtWrongDpopTokenHashWithNonce(@RestPath String nonce) {
+        return redirect("dpop-jwt", "callback-jwt-wrong-dpop-token-hash-with-nonce/" + nonce);
+    }
+
+    @GET
+    @Path("callback-jwt-wrong-dpop-token-hash-with-nonce/{nonce}")
+    public Response callbackWrongDpopTokenHashWithNonce(@RestQuery String code, @RestPath String nonce) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-wrong-dpop-token-hash-with-nonce/" + nonce, "GET",
+                "dpop-jwt", "dpop-jwt", false, false, true, nonce);
+    }
+
+    @GET
     @Path("login-jwt")
     public Response loginJwt() {
         return redirect("dpop-jwt", "callback-jwt");

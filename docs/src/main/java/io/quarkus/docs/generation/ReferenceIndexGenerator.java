@@ -23,11 +23,9 @@ import org.asciidoctor.ast.Row;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.Table;
 
-import com.fasterxml.jackson.core.exc.StreamWriteException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 /**
  * Iterate over the documents in the source directory and create an index of the references.
@@ -95,8 +93,10 @@ public class ReferenceIndexGenerator {
         this.targetDir = targetDir;
     }
 
-    private void writeYamlFiles(Index index) throws StreamWriteException, DatabindException, IOException {
-        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+    private void writeYamlFiles(Index index) throws IOException {
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder().enable(YAMLWriteFeature.MINIMIZE_QUOTES).build())
+                .build();
 
         om.writeValue(targetDir.resolve("referenceIndex.yaml").toFile(), index);
     }

@@ -25,10 +25,14 @@ public final class JacksonMappers {
     private static final ObjectWriter YAML_OBJECT_WRITER = YAMLMapper.builder()
             .changeDefaultPropertyInclusion(v -> v.withValueInclusion(JsonInclude.Include.NON_DEFAULT))
             .build().writer();
-    // Jackson 2 coerced null to false for primitives; Jackson 3 rejects it by default.
-    // The writer uses NON_DEFAULT inclusion, so false booleans are omitted and read back as null.
+    // Jackson 3 changed two defaults that break config model deserialization:
+    // - FAIL_ON_NULL_FOR_PRIMITIVES now defaults to true; the writer uses NON_DEFAULT inclusion,
+    //   so false booleans are omitted and read back as null.
+    // - ALLOW_FINAL_FIELDS_AS_MUTATORS now defaults to false; the config model classes (e.g. ConfigRoot)
+    //   use private final fields like items and qualifiedNames that are populated via reflection.
     private static final ObjectReader YAML_OBJECT_READER = YAMLMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
             .build().reader();
 
     private JacksonMappers() {

@@ -23,7 +23,8 @@ public interface DataSourceBuildTimeConfig {
      * as the string returned by `java.sql.DatabaseMetaData#getDatabaseProductVersion()`
      * for your database's JDBC driver.
      * This numbering scheme may be different from the most popular one for your database;
-     * for example Microsoft SQL Server 2016 would be version `13`.
+     * for example Microsoft SQL Server 2016 would be version `13`,
+     * and Oracle Database 26ai would be version `23.26`.
      *
      * As a rule, the version set here should be as high as possible,
      * but must be lower than or equal to the version of any database your application will connect to.

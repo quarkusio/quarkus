@@ -14,7 +14,7 @@ public class MyExtensionTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyExtensionProcessor.class));
+                    .addClasses(MyExtensionProcessor.class, MyExtensionServlet.class));
 
     @Test
     public void testGreeting() {

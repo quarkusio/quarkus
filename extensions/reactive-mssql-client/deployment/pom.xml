@@ -152,6 +152,9 @@
                                     <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssql</alias>
                                     <run>
+                                        <!-- Workaround for https://github.com/microsoft/mssql-docker/issues/954
+                                            SQL Server 2025 crashes when the visible CPU count is not a power of 2. -->
+                                        <cpuSet>0</cpuSet>
                                         <ports>
                                             <port>1435:1433</port>
                                         </ports>

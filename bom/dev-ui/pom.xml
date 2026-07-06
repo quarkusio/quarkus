@@ -41,7 +41,7 @@
         <qomponent.version>1.0.6</qomponent.version>
         <ldrs.version>1.1.9</ldrs.version>
         <directory-tree.version>1.0.4</directory-tree.version>
-        <hpcc-js-wasm.version>2.34.2</hpcc-js-wasm.version>
+        <hpcc-js-wasm.version>2.34.4</hpcc-js-wasm.version>
         <yargs.version>17.7.2</yargs.version>
         <cliui.version>8.0.1</cliui.version>
         <escalade.version>3.1.2</escalade.version>
@@ -336,7 +336,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>markdown-it</artifactId>
-                <version>14.2.0</version>
+                <version>14.3.0</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>
@@ -354,7 +354,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>linkify-it</artifactId>
-                <version>5.0.1</version>
+                <version>5.0.2</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

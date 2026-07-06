@@ -100,6 +100,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(token.allowOpaqueTokenIntrospection());
         assertTrue(token.customizerName().isEmpty());
         assertTrue(token.verifyAccessTokenWithUserInfo().isEmpty());
+        assertEquals(Duration.ZERO, token.refreshTokenCacheTimeToLive());
 
         var logout = config.logout();
         assertNotNull(logout);
@@ -279,6 +280,7 @@ public class OidcTenantConfigBuilderTest {
                 .introspectionCredentials().name("i-name").secret("i-secret").includeClientId(false).end()
                 .roles().roleClaimSeparator("@#$").roleClaimPath("separator-23").source(idtoken).end()
                 .token()
+                .refreshTokenCacheTimeToLive(Duration.ofSeconds(30))
                 .verifyAccessTokenWithUserInfo()
                 .customizerName("customizer-name-8")
                 .allowOpaqueTokenIntrospection(false)
@@ -491,6 +493,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(token.allowOpaqueTokenIntrospection());
         assertEquals("customizer-name-8", token.customizerName().orElse(null));
         assertTrue(token.verifyAccessTokenWithUserInfo().orElseThrow());
+        assertEquals(Duration.ofSeconds(30), token.refreshTokenCacheTimeToLive());
 
         var logout = config.logout();
         assertNotNull(logout);

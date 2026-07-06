@@ -7,6 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
@@ -136,7 +138,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *                         break;
  *                     default:
  *                         if (context.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)) {
- *                             throw new JsonMappingException("Unrecognized field \"" + fieldName + "\"");
+ *                             throw UnrecognizedPropertyException.from(jsonParser, Person.class, fieldName, null);
  *                         }
  *                 }
  *             }
@@ -201,7 +203,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *                     break;
  *                 default:
  *                     if (context.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)) {
- *                         throw new JsonMappingException("Unrecognized field \"" + field + "\"");
+ *                         throw UnrecognizedPropertyException.from(jsonParser, DataItem.class, field, null);
  *                     }
  *             }
  *         }
@@ -303,7 +305,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
-            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, deserData.namingStrategy);
+            FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(deserData.classInfo, paramInfo, deserData.namingStrategy);
             deserData.constructorFields.add(fieldSpecs.jsonName);
             for (String alias : fieldSpecs.aliases) {
                 deserData.constructorFields.add(alias);
@@ -370,6 +372,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
+        preprocessUnwrappedFields(deserData);
+
         ResultHandle fieldsIterator = deserData.methodCreator
                 .invokeVirtualMethod(ofMethod(JsonNode.class, "fields", Iterator.class), deserData.jsonNode);
         BytecodeCreator loopCreator = deserData.methodCreator.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
@@ -408,6 +412,26 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return result;
     }
 
+    private void preprocessUnwrappedFields(DeserializationData deserData) {
+        for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo,
+                    deserData.namingStrategy);
+            if (fieldSpecs != null && fieldSpecs.isUnwrapped()) {
+                String prefix = fieldSpecs.unwrappedPrefix();
+                String suffix = fieldSpecs.unwrappedSuffix();
+                if (!prefix.isEmpty() || !suffix.isEmpty()) {
+                    deserData.methodCreator.invokeStaticMethod(
+                            ofMethod(JacksonMapperUtil.class, "collectUnwrappedFields", void.class,
+                                    JsonNode.class, String.class, String.class, String.class),
+                            deserData.jsonNode,
+                            deserData.methodCreator.load(fieldSpecs.jsonName),
+                            deserData.methodCreator.load(prefix),
+                            deserData.methodCreator.load(suffix));
+                }
+            }
+        }
+    }
+
     private static void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,
             Set<String> ctorFields, Switch.StringSwitch strSwitch, ResultHandle deserializationContext,
             ResultHandle fieldName, ResultHandle fieldValue, ResultHandle objHandle, MethodInfo anySetterMethod) {
@@ -443,15 +467,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                         bytecode.readStaticField(FieldDescriptor.of(DeserializationFeature.class,
                                 "FAIL_ON_UNKNOWN_PROPERTIES", DeserializationFeature.class)));
                 BytecodeCreator trueBranch = bytecode.ifTrue(failOnUnknown).trueBranch();
-                ResultHandle message = trueBranch.invokeVirtualMethod(
-                        ofMethod(String.class, "concat", String.class, String.class),
-                        trueBranch.load("Unrecognized field \""),
-                        trueBranch.invokeVirtualMethod(
-                                ofMethod(String.class, "concat", String.class, String.class),
-                                trueBranch.checkCast(fieldName, String.class),
-                                trueBranch.load("\"")));
-                ResultHandle exception = trueBranch.newInstance(
-                        MethodDescriptor.ofConstructor(JsonMappingException.class, String.class), message);
+                ResultHandle parser = deserData.methodCreator.getMethodParam(0);
+                ResultHandle targetClass = trueBranch.loadClass(deserData.classInfo.name().toString());
+                ResultHandle castedFieldName = trueBranch.checkCast(fieldName, String.class);
+                ResultHandle exception = trueBranch.invokeStaticMethod(
+                        ofMethod(UnrecognizedPropertyException.class, "from", UnrecognizedPropertyException.class,
+                                JsonParser.class, Object.class, String.class, Collection.class),
+                        parser, targetClass, castedFieldName, trueBranch.loadNull());
                 trueBranch.throwException(exception);
             });
         }
@@ -500,7 +522,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Set<String> names = new HashSet<>();
         if (constructor.parametersCount() > 0) {
             for (MethodParameterInfo paramInfo : constructor.parameters()) {
-                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(paramInfo, namingStrategy);
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, paramInfo, namingStrategy);
                 if (!fieldSpecs.hasExplicitJsonName) {
                     names.add(fieldSpecs.fieldName);
                 }
@@ -579,17 +601,25 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch) {
 
         AtomicBoolean valid = new AtomicBoolean(true);
+        Set<String> boundFieldNames = new HashSet<>();
 
         for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo,
+                    deserData.namingStrategy);
+            if (fieldSpecs != null) {
+                boundFieldNames.add(fieldSpecs.fieldName);
+            }
             deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch,
-                    fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo, deserData.namingStrategy),
-                    valid);
+                    deserializedFields, strSwitch, fieldSpecs, valid);
         }
 
         for (MethodInfo methodInfo : classMethods(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, deserData.namingStrategy);
+            if (fieldSpecs != null && boundFieldNames.contains(fieldSpecs.fieldName)) {
+                continue;
+            }
             deserializeFieldSpecs(deserData, deserializationContext, objHandle, fieldValue,
-                    deserializedFields, strSwitch, fieldSpecsFromMethod(methodInfo, deserData.namingStrategy), valid);
+                    deserializedFields, strSwitch, fieldSpecs, valid);
         }
 
         return valid.get();

@@ -1181,6 +1181,54 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullBoxedFieldsPresentInRecord() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55137
+        // Null boxed Integer/Boolean fields must be serialized as null, not omitted
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("shortInstance"))
+                .body("$", hasKey("integerInstance"))
+                .body("$", hasKey("longInstance"))
+                .body("$", hasKey("floatInstance"))
+                .body("$", hasKey("doubleInstance"))
+                .body("$", hasKey("booleanInstance"));
+    }
+
+    @Test
+    public void testNullBoxedFieldsPresentInBean() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55137
+        // Null boxed Integer/Boolean fields must be serialized as null, not omitted
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("shortInstance"))
+                .body("$", hasKey("integerInstance"))
+                .body("$", hasKey("longInstance"))
+                .body("$", hasKey("floatInstance"))
+                .body("$", hasKey("doubleInstance"))
+                .body("$", hasKey("booleanInstance"));
+    }
+
+    @Test
     void testShouldDeserializePolymorphicItems() {
         RestAssured
                 .with()
@@ -1278,6 +1326,20 @@ public abstract class AbstractSimpleJsonTest {
                 .statusCode(200)
                 .body("item.type", CoreMatchers.is("type_a"))
                 .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void objectNode_shouldPreserveFieldNames() {
+        given()
+                .body("{\"name\":\"\",\"limit\":42}")
+                .contentType("application/json")
+                .when()
+                .post("/simple/object-node")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", is(""))
+                .body("limit", is(42));
     }
 
     @Test

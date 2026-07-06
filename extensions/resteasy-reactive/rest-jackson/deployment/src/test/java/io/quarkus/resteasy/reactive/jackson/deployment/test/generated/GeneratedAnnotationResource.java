@@ -450,6 +450,21 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- TestWithJsonPropertyDto: @JsonProperty renames field ---
+
+    @GET
+    @Path("/json-property-rename")
+    public TestWithJsonPropertyDto getJsonPropertyRename() {
+        return new TestWithJsonPropertyDto("Alice");
+    }
+
+    @POST
+    @Path("/json-property-rename")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public TestWithJsonPropertyDto echoJsonPropertyRename(TestWithJsonPropertyDto dto) {
+        return dto;
+    }
+
     // --- SpecialCharPropertyBean: @JsonProperty with special characters (hyphens, dots) ---
 
     @GET
@@ -465,6 +480,27 @@ public class GeneratedAnnotationResource {
     @Path("/special-char-property")
     @Consumes(MediaType.APPLICATION_JSON)
     public SpecialCharPropertyBean echoSpecialCharProperty(SpecialCharPropertyBean bean) {
+        return bean;
+    }
+
+    // --- UnwrappedWithPrefixBean: @JsonUnwrapped with prefix ---
+
+    @GET
+    @Path("/unwrapped-prefix")
+    public UnwrappedWithPrefixBean getUnwrappedPrefix() {
+        UnwrappedWithPrefixBean bean = new UnwrappedWithPrefixBean();
+        bean.setOrderId("ORD-001");
+        UnwrappedWithPrefixBean.Address address = new UnwrappedWithPrefixBean.Address();
+        address.setCity("Rome");
+        address.setZipCode("00100");
+        bean.setBillingAddress(address);
+        return bean;
+    }
+
+    @POST
+    @Path("/unwrapped-prefix")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public UnwrappedWithPrefixBean echoUnwrappedPrefix(UnwrappedWithPrefixBean bean) {
         return bean;
     }
 }

@@ -75,7 +75,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     //    CrudRepository Iterable<T> findAll();
     public void implementIterable(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isCrudRepository(repositoryInterfaceName)
-                && !entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)) {
+                && !entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)
+                && !entityClassHelper.isListCrudRepository(repositoryInterfaceName)) {
             classCreator.method("list", mc -> {
                 mc.public_();
                 mc.returning(List.class);

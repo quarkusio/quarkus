@@ -30,7 +30,6 @@ public class SystemPropsAsBuildTimeConfigSourceTest extends QuarkusGradleWrapper
             throw new IllegalStateException("Unable to copy gradle.properties file", e);
         }
 
-        gradleConfigurationCache(false);
         runGradleWrapper(projectDir,
                 "-Dquarkus.example.name=cheburashka",
                 "-Dquarkus.package.jar.type=mutable-jar",

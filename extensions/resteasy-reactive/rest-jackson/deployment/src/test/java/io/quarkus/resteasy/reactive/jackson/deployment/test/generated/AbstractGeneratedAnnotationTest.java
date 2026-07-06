@@ -792,6 +792,37 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("\"field\"")));
     }
 
+    // --- @JsonUnwrapped with prefix ---
+
+    @Test
+    public void testUnwrappedWithPrefixSerialization() {
+        RestAssured.get("/generated/unwrapped-prefix")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("orderId", Matchers.is("ORD-001"))
+                .body("billing_city", Matchers.is("Rome"))
+                .body("billing_zip", Matchers.is("00100"))
+                .body("$", not(hasKey("billingAddress")))
+                .body("$", not(hasKey("city")))
+                .body("$", not(hasKey("zip")));
+    }
+
+    @Test
+    public void testUnwrappedWithPrefixDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"orderId\":\"ORD-001\",\"billing_city\":\"Rome\",\"billing_zip\":\"00100\"}")
+                .when()
+                .post("/generated/unwrapped-prefix")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("orderId", Matchers.is("ORD-001"))
+                .body("billing_city", Matchers.is("Rome"))
+                .body("billing_zip", Matchers.is("00100"));
+    }
+
     // --- @JsonRawValue ---
 
     @Test

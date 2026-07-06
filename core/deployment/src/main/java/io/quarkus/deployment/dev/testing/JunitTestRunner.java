@@ -1217,7 +1217,7 @@ public class JunitTestRunner {
         private record ClassMatcher(Pattern classPattern) implements Matcher {
             @Override
             public boolean matches(String className, String methodName) {
-                return classPattern.matcher(className).matches();
+                return matchesClassOrEnclosingClass(classPattern, className);
             }
         }
 
@@ -1236,7 +1236,7 @@ public class JunitTestRunner {
         private record ClassAndMethodMatcher(Pattern classPattern, Pattern[] methodPatterns) implements Matcher {
             @Override
             public boolean matches(String className, String methodName) {
-                if (classPattern.matcher(className).matches()) {
+                if (matchesClassOrEnclosingClass(classPattern, className)) {
                     for (Pattern methodPattern : methodPatterns) {
                         if (methodPattern.matcher(methodName).matches()) {
                             return true;
@@ -1245,6 +1245,14 @@ public class JunitTestRunner {
                 }
                 return false;
             }
+        }
+
+        private static boolean matchesClassOrEnclosingClass(Pattern classPattern, String className) {
+            if (classPattern.matcher(className).matches()) {
+                return true;
+            }
+            int index = className.indexOf('$');
+            return index > 0 && classPattern.matcher(className.substring(0, index)).matches();
         }
     }
 
@@ -1328,13 +1336,28 @@ public class JunitTestRunner {
                     }
 
                     Pattern include = includes[i];
-                    if (include.matcher(testedClassAndMethodName).matches() || include.matcher(testedClassName).matches()) {
+                    if (matchesClassOrMethodOrEnclosingClass(include, testedClassName, testedClassAndMethodName,
+                            methodName)) {
                         return FilterResult.included(null);
                     }
                 }
                 return FilterResult.excluded(null);
             }
             return FilterResult.included("not a method");
+        }
+
+        private static boolean matchesClassOrMethodOrEnclosingClass(Pattern include, String testedClassName,
+                String testedClassAndMethodName, String methodName) {
+            if (include.matcher(testedClassAndMethodName).matches() || include.matcher(testedClassName).matches()) {
+                return true;
+            }
+            int index = testedClassName.indexOf('$');
+            if (index <= 0) {
+                return false;
+            }
+            String outerClassName = testedClassName.substring(0, index);
+            return include.matcher(outerClassName + "." + methodName).matches()
+                    || include.matcher(outerClassName).matches();
         }
     }
 

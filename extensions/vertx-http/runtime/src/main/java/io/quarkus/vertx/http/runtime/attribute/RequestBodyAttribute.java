@@ -22,7 +22,14 @@ public class RequestBodyAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(RoutingContext exchange) {
-        if (!enabled || exchange.body() == null) {
+        if (!enabled) {
+            return null;
+        }
+        Object captured = exchange.get(AccessLogBodySupport.REQUEST_BODY_KEY);
+        if (captured != null) {
+            return captured.toString();
+        }
+        if (exchange.body() == null || exchange.body().length() == 0) {
             return null;
         }
         return AccessLogBodySupport.formatBody(exchange.body().buffer(), maxSize);

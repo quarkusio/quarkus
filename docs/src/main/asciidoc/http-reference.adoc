@@ -556,7 +556,8 @@ The following attributes support this modifier:
 ====
 Request and response body logging must be explicitly enabled with `quarkus.http.access-log.log-request-body` and
 `quarkus.http.access-log.log-response-body` before using the `%{REQUEST_BODY}` and `%{RESPONSE_BODY}` attributes.
-Bodies may contain sensitive data. Use `quarkus.http.access-log.max-logged-body-size` to limit how many bytes are logged.
+Bodies may contain sensitive data. Use `quarkus.http.access-log.max-logged-body-size` to limit how many bytes are logged,
+and `quarkus.http.access-log.request-body-buffer-limit` to avoid buffering very large request bodies for logging.
 ====
 
 [NOTE]

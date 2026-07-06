@@ -9,20 +9,17 @@ public final class AccessLogBodySupport {
 
     public static final String REQUEST_BODY_TOKEN = "%{REQUEST_BODY}";
     public static final String RESPONSE_BODY_TOKEN = "%{RESPONSE_BODY}";
+    public static final String REQUEST_BODY_KEY = "quarkus.access-log.request-body";
 
     private AccessLogBodySupport() {
     }
 
     public static boolean isRequestBodyLoggingEnabled(AccessLogConfig config) {
-        return config.logRequestBody() || patternContains(config.pattern(), REQUEST_BODY_TOKEN);
+        return config.logRequestBody();
     }
 
     public static boolean isResponseBodyLoggingEnabled(AccessLogConfig config) {
-        return config.logResponseBody() || patternContains(config.pattern(), RESPONSE_BODY_TOKEN);
-    }
-
-    private static boolean patternContains(String pattern, String token) {
-        return resolveNamedPattern(pattern).contains(token);
+        return config.logResponseBody();
     }
 
     static String resolveNamedPattern(String pattern) {
@@ -48,12 +45,28 @@ public final class AccessLogBodySupport {
         if (!isText(bytes)) {
             return "<binary, " + bytes.length + " bytes>";
         }
+        boolean truncated = bytes.length > maxSize;
         int length = Math.min(bytes.length, maxSize);
-        String body = new String(bytes, 0, length, StandardCharsets.UTF_8);
-        if (bytes.length > maxSize) {
+        String body = sanitize(new String(bytes, 0, length, StandardCharsets.UTF_8));
+        if (truncated) {
+            if (body.length() > maxSize) {
+                body = body.substring(0, maxSize);
+            }
             return body + "...(truncated)";
         }
         return body;
+    }
+
+    public static String formatRequestBodyTooLarge(long contentLength) {
+        return "<" + contentLength + " bytes, body too large to log>";
+    }
+
+    static String sanitize(String value) {
+        return value
+                .replace("\r\n", "\\r\\n")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("${", "$\\{");
     }
 
     private static boolean isText(byte[] bytes) {

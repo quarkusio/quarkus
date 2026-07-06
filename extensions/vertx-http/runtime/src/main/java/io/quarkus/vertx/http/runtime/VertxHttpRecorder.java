@@ -99,6 +99,7 @@ import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogBodySupport;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogRequestBodyHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
@@ -484,11 +485,14 @@ public class VertxHttpRecorder {
         }
         if (bodyHandlerInstalled || requestBodyLogging) {
             //if this is set then everything needs the body handler installed
+            Handler<RoutingContext> requestBodyHandler = requestBodyLogging && !bodyHandlerInstalled
+                    ? new AccessLogRequestBodyHandler(bodyHandler, accessLog.requestBodyBufferLimit().asLongValue())
+                    : bodyHandler;
             httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext routingContext) {
                     routingContext.request().resume();
-                    bodyHandler.handle(routingContext);
+                    requestBodyHandler.handle(routingContext);
                 }
             });
         }

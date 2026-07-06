@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.WithDefault;
 
 public interface AccessLogConfig {
@@ -119,4 +120,11 @@ public interface AccessLogConfig {
      */
     @WithDefault("4096")
     int maxLoggedBodySize();
+
+    /**
+     * Maximum request body size to buffer when capturing a request body for access logging.
+     * Requests larger than this limit are summarized from {@code Content-Length} without buffering the body.
+     */
+    @WithDefault("10k")
+    MemorySize requestBodyBufferLimit();
 }

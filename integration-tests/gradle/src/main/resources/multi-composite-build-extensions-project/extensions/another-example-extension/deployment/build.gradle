@@ -1,4 +1,5 @@
 plugins {
+    id 'io.quarkus.extension.deployment'
     id 'java'
     id 'java-library'
 }
@@ -26,4 +27,3 @@ java {
    // withJavadocJar()
     withSourcesJar()
 }
-

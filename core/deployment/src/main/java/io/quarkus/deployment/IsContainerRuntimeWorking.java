@@ -3,7 +3,6 @@ package io.quarkus.deployment;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -12,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -66,8 +66,7 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                 StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment",
                         Optional.empty(), null,
                         (s) -> s.getName().startsWith("ducttape"));
-                Object configurationInstance = null;
-                Method updateUserConfigMethod = null;
+                Properties userProperties = null;
                 String oldReusePropertyValue = null;
                 boolean restoreReusePropertyValue = false;
                 try {
@@ -77,15 +76,14 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
 
                     Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
                             .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
-                    configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
-                    oldReusePropertyValue = (String) configurationClass
-                            .getMethod("getEnvVarOrUserProperty", String.class, String.class)
-                            .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
-                    updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class,
-                            String.class);
+                    Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
+                    // Modify userProperties in-memory only, without writing to ~/.testcontainers.properties on disk
+                    userProperties = (Properties) configurationClass.getMethod("getUserProperties")
+                            .invoke(configurationInstance);
+                    oldReusePropertyValue = userProperties.getProperty("testcontainers.reuse.enable");
                     restoreReusePropertyValue = true;
                     // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
-                    updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
+                    userProperties.setProperty("testcontainers.reuse.enable", "true");
 
                     // ensure that Testcontainers doesn't take previous failures into account
                     Class<?> dockerClientProviderStrategyClass = Thread.currentThread().getContextClassLoader()
@@ -112,9 +110,13 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                 } finally {
                     if (restoreReusePropertyValue) {
                         try {
-                            updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable",
-                                    oldReusePropertyValue);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            if (oldReusePropertyValue != null) {
+                                userProperties.setProperty("testcontainers.reuse.enable",
+                                        oldReusePropertyValue);
+                            } else {
+                                userProperties.remove("testcontainers.reuse.enable");
+                            }
+                        } catch (Exception e) {
                             LOGGER.debug("Unable to restore testcontainers.reuse.enable", e);
                         }
                     }

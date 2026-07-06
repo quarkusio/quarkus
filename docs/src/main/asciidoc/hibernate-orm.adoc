@@ -1062,6 +1062,38 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ----
 ====
 
+==== Weight-based eviction
+
+For entities with highly variable sizes (e.g., storing JSON data that ranges from a few bytes to
+megabytes), count-based eviction cannot reliably bound memory usage. In these cases, use weight-based
+eviction instead:
+
+[source,properties]
+----
+quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.maximum-weight=104857600
+quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.weigher-class=org.acme.MyEntityWeigher
+----
+
+The `maximum-weight` property sets the total weight limit for the cache region. The `weigher-class`
+property specifies a `com.github.benmanes.caffeine.cache.Weigher` implementation that assigns a
+weight to each cache entry:
+
+[source,java]
+----
+import com.github.benmanes.caffeine.cache.Weigher;
+
+public class MyEntityWeigher implements Weigher<Object, Object> {
+    @Override
+    public int weigh(Object key, Object value) {
+        // Estimate memory based on entity data size
+        return 100; // default weight
+    }
+}
+----
+
+NOTE: `object-count` and `maximum-weight` are mutually exclusive per cache region.
+If `maximum-weight` is set without `weigher-class`, each entry has a default weight of 1.
+
 include::{includes}/duration-format-note.adoc[]
 
 === Limitations of Caching

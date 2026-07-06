@@ -250,6 +250,16 @@ public final class HibernateOrmProcessor {
                     "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider")
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .methods().fields().build());
+
+            // Register custom cache weigher classes for reflection (native image support)
+            for (var puConfig : config.persistenceUnits().values()) {
+                for (var cacheEntry : puConfig.cache().entrySet()) {
+                    cacheEntry.getValue().memory().weigherClass().ifPresent(weigherClass -> reflective
+                            .produce(ReflectiveClassBuildItem.builder(weigherClass)
+                                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                                    .build()));
+                }
+            }
         }
     }
 

@@ -94,4 +94,29 @@ public interface AccessLogConfig {
      */
     @WithDefault("false")
     boolean consolidateReroutedRequests();
+
+    /**
+     * If the request body should be available for the {@code %{REQUEST_BODY}} access log attribute.
+     * <p>
+     * Enabling this may have performance and security implications, as request bodies can be large and may contain
+     * sensitive data.
+     */
+    @WithDefault("false")
+    boolean logRequestBody();
+
+    /**
+     * If the response body should be available for the {@code %{RESPONSE_BODY}} access log attribute.
+     * <p>
+     * Enabling this may have performance and security implications, as response bodies can be large and may contain
+     * sensitive data.
+     */
+    @WithDefault("false")
+    boolean logResponseBody();
+
+    /**
+     * The maximum number of bytes of a request or response body to include in the access log.
+     * Bodies larger than this limit are truncated.
+     */
+    @WithDefault("4096")
+    int maxLoggedBodySize();
 }

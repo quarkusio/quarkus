@@ -9,13 +9,17 @@ import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogResponseBodyCapture;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.internal.http.HttpServerRequestWrapper;
+import io.vertx.core.streams.ReadStream;
 
 public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 
@@ -36,10 +40,17 @@ public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 
     private final List<Handler<Void>> requestDoneHandlers = new ArrayList<>();
     private final BiConsumer<Cookie, HttpServerRequest> cookieConsumer;
+    private final AccessLogResponseBodyCapture responseBodyCapture;
 
     public QuarkusRequestWrapper(HttpServerRequest event, BiConsumer<Cookie, HttpServerRequest> cookieConsumer) {
+        this(event, cookieConsumer, false, 0);
+    }
+
+    public QuarkusRequestWrapper(HttpServerRequest event, BiConsumer<Cookie, HttpServerRequest> cookieConsumer,
+            boolean captureResponseBody, int maxLoggedBodySize) {
         super((HttpServerRequestInternal) event);
         this.cookieConsumer = cookieConsumer;
+        this.responseBodyCapture = captureResponseBody ? new AccessLogResponseBodyCapture(maxLoggedBodySize) : null;
         this.response = new ResponseWrapper(delegate.response(), event);
         event.exceptionHandler(new Handler<Throwable>() {
             @Override
@@ -59,6 +70,13 @@ public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 
     public void addRequestDoneHandler(Handler<Void> handler) {
         this.requestDoneHandlers.add(handler);
+    }
+
+    public String getCapturedResponseBody() {
+        if (responseBodyCapture == null) {
+            return null;
+        }
+        return responseBodyCapture.getCapturedBody();
     }
 
     @Override
@@ -172,6 +190,108 @@ public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
                 cookieConsumer.accept(cookie, request);
             }
             return super.addCookie(cookie);
+        }
+
+        @Override
+        public Future<Void> write(Buffer data) {
+            captureResponseBody(data);
+            return super.write(data);
+        }
+
+        @Override
+        public Future<Void> write(String chunk, String enc) {
+            captureResponseBody(chunk);
+            return super.write(chunk, enc);
+        }
+
+        @Override
+        public Future<Void> write(String chunk) {
+            captureResponseBody(chunk);
+            return super.write(chunk);
+        }
+
+        @Override
+        public Future<Void> end(String chunk) {
+            captureResponseBody(chunk);
+            return super.end(chunk);
+        }
+
+        @Override
+        public Future<Void> end(String chunk, String enc) {
+            captureResponseBody(chunk);
+            return super.end(chunk, enc);
+        }
+
+        @Override
+        public Future<Void> end(Buffer chunk) {
+            captureResponseBody(chunk);
+            return super.end(chunk);
+        }
+
+        @Override
+        public Future<Void> send(String body) {
+            captureResponseBody(body);
+            return super.send(body);
+        }
+
+        @Override
+        public Future<Void> send(Buffer body) {
+            captureResponseBody(body);
+            return super.send(body);
+        }
+
+        @Override
+        public Future<Void> send(ReadStream<Buffer> body) {
+            markNonBufferResponseBody();
+            return super.send(body);
+        }
+
+        @Override
+        public Future<Void> sendFile(String filename) {
+            markNonBufferResponseBody();
+            return super.sendFile(filename);
+        }
+
+        @Override
+        public Future<Void> sendFile(String filename, long offset) {
+            markNonBufferResponseBody();
+            return super.sendFile(filename, offset);
+        }
+
+        @Override
+        public Future<Void> sendFile(String filename, long offset, long length) {
+            markNonBufferResponseBody();
+            return super.sendFile(filename, offset, length);
+        }
+
+        @Override
+        public Future<Void> sendFile(java.io.RandomAccessFile file, long offset, long length) {
+            markNonBufferResponseBody();
+            return super.sendFile(file, offset, length);
+        }
+
+        @Override
+        public Future<Void> sendFile(java.nio.channels.FileChannel file, long offset, long length) {
+            markNonBufferResponseBody();
+            return super.sendFile(file, offset, length);
+        }
+
+        private void captureResponseBody(Buffer data) {
+            if (responseBodyCapture != null) {
+                responseBodyCapture.capture(data);
+            }
+        }
+
+        private void captureResponseBody(String data) {
+            if (responseBodyCapture != null) {
+                responseBodyCapture.capture(data);
+            }
+        }
+
+        private void markNonBufferResponseBody() {
+            if (responseBodyCapture != null) {
+                responseBodyCapture.markNonBufferBody();
+            }
         }
     }
 

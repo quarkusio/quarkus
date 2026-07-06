@@ -67,6 +67,10 @@ public class PersistentLoginManager {
         }
     }
 
+    protected long getCurrentMillis() {
+        return System.currentTimeMillis();
+    }
+
     public RestoreResult restore(RoutingContext context) {
         return restore(context, cookieName);
     }
@@ -97,7 +101,7 @@ public class PersistentLoginManager {
                 return null;
             }
             long expireIdle = Long.parseLong(result.substring(0, sep));
-            long now = System.currentTimeMillis();
+            long now = getCurrentMillis();
             log.debugf("Current time: %s, Expire idle timeout: %s, expireIdle - now is: %d - %d = %d",
                     new Date(now).toString(), new Date(expireIdle).toString(), expireIdle, now, expireIdle - now);
             // We don't attempt renewal, idle timeout already expired.
@@ -132,7 +136,7 @@ public class PersistentLoginManager {
             secureRandom.nextBytes(iv);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(ENC_TAG_LENGTH, iv));
             StringBuilder contents = new StringBuilder();
-            long timeout = System.currentTimeMillis() + timeoutMillis;
+            long timeout = getCurrentMillis() + timeoutMillis;
             log.debugf("The new cookie will expire at %s", new Date(timeout).toString());
             contents.append(timeout);
             contents.append(":");
@@ -190,5 +194,4 @@ public class PersistentLoginManager {
             return principal;
         }
     }
-
 }

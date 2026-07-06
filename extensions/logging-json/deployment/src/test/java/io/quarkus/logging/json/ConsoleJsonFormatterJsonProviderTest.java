@@ -12,13 +12,12 @@ import org.jboss.logmanager.ExtLogRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
 import io.quarkus.logging.json.runtime.JsonProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.VertxMDC;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class ConsoleJsonFormatterJsonProviderTest {
 

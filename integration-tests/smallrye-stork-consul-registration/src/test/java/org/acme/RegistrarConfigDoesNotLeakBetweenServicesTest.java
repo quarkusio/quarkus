@@ -1,7 +1,6 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
 
 import java.util.Map;
 

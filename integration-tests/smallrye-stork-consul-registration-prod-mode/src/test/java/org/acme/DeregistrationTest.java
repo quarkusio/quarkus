@@ -1,6 +1,7 @@
 package org.acme;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Map;

@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.time.Duration;
 
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -10,10 +11,8 @@ import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdToken;
-import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.runtime.OidcProvider;
 import io.quarkus.oidc.runtime.OidcProviderClientImpl;
@@ -39,9 +38,6 @@ public class TenantRefreshTokenResource {
     @Inject
     OidcResource oidcResource;
 
-    @Inject
-    OidcProviderClient oidcProviderClient;
-
     @GET
     @Path("/tenant-web-app-refresh/api/user")
     @RolesAllowed("user")
@@ -55,17 +51,20 @@ public class TenantRefreshTokenResource {
 
     @GET
     @Path("/concurrent-token-refresh")
-    @RolesAllowed("user")
-    public ConcurrentRefreshResult getConcurrentRefreshResult(@QueryParam("refresh_token") String originalRefreshToken) {
-        OidcProviderClientImpl client = (OidcProviderClientImpl) ClientProxy.unwrap(oidcProviderClient);
-        OidcProvider oidcProvider = tenantConfigBean.getStaticTenant("concurrent-token-refresh").provider();
+    @PermitAll
+    public ConcurrentRefreshResult getConcurrentRefreshResult(@QueryParam("refresh_token") String originalRefreshToken,
+            @QueryParam("expected_count_before") int expectedCountBefore,
+            @QueryParam("expected_count_after") int expectedCountAfter) {
+        var tenantConfigContext = tenantConfigBean.getStaticTenant("concurrent-token-refresh");
+        var client = tenantConfigContext.getOidcProviderClient();
+        OidcProvider oidcProvider = tenantConfigContext.provider();
         oidcResource.refreshEndpointWait = true;
-        assertCount(client, originalRefreshToken, 0);
+        assertCount(client, originalRefreshToken, expectedCountBefore);
         var result = Uni.join().all(
                 oidcProvider.refreshTokens(originalRefreshToken),
                 Uni.createFrom().nullItem().onItem().delayIt().by(Duration.ofMillis(300))
                         .chain(() -> {
-                            assertCount(client, originalRefreshToken, 1);
+                            assertCount(client, originalRefreshToken, expectedCountAfter);
                             var req = oidcProvider.refreshTokens(originalRefreshToken);
                             oidcResource.refreshEndpointWait = false;
                             return req;
@@ -73,7 +72,7 @@ public class TenantRefreshTokenResource {
                 .andFailFast().await().indefinitely();
         AuthorizationCodeTokens tokens1 = result.get(0);
         AuthorizationCodeTokens tokens2 = result.get(1);
-        assertCount(client, originalRefreshToken, 0);
+        assertCount(client, originalRefreshToken, expectedCountAfter);
         return new ConcurrentRefreshResult(tokens1.getAccessToken(), tokens2.getAccessToken());
     }
 

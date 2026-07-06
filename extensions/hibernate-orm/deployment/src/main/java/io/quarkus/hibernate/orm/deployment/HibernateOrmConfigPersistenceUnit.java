@@ -725,9 +725,30 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitCacheMemory {
         /**
          * The maximum number of objects kept in memory in the cache.
+         * <p>
+         * Mutually exclusive with {@code maximum-weight}.
          */
         @ConfigDocDefault("10000")
         OptionalLong objectCount();
+
+        /**
+         * The maximum total weight of objects kept in memory in the cache.
+         * <p>
+         * When set, eviction is based on the total weight of cached entries rather than their count.
+         * This is useful for entities with highly variable sizes (e.g., JSON blobs).
+         * <p>
+         * Mutually exclusive with {@code object-count}. Requires a {@code weigher-class} to assign
+         * weights to entries; without one, each entry has a default weight of 1.
+         */
+        OptionalLong maximumWeight();
+
+        /**
+         * The fully qualified class name of a {@code com.github.benmanes.caffeine.cache.Weigher}
+         * implementation used to assign weights to cache entries.
+         * <p>
+         * Only used when {@code maximum-weight} is set. The class must have a public no-arg constructor.
+         */
+        Optional<String> weigherClass();
     }
 
     @ConfigGroup

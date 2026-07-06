@@ -257,6 +257,23 @@ By default, Quarkus listens to port 8443 for SSL secured connections and 8444 wh
 
 These ports can be configured in your `application.properties` with the properties `quarkus.http.ssl-port` and `quarkus.http.test-ssl-port`.
 
+=== Configure the HTTPS host independently
+
+By default, both the plain HTTP and HTTPS listeners bind to the host configured with `quarkus.http.host`.
+When you need to bind them to different network interfaces, set `quarkus.http.ssl-host` for the HTTPS listener.
+When not set, HTTPS uses the same host as plain HTTP.
+
+This is useful when HTTP should only be reachable locally (for example health checks or admin tools) while HTTPS
+should be reachable from remote clients:
+
+[source,properties]
+----
+quarkus.http.host=127.0.0.1
+quarkus.http.ssl-host=0.0.0.0
+quarkus.http.ssl.certificate.files=/path/to/certificate
+quarkus.http.ssl.certificate.key-files=/path/to/key
+----
+
 === Disable the HTTP port
 
 It is possible to disable the HTTP port and only support secure requests. This is done via the

@@ -620,6 +620,18 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonUnwrapped.class.getName()) != null;
         }
 
+        String unwrappedPrefix() {
+            AnnotationInstance ann = annotations.get(JsonUnwrapped.class.getName());
+            AnnotationValue prefix = ann == null ? null : ann.value("prefix");
+            return prefix == null ? "" : prefix.asString();
+        }
+
+        String unwrappedSuffix() {
+            AnnotationInstance ann = annotations.get(JsonUnwrapped.class.getName());
+            AnnotationValue suffix = ann == null ? null : ann.value("suffix");
+            return suffix == null ? "" : suffix.asString();
+        }
+
         String[] fieldIgnoreProperties() {
             AnnotationInstance ann = annotations.get(JsonIgnoreProperties.class.getName());
             return ann == null || ann.value() == null ? EMPTY_STRING_ARRAY : ann.value().asStringArray();

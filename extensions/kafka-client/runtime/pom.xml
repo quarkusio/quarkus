@@ -45,6 +45,20 @@
             <groupId>io.strimzi</groupId>
             <artifactId>kafka-oauth-common</artifactId>
             <scope>provided</scope>
+            <!-- TODO: need to figure out what to do with this -->
+            <!-- For the time being we can't remove it since Jackson 2 is used internally by Kafka client -->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                    <artifactId>jackson-databind</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+        </dependency>
+
+        <!-- kafka-clients internally uses Jackson 2 in `org.apache.kafka.common.security.oauthbearer.internals.unsecured.OAuthBearerUnsecuredJws#toMap` -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>

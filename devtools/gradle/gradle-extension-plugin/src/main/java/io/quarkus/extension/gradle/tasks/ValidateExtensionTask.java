@@ -43,7 +43,7 @@ public class ValidateExtensionTask extends DefaultTask {
 
         this.project = getProject();
         this.runtimeModuleClasspath = runtimeModuleClasspath;
-        this.onlyIf(t -> !quarkusExtensionConfiguration.isValidationDisabled().get());
+        this.onlyIf(t -> !quarkusExtensionConfiguration.getDisableValidation().get());
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.

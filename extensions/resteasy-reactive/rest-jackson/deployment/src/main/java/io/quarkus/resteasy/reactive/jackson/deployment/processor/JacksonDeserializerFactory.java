@@ -7,6 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
@@ -136,7 +138,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *                         break;
  *                     default:
  *                         if (context.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)) {
- *                             throw new JsonMappingException("Unrecognized field \"" + fieldName + "\"");
+ *                             throw UnrecognizedPropertyException.from(jsonParser, Person.class, fieldName, null);
  *                         }
  *                 }
  *             }
@@ -201,7 +203,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *                     break;
  *                 default:
  *                     if (context.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)) {
- *                         throw new JsonMappingException("Unrecognized field \"" + field + "\"");
+ *                         throw UnrecognizedPropertyException.from(jsonParser, DataItem.class, field, null);
  *                     }
  *             }
  *         }
@@ -443,15 +445,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                         bytecode.readStaticField(FieldDescriptor.of(DeserializationFeature.class,
                                 "FAIL_ON_UNKNOWN_PROPERTIES", DeserializationFeature.class)));
                 BytecodeCreator trueBranch = bytecode.ifTrue(failOnUnknown).trueBranch();
-                ResultHandle message = trueBranch.invokeVirtualMethod(
-                        ofMethod(String.class, "concat", String.class, String.class),
-                        trueBranch.load("Unrecognized field \""),
-                        trueBranch.invokeVirtualMethod(
-                                ofMethod(String.class, "concat", String.class, String.class),
-                                trueBranch.checkCast(fieldName, String.class),
-                                trueBranch.load("\"")));
-                ResultHandle exception = trueBranch.newInstance(
-                        MethodDescriptor.ofConstructor(JsonMappingException.class, String.class), message);
+                ResultHandle parser = deserData.methodCreator.getMethodParam(0);
+                ResultHandle targetClass = trueBranch.loadClass(deserData.classInfo.name().toString());
+                ResultHandle castedFieldName = trueBranch.checkCast(fieldName, String.class);
+                ResultHandle exception = trueBranch.invokeStaticMethod(
+                        ofMethod(UnrecognizedPropertyException.class, "from", UnrecognizedPropertyException.class,
+                                JsonParser.class, Object.class, String.class, Collection.class),
+                        parser, targetClass, castedFieldName, trueBranch.loadNull());
                 trueBranch.throwException(exception);
             });
         }

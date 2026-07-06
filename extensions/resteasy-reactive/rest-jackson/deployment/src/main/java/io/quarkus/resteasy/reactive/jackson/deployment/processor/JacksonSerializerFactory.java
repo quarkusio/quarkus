@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.type.SimpleType;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
@@ -544,17 +545,24 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         String primitiveMethodName = writeMethodForPrimitiveFields(typeName);
 
         if (primitiveMethodName != null) {
-            BytecodeCreator primitiveBytecode = JacksonSerializationUtils.isBoxedPrimitive(typeName)
-                    ? bytecode.ifNotNull(arg).trueBranch()
-                    : bytecode;
-
             if (pkgName != null) {
-                writeFieldName(fieldSpecs, primitiveBytecode, ctx, pkgName);
+                writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
             }
 
-            MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JsonGenerator.class, primitiveMethodName, void.class,
-                    fieldSpecs.writtenType());
-            primitiveBytecode.invokeVirtualMethod(primitiveWriter, ctx.jsonGenerator, arg);
+            if (JacksonSerializationUtils.isBoxedPrimitive(typeName)) {
+                BranchResult nullCheck = bytecode.ifNotNull(arg);
+                nullCheck.trueBranch().invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(JsonGenerator.class, primitiveMethodName, void.class,
+                                fieldSpecs.writtenType()),
+                        ctx.jsonGenerator, arg);
+                nullCheck.falseBranch().invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(JsonGenerator.class, "writeNull", void.class),
+                        ctx.jsonGenerator);
+            } else {
+                MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JsonGenerator.class, primitiveMethodName,
+                        void.class, fieldSpecs.writtenType());
+                bytecode.invokeVirtualMethod(primitiveWriter, ctx.jsonGenerator, arg);
+            }
 
         } else {
             FieldKind fieldKind = null;

@@ -1,9 +1,8 @@
 package io.quarkus.kafka.client.serialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import tools.jackson.databind.ObjectMapper;
 
 final class ObjectMapperProducer {
 

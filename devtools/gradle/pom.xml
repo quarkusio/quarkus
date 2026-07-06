@@ -17,6 +17,7 @@
 
     <properties>
         <gradle.executable>./../gradlew</gradle.executable>
+        <gradle.configuration.cache.argument>--configuration-cache</gradle.configuration.cache.argument>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
@@ -25,6 +26,7 @@
         <module>gradle-model</module>
         <module>gradle-application-plugin</module>
         <module>gradle-extension-plugin</module>
+        <module>gradle-extension-deployment-plugin</module>
     </modules>
 
     <dependencyManagement>
@@ -96,6 +98,7 @@
                                         <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
                                         <argument>-S</argument>
                                         <argument>--stacktrace</argument>
+                                        <argument>${gradle.configuration.cache.argument}</argument>
                                         <argument>--no-daemon</argument>
                                     </arguments>
                                     <environmentVariables>
@@ -145,6 +148,23 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>disable-gradle-configuration-cache-in-ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <!--
+                  The Gradle configuration cache can persist values observed during configuration.
+                  Keep the Maven-driven Gradle plugin build off configuration cache in CI so
+                  accidentally observed CI secrets are not stored in configuration-cache state.
+                -->
+                <gradle.configuration.cache.argument>--no-configuration-cache</gradle.configuration.cache.argument>
+            </properties>
         </profile>
         <profile>
             <id>skipTests</id>

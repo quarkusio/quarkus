@@ -40,7 +40,9 @@ public abstract class AbstractQuarkusExtension {
     protected final File projectDir;
     protected final Property<String> finalName;
     private final MapProperty<String, String> forcedPropertiesProperty;
+    private final DeprecatedGradleDslUsageReporter deprecatedDslUsageReporter = new DeprecatedGradleDslUsageReporter();
     protected final MapProperty<String, String> quarkusBuildProperties;
+    protected final MapProperty<String, String> nativeArguments;
     protected final ListProperty<String> cachingRelevantProperties;
     private final ListProperty<String> ignoredEntries;
     private final FileCollection classpath;
@@ -55,6 +57,7 @@ public abstract class AbstractQuarkusExtension {
         this.finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
         this.forcedPropertiesProperty = project.getObjects().mapProperty(String.class, String.class);
         this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
+        this.nativeArguments = project.getObjects().mapProperty(String.class, String.class);
         this.cachingRelevantProperties = project.getObjects().listProperty(String.class)
                 .value(List.of("quarkus[.].*", "platform[.]quarkus[.].*"));
         this.ignoredEntries = project.getObjects().listProperty(String.class);
@@ -113,6 +116,17 @@ public abstract class AbstractQuarkusExtension {
 
     protected MapProperty<String, String> forcedPropertiesProperty() {
         return forcedPropertiesProperty;
+    }
+
+    /**
+     * Internal diagnostic delegate. Not intended as build-script DSL.
+     */
+    public DeprecatedGradleDslUsageReporter deprecatedDslUsageReporterInternal() {
+        return deprecatedDslUsageReporter;
+    }
+
+    protected void recordDeprecatedDslUsageInternal(String api, String replacement) {
+        deprecatedDslUsageReporter.record(api, replacement);
     }
 
     protected ListProperty<String> ignoredEntriesProperty() {

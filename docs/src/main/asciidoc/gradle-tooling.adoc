@@ -507,19 +507,18 @@ include::{includes}/devtools/build-native.adoc[]
 
 A native executable will be present in `build/`.
 
-Native related properties can either be added in `application.properties` file, as command line arguments or in the `quarkusBuild` task.
-Configuring the `quarkusBuild` task can be done as following:
+Native related properties can either be added in the `application.properties` file, as command line arguments or on the
+`quarkus` extension.
+Configuring the `quarkus` extension can be done as following:
 
 [role="primary asciidoc-tabs-sync-groovy"]
 .Groovy DSL
 ****
 [source,groovy,subs=attributes+]
 ----
-quarkusBuild {
-    nativeArgs {
-        containerBuild = true <1>
-        builderImage = "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
-    }
+quarkus {
+    nativeArguments.put("container-build", "true") <1>
+    nativeArguments.put("builder-image", "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}") <2>
 }
 ----
 
@@ -532,11 +531,9 @@ quarkusBuild {
 ****
 [source,kotlin,subs=attributes+]
 ----
-tasks.quarkusBuild {
-    nativeArgs {
-        "container-build" to true <1>
-        "builder-image" to "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
-    }
+quarkus {
+    nativeArguments.put("container-build", "true") <1>
+    nativeArguments.put("builder-image", "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}") <2>
 }
 ----
 
@@ -546,10 +543,162 @@ tasks.quarkusBuild {
 
 [WARNING]
 ====
-When using the Gradle Groovy DSL, property keys must follow lower camel case notation.
-e.g. `container-build` is not valid, and should be replaced by `containerBuild`.
-This limitation does not apply to the Gradle Kotlin DSL.
+Native argument keys are normalized to the `quarkus.native.*` namespace.
+For example, `container-build` is interpreted as `quarkus.native.container-build`.
 ====
+
+[[quarkus-4-gradle-dsl-migration]]
+=== Gradle DSL migration for Quarkus 4
+
+Quarkus 4 removes deprecated Gradle build-script entry points where JavaBean-style getters and setters duplicate Gradle
+managed properties.
+Build scripts should use the managed-property DSL shape because it works with Gradle's configuration cache and isolated
+projects more reliably, and it is the Gradle-native way to configure plugin extensions.
+
+The replacement syntax can already be used with Quarkus 3.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkus {
+    finalName.set("my-application")
+    cleanupBuildOutput.set(false)
+    cacheLargeArtifacts.set(true)
+    codeGenerationInputs.add("proto")
+    codeGenerationProviders.add("grpc")
+    nativeArguments.put("container-build", "true")
+}
+
+quarkusExtension {
+    disableValidation.set(true)
+    deploymentArtifact.set("com.example:my-extension-deployment:${project.version}")
+    excludedArtifacts.add("com.example:excluded-artifact")
+    parentFirstArtifacts.add("com.example:parent-first-artifact")
+    runnerParentFirstArtifacts.add("com.example:runner-parent-first-artifact")
+    lesserPriorityArtifacts.add("com.example:lesser-priority-artifact")
+    conditionalDependencies.add("com.example:conditional-dependency")
+    conditionalDevDependencies.add("com.example:conditional-dev-dependency")
+    dependencyConditions.add("com.example:dependency-condition")
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+quarkus {
+    finalName.set("my-application")
+    cleanupBuildOutput.set(false)
+    cacheLargeArtifacts.set(true)
+    codeGenerationInputs.add("proto")
+    codeGenerationProviders.add("grpc")
+    nativeArguments.put("container-build", "true")
+}
+
+quarkusExtension {
+    disableValidation.set(true)
+    deploymentArtifact.set("com.example:my-extension-deployment:${project.version}")
+    excludedArtifacts.add("com.example:excluded-artifact")
+    parentFirstArtifacts.add("com.example:parent-first-artifact")
+    runnerParentFirstArtifacts.add("com.example:runner-parent-first-artifact")
+    lesserPriorityArtifacts.add("com.example:lesser-priority-artifact")
+    conditionalDependencies.add("com.example:conditional-dependency")
+    conditionalDevDependencies.add("com.example:conditional-dev-dependency")
+    dependencyConditions.add("com.example:dependency-condition")
+}
+----
+****
+
+The most common replacements are listed below.
+In Groovy DSL, assignments such as `quarkus { finalName = "my-application" }` call the corresponding JavaBean setter,
+so they should be migrated to the managed property as well.
+
+[cols="1,1,1", options="header"]
+|===
+|Old build-script shape
+|Groovy DSL replacement
+|Kotlin DSL replacement
+
+|`quarkus { finalName = "my-application" }` or `quarkus.setFinalName("my-application")`
+|`quarkus { finalName.set("my-application") }`
+|`quarkus { finalName.set("my-application") }`
+
+|`quarkus.finalName()`
+|`quarkus.finalName.get()`
+|`quarkus.finalName.get()`
+
+|`quarkus { cleanupBuildOutput = false }` or `quarkus.setCleanupBuildOutput(false)`
+|`quarkus { cleanupBuildOutput.set(false) }`
+|`quarkus { cleanupBuildOutput.set(false) }`
+
+|`quarkus { cacheLargeArtifacts = true }` or `quarkus.setCacheLargeArtifacts(true)`
+|`quarkus { cacheLargeArtifacts.set(true) }`
+|`quarkus { cacheLargeArtifacts.set(true) }`
+
+|`quarkus { codeGenerationInputs = listOfInputs }` or `quarkus.setCodeGenerationInputs(listOfInputs)`
+|`quarkus { codeGenerationInputs.set(listOfInputs) }`
+|`quarkus { codeGenerationInputs.set(listOfInputs) }`
+
+|`quarkus { codeGenerationProviders = listOfProviders }` or `quarkus.setCodeGenerationProviders(listOfProviders)`
+|`quarkus { codeGenerationProviders.set(listOfProviders) }`
+|`quarkus { codeGenerationProviders.set(listOfProviders) }`
+
+|`quarkusBuild.nativeArgs { ... }`
+|`quarkus { nativeArguments.put("container-build", "true") }`
+|`quarkus { nativeArguments.put("container-build", "true") }`
+
+|`quarkusExtension { disableValidation = true }` or `quarkusExtension.setDisableValidation(true)`
+|`quarkusExtension { disableValidation.set(true) }`
+|`quarkusExtension { disableValidation.set(true) }`
+
+|`quarkusExtension.isValidationDisabled().get()`
+|`quarkusExtension.disableValidation.get()`
+|`quarkusExtension.disableValidation.get()`
+
+|`quarkusExtension { deploymentArtifact = notation }` or `quarkusExtension.setDeploymentArtifact(notation)`
+|`quarkusExtension { deploymentArtifact.set(notation) }`
+|`quarkusExtension { deploymentArtifact.set(notation) }`
+
+|`quarkusExtension { deploymentModule = path }` or `quarkusExtension.setDeploymentModule(path)`
+|`quarkusExtension { deploymentModule.set(path) }`
+|`quarkusExtension { deploymentModule.set(path) }`
+
+|`quarkusExtension { excludedArtifacts = artifacts }` or `quarkusExtension.setExcludedArtifacts(artifacts)`
+|`quarkusExtension { excludedArtifacts.set(artifacts) }`
+|`quarkusExtension { excludedArtifacts.set(artifacts) }`
+
+|`quarkusExtension { parentFirstArtifacts = artifacts }` or `quarkusExtension.setParentFirstArtifacts(artifacts)`
+|`quarkusExtension { parentFirstArtifacts.set(artifacts) }`
+|`quarkusExtension { parentFirstArtifacts.set(artifacts) }`
+
+|`quarkusExtension { runnerParentFirstArtifacts = artifacts }` or `quarkusExtension.setRunnerParentFirstArtifacts(artifacts)`
+|`quarkusExtension { runnerParentFirstArtifacts.set(artifacts) }`
+|`quarkusExtension { runnerParentFirstArtifacts.set(artifacts) }`
+
+|`quarkusExtension { lesserPriorityArtifacts = artifacts }` or `quarkusExtension.setLesserPriorityArtifacts(artifacts)`
+|`quarkusExtension { lesserPriorityArtifacts.set(artifacts) }`
+|`quarkusExtension { lesserPriorityArtifacts.set(artifacts) }`
+
+|`quarkusExtension { conditionalDependencies = dependencies }` or `quarkusExtension.setConditionalDependencies(dependencies)`
+|`quarkusExtension { conditionalDependencies.set(dependencies) }`
+|`quarkusExtension { conditionalDependencies.set(dependencies) }`
+
+|`quarkusExtension { conditionalDevDependencies = dependencies }` or `quarkusExtension.setConditionalDevDependencies(dependencies)`
+|`quarkusExtension { conditionalDevDependencies.set(dependencies) }`
+|`quarkusExtension { conditionalDevDependencies.set(dependencies) }`
+
+|`quarkusExtension { dependencyConditions = conditions }` or `quarkusExtension.setDependencyConditions(conditions)`
+|`quarkusExtension { dependencyConditions.set(conditions) }`
+|`quarkusExtension { dependencyConditions.set(conditions) }`
+|===
+
+Public Java visibility does not necessarily mean that a method is intended as stable build-script DSL.
+Some public getters and methods exist for Gradle task modeling or plugin internals.
+Use the DSL documented in this guide as the supported Gradle build-script surface.
 
 === Build a container friendly executable
 

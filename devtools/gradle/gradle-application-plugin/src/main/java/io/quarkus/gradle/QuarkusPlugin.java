@@ -654,7 +654,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getNativeSourcesOnly().set(quarkusExt.nativeConfig().sourcesOnly());
         task.getRunnerSuffix().set(quarkusExt.packageConfig().computedRunnerSuffix());
         task.getRunnerName().set(
-                quarkusExt.packageConfig().outputName().orElseGet(quarkusExt::finalName));
+                quarkusExt.packageConfig().outputName().orElseGet(() -> quarkusExt.getFinalName().get()));
         task.getOutputDirectory()
                 .set(Path.of(quarkusExt.packageConfig().outputDirectory().map(Path::toString)
                         .orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY)));

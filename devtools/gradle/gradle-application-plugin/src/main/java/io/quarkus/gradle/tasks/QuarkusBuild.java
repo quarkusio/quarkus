@@ -29,12 +29,10 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.dsl.Manifest;
-import io.quarkus.runtime.util.StringUtil;
 
 @CacheableTask
 public abstract class QuarkusBuild extends QuarkusBuildTask {
 
-    private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
     public static final String QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD = "quarkus.ignore.legacy.deploy.build";
 
     @Inject
@@ -42,13 +40,18 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         super("Builds a Quarkus application.", true);
     }
 
+    /**
+     * @deprecated Use {@code quarkus.nativeArguments} instead.
+     */
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
     public QuarkusBuild nativeArgs(Action<Map<String, ?>> action) {
+        extension().deprecatedDslUsageReporterInternal().record("QuarkusBuild.nativeArgs(Action<Map<String, ?>>)",
+                "Use quarkus.nativeArguments instead");
         Map<String, ?> nativeArgsMap = new HashMap<>();
         action.execute(nativeArgsMap);
         for (Map.Entry<String, ?> nativeArg : nativeArgsMap.entrySet()) {
-            getAdditionalForcedProperties().get().getProperties().put(expandConfigurationKey(nativeArg.getKey()),
-                    nativeArg.getValue().toString());
+            extension().getNativeArguments().put(nativeArg.getKey(), nativeArg.getValue().toString());
         }
         return this;
     }
@@ -203,6 +206,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     @SuppressWarnings("deprecation") // legacy JAR
     @TaskAction
     public void finalizeQuarkusBuild() {
+        reportDeprecatedDslUsages();
         if (getExtensionView().getForcedProperties().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
             getLogger().info("SKIPPING finalizedBy deploy build");
             return;
@@ -232,6 +236,11 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                 }
             }
         }
+    }
+
+    void reportDeprecatedDslUsages() {
+        getExtensionView().deprecatedDslUsageReporter().report(getLogger(),
+                gradleBuildDir().resolve(DeprecatedGradleDslUsageReporter.REPORT_PATH).toFile());
     }
 
     private void assembleLegacyJar() {
@@ -358,14 +367,6 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                                     NATIVE_SOURCES,
                                     nativeImageSourceJarDirName() + "/**");
                 });
-    }
-
-    private String expandConfigurationKey(String shortKey) {
-        final String hyphenatedKey = StringUtil.hyphenate(shortKey);
-        if (hyphenatedKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
-            return hyphenatedKey;
-        }
-        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, hyphenatedKey);
     }
 
     static GradleException nativeAndJar() {

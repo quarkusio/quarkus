@@ -33,9 +33,11 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
  * Configuration cache compatible view of Quarkus extension
  */
 public abstract class QuarkusPluginExtensionView {
+    private final DeprecatedGradleDslUsageReporter deprecatedDslUsageReporter;
 
     @Inject
     public QuarkusPluginExtensionView(Project project, QuarkusPluginExtension extension) {
+        this.deprecatedDslUsageReporter = extension.deprecatedDslUsageReporterInternal();
         project.getGradle().getTaskGraph().whenReady(taskGraph -> {
             if (taskGraph.hasTask(project.getPath() + BUILD_NATIVE_TASK_NAME)
                     || taskGraph.hasTask(project.getPath() + TEST_NATIVE_TASK_NAME)) {
@@ -58,7 +60,12 @@ public abstract class QuarkusPluginExtensionView {
         getQuarkusProfileEnvVariable().set(getProviderFactory().environmentVariable("QUARKUS_PROFILE"));
         getCachingRelevantProperties().set(extension.getCachingRelevantProperties());
         getForcedProperties().set(extension.forcedPropertiesProperty());
+        getNativeArguments().set(extension.getNativeArguments());
         getProjectProperties().set(getQuarkusAndPlatformProjectProperties(project));
+    }
+
+    DeprecatedGradleDslUsageReporter deprecatedDslUsageReporter() {
+        return deprecatedDslUsageReporter;
     }
 
     private Provider<Map<String, String>> getQuarkusAndPlatformProjectProperties(Project project) {
@@ -143,5 +150,9 @@ public abstract class QuarkusPluginExtensionView {
     @Input
     @Optional
     public abstract MapProperty<String, String> getForcedProperties();
+
+    @Input
+    @Optional
+    public abstract MapProperty<String, String> getNativeArguments();
 
 }

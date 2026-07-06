@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.gradle.api.Project;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
+import io.quarkus.gradle.tasks.QuarkusBuild;
 
 public class QuarkusPluginTest {
 
@@ -47,6 +49,26 @@ public class QuarkusPluginTest {
         assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_BUILD_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.IMAGE_PUSH_TASK_NAME));
         assertNotNull(tasks.getByName(QuarkusPlugin.DEPLOY_TASK_NAME));
+    }
+
+    @Test
+    @SuppressWarnings("removal")
+    public void nativeArgsShouldPopulateExtensionNativeArguments() {
+        Project project = ProjectBuilder.builder().build();
+        project.getPluginManager().apply(QuarkusPlugin.ID);
+
+        QuarkusBuild quarkusBuild = (QuarkusBuild) project.getTasks().getByName(QUARKUS_BUILD_TASK_NAME);
+        quarkusBuild.nativeArgs(args -> {
+            @SuppressWarnings({ "rawtypes", "unchecked" })
+            Map<String, Object> mutableArgs = (Map) args;
+            mutableArgs.put("containerBuild", true);
+            mutableArgs.put("quarkus.native.builderImage", "builder-image");
+        });
+
+        QuarkusPluginExtension extension = project.getExtensions().getByType(QuarkusPluginExtension.class);
+        assertThat(extension.getNativeArguments().get()).containsOnly(
+                Map.entry("containerBuild", "true"),
+                Map.entry("quarkus.native.builderImage", "builder-image"));
     }
 
     @Test

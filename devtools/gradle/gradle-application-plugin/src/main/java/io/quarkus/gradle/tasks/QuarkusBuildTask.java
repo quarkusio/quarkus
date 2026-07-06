@@ -281,7 +281,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         Map<String, String> quarkusProperties = effectiveProvider()
-                .buildEffectiveConfiguration(appModel, getAdditionalForcedProperties().get().getProperties())
+                .buildEffectiveConfiguration(appModel, additionalForcedProperties())
                 .getQuarkusValues();
 
         if (nativeEnabled()) {
@@ -350,6 +350,12 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
                 }
             }
         });
+    }
+
+    Map<String, String> additionalForcedProperties() {
+        return AdditionalForcedProperties.of(
+                getExtensionView().getNativeArguments().get(),
+                getAdditionalForcedProperties().get().getProperties());
     }
 
     void abort(String message, Object... args) {

@@ -82,7 +82,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return cleanupBuildOutput;
     }
 
+    /**
+     * @deprecated Use {@code quarkus.cleanupBuildOutput.set(...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void setCleanupBuildOutput(boolean cleanupBuildOutput) {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.setCleanupBuildOutput(boolean)",
+                "Use quarkus.cleanupBuildOutput.set(...) instead");
         this.cleanupBuildOutput.set(cleanupBuildOutput);
     }
 
@@ -94,11 +100,23 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return cacheLargeArtifacts;
     }
 
+    /**
+     * @deprecated Use {@code quarkus.cacheLargeArtifacts.set(...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void setCacheLargeArtifacts(boolean cacheLargeArtifacts) {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.setCacheLargeArtifacts(boolean)",
+                "Use quarkus.cacheLargeArtifacts.set(...) instead");
         this.cacheLargeArtifacts.set(cacheLargeArtifacts);
     }
 
+    /**
+     * @deprecated Use {@code quarkus.codeGenerationInputs.set(...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void setCodeGenerationInputs(List<String> codeGenerationInputs) {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.setCodeGenerationInputs(List<String>)",
+                "Use quarkus.codeGenerationInputs.set(...) instead");
         this.codeGenerationInputs.set(codeGenerationInputs);
     }
 
@@ -110,7 +128,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return codeGenerationInputs;
     }
 
+    /**
+     * @deprecated Use {@code quarkus.codeGenerationProviders.set(...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void setCodeGenerationProviders(List<String> codeGenerationProviders) {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.setCodeGenerationProviders(List<String>)",
+                "Use quarkus.codeGenerationProviders.set(...) instead");
         this.codeGenerationProviders.set(codeGenerationProviders);
     }
 
@@ -122,11 +146,22 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return codeGenerationProviders;
     }
 
+    /**
+     * @deprecated Use {@code quarkus.finalName.get()} instead.
+     */
+    @Deprecated(forRemoval = true)
     public String finalName() {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.finalName()", "Use quarkus.finalName.get() instead");
         return getFinalName().get();
     }
 
+    /**
+     * @deprecated Use {@code quarkus.finalName.set(...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void setFinalName(String finalName) {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.setFinalName(String)",
+                "Use quarkus.finalName.set(...) instead");
         getFinalName().set(finalName);
     }
 
@@ -138,7 +173,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return sourceSetExtension;
     }
 
+    /**
+     * @deprecated This method exposes live Gradle project state and is not intended as build-script DSL.
+     */
+    @Deprecated(forRemoval = true)
     public Set<File> resourcesDir() {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.resourcesDir()",
+                "Use the Gradle source set APIs directly instead");
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
     }
 
@@ -150,7 +191,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return classesDirs;
     }
 
+    /**
+     * @deprecated This method exposes live Gradle project state and is not intended as build-script DSL.
+     */
+    @Deprecated(forRemoval = true)
     public Set<File> combinedOutputSourceDirs() {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.combinedOutputSourceDirs()",
+                "Use the Gradle source set APIs directly instead");
         Set<File> sourcesDirs = new LinkedHashSet<>();
         SourceSetContainer sourceSets = getSourceSets();
         sourcesDirs.addAll(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
@@ -158,18 +205,34 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return sourcesDirs;
     }
 
+    /**
+     * @deprecated This method resolves a live application model and is not configuration-cache friendly.
+     */
+    @Deprecated(forRemoval = true)
     public AppModelResolver getAppModelResolver() {
         return getAppModelResolver(NORMAL);
     }
 
+    /**
+     * @deprecated This method resolves a live application model and is not configuration-cache friendly.
+     */
+    @Deprecated(forRemoval = true)
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
         return new AppModelGradleResolver(project, mode);
     }
 
+    /**
+     * @deprecated This method resolves a live application model and is not configuration-cache friendly.
+     */
+    @Deprecated(forRemoval = true)
     public ApplicationModel getApplicationModel() {
         return getApplicationModel(NORMAL);
     }
 
+    /**
+     * @deprecated This method resolves a live application model and is not configuration-cache friendly.
+     */
+    @Deprecated(forRemoval = true)
     public ApplicationModel getApplicationModel(LaunchMode mode) {
         return ToolingUtils.create(project, mode);
     }
@@ -219,7 +282,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return project.getExtensions().getByType(SourceSetContainer.class);
     }
 
+    /**
+     * @deprecated This method exposes live Gradle project state and is not intended as build-script DSL.
+     */
+    @Deprecated(forRemoval = true)
     public Path appJarOrClasses() {
+        recordDeprecatedDslUsage("QuarkusPluginExtension.appJarOrClasses()",
+                "Use the Gradle Java plugin outputs directly instead");
         final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
         if (jarTask == null) {
             throw new RuntimeException("Failed to locate task 'jar' in the project.");
@@ -250,6 +319,13 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return quarkusBuildProperties;
     }
 
+    /**
+     * Native-image build arguments configured through the Gradle extension.
+     */
+    public MapProperty<String, String> getNativeArguments() {
+        return nativeArguments;
+    }
+
     public ListProperty<String> getCachingRelevantProperties() {
         return cachingRelevantProperties;
     }
@@ -264,5 +340,9 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     private String addQuarkusBuildPropertyPrefix(String name) {
         return String.format("quarkus.%s", name);
+    }
+
+    private void recordDeprecatedDslUsage(String api, String replacement) {
+        recordDeprecatedDslUsageInternal(api, replacement);
     }
 }

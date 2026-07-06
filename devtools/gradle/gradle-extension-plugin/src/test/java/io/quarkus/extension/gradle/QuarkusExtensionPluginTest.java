@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.Properties;
 
 import org.assertj.core.api.Assertions;
+import org.gradle.api.Project;
+import org.gradle.testfixtures.ProjectBuilder;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -33,6 +35,16 @@ public class QuarkusExtensionPluginTest {
         File settingFile = new File(testProjectDir, "settings.gradle");
         String settingsContent = "rootProject.name = 'test'";
         TestUtils.writeFile(settingFile, settingsContent);
+    }
+
+    @Test
+    public void disableValidationShouldExposeManagedProperty() {
+        Project project = ProjectBuilder.builder().build();
+        QuarkusExtensionConfiguration configuration = new QuarkusExtensionConfiguration(project);
+
+        configuration.getDisableValidation().set(true);
+
+        assertThat(configuration.isValidationDisabled().get()).isTrue();
     }
 
     @Test

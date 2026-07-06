@@ -1,45 +1,41 @@
 package io.quarkus.extension.gradle;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
+import java.util.Collections;
 
-import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.language.jvm.tasks.ProcessResources;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
 import io.quarkus.gradle.GradleVersionSupport;
-import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.ExtensionConstants;
-import io.quarkus.gradle.tooling.ToolingUtils;
-import io.quarkus.gradle.tooling.dependency.DependencyUtils;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.gradle.model.config.ExtensionVariantConstants;
+import io.quarkus.gradle.model.config.QuarkusExtensionAnnotationProcessorConfigurator;
 
 public class QuarkusExtensionPlugin implements Plugin<Project> {
 
-    public static final String DEFAULT_DEPLOYMENT_PROJECT_NAME = "deployment";
     public static final String EXTENSION_CONFIGURATION_NAME = ExtensionConstants.EXTENSION_CONFIGURATION_NAME;
 
     public static final String EXTENSION_DESCRIPTOR_TASK_NAME = "extensionDescriptor";
     public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
     private static final String DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME = "quarkusDeploymentClasspath";
+    private static final String DEPLOYMENT_MARKER_CONFIGURATION_NAME = "quarkusDeploymentMarker";
+    public static final String DEPLOYMENT_DEPENDENCY_ELEMENTS_CONFIGURATION_NAME = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_ELEMENTS_CONFIGURATION_NAME;
 
-    public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
+    public static final String QUARKUS_ANNOTATION_PROCESSOR = ExtensionVariantConstants.QUARKUS_ANNOTATION_PROCESSOR;
 
     public QuarkusExtensionPlugin() {
     }
@@ -49,7 +45,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         GradleVersionSupport.requireMinimumGradleVersion();
 
         final QuarkusExtensionConfiguration quarkusExt = project.getExtensions().create(EXTENSION_CONFIGURATION_NAME,
-                QuarkusExtensionConfiguration.class);
+                QuarkusExtensionConfiguration.class, project.getObjects());
 
         project.getPluginManager().apply(JavaPlugin.class);
         registerTasks(project, quarkusExt);
@@ -58,123 +54,105 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
 
-        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-        SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet mainSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
+                .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Configuration runtimeModuleClasspath = project.getConfigurations()
                 .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
 
+        Configuration deploymentClasspath = createDeploymentClasspath(project, quarkusExt);
+        Configuration deploymentMarker = createDeploymentMarker(project, quarkusExt);
+        createDeploymentDependencyElements(project, quarkusExt);
+        Provider<Boolean> localDeploymentValidationEnabled = quarkusExt.getDeploymentArtifact()
+                .map(deploymentArtifact -> false)
+                .orElse(true);
+
         TaskProvider<ValidateExtensionTask> validateExtensionTask = tasks.register(VALIDATE_EXTENSION_TASK_NAME,
-                ValidateExtensionTask.class, quarkusExt, runtimeModuleClasspath);
+                ValidateExtensionTask.class, quarkusExt, runtimeModuleClasspath,
+                deploymentClasspath, deploymentMarker, localDeploymentValidationEnabled);
+
+        TaskProvider<ProcessResources> processResourcesTask = tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME,
+                ProcessResources.class);
+
+        // The source YAML is an input to descriptor generation, not a resource that should be copied before the
+        // generated descriptor. Keeping raw and generated descriptors out of the same Copy source also gives
+        // processResources sole ownership of its destination directory.
+        mainSourceSet.getResources().exclude(BootstrapConstants.DESCRIPTOR_PATH, BootstrapConstants.EXTENSION_METADATA_PATH);
 
         TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
                 ExtensionDescriptorTask.class, quarkusExt, mainSourceSet, runtimeModuleClasspath);
 
         extensionDescriptorTask.configure(task -> task.dependsOn(validateExtensionTask));
+        processResourcesTask.configure(
+                task -> task.from(extensionDescriptorTask.flatMap(ExtensionDescriptorTask::getOutputDirectory)));
 
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-                    tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
+                    project.getConfigurations().named(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME,
+                            configuration -> configuration
+                                    .getAttributes().attribute(ExtensionVariantConstants.EXTENSION_RUNTIME_ATTRIBUTE, true));
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
                     tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
                     addAnnotationProcessorDependency(project);
                 });
-
-        project.afterEvaluate(innerProject -> {
-            //This must be run after the extension has been configured
-            Project deploymentProject = findDeploymentProject(project, quarkusExt);
-            if (deploymentProject != null) {
-                deploymentProject.getPlugins().apply(JavaPlugin.class);
-                ApplicationDeploymentClasspathBuilder.initConfigurations(deploymentProject);
-                deploymentProject.getPlugins().withType(
-                        JavaPlugin.class,
-                        javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
-
-                validateExtensionTask.configure(task -> {
-                    // Create a local resolvable configuration that depends on the deployment project.
-                    // This avoids cross-project configuration resolution issues in Gradle 9.x.
-                    Configuration deploymentClasspath = project.getConfigurations()
-                            .findByName(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
-                    if (deploymentClasspath == null) {
-                        deploymentClasspath = project.getConfigurations().create(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
-                        deploymentClasspath.setCanBeConsumed(false);
-                        deploymentClasspath.setCanBeResolved(true);
-                        deploymentClasspath.setTransitive(true);
-                        // Add project dependency on deployment module
-                        project.getDependencies().add(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME,
-                                project.getDependencies().project(
-                                        java.util.Map.of("path", deploymentProject.getPath())));
-                    }
-                    task.setDeploymentModuleClasspath(deploymentClasspath);
-                });
-
-                deploymentProject.getTasks().withType(Test.class).configureEach(test -> {
-                    test.useJUnitPlatform();
-                    test.doFirst(task -> {
-                        final Map<String, Object> props = test.getSystemProperties();
-                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST);
-                        try {
-                            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
-                            props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
-                        } catch (IOException e) {
-                            throw new GradleException("Unable to serialiaze gradle application model", e);
-                        }
-                    });
-                });
-                if (ApplicationDeploymentClasspathBuilder.isDisableComponentVariants(project)) {
-                    // This seems to override the deployment configuration that otherwise would be created
-                    // by the ApplicationDeploymentClasspathBuilder, which will not work
-                    // especially for the component variant-based approach.
-                    exportDeploymentClasspath(deploymentProject);
-                }
-            }
-        });
-    }
-
-    private void exportDeploymentClasspath(Project project) {
-        DeploymentClasspathBuilder deploymentClasspathBuilder = new DeploymentClasspathBuilder(project);
-        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
-                .beforeResolve((dependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, LaunchMode.NORMAL));
-        project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
-                .beforeResolve((testDependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, LaunchMode.TEST));
-
     }
 
     private void addAnnotationProcessorDependency(Project project) {
-        project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
-                .withDependencies(annotationProcessors -> {
-                    Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
-                            .duplicateConfiguration(project, project.getConfigurations()
-                                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
-                            .getResolvedConfiguration()
-                            .getResolvedArtifacts();
-
-                    for (ResolvedArtifact artifact : compileClasspathArtifacts) {
-                        ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
-                        if ("io.quarkus".equals(id.getGroup()) && "quarkus-core".equals(id.getName())
-                                && !id.getVersion().isEmpty()) {
-                            annotationProcessors.add(
-                                    project.getDependencies().create(QUARKUS_ANNOTATION_PROCESSOR + ':' + id.getVersion()));
-                        }
-                    }
-                });
+        new QuarkusExtensionAnnotationProcessorConfigurator().configure(project);
     }
 
-    private Project findDeploymentProject(Project project, QuarkusExtensionConfiguration configuration) {
+    private Configuration createDeploymentClasspath(Project project, QuarkusExtensionConfiguration quarkusExt) {
+        Configuration deploymentClasspath = project.getConfigurations().create(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
+        deploymentClasspath.setCanBeConsumed(false);
+        deploymentClasspath.setCanBeResolved(true);
+        deploymentClasspath.setTransitive(true);
+        deploymentClasspath.getDependencies().addLater(deploymentProjectDependency(project, quarkusExt));
+        return deploymentClasspath;
+    }
 
-        String deploymentProjectName = configuration.getDeploymentModule().get();
-        if (deploymentProjectName == null) {
-            deploymentProjectName = DEFAULT_DEPLOYMENT_PROJECT_NAME;
+    private Configuration createDeploymentMarker(Project project, QuarkusExtensionConfiguration quarkusExt) {
+        Configuration deploymentMarker = project.getConfigurations().create(DEPLOYMENT_MARKER_CONFIGURATION_NAME);
+        deploymentMarker.setCanBeConsumed(false);
+        deploymentMarker.setCanBeResolved(true);
+        deploymentMarker.setTransitive(false);
+        deploymentMarker.getAttributes().attribute(Category.CATEGORY_ATTRIBUTE,
+                project.getObjects().named(Category.class, ExtensionVariantConstants.EXTENSION_DEPLOYMENT_MARKER_CATEGORY));
+        deploymentMarker.getAttributes().attribute(ExtensionVariantConstants.EXTENSION_DEPLOYMENT_ATTRIBUTE, true);
+        deploymentMarker.getDependencies().addLater(deploymentProjectDependency(project, quarkusExt));
+        return deploymentMarker;
+    }
+
+    private void createDeploymentDependencyElements(Project project, QuarkusExtensionConfiguration quarkusExt) {
+        Configuration deploymentDependencyElements = project.getConfigurations()
+                .create(DEPLOYMENT_DEPENDENCY_ELEMENTS_CONFIGURATION_NAME);
+        deploymentDependencyElements.setCanBeConsumed(true);
+        deploymentDependencyElements.setCanBeResolved(false);
+        deploymentDependencyElements.setDescription(
+                "Provides the local deployment project dependency for this Quarkus extension runtime module.");
+        deploymentDependencyElements.getAttributes().attribute(Category.CATEGORY_ATTRIBUTE,
+                project.getObjects().named(Category.class, ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_CATEGORY));
+        deploymentDependencyElements.getAttributes()
+                .attribute(ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_ATTRIBUTE, true);
+        deploymentDependencyElements.getDependencies().addLater(deploymentProjectDependency(project, quarkusExt));
+    }
+
+    private static Provider<Dependency> deploymentProjectDependency(Project project,
+            QuarkusExtensionConfiguration quarkusExt) {
+        DependencyHandler dependencies = project.getDependencies();
+        String projectPath = project.getPath();
+        return quarkusExt.getDeploymentModule()
+                .map(deploymentModule -> deploymentProjectPath(projectPath, deploymentModule))
+                .map(deploymentProjectPath -> dependencies.project(Collections.singletonMap("path", deploymentProjectPath)));
+    }
+
+    private static String deploymentProjectPath(String projectPath, String deploymentModule) {
+        if (deploymentModule.startsWith(":")) {
+            return deploymentModule;
         }
-
-        Project deploymentProject = ToolingUtils.findLocalProject(project, deploymentProjectName);
-        if (deploymentProject == null) {
-            project.getLogger().warn("Unable to find deployment project with name: " + deploymentProjectName
-                    + ". You can configure the deployment project name by setting the 'deploymentModule' property in the plugin extension.");
+        int lastSeparator = projectPath.lastIndexOf(':');
+        if (lastSeparator <= 0) {
+            return ":" + deploymentModule;
         }
-
-        return deploymentProject;
+        return projectPath.substring(0, lastSeparator) + ":" + deploymentModule;
     }
 }

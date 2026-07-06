@@ -32,6 +32,20 @@
 # alpine           3.14        dd53f409bf0b   4 months ago   5.6MB
 # alpine           3.15        c4fc93816858   4 months ago   5.58MB
 
+# Stop all running containers to prevent cross-job container reuse on self-hosted runners.
+# A container left running by a killed/interrupted previous job could be picked up
+# by Testcontainers in this job if it has a matching hash.
+time sudo docker container stop -a 2>/dev/null || true
+
+# Remove stopped containers so that they are not reused by Testcontainers.
+time sudo docker container prune -f || true
+
+# Remove any testcontainers configuration left over from a previous job.
+# IsContainerRuntimeWorking temporarily enables testcontainers.reuse.enable in this
+# file; if the JVM was killed before restoring it, the setting persists
+# and enables unintended container reuse in subsequent jobs.
+rm -f ~/.testcontainers.properties
+
 time sudo docker image prune --all --force || true
 
 sudo apt-get remove -y '^dotnet-.*'

@@ -370,6 +370,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
+        preprocessUnwrappedFields(deserData);
+
         ResultHandle fieldsIterator = deserData.methodCreator
                 .invokeVirtualMethod(ofMethod(JsonNode.class, "fields", Iterator.class), deserData.jsonNode);
         BytecodeCreator loopCreator = deserData.methodCreator.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
@@ -406,6 +408,26 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         handleUnknownFields(deserData, ignoredProperties, ctorFields, strSwitch, deserializationContext, fieldName,
                 fieldValue, objHandle, anySetterMethod);
         return result;
+    }
+
+    private void preprocessUnwrappedFields(DeserializationData deserData) {
+        for (FieldInfo fieldInfo : classFields(deserData.classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(deserData.classInfo, deserData.constructor, fieldInfo,
+                    deserData.namingStrategy);
+            if (fieldSpecs != null && fieldSpecs.isUnwrapped()) {
+                String prefix = fieldSpecs.unwrappedPrefix();
+                String suffix = fieldSpecs.unwrappedSuffix();
+                if (!prefix.isEmpty() || !suffix.isEmpty()) {
+                    deserData.methodCreator.invokeStaticMethod(
+                            ofMethod(JacksonMapperUtil.class, "collectUnwrappedFields", void.class,
+                                    JsonNode.class, String.class, String.class, String.class),
+                            deserData.jsonNode,
+                            deserData.methodCreator.load(fieldSpecs.jsonName),
+                            deserData.methodCreator.load(prefix),
+                            deserData.methodCreator.load(suffix));
+                }
+            }
+        }
     }
 
     private static void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,

@@ -256,7 +256,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (dpopJwkThumbprint == null) {
                                 LOG.warn(
                                         "DPoP access token does not contain a confirmation 'cnf' claim with the JWK thumbprint");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             JsonObject proofHeaders = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_HEADERS);
@@ -264,7 +264,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             JsonObject jwkProof = proofHeaders.getJsonObject(OidcConstants.DPOP_JWK_HEADER);
                             if (jwkProof == null) {
                                 LOG.warn("DPoP proof jwk header is missing");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             PublicJsonWebKey publicJsonWebKey = null;
@@ -272,12 +272,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 publicJsonWebKey = PublicJsonWebKey.Factory.newPublicJwk(jwkProof.getMap());
                             } catch (JoseException ex) {
                                 LOG.warn("DPoP proof jwk header does not represent a valid JWK key");
-                                throw new AuthenticationFailedException(ex, tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(ex, invalidDPoPProofMap(request.getToken()));
                             }
 
                             if (publicJsonWebKey.getPrivateKey() != null) {
                                 LOG.warn("DPoP proof JWK key is a private key but it must be a public key");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             byte[] jwkProofDigest = publicJsonWebKey.calculateThumbprint("SHA-256");
@@ -285,7 +285,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                             if (!dpopJwkThumbprint.equals(jwkProofThumbprint)) {
                                 LOG.warn("DPoP access token JWK thumbprint does not match the DPoP proof JWK thumbprint");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             try {
@@ -295,11 +295,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 jws.setKey(publicJsonWebKey.getPublicKey());
                                 if (!jws.verifySignature()) {
                                     LOG.warn("DPoP proof token signature is invalid");
-                                    throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                    throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                                 }
                             } catch (JoseException ex) {
                                 LOG.warn("DPoP proof token signature can not be verified");
-                                throw new AuthenticationFailedException(ex, tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(ex, invalidDPoPProofMap(request.getToken()));
                             }
 
                             JsonObject proofClaims = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_CLAIMS);
@@ -309,7 +309,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             String accessTokenProof = proofClaims.getString(OidcConstants.DPOP_ACCESS_TOKEN_THUMBPRINT);
                             if (accessTokenProof == null) {
                                 LOG.warn("DPoP proof access token hash is missing");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             String accessTokenHash = null;
@@ -322,7 +322,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                             if (!accessTokenProof.equals(accessTokenHash)) {
                                 LOG.warn("DPoP access token hash does not match the DPoP proof access token hash");
-                                throw new AuthenticationFailedException(tokenMap(request.getToken()));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                             }
 
                             return t;
@@ -566,6 +566,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private static Map<String, Object> tokenMap(TokenCredential tokenCred) {
         final String tokenType = isIdToken(tokenCred) ? OidcConstants.ID_TOKEN_VALUE : OidcConstants.ACCESS_TOKEN_VALUE;
         return Map.of(tokenType, tokenCred.getToken());
+    }
+
+    private static Map<String, Object> invalidDPoPProofMap(TokenCredential tokenCred) {
+        return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, tokenCred.getToken(),
+                OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE);
     }
 
     private static boolean isInternalIdToken(TokenAuthenticationRequest request) {

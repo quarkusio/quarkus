@@ -603,6 +603,18 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("date", Matchers.is("2025-06-15"));
     }
 
+    // --- @JsonFormat with ZonedDateTime ---
+
+    @Test
+    public void testFormatZonedDateTimePatternSerialization() {
+        RestAssured.get("/generated/zoned-date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("zoned-date-test"))
+                .body("dateTime", Matchers.is("2024-03-13T10:05:01.000Z"));
+    }
+
     // --- @JsonFormat ---
 
     @Test

@@ -568,8 +568,14 @@ public class ResteasyReactiveJacksonProcessor {
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
         }
         return effectiveReturnType;

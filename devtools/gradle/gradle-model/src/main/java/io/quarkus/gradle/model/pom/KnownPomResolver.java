@@ -17,12 +17,30 @@ import org.apache.maven.model.resolution.UnresolvableModelException;
 
 import io.quarkus.maven.dependency.GAV;
 
+/**
+ * Resolves POMs from a previously generated closure and explicitly supplied local repository roots.
+ * <p>
+ * Resolution never contacts a repository service. It first uses the resolved/missing results supplied at construction,
+ * then looks for Maven-layout POMs and unambiguous Gradle-cache POMs under the known roots. It can also derive a
+ * Maven-layout repository root from a known POM path. This makes it suitable for configuration-cache-compatible task
+ * execution and offline model generation.
+ * <p>
+ * A parent or imported BOM is available only when it is present in those inputs or local roots; this resolver does not
+ * independently discover or download Maven metadata.
+ */
 public final class KnownPomResolver implements PomResolver {
 
     private final Map<GAV, Optional<File>> pomCache = new ConcurrentHashMap<>();
     private final Map<GAV, File> resolvedPomFiles;
     private final ArrayList<File> repositoryRoots;
 
+    /**
+     * Creates a local-only resolver.
+     *
+     * @param resolvedPomFiles known POM coordinates and files
+     * @param missingPoms coordinates already known to be unavailable
+     * @param repositoryRoots local Maven repositories or Gradle artifact-cache roots to search
+     */
     public KnownPomResolver(Map<GAV, File> resolvedPomFiles, Collection<GAV> missingPoms,
             Collection<File> repositoryRoots) {
         this.resolvedPomFiles = Map.copyOf(resolvedPomFiles);
@@ -31,11 +49,24 @@ public final class KnownPomResolver implements PomResolver {
         missingPoms.forEach(gav -> pomCache.putIfAbsent(gav, Optional.empty()));
     }
 
+    /**
+     * Named factory equivalent to {@link #KnownPomResolver(Map, Collection, Collection)}.
+     *
+     * @param resolvedPomFiles known POM coordinates and files
+     * @param missingPoms coordinates already known to be unavailable
+     * @param repositoryRoots local Maven repositories or Gradle artifact-cache roots to search
+     * @return a local-only resolver
+     */
     public static KnownPomResolver fromPomClosure(Map<GAV, File> resolvedPomFiles, Collection<GAV> missingPoms,
             Collection<File> repositoryRoots) {
         return new KnownPomResolver(resolvedPomFiles, missingPoms, repositoryRoots);
     }
 
+    /**
+     * Populates resolved or known-missing results for uncached coordinates using only known local repositories.
+     *
+     * @param gavs POM coordinates to look up
+     */
     @Override
     public void prefetchPoms(Collection<GAV> gavs) {
         gavs.stream()
@@ -43,11 +74,22 @@ public final class KnownPomResolver implements PomResolver {
                 .forEach(gav -> pomCache.putIfAbsent(gav, resolvePomFromKnownRepositories(gav)));
     }
 
+    /**
+     * @param gav POM coordinates to query
+     * @return whether a resolved or known-missing result is cached for {@code gav}
+     */
     @Override
     public boolean hasPomResult(GAV gav) {
         return pomCache.containsKey(gav);
     }
 
+    /**
+     * Resolves a POM from the local cache/search roots.
+     *
+     * @param gav POM coordinates to resolve
+     * @return Maven model source backed by the resolved local file
+     * @throws UnresolvableModelException when no unambiguous local POM can be found
+     */
     @Override
     public ModelSource2 resolvePom(GAV gav) throws UnresolvableModelException {
         File pomFile = pomCache.computeIfAbsent(gav, this::resolvePomFromKnownRepositories).orElse(null);

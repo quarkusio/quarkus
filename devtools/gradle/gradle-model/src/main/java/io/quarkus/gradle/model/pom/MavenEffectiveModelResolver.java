@@ -18,6 +18,14 @@ import org.apache.maven.model.resolution.UnresolvableModelException;
 
 import io.quarkus.maven.dependency.GAV;
 
+/**
+ * Builds Maven effective models while delegating every external POM lookup to a {@link PomResolver}.
+ * <p>
+ * Parent and imported-BOM requests made by Maven's model builder therefore participate in the same Gradle-backed
+ * prefetch protocol as selected module POMs. Repositories declared by Maven models are intentionally ignored; Gradle's
+ * repository configuration remains authoritative. JVM system properties are supplied for model interpolation and Maven
+ * validation is kept at the minimal level required for dependency enrichment.
+ */
 class MavenEffectiveModelResolver {
 
     private final PomResolver pomResolver;

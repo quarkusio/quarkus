@@ -207,6 +207,12 @@ public class QuarkusExtensionDeploymentPluginTest extends BaseGradleTest {
         assertResolvedPathsContain(runtime, "runtime/build/classes/java/main");
         assertResolvedPathsContain(testFixtures, "runtime/build/classes/java/testFixtures");
         assertResolvedPathsDoNotContain(testFixtures, "runtime/build/classes/java/main");
+
+        var secondResult = buildResult(":deployment:quarkusGenerateTestAppModel",
+                "-Dorg.gradle.unsafe.isolated-projects=true");
+        assertThat(secondResult.task(":deployment:quarkusGenerateTestAppModel").getOutcome())
+                .isIn(UP_TO_DATE, FROM_CACHE);
+        assertThat(secondResult.getOutput()).contains("Reusing configuration cache.");
     }
 
     @Test
@@ -280,7 +286,7 @@ public class QuarkusExtensionDeploymentPluginTest extends BaseGradleTest {
         assertTaskOutcomes(secondRun, FROM_CACHE, markerTask);
         assertThat(testProjectDir
                 .resolve("build/quarkus/extension-deployment-marker/" + QuarkusExtensionDeploymentPlugin.PLUGIN_ID))
-                .content().isEqualTo(QuarkusExtensionDeploymentPlugin.PLUGIN_ID + System.lineSeparator());
+                .content().isEqualTo(QuarkusExtensionDeploymentPlugin.PLUGIN_ID + "\n");
     }
 
     @Test

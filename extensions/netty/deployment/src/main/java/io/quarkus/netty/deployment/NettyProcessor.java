@@ -217,6 +217,10 @@ class NettyProcessor {
                 // .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 // Runtime initialize to prevent embedding SecureRandom instances in the native image
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
+                // Runtime initialize so that the optional, reflective use of Bouncy Castle in the constructor
+                // (only reachable when generating a certificate) doesn't force build-time resolution of
+                // BouncyCastleSelfSignedCertGenerator when Bouncy Castle isn't on the classpath
+                .addRuntimeInitializedClass("io.netty.handler.ssl.util.SelfSignedCertificate")
                 // The default channel id uses the process id, it should not be cached in the native image. This way we
                 // also respect the run-time provided value of the io.netty.processId property, io.netty.machineId
                 // property is being hardcoded in setNettyMachineId method

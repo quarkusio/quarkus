@@ -27,7 +27,7 @@ public class UnixDomainSocketTestResource implements QuarkusTestResourceLifecycl
                 "quarkus.http.domain-socket-enabled", "true",
                 "quarkus.http.domain-socket", udsPath.toAbsolutePath().toString(),
                 "quarkus.http.host-enabled", "false",
-                "quarkus.vertx.prefer-native-transport", "false");
+                "quarkus.vertx.native-transport", "disabled");
     }
 
     @Override

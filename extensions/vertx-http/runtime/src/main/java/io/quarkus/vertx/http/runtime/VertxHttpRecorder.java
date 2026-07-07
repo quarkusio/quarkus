@@ -995,6 +995,8 @@ public class VertxHttpRecorder {
             registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
         }
 
+        validateManagementPortDistinctFromMainServer(httpConfig, managementBuildTimeConfig, managementConfig, launchMode);
+
         var mainServerFuture = initializeMainHttpServer(vertx, httpBuildTimeConfig, httpConfig, launchMode,
                 eventLoops, websocketSubProtocols, insecureRequestStrategy, registry);
         var managementInterfaceFuture = initializeManagementInterface(vertx, managementRouter, managementBuildTimeConfig,
@@ -1093,6 +1095,32 @@ public class VertxHttpRecorder {
                 httpMainSslServerConfig,
                 httpMainDomainSocketConfig,
                 auxiliaryApplication, httpManagementServerConfig);
+    }
+
+    private static void validateManagementPortDistinctFromMainServer(VertxHttpConfig httpConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, ManagementConfig managementConfig,
+            LaunchMode launchMode) {
+        if (!managementBuildTimeConfig.enabled() || managementConfig == null || !managementConfig.hostEnabled()) {
+            return;
+        }
+
+        int managementPort = managementConfig.determinePort(launchMode);
+        if (managementPort <= 0) {
+            // 0 means random port, so it can't be validated against fixed ports here
+            return;
+        }
+
+        int httpPort = httpConfig.hostEnabled() ? httpConfig.determinePort(launchMode) : -1;
+        if (httpPort > 0 && httpPort == managementPort) {
+            throw new IllegalStateException(
+                    "Invalid configuration: `quarkus.management.port` must be different from `quarkus.http.port`.");
+        }
+
+        int httpsPort = httpConfig.determineSslPort(launchMode);
+        if (httpsPort > 0 && httpsPort == managementPort) {
+            throw new IllegalStateException(
+                    "Invalid configuration: `quarkus.management.port` must be different from `quarkus.http.ssl-port`.");
+        }
     }
 
     private static void setHttpServerTiming(boolean httpDisabled, HttpServerConfig httpServerConfig,

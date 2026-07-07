@@ -22,11 +22,27 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 
+/**
+ * Builds the workspace descriptor for the Gradle project to which a Quarkus plugin is applied.
+ * <p>
+ * This is an implementation-facing bridge between Gradle's Java source-set/task model and the Quarkus bootstrap
+ * workspace model. Source and resource outputs are discovered from configured {@link Jar} and {@link Test} tasks after
+ * project evaluation; the returned provider refreshes the module coordinates when it is queried.
+ */
 public final class CurrentProjectDescriptorBuilder {
 
     private CurrentProjectDescriptorBuilder() {
     }
 
+    /**
+     * Creates a lazy descriptor for {@code project}.
+     * <p>
+     * Source discovery is finalized after project evaluation, so callers should retain and consume the provider lazily.
+     * Projects without the Java source-set extension produce a descriptor without artifact sources.
+     *
+     * @param project the project whose module coordinates, build paths, and source outputs are described
+     * @return a provider of the current project descriptor
+     */
     public static Provider<DefaultProjectDescriptor> buildForCurrentProject(Project project) {
         WorkspaceModule.Mutable module = moduleBuilder(project);
         initModuleAfterEvaluation(project, module);

@@ -149,37 +149,94 @@ public class DevModeContext implements Serializable {
         this.abortOnFailedStart = abortOnFailedStart;
     }
 
+    /**
+     * Returns whether Quarkus or an external build tool owns compilation and
+     * build-output change detection.
+     *
+     * @return the update owner, defaulting to {@link BuildUpdateSource#QUARKUS}
+     */
     public BuildUpdateSource getBuildUpdateSource() {
         return buildUpdateSource == null ? BuildUpdateSource.QUARKUS : buildUpdateSource;
     }
 
+    /**
+     * Selects the owner of compilation and build-output change detection.
+     * A {@code null} value restores {@link BuildUpdateSource#QUARKUS}.
+     *
+     * @param buildUpdateSource update owner
+     */
     public void setBuildUpdateSource(BuildUpdateSource buildUpdateSource) {
         this.buildUpdateSource = buildUpdateSource == null ? BuildUpdateSource.QUARKUS : buildUpdateSource;
     }
 
+    /**
+     * Returns the authenticated local transport used for externally produced
+     * build-output updates.
+     *
+     * @return transport metadata, disabled by default
+     */
     public ExternalBuildOutputTransport getExternalBuildOutputTransport() {
         return externalBuildOutputTransport == null ? ExternalBuildOutputTransport.disabled() : externalBuildOutputTransport;
     }
 
+    /**
+     * Configures the authenticated local external-output transport.
+     * A {@code null} value disables the transport.
+     *
+     * @param externalBuildOutputTransport transport metadata
+     */
     public void setExternalBuildOutputTransport(ExternalBuildOutputTransport externalBuildOutputTransport) {
         this.externalBuildOutputTransport = externalBuildOutputTransport == null
                 ? ExternalBuildOutputTransport.disabled()
                 : externalBuildOutputTransport;
     }
 
+    /**
+     * Returns the test application model supplied by the external build tool.
+     *
+     * @return the external test model, or {@code null} when none was supplied
+     */
     public ApplicationModel getExternalTestApplicationModel() {
         return externalTestApplicationModel;
     }
 
+    /**
+     * Supplies the application model for externally compiled test outputs.
+     *
+     * @param externalTestApplicationModel external test model, or {@code null}
+     *        to clear it
+     */
     public void setExternalTestApplicationModel(ApplicationModel externalTestApplicationModel) {
         this.externalTestApplicationModel = externalTestApplicationModel;
     }
 
+    /**
+     * Owner of compilation and build-output change detection in dev mode.
+     */
     public enum BuildUpdateSource {
+        /**
+         * Quarkus scans sources and performs compilation through its normal
+         * dev-mode pipeline.
+         */
         QUARKUS,
+        /**
+         * The launching build tool compiles sources and sends categorized
+         * output changes to Quarkus.
+         */
         EXTERNAL_BUILD_TOOL
     }
 
+    /**
+     * Serializable launch metadata for the authenticated local external-output
+     * transport.
+     * <p>
+     * The URI and token are validated when a transport connection is created,
+     * not when this metadata is populated. The token is sensitive session
+     * data. Launching dev mode necessarily serializes this object into its
+     * launch context and may place it in the generated dev-runner JAR; that
+     * context and JAR must be treated as sensitive, lifecycle-bounded state,
+     * and the token must not be logged or persisted elsewhere.
+     */
     public static class ExternalBuildOutputTransport implements Serializable {
 
         private static final long serialVersionUID = 7138938820132266370L;
@@ -187,10 +244,24 @@ public class DevModeContext implements Serializable {
         private URI uri;
         private String token;
 
+        /**
+         * Creates disabled transport metadata.
+         *
+         * @return metadata with no transport URI
+         */
         public static ExternalBuildOutputTransport disabled() {
             return new ExternalBuildOutputTransport();
         }
 
+        /**
+         * Creates unvalidated transport metadata. The result is enabled when
+         * {@code uri} is non-{@code null}; scheme, address, port, and token
+         * validation is deferred until a connection is created.
+         *
+         * @param uri listener URI, or {@code null} for disabled metadata
+         * @param token per-session authentication token, validated later
+         * @return transport metadata
+         */
         public static ExternalBuildOutputTransport of(URI uri, String token) {
             ExternalBuildOutputTransport transport = new ExternalBuildOutputTransport();
             transport.setUri(uri);
@@ -198,22 +269,47 @@ public class DevModeContext implements Serializable {
             return transport;
         }
 
+        /**
+         * Returns whether a transport URI is configured.
+         *
+         * @return {@code true} when enabled
+         */
         public boolean isEnabled() {
             return uri != null;
         }
 
+        /**
+         * Returns the configured listener URI.
+         *
+         * @return listener URI, or empty when disabled
+         */
         public Optional<URI> getUri() {
             return Optional.ofNullable(uri);
         }
 
+        /**
+         * Sets the listener URI; {@code null} disables the transport.
+         *
+         * @param uri listener URI
+         */
         public void setUri(URI uri) {
             this.uri = uri;
         }
 
+        /**
+         * Returns the session authentication token.
+         *
+         * @return token, or empty when none is configured
+         */
         public Optional<String> getToken() {
             return Optional.ofNullable(token);
         }
 
+        /**
+         * Sets the session authentication token.
+         *
+         * @param token token, or {@code null} to clear it
+         */
         public void setToken(String token) {
             this.token = token;
         }
@@ -462,6 +558,13 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
+            /**
+             * Sets every main class-output directory, encoded with the current
+             * platform path separator for the serialized context.
+             *
+             * @param classesPaths class-output directories
+             * @return this builder
+             */
             public Builder setClassesPaths(Collection<Path> classesPaths) {
                 this.classesPath = joinPaths(classesPaths);
                 return this;
@@ -502,6 +605,13 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
+            /**
+             * Sets every test class-output directory, encoded with the current
+             * platform path separator for the serialized context.
+             *
+             * @param testClassesPaths test class-output directories
+             * @return this builder
+             */
             public Builder setTestClassesPaths(Collection<Path> testClassesPaths) {
                 this.testClassesPath = joinPaths(testClassesPaths);
                 return this;
@@ -562,6 +672,13 @@ public class DevModeContext implements Serializable {
             return classesPath;
         }
 
+        /**
+         * Returns all class-output directories encoded by
+         * {@link ModuleInfo.Builder#setClassesPaths(Collection)} or the legacy
+         * single-string setter.
+         *
+         * @return immutable class-output paths in their encoded order
+         */
         public List<Path> getClassesPaths() {
             if (classesPath == null || classesPath.isBlank()) {
                 return List.of();

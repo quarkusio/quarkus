@@ -16,6 +16,14 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 
+/**
+ * Configures the Quarkus extension annotation processor on a Java project's annotation-processor configuration.
+ * <p>
+ * Quarkus platform dependencies declared on {@code implementation} are copied lazily so they constrain the processor.
+ * If no Quarkus platform is declared, the default version resolver resolves a detached copy of the compile classpath
+ * and uses the selected {@code io.quarkus:quarkus-core} version. This is plugin implementation API rather than a user
+ * DSL.
+ */
 public final class QuarkusExtensionAnnotationProcessorConfigurator {
 
     private static final String QUARKUS_CORE_GROUP = "io.quarkus";
@@ -25,14 +33,29 @@ public final class QuarkusExtensionAnnotationProcessorConfigurator {
 
     private final Function<Project, String> quarkusCoreVersionResolver;
 
+    /**
+     * Creates a configurator using compile-classpath resolution as the version fallback.
+     */
     public QuarkusExtensionAnnotationProcessorConfigurator() {
         this(QuarkusExtensionAnnotationProcessorConfigurator::resolveQuarkusCoreVersionFromCompileClasspath);
     }
 
+    /**
+     * Creates a configurator with a custom annotation-processor version fallback.
+     *
+     * @param quarkusCoreVersionResolver invoked only when no Quarkus platform dependency is declared; an empty or
+     *        {@code null} result suppresses the annotation-processor dependency
+     */
     public QuarkusExtensionAnnotationProcessorConfigurator(Function<Project, String> quarkusCoreVersionResolver) {
         this.quarkusCoreVersionResolver = quarkusCoreVersionResolver;
     }
 
+    /**
+     * Adds lazy platform and processor dependency providers to the project's annotation-processor configuration.
+     *
+     * @param project a Java project with {@code implementation}, {@code compileClasspath}, and
+     *        {@code annotationProcessor} configurations
+     */
     public void configure(Project project) {
         DependencySet annotationProcessorDependencies = project.getConfigurations()
                 .getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)

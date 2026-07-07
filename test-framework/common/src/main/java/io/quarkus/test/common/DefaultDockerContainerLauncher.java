@@ -29,19 +29,29 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
+import io.quarkus.deployment.util.BoundedProcessRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
+/**
+ * Default container-runtime implementation of {@link DockerContainerArtifactLauncher}.
+ * <p>
+ * Explicit startup-archive training mounts fresh host output into the container, preserves inherited
+ * {@code JAVA_TOOL_OPTIONS}, and validates the produced file or directory. The launcher owns its uniquely named
+ * integration-test container and uses bounded cleanup before consuming or removing mounted training intermediates.
+ */
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
     private static final Logger log = Logger.getLogger(DefaultDockerContainerLauncher.class);
 
     private static final String AOT_DIR = "aot";
     private static final String AOT_FILE_NAME = "app.aot";
     private static final String AOT_CONF_FILE_NAME = "app.aotconf";
+    private static final Duration PROCESS_FORCE_TIMEOUT = Duration.ofSeconds(5);
 
     private int httpPort;
     private int httpsPort;
@@ -67,6 +77,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private List<String> programArgs;
     private Optional<String> containerWorkingDirectory;
     private String outputTargetDirectory;
+    private Optional<JvmStartupArchiveTraining> startupArchiveTraining;
     private Process containerProcess;
 
     @Override
@@ -90,6 +101,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.generateAotFile = initContext.generateAotFile();
         this.additionalRecordingArgs = initContext.additionalRecordingArgs();
         this.outputTargetDirectory = initContext.outputTargetDirectory();
+        this.startupArchiveTraining = initContext.startupArchiveTraining();
     }
 
     @Override
@@ -122,7 +134,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add("-i"); // Interactive, write logs to stdout
             args.add("--rm");
 
-            if (!volumeMounts.isEmpty()) {
+            if (!volumeMounts.isEmpty() || startupArchiveTraining.isPresent()) {
                 args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
             }
 
@@ -167,6 +179,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             }
 
             for (var e : env.entrySet()) {
+                if (startupArchiveTraining.isPresent() && "JAVA_TOOL_OPTIONS".equals(e.getKey())) {
+                    continue;
+                }
                 args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
             }
 
@@ -239,7 +254,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
 
-        if (!volumeMounts.isEmpty()) {
+        if (!volumeMounts.isEmpty() || startupArchiveTraining.isPresent()) {
             args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
         }
 
@@ -280,6 +295,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         }
 
         for (var e : env.entrySet()) {
+            if (startupArchiveTraining.isPresent() && "JAVA_TOOL_OPTIONS".equals(e.getKey())) {
+                continue;
+            }
             args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
         }
 
@@ -325,6 +343,16 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {
+        if (startupArchiveTraining.isPresent()) {
+            StartupArchiveContainerPlan plan = StartupArchiveContainerPlan.create(startupArchiveTraining.get(),
+                    additionalRecordingArgs);
+            plan.prepareHostOutput();
+            args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
+                    appendJavaToolOptions(inheritedJavaToolOptions(), plan.recordingJavaToolOptions())));
+            NativeImageBuildLocalContainerRunner.addVolumeParameter(plan.hostDirectory().toString(),
+                    plan.containerDirectory(), args, containerRuntime);
+            return;
+        }
         if (generateAotFile) {
             if (containerWorkingDirectory.isPresent()) {
                 args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
@@ -373,29 +401,77 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     @Override
     public void close() {
+        boolean interrupted = false;
+        boolean containerStopSucceeded = false;
+        Process dockerKillProcess = null;
         try {
-            final Process dockerKillProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
+            dockerKillProcess = new ProcessBuilder(containerRuntimeBinaryName, "kill", "--signal=SIGINT",
                     containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             log.debug("Wait for container to stop");
-            dockerKillProcess.waitFor(10, TimeUnit.SECONDS);
-        } catch (IOException | InterruptedException e) {
+            if (!dockerKillProcess.waitFor(10, TimeUnit.SECONDS)) {
+                if (!BoundedProcessRunner.forceTerminateAndWait(dockerKillProcess, PROCESS_FORCE_TIMEOUT)) {
+                    log.warnf("Container stop helper for '%s' did not terminate after it was forcibly destroyed",
+                            containerName);
+                }
+                log.errorf("Timed out stopping container '%s'", containerName);
+            } else if (dockerKillProcess.exitValue() != 0) {
+                log.errorf("Unable to stop container '%s'; helper exited with code %d", containerName,
+                        dockerKillProcess.exitValue());
+            } else {
+                containerStopSucceeded = true;
+            }
+        } catch (InterruptedException e) {
+            interrupted = true;
+            if (dockerKillProcess != null
+                    && !BoundedProcessRunner.forceTerminateAndWait(dockerKillProcess, PROCESS_FORCE_TIMEOUT)) {
+                log.warnf("Interrupted container stop helper for '%s' did not terminate", containerName);
+            }
+            log.errorf("Interrupted while stopping container '%s'", containerName);
+        } catch (IOException e) {
             log.errorf("Unable to stop container '%s'", containerName);
         }
 
-        if (containerProcess != null) {
+        if (containerProcess != null && containerStopSucceeded && !interrupted) {
             try {
                 containerProcess.waitFor(getAdjustedShutdownTimeout().getSeconds(), TimeUnit.SECONDS);
-            } catch (InterruptedException ignored) {
-
-            }
-            if (containerProcess.isAlive()) {
-                containerProcess.destroyForcibly();
+            } catch (InterruptedException e) {
+                interrupted = true;
             }
         }
+        if (!containerStopSucceeded || containerProcess != null && containerProcess.isAlive()) {
+            removeOwnedContainer();
+            if (Thread.interrupted()) {
+                interrupted = true;
+            }
+        }
+        if (containerProcess != null && containerProcess.isAlive()
+                && !BoundedProcessRunner.forceTerminateAndWait(containerProcess, PROCESS_FORCE_TIMEOUT)) {
+            log.warnf("Container process '%s' did not terminate after it was forcibly destroyed", containerName);
+        }
 
-        if (generateAotFile) {
+        RuntimeException trainingFailure = null;
+        if (startupArchiveTraining.isPresent()) {
+            JvmStartupArchiveTraining training = startupArchiveTraining.get();
+            try {
+                if (training.type() == JvmStartupOptimizerArchiveType.AOT) {
+                    Path aotConfiguration = training.aotConfigurationDestination();
+                    if (Files.isRegularFile(aotConfiguration)) {
+                        createStartupArchiveFromAotConfiguration(
+                                StartupArchiveContainerPlan.create(training, additionalRecordingArgs));
+                    } else {
+                        throw new IllegalStateException("The AOT recording configuration was not produced at "
+                                + aotConfiguration
+                                + ". The application may not have stopped gracefully; increasing quarkus.shutdown.timeout "
+                                + "may help.");
+                    }
+                }
+                training.validateProducedArchive();
+            } catch (RuntimeException e) {
+                trainingFailure = e;
+            }
+        } else if (generateAotFile) {
             Path aotConfigFile = Path.of(outputTargetDirectory).resolve(AOT_DIR).resolve(AOT_CONF_FILE_NAME);
             if (Files.exists(aotConfigFile)) {
                 createAotFileFromAotConfFile(aotConfigFile);
@@ -410,10 +486,82 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         executorService.shutdown();
 
         recordMetadata();
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+        if (trainingFailure != null) {
+            throw trainingFailure;
+        }
+    }
+
+    private void removeOwnedContainer() {
+        Process removeProcess = null;
+        try {
+            removeProcess = new ProcessBuilder(containerRuntimeBinaryName, "rm", "--force", containerName)
+                    .redirectError(DISCARD)
+                    .redirectOutput(DISCARD)
+                    .start();
+            if (!removeProcess.waitFor(10, TimeUnit.SECONDS)) {
+                if (!BoundedProcessRunner.forceTerminateAndWait(removeProcess, PROCESS_FORCE_TIMEOUT)) {
+                    log.warnf("Forced container-removal helper for '%s' did not terminate", containerName);
+                }
+                log.warnf("Timed out forcibly removing container '%s'", containerName);
+            } else if (removeProcess.exitValue() != 0) {
+                log.warnf("Unable to forcibly remove container '%s'; helper exited with code %d", containerName,
+                        removeProcess.exitValue());
+            }
+        } catch (InterruptedException e) {
+            if (removeProcess != null
+                    && !BoundedProcessRunner.forceTerminateAndWait(removeProcess, PROCESS_FORCE_TIMEOUT)) {
+                log.warnf("Interrupted container-removal helper for '%s' did not terminate", containerName);
+            }
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            log.warnf("Unable to forcibly remove container '%s': %s", containerName, e.getMessage());
+        }
     }
 
     private Duration getAdjustedShutdownTimeout() {
-        return shutdownTimeout.plus(generateAotFile ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
+        return shutdownTimeout
+                .plus(generateAotFile || startupArchiveTraining.isPresent() ? Duration.ofMinutes(1) : Duration.ofSeconds(10));
+    }
+
+    static String appendJavaToolOptions(String inherited, String startupArchiveOption) {
+        if (inherited == null || inherited.isBlank()) {
+            return startupArchiveOption;
+        }
+        return inherited + " " + startupArchiveOption;
+    }
+
+    private String inheritedJavaToolOptions() throws IOException {
+        String configured = env.get("JAVA_TOOL_OPTIONS");
+        return configured == null ? inspectJavaToolOptions(containerRuntimeBinaryName, containerImage) : configured;
+    }
+
+    private static String inspectJavaToolOptions(String containerRuntime, String image) throws IOException {
+        try {
+            BoundedProcessRunner.Result result = BoundedProcessRunner.capture(new ProcessBuilder(
+                    containerRuntime,
+                    "image",
+                    "inspect",
+                    "--format={{range .Config.Env}}{{println .}}{{end}}",
+                    image),
+                    Duration.ofSeconds(30),
+                    PROCESS_FORCE_TIMEOUT,
+                    "Inspecting environment of base container image " + image);
+            if (result.exitCode() != 0) {
+                throw new IOException(
+                        "Unable to inspect environment of base container image " + image + ": " + result.output());
+            }
+            return result.output().lines()
+                    .filter(line -> line.startsWith("JAVA_TOOL_OPTIONS="))
+                    .map(line -> line.substring("JAVA_TOOL_OPTIONS=".length()))
+                    .findFirst()
+                    .orElse("");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while inspecting environment of base container image " + image, e);
+        }
     }
 
     private void createAotFileFromAotConfFile(Path aotConfigFile) {
@@ -449,23 +597,155 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerImage);
         args.addAll(programArgs);
 
+        Process process = null;
+        boolean processTerminated = true;
         try {
-            var unused = new ProcessBuilder(args)
+            process = new ProcessBuilder(args)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start().waitFor(20, TimeUnit.SECONDS);
+                    .start();
+            if (!process.waitFor(20, TimeUnit.SECONDS)) {
+                processTerminated = BoundedProcessRunner.forceTerminateAndWait(process, PROCESS_FORCE_TIMEOUT);
+                log.warn("AOT creation process timed out");
+                return;
+            }
             if (Files.exists(aotFilePath)) {
                 log.infof("AOT file '%s' created", aotFilePath.toAbsolutePath());
             } else {
                 log.warnf("AOT file '%s' was not created, the AOT-optimized container image won't be created", aotFilePath);
             }
-            try {
-                Files.deleteIfExists(aotConfigFile);
-            } catch (IOException e) {
-                log.debug("Unable to delete AOT config file", e);
+        } catch (InterruptedException e) {
+            if (process != null) {
+                processTerminated = BoundedProcessRunner.forceTerminateAndWait(process, PROCESS_FORCE_TIMEOUT);
             }
-        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            log.warn("AOT creation process was interrupted", e);
+        } catch (IOException e) {
             log.warn("Unable to create AOT file", e);
+        } finally {
+            if (processTerminated) {
+                try {
+                    Files.deleteIfExists(aotConfigFile);
+                } catch (IOException e) {
+                    log.debug("Unable to delete AOT config file", e);
+                }
+            } else {
+                log.warnf("Retaining AOT configuration file '%s' because its process did not terminate", aotConfigFile);
+            }
+        }
+    }
+
+    private void createStartupArchiveFromAotConfiguration(StartupArchiveContainerPlan plan) {
+        List<String> args = new ArrayList<>();
+        args.add(containerRuntimeBinaryName);
+        args.add("run");
+        if (!argLine.isEmpty()) {
+            args.addAll(argLine);
+        }
+        args.add("--name");
+        args.add(containerName);
+        args.add("-i");
+        args.add("--rm");
+
+        ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+        args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime, containerImage));
+        NativeImageBuildLocalContainerRunner.addVolumeParameter(plan.hostDirectory().toString(),
+                plan.containerDirectory(), args, containerRuntime);
+
+        Process process = null;
+        boolean processTerminated = true;
+        try {
+            args.addAll(toEnvVar("JAVA_TOOL_OPTIONS",
+                    appendJavaToolOptions(inheritedJavaToolOptions(), plan.createJavaToolOptions().orElseThrow())));
+            args.add(containerImage);
+            args.addAll(programArgs);
+            process = new ProcessBuilder(args)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            if (!process.waitFor(getAdjustedShutdownTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+                processTerminated = BoundedProcessRunner.forceTerminateAndWait(process, PROCESS_FORCE_TIMEOUT);
+                if (!processTerminated) {
+                    throw new IllegalStateException(
+                            "The AOT startup-archive create container did not terminate after it was forcibly destroyed");
+                }
+                throw new IllegalStateException("The AOT startup-archive create container timed out");
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException(
+                        "The AOT startup-archive create container failed with exit code " + process.exitValue());
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to run the AOT startup-archive create container", e);
+        } catch (InterruptedException e) {
+            if (process != null) {
+                processTerminated = BoundedProcessRunner.forceTerminateAndWait(process, PROCESS_FORCE_TIMEOUT);
+            }
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while running the AOT startup-archive create container", e);
+        } finally {
+            // Retain the mounted recording configuration while a possibly live container can still read it.
+            if (processTerminated) {
+                try {
+                    Files.deleteIfExists(plan.training().aotConfigurationDestination());
+                } catch (IOException e) {
+                    log.debug("Unable to delete AOT configuration file", e);
+                }
+            } else {
+                log.warnf("Retaining AOT configuration file '%s' because its process did not terminate",
+                        plan.training().aotConfigurationDestination());
+            }
+        }
+    }
+
+    /**
+     * Maps typed training metadata to one host mount and the JVM options visible inside the container.
+     * <p>
+     * AOT training records an intermediate configuration and therefore has a separate create phase. SCC training
+     * populates its directory during the integration-test run and has no create phase.
+     */
+    static record StartupArchiveContainerPlan(
+            JvmStartupArchiveTraining training,
+            Path hostDirectory,
+            String containerDirectory,
+            String recordingJavaToolOptions,
+            Optional<String> createJavaToolOptions) {
+
+        static StartupArchiveContainerPlan create(JvmStartupArchiveTraining training,
+                List<String> additionalRecordingArguments) {
+            String recordingArguments;
+            Optional<String> createArguments;
+            switch (training.type()) {
+                case AOT -> {
+                    recordingArguments = "-XX:AOTMode=record -XX:AOTConfiguration="
+                            + training.containerAotConfigurationPath();
+                    createArguments = Optional.of("-XX:AOTMode=create -XX:AOTConfiguration="
+                            + training.containerAotConfigurationPath() + " "
+                            + training.type().renderRuntimeOption(training.containerArchivePath()));
+                }
+                case SCC -> {
+                    recordingArguments = "-Xshareclasses:name=quarkus-app,cacheDir="
+                            + training.containerArchivePath();
+                    createArguments = Optional.empty();
+                }
+                case AppCDS -> throw new IllegalArgumentException(
+                        "AppCDS is not supported by integration-test startup-archive training");
+                default -> throw new IllegalArgumentException("Unsupported startup-archive type " + training.type());
+            }
+            if (!additionalRecordingArguments.isEmpty()) {
+                String additional = String.join(" ", additionalRecordingArguments);
+                recordingArguments += " " + additional;
+                createArguments = createArguments.map(value -> value + " " + additional);
+            }
+            return new StartupArchiveContainerPlan(training, training.hostDirectory().toAbsolutePath(),
+                    training.containerDirectory().orElseThrow(), recordingArguments, createArguments);
+        }
+
+        /**
+         * Prepares a fresh host destination with permissions suitable for a container mount.
+         */
+        void prepareHostOutput() throws IOException {
+            training.prepareContainerMountedHostOutput();
         }
     }
 
@@ -476,7 +756,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if (containerWorkingDirectory.isPresent()) {
             properties.put("container-working-directory", containerWorkingDirectory.get());
         }
-        Path aotFile = Path.of(outputTargetDirectory).resolve(AOT_DIR).resolve(AOT_FILE_NAME);
+        Path aotFile = startupArchiveTraining
+                .filter(training -> training.type() == JvmStartupOptimizerArchiveType.AOT)
+                .map(JvmStartupArchiveTraining::destination)
+                .orElseGet(() -> Path.of(outputTargetDirectory).resolve(AOT_DIR).resolve(AOT_FILE_NAME));
         if (Files.exists(aotFile)) {
             properties.setProperty("aot-file", aotFile.toAbsolutePath().toString());
         }

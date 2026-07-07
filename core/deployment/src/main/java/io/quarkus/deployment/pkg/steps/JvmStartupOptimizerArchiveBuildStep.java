@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
@@ -25,6 +26,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveKind;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
@@ -209,29 +211,39 @@ public class JvmStartupOptimizerArchiveBuildStep {
             if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
                 log.infof(
                         "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
+                                "run the application jar from its directory and also add the '%s' "
                                 +
                                 "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        archiveType.renderRuntimeOption(archiveType.getDefaultName()),
                         System.getProperty("java.version"));
             } else if (archiveType == JvmStartupOptimizerArchiveType.SCC) {
                 log.infof(
                         "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-Xshareclasses:name=quarkus-app,cacheDir=app-scc,readonly' "
+                                "run the application jar from its directory and also add the '%s' "
                                 +
                                 "JVM flag.\nMoreover, make sure to use the same OpenJ9 JVM version (%s) to run the application as was used to build it.",
+                        archiveType.renderRuntimeOption(archiveType.getDefaultName()),
                         System.getProperty("java.version"));
             } else {
                 log.infof(
                         "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:AOTCache=app.aot' "
+                                "run the application jar from its directory and also add the '%s' "
                                 +
                                 "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        archiveType.renderRuntimeOption(archiveType.getDefaultName()),
                         System.getProperty("java.version"));
             }
         }
 
         jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath, archiveType));
-        artifactResult.produce(new ArtifactResultBuildItem(archivePath, "appCDS", Collections.emptyMap()));
+        artifactResult.produce(archiveArtifactResult(archivePath, archiveType));
+    }
+
+    static ArtifactResultBuildItem archiveArtifactResult(Path archivePath,
+            JvmStartupOptimizerArchiveType archiveType) {
+        return new ArtifactResultBuildItem(archivePath, "appCDS",
+                Map.of("archive-type", archiveType.name(),
+                        "artifact-kind", archiveType.getArtifactKind().name()));
     }
 
     private String determineContainerImage(PackageConfig packageConfig,
@@ -287,7 +299,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
             boolean isFastJar) {
 
-        ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.appCDSFromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.fromQuarkusJar(
+                jarResult.getPath(), JvmStartupOptimizerArchiveType.AppCDS);
         Path workingDirectory = appCDSPathsContainer.workingDirectory;
         Path appCDSPath = appCDSPathsContainer.resultingFile;
 
@@ -340,7 +353,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             throw new IllegalStateException(
                     "AOT cache generation requires building with JDK 25 or newer (see JEP 514). ");
         }
-        ArchivePathsContainer aotPathContainers = ArchivePathsContainer.aotFromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer aotPathContainers = ArchivePathsContainer.fromQuarkusJar(
+                jarResult.getPath(), JvmStartupOptimizerArchiveType.AOT);
         return launchArchiveCreateCommand(aotPathContainers.workingDirectory, aotPathContainers.resultingFile,
                 createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, additionalRecordingArgs,
                         aotPathContainers));
@@ -391,7 +405,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
     private Path createScc(JarBuildItem jarResult,
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
             boolean isFastJar, List<String> additionalJvmArguments) {
-        ArchivePathsContainer sccPaths = ArchivePathsContainer.sccFromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer sccPaths = ArchivePathsContainer.fromQuarkusJar(
+                jarResult.getPath(), JvmStartupOptimizerArchiveType.SCC);
         Path workingDirectory = sccPaths.workingDirectory;
         Path sccDir = sccPaths.resultingFile;
 
@@ -497,39 +512,37 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     private record ArchivePathsContainer(Path workingDirectory, Path resultingFile) {
 
-        public static ArchivePathsContainer appCDSFromQuarkusJar(Path jar) {
-            return doCreate(jar, "app-cds.jsa");
-        }
-
-        public static ArchivePathsContainer aotFromQuarkusJar(Path jar) {
-            return doCreate(jar, "app.aot");
-        }
-
-        public static ArchivePathsContainer sccFromQuarkusJar(Path jar) {
+        public static ArchivePathsContainer fromQuarkusJar(Path jar,
+                JvmStartupOptimizerArchiveType archiveType) {
             Path workingDirectory = jar.getParent();
-            Path sccDir = workingDirectory.resolve("app-scc");
-            if (sccDir.toFile().exists()) {
+            Path archivePath = workingDirectory.resolve(archiveType.getDefaultName());
+            if (archiveType.getArtifactKind() == JvmStartupOptimizerArchiveKind.DIRECTORY) {
+                prepareDirectory(archivePath);
+            } else {
+                prepareFile(archivePath);
+            }
+            return new ArchivePathsContainer(workingDirectory, archivePath);
+        }
+
+        private static void prepareDirectory(Path archivePath) {
+            if (archivePath.toFile().exists()) {
                 try {
-                    IoUtils.recursiveDelete(sccDir);
+                    IoUtils.recursiveDelete(archivePath);
                 } catch (Exception e) {
-                    log.debugf(e, "Unable to delete existing 'app-scc' directory.");
+                    log.debugf(e, "Unable to delete existing '%s' directory.", archivePath.getFileName());
                 }
             }
-            sccDir.toFile().mkdirs();
-            return new ArchivePathsContainer(workingDirectory, sccDir);
+            archivePath.toFile().mkdirs();
         }
 
-        private static ArchivePathsContainer doCreate(Path jar, String fileName) {
-            Path workingDirectory = jar.getParent();
-            Path appCDSPath = workingDirectory.resolve(fileName);
-            if (appCDSPath.toFile().exists()) {
+        private static void prepareFile(Path archivePath) {
+            if (archivePath.toFile().exists()) {
                 try {
-                    Files.delete(appCDSPath);
+                    Files.delete(archivePath);
                 } catch (IOException e) {
-                    log.debugf(e, "Unable to delete existing '%s' file.", fileName);
+                    log.debugf(e, "Unable to delete existing '%s' file.", archivePath.getFileName());
                 }
             }
-            return new ArchivePathsContainer(workingDirectory, appCDSPath);
         }
     }
 

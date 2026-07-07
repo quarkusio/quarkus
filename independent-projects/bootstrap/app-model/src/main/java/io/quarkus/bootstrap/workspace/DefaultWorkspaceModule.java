@@ -38,7 +38,7 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
          *
          * @param map workspace-module representation
          * @return this builder
-        */
+         */
         @Override
         public Builder fromMap(Map<String, Object> map) {
             setModuleId(WorkspaceModuleId.fromString((String) map.get(BootstrapConstants.MAPPABLE_MODULE_ID)));

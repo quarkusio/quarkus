@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.docker.common.deployment.CommonProcessor;
+import io.quarkus.container.image.docker.common.deployment.StartupArchiveDockerfile;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
@@ -238,60 +239,50 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
         Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
 
-        Path aotFile = requestBuildItem.getAotFile();
-        String aotEnhancedDockerfileContent = """
-                FROM %s
+        try (var startupArchivePlan = StartupArchiveDockerfile.prepare(outputDirectory, baseImage,
+                requestBuildItem.getArchive(), requestBuildItem.getContainerWorkingDirectory(),
+                requestBuildItem.getArchiveType())) {
+            Path aotEnhancedDockerfile = outputDirectory.resolve("Dockerfile.aot");
+            Files.writeString(aotEnhancedDockerfile, startupArchivePlan.dockerfile());
 
-                # Add the app.aot file to the working directory
-                COPY %s %s
+            boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
 
-                # Set the JAVA_TOOL_OPTIONS environment variable
-                ENV JAVA_TOOL_OPTIONS="-XX:AOTCache=%s"
-                """.formatted(baseImage, outputDirectory.relativize(aotFile).toString().replace('\\', '/'),
-                requestBuildItem.getContainerWorkingDirectory(), aotFile.getFileName());
+            String executableName = getExecutableName(dockerConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+            var dockerBuildArgs = getDockerBuildArgs(enhancedImage, new DockerfilePaths() {
+                @Override
+                public Path dockerfilePath() {
+                    return aotEnhancedDockerfile;
+                }
 
-        Path aotEnhancedDockerfile = outputDirectory.resolve("Dockerfile.aot");
-        try {
-            Files.write(aotEnhancedDockerfile, aotEnhancedDockerfileContent.getBytes());
+                @Override
+                public Path dockerExecutionPath() {
+                    return startupArchivePlan.contextDirectory();
+                }
+            }, containerImageConfig,
+                    dockerConfig, pushContainerImage, executableName, Collections.emptyList());
+
+            boolean useBuildx = dockerConfig.buildx().useBuildx();
+            if (useBuildx && pushContainerImage) {
+                loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
+            }
+
+            LOG.infof("Executing the following command to build image: '%s %s'", executableName,
+                    String.join(" ", dockerBuildArgs));
+            ProcessBuilder.newBuilder(executableName)
+                    .directory(outputDirectory)
+                    .arguments(dockerBuildArgs)
+                    .error().logOnSuccess(false).inherited()
+                    .run();
+
+            if (!useBuildx && pushContainerImage) {
+                loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
+                pushImage(enhancedImage, executableName, dockerConfig);
+            }
         } catch (IOException e) {
-            throw new UnsupportedOperationException("Unable to save enhanced Dockerfile contents to disk", e);
+            throw new UnsupportedOperationException("Unable to prepare enhanced container image build context", e);
         }
 
-        boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
-
-        String executableName = getExecutableName(dockerConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
-        var dockerBuildArgs = getDockerBuildArgs(enhancedImage, new DockerfilePaths() {
-            @Override
-            public Path dockerfilePath() {
-                return aotEnhancedDockerfile;
-            }
-
-            @Override
-            public Path dockerExecutionPath() {
-                return outputDirectory;
-            }
-        }, containerImageConfig,
-                dockerConfig, pushContainerImage, executableName, Collections.emptyList());
-
-        boolean useBuildx = dockerConfig.buildx().useBuildx();
-        if (useBuildx && pushContainerImage) {
-            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
-        }
-
-        LOG.infof("Executing the following command to build image: '%s %s'", executableName,
-                String.join(" ", dockerBuildArgs));
-        ProcessBuilder.newBuilder(executableName)
-                .directory(outputDirectory)
-                .arguments(dockerBuildArgs)
-                .error().logOnSuccess(false).inherited()
-                .run();
-
-        if (!useBuildx && pushContainerImage) {
-            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
-            pushImage(enhancedImage, executableName, dockerConfig);
-        }
-
-        LOG.infof("Created AOT enhanced container image %s", enhancedImage);
+        LOG.infof("Created JVM-startup-optimized container image %s", enhancedImage);
         return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);
     }
 }

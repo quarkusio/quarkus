@@ -1,21 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 package io.quarkus.gradle.model.config;
 
 import java.io.File;
@@ -33,6 +15,13 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 
+/**
+ * Lazy artifact views of local component class directories, resource directories, and JARs.
+ * <p>
+ * The views use variant reselection and lenient resolution so application-model generation can consume producer outputs
+ * without reaching into producer projects. This is an implementation-facing Gradle model used to support isolated
+ * projects.
+ */
 public final class LocalComponentOutputViews {
 
     private final ArtifactView classes;
@@ -48,46 +37,71 @@ public final class LocalComponentOutputViews {
                 ArtifactTypeDefinition.JAR_TYPE);
     }
 
+    /**
+     * Creates all three output views without resolving them.
+     *
+     * @param objects Gradle object factory used to create the requested library-element attributes
+     * @param configuration the resolvable configuration whose component outputs are viewed
+     * @return lazy local-output views
+     */
     public static LocalComponentOutputViews of(ObjectFactory objects, Configuration configuration) {
         return new LocalComponentOutputViews(objects, configuration);
     }
 
+    /** @return the variant-reselected class-directory artifact view */
     public ArtifactView classes() {
         return classes;
     }
 
+    /** @return the variant-reselected resource-directory artifact view */
     public ArtifactView resources() {
         return resources;
     }
 
+    /** @return the variant-reselected JAR artifact view */
     public ArtifactView jars() {
         return jars;
     }
 
+    /** @return a provider of resolved class-directory artifacts */
     public Provider<Set<ResolvedArtifactResult>> classArtifacts() {
         return classes.getArtifacts().getResolvedArtifacts();
     }
 
+    /** @return a provider of resolved resource-directory artifacts */
     public Provider<Set<ResolvedArtifactResult>> resourceArtifacts() {
         return resources.getArtifacts().getResolvedArtifacts();
     }
 
+    /** @return a provider of resolved JAR artifacts */
     public Provider<Set<ResolvedArtifactResult>> jarArtifacts() {
         return jars.getArtifacts().getResolvedArtifacts();
     }
 
+    /** @return the lazily resolved class-directory files */
     public FileCollection classFiles() {
         return classes.getFiles();
     }
 
+    /** @return the lazily resolved resource-directory files */
     public FileCollection resourceFiles() {
         return resources.getFiles();
     }
 
+    /** @return the lazily resolved JAR files */
     public FileCollection jarFiles() {
         return jars.getFiles();
     }
 
+    /**
+     * Returns JARs only for components for which Gradle did not expose class or resource directory variants.
+     * <p>
+     * The result preserves the encounter order of the JAR artifact view and avoids representing a local component both
+     * by its output directories and its archive.
+     *
+     * @param providers factory used to keep the filtering lazy
+     * @return a provider of non-duplicated JAR files
+     */
     public Provider<Set<File>> jarFilesWithoutOutputVariants(ProviderFactory providers) {
         return providers.provider(() -> {
             Set<String> componentsWithOutputVariants = new HashSet<>();

@@ -13,6 +13,13 @@ import java.util.TreeSet;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.GAV;
 
+/**
+ * Deterministic properties-file codec for {@link PomClosureResult}.
+ * <p>
+ * Entries are written in GAV order, with resolved entries before missing entries. Resolved paths are absolute, so this
+ * format is an internal hand-off between tasks in the same local environment rather than a portable or public storage
+ * format. Readers reject missing required fields and malformed GAV/count values.
+ */
 public final class PomClosureResultCodec {
 
     private static final String COUNT = "count";
@@ -24,11 +31,26 @@ public final class PomClosureResultCodec {
     private PomClosureResultCodec() {
     }
 
+    /**
+     * Writes the closure, creating the output's parent directories.
+     *
+     * @param result closure to write
+     * @param file output properties file
+     * @throws IOException if the output cannot be created or written
+     */
     public static void write(PomClosureResult result, Path file) throws IOException {
         Files.createDirectories(file.getParent());
         PropertyUtils.store(toProperties(result), file);
     }
 
+    /**
+     * Reads and validates a closure properties file.
+     *
+     * @param file input properties file
+     * @return decoded closure
+     * @throws IOException if the file cannot be read
+     * @throws IllegalArgumentException if required fields or values are malformed
+     */
     public static PomClosureResult read(Path file) throws IOException {
         Properties properties = new Properties();
         try (InputStream input = Files.newInputStream(file)) {

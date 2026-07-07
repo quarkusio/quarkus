@@ -275,6 +275,83 @@ This will:
 3. Run integration tests to train the AOT cache
 4. Create a new container image with `-aot` suffix in the version of the image that includes the AOT cache, pre-configured to use it
 
+=== Standalone Gradle application plugin
+
+The standalone `io.quarkus.application` Gradle plugin models the package, the startup archive, and a startup-optimized image as separate named outputs.
+Its `aotJar` DSL name follows the established Quarkus `aot-jar` package type.
+It does not mean that the concrete startup archive must be an OpenJDK AOT cache: the archive type can be `AOT`, `SCC`, or `APP_CDS`.
+
+For example, an externally produced OpenJDK AOT cache can be added to a startup-optimized image as follows:
+
+[source,groovy]
+----
+import io.quarkus.gradle.application.model.QuarkusApplicationJvmStartupArchiveType
+
+plugins {
+    id 'io.quarkus.application'
+}
+
+quarkusApplication {
+    builds {
+        aotJar('production', QuarkusApplicationJvmStartupArchiveType.AOT) {
+            startupArchive {
+                file.set(layout.projectDirectory.file('training/app.aot'))
+            }
+            startupOptimizedImage {
+            }
+        }
+    }
+}
+----
+
+Use `directory.set(...)` with `SCC`; `AOT` and `APP_CDS` use `file.set(...)`.
+A producer task can supply either property through its normal Gradle output provider, which also supplies task ordering.
+To let the selected Quarkus package operation produce the archive instead, use:
+
+[source,groovy]
+----
+startupArchive {
+    fromPackageBuild()
+}
+----
+
+These sources are mutually exclusive for a named output.
+The normal `quarkusProductionImageBuild` task always builds an archive-free base image.
+After an archive exists, `quarkusProductionStartupOptimizedImageBuild` extends that exact base image and adds the selected archive and runtime option.
+
+An integration-test suite can be selected as an AOT or SCC training workload:
+
+[source,groovy]
+----
+import io.quarkus.gradle.application.model.QuarkusApplicationStartupArchiveTrainingExecutionTarget
+import org.gradle.api.plugins.jvm.JvmTestSuite
+
+testing {
+    suites {
+        training(JvmTestSuite) {
+            forQuarkusIntegrationTests 'production'
+            startupArchiveTraining {
+                executionTarget.set(
+                    QuarkusApplicationStartupArchiveTrainingExecutionTarget.HOST_JVM)
+            }
+        }
+    }
+}
+----
+
+`HOST_JVM` uses the JVM selected for that Gradle `Test` task.
+Use `BASE_IMAGE` when building an optimized container image so training uses the same JVM, operating system, and architecture as the base image.
+Integration-test training supports `AOT` and `SCC`; AppCDS can still be supplied externally or produced by the package build.
+The selected training suite must use one test worker (`maxParallelForks = 1`) without worker recycling (`forkEvery = 0`), because all tests in the suite contribute to one archive.
+
+Startup-optimized image build and push tasks first build the archive-free base image locally, then extend that exact image.
+This also applies to Jib: pushing only the ordinary image to a registry does not provide the local base required by the startup-optimized image operation.
+The configured optimized-image suffix must be non-empty so the optimized image cannot overwrite its base image.
+The resolved archive path inside the container, including the base image working directory, must not contain whitespace because JVM parsing of archive options supplied through `JAVA_TOOL_OPTIONS` has no portable quoting contract.
+
+Startup archives are runtime-specific artifacts.
+The plugin validates their configured file-versus-directory shape and that built-in producers created non-empty output, but it cannot prove compatibility with a different JVM build, operating system, architecture, application layout, or container base.
+
 === Adding the container image extension
 
 Add one of the following dependencies to your project:

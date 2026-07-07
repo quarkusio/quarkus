@@ -4,6 +4,9 @@ import java.util.Objects;
 
 import io.quarkus.bootstrap.model.gradle.GradleSourceObservation;
 
+/**
+ * Default serializable value used by Gradle producers to transport a {@link GradleSourceObservation}.
+ */
 public final class DefaultGradleSourceObservation implements GradleSourceObservation {
 
     private static final long serialVersionUID = 2428088945457434848L;
@@ -12,6 +15,15 @@ public final class DefaultGradleSourceObservation implements GradleSourceObserva
     private final Role role;
     private final String logicalOutputIdentity;
 
+    /**
+     * Creates a source observation.
+     *
+     * @param path source path copied from Gradle; must not be {@code null}
+     * @param role source role reported by the producer; must not be {@code null}
+     * @param logicalOutputIdentity opaque identity of an associated output in the same sidecar, or {@code null} when
+     *        the producer did not publish an association
+     * @throws NullPointerException if {@code path} or {@code role} is {@code null}
+     */
     public DefaultGradleSourceObservation(String path, Role role, String logicalOutputIdentity) {
         this.path = Objects.requireNonNull(path, "path");
         this.role = Objects.requireNonNull(role, "role");

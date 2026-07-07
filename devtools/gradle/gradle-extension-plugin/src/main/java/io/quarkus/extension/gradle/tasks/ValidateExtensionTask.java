@@ -45,9 +45,31 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
+/**
+ * Validates dependency separation between a Quarkus extension's runtime and deployment modules.
+ * <p>
+ * The {@code io.quarkus.extension} plugin registers this task as
+ * {@link io.quarkus.extension.gradle.QuarkusExtensionPlugin#VALIDATE_EXTENSION_TASK_NAME}. It rejects extension
+ * deployment artifacts on the runtime classpath and, for a local deployment project, verifies that all deployment
+ * artifacts required by runtime extension dependencies are present. Selecting the deployment marker also verifies that
+ * the local deployment project applies {@code io.quarkus.extension.deployment}.
+ * <p>
+ * The task is skipped when {@code quarkusExtension.disableValidation} is {@code true}. Local deployment checks are
+ * skipped when an explicit published deployment artifact is configured. This non-cacheable, plugin-configured type is
+ * not a general task-registration or subclassing API.
+ */
 @DisableCachingByDefault(because = "Not cacheable")
 public abstract class ValidateExtensionTask extends DefaultTask {
 
+    /**
+     * Creates and wires the plugin-owned validation task.
+     *
+     * @param quarkusExtensionConfiguration the runtime extension DSL configuration
+     * @param runtimeModuleClasspath the runtime module classpath
+     * @param deploymentModuleClasspath the local deployment module classpath
+     * @param deploymentMarker the local deployment marker configuration
+     * @param localDeploymentValidationEnabled whether local deployment validation applies
+     */
     @Inject
     public ValidateExtensionTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration,
             Configuration runtimeModuleClasspath, Configuration deploymentModuleClasspath,
@@ -69,27 +91,67 @@ public abstract class ValidateExtensionTask extends DefaultTask {
         this.onlyIf(t -> !getValidationDisabled().get());
     }
 
+    /**
+     * Returns Gradle's provider factory used for lazy marker selection.
+     *
+     * @return the provider factory
+     */
     @Inject
     public abstract ProviderFactory getProviders();
 
+    /**
+     * Returns Gradle's object factory used for lazy empty file collections.
+     *
+     * @return the object factory
+     */
     @Inject
     public abstract ObjectFactory getObjects();
 
+    /**
+     * Returns normalized runtime-module artifact identities.
+     *
+     * @return runtime artifact identities
+     */
     @Input
     public abstract ListProperty<String> getRuntimeModuleArtifacts();
 
+    /**
+     * Returns normalized artifacts present in the local deployment module.
+     *
+     * @return deployment artifact identities
+     */
     @Input
     public abstract ListProperty<String> getDeploymentModuleArtifacts();
 
+    /**
+     * Returns deployment artifact keys declared by extensions on the runtime classpath.
+     *
+     * @return runtime extension deployment artifact keys
+     */
     @Input
     public abstract ListProperty<String> getRuntimeExtensionDeploymentArtifacts();
 
+    /**
+     * Returns whether validation is disabled through the runtime extension DSL.
+     *
+     * @return whether validation is disabled
+     */
     @Input
     public abstract Property<Boolean> getValidationDisabled();
 
+    /**
+     * Returns whether the configured deployment artifact is represented by a local deployment project.
+     *
+     * @return whether local deployment checks are enabled
+     */
     @Input
     public abstract Property<Boolean> getLocalDeploymentValidationEnabled();
 
+    /**
+     * Returns the marker selected from the local deployment project when local validation is enabled.
+     *
+     * @return the deployment marker files
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.NAME_ONLY)
     public abstract ConfigurableFileCollection getDeploymentMarker();
@@ -198,6 +260,11 @@ public abstract class ValidateExtensionTask extends DefaultTask {
         return ArtifactKey.ga(deploymentCoords.getGroupId(), deploymentCoords.getArtifactId());
     }
 
+    /**
+     * Performs runtime/deployment separation and completeness checks.
+     *
+     * @throws GradleException when dependency separation or local deployment completeness is invalid
+     */
     @TaskAction
     public void validateExtension() {
         if (shouldValidateLocalDeployment()) {

@@ -52,10 +52,6 @@
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-httpclient-vertx-5</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-deployment</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

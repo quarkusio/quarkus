@@ -42,7 +42,10 @@ public class PulsarClientConfigCustomizer implements ClientCustomizer<ClientBuil
                 SSLOptions sslOptions = configuration.getSSLOptions();
                 builder.tlsCiphers(sslOptions.getEnabledCipherSuites());
                 builder.tlsProtocols(sslOptions.getEnabledSecureTransportProtocols());
-                builder.allowTlsInsecureConnection(false);
+                builder.allowTlsInsecureConnection(configuration.isTrustAll());
+
+                String algorithm = configuration.getHostnameVerificationAlgorithm().orElse("HTTPS");
+                builder.enableTlsHostnameVerification(!"NONE".equalsIgnoreCase(algorithm));
 
                 KeyCertOptions keyStoreOptions = configuration.getKeyStoreOptions();
                 TrustOptions trustStoreOptions = configuration.getTrustStoreOptions();

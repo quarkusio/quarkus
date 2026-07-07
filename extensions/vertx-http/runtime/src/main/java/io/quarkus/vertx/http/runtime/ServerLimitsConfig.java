@@ -80,9 +80,13 @@ public interface ServerLimitsConfig {
      * Set SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
      * <p>
      * Indicates the maximum number of concurrent streams that the sender will allow. This limit is directional: it
-     * applies to the number of streams that the sender permits the receiver to create. Initially, there is no limit to
-     * this value. It is recommended that this value be no smaller than 100, to not unnecessarily limit parallelism.
+     * applies to the number of streams that the sender permits the receiver to create. It is recommended that this
+     * value be no smaller than 100, to not unnecessarily limit parallelism.
+     * <p>
+     * Limiting concurrent streams provides backpressure under high load and prevents {@code OutOfMemoryError} when
+     * using gRPC over HTTP/2. Increase this value if clients observe {@code REFUSED_STREAM} errors under load.
      */
+    @WithDefault("200")
     OptionalLong maxConcurrentStreams();
 
     /**

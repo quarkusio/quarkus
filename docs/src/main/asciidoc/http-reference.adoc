@@ -378,6 +378,7 @@ quarkus.http.http2=false
 
 Note that some configuration attributes are specific to HTTP/2.
 For example, to configure the max header list size (~ header), you need to configure the `quarkus.http.limits.max-header-list-size` attribute.
+The maximum number of concurrent HTTP/2 streams defaults to `200` and can be configured using `quarkus.http.limits.max-concurrent-streams`.
 You can also enable or disable HTTP/2 push using `quarkus.http.http2-push-enabled`.
 
 == HTTP/3 Support

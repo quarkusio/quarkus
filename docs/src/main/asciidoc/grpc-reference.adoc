@@ -66,7 +66,12 @@ When working with large gRPC messages, you may need to tune the HTTP/2 flow cont
 
 === Unified server mode (Vert.x-based)
 
-When using the unified server mode (`quarkus.grpc.server.use-separate-server=false`), you can configure the HTTP/2 connection window size:
+When using the unified server mode (`quarkus.grpc.server.use-separate-server=false`), gRPC traffic is served over the main HTTP server using HTTP/2.
+By default, Quarkus limits the number of concurrent HTTP/2 streams to `200` via `quarkus.http.limits.max-concurrent-streams`.
+This provides backpressure under high load and prevents `OutOfMemoryError` when many requests arrive in a short period of time.
+If clients observe `REFUSED_STREAM` errors under load, increase this value.
+
+You can also configure the HTTP/2 connection window size:
 
 [source,properties,subs=attributes+]
 ----

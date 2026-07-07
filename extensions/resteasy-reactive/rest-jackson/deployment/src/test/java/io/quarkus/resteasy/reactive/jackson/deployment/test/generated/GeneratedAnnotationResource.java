@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -323,6 +324,17 @@ public class GeneratedAnnotationResource {
         DateFormatBean bean = new DateFormatBean();
         bean.setName("date-test");
         bean.setDate(Date.from(LocalDate.of(2025, 6, 15).atStartOfDay().toInstant(ZoneOffset.UTC)));
+        return bean;
+    }
+
+    // --- ZonedDateTimeFormatBean: @JsonFormat with ZonedDateTime ---
+
+    @GET
+    @Path("/zoned-date-format")
+    public ZonedDateTimeFormatBean getZonedDateFormat() {
+        ZonedDateTimeFormatBean bean = new ZonedDateTimeFormatBean();
+        bean.setName("zoned-date-test");
+        bean.setDateTime(ZonedDateTime.of(2024, 3, 13, 10, 5, 1, 0, ZoneOffset.UTC));
         return bean;
     }
 

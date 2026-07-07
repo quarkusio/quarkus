@@ -485,7 +485,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             } else if (fieldSpecs.isFormatShapeNumber() && isEnumType(typeName)) {
                 writeFormattedValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.formatPattern() != null && isJavaUtilDateType(typeName)) {
-                writeFormattedDateValue(fieldSpecs, bytecode, ctx, pkgName, arg);
+                writeFormattedDateValue(fieldSpecs, bytecode, ctx, pkgName, arg, false);
+            } else if (fieldSpecs.formatPattern() != null && isJavaTimeDateType(typeName)) {
+                writeFormattedDateValue(fieldSpecs, bytecode, ctx, pkgName, arg, true);
             } else {
                 writeFieldValue(fieldSpecs, bytecode, ctx, typeName, arg, pkgName);
             }
@@ -522,11 +524,12 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private static void writeFormattedDateValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,
-            String pkgName, ResultHandle arg) {
+            String pkgName, ResultHandle arg, boolean temporal) {
         writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
         String timezone = fieldSpecs.formatTimezone();
+        String methodName = temporal ? "serializeFormattedTemporal" : "serializeFormattedDate";
         MethodDescriptor serializeFormatted = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
-                "serializeFormattedDate", void.class, Object.class, String.class, String.class, JsonGenerator.class);
+                methodName, void.class, Object.class, String.class, String.class, JsonGenerator.class);
         bytecode.invokeStaticMethod(serializeFormatted, arg,
                 bytecode.load(fieldSpecs.formatPattern()),
                 timezone != null ? bytecode.load(timezone) : bytecode.loadNull(),
@@ -639,6 +642,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return "java.util.Date".equals(typeName)
                 || "java.sql.Date".equals(typeName)
                 || "java.sql.Timestamp".equals(typeName);
+    }
+
+    private static boolean isJavaTimeDateType(String typeName) {
+        return typeName.startsWith("java.time.");
     }
 
     private String writeMethodForPrimitiveFields(String typeName) {

@@ -14,33 +14,48 @@ import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 
 /**
- * See example https://docs.gradle.org/current/samples/sample_tasks_with_dependency_resolution_result_inputs.html,
- * to better understand how this works.
+ * Gradle-decorated nested input for a resolved classpath consumed by application-model generation.
+ * <p>
+ * Gradle cannot directly fingerprint resolution-result object graphs, so the graph and artifact identities are exposed
+ * as canonical scalar fingerprints while artifact contents are declared separately as files. The internal Gradle
+ * result objects remain lazy until task execution. Public visibility supports Gradle decoration and shared plugin code;
+ * this is not application DSL.
+ *
+ * @see <a href="https://docs.gradle.org/current/samples/sample_tasks_with_dependency_resolution_result_inputs.html">
+ *      Gradle's dependency-resolution task-input sample</a>
  */
 public abstract class QuarkusResolvedClasspath {
 
-    /**
-     * Internal since we track defined dependencies via {@link QuarkusApplicationModelTask#getOriginalClasspath}
-     */
+    /** @return the internal lazy root component of the resolution graph */
     @Internal
     public abstract Property<ResolvedComponentResult> getRoot();
 
-    /**
-     * Internal since we track defined dependencies via {@link QuarkusApplicationModelTask#getOriginalClasspath}
-     */
+    /** @return the internal lazy resolved artifacts consumed during model assembly */
     @Internal
     public abstract SetProperty<ResolvedArtifactResult> getResolvedArtifacts();
 
-    /**
-     * Internal since we track defined dependencies via {@link QuarkusApplicationModelTask#getOriginalClasspath}
-     */
-    @Internal
+    /** @return resolved artifact files tracked with relative path sensitivity */
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
     public abstract ConfigurableFileCollection getResolvedArtifactFiles();
+
+    /** @return canonical scalar representation of resolved and unresolved graph edges */
+    @Input
+    public abstract ListProperty<String> getResolutionGraph();
+
+    /** @return canonical scalar fingerprints of resolved artifact identity, type, and path */
+    @Input
+    public abstract ListProperty<String> getArtifactMetadata();
 
     @Internal
     FileCollection getAllResolvedFiles() {
@@ -63,11 +78,19 @@ public abstract class QuarkusResolvedClasspath {
         return new QuarkusResolvedArtifact(result.getId(), result.getFile(), type);
     }
 
+    /**
+     * Lazily wires all graph, artifact, and file inputs from {@code configuration}.
+     *
+     * @param configuration resolvable classpath configuration
+     */
     public void configureFrom(Configuration configuration) {
         ResolvableDependencies resolvableDependencies = configuration.getIncoming();
-        getRoot().set(resolvableDependencies.getResolutionResult().getRootComponent());
+        var root = resolvableDependencies.getResolutionResult().getRootComponent();
+        getRoot().set(root);
+        getResolutionGraph().set(root.map(ResolvedInputFingerprint::resolutionGraph));
         var artifacts = resolvableDependencies.getArtifacts();
         getResolvedArtifacts().set(artifacts.getResolvedArtifacts());
+        getArtifactMetadata().set(artifacts.getResolvedArtifacts().map(ResolvedInputFingerprint::artifactMetadata));
         getResolvedArtifactFiles().from(artifacts.getArtifactFiles());
     }
 

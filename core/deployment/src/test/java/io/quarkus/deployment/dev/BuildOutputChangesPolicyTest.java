@@ -8,20 +8,24 @@ import static io.quarkus.deployment.dev.BuildOutputChangeStatus.BUILD_FAILED;
 import static io.quarkus.deployment.dev.BuildOutputChangeStatus.BUILD_SUCCEEDED;
 import static io.quarkus.deployment.dev.BuildOutputChangeStatus.BUILD_SUPERSEDED;
 import static io.quarkus.deployment.dev.BuildOutputChangesApplyStatus.APPLIED;
+import static io.quarkus.deployment.dev.BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED;
 import static io.quarkus.deployment.dev.BuildOutputChangesApplyStatus.NOT_APPLIED;
 import static io.quarkus.deployment.dev.BuildOutputChangesApplyStatus.REJECTED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.BASELINE_DROPPED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.DISCARDED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.NON_RELOADABLE_STATUS;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.NOTHING_TO_SEND;
+import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.NO_RELOADABLE_CHANGES;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.PENDING;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.RESTART_REQUIRED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.SEND_FAILED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.SENT_APPLIED;
+import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.SENT_LIVE_RELOAD_DISABLED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.SENT_NOT_APPLIED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.SENT_REJECTED;
 import static io.quarkus.deployment.dev.BuildOutputChangesPolicy.Outcome.STALE_REJECTED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -154,6 +158,17 @@ class BuildOutputChangesPolicyTest {
     }
 
     @Test
+    void explicitPathlessRebaselineIsDelivered() {
+        var policy = new BuildOutputChangesPolicy();
+        var rebaseline = new BuildOutputChanges(1, BUILD_SUCCEEDED, BuildOutputFailureKind.NONE,
+                List.of(), List.of(), List.of(), List.of(), null, null, false, true,
+                BuildOutputChangesDeliveryKind.REBASELINE);
+
+        assertThat(policy.accept(rebaseline).outcome()).isEqualTo(PENDING);
+        assertThat(deliver(policy, APPLIED)).isEqualTo(rebaseline);
+    }
+
+    @Test
     void rejectedDeliveryClearsPendingChanges() {
         var policy = new BuildOutputChangesPolicy();
         policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
@@ -177,6 +192,67 @@ class BuildOutputChangesPolicyTest {
         assertThat(delivered.sequence()).isEqualTo(2);
         assertThat(delivered.mainClassChanges()).extracting(BuildOutputPathChange::kind)
                 .containsExactly(DELETED);
+    }
+
+    @Test
+    void liveReloadDisabledDeliveryKeepsPendingChangesAndCoalescesLaterEvents() {
+        var policy = new BuildOutputChangesPolicy();
+        policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
+
+        assertThat(policy.deliver(ignored -> LIVE_RELOAD_DISABLED).outcome())
+                .isEqualTo(SENT_LIVE_RELOAD_DISABLED);
+
+        policy.accept(success(2, classChange("com/acme/Foo.class", DELETED)));
+        BuildOutputChanges delivered = deliver(policy, APPLIED);
+        assertThat(delivered.sequence()).isEqualTo(2);
+        assertThat(delivered.mainClassChanges()).extracting(BuildOutputPathChange::kind)
+                .containsExactly(DELETED);
+    }
+
+    @Test
+    void failureAfterDisabledDeltaRetainsCompactRecoveryObligation() {
+        var policy = new BuildOutputChangesPolicy();
+        policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
+        assertThat(policy.deliver(ignored -> LIVE_RELOAD_DISABLED).outcome())
+                .isEqualTo(SENT_LIVE_RELOAD_DISABLED);
+
+        policy.accept(changes(2, BUILD_FAILED, List.of(), List.of()));
+        assertThat(deliver(policy, APPLIED).status()).isEqualTo(BUILD_FAILED);
+        assertThat(policy.accept(success(3)).outcome()).isEqualTo(PENDING);
+
+        BuildOutputChanges recovered = deliver(policy, APPLIED);
+        assertThat(recovered.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+        assertThat(recovered.forceRestart()).isTrue();
+    }
+
+    @Test
+    void cancellationOrSupersessionAfterDisabledDeltaRetainsCompactRecoveryObligation() {
+        for (BuildOutputChangeStatus status : List.of(BUILD_CANCELLED, BUILD_SUPERSEDED)) {
+            var policy = new BuildOutputChangesPolicy();
+            policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
+            assertThat(policy.deliver(ignored -> LIVE_RELOAD_DISABLED).outcome())
+                    .isEqualTo(SENT_LIVE_RELOAD_DISABLED);
+
+            policy.accept(changes(2, status, List.of(), List.of()));
+            assertThat(deliver(policy, APPLIED).status()).isEqualTo(status);
+            assertThat(policy.accept(success(3)).outcome()).isEqualTo(PENDING);
+
+            BuildOutputChanges recovered = deliver(policy, APPLIED);
+            assertThat(recovered.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+            assertThat(recovered.forceRestart()).isTrue();
+        }
+    }
+
+    @Test
+    void rejectedDisabledDeltaRetainsCompactRecoveryObligation() {
+        var policy = new BuildOutputChangesPolicy();
+        policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
+        assertThat(policy.deliver(ignored -> LIVE_RELOAD_DISABLED).outcome())
+                .isEqualTo(SENT_LIVE_RELOAD_DISABLED);
+        assertThat(policy.deliver(ignored -> REJECTED).outcome()).isEqualTo(SENT_REJECTED);
+
+        assertThat(policy.accept(success(2)).outcome()).isEqualTo(PENDING);
+        assertThat(deliver(policy, APPLIED).deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
     }
 
     @Test
@@ -283,6 +359,131 @@ class BuildOutputChangesPolicyTest {
     }
 
     @Test
+    void successfulEmptyBuildAfterDeliveredFailureIsDeliveredToClearFailureState() {
+        var policy = new BuildOutputChangesPolicy();
+        policy.accept(changes(1, BUILD_FAILED, List.of(), List.of()));
+        assertThat(deliver(policy, APPLIED).status()).isEqualTo(BUILD_FAILED);
+
+        assertThat(policy.accept(success(2)).outcome()).isEqualTo(PENDING);
+
+        BuildOutputChanges delivered = deliver(policy, APPLIED);
+        assertThat(delivered.status()).isEqualTo(BUILD_SUCCEEDED);
+        assertThat(delivered.sequence()).isEqualTo(2);
+        assertThat(policy.accept(success(3)).outcome()).isEqualTo(NO_RELOADABLE_CHANGES);
+    }
+
+    @Test
+    void cancelledAndSupersededBuildsDoNotRequireARecoverySuccess() {
+        for (BuildOutputChangeStatus status : List.of(BUILD_CANCELLED, BUILD_SUPERSEDED)) {
+            var policy = new BuildOutputChangesPolicy();
+            policy.accept(changes(1, status, List.of(), List.of()));
+            deliver(policy, APPLIED);
+
+            assertThat(policy.accept(success(2)).outcome()).isEqualTo(NO_RELOADABLE_CHANGES);
+        }
+    }
+
+    @Test
+    void cancelledAndSupersededBuildsDoNotHideAnEarlierFailureRecovery() {
+        for (BuildOutputChangeStatus status : List.of(BUILD_CANCELLED, BUILD_SUPERSEDED)) {
+            var policy = new BuildOutputChangesPolicy();
+            policy.accept(changes(1, BUILD_FAILED, List.of(), List.of()));
+            deliver(policy, APPLIED);
+            policy.accept(changes(2, status, List.of(), List.of()));
+            deliver(policy, APPLIED);
+
+            assertThat(policy.accept(success(3)).outcome()).isEqualTo(PENDING);
+            assertThat(deliver(policy, APPLIED).status()).isEqualTo(BUILD_SUCCEEDED);
+            assertThat(policy.accept(success(4)).outcome()).isEqualTo(NO_RELOADABLE_CHANGES);
+        }
+    }
+
+    @Test
+    void pendingCancelledAndSupersededBuildsDoNotRequireARecoverySuccess() {
+        for (BuildOutputChangeStatus status : List.of(BUILD_CANCELLED, BUILD_SUPERSEDED)) {
+            var policy = new BuildOutputChangesPolicy();
+            policy.accept(changes(1, status, List.of(), List.of()));
+
+            assertThat(policy.accept(success(2)).outcome()).isEqualTo(NO_RELOADABLE_CHANGES);
+            assertThat(policy.deliver(ignored -> APPLIED).outcome()).isEqualTo(NOTHING_TO_SEND);
+        }
+    }
+
+    @Test
+    void deltaAtConfiguredByteLimitIsPreservedAndLargerDeltaRebaselines() {
+        BuildOutputChanges candidate = success(1, classChange("com/acme/Foo.class", MODIFIED));
+        int encodedBytes = BuildOutputChangesProtocol.completeChangesPayloadBytes(candidate);
+        var exactPolicy = new BuildOutputChangesPolicy(encodedBytes);
+        var smallerPolicy = new BuildOutputChangesPolicy(encodedBytes - 1);
+
+        exactPolicy.accept(candidate);
+        smallerPolicy.accept(candidate);
+
+        assertThat(deliver(exactPolicy, APPLIED).deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.DELTA);
+        BuildOutputChanges rebaseline = deliver(smallerPolicy, APPLIED);
+        assertThat(rebaseline.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+        assertThat(rebaseline.mainClassChanges()).isEmpty();
+        assertThat(rebaseline.forceRestart()).isTrue();
+    }
+
+    @Test
+    void failedRebaselineDeliveryStaysCompactAndAbsorbsLaterChanges() {
+        var policy = new BuildOutputChangesPolicy(1);
+        policy.accept(success(1, classChange("com/acme/Foo.class", ADDED)));
+
+        var failed = policy.deliver(ignored -> {
+            throw new IOException("offline");
+        });
+        assertThat(failed.outcome()).isEqualTo(SEND_FAILED);
+        assertThat(failed.changes().deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+
+        policy.accept(success(2, resourceChange("application.properties", MODIFIED)));
+        BuildOutputChanges delivered = deliver(policy, APPLIED);
+
+        assertThat(delivered.sequence()).isEqualTo(2);
+        assertThat(delivered.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+        assertThat(delivered.mainClassChanges()).isEmpty();
+        assertThat(delivered.mainResourceChanges()).isEmpty();
+    }
+
+    @Test
+    void cancelledAndSupersededBuildsDoNotEraseRequiredRebaseline() {
+        for (BuildOutputChangeStatus status : List.of(BUILD_CANCELLED, BUILD_SUPERSEDED)) {
+            var policy = new BuildOutputChangesPolicy(1);
+            policy.accept(success(1, classChange("com/acme/Foo.class", MODIFIED)));
+            policy.accept(changes(2, status, List.of(), List.of()));
+
+            assertThat(deliver(policy, APPLIED).status()).isEqualTo(status);
+            assertThat(policy.accept(success(3)).outcome()).isEqualTo(PENDING);
+
+            BuildOutputChanges recovered = deliver(policy, APPLIED);
+            assertThat(recovered.sequence()).isEqualTo(3);
+            assertThat(recovered.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+            assertThat(policy.accept(success(4)).outcome()).isEqualTo(NO_RELOADABLE_CHANGES);
+        }
+    }
+
+    @Test
+    void internalDeltaLimitIsLowerOnly() {
+        assertThat(BuildOutputChangesPolicy.configuredDeltaMaxBytes(null))
+                .isEqualTo(BuildOutputChangesFrameCodec.MAX_FRAME_BYTES);
+        assertThat(BuildOutputChangesPolicy.configuredDeltaMaxBytes("1")).isEqualTo(1);
+        assertThat(BuildOutputChangesPolicy.configuredDeltaMaxBytes(
+                Integer.toString(BuildOutputChangesFrameCodec.MAX_FRAME_BYTES)))
+                .isEqualTo(BuildOutputChangesFrameCodec.MAX_FRAME_BYTES);
+        assertThatThrownBy(() -> BuildOutputChangesPolicy.configuredDeltaMaxBytes("0"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("between 1");
+        assertThatThrownBy(() -> BuildOutputChangesPolicy.configuredDeltaMaxBytes(
+                Integer.toString(BuildOutputChangesFrameCodec.MAX_FRAME_BYTES + 1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("between 1");
+        assertThatThrownBy(() -> BuildOutputChangesPolicy.configuredDeltaMaxBytes("not-a-number"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("integer");
+    }
+
+    @Test
     void policySurfaceDoesNotExposeGradleTypes() {
         assertNoGradleType(BuildOutputChangesPolicy.class);
         assertNoGradleType(BuildOutputChangesPolicy.Result.class);
@@ -296,7 +497,9 @@ class BuildOutputChangesPolicyTest {
             return status;
         });
         assertThat(result.outcome())
-                .isEqualTo(status == APPLIED ? SENT_APPLIED : status == REJECTED ? SENT_REJECTED : SENT_NOT_APPLIED);
+                .isEqualTo(status == APPLIED ? SENT_APPLIED
+                        : status == REJECTED ? SENT_REJECTED
+                                : status == LIVE_RELOAD_DISABLED ? SENT_LIVE_RELOAD_DISABLED : SENT_NOT_APPLIED);
         assertThat(delivered).hasSize(1);
         assertThat(result.changes()).isSameAs(delivered.get(0));
         return delivered.get(0);

@@ -10,8 +10,19 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 
+/**
+ * Base class for Quarkus Gradle tasks that need normalized project identity and injected Gradle services.
+ * <p>
+ * The public type and service accessors support Gradle task decoration and subclasses in sibling plugin modules. This
+ * is developer-facing plugin infrastructure, not an application build-script API.
+ */
 public abstract class QuarkusBaseTask extends DefaultTask {
 
+    /**
+     * Captures the project name, group, and initial description as declared task inputs.
+     * <p>
+     * The version is intentionally not captured because it may be configured after task construction.
+     */
     protected QuarkusBaseTask() {
         getProjectName().set(getProject().getName());
         getProjectGroup().set(getProject().getGroup().toString());
@@ -23,22 +34,28 @@ public abstract class QuarkusBaseTask extends DefaultTask {
         }
     }
 
+    /** @return the project name captured for task input tracking */
     @Input
     protected abstract Property<String> getProjectName();
 
+    /** @return the optional project description captured for task input tracking */
     @Input
     @Optional
     protected abstract Property<String> getProjectDescription();
 
+    /** @return the project group captured for task input tracking */
     @Input
     protected abstract Property<String> getProjectGroup();
 
+    /** @return Gradle's injected provider factory */
     @Inject
     public abstract ProviderFactory getProviderFactory();
 
+    /** @return Gradle's injected dependency handler */
     @Inject
     public abstract DependencyHandler getDependencyHandler();
 
+    /** @return Gradle's injected object factory */
     @Inject
     public abstract ObjectFactory getObjects();
 }

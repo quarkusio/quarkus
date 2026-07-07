@@ -20,6 +20,17 @@ import io.quarkus.gradle.dependency.QuarkusComponentVariants;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * Creates the resolvable configurations used to build a Quarkus application model without traversing live producer
+ * projects.
+ * <p>
+ * Each instance owns mode- and prefix-specific runtime, platform, platform-properties, deployment, and compile-only
+ * configurations. Resolution remains lazy; constructing the builder configures dependency and attribute providers but
+ * does not request resolved files. Supported launch modes are {@link LaunchMode#NORMAL},
+ * {@link LaunchMode#DEVELOPMENT}, and {@link LaunchMode#TEST}.
+ * <p>
+ * This class is cross-plugin implementation API. Its generated configuration names are not application DSL.
+ */
 @SuppressWarnings("UnstableApiUsage")
 public final class StrictApplicationDeploymentClasspathBuilder {
 
@@ -31,6 +42,12 @@ public final class StrictApplicationDeploymentClasspathBuilder {
     private final String deploymentConfigurationName;
     private final String compileOnlyConfigurationName;
 
+    /**
+     * Creates the legacy-compatible base configurations from which strict configurations inherit.
+     * Existing configurations with the expected names are retained.
+     *
+     * @param project the Java project to configure
+     */
     public static void initConfigurations(Project project) {
         var configurations = project.getConfigurations();
         configurations.maybeCreate(ToolingUtils.DEV_MODE_CONFIGURATION_NAME)
@@ -55,6 +72,14 @@ public final class StrictApplicationDeploymentClasspathBuilder {
         });
     }
 
+    /**
+     * Configures a complete set of strict application-model classpaths.
+     *
+     * @param project the Java project to configure
+     * @param mode supported Quarkus launch mode
+     * @param configurationNamePrefix prefix that isolates this set from other named builds
+     * @throws IllegalArgumentException if {@code mode} is not supported
+     */
     public StrictApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode, String configurationNamePrefix) {
         this.project = project;
         this.mode = mode;
@@ -160,28 +185,38 @@ public final class StrictApplicationDeploymentClasspathBuilder {
         });
     }
 
+    /**
+     * Returns the original Java classpath only as an up-to-date-check input.
+     * <p>
+     * Application-model resolution uses the strict configurations exposed by the other accessors.
+     */
     public FileCollection getOriginalRuntimeClasspathAsInput() {
         return project.files(originalRuntimeConfigurationNames(mode).stream()
                 .map(name -> project.getConfigurations().getByName(name))
                 .toArray());
     }
 
+    /** @return the configuration resolving imported Quarkus platform BOMs */
     public Configuration getPlatformConfiguration() {
         return project.getConfigurations().getByName(platformConfigurationName);
     }
 
+    /** @return the configuration resolving platform descriptor and properties artifacts */
     public Configuration getPlatformPropertiesConfiguration() {
         return project.getConfigurations().getByName(platformPropertiesConfigurationName);
     }
 
+    /** @return the runtime configuration before deployment-variant selection */
     public Configuration getRuntimeConfigurationWithoutResolvingDeployment() {
         return project.getConfigurations().getByName(runtimeConfigurationName);
     }
 
+    /** @return the deployment classpath selected consistently with the runtime classpath */
     public Configuration getDeploymentConfiguration() {
         return project.getConfigurations().getByName(deploymentConfigurationName);
     }
 
+    /** @return the compile-only classpath selected consistently with the deployment classpath */
     public Configuration getCompileOnlyWithoutResolvingDeployment() {
         return project.getConfigurations().getByName(compileOnlyConfigurationName);
     }

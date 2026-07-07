@@ -3,18 +3,21 @@
         {
             "category": "19c",
             "oci-service": "base-database-service-19c",
+            "db-version": "19",
             "timeout": 25,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         },
         {
             "category": "21c",
             "oci-service": "base-database-service-21c",
+            "db-version": "21",
             "timeout": 25,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         },
         {
             "category": "26ai",
             "oci-service": "base-database-service-26ai",
+            "db-version": "26",
             "timeout": 25,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         }

@@ -606,7 +606,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new IllegalStateException(
                     "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
         }
-        cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
@@ -623,10 +622,17 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if ((state == null && !failedBoot) || (runningQuarkusApplication != null && isNewApplication)) {
             if (isNewApplication) {
                 if (state != null) {
+                    // Tell the close task in StartupActionImpl.run() whether the
+                    // CuratedApplication will be reused by the next test class.
+                    cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
                     try {
                         state.close();
                     } catch (Throwable throwable) {
                         markTestAsFailed(extensionContext, throwable);
+                    } finally {
+                        // Reset: eligibleForReuse only applies to this transition,
+                        // not to the eventual final shutdown where nothing can be reused.
+                        cl.getCuratedApplication().setEligibleForReuse(false);
                     }
                 }
             }

@@ -1,7 +1,6 @@
 package io.quarkus.it.jpa.postgresql;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,16 +74,12 @@ class DevServicesPostgresqlContainerNoReuseTest extends MojoTestBase {
                 .isZero();
         firstRun.stop();
 
-        // Container shutdown may not be instantaneous: for some reason,
-        // Quarkus doesn't shut down containers itself but lets Ryuk take care of it.
-        // See https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/Hibernate.20test.20failures.20on.20CI/near/608660701
-        await().atMost(30, TimeUnit.SECONDS)
-                .pollInterval(1, TimeUnit.SECONDS)
-                .untilAsserted(() -> assertThat(findContainerOnPort(FIXED_PORT))
-                        .as("Container on port %d should be stopped after the first run"
-                                + " (reuse is not enabled, so ContainerShutdownCloseable must call container.stop())",
-                                FIXED_PORT)
-                        .isNull());
+        // With default settings, the container should have been stopped on shutdown
+        assertThat(findContainerOnPort(FIXED_PORT))
+                .as("Container on port %d should be stopped after the first run"
+                        + " (reuse is not enabled, so the container must be stopped on shutdown)",
+                        FIXED_PORT)
+                .isNull();
 
         // IsContainerRuntimeWorking must not persist testcontainers.reuse.enable to disk
         if (TESTCONTAINERS_PROPS_FILE.exists()) {

@@ -6,6 +6,7 @@ import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -52,6 +53,12 @@ public interface HibernateOrmConfig {
      */
     @ConfigDocSection
     HibernateOrmConfigDatabase database();
+
+    /**
+     * JSON/XML mapping related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigMapping mapping();
 
     /**
      * Configuration for persistence units.
@@ -209,6 +216,35 @@ public interface HibernateOrmConfig {
          */
         @WithDefault("false")
         boolean allowHql();
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigMapping {
+
+        /**
+         * Mapping format.
+         */
+        HibernateOrmConfigMappingFormat format();
+
+        @ConfigGroup
+        interface HibernateOrmConfigMappingFormat {
+            /**
+             * How the default JSON/XML format mappers are configured.
+             *
+             * Quarkus no longer pre-builds format mappers and unless a user configures
+             * one explicitly it lets Hibernate ORM create its own internally.
+             *
+             * This property is deprecated and only accepts {@code ignore}. Setting it
+             * to {@code warn} or {@code fail} will result in an exception.
+             *
+             * @deprecated This property is no longer functional. It will be removed in a future version.
+             * @asciidoclet
+             */
+            @Deprecated(since = "4.0", forRemoval = true)
+            @WithDefault("ignore")
+            BuiltinFormatMapperBehaviour global();
+
+        }
     }
 
 }

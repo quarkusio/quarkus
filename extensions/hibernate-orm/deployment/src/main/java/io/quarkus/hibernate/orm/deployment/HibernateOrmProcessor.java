@@ -292,6 +292,16 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    void checkFormatMapperConfig(HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<ValidationErrorBuildItem> validationError) {
+        try {
+            hibernateOrmConfig.mapping().format().global().action();
+        } catch (ConfigurationException e) {
+            validationError.produce(new ValidationErrorBuildItem(e));
+        }
+    }
+
+    @BuildStep
     void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
         for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.persistenceUnits()

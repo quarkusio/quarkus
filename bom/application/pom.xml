@@ -175,7 +175,7 @@
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
-        <quarkus-spring-test-api.version>3.5.Alpha1</quarkus-spring-test-api.version>
+        <quarkus-spring-test-api.version>4.1</quarkus-spring-test-api.version>
         <mockito.version>5.21.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.3.2</quarkus-security.version>

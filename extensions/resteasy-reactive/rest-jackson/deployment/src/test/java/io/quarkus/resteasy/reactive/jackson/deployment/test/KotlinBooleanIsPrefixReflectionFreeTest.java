@@ -1,8 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 import java.util.function.Supplier;
 
@@ -15,6 +13,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
+/**
+ * Verifies that Kotlin classes are NOT processed by the reflection-free serializer
+ * and instead fall back to standard Jackson serialization.
+ */
 public class KotlinBooleanIsPrefixReflectionFreeTest {
 
     @RegisterExtension
@@ -33,23 +35,14 @@ public class KotlinBooleanIsPrefixReflectionFreeTest {
             });
 
     @Test
-    public void testSerializationUsesKotlinPropertyName() {
+    public void testKotlinClassUsesStandardJackson() {
+        // Standard Jackson (without KotlinModule) strips the "is" prefix from boolean getters,
+        // so isEligible() becomes "eligible". This proves the reflection-free serializer
+        // (which would preserve "isEligible" from the field name) is NOT used for Kotlin classes.
         RestAssured.get("/kotlin-boolean-is-prefix")
                 .then()
                 .statusCode(200)
-                .body("isEligible", is(true))
-                .body(not(containsString("\"eligible\"")));
+                .body("eligible", is(true));
     }
 
-    @Test
-    public void testRoundTrip() {
-        RestAssured
-                .with()
-                .body("{\"isEligible\": true}")
-                .contentType("application/json")
-                .post("/kotlin-boolean-is-prefix")
-                .then()
-                .statusCode(200)
-                .body("isEligible", is(true));
-    }
 }

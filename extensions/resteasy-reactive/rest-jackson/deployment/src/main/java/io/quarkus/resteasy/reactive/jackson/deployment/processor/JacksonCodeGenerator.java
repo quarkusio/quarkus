@@ -127,7 +127,11 @@ public abstract class JacksonCodeGenerator {
 
     public Collection<String> create(Collection<ClassInfo> classInfos) {
         Set<String> createdClasses = new HashSet<>();
-        toBeGenerated.addAll(classInfos);
+        for (ClassInfo classInfo : classInfos) {
+            if (shouldGenerateCodeFor(classInfo)) {
+                toBeGenerated.add(classInfo);
+            }
+        }
 
         while (!toBeGenerated.isEmpty()) {
             create(toBeGenerated.removeFirst()).ifPresent(createdClasses::add);
@@ -339,7 +343,7 @@ public abstract class JacksonCodeGenerator {
     }
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
-        return !classInfo.isEnum();
+        return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
     }
 
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
@@ -354,8 +358,7 @@ public abstract class JacksonCodeGenerator {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
-                        || fieldInfo.hasAnnotation(JsonProperty.class)
-                        || classInfo.hasDeclaredAnnotation(KOTLIN_METADATA))) {
+                        || fieldInfo.hasAnnotation(JsonProperty.class))) {
             return namedAccessor;
         }
         String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());

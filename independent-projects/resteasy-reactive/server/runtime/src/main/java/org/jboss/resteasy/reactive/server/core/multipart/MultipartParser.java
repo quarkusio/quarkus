@@ -54,22 +54,35 @@ public class MultipartParser {
     }
 
     public static ParseState beginParse(final PartHandler handler, final byte[] boundary, final String requestCharset) {
+        return beginParse(handler, boundary, requestCharset, ParseState.DEFAULT_MAX_PART_HEADER_SIZE,
+                ParseState.DEFAULT_MAX_HEADER_COUNT);
+    }
+
+    public static ParseState beginParse(final PartHandler handler, final byte[] boundary, final String requestCharset,
+            final int maxPartHeaderSize, final int maxHeaderCount) {
 
         // We prepend CR/LF to the boundary to chop trailing CR/LF from
         // body-data tokens.
         byte[] boundaryToken = new byte[boundary.length + BOUNDARY_PREFIX.length];
         System.arraycopy(BOUNDARY_PREFIX, 0, boundaryToken, 0, BOUNDARY_PREFIX.length);
         System.arraycopy(boundary, 0, boundaryToken, BOUNDARY_PREFIX.length, boundary.length);
-        return new ParseState(handler, requestCharset, boundaryToken);
+        return new ParseState(handler, requestCharset, boundaryToken, maxPartHeaderSize, maxHeaderCount);
     }
 
     public static class ParseState {
+
+        public static final int DEFAULT_MAX_PART_HEADER_SIZE = 32768;
+        public static final int DEFAULT_MAX_HEADER_COUNT = 40;
+
         private final PartHandler partHandler;
         private String requestCharset;
         /**
          * The boundary, complete with the initial CRLF--
          */
         private final byte[] boundary;
+
+        private final int maxPartHeaderSize;
+        private final int maxHeaderCount;
 
         //0=preamble
         private int state = 0;
@@ -79,10 +92,20 @@ public class MultipartParser {
         private CaseInsensitiveMap<String> headers;
         private Encoding encodingHandler;
 
+        private int partHeaderBytesRead;
+        private int headerCount;
+
         public ParseState(final PartHandler partHandler, String requestCharset, final byte[] boundary) {
+            this(partHandler, requestCharset, boundary, DEFAULT_MAX_PART_HEADER_SIZE, DEFAULT_MAX_HEADER_COUNT);
+        }
+
+        public ParseState(final PartHandler partHandler, String requestCharset, final byte[] boundary,
+                final int maxPartHeaderSize, final int maxHeaderCount) {
             this.partHandler = partHandler;
             this.requestCharset = requestCharset;
             this.boundary = boundary;
+            this.maxPartHeaderSize = maxPartHeaderSize;
+            this.maxHeaderCount = maxHeaderCount;
         }
 
         public void setCharacterEncoding(String encoding) {
@@ -151,6 +174,8 @@ public class MultipartParser {
                         subState = 0;
                         state = 1;//preamble is done
                         headers = new CaseInsensitiveMap<String>();
+                        partHeaderBytesRead = 0;
+                        headerCount = 0;
                         return;
                     } else {
                         subState = -1;
@@ -213,6 +238,9 @@ public class MultipartParser {
                         currentString = new ByteArrayOutputStream();
                     }
                     currentString.write(b);
+                    if (++partHeaderBytesRead > maxPartHeaderSize) {
+                        throw new HeaderTooLargeException();
+                    }
                 }
             }
         }
@@ -224,6 +252,9 @@ public class MultipartParser {
                     if (b == CR) { //end of headers section
                         headers.put(currentHeaderName.trim(),
                                 Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                        if (++headerCount > maxHeaderCount) {
+                            throw new HeaderTooLargeException();
+                        }
                         //set state for headerName to verify end of headers section
                         state = 1;
                         subState = 1; //CR already encountered
@@ -231,16 +262,23 @@ public class MultipartParser {
                         return;
                     } else if (b == SP || b == HTAB) { //multi-line header
                         currentString.write(b);
+                        if (++partHeaderBytesRead > maxPartHeaderSize) {
+                            throw new HeaderTooLargeException();
+                        }
                         subState = 0;
                     } else { //next header name
                         headers.put(currentHeaderName.trim(),
                                 Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                        if (++headerCount > maxHeaderCount) {
+                            throw new HeaderTooLargeException();
+                        }
                         //set state for headerName to collect next header's name
                         state = 1;
                         subState = 0;
                         //start name collection for headerName to finish
                         currentString = new ByteArrayOutputStream();
                         currentString.write(b);
+                        partHeaderBytesRead++;
                         return;
                     }
                 } else if (b == CR) {
@@ -255,6 +293,9 @@ public class MultipartParser {
                         throw new MalformedMessageException();
                     }
                     currentString.write(b);
+                    if (++partHeaderBytesRead > maxPartHeaderSize) {
+                        throw new HeaderTooLargeException();
+                    }
                 }
             }
         }
@@ -308,6 +349,8 @@ public class MultipartParser {
                         subState = 0;
                         state = 1;
                         headers = new CaseInsensitiveMap<String>();
+                        partHeaderBytesRead = 0;
+                        headerCount = 0;
                         return;
                     } else if (b == DASH) {
                         subState = -3;
@@ -420,6 +463,9 @@ public class MultipartParser {
     }
 
     public static class MalformedMessageException extends RuntimeException {
+    }
+
+    public static class HeaderTooLargeException extends RuntimeException {
     }
 
 }

@@ -57,6 +57,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     private long maxAttributeSize = 2048;
     private int maxParameters = 1000;
     private long maxEntitySize = -1;
+    private int maxPartHeaderSize = MultipartParser.ParseState.DEFAULT_MAX_PART_HEADER_SIZE;
+    private int maxHeaderCount = MultipartParser.ParseState.DEFAULT_MAX_HEADER_COUNT;
     private List<String> fileContentTypes;
 
     public MultiPartParserDefinition(Supplier<Executor> executorSupplier) {
@@ -81,7 +83,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters, fileFormNames);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters,
+                    maxPartHeaderSize, maxHeaderCount, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -175,6 +178,24 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public int getMaxPartHeaderSize() {
+        return maxPartHeaderSize;
+    }
+
+    public MultiPartParserDefinition setMaxPartHeaderSize(int maxPartHeaderSize) {
+        this.maxPartHeaderSize = maxPartHeaderSize;
+        return this;
+    }
+
+    public int getMaxHeaderCount() {
+        return maxHeaderCount;
+    }
+
+    public MultiPartParserDefinition setMaxHeaderCount(int maxHeaderCount) {
+        this.maxHeaderCount = maxHeaderCount;
+        return this;
+    }
+
     private final class MultiPartUploadHandler implements FormDataParser, MultipartParser.PartHandler {
 
         private final ResteasyReactiveRequestContext exchange;
@@ -201,7 +222,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
                 String contentType, long maxAttributeSize, long maxEntitySize, int maxParameters,
-                Set<String> fileFormNames) {
+                int maxPartHeaderSize, int maxHeaderCount, Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
             this.defaultEncoding = defaultEncoding;
@@ -218,7 +239,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     charset = value;
                 }
             }
-            this.parser = MultipartParser.beginParse(this, boundary.getBytes(StandardCharsets.US_ASCII), charset);
+            this.parser = MultipartParser.beginParse(this, boundary.getBytes(StandardCharsets.US_ASCII), charset,
+                    maxPartHeaderSize, maxHeaderCount);
 
         }
 
@@ -244,7 +266,11 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 byte[] buf = new byte[1024];
                 int c;
                 while ((c = inputStream.read(buf)) > 0) {
-                    parser.parse(ByteBuffer.wrap(buf, 0, c));
+                    try {
+                        parser.parse(ByteBuffer.wrap(buf, 0, c));
+                    } catch (MultipartParser.HeaderTooLargeException e) {
+                        throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+                    }
                 }
                 if (!parser.isComplete()) {
                     throw new IOException("Connection terminated parsing multipart request");
@@ -449,6 +475,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         try {
                             parser.parse(data);
                             exchange.serverRequest().resumeRequestInput();
+                        } catch (MultipartParser.HeaderTooLargeException e) {
+                            exchange.resume(
+                                    new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE));
                         } catch (Throwable t) {
                             exchange.resume(t);
                         }

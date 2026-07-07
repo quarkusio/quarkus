@@ -5,6 +5,13 @@ import java.io.Serializable;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 
+/**
+ * Serializable, normalized snapshot of a dependency declared by a Maven effective model.
+ * <p>
+ * Missing classifiers, types, and scopes are normalized to the Maven defaults ({@code ""}, {@code jar}, and
+ * {@code compile}). Construction and field access remain package-restricted because instances are implementation
+ * values, not a user-facing model contract.
+ */
 public class DeclaredDependency implements Serializable {
 
     @Serial

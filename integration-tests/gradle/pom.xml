@@ -33,6 +33,12 @@
             <type>pom</type>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.application</groupId>
+            <artifactId>io.quarkus.application.gradle.plugin</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus.extension</groupId>
             <artifactId>io.quarkus.extension.gradle.plugin</artifactId>
             <version>${project.version}</version>
@@ -45,6 +51,16 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>

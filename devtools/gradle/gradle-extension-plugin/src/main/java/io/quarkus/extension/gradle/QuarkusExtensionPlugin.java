@@ -7,8 +7,10 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -24,22 +26,63 @@ import io.quarkus.gradle.GradleVersionSupport;
 import io.quarkus.gradle.extension.ExtensionConstants;
 import io.quarkus.gradle.model.config.ExtensionVariantConstants;
 import io.quarkus.gradle.model.config.QuarkusExtensionAnnotationProcessorConfigurator;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
+/**
+ * Gradle plugin for a Quarkus extension runtime module.
+ * <p>
+ * Apply plugin ID {@code io.quarkus.extension} to the runtime project. The plugin creates the
+ * {@value #EXTENSION_CONFIGURATION_NAME} DSL extension, applies Java support, generates and validates Quarkus extension
+ * descriptors, configures the extension annotation processor, marks the runtime variant, and publishes local deployment
+ * and conditional-dependency variants.
+ * <p>
+ * Descriptor generation owns an isolated generated-resources directory. The Java {@code processResources} task consumes
+ * that directory and remains the sole owner of the conventional processed-resources output.
+ * <p>
+ * Deployment-module test modeling and the deployment marker are owned by the
+ * {@code io.quarkus.extension.deployment} plugin.
+ */
 public class QuarkusExtensionPlugin implements Plugin<Project> {
 
+    /**
+     * The name of the {@link QuarkusExtensionConfiguration} DSL extension.
+     */
     public static final String EXTENSION_CONFIGURATION_NAME = ExtensionConstants.EXTENSION_CONFIGURATION_NAME;
 
+    /**
+     * The task that generates the extension properties and YAML descriptors in its declared output directory.
+     */
     public static final String EXTENSION_DESCRIPTOR_TASK_NAME = "extensionDescriptor";
+
+    /**
+     * The task that validates runtime and deployment dependency separation.
+     */
     public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
     private static final String DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME = "quarkusDeploymentClasspath";
     private static final String DEPLOYMENT_MARKER_CONFIGURATION_NAME = "quarkusDeploymentMarker";
+
+    /**
+     * The consumable configuration that publishes the local deployment project dependency.
+     */
     public static final String DEPLOYMENT_DEPENDENCY_ELEMENTS_CONFIGURATION_NAME = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_ELEMENTS_CONFIGURATION_NAME;
 
+    /**
+     * The Quarkus annotation processor dependency added by the plugin.
+     */
     public static final String QUARKUS_ANNOTATION_PROCESSOR = ExtensionVariantConstants.QUARKUS_ANNOTATION_PROCESSOR;
 
+    /**
+     * Creates the plugin implementation used by Gradle's plugin manager.
+     * Direct construction is not a supported configuration entry point.
+     */
     public QuarkusExtensionPlugin() {
     }
 
+    /**
+     * Applies runtime-extension configuration to the target project.
+     *
+     * @param project the extension runtime project
+     */
     @Override
     public void apply(Project project) {
         GradleVersionSupport.requireMinimumGradleVersion();
@@ -62,6 +105,16 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         Configuration deploymentClasspath = createDeploymentClasspath(project, quarkusExt);
         Configuration deploymentMarker = createDeploymentMarker(project, quarkusExt);
         createDeploymentDependencyElements(project, quarkusExt);
+        createConditionalDependenciesElements(project, quarkusExt.getConditionalDependencies(),
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEPENDENCIES_ELEMENTS_CONFIGURATION_NAME,
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEPENDENCIES_CATEGORY,
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEPENDENCIES_ATTRIBUTE,
+                "Provides conditional dependency declarations for this local Quarkus extension runtime module.");
+        createConditionalDependenciesElements(project, quarkusExt.getConditionalDevDependencies(),
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEV_DEPENDENCIES_ELEMENTS_CONFIGURATION_NAME,
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEV_DEPENDENCIES_CATEGORY,
+                ExtensionVariantConstants.EXTENSION_CONDITIONAL_DEV_DEPENDENCIES_ATTRIBUTE,
+                "Provides conditional development dependency declarations for this local Quarkus extension runtime module.");
         Provider<Boolean> localDeploymentValidationEnabled = quarkusExt.getDeploymentArtifact()
                 .map(deploymentArtifact -> false)
                 .orElse(true);
@@ -130,10 +183,40 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         deploymentDependencyElements.setDescription(
                 "Provides the local deployment project dependency for this Quarkus extension runtime module.");
         deploymentDependencyElements.getAttributes().attribute(Category.CATEGORY_ATTRIBUTE,
-                project.getObjects().named(Category.class, ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_CATEGORY));
+                project.getObjects().named(Category.class, Category.LIBRARY));
         deploymentDependencyElements.getAttributes()
                 .attribute(ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_ATTRIBUTE, true);
+        deploymentDependencyElements.getOutgoing().capability(project.provider(
+                () -> ExtensionVariantConstants.extensionVariantCapability(
+                        project.getGroup().toString(), project.getName(), project.getVersion().toString(),
+                        ExtensionVariantConstants.EXTENSION_DEPLOYMENT_DEPENDENCY_CATEGORY)));
         deploymentDependencyElements.getDependencies().addLater(deploymentProjectDependency(project, quarkusExt));
+    }
+
+    private void createConditionalDependenciesElements(Project project, ListProperty<String> coordinates,
+            String configurationName, String variantName, Attribute<Boolean> attribute,
+            String description) {
+        Configuration elements = project.getConfigurations().create(configurationName);
+        elements.setCanBeConsumed(true);
+        elements.setCanBeResolved(false);
+        elements.setDescription(description);
+        elements.getAttributes().attribute(Category.CATEGORY_ATTRIBUTE,
+                project.getObjects().named(Category.class, Category.LIBRARY));
+        elements.getAttributes().attribute(attribute, true);
+        elements.getOutgoing().capability(project.provider(
+                () -> ExtensionVariantConstants.extensionVariantCapability(
+                        project.getGroup().toString(), project.getName(), project.getVersion().toString(), variantName)));
+
+        DependencyHandler dependencies = project.getDependencies();
+        elements.getDependencies().addAllLater(coordinates.map(values -> values.stream()
+                .map(QuarkusExtensionPlugin::runtimeDependencyNotation)
+                .map(dependencies::create)
+                .toList()));
+    }
+
+    private static String runtimeDependencyNotation(String value) {
+        ArtifactCoords coordinates = ArtifactCoords.fromString(value);
+        return coordinates.getGroupId() + ":" + coordinates.getArtifactId() + ":" + coordinates.getVersion();
     }
 
     private static Provider<Dependency> deploymentProjectDependency(Project project,

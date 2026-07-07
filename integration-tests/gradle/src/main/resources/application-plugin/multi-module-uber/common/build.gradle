@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'

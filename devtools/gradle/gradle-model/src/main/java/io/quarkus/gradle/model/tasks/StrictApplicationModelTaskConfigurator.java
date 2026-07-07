@@ -7,6 +7,12 @@ import io.quarkus.gradle.model.config.StrictApplicationDeploymentClasspathBuilde
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * Wires strict, provider-backed classpath inputs into an application-model task.
+ * <p>
+ * The configurator does not resolve configurations and does not inspect producer projects. It is shared plugin
+ * implementation API rather than a user-facing task configuration surface.
+ */
 public final class StrictApplicationModelTaskConfigurator {
 
     private StrictApplicationModelTaskConfigurator() {
@@ -14,6 +20,14 @@ public final class StrictApplicationModelTaskConfigurator {
 
     /**
      * Configures an application-model task without reading live Gradle project models for declared dependency enrichment.
+     *
+     * @param project project that owns the task and output
+     * @param task task to configure
+     * @param projectDescriptor lazy workspace descriptor
+     * @param classpath strict resolution configurations
+     * @param launchMode model launch mode
+     * @param buildModel whether normal mode should use the build-model output path
+     * @throws IllegalArgumentException if the launch mode/output combination is unsupported
      */
     public static void configureNoLiveProjectDeclaredDependencies(Project project, QuarkusApplicationModelTask task,
             Provider<DefaultProjectDescriptor> projectDescriptor,

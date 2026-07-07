@@ -5,6 +5,12 @@ import java.util.Objects;
 import io.quarkus.bootstrap.model.gradle.GradleLogicalOutput;
 import io.quarkus.bootstrap.model.gradle.GradleModelAssociation;
 
+/**
+ * Default serializable value used by Gradle producers to transport a {@link GradleLogicalOutput}.
+ * <p>
+ * Required fields are validated at construction time. Optional semantic fields remain {@code null} when the producer
+ * cannot publish them; this implementation does not derive them from the output path.
+ */
 public final class DefaultGradleLogicalOutput implements GradleLogicalOutput {
 
     private static final long serialVersionUID = -7112065215159628735L;
@@ -22,6 +28,24 @@ public final class DefaultGradleLogicalOutput implements GradleLogicalOutput {
     private final ProducerCategory producerCategory;
     private final GradleModelAssociation modelAssociation;
 
+    /**
+     * Creates a logical output value.
+     *
+     * @param identity opaque sidecar-local output identity; must not be {@code null}
+     * @param kind kind of files in the output; must not be {@code null}
+     * @param scope source scope reported by the producer; must not be {@code null}
+     * @param path path copied from Gradle; must not be {@code null}
+     * @param selectedArtifactIdentity opaque selected artifact or capability identity; must not be {@code null}
+     * @param producerSemanticIdentity producer semantic identity, or {@code null} when unavailable
+     * @param sourceSet Gradle source-set name, or {@code null} when unavailable
+     * @param jvmFeature Gradle JVM feature name, or {@code null} when unavailable
+     * @param classifier artifact classifier, or {@code null} when unavailable
+     * @param materialization materialization requirement reported by the producer; must not be {@code null}
+     * @param producerCategory semantic category of the producer; must not be {@code null}
+     * @param modelAssociation exact application-model association or an explicit unknown association; must not be
+     *        {@code null}
+     * @throws NullPointerException if a required argument is {@code null}
+     */
     public DefaultGradleLogicalOutput(String identity, Kind kind, Scope scope, String path,
             String selectedArtifactIdentity, String producerSemanticIdentity, String sourceSet, String jvmFeature,
             String classifier, Materialization materialization, ProducerCategory producerCategory,

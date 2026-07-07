@@ -1,13 +1,20 @@
 package io.quarkus.deployment.dev;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -157,7 +164,7 @@ class RuntimeUpdatesProcessorBuildOutputChangesTest {
 
     @SuppressWarnings("resource")
     @Test
-    void processBuildOutputChangesAdvancesSequenceWhenLiveReloadIsDisabled() {
+    void processBuildOutputChangesLeavesSequenceRetryableWhenLiveReloadIsDisabled() {
         var restarted = new AtomicBoolean();
         var processor = newProcessor(restarted, new AtomicReference<>(), new AtomicReference<>());
         processor.setLiveReloadEnabled(false);
@@ -165,14 +172,83 @@ class RuntimeUpdatesProcessorBuildOutputChangesTest {
         assertThat(processor.processBuildOutputChanges(
                 changesWithMainClass(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputChangeKind.MODIFIED,
                         "com/acme/Skipped.class")))
-                .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+                .isEqualTo(BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED);
         processor.setLiveReloadEnabled(true);
         assertThat(processor.processBuildOutputChanges(
                 changesWithMainClass(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputChangeKind.MODIFIED,
                         "com/acme/Skipped.class")))
-                .isEqualTo(BuildOutputChangesApplyStatus.REJECTED);
+                .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
 
-        assertThat(restarted).isFalse();
+        assertThat(restarted).isTrue();
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void liveReloadDisabledDefersEveryOutputCategoryAndForcedRestart() {
+        Path classes = applicationRoot.resolve("classes");
+        Path resources = applicationRoot.resolve("resources");
+        Path testClasses = applicationRoot.resolve("test-classes");
+        Path testResources = applicationRoot.resolve("test-resources");
+        List<BuildOutputChanges> candidates = List.of(
+                new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                        List.of(new BuildOutputPathChange(classes, classes.resolve("com/acme/Foo.class"),
+                                BuildOutputChangeKind.MODIFIED)),
+                        null, null, null, null, null, false, false),
+                new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, null,
+                        List.of(new BuildOutputPathChange(resources, resources.resolve("application.properties"),
+                                BuildOutputChangeKind.MODIFIED)),
+                        null, null, null, null, false, false),
+                new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, null, null,
+                        List.of(new BuildOutputPathChange(testClasses, testClasses.resolve("com/acme/FooTest.class"),
+                                BuildOutputChangeKind.MODIFIED)),
+                        null, null, null, false, false),
+                new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, null, null, null,
+                        List.of(new BuildOutputPathChange(testResources, testResources.resolve("test.properties"),
+                                BuildOutputChangeKind.MODIFIED)),
+                        null, null, false, false),
+                new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, null, null, null, null,
+                        null, null, false, true));
+
+        for (BuildOutputChanges candidate : candidates) {
+            var processor = new RuntimeUpdatesProcessor(applicationRoot, null, null, DevModeType.LOCAL,
+                    (files, classesChanged) -> {
+                    }, null, null, new RecordingTestSupport(), new AtomicReference<>());
+            processor.setLiveReloadEnabled(false);
+
+            assertThat(processor.processBuildOutputChanges(candidate))
+                    .isEqualTo(BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED);
+            processor.setLiveReloadEnabled(true);
+            assertThat(processor.processBuildOutputChanges(candidate))
+                    .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+        }
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void disabledLiveReloadStillConsumesStatusAndEmptyDiagnosticRecoveryMessages() {
+        for (BuildOutputChangeStatus status : List.of(
+                BuildOutputChangeStatus.BUILD_FAILED,
+                BuildOutputChangeStatus.BUILD_CANCELLED,
+                BuildOutputChangeStatus.BUILD_SUPERSEDED)) {
+            var processor = newProcessor(new AtomicBoolean(), new AtomicReference<>(), new AtomicReference<>());
+            processor.setLiveReloadEnabled(false);
+            var statusMessage = new BuildOutputChanges(1, status, null, null, null, null,
+                    "build status", null, false, false);
+
+            assertThat(processor.processBuildOutputChanges(statusMessage))
+                    .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+            assertThat(processor.processBuildOutputChanges(statusMessage))
+                    .isEqualTo(BuildOutputChangesApplyStatus.REJECTED);
+        }
+
+        var processor = newProcessor(new AtomicBoolean(), new AtomicReference<>(), new AtomicReference<>());
+        processor.setLiveReloadEnabled(false);
+        var emptySuccess = new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                null, null, null, null, null, null, false, false);
+        assertThat(processor.processBuildOutputChanges(emptySuccess))
+                .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+        assertThat(processor.processBuildOutputChanges(emptySuccess))
+                .isEqualTo(BuildOutputChangesApplyStatus.REJECTED);
     }
 
     @SuppressWarnings("resource")
@@ -317,6 +393,77 @@ class RuntimeUpdatesProcessorBuildOutputChangesTest {
 
     @SuppressWarnings("resource")
     @Test
+    void policyDeliversEmptySuccessAfterAppliedFailureToProcessor() {
+        var testSupport = new RecordingTestSupport();
+        var processor = new RuntimeUpdatesProcessor(applicationRoot, null, null, DevModeType.LOCAL,
+                (files, classes) -> {
+                }, null, null, testSupport, new AtomicReference<>());
+        var policy = new BuildOutputChangesPolicy();
+        policy.accept(new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_FAILED, BuildOutputFailureKind.MAIN,
+                null, null, null, null, "main compilation failed", null, false, false));
+
+        assertThat(policy.deliver(processor::processBuildOutputChanges).outcome())
+                .isEqualTo(BuildOutputChangesPolicy.Outcome.SENT_APPLIED);
+        assertThat(processor.getCompileProblem()).isNotNull();
+        assertThat(testSupport.compileFailure).isNotNull();
+
+        assertThat(policy.accept(new BuildOutputChanges(2, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                null, null, null, null, null, null, false, false)).outcome())
+                .isEqualTo(BuildOutputChangesPolicy.Outcome.PENDING);
+        assertThat(policy.deliver(processor::processBuildOutputChanges).outcome())
+                .isEqualTo(BuildOutputChangesPolicy.Outcome.SENT_APPLIED);
+
+        assertThat(processor.getCompileProblem()).isNull();
+        assertThat(testSupport.compileFailure).isNull();
+        assertThat(testSupport.compileSucceeded).isEqualTo(1);
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void rebaselineRestartsFromCurrentOutputsAndRequestsFullTestRun() {
+        var restarted = new AtomicBoolean();
+        var filesChanged = new AtomicReference<Set<String>>();
+        var changedClasses = new AtomicReference<ClassScanResult>();
+        var testSupport = new RecordingTestSupport();
+        var processor = new RuntimeUpdatesProcessor(applicationRoot, null, null, DevModeType.LOCAL,
+                (files, classes) -> {
+                    restarted.set(true);
+                    filesChanged.set(files);
+                    changedClasses.set(classes);
+                }, null, null, testSupport, new AtomicReference<>());
+        var changes = new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputFailureKind.NONE,
+                null, null, null, null, null, null, false, true, BuildOutputChangesDeliveryKind.REBASELINE);
+
+        assertThat(processor.processBuildOutputChanges(changes)).isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+
+        assertThat(restarted).isTrue();
+        assertThat(filesChanged.get()).isEmpty();
+        assertThat(changedClasses.get().isChanged()).isFalse();
+        assertThat(testSupport.compileSucceeded).isEqualTo(1);
+        assertThat(testSupport.runRequests).isEqualTo(1);
+        assertThat(testSupport.queuedChanges).isNull();
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void disabledLiveReloadLeavesRebaselineRetryable() {
+        var restarted = new AtomicBoolean();
+        var processor = newProcessor(restarted, new AtomicReference<>(), new AtomicReference<>());
+        var changes = new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputFailureKind.NONE,
+                null, null, null, null, null, null, false, true, BuildOutputChangesDeliveryKind.REBASELINE);
+        processor.setLiveReloadEnabled(false);
+
+        assertThat(processor.processBuildOutputChanges(changes))
+                .isEqualTo(BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED);
+        assertThat(restarted).isFalse();
+
+        processor.setLiveReloadEnabled(true);
+        assertThat(processor.processBuildOutputChanges(changes)).isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+        assertThat(restarted).isTrue();
+    }
+
+    @SuppressWarnings("resource")
+    @Test
     void externalBuildToolUpdateSourceMakesDoScanSkipCompilerDrivenSourceScanning() throws Exception {
         var context = new DevModeContext();
         context.setBuildUpdateSource(DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL);
@@ -357,7 +504,12 @@ class RuntimeUpdatesProcessorBuildOutputChangesTest {
     void constructorConnectsConfiguredBuildOutputChangesTransport() throws Exception {
         var restarted = new CountDownLatch(1);
         var changedClasses = new AtomicReference<ClassScanResult>();
-        try (var server = BuildOutputChangesTransports.createTcpServer()) {
+        var states = Collections.synchronizedList(new ArrayList<BuildOutputLiveReloadState>());
+        var stateChanges = new AtomicReference<>(new CountDownLatch(1));
+        try (var server = BuildOutputChangesTransports.createTcpServer(state -> {
+            states.add(state);
+            stateChanges.get().countDown();
+        })) {
             var context = new DevModeContext();
             context.setExternalBuildOutputTransport(server.transport());
             try (var ignore = new RuntimeUpdatesProcessor(applicationRoot, context, null, DevModeType.LOCAL,
@@ -365,12 +517,108 @@ class RuntimeUpdatesProcessorBuildOutputChangesTest {
                         changedClasses.set(classes);
                         restarted.countDown();
                     }, null, null, null, new AtomicReference<>())) {
+                ignore.externalBuildOutputReady();
+                assertThat(stateChanges.get().await(5, TimeUnit.SECONDS)).isTrue();
+                stateChanges.set(new CountDownLatch(1));
+                ignore.setLiveReloadEnabled(false);
+                assertThat(stateChanges.get().await(5, TimeUnit.SECONDS)).isTrue();
+                stateChanges.set(new CountDownLatch(1));
+                ignore.setLiveReloadEnabled(true);
                 assertThat(server.send(changesWithMainClass(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
                         BuildOutputChangeKind.MODIFIED, "com/acme/Foo.class")))
                         .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
 
+                assertThat(stateChanges.get().await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(states).containsExactly(
+                        new BuildOutputLiveReloadState(0, true),
+                        new BuildOutputLiveReloadState(1, false),
+                        new BuildOutputLiveReloadState(2, true));
                 assertThat(restarted.await(5, TimeUnit.SECONDS)).isTrue();
                 assertThat(changedClasses.get().getChangedClassNames()).containsExactly("com.acme.Foo");
+            }
+        }
+    }
+
+    @Test
+    void externalChangesWaitForInitialRuntimeConfigurationWithoutHoldingTheScanLock() throws Exception {
+        var initialState = new CountDownLatch(1);
+        try (var server = BuildOutputChangesTransports.createTcpServer(ignored -> initialState.countDown())) {
+            var context = new DevModeContext();
+            context.setBuildUpdateSource(DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL);
+            context.setExternalBuildOutputTransport(server.transport());
+            try (var processor = new RuntimeUpdatesProcessor(applicationRoot, context, null, DevModeType.LOCAL,
+                    (files, classes) -> {
+                    }, null, null, null, new AtomicReference<>())) {
+                assertThat(initialState.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(server.send(new BuildOutputChanges(0, BuildOutputChangeStatus.BUILD_CANCELLED,
+                        List.of(), List.of(), null, null, null, null, false, false)))
+                        .isEqualTo(BuildOutputChangesApplyStatus.APPLIED);
+                CompletableFuture<BuildOutputChangesApplyStatus> delivery = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return server.send(changesWithMainClass(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                                BuildOutputChangeKind.MODIFIED, "com/acme/Foo.class"));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                assertThatThrownBy(() -> delivery.get(200, TimeUnit.MILLISECONDS))
+                        .isInstanceOf(TimeoutException.class);
+                CompletableFuture<Void> configuration = CompletableFuture.runAsync(
+                        () -> processor.setLiveReloadEnabled(false));
+                assertThat(configuration.get(5, TimeUnit.SECONDS)).isNull();
+
+                processor.externalBuildOutputReady();
+                assertThat(delivery.get(5, TimeUnit.SECONDS))
+                        .isEqualTo(BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED);
+            }
+        }
+    }
+
+    @Test
+    void closeReleasesExternalChangesWaitingForInitialRuntimeConfiguration() throws Exception {
+        try (var server = BuildOutputChangesTransports.createTcpServer()) {
+            var context = new DevModeContext();
+            context.setBuildUpdateSource(DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL);
+            context.setExternalBuildOutputTransport(server.transport());
+            var processor = new RuntimeUpdatesProcessor(applicationRoot, context, null, DevModeType.LOCAL,
+                    (files, classes) -> {
+                    }, null, null, null, new AtomicReference<>());
+            var executor = Executors.newFixedThreadPool(2);
+            var delivery = executor.submit(() -> {
+                try {
+                    server.send(changesWithMainClass(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                            BuildOutputChangeKind.MODIFIED, "com/acme/Foo.class"));
+                    return null;
+                } catch (IOException expectedDuringConnectionClose) {
+                    return expectedDuringConnectionClose;
+                }
+            });
+            boolean processorClosed = false;
+            try {
+                assertThatThrownBy(() -> delivery.get(200, TimeUnit.MILLISECONDS))
+                        .isInstanceOf(TimeoutException.class);
+
+                var close = executor.submit(() -> {
+                    processor.close();
+                    return null;
+                });
+                assertThat(close.get(5, TimeUnit.SECONDS)).isNull();
+                processorClosed = true;
+
+                // The sender may receive APPLIED before the connection closes or an
+                // IOException from that close. Either way, the real TCP reader must
+                // leave the startup latch and let both close paths terminate.
+                assertThatCode(() -> delivery.get(5, TimeUnit.SECONDS)).doesNotThrowAnyException();
+            } finally {
+                try {
+                    if (!processorClosed) {
+                        processor.close();
+                    }
+                } finally {
+                    executor.shutdownNow();
+                    assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+                }
             }
         }
     }

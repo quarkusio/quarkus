@@ -20,14 +20,45 @@ import io.quarkus.gradle.model.tasks.IsolatedApplicationModelTaskConfigurator;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * Gradle plugin for a Quarkus extension's deployment module.
+ * <p>
+ * Apply plugin ID {@value #PLUGIN_ID} to the deployment project. The plugin applies Java support, configures the Quarkus
+ * annotation processor and strict deployment classpaths, generates one isolated Quarkus test application model and
+ * supplies it to every Gradle {@link Test} task, and publishes a marker variant that runtime extension projects use for
+ * local deployment validation.
+ * <p>
+ * The plugin owns the marker configuration and task as well as deployment-test model wiring. Runtime extension
+ * descriptor configuration remains owned by the {@code io.quarkus.extension} plugin.
+ */
 public class QuarkusExtensionDeploymentPlugin implements Plugin<Project> {
 
+    /**
+     * The deployment plugin ID, {@value}.
+     */
     public static final String PLUGIN_ID = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_PLUGIN_ID;
+
+    /**
+     * The consumable configuration that publishes the deployment marker.
+     */
     public static final String MARKER_ELEMENTS_CONFIGURATION_NAME = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_MARKER_ELEMENTS_CONFIGURATION_NAME;
+
+    /**
+     * The task that generates the deployment marker.
+     */
     public static final String MARKER_TASK_NAME = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_MARKER_TASK_NAME;
+
+    /**
+     * The Gradle category value used to select the deployment marker variant.
+     */
     public static final String MARKER_CATEGORY = ExtensionVariantConstants.EXTENSION_DEPLOYMENT_MARKER_CATEGORY;
     private static final String ISOLATED_TEST_MODEL_CONFIGURATION_PREFIX = "quarkusExtensionDeploymentIsolated";
 
+    /**
+     * Applies deployment-module configuration to the target project.
+     *
+     * @param project the deployment project
+     */
     @Override
     public void apply(Project project) {
         GradleVersionSupport.requireMinimumGradleVersion();

@@ -24,6 +24,7 @@
 
     <modules>
         <module>gradle-model</module>
+        <module>gradle-app-plugin</module>
         <module>gradle-application-plugin</module>
         <module>gradle-extension-plugin</module>
         <module>gradle-extension-deployment-plugin</module>

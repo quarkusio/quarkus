@@ -30,6 +30,7 @@ final class BuildOutputChangesJsonCodec {
     private static final String DIAGNOSTICS_PATH = "diagnosticsPath";
     private static final String USER_INITIATED = "userInitiated";
     private static final String FORCE_RESTART = "forceRestart";
+    private static final String DELIVERY_KIND = "deliveryKind";
     private static final String OUTPUT_ROOT = "outputRoot";
     private static final String CHANGED_PATH = "changedPath";
     private static final String KIND = "kind";
@@ -48,7 +49,8 @@ final class BuildOutputChangesJsonCodec {
                 .put(TEST_CLASS_CHANGES, pathChanges(changes.testClassChanges()))
                 .put(TEST_RESOURCE_CHANGES, pathChanges(changes.testResourceChanges()))
                 .put(USER_INITIATED, changes.userInitiated())
-                .put(FORCE_RESTART, changes.forceRestart());
+                .put(FORCE_RESTART, changes.forceRestart())
+                .put(DELIVERY_KIND, changes.deliveryKind().name());
         if (changes.failureSummary() != null) {
             root.put(FAILURE_SUMMARY, changes.failureSummary());
         }
@@ -78,7 +80,9 @@ final class BuildOutputChangesJsonCodec {
                 optionalString(root, FAILURE_SUMMARY),
                 optionalPath(root, DIAGNOSTICS_PATH),
                 optionalBoolean(root, USER_INITIATED),
-                optionalBoolean(root, FORCE_RESTART));
+                optionalBoolean(root, FORCE_RESTART),
+                optionalEnum(root, DELIVERY_KIND, BuildOutputChangesDeliveryKind.class,
+                        BuildOutputChangesDeliveryKind.DELTA));
     }
 
     private static Json.JsonArrayBuilder pathChanges(List<BuildOutputPathChange> changes) {

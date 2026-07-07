@@ -1,21 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 package io.quarkus.gradle.model.pom;
 
 import java.io.File;
@@ -33,6 +15,13 @@ import org.gradle.api.tasks.Internal;
 
 import io.quarkus.maven.dependency.GAV;
 
+/**
+ * Serializable nested Gradle input for a prepared POM closure.
+ * <p>
+ * Coordinates and paths are exposed as scalar inputs, while resolved POM contents are exposed as a classpath input. The
+ * object form reconstructed by {@link #getResult()} is internal to task execution. This separation gives Gradle stable
+ * input normalization without requiring it to fingerprint Maven model objects.
+ */
 @SuppressWarnings("ClassCanBeRecord") // Gradle doesn't like records in this case
 public final class PomClosureTaskInput implements Serializable {
 
@@ -50,6 +39,14 @@ public final class PomClosureTaskInput implements Serializable {
         this.resolvedPomFiles = List.copyOf(resolvedPomFiles);
     }
 
+    /**
+     * Creates a Gradle input snapshot from a closure.
+     * <p>
+     * Missing GAVs and the resolved-file list are canonicalized by GAV.
+     *
+     * @param result closure to normalize
+     * @return serializable nested task input
+     */
     public static PomClosureTaskInput from(PomClosureResult result) {
         Map<String, String> resolved = new TreeMap<>();
         result.resolvedPoms()
@@ -64,21 +61,25 @@ public final class PomClosureTaskInput implements Serializable {
         return new PomClosureTaskInput(resolved, missing, files);
     }
 
+    /** @return scalar mapping from POM GAV to absolute resolved path */
     @Input
     public Map<String, String> getResolvedPomFilesByGav() {
         return resolvedPomFilesByGav;
     }
 
+    /** @return sorted scalar list of coordinates known to be missing */
     @Input
     public List<String> getMissingPomGavs() {
         return missingPomGavs;
     }
 
+    /** @return resolved POM files tracked by Gradle using classpath normalization */
     @Classpath
     public List<File> getResolvedPomFiles() {
         return resolvedPomFiles;
     }
 
+    /** @return the reconstructed closure consumed by the task action */
     @Internal
     public PomClosureResult getResult() {
         Map<GAV, File> resolved = new TreeMap<>((left, right) -> left.toString().compareTo(right.toString()));

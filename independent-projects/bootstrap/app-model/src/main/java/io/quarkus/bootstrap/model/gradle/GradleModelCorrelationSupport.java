@@ -12,8 +12,12 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 
 /**
- * Produces the neutral application-model projection used to correlate a
- * Gradle sidecar with its paired model.
+ * Produces the neutral application-model projection used to correlate a Gradle sidecar with its paired model.
+ * <p>
+ * This shared helper defines the current schema's fact encoding for ordinary application-model implementations.
+ * Tooling API proxy consumers should use the application-model validation overload on
+ * {@link GradleApplicationModelSidecarValidator}, which does not iterate proxy path collections. Fact strings are not a
+ * public model serialization, cache key, or security primitive.
  */
 public final class GradleModelCorrelationSupport {
 
@@ -24,6 +28,10 @@ public final class GradleModelCorrelationSupport {
      * Returns deterministic facts for the application and every dependency,
      * including coordinates, flags, every exact resolved-path occurrence, and
      * workspace-module direct edges.
+     *
+     * @param model application model to project; must not be {@code null}
+     * @return immutable facts sorted by their encoded value
+     * @throws NullPointerException if {@code model} is {@code null}
      */
     public static List<String> canonicalGraphFacts(ApplicationModel model) {
         final List<String> facts = new ArrayList<>();

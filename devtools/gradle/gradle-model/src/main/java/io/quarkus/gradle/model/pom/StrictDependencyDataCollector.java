@@ -27,6 +27,16 @@ import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GAV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
+/**
+ * Enriches a Gradle-resolved application model with dependencies declared by Maven effective models.
+ * <p>
+ * Gradle's resolution graph remains authoritative for selected components, versions, variants, platforms, and
+ * constraints. Effective POMs are used only to recover declared edges, Maven scopes, and optional markers. Parent POMs
+ * and imported BOMs discovered during model building are prefetched and the affected models retried.
+ * <p>
+ * Instances cache results by artifact key and POM GAV. This class is shared Gradle-plugin implementation API, not a
+ * user-facing dependency resolver.
+ */
 public class StrictDependencyDataCollector {
 
     private static final String SCOPE_TEST = "test";
@@ -35,6 +45,13 @@ public class StrictDependencyDataCollector {
     private final Supplier<Map<String, String>> systemProperties;
     private final Map<DeclaredDepsCacheKey, DeclaredDepsResult> declaredDependenciesCache = new ConcurrentHashMap<>();
 
+    /**
+     * Creates a collector.
+     *
+     * @param pomResolver source of selected, parent, and imported-BOM POMs
+     * @param systemProperties properties used by Maven effective-model interpolation
+     * @throws NullPointerException if either argument is {@code null}
+     */
     public StrictDependencyDataCollector(PomResolver pomResolver, Supplier<Map<String, String>> systemProperties) {
         this.pomResolver = Objects.requireNonNull(pomResolver, "pomResolver cannot be null");
         this.systemProperties = Objects.requireNonNull(systemProperties, "systemProperties cannot be null");
@@ -44,8 +61,13 @@ public class StrictDependencyDataCollector {
      * Sets direct dependencies for the given dependency builder based on the provided declared dependencies.
      * <p>
      * The intention here is to use this method right before we build the model, making sure that the modelBuilder
-     * hass all the info about all dependencies, so we can properly set the flags for direct dependencies (e.g.
+     * has all the info about all dependencies, so we can properly set the flags for direct dependencies (e.g.
      * MISSING_FROM_APPLICATION).
+     *
+     * @param depBuilder dependency whose declared edges are populated
+     * @param modelBuilder application model used to match declared edges to Gradle-selected dependencies
+     * @param declaredDependencies effective-POM results by artifact key
+     * @param logger destination for diagnostics when declarations are unavailable
      */
     public static void setDirectDeps(
             ResolvedDependencyBuilder depBuilder,
@@ -96,6 +118,13 @@ public class StrictDependencyDataCollector {
                 .setDirectDependencies(directDeps);
     }
 
+    /**
+     * Converts external resolved artifacts into deterministic POM-enrichment task inputs.
+     * <p>
+     * Non-module components are excluded. Multiple artifacts for a module remain distinct through their artifact keys.
+     *
+     * @return an immutable list sorted by artifact key and POM GAV
+     */
     public static List<ExternalModuleDeclaredDependencyInput> externalModuleDeclaredDependencyInputs(
             Collection<ResolvedArtifactResult> artifacts) {
         List<ExternalModuleDeclaredDependencyInput> moduleInputs = new ArrayList<>();
@@ -109,6 +138,16 @@ public class StrictDependencyDataCollector {
         return List.copyOf(moduleInputs);
     }
 
+    /**
+     * Builds effective models for the supplied external modules and returns their declared dependencies.
+     * <p>
+     * Test-scoped declarations are excluded. An unavailable or invalid effective model produces an unresolved result
+     * rather than aborting application-model generation.
+     *
+     * @param logger destination for model-resolution diagnostics
+     * @param moduleInputs deterministic module/POM inputs to enrich
+     * @return enrichment results keyed by the resolved artifact key
+     */
     public Map<ArtifactKey, DeclaredDepsResult> collectExternalDeclaredDependencies(Logger logger,
             List<ExternalModuleDeclaredDependencyInput> moduleInputs) {
         Map<ArtifactKey, DeclaredDepsResult> result = new ConcurrentHashMap<>();

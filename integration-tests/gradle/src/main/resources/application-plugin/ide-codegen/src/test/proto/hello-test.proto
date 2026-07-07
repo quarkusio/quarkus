@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "org.acme.grpc.test";
+
+package hello.test;
+
+service TestGreeter {
+  rpc SayHello (TestHelloRequest) returns (TestHelloReply) {}
+}
+
+message TestHelloRequest {
+  string name = 1;
+}
+
+message TestHelloReply {
+  string message = 1;
+}

@@ -42,6 +42,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -140,8 +141,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private volatile Boolean instrumentationEnabled;
     private volatile boolean configuredInstrumentationEnabled;
     private volatile boolean liveReloadEnabled = true;
+    /*
+     * External batches reuse the ordinary scanLock -> codeGenLock order. Sequence
+     * admission, live-reload state, failure publication, restart, and continuous
+     * testing are processed within that ordering boundary. Transport state
+     * notifications are published only after scanLock is released, and close()
+     * releases the startup latch before closing the connection so a receiver
+     * waiting for initial readiness cannot remain blocked.
+     */
+    private long liveReloadStateGeneration;
     private long lastProcessedBuildOutputSequence = -1;
-    private final AutoCloseable buildOutputChangesConnection;
+    private final BuildOutputChangesConnection buildOutputChangesConnection;
+    private final CountDownLatch externalBuildOutputReady;
 
     private WatchServiceFileSystemWatcher testClassChangeWatcher;
     private Timer testClassChangeTimer;
@@ -191,10 +202,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             });
         }
         this.deploymentProblem = deploymentProblem;
+        externalBuildOutputReady = new CountDownLatch(hasExternalBuildOutputTransport() ? 1 : 0);
         this.buildOutputChangesConnection = connectToBuildOutputChanges();
+        publishLiveReloadState(new BuildOutputLiveReloadState(0, liveReloadEnabled));
     }
 
-    private AutoCloseable connectToBuildOutputChanges() {
+    private BuildOutputChangesConnection connectToBuildOutputChanges() {
         try {
             return BuildOutputChangesTransports.connect(
                     context == null ? null : context.getExternalBuildOutputTransport(),
@@ -463,6 +476,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         Path resolve = resolveApplicationPath(file);
         try {
             Files.deleteIfExists(resolve);
+            DevModeMediator.cancelDelete(resolve);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -569,6 +583,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     BuildOutputChangesApplyStatus processBuildOutputChanges(BuildOutputChanges changes) {
         requireNonNull(changes, "changes");
+        if (changes.status() == BuildOutputChangeStatus.BUILD_SUCCEEDED && requiresLiveReload(changes)) {
+            try {
+                // The first external batch must not enter the scanner until startup
+                // has installed the initial application state. close() also releases
+                // this latch so transport shutdown cannot strand the receiver.
+                externalBuildOutputReady.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return BuildOutputChangesApplyStatus.NOT_APPLIED;
+            }
+        }
         scanLock.lock();
         codeGenLock.lock();
 
@@ -580,11 +605,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 lastProcessedBuildOutputSequence = changes.sequence();
                 return BuildOutputChangesApplyStatus.REJECTED;
             }
-            lastProcessedBuildOutputSequence = changes.sequence();
             if (changes.status() != BuildOutputChangeStatus.BUILD_SUCCEEDED) {
+                lastProcessedBuildOutputSequence = changes.sequence();
                 processExternalBuildStatus(changes);
                 return BuildOutputChangesApplyStatus.APPLIED;
             }
+            if (!liveReloadEnabled && requiresLiveReload(changes)) {
+                return BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED;
+            }
+            if (changes.deliveryKind() == BuildOutputChangesDeliveryKind.REBASELINE) {
+                return processBuildOutputRebaseline(changes);
+            }
+            lastProcessedBuildOutputSequence = changes.sequence();
 
             setRemoteProblem(null);
             if (testSupport != null) {
@@ -593,14 +625,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
             ClassScanResult mainClassChanges = toClassScanResult(changes.mainClassChanges());
             Set<String> mainResourceChanges = toChangedFileSet(changes.mainResourceChanges());
-            boolean productionChanges = mainClassChanges.isChanged() || !mainResourceChanges.isEmpty();
-            boolean productionAccepted = !productionChanges || liveReloadEnabled || changes.forceRestart();
-            if (productionAccepted) {
-                processApplicationChanges(changes.userInitiated(), changes.forceRestart(), System.nanoTime(),
-                        mainClassChanges, mainResourceChanges);
-            }
+            processApplicationChanges(changes.userInitiated(), changes.forceRestart(), System.nanoTime(),
+                    mainClassChanges, mainResourceChanges);
 
-            if (productionAccepted && testSupport != null && testSupport.isStarted()) {
+            if (testSupport != null && testSupport.isStarted()) {
                 ClassScanResult testClassChanges = toClassScanResult(changes.testClassChanges());
                 ClassScanResult allClassChanges = ClassScanResult.merge(testClassChanges, mainClassChanges);
                 if (!changes.mainResourceChanges().isEmpty() || !changes.testResourceChanges().isEmpty()) {
@@ -614,6 +642,29 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             scanLock.unlock();
             codeGenLock.unlock();
         }
+    }
+
+    private BuildOutputChangesApplyStatus processBuildOutputRebaseline(BuildOutputChanges changes) {
+        setRemoteProblem(null);
+        if (testSupport != null) {
+            testSupport.testCompileSucceeded();
+        }
+        log.info("Rebaselining Quarkus dev mode from the current external build outputs.");
+        processApplicationChanges(changes.userInitiated(), true, System.nanoTime(), new ClassScanResult(), Set.of());
+        if (testSupport != null && testSupport.isStarted()) {
+            testSupport.runTests(null);
+        }
+        lastProcessedBuildOutputSequence = changes.sequence();
+        return BuildOutputChangesApplyStatus.APPLIED;
+    }
+
+    private static boolean requiresLiveReload(BuildOutputChanges changes) {
+        return changes.deliveryKind() == BuildOutputChangesDeliveryKind.REBASELINE
+                || changes.forceRestart()
+                || !changes.mainClassChanges().isEmpty()
+                || !changes.mainResourceChanges().isEmpty()
+                || !changes.testClassChanges().isEmpty()
+                || !changes.testResourceChanges().isEmpty();
     }
 
     private void processExternalBuildStatus(BuildOutputChanges changes) {
@@ -678,6 +729,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private boolean usesExternalBuildOutputs() {
         return context != null && context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL;
+    }
+
+    private boolean hasExternalBuildOutputTransport() {
+        return context != null && context.getExternalBuildOutputTransport() != null
+                && context.getExternalBuildOutputTransport().isEnabled();
     }
 
     private static ClassScanResult toClassScanResult(List<BuildOutputPathChange> changes) {
@@ -857,8 +913,24 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     public RuntimeUpdatesProcessor setLiveReloadEnabled(boolean liveReloadEnabled) {
-        this.liveReloadEnabled = liveReloadEnabled;
+        BuildOutputLiveReloadState state = null;
+        scanLock.lock();
+        try {
+            if (this.liveReloadEnabled != liveReloadEnabled) {
+                long nextGeneration = Math.incrementExact(liveReloadStateGeneration);
+                this.liveReloadEnabled = liveReloadEnabled;
+                liveReloadStateGeneration = nextGeneration;
+                state = new BuildOutputLiveReloadState(nextGeneration, liveReloadEnabled);
+            }
+        } finally {
+            scanLock.unlock();
+        }
+        publishLiveReloadState(state);
         return this;
+    }
+
+    void externalBuildOutputReady() {
+        externalBuildOutputReady.countDown();
     }
 
     public RuntimeUpdatesProcessor setConfiguredInstrumentationEnabled(boolean configuredInstrumentationEnabled) {
@@ -1676,6 +1748,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public void close() throws IOException {
+        externalBuildOutputReady.countDown();
         IOException failure = null;
         try {
             buildOutputChangesConnection.close();
@@ -1723,17 +1796,40 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     public boolean toggleLiveReloadEnabled() {
-        liveReloadEnabled = !liveReloadEnabled;
-        if (liveReloadEnabled) {
+        boolean enabled;
+        BuildOutputLiveReloadState state;
+        scanLock.lock();
+        try {
+            long nextGeneration = Math.incrementExact(liveReloadStateGeneration);
+            enabled = !liveReloadEnabled;
+            liveReloadEnabled = enabled;
+            liveReloadStateGeneration = nextGeneration;
+            state = new BuildOutputLiveReloadState(nextGeneration, enabled);
+        } finally {
+            scanLock.unlock();
+        }
+        publishLiveReloadState(state);
+        if (enabled) {
             log.info("Live reload enabled");
         } else {
             log.info("Live reload disabled");
         }
-        return liveReloadEnabled;
+        return enabled;
     }
 
     public boolean isLiveReloadEnabled() {
         return liveReloadEnabled;
+    }
+
+    private void publishLiveReloadState(BuildOutputLiveReloadState state) {
+        if (state == null) {
+            return;
+        }
+        try {
+            buildOutputChangesConnection.liveReloadStateChanged(state);
+        } catch (RuntimeException e) {
+            log.warn("Failed to publish external build output live-reload state", e);
+        }
     }
 
     static class TimestampSet {

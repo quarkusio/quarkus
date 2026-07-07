@@ -26,6 +26,7 @@ rootProject.name = "quarkus-gradle-plugins"
 includeBuild("build-logic")
 include(
     "gradle-model",
+    "gradle-app-plugin",
     "gradle-application-plugin",
     "gradle-extension-plugin",
     "gradle-extension-deployment-plugin"

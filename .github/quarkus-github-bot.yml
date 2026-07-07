@@ -11,8 +11,6 @@ develocity:
 workflows:
   rules:
     - allow:
-        users:
-          minContributions: 10
         files:
           - "**/*.md"
           - "**/*.adoc"

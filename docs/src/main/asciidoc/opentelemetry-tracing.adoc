@@ -375,6 +375,13 @@ quarkus.otel.traces.sampler=traceidratio
 # Runtime property:
 quarkus.otel.traces.sampler.arg=0.5
 ----
+
+[NOTE]
+====
+As of Quarkus 4, the default sampling ratio changed from 100% (1.0d) to 10% (0.1d) to reduce overhead in production environments.
+In development mode, sampling defaults to 100% (1.0d) to ensure all traces are captured for debugging.
+====
+
 [TIP]
 ====
 
@@ -383,7 +390,7 @@ An interesting use case for the sampler is to activate and deactivate tracing ex
 ----
 # build time property only:
 quarkus.otel.traces.sampler=traceidratio
-# On (default). All traces are exported:
+# On. All traces are exported:
 quarkus.otel.traces.sampler.arg=1.0
 # Off. No traces are exported:
 quarkus.otel.traces.sampler.arg=0.0

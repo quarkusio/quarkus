@@ -65,6 +65,7 @@ public class GraphQLOpenTelemetryTest {
                             smallrye.graphql.events.enabled=true
                             quarkus.otel.metrics.exporter=none
                             quarkus.otel.traces.exporter=test-span-exporter
+                            quarkus.otel.traces.sampler.arg=1.0d
                             """),
                             "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),

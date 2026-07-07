@@ -16,5 +16,6 @@ public class OpenTelemetryServiceNameNoResourceAttrsTest extends OpenTelemetrySe
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class))
             .overrideConfigKey("quarkus.otel.service.name", SERVICE_NAME)
-            .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50");// speed up test
+            .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50")// speed up test
+            .overrideRuntimeConfigKey("quarkus.otel.traces.sampler.arg", "1.0d");
 }

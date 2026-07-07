@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
@@ -62,6 +63,17 @@ import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * Base task implementation that assembles and serializes a Quarkus application model from normalized Gradle resolution
+ * inputs.
+ * <p>
+ * The task consumes Gradle-selected application, deployment, compile-only, and platform graphs. Optional Maven POM
+ * enrichment adds declared dependency scope/optionality but never replaces Gradle's selected graph. Local project
+ * components may be represented by class/resource output variants so task execution does not inspect producer projects.
+ * <p>
+ * The model contains absolute resolved paths and is intentionally neither relocatable nor build-cacheable. This is a
+ * shared developer task type for Quarkus Gradle plugins, not a user DSL model.
+ */
 @DisableCachingByDefault(because = "The serialized application model contains resolved file-system paths and is not relocatable")
 public abstract class QuarkusApplicationModelTask extends QuarkusBaseTask {
 
@@ -74,12 +86,13 @@ public abstract class QuarkusApplicationModelTask extends QuarkusBaseTask {
     private final QuarkusResolvedClasspath compileOnlyClasspath;
     private final QuarkusResolvedClasspath deploymentClasspath;
 
+    /** @return internal handle to the owning project's build file */
     @Internal
     public abstract RegularFileProperty getProjectBuildFile();
 
     /**
-     * Used just to track original classpath as an input, since resolving quarkus classpath is kinda expensive,
-     * and we don't want to do that if task is up-to-date
+     * Tracks the original Java classpath so Gradle can skip the task before resolving the more expensive Quarkus
+     * classpaths.
      */
     @CompileClasspath
     public abstract ConfigurableFileCollection getOriginalClasspath();
@@ -91,70 +104,138 @@ public abstract class QuarkusApplicationModelTask extends QuarkusBaseTask {
     @CompileClasspath
     public abstract ConfigurableFileCollection getDeploymentClasspathFiles();
 
+    /** @return internal local class-directory artifacts consumed during model assembly */
     @Internal
     public abstract SetProperty<ResolvedArtifactResult> getLocalClassOutputArtifacts();
 
+    /** @return internal local resource-directory artifacts consumed during model assembly */
     @Internal
     public abstract SetProperty<ResolvedArtifactResult> getLocalResourceOutputArtifacts();
 
+    /** @return canonical scalar fingerprints for local class-directory artifacts */
+    @Input
+    public abstract ListProperty<String> getLocalClassOutputMetadata();
+
+    /** @return canonical scalar fingerprints for local resource-directory artifacts */
+    @Input
+    public abstract ListProperty<String> getLocalResourceOutputMetadata();
+
+    /** @return local class and resource output files tracked using compile-classpath normalization */
     @CompileClasspath
     public abstract ConfigurableFileCollection getLocalComponentOutputFiles();
 
+    /** @return nested Gradle inputs for platform BOM resolution */
     @Nested
     public abstract QuarkusResolvedClasspath getPlatformConfiguration();
 
+    /** @return nested Gradle inputs for the application runtime classpath */
     @Nested
     public abstract QuarkusResolvedClasspath getAppClasspath();
 
-    @Internal
+    /** @return nested Gradle inputs for the Quarkus deployment classpath */
+    @Nested
     public QuarkusResolvedClasspath getDeploymentClasspath() {
         return deploymentClasspath;
     }
 
-    @Internal
+    /** @return nested Gradle inputs for compile-only dependencies */
+    @Nested
     public QuarkusResolvedClasspath getCompileOnlyClasspath() {
         return compileOnlyClasspath;
     }
 
+    /** @return nested descriptor/properties inputs for imported Quarkus platforms */
     @Nested
     public abstract QuarkusPlatformInfo getPlatformInfo();
 
+    /** @return launch mode whose dependency semantics are modeled */
     @Input
     public abstract Property<LaunchMode> getLaunchMode();
 
+    /**
+     * @return logical model type used to distinguish otherwise equivalent model-generation tasks
+     */
     @Input
     public abstract Property<String> getTypeModel();
 
     /**
-     * If any project task changes, we will invalidate this task anyway
+     * Returns the serialized workspace descriptor for the current project.
+     * <p>
+     * Gradle fingerprints the descriptor as a scalar input, so changes represented by that descriptor invalidate the
+     * application model.
      */
     @Input
     public abstract Property<DefaultProjectDescriptor> getProjectDescriptor();
 
+    /**
+     * Returns declared dependencies already collected by plugin configuration.
+     * <p>
+     * The map is internal because effective-POM task invalidation is represented by the enrichment mode,
+     * system-property fingerprint, and optional POM-closure file.
+     */
     @Internal
     public abstract MapProperty<ArtifactKey, DeclaredDepsResult> getDeclaredDependencies();
 
+    /**
+     * @return whether Maven POM declarations supplement the Gradle resolution graph; defaults to
+     *         {@link DeclaredDependencyEnrichmentMode#SELECTED_MODULE_POMS}
+     */
     @Input
     public abstract Property<DeclaredDependencyEnrichmentMode> getDeclaredDependencyEnrichmentMode();
 
+    /**
+     * Returns the current JVM system properties used for Maven effective-model interpolation.
+     * <p>
+     * This object-valued view is internal; {@link #getMavenModelSystemPropertiesFingerprint()} is the declared input.
+     */
+    @Internal
+    public Map<String, String> getMavenModelSystemProperties() {
+        return getProviderFactory().systemPropertiesPrefixedBy("").get();
+    }
+
+    /**
+     * Returns an opaque fingerprint of Maven model system properties when POM enrichment is enabled, otherwise an empty
+     * string.
+     */
+    @Input
+    public String getMavenModelSystemPropertiesFingerprint() {
+        return getDeclaredDependencyEnrichmentMode().get() == DeclaredDependencyEnrichmentMode.SELECTED_MODULE_POMS
+                ? TaskInputFingerprint.ofMap(getMavenModelSystemProperties())
+                : "";
+    }
+
+    /**
+     * @return optional local POM-closure file; path is ignored because its contents include local absolute POM paths
+     */
     @InputFile
     @Optional
     @PathSensitive(PathSensitivity.NONE)
     public abstract RegularFileProperty getPomClosureFile();
 
+    /** @return serialized, non-relocatable application-model output */
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
 
+    /**
+     * Initializes nested classpath inputs and empty conventions without resolving any configuration.
+     */
     public QuarkusApplicationModelTask() {
         compileOnlyClasspath = getObjects().newInstance(QuarkusResolvedClasspath.class);
         deploymentClasspath = getObjects().newInstance(QuarkusResolvedClasspath.class);
         getProjectBuildFile().set(getProject().getBuildFile());
         getLocalClassOutputArtifacts().convention(Set.of());
         getLocalResourceOutputArtifacts().convention(Set.of());
+        getLocalClassOutputMetadata().convention(List.of());
+        getLocalResourceOutputMetadata().convention(List.of());
         getDeclaredDependencies().convention(Map.of());
         getDeclaredDependencyEnrichmentMode().convention(DeclaredDependencyEnrichmentMode.SELECTED_MODULE_POMS);
     }
 
+    /**
+     * Assembles the application model from the configured Gradle inputs and serializes it.
+     *
+     * @throws IOException if the POM closure cannot be read or the application model cannot be written
+     */
     @TaskAction
     public void execute() throws IOException {
         final DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get();
@@ -187,7 +268,7 @@ public abstract class QuarkusApplicationModelTask extends QuarkusBaseTask {
 
     private Map<ArtifactKey, DeclaredDepsResult> collectExternalDeclaredDependencies() throws IOException {
         var collector = new StrictDependencyDataCollector(pomResolver(),
-                getProviderFactory().systemPropertiesPrefixedBy("")::get);
+                this::getMavenModelSystemProperties);
         return collector.collectExternalDeclaredDependencies(getLogger(),
                 StrictDependencyDataCollector.externalModuleDeclaredDependencyInputs(Stream.concat(
                         getAppClasspath().getResolvedArtifacts().get().stream(),

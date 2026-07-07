@@ -17,6 +17,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -481,7 +482,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
                 packageClasses(packageDirectoryRootsTogether ? resolvedPaths : List.of(resolvedDep), targetPath,
-                        packageConfig, outputTargetBuildItem, executorService);
+                        packageConfig.jar().compress(), packageConfig.outputTimestamp(), executorService);
                 if (packageDirectoryRootsTogether) {
                     return;
                 }
@@ -534,11 +535,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
     }
 
-    private static void packageClasses(List<Path> resolvedDependencies, final Path targetPath, PackageConfig packageConfig,
-            OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
+    static void packageClasses(List<Path> resolvedDependencies, final Path targetPath, boolean compress,
+            Instant outputTimestamp, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp(),
-                executorService)) {
+                compress, outputTimestamp, executorService)) {
             for (Path resolvedDependency : resolvedDependencies) {
                 Files.walkFileTree(resolvedDependency, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                         new SimpleFileVisitor<Path>() {

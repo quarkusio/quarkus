@@ -5,48 +5,62 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * If an implementation of this class is found using the ServiceLoader mechanism, then it is used.
- * Otherwise {@link DefaultJarLauncher} is used
+ * Launches a packaged Quarkus JAR for integration tests.
+ * <p>
+ * The test framework uses a custom implementation discovered through {@link java.util.ServiceLoader}, when present,
+ * and otherwise uses {@link DefaultJarLauncher}.
  */
 public interface JarArtifactLauncher extends ArtifactLauncher<JarArtifactLauncher.JarInitContext> {
 
+    /**
+     * Initialization values supplied to a JAR launcher.
+     */
     interface JarInitContext extends InitContext {
 
+        /**
+         * @return the packaged JAR to launch
+         */
         Path jarPath();
 
         /**
-         * Additional JVM args to add during the integration test run for training/recording.
-         * Empty list means no recording.
+         * Returns additional JVM arguments for startup-archive recording during the integration-test run.
          * <p>
-         * For Leyden AOT: {@code [-XX:AOTMode=record, -XX:AOTConfiguration=<path>, ...]}
-         * For OpenJ9 SCC: {@code [-Xshareclasses:name=quarkus-app,cacheDir=
+         * An empty list means that no recording arguments are required.
          *
-        <dir>
-         * ]}
+         * @return the recording JVM arguments
          */
         List<String> recordingArgs();
 
         /**
-         * Base command to run after the test process exits.
-         * The launcher will prepend the java binary and argLine, then append runtime system properties,
-         * {@code -jar}, and jar path before executing. Empty list means no post-close processing.
+         * Returns the JVM arguments for optional processing after the integration-test process exits.
          * <p>
-         * For Leyden AOT: {@code [-XX:AOTMode=create, -XX:AOTConfiguration=..., -XX:AOTCache=...]}
-         * For Semeru SCC: empty (cache is populated during the test run).
+         * The launcher prepends the Java executable and configured JVM arguments, then appends runtime system
+         * properties, {@code -jar}, the JAR path, and the original program arguments. An empty list means that no
+         * post-close process is required.
+         *
+         * @return the post-close JVM arguments
          */
         List<String> postCloseCommand();
 
         /**
-         * Path to the AOT result file or directory that the user should reference when running the application.
-         * Used for logging purposes after the AOT process completes.
-         * Empty when AOT is not enabled.
+         * @return the result file or directory to report after archive processing, or empty when none is expected
          */
         Optional<Path> aotResultPath();
 
         /**
-         * Human-readable description of the AOT result (e.g. "AOT cache", "SCC cache").
-         * Used in log messages to describe what was created.
+         * @return a human-readable description used when reporting {@link #aotResultPath()}
          */
         String aotResultDescription();
+
+        /**
+         * Returns the explicit typed training request supplied by build-tool metadata.
+         * <p>
+         * The default is empty so existing custom launcher contexts retain their previous behavior.
+         *
+         * @return the explicit startup-archive training request, when present
+         */
+        default Optional<JvmStartupArchiveTraining> startupArchiveTraining() {
+            return Optional.empty();
+        }
     }
 }

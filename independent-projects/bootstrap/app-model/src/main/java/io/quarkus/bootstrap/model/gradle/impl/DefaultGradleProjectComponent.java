@@ -12,6 +12,12 @@ import io.quarkus.bootstrap.model.gradle.GradleProjectComponent;
 import io.quarkus.bootstrap.model.gradle.GradleProjectIdentity;
 import io.quarkus.bootstrap.model.gradle.GradleSourceObservation;
 
+/**
+ * Default serializable value used by Gradle producers to transport a {@link GradleProjectComponent}.
+ * <p>
+ * Collections are defensively copied and exposed as immutable values. Empty characteristic sets remain empty rather
+ * than being inferred from the project identity or outputs.
+ */
 public final class DefaultGradleProjectComponent implements GradleProjectComponent {
 
     private static final long serialVersionUID = -5391398664530192947L;
@@ -24,6 +30,18 @@ public final class DefaultGradleProjectComponent implements GradleProjectCompone
     private final List<? extends GradleSourceObservation> sourceObservations;
     private final List<? extends GradleLogicalOutput> logicalOutputs;
 
+    /**
+     * Creates a project component value.
+     *
+     * @param projectIdentity composite-build-safe project identity; must not be {@code null}
+     * @param selectedComponentIdentity opaque selected Gradle component identity; must not be {@code null}
+     * @param roles observed project roles; must not be {@code null} or contain {@code null}
+     * @param classpathAssociations observed classpaths; must not be {@code null} or contain {@code null}
+     * @param graphRelationships observed graph relationships; must not be {@code null} or contain {@code null}
+     * @param sourceObservations published sources; must not be {@code null} or contain {@code null}
+     * @param logicalOutputs published logical outputs; must not be {@code null} or contain {@code null}
+     * @throws NullPointerException if a required argument or collection element is {@code null}
+     */
     public DefaultGradleProjectComponent(GradleProjectIdentity projectIdentity, String selectedComponentIdentity,
             Collection<Role> roles, Collection<ClasspathAssociation> classpathAssociations,
             Collection<GraphRelationship> graphRelationships,

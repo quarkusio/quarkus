@@ -32,9 +32,9 @@ public class DeploymentConfigurationResolver {
     /**
      * Registers and initializes project's build time (deployment) classpath configuration for a given project
      * and launch mode.
-     * <p/>
+     * <p>
      * The configuration will re-use component variants added previously by the {@link QuarkusComponentVariants}.
-     * <p/>
+     * <p>
      * Deployment dependencies that could not be added using variants, will be added as direct dependencies
      * of the configuration.
      *

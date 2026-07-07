@@ -224,6 +224,13 @@ public class ApplicationModelBuilder {
         return this;
     }
 
+    /**
+     * Removes a workspace module from the set marked reloadable in the resulting application model.
+     * If the key is not present, the set is unchanged.
+     *
+     * @param key artifact key of the workspace module to remove
+     * @return this builder
+     */
     public ApplicationModelBuilder removeReloadableWorkspaceModule(ArtifactKey key) {
         this.reloadableWorkspaceModules.remove(key);
         return this;

@@ -66,7 +66,17 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * Task that generates extension descriptor files.
+ * Generates the Quarkus extension properties and YAML descriptors for a runtime extension project.
+ * <p>
+ * The {@code io.quarkus.extension} plugin registers this task as
+ * {@link io.quarkus.extension.gradle.QuarkusExtensionPlugin#EXTENSION_DESCRIPTOR_TASK_NAME}. It merges an optional
+ * source descriptor with project and dependency metadata, validates the YAML descriptor, and writes both descriptors
+ * into an isolated generated-resources directory. Gradle's {@code processResources} task consumes that directory and
+ * owns the final processed-resources tree. This task is not build-cacheable.
+ * <p>
+ * This is a plugin-configured task type. The supported contract covers the registered task and its documented name,
+ * inputs, and outputs; no compatibility commitment is made for direct construction, additional registration, or
+ * subclassing.
  */
 @DisableCachingByDefault(because = "Not cacheable")
 public abstract class ExtensionDescriptorTask extends DefaultTask {
@@ -79,6 +89,13 @@ public abstract class ExtensionDescriptorTask extends DefaultTask {
 
     private final Map<String, String> projectInfo;
 
+    /**
+     * Creates and wires the plugin-owned descriptor task.
+     *
+     * @param quarkusExtensionConfiguration the runtime extension DSL configuration
+     * @param mainSourceSet the main source set
+     * @param runtimeClasspath the runtime extension classpath
+     */
     @Inject
     public ExtensionDescriptorTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration, SourceSet mainSourceSet,
             Configuration runtimeClasspath) {
@@ -136,73 +153,178 @@ public abstract class ExtensionDescriptorTask extends DefaultTask {
         return String.format("%s:%s-deployment:%s", getProject().getGroup(), projectName, getProject().getVersion());
     }
 
+    /**
+     * Returns the runtime classpath inspected for Quarkus extension and platform metadata.
+     *
+     * @return the runtime classpath
+     */
     @Classpath
     public abstract ConfigurableFileCollection getClasspath();
 
+    /**
+     * Returns resolved runtime artifacts paired with the classpath files.
+     * This is internal task wiring used to inspect component identities.
+     *
+     * @return resolved runtime artifacts
+     */
     @Internal
     public abstract SetProperty<ResolvedArtifactResult> getResolvedArtifacts();
 
+    /**
+     * Returns main resource directories searched for a source extension YAML descriptor.
+     *
+     * @return the input resource directories
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public FileCollection getInputResourcesDirs() {
         return inputResourcesDirs;
     }
 
+    /**
+     * Returns the directory containing the generated extension resources.
+     * Gradle's {@code processResources} task consumes this directory and copies
+     * its contents to the conventional main-resources output.
+     *
+     * @return the generated extension-resources directory
+     */
     @OutputDirectory
     public abstract DirectoryProperty getOutputDirectory();
 
+    /**
+     * Returns the generated {@code META-INF/quarkus-extension.properties} file below {@link #getOutputDirectory()}.
+     *
+     * @return the generated properties descriptor
+     */
     @Internal
     public abstract RegularFileProperty getExtensionPropertiesFile();
 
+    /**
+     * Returns the generated {@code META-INF/quarkus-extension.yaml} file below {@link #getOutputDirectory()}.
+     *
+     * @return the generated YAML descriptor
+     */
     @Internal
     public abstract RegularFileProperty getExtensionDescriptorFile();
 
+    /**
+     * Returns the generated {@code META-INF/quarkus-extension.json} file below {@link #getOutputDirectory()}.
+     *
+     * @return the generated JSON descriptor
+     */
     @Internal
     public abstract RegularFileProperty getExtensionJsonDescriptorFile();
 
     @Inject
     protected abstract FileSystemOperations getFileSystemOperations();
 
+    /**
+     * Returns project name, description, group, and version inputs used to complete descriptor metadata.
+     *
+     * @return project metadata captured at task creation
+     */
     @Input
     public Map<String, String> getProjectInfo() {
         return projectInfo;
     }
 
+    /**
+     * Returns the deployment artifact coordinate written to the extension properties descriptor.
+     *
+     * @return the deployment artifact coordinate
+     */
     @Input
     public abstract Property<String> getDeploymentArtifact();
 
+    /**
+     * Returns conditional runtime dependency coordinates written to the extension properties descriptor.
+     *
+     * @return conditional dependency coordinates
+     */
     @Input
     public abstract ListProperty<String> getConditionalDependencies();
 
+    /**
+     * Returns conditional development dependency coordinates written to the extension properties descriptor.
+     *
+     * @return conditional development dependency coordinates
+     */
     @Input
     public abstract ListProperty<String> getConditionalDevDependencies();
 
+    /**
+     * Returns artifact conditions that control activation of this extension as a conditional dependency.
+     *
+     * @return dependency-condition declarations
+     */
     @Input
     public abstract ListProperty<String> getDependencyConditions();
 
+    /**
+     * Returns artifacts loaded parent-first in all launch modes.
+     *
+     * @return parent-first artifact declarations
+     */
     @Input
     public abstract ListProperty<String> getParentFirstArtifacts();
 
+    /**
+     * Returns artifacts loaded parent-first only by application runners.
+     *
+     * @return runner parent-first artifact declarations
+     */
     @Input
     public abstract ListProperty<String> getRunnerParentFirstArtifacts();
 
+    /**
+     * Returns artifacts excluded from the application dependency model.
+     *
+     * @return excluded artifact declarations
+     */
     @Input
     public abstract ListProperty<String> getExcludedArtifacts();
 
+    /**
+     * Returns artifacts assigned lesser class-loading priority.
+     *
+     * @return lesser-priority artifact declarations
+     */
     @Input
     public abstract ListProperty<String> getLesserPriorityArtifacts();
 
+    /**
+     * Returns serialized provided-capability declarations, including conditions.
+     *
+     * @return provided-capability descriptor inputs
+     */
     @Input
     public abstract ListProperty<String> getProvidedCapabilities();
 
+    /**
+     * Returns serialized required-capability declarations, including conditions.
+     *
+     * @return required-capability descriptor inputs
+     */
     @Input
     public abstract ListProperty<String> getRequiredCapabilities();
 
+    /**
+     * Returns serialized artifact-to-resource removal declarations.
+     *
+     * @return removed-resource descriptor inputs
+     */
     @Input
     public abstract ListProperty<String> getRemovedResources();
 
+    /**
+     * Generates and validates both extension descriptors.
+     *
+     * @throws IOException when source metadata cannot be read or an output cannot be written
+     */
     @TaskAction
     public void generateExtensionDescriptor() throws IOException {
+        // The directory is owned exclusively by this task. Clear it so stale files cannot become additional
+        // processResources inputs after a failed or older generator implementation.
         getFileSystemOperations().delete(delete -> delete.delete(getOutputDirectory()));
         Path outputMetaInfDir = getExtensionPropertiesFile().get().getAsFile().toPath().getParent();
 

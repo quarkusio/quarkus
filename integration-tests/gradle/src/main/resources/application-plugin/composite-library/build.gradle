@@ -1,0 +1,28 @@
+plugins {
+    id 'io.quarkus.application'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'org.acme:included-library'
+}
+
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
+
+quarkusApplication {
+    builds {
+        fastJar('app')
+    }
+}

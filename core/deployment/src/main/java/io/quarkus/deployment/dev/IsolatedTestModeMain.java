@@ -147,6 +147,10 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 System.err.println("Failed to start quarkus test mode");
                 t.printStackTrace();
                 System.exit(1);
+            } finally {
+                if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                    RuntimeUpdatesProcessor.INSTANCE.externalBuildOutputReady();
+                }
             }
 
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

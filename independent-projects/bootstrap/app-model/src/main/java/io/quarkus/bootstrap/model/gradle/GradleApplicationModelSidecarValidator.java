@@ -18,14 +18,29 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 
 /**
- * Validates the externally known dimensions of a paired application model and
- * Gradle sidecar.
+ * Validates the externally known dimensions of a paired application model and Gradle sidecar.
+ * <p>
+ * Validation is strict and fail-closed: schema, mode, target, and graph data must all match. The utility detects
+ * accidentally mismatched Tooling API results; it does not authenticate either model.
  */
 public final class GradleApplicationModelSidecarValidator {
 
     private GradleApplicationModelSidecarValidator() {
     }
 
+    /**
+     * Validates a sidecar against correlation facts computed independently by the caller.
+     * <p>
+     * Expected facts are sorted before comparison. The sidecar itself must already contain a canonical sorted list.
+     *
+     * @param sidecar sidecar to validate
+     * @param expectedSchemaVersion schema understood by the consumer
+     * @param expectedMode launch mode requested by the consumer
+     * @param expectedTargetBuildTreePath target project's Gradle build-tree path
+     * @param expectedCanonicalGraphFacts independently computed graph facts; encounter order is ignored
+     * @throws NullPointerException if a required value or required sidecar field is {@code null}
+     * @throws GradleApplicationModelSidecarMismatchException if a correlation dimension does not match
+     */
     public static void validate(GradleApplicationModelSidecar sidecar, int expectedSchemaVersion,
             GradleApplicationModelSidecar.Mode expectedMode, String expectedTargetBuildTreePath,
             Collection<String> expectedCanonicalGraphFacts) {
@@ -39,8 +54,7 @@ public final class GradleApplicationModelSidecarValidator {
     }
 
     /**
-     * Validates a sidecar against an application model obtained through the
-     * Tooling API.
+     * Validates a sidecar against an application model obtained through the Tooling API.
      * <p>
      * Gradle adapts custom model interfaces to protocol proxies. In
      * particular, {@link PathCollection#iterator()} and
@@ -48,6 +62,15 @@ public final class GradleApplicationModelSidecarValidator {
      * This validation path therefore compares every sidecar path with
      * {@link PathCollection#contains(Path)} and verifies the collection size,
      * without attempting to iterate it.
+     *
+     * @param sidecar sidecar to validate
+     * @param expectedSchemaVersion schema understood by the consumer
+     * @param expectedMode launch mode requested by the consumer
+     * @param expectedTargetBuildTreePath target project's Gradle build-tree path
+     * @param expectedApplicationModel application model returned by the same Tooling API request
+     * @throws NullPointerException if a required value or required sidecar field is {@code null}
+     * @throws GradleApplicationModelSidecarMismatchException if schema, mode, target, coordinates, flags, resolved
+     *         paths, or workspace direct edges do not match
      */
     public static void validate(GradleApplicationModelSidecar sidecar, int expectedSchemaVersion,
             GradleApplicationModelSidecar.Mode expectedMode, String expectedTargetBuildTreePath,

@@ -9,6 +9,7 @@ import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -70,6 +71,14 @@ public abstract class BaseGradleTest {
     public static boolean containsFileNamed(Path root, String fileName) throws IOException {
         try (var paths = Files.walk(root)) {
             return paths.anyMatch(path -> path.getFileName().toString().equals(fileName));
+        }
+    }
+
+    public static Path canonicalPath(Path path) {
+        try {
+            return path.toFile().getCanonicalFile().toPath();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to canonicalize path " + path, e);
         }
     }
 
@@ -156,5 +165,32 @@ public abstract class BaseGradleTest {
         return result.getTasks().stream()
                 .collect(Collectors.toMap(BuildTask::getPath, BuildTask::getOutcome, (first, second) -> second,
                         LinkedHashMap::new));
+    }
+
+    public static void assertConfigurationCacheReused(BuildResult result) {
+        assertConfigurationCacheReused(result.getOutput());
+    }
+
+    public static void assertConfigurationCacheReused(String output) {
+        assertThat(output)
+                .as("Gradle configuration-cache output")
+                .containsAnyOf(
+                        "Reusing configuration cache.",
+                        "Configuration cache entry reused.");
+    }
+
+    public static void assertTasksOrdered(BuildResult result, String... taskPaths) {
+        List<String> executedTaskPaths = result.getTasks().stream().map(BuildTask::getPath).toList();
+        if (executedTaskPaths.isEmpty()) {
+            executedTaskPaths = result.getOutput().lines()
+                    .map(String::trim)
+                    .filter(line -> line.endsWith(" SKIPPED"))
+                    .map(line -> line.startsWith("> Task ") ? line.substring("> Task ".length()) : line)
+                    .map(line -> line.substring(0, line.length() - " SKIPPED".length()))
+                    .toList();
+        }
+        assertThat(executedTaskPaths)
+                .as("Gradle task execution order")
+                .containsSubsequence(taskPaths);
     }
 }

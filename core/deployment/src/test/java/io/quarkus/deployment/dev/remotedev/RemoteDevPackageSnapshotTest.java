@@ -1,10 +1,15 @@
 package io.quarkus.deployment.dev.remotedev;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -66,6 +71,124 @@ class RemoteDevPackageSnapshotTest {
 
         assertThat(Files.readString(snapshotFile)).contains("app/app.jar\t");
         assertThat(read.diffSince(RemoteDevPackageSnapshot.capture(root), root).isEmpty()).isTrue();
+    }
+
+    @Test
+    void filtersDeletePathsThatAreNotPackageRelative() {
+        RemoteDevPackageDiff diff = new RemoteDevPackageDiff(List.of(), List.of(
+                "../outside.txt",
+                "lib/../../outside.txt",
+                "lib\\..\\..\\outside.txt",
+                "/absolute/outside.txt",
+                "\\\\server\\share\\outside.txt",
+                "C:\\absolute\\outside.txt",
+                "C:drive-relative.txt",
+                "a:b/portable-package-path.txt",
+                "lib/main/removed.jar"));
+
+        assertThat(diff.deleted()).containsExactly("lib/main/removed.jar");
+    }
+
+    @Test
+    void resolvesRequestedFilesStrictlyAndDeterministically() throws Exception {
+        Path root = Files.createDirectory(directory.resolve("quarkus-app"));
+        write(root.resolve("app/z.jar"), "z");
+        write(root.resolve("app/a.jar"), "a");
+        RemoteDevPackageSnapshot snapshot = RemoteDevPackageSnapshot.capture(root);
+
+        RemoteDevPackageDiff requested = snapshot.requestedFiles(Set.of("app\\z.jar", "app/a.jar"), root);
+
+        assertThat(requested.changed()).extracting(RemoteDevPackageChange::relativePath)
+                .containsExactly("app/a.jar", "app/z.jar");
+        assertThat(requested.changed()).extracting(RemoteDevPackageChange::file)
+                .allMatch(path -> path.normalize().startsWith(root.normalize()));
+    }
+
+    @Test
+    void rejectsMissingUnsafeAndDuplicateNormalizedRequestedFiles() throws Exception {
+        Path root = Files.createDirectory(directory.resolve("quarkus-app"));
+        write(root.resolve("app/application.jar"), "application");
+        RemoteDevPackageSnapshot snapshot = RemoteDevPackageSnapshot.capture(root);
+
+        assertThatThrownBy(() -> snapshot.requestedFiles(Set.of("app/missing.jar"), root))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("absent from the current snapshot");
+        for (String unsafe : List.of(
+                "../outside.txt",
+                "lib/../../outside.txt",
+                "/absolute/outside.txt",
+                "\\\\server\\share\\outside.txt",
+                "C:\\absolute\\outside.txt",
+                "C:drive-relative.txt",
+                "a:b/portable-package-path.txt",
+                "./app/application.jar")) {
+            assertThatThrownBy(() -> snapshot.requestedFiles(Set.of(unsafe), root))
+                    .as("requested path %s", unsafe)
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("unsafe package path");
+        }
+        assertThatThrownBy(
+                () -> snapshot.requestedFiles(Set.of("app/application.jar", "app\\application.jar"), root))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("duplicate normalized package path");
+    }
+
+    @Test
+    void rejectsFileSymlinksWithoutReadingTheirTargets() throws Exception {
+        Path root = Files.createDirectory(directory.resolve("quarkus-app"));
+        Path outside = directory.resolve("outside-secret.txt");
+        write(outside, "outside secret");
+        Path link = root.resolve("app/secret.txt");
+        Files.createDirectories(link.getParent());
+        createSymbolicLinkOrAbort(link, outside);
+
+        assertThatThrownBy(() -> RemoteDevPackageSnapshot.capture(root))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("unsupported entry type")
+                .hasMessageContaining("app/secret.txt");
+        assertThat(Files.readString(outside)).isEqualTo("outside secret");
+    }
+
+    @Test
+    void rejectsDirectorySymlinksWithoutTraversingTheirTargets() throws Exception {
+        Path root = Files.createDirectory(directory.resolve("quarkus-app"));
+        Path outside = Files.createDirectory(directory.resolve("outside"));
+        write(outside.resolve("secret.txt"), "outside secret");
+        Path link = root.resolve("lib/external");
+        Files.createDirectories(link.getParent());
+        createSymbolicLinkOrAbort(link, outside);
+
+        assertThatThrownBy(() -> RemoteDevPackageSnapshot.capture(root))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("unsupported entry type")
+                .hasMessageContaining("lib/external");
+    }
+
+    @Test
+    void rejectsUnsupportedPackageRoots() throws Exception {
+        Path regularFile = directory.resolve("package-file");
+        write(regularFile, "not a package directory");
+
+        assertThatThrownBy(() -> RemoteDevPackageSnapshot.capture(regularFile))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("package root has an unsupported entry type")
+                .hasMessageContaining("package-file");
+
+        Path realRoot = Files.createDirectory(directory.resolve("real-root"));
+        Path linkedRoot = directory.resolve("linked-root");
+        createSymbolicLinkOrAbort(linkedRoot, realRoot);
+        assertThatThrownBy(() -> RemoteDevPackageSnapshot.capture(linkedRoot))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("package root has an unsupported entry type")
+                .hasMessageContaining("linked-root");
+    }
+
+    private static void createSymbolicLinkOrAbort(Path link, Path target) {
+        try {
+            Files.createSymbolicLink(link, target);
+        } catch (IOException | UnsupportedOperationException e) {
+            Assumptions.abort("Symbolic links are not supported by this test environment: " + e);
+        }
     }
 
     private static void write(Path file, String content) throws Exception {

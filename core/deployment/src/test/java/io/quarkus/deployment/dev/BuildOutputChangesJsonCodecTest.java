@@ -49,6 +49,7 @@ class BuildOutputChangesJsonCodecTest {
         assertThat(decoded.diagnosticsPath()).isEqualTo(diagnostics);
         assertThat(decoded.userInitiated()).isTrue();
         assertThat(decoded.forceRestart()).isTrue();
+        assertThat(decoded.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.DELTA);
     }
 
     @Test
@@ -69,6 +70,45 @@ class BuildOutputChangesJsonCodecTest {
         assertThat(decoded.failureKind()).isEqualTo(BuildOutputFailureKind.NONE);
         assertThat(decoded.userInitiated()).isFalse();
         assertThat(decoded.forceRestart()).isFalse();
+        assertThat(decoded.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.DELTA);
+    }
+
+    @Test
+    void roundTripsRebaselineMessage() {
+        var changes = new BuildOutputChanges(7, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputFailureKind.NONE,
+                null, null, null, null, null, null, true, true, BuildOutputChangesDeliveryKind.REBASELINE);
+
+        var decoded = BuildOutputChangesJsonCodec.decode(BuildOutputChangesJsonCodec.encode(changes));
+
+        assertThat(decoded.deliveryKind()).isEqualTo(BuildOutputChangesDeliveryKind.REBASELINE);
+        assertThat(decoded.mainClassChanges()).isEmpty();
+        assertThat(decoded.mainResourceChanges()).isEmpty();
+        assertThat(decoded.testClassChanges()).isEmpty();
+        assertThat(decoded.testResourceChanges()).isEmpty();
+        assertThat(decoded.userInitiated()).isTrue();
+        assertThat(decoded.forceRestart()).isTrue();
+    }
+
+    @Test
+    void rejectsRebaselineWithPathChanges() {
+        Path classes = directory.resolve("classes");
+
+        assertThatThrownBy(() -> new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+                BuildOutputFailureKind.NONE,
+                List.of(new BuildOutputPathChange(classes, classes.resolve("org/acme/Foo.class"),
+                        BuildOutputChangeKind.MODIFIED)),
+                null, null, null, null, null, false, true, BuildOutputChangesDeliveryKind.REBASELINE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not contain path changes");
+    }
+
+    @Test
+    void rejectsRebaselineForUnsuccessfulBuild() {
+        assertThatThrownBy(() -> new BuildOutputChanges(1, BuildOutputChangeStatus.BUILD_FAILED,
+                BuildOutputFailureKind.MAIN, null, null, null, null, "failed", null, false, true,
+                BuildOutputChangesDeliveryKind.REBASELINE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("successful build");
     }
 
     @Test

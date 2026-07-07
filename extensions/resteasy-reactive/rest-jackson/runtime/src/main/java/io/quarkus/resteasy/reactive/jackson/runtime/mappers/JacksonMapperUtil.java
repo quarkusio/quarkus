@@ -5,6 +5,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -71,6 +74,19 @@ public class JacksonMapperUtil {
             sdf.setTimeZone(TimeZone.getTimeZone(timezone));
         }
         generator.writeString(sdf.format(value));
+    }
+
+    public static void serializeFormattedTemporal(Object value, String pattern, String timezone,
+            JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        if (timezone != null) {
+            formatter = formatter.withZone(ZoneId.of(timezone));
+        }
+        generator.writeString(formatter.format((TemporalAccessor) value));
     }
 
     public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {

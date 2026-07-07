@@ -292,6 +292,54 @@ include::{includes}/duration-format-note.adoc[]
 
 The default value is 60 seconds.
 
+== Configuring the transaction reaper
+
+The transaction reaper is a background thread that monitors running transactions and cancels those that exceed
+their timeout. It periodically scans for timed-out transactions (every `check-period`, default 120 seconds).
+When a transaction times out, the reaper follows this sequence:
+
+1. Schedules the transaction for cancellation
+2. A cancel worker attempts to roll back the transaction
+3. After `cancel-wait-period` (default 500ms), the reaper interrupts the cancel worker if it has not finished
+4. After `cancel-fail-wait-period` (default 500ms), the reaper declares the transaction a zombie if the worker still has not finished
+5. Once the number of zombies exceeds `zombie-max` (default 8), the reaper escalates to ERROR-level logging
+
+In CPU-constrained environments (e.g., containers with strict CPU limits), the default cancel wait periods
+may be too aggressive — the reaper can declare a zombie before the application thread gets a chance to respond
+to the cancellation. When this happens, you will see warnings like:
+
+[source]
+----
+ARJUNA012117: TransactionReaper::check timeout for TX ... in state CANCEL
+ARJUNA012120: cancel for ... returned, but worker is not done
+ARJUNA012378: ReaperElement appears to be wedged
+ARJUNA012108: CheckedAction::check - atomic action ... aborting with N threads active
+----
+
+If you see these messages, increase the cancel wait periods to give the reaper more time.
+
+For CPU-constrained environments, increase the cancel wait periods:
+
+[source, properties]
+----
+# Time before interrupting a cancel worker (default: 500ms)
+quarkus.transaction-manager.reaper.cancel-wait-period=30s
+# Time after interrupting before declaring a zombie (default: 500ms)
+quarkus.transaction-manager.reaper.cancel-fail-wait-period=30s
+----
+
+Other reaper settings can also be tuned if needed:
+
+[source, properties]
+----
+# How often the reaper scans for timed-out transactions (default: 120s)
+quarkus.transaction-manager.reaper.check-period=120s
+# Zombie count threshold before ERROR-level logging (default: 8)
+quarkus.transaction-manager.reaper.zombie-max=8
+----
+
+include::{includes}/duration-format-note.adoc[]
+
 == Configuring transaction node name identifier
 
 Narayana, as the underlying transaction manager, has a concept of a unique node identifier.

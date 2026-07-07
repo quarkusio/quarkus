@@ -1757,6 +1757,11 @@ When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` imp
 
 Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
 
+[NOTE]
+====
+Reflection-free serializers are not compatible with Kotlin classes, since they break Kotlin-specific features such as default parameter values and non-null type enforcement. As a result, reflection-free serializers are not generated for Kotlin classes.
+====
+
 ===== Completely customized per method serialization/deserialization
 
 There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis or on a per Jakarta REST resource basis. For such use cases, you can use the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations in the REST method or in the REST resource at class level. These annotations allow you to fully configure the `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader`.

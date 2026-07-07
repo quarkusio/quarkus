@@ -9,6 +9,9 @@ import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 
+/**
+ * Package-local artifact and descriptor helpers shared by extension tasks.
+ */
 final class Util {
     private Util() {
     }

@@ -30,7 +30,6 @@
             <groupId>com.google.cloud.tools</groupId>
             <artifactId>jib-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-internal</artifactId>

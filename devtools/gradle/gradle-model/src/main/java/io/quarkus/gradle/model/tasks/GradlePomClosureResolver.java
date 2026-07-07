@@ -28,6 +28,17 @@ import org.gradle.maven.MavenPomArtifact;
 import io.quarkus.gradle.model.pom.PomResolver;
 import io.quarkus.maven.dependency.GAV;
 
+/**
+ * POM resolver backed by Gradle artifact-resolution queries with a local-repository fallback.
+ * <p>
+ * This resolver is used while Gradle services are available to prepare a closure of lookup outcomes for later task
+ * execution.
+ * Maven effective-model construction may reveal parent and imported-BOM coordinates; batch prefetch records both
+ * resolved and missing results so callers can retry without repeatedly resolving the same POM.
+ * <p>
+ * Passing no dependency handler disables Gradle queries and restricts resolution to supplied POMs and local repository
+ * roots. The resolver ignores Maven-declared repositories: Gradle's configured repositories remain authoritative.
+ */
 public class GradlePomClosureResolver implements PomResolver {
 
     private final DependencyHandler dependencies;
@@ -38,6 +49,10 @@ public class GradlePomClosureResolver implements PomResolver {
     /**
      * Creates a resolver that starts from modeled POM files but falls back to Gradle artifact resolution for missing POMs.
      * This is intended for legacy/tooling compatibility and dedicated POM-closure producer tasks.
+     *
+     * @param resolvedPomFiles POM artifacts already resolved by a Gradle artifact view
+     * @param dependencies Gradle dependency handler used for artifact-resolution queries
+     * @param repositoryRoots local Maven repositories or Gradle artifact-cache roots used as fallback
      */
     public static GradlePomClosureResolver withGradleArtifactResolution(Map<GAV, File> resolvedPomFiles,
             DependencyHandler dependencies, Collection<File> repositoryRoots) {
@@ -52,10 +67,20 @@ public class GradlePomClosureResolver implements PomResolver {
         resolvedPomFiles.forEach((gav, file) -> pomCache.put(gav, Optional.of(file)));
     }
 
+    /**
+     * Returns a snapshot of every resolved or known-missing lookup attempted by this resolver.
+     *
+     * @return an immutable snapshot of the lookup cache
+     */
     public Map<GAV, Optional<File>> getPomResults() {
         return Map.copyOf(pomCache);
     }
 
+    /**
+     * Prefetches POM artifacts for Gradle module identifiers, using one artifact-resolution query when possible.
+     *
+     * @param moduleIds module identifiers to consume
+     */
     public void prefetchPoms(Stream<ModuleComponentIdentifier> moduleIds) {
         Set<ModuleComponentIdentifier> unresolvedModuleIds = new HashSet<>();
         moduleIds.filter(moduleId -> !pomCache.containsKey(toGav(moduleId)))
@@ -101,6 +126,11 @@ public class GradlePomClosureResolver implements PomResolver {
         }
     }
 
+    /**
+     * Prefetches POM artifacts for coordinates and caches resolved or missing outcomes.
+     *
+     * @param gavs POM coordinates to look up
+     */
     @Override
     public void prefetchPoms(Collection<GAV> gavs) {
         Set<GAV> unresolvedGavs = new HashSet<>();
@@ -116,11 +146,22 @@ public class GradlePomClosureResolver implements PomResolver {
         }
     }
 
+    /**
+     * @param gav POM coordinates to query
+     * @return whether a resolved or known-missing result is cached for {@code gav}
+     */
     @Override
     public boolean hasPomResult(GAV gav) {
         return pomCache.containsKey(gav);
     }
 
+    /**
+     * Resolves a POM, querying Gradle or local roots on the first lookup.
+     *
+     * @param gav POM coordinates to resolve
+     * @return Maven model source backed by the resolved POM file
+     * @throws UnresolvableModelException when the POM cannot be found
+     */
     @Override
     public ModelSource2 resolvePom(GAV gav) throws UnresolvableModelException {
         File pomFile = pomCache

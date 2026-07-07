@@ -7,18 +7,35 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Creates the local authenticated transport used between an external
+ * build-output producer and a Quarkus dev-mode process.
+ * <p>
+ * The current transport binds to loopback and uses a per-server token. The
+ * returned public contracts are shared by Quarkus build-tool integrations;
+ * the framing protocol is not a third-party cross-version compatibility
+ * promise.
+ */
 public final class BuildOutputChangesTransports {
 
     private BuildOutputChangesTransports() {
     }
 
-    static AutoCloseable connect(DevModeContext.ExternalBuildOutputTransport transport,
+    static BuildOutputChangesConnection connect(DevModeContext.ExternalBuildOutputTransport transport,
             Function<BuildOutputChanges, BuildOutputChangesApplyStatus> consumer) throws IOException {
         requireNonNull(consumer, "consumer");
         if (transport == null || !transport.isEnabled()) {
-            return () -> {
+            return new BuildOutputChangesConnection() {
+                @Override
+                public void liveReloadStateChanged(BuildOutputLiveReloadState state) {
+                }
+
+                @Override
+                public void close() {
+                }
             };
         }
 
@@ -49,9 +66,27 @@ public final class BuildOutputChangesTransports {
     /**
      * Creates a build-tool-side TCP listener for local Quarkus dev-mode output
      * updates.
+     *
+     * @return a listening server with launch metadata
+     * @throws IOException when the loopback listener cannot be created
      */
     public static BuildOutputChangesServer createTcpServer() throws IOException {
         return new BuildOutputChangesTcpServer();
+    }
+
+    /**
+     * Creates a build-tool-side TCP listener that also receives asynchronous
+     * live-reload state from the Quarkus dev-mode process.
+     *
+     * @param stateListener callback for monotonic live-reload state updates;
+     *        a dedicated dispatcher serializes and may coalesce callbacks
+     *        outside the transport reader and connection lock
+     * @return a listening server with launch metadata
+     * @throws IOException when the loopback listener cannot be created
+     */
+    public static BuildOutputChangesServer createTcpServer(Consumer<BuildOutputLiveReloadState> stateListener)
+            throws IOException {
+        return new BuildOutputChangesTcpServer(requireNonNull(stateListener, "stateListener"));
     }
 
     private static InetAddress loopbackAddress(String host) {

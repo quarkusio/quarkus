@@ -48,6 +48,17 @@ class BuildOutputChangesFrameCodecTest {
     }
 
     @Test
+    void rejectsOversizedPayloadBeforeWrite() {
+        var output = new ByteArrayOutputStream();
+
+        assertThatThrownBy(() -> BuildOutputChangesFrameCodec.write(output,
+                "x".repeat(BuildOutputChangesFrameCodec.MAX_FRAME_BYTES + 1)))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining("maximum");
+        assertThat(output.size()).isZero();
+    }
+
+    @Test
     void rejectsTruncatedPayload() throws Exception {
         var output = new ByteArrayOutputStream();
         try (var data = new DataOutputStream(output)) {

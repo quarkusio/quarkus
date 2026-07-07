@@ -5,6 +5,12 @@ import java.io.Serializable;
 
 import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 
+/**
+ * Serializable task-execution snapshot of the Gradle artifact fields required by application-model assembly.
+ * <p>
+ * Keeping this value free of a live variant object limits the Gradle model retained while artifacts are grouped and
+ * translated.
+ */
 class QuarkusResolvedArtifact implements Serializable {
 
     private static final long serialVersionUID = 1L;

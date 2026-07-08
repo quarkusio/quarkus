@@ -854,6 +854,19 @@ The `ssl-negotiation` property accepts two values:
 * `postgres` (default) — traditional negotiation, compatible with all PostgreSQL versions.
 * `direct` — direct SSL, requires PostgreSQL 17 or later.
 
+=== TDS 8.0 (Microsoft SQL Server 2022+)
+
+Microsoft SQL Server 2022 and later support TDS 8.0, which performs the TLS handshake before any TDS protocol exchange.
+The reactive MSSQL client exposes this via the `encryption-mode` configuration property:
+
+[source,properties]
+----
+quarkus.datasource.reactive.mssql.encryption-mode=strict
+----
+
+`strict` enables TDS 8.0.
+The other values are `on` (optional encryption, equivalent to `ssl=true`) and `off` (no encryption, the default).
+
 == Customizing pool creation
 
 Sometimes, the database connection pool cannot be configured only by declaration.

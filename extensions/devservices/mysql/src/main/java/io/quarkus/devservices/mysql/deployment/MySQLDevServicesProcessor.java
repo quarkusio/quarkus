@@ -27,6 +27,7 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
@@ -149,6 +150,11 @@ public class MySQLDevServicesProcessor {
 
         public String getReactiveUrl() {
             return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
+        }
+
+        @Override
+        public boolean isReusable() {
+            return StartableContainer.isContainerReusable(this);
         }
 
         @Override

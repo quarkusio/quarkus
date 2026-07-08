@@ -10,4 +10,8 @@ public interface Startable extends Closeable {
     // This starts to couple to containers, so we could move it to sub-interface and use that in dev services
     String getContainerId();
 
+    default boolean isReusable() {
+        return false;
+    }
+
 }

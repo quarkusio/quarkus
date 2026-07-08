@@ -228,7 +228,8 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 allDevServicesOverrideConfigs.putAll(overrideConfig);
 
                 RunningService service = new RunningService(request.getName(), request.getDescription(),
-                        new HashMap<>(currentDevServiceConfig), overrideConfig, startable.getContainerId(), startable);
+                        new HashMap<>(currentDevServiceConfig), overrideConfig, startable.getContainerId(), startable,
+                        startable.isReusable());
 
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()

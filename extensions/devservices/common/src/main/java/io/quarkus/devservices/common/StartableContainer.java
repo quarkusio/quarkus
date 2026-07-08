@@ -2,7 +2,6 @@ package io.quarkus.devservices.common;
 
 import java.util.function.Function;
 
-import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
@@ -14,8 +13,6 @@ import io.quarkus.deployment.builditem.Startable;
  * @param <T> the type of the container
  */
 public class StartableContainer<T extends GenericContainer<?>> implements Startable {
-
-    private static final Logger LOG = Logger.getLogger(StartableContainer.class);
 
     private final T container;
     private final Function<T, String> connectionInfoFunction;
@@ -53,11 +50,16 @@ public class StartableContainer<T extends GenericContainer<?>> implements Starta
 
     @Override
     public void close() {
-        if (TestcontainersConfiguration.getInstance().environmentSupportsReuse()
-                && container.isShouldBeReused()) {
-            LOG.infof("Not stopping Dev Services container %s as reuse is enabled", container.getContainerId());
-            return;
-        }
         container.close();
+    }
+
+    @Override
+    public boolean isReusable() {
+        return isContainerReusable(container);
+    }
+
+    public static boolean isContainerReusable(GenericContainer<?> container) {
+        return TestcontainersConfiguration.getInstance().environmentSupportsReuse()
+                && container.isShouldBeReused();
     }
 }

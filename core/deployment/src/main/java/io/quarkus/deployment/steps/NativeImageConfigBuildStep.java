@@ -6,10 +6,10 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
@@ -20,7 +20,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 //TODO: this should go away, once we decide on which one of the API's we want
 class NativeImageConfigBuildStep {
@@ -28,9 +28,8 @@ class NativeImageConfigBuildStep {
     private static final Logger log = Logger.getLogger(NativeImageConfigBuildStep.class);
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void build(NativeConfig nativeConfig,
-            SslContextConfigurationRecorder sslContextConfigurationRecorder,
+    void build(ActionBuilder action,
+            NativeConfig nativeConfig,
             List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
@@ -57,7 +56,10 @@ class NativeImageConfigBuildStep {
 
         // For now, we enable SSL native if it hasn't been explicitly disabled
         // it's probably overly conservative but it's a first step in the right direction
-        sslContextConfigurationRecorder.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
+        boolean enableSslNative = !sslNativeConfig.isExplicitlyDisabled();
+        action.forService("io.quarkus.ssl.native-config")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> SslContextConfiguration.setSslNativeEnabled(enableSslNative));
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));

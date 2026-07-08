@@ -31,7 +31,10 @@ import java.lang.annotation.Target;
  * {@code io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)} mechanism
  * - arrays, lists and maps of the above
  *
+ * @deprecated Use {@code ActionBuilder} instead. Define runtime behavior directly as lambdas
+ *             via the {@code ActionBuilder} fluent API injected into {@code @BuildStep} methods.
  */
+//@Deprecated(since = "4.0")
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Recorder {

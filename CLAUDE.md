@@ -25,3 +25,5 @@ guidance before starting work:
   when preparing a pull request, writing commit messages, or choosing labels.
 - **Building docs** — Read `.agents/skills/building-docs/SKILL.md`
   when building, previewing, or testing documentation changes locally.
+- **Converting recorders to services** — Read `.agents/skills/converting-recorders-to-services/SKILL.md`
+  when converting extensions from `@Record`/`@Recorder` to `ActionBuilder` services.

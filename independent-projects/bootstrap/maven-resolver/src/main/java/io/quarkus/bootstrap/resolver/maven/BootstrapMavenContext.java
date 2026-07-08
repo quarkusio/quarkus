@@ -939,6 +939,30 @@ public class BootstrapMavenContext {
         if (settingsDecrypter == null) {
             settingsDecrypter = factory.getContainer().requireBean(SettingsDecrypter.class);
         }
+        ensureHttpTransportClassesInitialized();
+    }
+
+    /**
+     * Eagerly triggers class initialization of Apache HttpClient SSL classes that are
+     * used by maven-resolver-transport-http's GlobalState.getConnectionManager().
+     * <p>
+     * GlobalState uses ConcurrentHashMap.computeIfAbsent() to lazily create connection
+     * managers, and the mapping function triggers first-time class initialization of
+     * SSLConnectionSocketFactory → AbstractVerifier → commons-logging Class.forName().
+     * Under parallel resolution, multiple threads entering computeIfAbsent() concurrently
+     * can deadlock: one thread holds the CHM bin lock while blocked on a HotSpot
+     * class-initialization lock held by another thread that is blocked on the same bin lock.
+     * <p>
+     * Pre-loading these classes on a single thread eliminates the race.
+     *
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/55317">quarkusio/quarkus#55317</a>
+     */
+    private static void ensureHttpTransportClassesInitialized() {
+        try {
+            Class.forName("org.apache.http.conn.ssl.SSLConnectionSocketFactory", true, RepositorySystem.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            // transport-http not on the classpath — nothing to pre-initialize
+        }
     }
 
     protected MavenFactory configureMavenFactory() {

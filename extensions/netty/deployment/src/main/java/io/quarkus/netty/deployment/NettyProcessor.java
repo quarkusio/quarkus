@@ -359,6 +359,15 @@ class NettyProcessor {
             log.debug("Not registering Netty QUIC classes as they were not found");
         }
 
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.core.net.impl.quic.QuicEndpointImpl")) {
+            // Vert.x's QuicEndpointImpl caches an EnumMap keyed by the (runtime-initialized) Netty
+            // QuicCongestionControlAlgorithm enum; unless this class is also runtime initialized, that map gets
+            // folded into the image heap at build time, which conflicts with the enum's runtime initialization.
+            builder.addRuntimeInitializedClass("io.vertx.core.net.impl.quic.QuicEndpointImpl");
+        } else {
+            log.debug("Not registering Vert.x QUIC classes as they were not found");
+        }
+
         // tcnative is handled via RuntimeInitializedPackageBuildItem in a separate build step
 
         // Runtime initialize due to platform dependent initialization and to respect the run-time provided value of the

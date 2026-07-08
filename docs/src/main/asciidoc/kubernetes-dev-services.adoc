@@ -70,6 +70,58 @@ If `api-version` is not set, the latest version for the given flavor will be use
 
 Once the cluster is configured, you can access it easily as you normally would, for example, by injecting a client instance in your test.
 
+== Accessing the cluster from `@QuarkusIntegrationTest`
+
+In a `@QuarkusIntegrationTest` (including native tests), the tested artifact runs in a separate process, so a `KubernetesClient` can't be obtained through CDI injection like in a `@QuarkusTest`. Instead, build one from the Dev Services connection properties exposed through `io.quarkus.test.common.DevServicesContext`.
+
+The `quarkus-kubernetes-client-test-utils` artifact provides a helper for this:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client-test-utils</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Declare a `KubernetesClientDevServicesTestHelper` field on your test class - Quarkus automatically injects the Dev Services connection properties into it, the same way it does for a plain `DevServicesContext` field:
+
+[source, java]
+----
+import io.quarkus.kubernetes.client.test.utils.KubernetesClientDevServicesTestHelper;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+
+@QuarkusIntegrationTest
+class MyResourceIT extends MyResourceTest {
+
+    final KubernetesClientDevServicesTestHelper k8s = new KubernetesClientDevServicesTestHelper();
+
+    @BeforeEach
+    void setUpClient() {
+        client = k8s.getClient();
+    }
+}
+----
+
+WARNING: If `MyResourceIT` extends a `@QuarkusTest` class (as above, to reuse its test methods), that base class must **not** use `@Inject` to populate the `client` field. `@QuarkusIntegrationTest` scans the whole class hierarchy for `@Inject` fields and fails fast if it finds one, since there is no CDI container to satisfy it in a separate-process test. Use a plain field instead, and look it up with `Arc.container().select(KubernetesClient.class).get()` in the base class's own `@BeforeEach`:
++
+[source, java]
+----
+@QuarkusTest
+class MyResourceTest {
+
+    protected KubernetesClient client;
+
+    @BeforeEach
+    void setUpClient() {
+        client = Arc.container().select(KubernetesClient.class).get();
+    }
+}
+----
++
+The subclass's `setUpClient()` above then overrides this one (same name and signature), so only the Dev Services variant runs under `@QuarkusIntegrationTest`.
+
 == Applying manifests to the cluster
 Within Quarkus it is possible to apply Kubernetes manifests to the cluster dev service on startup. This is especially useful if your application expects certain resources to be present in the cluster, such as for example a specific namespace or certain Custom Resource Definitions that the application interacts with.
 

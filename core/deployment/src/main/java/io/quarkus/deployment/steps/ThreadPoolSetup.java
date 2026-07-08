@@ -1,7 +1,10 @@
 package io.quarkus.deployment.steps;
 
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -20,14 +23,17 @@ public class ThreadPoolSetup {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
+    public ExecutorBuildItem createExecutor(ActionBuilder action, ExecutorRecorder recorder,
+            ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<ThreadFactoryBuildItem> threadFactoryBuildItem,
             Optional<ContextHandlerBuildItem> contextBuildItem) {
-        return new ExecutorBuildItem(
-                recorder.setupRunTime(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode(),
-                        threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null),
-                        contextBuildItem.map(ContextHandlerBuildItem::contextHandler).orElse(null)));
+        ScheduledExecutorService proxy = recorder.setupRunTime(shutdownContextBuildItem,
+                launchModeBuildItem.getLaunchMode(),
+                threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null),
+                contextBuildItem.map(ContextHandlerBuildItem::contextHandler).orElse(null));
+        action.aliasRecorderValue(ScheduledExecutorService.class, proxy, Phase.INFRASTRUCTURE);
+        return new ExecutorBuildItem(proxy);
     }
 
     @BuildStep

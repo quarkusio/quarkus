@@ -370,10 +370,11 @@ quarkus.lambda.mock-event-server.enabled=false
 
 === Mock Lambda environment variables
 
-In dev and test mode, Quarkus provides defaults for common AWS Lambda reserved environment variables
-such as `AWS_LAMBDA_FUNCTION_NAME`, `AWS_LAMBDA_FUNCTION_VERSION`, and `AWS_LAMBDA_FUNCTION_MEMORY_SIZE`.
-These values are available through the Lambda `Context` API and, in dev mode, through `System.getenv()`.
-On AWS, the real environment variables always take precedence.
+In dev mode, Quarkus sets defaults for common AWS Lambda reserved environment variables
+such as `AWS_LAMBDA_FUNCTION_NAME`, `AWS_LAMBDA_FUNCTION_VERSION`, and `AWS_LAMBDA_FUNCTION_MEMORY_SIZE`
+in the forked dev mode process. These values are available through `System.getenv()` and the Lambda `Context` API.
+On AWS, the real environment variables always take precedence. Existing shell environment variables are not
+overwritten.
 
 By default, the mock function name is derived from the application artifact id. You can override the mock
 environment with:

@@ -1,10 +1,7 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 
 final class MockLambdaEnvironment {
 
@@ -49,16 +46,6 @@ final class MockLambdaEnvironment {
                 buildSystemProperties.getOrDefault("quarkus.lambda.mock-environment.function-memory-size", "128"),
                 logGroupName,
                 buildSystemProperties.getOrDefault("quarkus.lambda.mock-environment.log-stream-name", "local/dev"));
-    }
-
-    static Map<String, String> toRuntimeConfig(Values values) {
-        Map<String, String> config = new LinkedHashMap<>();
-        config.put(AmazonLambdaApi.INTERNAL_FUNCTION_NAME, values.functionName());
-        config.put(AmazonLambdaApi.INTERNAL_FUNCTION_VERSION, values.functionVersion());
-        config.put(AmazonLambdaApi.INTERNAL_FUNCTION_MEMORY_SIZE, values.functionMemorySize());
-        config.put(AmazonLambdaApi.INTERNAL_LOG_GROUP_NAME, values.logGroupName());
-        config.put(AmazonLambdaApi.INTERNAL_LOG_STREAM_NAME, values.logStreamName());
-        return config;
     }
 
     static Map<String, String> toEnvironmentVariables(Values values) {

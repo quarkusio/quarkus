@@ -3,6 +3,7 @@ package io.quarkus.amazon.lambda.runtime;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.LaunchMode;
@@ -22,6 +23,13 @@ public class AmazonLambdaApi {
 
     // Test API
     public static final String QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API = "quarkus-internal.aws-lambda.test-api";
+
+    // Mock Lambda environment (dev/test mode)
+    public static final String INTERNAL_FUNCTION_NAME = "quarkus-internal.aws-lambda.function-name";
+    public static final String INTERNAL_FUNCTION_VERSION = "quarkus-internal.aws-lambda.function-version";
+    public static final String INTERNAL_FUNCTION_MEMORY_SIZE = "quarkus-internal.aws-lambda.function-memory-size";
+    public static final String INTERNAL_LOG_GROUP_NAME = "quarkus-internal.aws-lambda.log-group-name";
+    public static final String INTERNAL_LOG_STREAM_NAME = "quarkus-internal.aws-lambda.log-stream-name";
 
     // API paths
     public static final String API_PROTOCOL = "http://";
@@ -64,23 +72,23 @@ public class AmazonLambdaApi {
     }
 
     static String logGroupName() {
-        return System.getenv("AWS_LAMBDA_LOG_GROUP_NAME");
+        return envOrInternalConfig("AWS_LAMBDA_LOG_GROUP_NAME", INTERNAL_LOG_GROUP_NAME);
     }
 
     static String functionMemorySize() {
-        return System.getenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE");
+        return envOrInternalConfig("AWS_LAMBDA_FUNCTION_MEMORY_SIZE", INTERNAL_FUNCTION_MEMORY_SIZE);
     }
 
     static String logStreamName() {
-        return System.getenv("AWS_LAMBDA_LOG_STREAM_NAME");
+        return envOrInternalConfig("AWS_LAMBDA_LOG_STREAM_NAME", INTERNAL_LOG_STREAM_NAME);
     }
 
     static String functionName() {
-        return System.getenv("AWS_LAMBDA_FUNCTION_NAME");
+        return envOrInternalConfig("AWS_LAMBDA_FUNCTION_NAME", INTERNAL_FUNCTION_NAME);
     }
 
     static String functionVersion() {
-        return System.getenv("AWS_LAMBDA_FUNCTION_VERSION");
+        return envOrInternalConfig("AWS_LAMBDA_FUNCTION_VERSION", INTERNAL_FUNCTION_VERSION);
     }
 
     public static boolean isTestMode() {
@@ -95,6 +103,20 @@ public class AmazonLambdaApi {
             return testApi.get();
         }
         return System.getenv("AWS_LAMBDA_RUNTIME_API");
+    }
+
+    private static String envOrInternalConfig(String envVarName, String internalConfigKey) {
+        String env = System.getenv(envVarName);
+        if (env != null) {
+            return env;
+        }
+        if (!isTestMode()) {
+            return null;
+        }
+        Config config = ConfigProvider.getConfig();
+        return config.getOptionalValue(envVarName, String.class)
+                .or(() -> config.getOptionalValue(internalConfigKey, String.class))
+                .orElse(null);
     }
 
 }

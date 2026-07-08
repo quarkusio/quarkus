@@ -38,6 +38,7 @@ public class DevModeContext implements Serializable {
     private final List<ModuleInfo> additionalModules = new ArrayList<>();
     private final Map<String, String> systemProperties = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
+    private final Map<String, String> launcherEnvironmentVariables = new HashMap<>();
     private String sourceEncoding;
 
     private final List<URL> additionalClassPathElements = new ArrayList<>();
@@ -104,6 +105,10 @@ public class DevModeContext implements Serializable {
 
     public Map<String, String> getBuildSystemProperties() {
         return buildSystemProperties;
+    }
+
+    public Map<String, String> getLauncherEnvironmentVariables() {
+        return launcherEnvironmentVariables;
     }
 
     public String getSourceEncoding() {

@@ -29,3 +29,5 @@ guidance before starting work:
   when removing code that has been deprecated for over 12 months, adding
   `@Deprecated` annotations that were missed on companions of a deprecated
   element, or applying a new deprecation the user requests.
+- **Converting recorders to services** — Read `.agents/skills/converting-recorders-to-services/SKILL.md`
+  when converting extensions from `@Record`/`@Recorder` to `ActionBuilder` services.

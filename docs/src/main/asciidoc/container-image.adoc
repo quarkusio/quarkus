@@ -146,6 +146,7 @@ Use either the `quarkus-container-image-docker` or `quarkus-container-image-podm
 For example, building multi-platform images is implemented differently for Docker and Podman. Docker uses https://docs.docker.com/engine/reference/commandline/buildx_build/[the buildx plugin] whereas Podman can build multi-platform images https://docs.podman.io/en/latest/markdown/podman-build.1.html#platform-os-arch-variant[natively]. Because of this, you would need to use the specific extension to perform that function.
 ====
 
+[[s2i]]
 [[openshift]]
 === OpenShift
 

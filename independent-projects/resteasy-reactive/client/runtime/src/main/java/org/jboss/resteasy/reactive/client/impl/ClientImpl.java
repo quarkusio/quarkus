@@ -113,7 +113,8 @@ public class ClientImpl implements Client {
             ClientLogger clientLogger, String userAgent,
             String tlsConfigName,
             List<Consumer<HttpClientRequest>> clientRequestCustomizers,
-            boolean http3) {
+            boolean http3,
+            String domainSocketPath) {
         this.userAgent = userAgent;
         this.tlsConfigName = tlsConfigName;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
@@ -236,7 +237,8 @@ public class ClientImpl implements Client {
                 loggingScope,
                 clientContext.getMultipartResponsesData(),
                 clientLogger,
-                clientRequestCustomizers);
+                clientRequestCustomizers,
+                domainSocketPath);
     }
 
     public HttpClient getVertxHttpClient() {

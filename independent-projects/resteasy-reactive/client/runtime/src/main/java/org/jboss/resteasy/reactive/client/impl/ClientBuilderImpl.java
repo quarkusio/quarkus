@@ -93,6 +93,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private MultiQueryParamMode multiQueryParamMode;
 
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
+    private String domainSocketPath;
 
     private Boolean enableCompression;
     private Integer http2UpgradeMaxContentLength;
@@ -365,7 +366,8 @@ public class ClientBuilderImpl extends ClientBuilder {
                 loggingScope,
                 clientLogger, userAgent, tlsConfig != null ? tlsConfig.getName().orElse(null) : null,
                 clientRequestCustomizers,
-                http3);
+                http3,
+                domainSocketPath);
 
     }
 
@@ -543,6 +545,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl setUserAgent(String userAgent) {
         this.userAgent = userAgent;
+        return this;
+    }
+
+    public ClientBuilderImpl domainSocket(String path) {
+        this.domainSocketPath = path;
         return this;
     }
 

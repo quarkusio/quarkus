@@ -89,6 +89,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureShared(builder);
         configureLogging(builder);
         configureCustomProperties(builder);
+        configureDomainSocket(builder);
         configureClientOptionsCustomizer(builder);
     }
 
@@ -449,6 +450,10 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
+    }
+
+    private void configureDomainSocket(QuarkusRestClientBuilder builder) {
+        restClientConfig.domainSocket().ifPresent(builder::domainSocket);
     }
 
     private void configureClientOptionsCustomizer(QuarkusRestClientBuilder builder) {

@@ -13,4 +13,9 @@ public interface LambdaBuildConfig {
      * in dev mode and test mode
      */
     MockEventServerBuildConfig mockEventServer();
+
+    /**
+     * Configuration for mock AWS Lambda environment variables in dev and test mode.
+     */
+    MockLambdaEnvironmentBuildConfig mockEnvironment();
 }

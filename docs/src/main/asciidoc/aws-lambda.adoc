@@ -368,6 +368,25 @@ To turn off the mock event server:
 quarkus.lambda.mock-event-server.enabled=false
 ----
 
+=== Mock Lambda environment variables
+
+In dev and test mode, Quarkus provides defaults for common AWS Lambda reserved environment variables
+such as `AWS_LAMBDA_FUNCTION_NAME`, `AWS_LAMBDA_FUNCTION_VERSION`, and `AWS_LAMBDA_FUNCTION_MEMORY_SIZE`.
+These values are available through the Lambda `Context` API and, in dev mode, through `System.getenv()`.
+On AWS, the real environment variables always take precedence.
+
+By default, the mock function name is derived from the application artifact id. You can override the mock
+environment with:
+
+[source, subs=attributes+]
+----
+quarkus.lambda.mock-environment.function-name=my-function
+quarkus.lambda.mock-environment.function-version=$LATEST
+quarkus.lambda.mock-environment.function-memory-size=128
+quarkus.lambda.mock-environment.log-group-name=/aws/lambda/my-function
+quarkus.lambda.mock-environment.log-stream-name=local/dev
+----
+
 
 == Testing with the SAM CLI
 If you do not want to use the mock event server, you can test your lambdas with SAM CLI.

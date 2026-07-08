@@ -12,7 +12,12 @@ import io.quarkus.deployment.recording.BytecodeRecorderImpl;
  * without introducing new dependencies from build steps
  * that use the recorder to build steps that create the constant value.
  * This can be useful in complex dependency graphs.
+ *
+ * @deprecated Extension authors should use {@code ActionBuilder} instead of producing
+ *             this item directly. The bytecode recorder infrastructure is being replaced
+ *             by a lambda-based service mechanism.
  */
+@Deprecated(since = "4.0")
 public final class BytecodeRecorderConstantDefinitionBuildItem extends MultiBuildItem {
 
     private final Holder<?> holder;

@@ -6,7 +6,7 @@ import io.quarkus.deployment.recording.ObjectLoader;
 /**
  * @deprecated This class is intended only for internal use.
  */
-@Deprecated(forRemoval = true)
+@Deprecated(since = "4.0", forRemoval = true)
 public final class BytecodeRecorderObjectLoaderBuildItem extends MultiBuildItem {
     private final ObjectLoader objectLoader;
 

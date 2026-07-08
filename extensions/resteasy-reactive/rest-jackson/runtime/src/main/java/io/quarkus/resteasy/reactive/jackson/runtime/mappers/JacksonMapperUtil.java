@@ -2,10 +2,17 @@ package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -20,11 +27,13 @@ import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 
 import io.quarkus.arc.Arc;
@@ -34,6 +43,25 @@ import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigE
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class JacksonMapperUtil {
+
+    private static final Method VISIBILITY_TEST_METHOD;
+    static {
+        try {
+            VISIBILITY_TEST_METHOD = Object.class.getMethod("getClass");
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean isPublicGetterVisible(SerializerProvider provider) {
+        return provider.getConfig().getDefaultVisibilityChecker()
+                .isGetterVisible(VISIBILITY_TEST_METHOD);
+    }
+
+    public static boolean isPublicIsGetterVisible(SerializerProvider provider) {
+        return provider.getConfig().getDefaultVisibilityChecker()
+                .isIsGetterVisible(VISIBILITY_TEST_METHOD);
+    }
 
     public static void serializeFormattedDate(Object value, String pattern, String timezone,
             JsonGenerator generator) throws IOException {
@@ -46,6 +74,19 @@ public class JacksonMapperUtil {
             sdf.setTimeZone(TimeZone.getTimeZone(timezone));
         }
         generator.writeString(sdf.format(value));
+    }
+
+    public static void serializeFormattedTemporal(Object value, String pattern, String timezone,
+            JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        if (timezone != null) {
+            formatter = formatter.withZone(ZoneId.of(timezone));
+        }
+        generator.writeString(formatter.format((TemporalAccessor) value));
     }
 
     public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {
@@ -237,7 +278,8 @@ public class JacksonMapperUtil {
     }
 
     public static void serializeUnwrapped(Object value, JsonGenerator generator,
-            SerializerProvider serializerProvider, Set<String> ignoredProperties) throws IOException {
+            SerializerProvider serializerProvider, Set<String> ignoredProperties,
+            String prefix, String suffix) throws IOException {
         if (value == null) {
             return;
         }
@@ -249,12 +291,42 @@ public class JacksonMapperUtil {
                 }
             }, TokenFilter.Inclusion.INCLUDE_ALL_AND_PATH, true);
         }
+        boolean hasTransform = !prefix.isEmpty() || !suffix.isEmpty();
+        if (hasTransform) {
+            generator = new PrefixSuffixGeneratorDelegate(generator, prefix, suffix);
+        }
         JsonSerializer<Object> serializer = serializerProvider.findValueSerializer(value.getClass());
         if (serializer instanceof GeneratedSerializer gs) {
             gs.serializeContent(value, generator, serializerProvider);
         } else {
-            serializer.unwrappingSerializer(NameTransformer.NOP)
+            NameTransformer transformer = hasTransform
+                    ? NameTransformer.simpleTransformer(prefix, suffix)
+                    : NameTransformer.NOP;
+            serializer.unwrappingSerializer(transformer)
                     .serialize(value, generator, serializerProvider);
+        }
+    }
+
+    public static void collectUnwrappedFields(JsonNode root, String fieldName, String prefix, String suffix) {
+        if (!(root instanceof ObjectNode objectNode)) {
+            return;
+        }
+        ObjectNode inner = objectNode.objectNode();
+        List<String> toRemove = new ArrayList<>();
+        Iterator<String> names = objectNode.fieldNames();
+        while (names.hasNext()) {
+            String name = names.next();
+            if (name.startsWith(prefix) && name.endsWith(suffix)) {
+                String stripped = name.substring(prefix.length(), name.length() - suffix.length());
+                if (!stripped.isEmpty()) {
+                    inner.set(stripped, objectNode.get(name));
+                    toRemove.add(name);
+                }
+            }
+        }
+        if (!inner.isEmpty()) {
+            toRemove.forEach(objectNode::remove);
+            objectNode.set(fieldName, inner);
         }
     }
 

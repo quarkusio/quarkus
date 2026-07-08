@@ -603,6 +603,18 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("date", Matchers.is("2025-06-15"));
     }
 
+    // --- @JsonFormat with ZonedDateTime ---
+
+    @Test
+    public void testFormatZonedDateTimePatternSerialization() {
+        RestAssured.get("/generated/zoned-date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("zoned-date-test"))
+                .body("dateTime", Matchers.is("2024-03-13T10:05:01.000Z"));
+    }
+
     // --- @JsonFormat ---
 
     @Test
@@ -764,6 +776,63 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("'ROUND-0.2'", Matchers.is(5))
                 .body("normal_name", Matchers.is("hello"));
+    }
+
+    // --- @JsonProperty renames field ---
+
+    @Test
+    public void testJsonPropertyRenameSerialization() {
+        RestAssured.get("/generated/json-property-rename")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Alice"))
+                .body(not(containsString("\"field\"")));
+    }
+
+    @Test
+    public void testJsonPropertyRenameRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"Bob\"}")
+                .when()
+                .post("/generated/json-property-rename")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bob"))
+                .body(not(containsString("\"field\"")));
+    }
+
+    // --- @JsonUnwrapped with prefix ---
+
+    @Test
+    public void testUnwrappedWithPrefixSerialization() {
+        RestAssured.get("/generated/unwrapped-prefix")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("orderId", Matchers.is("ORD-001"))
+                .body("billing_city", Matchers.is("Rome"))
+                .body("billing_zip", Matchers.is("00100"))
+                .body("$", not(hasKey("billingAddress")))
+                .body("$", not(hasKey("city")))
+                .body("$", not(hasKey("zip")));
+    }
+
+    @Test
+    public void testUnwrappedWithPrefixDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"orderId\":\"ORD-001\",\"billing_city\":\"Rome\",\"billing_zip\":\"00100\"}")
+                .when()
+                .post("/generated/unwrapped-prefix")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("orderId", Matchers.is("ORD-001"))
+                .body("billing_city", Matchers.is("Rome"))
+                .body("billing_zip", Matchers.is("00100"));
     }
 
     // --- @JsonRawValue ---

@@ -44,6 +44,7 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
                                     DateFormatBean.class,
+                                    ZonedDateTimeFormatBean.class,
                                     FormatShape.class,
                                     FormatBean.class,
                                     GetterSetterBean.class,
@@ -54,8 +55,11 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     RawValueBean.class,
                                     PackageProtectedBean.class,
                                     SpecialCharPropertyBean.class,
+                                    TestWithJsonPropertyDto.class,
                                     UnwrappedIgnorePropertiesBean.class,
-                                    UnwrappedIgnorePropertiesBean.User.class)
+                                    UnwrappedIgnorePropertiesBean.User.class,
+                                    UnwrappedWithPrefixBean.class,
+                                    UnwrappedWithPrefixBean.Address.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),

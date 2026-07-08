@@ -123,6 +123,7 @@ import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.ParametrizedTypeEntry;
 import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Scalars;
 import io.smallrye.graphql.schema.model.Schema;
@@ -651,11 +652,9 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getAllReferenceClasses(Reference reference) {
         Set<String> classes = new HashSet<>();
         classes.add(reference.getClassName());
-        if (reference.getClassParametrizedTypes() != null && !reference.getClassParametrizedTypes().isEmpty()) {
-
-            Collection<Reference> parametrized = reference.getClassParametrizedTypes().values();
-            for (Reference r : parametrized) {
-                classes.addAll(getAllReferenceClasses(r));
+        if (reference.hasParametrizedTypes()) {
+            for (ParametrizedTypeEntry entry : reference.getParametrizedTypes().values()) {
+                classes.addAll(getAllReferenceClasses(entry.getReference()));
             }
         }
         return classes;

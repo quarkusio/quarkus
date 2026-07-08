@@ -822,7 +822,7 @@ Or, if you need to customise the endpoints:
 
 === CSRF considerations
 
-If you use the endpoints provided by Quarkus, they will not be protected by xdoc:security-csrf-prevention.adoc[CSRF], but
+If you use the endpoints provided by Quarkus, they will not be protected by xref:security-csrf-prevention.adoc[CSRF], but
 if you define your own endpoints and use this JavaScript library to access them you will need to configure CSRF via headers:
 
 [source,javascript]

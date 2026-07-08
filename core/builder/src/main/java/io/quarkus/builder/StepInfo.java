@@ -8,13 +8,15 @@ final class StepInfo {
     private final Set<StepInfo> dependents;
     private final Set<ItemId> consumes;
     private final Set<ItemId> produces;
+    private final Set<ItemId> allProduces;
     private final int ordinal;
 
-    StepInfo(BuildStep buildStep, Set<ItemId> consumes, Set<ItemId> produces, int dependencies, Set<StepInfo> dependents,
-            int ordinal) {
+    StepInfo(BuildStep buildStep, Set<ItemId> consumes, Set<ItemId> produces, Set<ItemId> allProduces,
+            int dependencies, Set<StepInfo> dependents, int ordinal) {
         this.buildStep = buildStep;
         this.consumes = consumes;
         this.produces = produces;
+        this.allProduces = allProduces;
         this.dependencies = dependencies;
         this.dependents = dependents;
         this.ordinal = ordinal;
@@ -38,6 +40,16 @@ final class StepInfo {
 
     Set<ItemId> getProduces() {
         return produces;
+    }
+
+    /**
+     * Get all items this step produces, including order-only items
+     * (from {@code @Produce} annotations / {@code beforeConsume} calls).
+     *
+     * @return the full produces set
+     */
+    Set<ItemId> getAllProduces() {
+        return allProduces;
     }
 
     /**

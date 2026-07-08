@@ -62,7 +62,7 @@ public class UnusedExclusionTest {
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder));
+                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder, context.getStepId()));
                     }
                 }).consumes(BeanContainerBuildItem.class).produces(StaticBytecodeRecorderBuildItem.class).build();
             }

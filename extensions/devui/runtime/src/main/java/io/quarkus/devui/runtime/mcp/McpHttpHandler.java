@@ -33,11 +33,6 @@ public class McpHttpHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext ctx) {
         McpServerConfiguration mcpServerConfiguration = CDI.current().select(McpServerConfiguration.class).get();
         if (mcpServerConfiguration.isEnabled()) {
-            // TODO:
-            // Servers MUST validate the Origin header on all incoming connections to prevent DNS rebinding attacks
-            // When running locally, servers SHOULD bind only to localhost (127.0.0.1) rather than all network interfaces (0.0.0.0)
-            // Servers SHOULD implement proper authentication for all connections
-
             //The client MUST use HTTP POST to send JSON-RPC messages to the MCP endpoint.
             //The client MUST include an Accept header, listing both application/json and text/event-stream as supported content types.
             // The body of the POST request MUST be a single JSON-RPC request, notification, or response.

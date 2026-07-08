@@ -294,6 +294,27 @@ public interface ServerBuilderCustomizer<T extends ServerBuilder<T>> {
 }
 ----
 
+=== Domain Socket
+
+The gRPC server uses the Quarkus HTTP server, so you can configure it to listen on a Unix domain socket using the standard HTTP configuration properties:
+
+[source,properties]
+----
+quarkus.http.domain-socket-enabled=true
+quarkus.http.domain-socket=/var/run/grpc.sock
+----
+
+When a domain socket is enabled, the gRPC server automatically accepts gRPC requests on it — no gRPC-specific configuration is required.
+
+To listen *only* on the domain socket (disabling TCP), set:
+
+[source,properties]
+----
+quarkus.http.host-enabled=false
+----
+
+NOTE: Unix domain sockets require JDK 16+ and are not available on Windows. Native transport (`quarkus.vertx.native-transport`) is not required.
+
 == Server Interceptors
 
 gRPC server interceptors let you perform logic, such as authentication, before your service is invoked.

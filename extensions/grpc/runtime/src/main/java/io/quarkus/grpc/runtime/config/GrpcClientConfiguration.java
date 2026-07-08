@@ -37,6 +37,22 @@ public interface GrpcClientConfiguration {
     String host();
 
     /**
+     * The path to a Unix domain socket. When set, the client connects to the gRPC server
+     * using a Unix domain socket instead of a TCP connection. The {@code host} and {@code port}
+     * properties are ignored in this case.
+     * <p>
+     * Unix domain sockets are not available on Windows.
+     */
+    Optional<String> domainSocket();
+
+    /**
+     * The HTTP/2 {@code :authority} pseudo-header value used when connecting via a Unix domain socket.
+     * This is only used when {@code domain-socket} is set.
+     */
+    @WithDefault("localhost")
+    String domainSocketAuthority();
+
+    /**
      * The name of the TLS configuration to use.
      * <p>
      * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.

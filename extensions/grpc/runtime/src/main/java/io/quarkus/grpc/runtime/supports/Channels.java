@@ -115,6 +115,11 @@ public class Channels {
         String nameResolver = clientConfig.nameResolver();
 
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
+        boolean useDomainSocket = clientConfig.domainSocket().isPresent();
+        if (useDomainSocket && stork) {
+            throw new IllegalArgumentException(
+                    "gRPC client '" + name + "' cannot use both domain-socket and Stork name resolver");
+        }
 
         String[] resolverSplit = nameResolver.split(":");
         String resolver = resolverSplit[0];
@@ -217,13 +222,22 @@ public class Channels {
                 options);
 
         Channel channel;
+        String authority;
         if (stork) {
             ManagedExecutor executor = container.instance(ManagedExecutor.class).get();
-            channel = new StorkGrpcChannel(client, clientConfig.host(), clientConfig.stork(), executor); // host = service-name
+            channel = new StorkGrpcChannel(client, clientConfig.host(), clientConfig.stork(), executor);
+            authority = host + ":" + port;
+            LOGGER.debugf("Target for client '%s': %s (stork)", name, host);
+        } else if (useDomainSocket) {
+            String socketPath = clientConfig.domainSocket().get();
+            authority = clientConfig.domainSocketAuthority();
+            channel = new GrpcIoClientChannel(client, new DomainSocketAddressWithAuthority(socketPath, authority));
+            LOGGER.debugf("Target for client '%s': unix:%s", name, socketPath);
         } else {
             channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+            authority = host + ":" + port;
+            LOGGER.debugf("Target for client '%s': %s", name, authority);
         }
-        LOGGER.debugf("Target for client '%s': %s", name, host + ":" + port);
 
         List<ClientInterceptor> interceptors = new ArrayList<>();
         interceptors.addAll(interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors));
@@ -232,7 +246,7 @@ public class Channels {
         LOGGER.debug("Creating Vert.x gRPC channel ...");
 
         return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors),
-                host + ":" + port);
+                authority);
 
     }
 
@@ -329,6 +343,71 @@ public class Channels {
         @Override
         public String authority() {
             return authority;
+        }
+    }
+
+    private static class DomainSocketAddressWithAuthority implements SocketAddress {
+
+        private final String path;
+        private final String authority;
+
+        DomainSocketAddressWithAuthority(String path, String authority) {
+            this.path = path;
+            this.authority = authority;
+        }
+
+        @Override
+        public boolean isDomainSocket() {
+            return true;
+        }
+
+        @Override
+        public String path() {
+            return path;
+        }
+
+        @Override
+        public String host() {
+            return authority;
+        }
+
+        @Override
+        public String hostName() {
+            return authority;
+        }
+
+        @Override
+        public int port() {
+            return 0;
+        }
+
+        @Override
+        public boolean isInetSocket() {
+            return false;
+        }
+
+        @Override
+        public String hostAddress() {
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return path;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof DomainSocketAddressWithAuthority that))
+                return false;
+            return path.equals(that.path) && authority.equals(that.authority);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * path.hashCode() + authority.hashCode();
         }
     }
 }

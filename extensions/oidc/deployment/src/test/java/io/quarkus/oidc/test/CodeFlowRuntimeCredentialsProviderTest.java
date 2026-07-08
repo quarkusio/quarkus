@@ -90,7 +90,7 @@ public class CodeFlowRuntimeCredentialsProviderTest {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(false,
                                 TestRecorder.class.getSimpleName(), "createRuntimeSecretProvider",
                                 "" + TestRecorder.class.hashCode(), true);
-                        context.produce(new MainBytecodeRecorderBuildItem(bytecodeRecorder));
+                        context.produce(new MainBytecodeRecorderBuildItem(bytecodeRecorder, context.getStepId()));
 
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);

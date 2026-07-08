@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
@@ -24,11 +25,12 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -36,9 +38,9 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.websockets.client.runtime.DisableLoggingFeature;
+import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebsocketCoreRecorder;
 import io.undertow.websockets.DefaultContainerConfigurator;
 import io.undertow.websockets.ServerWebSocketContainer;
@@ -79,9 +81,8 @@ public class WebsocketClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     public ServerWebSocketContainerBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            WebsocketCoreRecorder recorder,
+            ActionBuilder action,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
             BeanContainerBuildItem beanContainerBuildItem,
@@ -129,18 +130,44 @@ public class WebsocketClientProcessor {
                 ReflectiveClassBuildItem.builder(ClientEndpointConfig.Configurator.class.getName()).methods().fields()
                         .build());
 
-        RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints, config,
-                websocketConfig.maxFrameSize(),
-                websocketConfig.dispatchToWorker());
-        infoBuildItemBuildProducer.produce(new WebSocketDeploymentInfoBuildItem(deploymentInfo));
-        RuntimeValue<ServerWebSocketContainer> serverContainer = recorder.createServerContainer(
-                beanContainerBuildItem.getValue(),
-                deploymentInfo,
-                factoryBuildItem.map(ServerWebSocketContainerFactoryBuildItem::getFactory).orElse(null));
+        // extract build-time config values into locals (BUILD_TIME config cannot be captured directly)
+        int maxFrameSize = websocketConfig.maxFrameSize();
+        boolean dispatchToWorker = websocketConfig.dispatchToWorker();
+
+        // convert annotated/endpoints/config to immutable sets for lambda capture
+        Set<String> capturedAnnotated = Set.copyOf(annotated);
+        Set<String> capturedEndpoints = Set.copyOf(endpoints);
+        Set<String> capturedConfig = Set.copyOf(config);
+
+        action
+                .forService(WebSocketDeploymentInfo.class)
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> WebsocketCoreRecorder.createDeploymentInfo(
+                        capturedAnnotated, capturedEndpoints, capturedConfig,
+                        maxFrameSize, dispatchToWorker));
+        infoBuildItemBuildProducer.produce(new WebSocketDeploymentInfoBuildItem());
+
+        // if the server module didn't register a factory, register the default
+        if (factoryBuildItem.isEmpty()) {
+            action
+                    .forService(ServerWebSocketContainerFactory.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .action(ctx -> (ServerWebSocketContainerFactory) ServerWebSocketContainer::new);
+        }
+
+        action
+                .forService(ServerWebSocketContainer.class)
+                .atPhase(Phase.STATIC_INIT)
+                .require(WebSocketDeploymentInfo.class)
+                .require(ServerWebSocketContainerFactory.class)
+                .require(BeanContainer.class)
+                .action((ctx, info, factory, beanContainer) -> WebsocketCoreRecorder.createServerContainer(beanContainer, info,
+                        factory));
+
         servletContextAttributeBuildItemBuildProducer
-                .produce(new ServletContextAttributeBuildItem(ServerContainer.class.getName(), serverContainer));
-        return new ServerWebSocketContainerBuildItem(
-                serverContainer);
+                .produce(new ServletContextAttributeBuildItem(ServerContainer.class.getName(),
+                        action.staticInitServiceAsRuntimeValue(ServerWebSocketContainer.class)));
+        return new ServerWebSocketContainerBuildItem();
     }
 
     public static void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,
@@ -166,9 +193,11 @@ public class WebsocketClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem setupWorker(WebsocketCoreRecorder recorder, ExecutorBuildItem exec) {
-        recorder.setupWorker(exec.getExecutorProxy());
+    ServiceStartBuildItem setupWorker(ActionBuilder action, ExecutorBuildItem exec) {
+        action
+                .forService("io.quarkus.websocket.worker-setup")
+                .require(ScheduledExecutorService.class)
+                .action((ctx, executor) -> WebsocketCoreRecorder.setupWorker(executor));
         return new ServiceStartBuildItem("Websockets");
     }
 

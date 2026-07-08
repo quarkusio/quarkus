@@ -13,8 +13,6 @@ import jakarta.websocket.Extension;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebSocketPrincipal;
@@ -31,14 +29,16 @@ import io.vertx.core.Handler;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
-@Recorder
 public class WebsocketServerRecorder {
 
     private static final Logger log = Logger.getLogger(WebsocketCoreRecorder.class);
 
-    public Handler<RoutingContext> createHandler(RuntimeValue<WebSocketDeploymentInfo> info,
-            RuntimeValue<ServerWebSocketContainer> container) throws DeploymentException {
-        return new VertxWebSocketHandler(container.getValue(), info.getValue()) {
+    private WebsocketServerRecorder() {
+    }
+
+    public static Handler<RoutingContext> createHandler(WebSocketDeploymentInfo info,
+            ServerWebSocketContainer container) throws DeploymentException {
+        return new VertxWebSocketHandler(container, info) {
             @Override
             protected VertxWebSocketHttpExchange createHttpExchange(RoutingContext event) {
                 return new QuarkusVertxWebSocketHttpExchange(executor, event);
@@ -46,7 +46,7 @@ public class WebsocketServerRecorder {
         };
     }
 
-    public ServerWebSocketContainerFactory createFactory() {
+    public static ServerWebSocketContainerFactory createFactory() {
         return new ServerWebSocketContainerFactory() {
             @Override
             public ServerWebSocketContainer create(ObjectIntrospecter objectIntrospecter, ClassLoader classLoader,

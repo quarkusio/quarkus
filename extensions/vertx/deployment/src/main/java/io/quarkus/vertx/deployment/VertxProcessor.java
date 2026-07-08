@@ -20,6 +20,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -37,10 +38,12 @@ import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.spi.NonBlockingProvider;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -65,6 +68,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInfo;
+import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
 import io.quarkus.vertx.runtime.VertxNonBlockingProvider;
 import io.quarkus.vertx.runtime.VertxProducer;
@@ -133,11 +137,15 @@ class VertxProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
-            VertxBuildConfig buildConfig, VertxEventBusConsumerRecorder recorder) {
+            VertxBuildConfig buildConfig, ActionBuilder action) {
         if (buildConfig.customizeArcContext()) {
-            currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
+            action
+                    .forService(CurrentContextFactory.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .action(ctx -> new VertxCurrentContextFactory());
+            currentContextFactory.produce(new CurrentContextFactoryBuildItem(
+                    action.staticInitServiceAsRuntimeValue(CurrentContextFactory.class)));
         }
     }
 

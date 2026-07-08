@@ -217,6 +217,34 @@ Don't forget to replace it with the name you used in the `@GrpcClient` annotatio
 
 IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
 
+=== Domain Socket
+
+To connect a gRPC client to a server listening on a Unix domain socket, set the `domain-socket` property to the socket path:
+
+[source,properties]
+----
+quarkus.grpc.clients.hello.domain-socket=/var/run/grpc.sock
+----
+
+When `domain-socket` is set, the `host` and `port` properties are ignored. The client connects directly to the specified socket file.
+
+Here is a full example with both the server and client configured to use the same domain socket:
+
+[source,properties]
+----
+# Server: listen on domain socket only
+quarkus.http.domain-socket-enabled=true
+quarkus.http.domain-socket=/var/run/grpc.sock
+quarkus.http.host-enabled=false
+
+# Client: connect via domain socket
+quarkus.grpc.clients.hello.domain-socket=/var/run/grpc.sock
+----
+
+IMPORTANT: The Stork name resolver is incompatible with domain sockets. Setting both `domain-socket` and `name-resolver=stork` will result in a startup error.
+
+NOTE: Unix domain sockets require JDK 16+ and are not available on Windows.
+
 === Custom Channel building
 
 When Quarkus builds a gRPC Channel instance (the way gRPC clients communicate with gRPC services on a lower network level), users can apply their own Channel(Builder) customizers. The customizers are applied by `priority`, the higher the number the later customizer is applied. The customizers are applied before Quarkus applies user's client configuration; e.g. ideal for some initial defaults per all clients.

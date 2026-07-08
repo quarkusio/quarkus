@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -34,8 +35,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInitConfig;
 import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
@@ -71,9 +75,11 @@ import io.quarkus.arc.runtime.appcds.JvmStartupOptimizerArchiveRecorder;
 import io.quarkus.arc.runtime.context.ArcContextProvider;
 import io.quarkus.arc.shutdown.ArcShutdownListener;
 import io.quarkus.bootstrap.BootstrapDebug;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -90,7 +96,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -619,25 +624,67 @@ public class ArcProcessor {
     // PHASE 6 - initialize the container
     @BuildStep
     @Consume(ResourcesGeneratedPhaseBuildItem.class)
-    @Record(STATIC_INIT)
-    public ArcContainerBuildItem initializeContainer(ArcConfig config, ArcRecorder recorder,
-            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory,
-            LaunchModeBuildItem launchMode)
-            throws Exception {
-        ArcContainer container = recorder.initContainer(shutdown,
-                currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility(), launchMode.isTest());
-        return new ArcContainerBuildItem(container);
+    public void initializeContainer(ArcConfig config, ActionBuilder action,
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            LaunchModeBuildItem launchMode) {
+        boolean strictCompat = config.strictCompatibility();
+        boolean testMode = launchMode.isTest();
+        action
+                .forService(ArcContainer.class)
+                .atPhase(Phase.STATIC_INIT)
+                .afterBuildItem(ResourcesGeneratedPhaseBuildItem.class)
+                .after("io.quarkus.core.last-shutdown-tasks")
+                .request(CurrentContextFactory.class)
+                .action((ctx, factoryOpt) -> {
+                    ArcInitConfig.Builder b = ArcInitConfig.builder()
+                            .setCurrentContextFactory(factoryOpt.orElse(null))
+                            .setStrictCompatibility(strictCompat)
+                            .setTestMode(testMode);
+                    ArcContainer container = Arc.initialize(b.build());
+                    ctx.onStop(() -> {
+                        try {
+                            Arc.shutdown();
+                        } finally {
+                            // Synthetic bean providers must stay available for the whole of bean destruction
+                            // (destroyers / @PreDestroy callbacks may resolve synthetic beans), so tear them
+                            // down only now, after the container has been fully destroyed.
+                            ArcRecorder.clearSyntheticBeans();
+                        }
+                    });
+                    return container;
+                });
+    }
+
+    @BuildStep
+    // Ordered after the bean deployment is fully processed (as the ArcContainer service is), so that
+    // BeanContainerBuildItem and everything else derived from PreBeanContainerBuildItem are only available
+    // once bean registration has completed, which downstream consumers of BeanContainerBuildItem rely upon.
+    @Consume(ResourcesGeneratedPhaseBuildItem.class)
+    public PreBeanContainerBuildItem createBeanContainer(ActionBuilder action) {
+        // BeanContainer is a static-init service wrapping the ArcContainer service. This replaces the
+        // former recorder-created-and-aliased value, so consumers can require(BeanContainer.class) and
+        // its value flows through the service graph.
+        action
+                .forService(BeanContainer.class)
+                .atPhase(Phase.STATIC_INIT)
+                .require(ArcContainer.class)
+                .action((ctx, container) -> ArcRecorder.createBeanContainer(container));
+        // Hand out a bare recorder proxy for legacy consumers: the listener-firing step below,
+        // PreBeanContainerBuildItem consumers, and the downstream BeanContainerBuildItem recorders.
+        // For a static-init service, getRecorderProxy also retains the value across the phase boundary.
+        return new PreBeanContainerBuildItem(action.getRecorderProxy(BeanContainer.class));
     }
 
     @BuildStep
     @Record(STATIC_INIT)
-    public PreBeanContainerBuildItem notifyBeanContainerListeners(ArcContainerBuildItem container,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder) throws Exception {
-        BeanContainer beanContainer = recorder.initBeanContainer(container.getContainer(),
+    public void notifyBeanContainerListeners(PreBeanContainerBuildItem preBeanContainer,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder) {
+        // Fire any BeanContainerListeners contributed by extensions that still use the legacy build item.
+        // Consuming PreBeanContainerBuildItem orders this recorder step after the BeanContainer service
+        // (which produces that item), so the recorder proxy resolves to the initialized container at runtime.
+        recorder.fireBeanContainerListeners(preBeanContainer.getValue(),
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
-        return new PreBeanContainerBuildItem(beanContainer);
     }
 
     @Record(RUNTIME_INIT)
@@ -660,9 +707,12 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    @Record(value = RUNTIME_INIT)
-    void setupExecutor(ExecutorBuildItem executor, ArcRecorder recorder) {
-        recorder.initExecutor(executor.getExecutorProxy());
+    void setupExecutor(ExecutorBuildItem executor, ActionBuilder action) {
+        action
+                .forService("io.quarkus.arc.executor")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(ScheduledExecutorService.class)
+                .action((ctx, exec) -> Arc.setExecutor(exec));
     }
 
     @BuildStep

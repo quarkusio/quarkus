@@ -706,6 +706,115 @@ match the value of `quarkus.test.profile.tags`.
 * `quarkus.test.profile.tags=test2,test3`: In this case only `MultipleTagsTest` will be run because `MultipleTagsTest` is the only `QuarkusTestProfile` implementation whose `tags` method
 matches the value of `quarkus.test.profile.tags`.
 
+== Conditional test execution based on application configuration
+
+Quarkus provides `@EnabledIfConfig` and `@DisabledIfConfig` annotations to conditionally enable or disable tests based on application configuration.
+These work similarly to JUnit's https://docs.junit.org/6.1.2/writing-tests/conditional-test-execution.html[`@EnabledIfSystemProperty` and `@DisabledIfSystemProperty`], but resolve values through the full MicroProfile Config system.
+This means that any registered `ConfigSource` is consulted, including `application.properties`, system properties, environment variables, and any custom config sources.
+
+Both annotations accept the following attributes:
+
+* `named` — the configuration key to look up
+* `matches` — a regular expression to match against the resolved value
+* `disabledReason` (optional) — a custom reason to display when the test is skipped
+
+=== `@EnabledIfConfig`
+
+`@EnabledIfConfig` enables a test only when the specified configuration key exists and its value matches the given regular expression.
+If the key is not defined, the test is **disabled**.
+
+[source,java]
+----
+@QuarkusTest
+@EnabledIfConfig(named = "my.feature.enabled", matches = "true") <1>
+public class FeatureEnabledTest {
+
+    @Test
+    public void testFeature() {
+        // runs only when my.feature.enabled=true
+    }
+}
+----
+<1> The test class is enabled only when `my.feature.enabled` resolves to `true`.
+
+You can also apply the annotation to individual methods:
+
+[source,java]
+----
+@QuarkusTest
+public class MixedTest {
+
+    @Test
+    @EnabledIfConfig(named = "db.type", matches = "postgresql")
+    public void postgresOnly() {
+        // runs only when db.type=postgresql
+    }
+
+    @Test
+    public void alwaysRuns() {
+        // runs regardless of configuration
+    }
+}
+----
+
+=== `@DisabledIfConfig`
+
+`@DisabledIfConfig` disables a test when the specified configuration key exists and its value matches the given regular expression.
+If the key is not defined, the test remains **enabled**.
+
+[source,java]
+----
+@QuarkusTest
+@DisabledIfConfig(named = "ci.slow.tests.skip", matches = "true",
+    disabledReason = "Slow tests are skipped in this CI environment") <1>
+public class SlowTest {
+
+    @Test
+    public void longRunningTest() {
+        // skipped when ci.slow.tests.skip=true
+    }
+}
+----
+<1> The optional `disabledReason` provides context when the test is skipped.
+
+=== Repeatable annotations
+
+Both annotations are `@Repeatable` and can be stacked on the same class or method, but the evaluation semantics differ:
+
+* **Multiple `@EnabledIfConfig`**: the test is enabled only when **all** conditions match (AND semantics). If any single condition does not match, the test is disabled.
+* **Multiple `@DisabledIfConfig`**: the test is disabled when **any** condition matches (OR semantics). The first matching condition disables the test.
+
+[source,java]
+----
+@QuarkusTest
+@EnabledIfConfig(named = "db.type", matches = "postgresql")
+@EnabledIfConfig(named = "test.integration", matches = "true")
+public class PostgresIntegrationTest {
+
+    @Test
+    public void test() {
+        // runs only when BOTH conditions are satisfied
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@DisabledIfConfig(named = "ci.skip.slow", matches = "true")
+@DisabledIfConfig(named = "ci.skip.db", matches = "true")
+public class SlowDatabaseTest {
+
+    @Test
+    public void test() {
+        // skipped if EITHER condition matches
+    }
+}
+----
+
+NOTE: These annotations are not `@Inherited`.
+If you need the same conditions on a subclass, redeclare the annotations on the subclass.
+
 == Nested Tests
 
 JUnit https://docs.junit.org/current/writing-tests/nested-tests.html[@Nested tests] are useful for structuring more complex test scenarios.

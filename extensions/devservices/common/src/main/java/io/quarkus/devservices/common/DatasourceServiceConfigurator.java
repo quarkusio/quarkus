@@ -2,9 +2,14 @@ package io.quarkus.devservices.common;
 
 import java.util.Map;
 
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider.RunningDevServicesDatasource;
 import io.quarkus.runtime.util.StringUtil;
 
 public interface DatasourceServiceConfigurator {
+
+    RunningDevServicesDatasource composeRunningService(ContainerAddress containerAddress,
+            DevServicesDatasourceContainerConfig containerConfig);
 
     default String getReactiveUrl(String jdbcUrl) {
         return jdbcUrl.replaceFirst("jdbc:", "vertx-reactive:");

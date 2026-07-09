@@ -141,6 +141,8 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.port", config.devservices().port());
             res.put(name + ".devservices.properties", config.devservices().properties());
             res.put(name + ".devservices.reuse", config.devservices().reuse());
+            res.put(name + ".devservices.shared", config.devservices().shared());
+            res.put(name + ".devservices.service-name", config.devservices().serviceName());
             res.put(name + ".devservices.username", config.devservices().username());
             res.put(name + ".devservices.volumes", config.devservices().volumes());
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
@@ -223,7 +225,10 @@ public class DevServicesDatasourceProcessor {
             String feature = devDbProvider.getFeature();
 
             DevServicesResultBuildItem buildItem = devDbProvider
-                    .findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
+                    .findRunningSharedDatasource(launchMode, containerConfig)
+                    .or(() -> devDbProvider
+                            .findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig,
+                                    composeProjectBuildItem))
                     .map(datasource -> DevServicesResultBuildItem.discovered().feature(feature).containerId(datasource.id())
                             .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, datasource))
                             .build())
@@ -414,6 +419,8 @@ public class DevServicesDatasourceProcessor {
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             String datasourceName,
             Set<DatabaseFeature> requiredFeatures) {
+        String serviceName = dataSourceBuildTimeConfig.devservices().serviceName()
+                .orElse(DataSourceUtil.isDefault(datasourceName) ? "default" : datasourceName);
         return new DevServicesDatasourceContainerConfig(
                 dataSourceBuildTimeConfig.devservices().imageName(),
                 dataSourceBuildTimeConfig.devservices().containerEnv(),
@@ -429,6 +436,8 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().volumes(),
                 dataSourceBuildTimeConfig.devservices().reuse(),
                 dataSourceBuildTimeConfig.devservices().showLogs(),
+                dataSourceBuildTimeConfig.devservices().shared(),
+                serviceName,
                 datasourceName,
                 requiredFeatures);
     }

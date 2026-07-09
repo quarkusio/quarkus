@@ -30,6 +30,11 @@ public interface DevServicesDatasourceProvider {
             boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
             DevServicesComposeProjectBuildItem composeProjectBuildItem);
 
+    default Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+            LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+        return Optional.empty();
+    }
+
     default boolean isDockerRequired() {
         return true;
     }

@@ -25,8 +25,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.SharedDatasourceLocator;
 import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
@@ -40,6 +42,10 @@ public class OracleDevServicesProcessor {
      */
     public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-xe";
     public static final int PORT = 1521;
+
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-oracle";
+    private static final ContainerLocator containerLocator = ContainerLocator.locateContainerWithLabels(PORT,
+            DEV_SERVICE_LABEL);
 
     private static final OracleDatasourceServiceConfigurator configurator = new OracleDatasourceServiceConfigurator();
 
@@ -100,7 +106,15 @@ public class OracleDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
+                SharedDatasourceLocator.configureSharedLabel(container, launchMode, DEV_SERVICE_LABEL, containerConfig);
+
                 return container;
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return SharedDatasourceLocator.locate(containerLocator, launchMode, containerConfig, configurator);
             }
 
             @Override

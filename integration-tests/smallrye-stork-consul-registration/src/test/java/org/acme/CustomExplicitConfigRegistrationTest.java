@@ -4,7 +4,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.util.Map;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -24,7 +23,6 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestProfile(CustomExplicitConfigRegistrationTest.CustomExplicitConfigProfile.class)
 @QuarkusTestResource(ConsulContainerWithFixedPortsTestResource.class)
-@Disabled("Require a Stork v3 update")
 public class CustomExplicitConfigRegistrationTest {
 
     public static class CustomExplicitConfigProfile implements QuarkusTestProfile {

@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.matchesPattern;
 
 import java.util.Map;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -26,7 +25,6 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestProfile(MultipleRegistrarsConfigRegistrationTest.MultipleConfigProfile.class)
 @QuarkusTestResource(ConsulContainerWithFixedPortsTestResource.class)
-@Disabled("Require a Stork v3 update")
 public class MultipleRegistrarsConfigRegistrationTest {
 
     public static class MultipleConfigProfile implements QuarkusTestProfile {

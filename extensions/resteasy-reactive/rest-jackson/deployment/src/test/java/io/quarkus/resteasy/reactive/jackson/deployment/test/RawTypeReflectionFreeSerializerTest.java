@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
 import java.util.List;
@@ -58,7 +59,7 @@ public class RawTypeReflectionFreeSerializerTest {
         RestAssured.get("/raw/set")
                 .then()
                 .statusCode(200)
-                .body("[0]", is("x"));
+                .body("$", containsInAnyOrder("x", "y"));
     }
 
     @Path("/raw")

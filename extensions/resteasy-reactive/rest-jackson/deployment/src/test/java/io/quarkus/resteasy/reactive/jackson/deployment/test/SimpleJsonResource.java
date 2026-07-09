@@ -752,6 +752,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return body;
     }
 
+    @POST
+    @Path("/final-collection")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public FinalCollectionHolder echoFinalCollection(FinalCollectionHolder holder) {
+        return holder;
+    }
+
     @GET
     @Path("/sensor-metadata")
     public SensorMetadata sensorMetadata() {

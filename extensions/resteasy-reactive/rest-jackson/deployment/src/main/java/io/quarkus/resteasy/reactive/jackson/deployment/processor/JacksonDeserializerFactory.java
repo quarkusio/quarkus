@@ -859,7 +859,37 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 } else {
                     bytecode.invokeVirtualMethod(setterMethod, objHandle, valueHandle);
                 }
+            } else if (fieldSpecs.methodInfo != null && fieldSpecs.methodInfo.parametersCount() == 0) {
+                writeValueViaGetterAsSetter(objHandle, fieldSpecs, bytecode, valueHandle);
             }
+        }
+    }
+
+    private void writeValueViaGetterAsSetter(ResultHandle objHandle, FieldSpecs fieldSpecs,
+            BytecodeCreator bytecode, ResultHandle valueHandle) {
+        String typeName = fieldSpecs.fieldType.name().toString();
+        boolean isCollection = isAssignableTo(typeName, COLLECTION_NAME);
+        boolean isMap = !isCollection && isAssignableTo(typeName, MAP_NAME);
+        if (!isCollection && !isMap) {
+            return;
+        }
+
+        BytecodeCreator valueNotNull = bytecode.ifNotNull(valueHandle).trueBranch();
+        ResultHandle existingValue;
+        if (fieldSpecs.methodInfo.declaringClass().isInterface()) {
+            existingValue = valueNotNull.invokeInterfaceMethod(fieldSpecs.methodInfo, objHandle);
+        } else {
+            existingValue = valueNotNull.invokeVirtualMethod(fieldSpecs.methodInfo, objHandle);
+        }
+        BytecodeCreator existingNotNull = valueNotNull.ifNotNull(existingValue).trueBranch();
+        if (isCollection) {
+            existingNotNull.invokeInterfaceMethod(
+                    ofMethod(Collection.class, "addAll", boolean.class, Collection.class),
+                    existingValue, valueHandle);
+        } else {
+            existingNotNull.invokeInterfaceMethod(
+                    ofMethod(Map.class, "putAll", void.class, Map.class),
+                    existingValue, valueHandle);
         }
     }
 

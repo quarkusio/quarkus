@@ -62,7 +62,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
@@ -386,7 +385,6 @@ public class ResteasyReactiveJacksonProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SynthesisFinishedBuildItem.class)
     public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
             Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {

@@ -62,8 +62,11 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devjsonrpc.deployment.DeploymentMethodBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
+import io.quarkus.devjsonrpc.spi.jsonrpc.DeploymentJsonRpcMethod;
+import io.quarkus.devjsonrpc.spi.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.deployment.extension.Extension;
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
@@ -71,8 +74,6 @@ import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeData;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
-import io.quarkus.devui.spi.buildtime.jsonrpc.DeploymentJsonRpcMethod;
-import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.spi.page.AbstractPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -547,7 +548,7 @@ public class BuildTimeContentProcessor {
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
             DevUIConfig devUIConfig) {
 
-        BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
+        BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevBuildItem.DEV_UI);
 
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);

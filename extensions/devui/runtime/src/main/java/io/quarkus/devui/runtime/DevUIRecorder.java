@@ -15,20 +15,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.enterprise.inject.spi.CDI;
-
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devui.runtime.comms.JsonRpcRouter;
+import io.quarkus.devjsonrpc.runtime.DevJsonRpcRecorder;
+import io.quarkus.devjsonrpc.runtime.comms.JsonRpcRouter;
+import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonTypeAdapter;
+import io.quarkus.devmcp.runtime.McpBuildTimeData;
 import io.quarkus.devui.runtime.js.DevUIWebSocketHandler;
-import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
-import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
-import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
-import io.quarkus.devui.runtime.mcp.McpHttpHandler;
-import io.quarkus.devui.runtime.spi.McpServerConfiguration;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
@@ -42,34 +39,15 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class DevUIRecorder {
     private static final Logger LOG = Logger.getLogger(DevUIRecorder.class);
-    public static final String DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY = "dev-ui-databind-codec-builder";
 
-    public void shutdownTask(ShutdownContext shutdownContext, String devUIBasePath) {
-        shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(devUIBasePath));
-    }
-
-    public void createJsonRpcRouter(BeanContainer beanContainer,
-            Map<String, JsonRpcMethod> runtimeMethods,
-            Map<String, JsonRpcMethod> runtimeSubscriptions,
-            Map<String, JsonRpcMethod> deploymentMethods,
-            Map<String, JsonRpcMethod> deploymentSubscriptions,
-            Map<String, JsonRpcMethod> recordedMethods,
-            Map<String, JsonRpcMethod> recordedSubscriptions) {
-
+    public void initializeJsonRpcCodec(BeanContainer beanContainer) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.populateJsonRpcEndpoints(runtimeMethods, runtimeSubscriptions, deploymentMethods, deploymentSubscriptions,
-                recordedMethods, recordedSubscriptions);
-
-        jsonRpcRouter.initializeCodec(createJsonMapper());
+        jsonRpcRouter.initializeCodec(createVertxJsonMapper());
     }
 
-    private JsonMapper createJsonMapper() {
-        // We use a codec defined in the deployment module
-        // because that module always has access to Jackson-Databind regardless of the application dependencies.
+    public static JsonMapper createVertxJsonMapper() {
         JsonMapper.Factory factory = JsonMapper.Factory.deploymentLinker().createLink(
-                DevConsoleManager.getGlobal(DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
-        // We need to pass some information so that the mapper, who lives in the deployment classloader,
-        // knows how to deal with JsonObject/JsonArray/JsonBuffer, who live in the runtime classloader.
+                DevConsoleManager.getGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
         return factory.create(new JsonTypeAdapter<>(JsonObject.class, JsonObject::getMap, JsonObject::new),
                 new JsonTypeAdapter<>(JsonArray.class, JsonArray::getList, JsonArray::new),
                 new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()), text -> {
@@ -81,19 +59,12 @@ public class DevUIRecorder {
                 }));
     }
 
+    public void shutdownTask(ShutdownContext shutdownContext, String devUIBasePath) {
+        shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(devUIBasePath));
+    }
+
     public Handler<RoutingContext> devUIWebSocketHandler() {
         return new DevUIWebSocketHandler();
-    }
-
-    public void logDevMcpEndpoint(String path) {
-        McpServerConfiguration config = CDI.current().select(McpServerConfiguration.class).get();
-        if (config.isEnabled()) {
-            LOG.infof("Dev MCP available at: %s", path);
-        }
-    }
-
-    public Handler<RoutingContext> mcpStreamableHTTPHandler(String quarkusVersion) {
-        return new McpHttpHandler(quarkusVersion, createJsonMapper());
     }
 
     public Handler<RoutingContext> uiHandler(String finalDestination,
@@ -114,6 +85,10 @@ public class DevUIRecorder {
             Map<String, String> contentTypes) {
         DevUIBuildTimeStaticService buildTimeStaticService = beanContainer.beanInstance(DevUIBuildTimeStaticService.class);
         buildTimeStaticService.addData(basePath, urlAndPath, descriptions, mcpDefaultEnabled, contentTypes);
+
+        McpBuildTimeData mcpBuildTimeData = beanContainer
+                .beanInstance(McpBuildTimeData.class);
+        mcpBuildTimeData.addData(urlAndPath, descriptions, mcpDefaultEnabled, contentTypes);
 
         return new DevUIBuildTimeStaticHandler();
     }

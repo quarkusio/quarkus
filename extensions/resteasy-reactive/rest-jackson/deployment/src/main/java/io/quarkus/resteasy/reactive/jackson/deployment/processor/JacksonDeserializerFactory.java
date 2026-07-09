@@ -797,6 +797,10 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             return readValueForPrimitiveFields(bytecode, fieldType, valueNode);
         }
 
+        if (hasJsonTypeInfoInTypeChain(fieldType)) {
+            return null;
+        }
+
         FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
             case TYPE_VARIABLE -> {

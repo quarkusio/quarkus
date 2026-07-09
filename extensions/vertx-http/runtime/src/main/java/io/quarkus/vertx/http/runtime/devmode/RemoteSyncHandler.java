@@ -253,7 +253,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     private void handleDelete(HttpServerRequest event) {
         if (checkSession(event, event.path().getBytes(StandardCharsets.UTF_8)))
             return;
-        hotReplacementContext.updateFile(stripRootPath(event.path()), null);
+        hotReplacementContext.deleteFile(stripRootPath(event.path()));
         event.response().end();
     }
 

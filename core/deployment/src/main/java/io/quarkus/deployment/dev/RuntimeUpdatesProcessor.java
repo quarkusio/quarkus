@@ -148,7 +148,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
             BiFunction<String, byte[], byte[]> classTransformers,
             TestSupport testSupport, AtomicReference<Throwable> deploymentProblem) {
-        this.applicationRoot = applicationRoot;
+        this.applicationRoot = applicationRoot != null ? applicationRoot.normalize() : null;
         this.context = context;
         this.compiler = compiler;
         this.devModeType = devModeType;
@@ -434,11 +434,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             file = file.substring(1);
         }
         try {
-            Path resolve = applicationRoot.resolve(file);
-            if (!Files.exists(resolve.getParent())) {
-                Files.createDirectories(resolve.getParent());
+            Path resolve = applicationRoot.resolve(file).normalize();
+            if (!resolve.startsWith(applicationRoot)) {
+                log.errorf("Path traversal attempt blocked: %s", file);
+                return;
             }
-            Files.write(resolve, data);
+            if (data != null) {
+                if (!Files.exists(resolve.getParent())) {
+                    Files.createDirectories(resolve.getParent());
+                }
+                Files.write(resolve, data);
+            } else {
+                Files.deleteIfExists(resolve);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

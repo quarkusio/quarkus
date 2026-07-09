@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -61,6 +62,18 @@ public class JacksonMapperUtil {
     public static boolean isPublicIsGetterVisible(SerializerProvider provider) {
         return provider.getConfig().getDefaultVisibilityChecker()
                 .isIsGetterVisible(VISIBILITY_TEST_METHOD);
+    }
+
+    public static void serializeBooleanAsNumber(boolean value, JsonGenerator generator) throws IOException {
+        generator.writeNumber(value ? 1 : 0);
+    }
+
+    public static void serializeDateAsTimestamp(Date value, JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        generator.writeNumber(value.getTime());
     }
 
     public static void serializeFormattedDate(Object value, String pattern, String timezone,

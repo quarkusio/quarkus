@@ -260,9 +260,9 @@ public abstract class JacksonCodeGenerator {
         }
     }
 
-    private static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
+    protected static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
     private static final DotName SET_NAME = DotName.createSimple(Set.class);
-    private static final DotName MAP_NAME = DotName.createSimple(Map.class);
+    protected static final DotName MAP_NAME = DotName.createSimple(Map.class);
 
     protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
@@ -295,7 +295,7 @@ public abstract class JacksonCodeGenerator {
         return FieldKind.OBJECT;
     }
 
-    private boolean isAssignableTo(String typeName, DotName targetName) {
+    protected boolean isAssignableTo(String typeName, DotName targetName) {
         if (typeName.equals(targetName.toString())) {
             return true;
         }

@@ -356,6 +356,64 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- FormatStringShapeBean: @JsonFormat(shape = STRING) on primitives ---
+
+    @GET
+    @Path("/format-string-shape")
+    public FormatStringShapeBean getFormatStringShape() {
+        FormatStringShapeBean bean = new FormatStringShapeBean();
+        bean.setName("string-shape");
+        bean.setCount(42);
+        bean.setScore(3.14);
+        bean.setActive(true);
+        bean.setBigNumber(123456789L);
+        return bean;
+    }
+
+    @POST
+    @Path("/format-string-shape")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatStringShapeBean echoFormatStringShape(FormatStringShapeBean bean) {
+        return bean;
+    }
+
+    // --- FormatNumberBooleanBean: @JsonFormat(shape = NUMBER) on boolean ---
+
+    @GET
+    @Path("/format-number-boolean")
+    public FormatNumberBooleanBean getFormatNumberBoolean() {
+        FormatNumberBooleanBean bean = new FormatNumberBooleanBean();
+        bean.setName("bool-as-number");
+        bean.setEnabled(true);
+        bean.setOptional(false);
+        return bean;
+    }
+
+    @POST
+    @Path("/format-number-boolean")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatNumberBooleanBean echoFormatNumberBoolean(FormatNumberBooleanBean bean) {
+        return bean;
+    }
+
+    // --- FormatDateTimestampBean: @JsonFormat(shape = NUMBER) on Date ---
+
+    @GET
+    @Path("/format-date-timestamp")
+    public FormatDateTimestampBean getFormatDateTimestamp() {
+        FormatDateTimestampBean bean = new FormatDateTimestampBean();
+        bean.setName("timestamp-test");
+        bean.setTimestamp(new Date(1750000000000L));
+        return bean;
+    }
+
+    @POST
+    @Path("/format-date-timestamp")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatDateTimestampBean echoFormatDateTimestamp(FormatDateTimestampBean bean) {
+        return bean;
+    }
+
     // --- GetterSetterBean: @JsonGetter + @JsonSetter ---
 
     @GET
@@ -492,6 +550,43 @@ public class GeneratedAnnotationResource {
     @Path("/special-char-property")
     @Consumes(MediaType.APPLICATION_JSON)
     public SpecialCharPropertyBean echoSpecialCharProperty(SpecialCharPropertyBean bean) {
+        return bean;
+    }
+
+    // --- FormatArrayShapeBean: @JsonFormat(shape = ARRAY) on class ---
+
+    @GET
+    @Path("/format-array-shape")
+    public FormatArrayShapeBean getFormatArrayShape() {
+        return new FormatArrayShapeBean(1.0, 2.0);
+    }
+
+    @POST
+    @Path("/format-array-shape")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatArrayShapeBean echoFormatArrayShape(FormatArrayShapeBean bean) {
+        return bean;
+    }
+
+    @POST
+    @Path("/format-array-shape-list")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<FormatArrayShapeBean> echoFormatArrayShapeList(List<FormatArrayShapeBean> list) {
+        return list;
+    }
+
+    // --- FormatArrayShapeNoOrderBean: @JsonFormat(shape = ARRAY) without @JsonPropertyOrder ---
+
+    @GET
+    @Path("/format-array-shape-no-order")
+    public FormatArrayShapeNoOrderBean getFormatArrayShapeNoOrder() {
+        return new FormatArrayShapeNoOrderBean("hello", 42);
+    }
+
+    @POST
+    @Path("/format-array-shape-no-order")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatArrayShapeNoOrderBean echoFormatArrayShapeNoOrder(FormatArrayShapeNoOrderBean bean) {
         return bean;
     }
 

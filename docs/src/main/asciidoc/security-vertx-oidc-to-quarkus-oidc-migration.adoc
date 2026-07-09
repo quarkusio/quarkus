@@ -41,7 +41,7 @@ https://how-to.vertx.io/web-and-oauth2-oidc/#create-a-project[Create the project
   
   <properties>
     <! ... --> 
-    <vertx.version>5.0.16</vertx.version>
+    <vertx.version>5.1.5</vertx.version>
     <main.verticle>howto.oauth_oidc.MainVerticle</main.verticle>
     <launcher.class>io.vertx.launcher.application.VertxApplication</launcher.class>
   </properties>

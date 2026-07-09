@@ -22,6 +22,8 @@ public interface HotReplacementContext {
 
     void updateFile(String file, byte[] data);
 
+    void deleteFile(String file);
+
     /**
      * If this is true then this is a dev mode test case, rather than a user actually using Quarkus.
      *

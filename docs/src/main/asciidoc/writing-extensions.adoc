@@ -740,6 +740,94 @@ public void produceServiceProviders(
 }
 ----
 
+[id='keyed-build-items']
+===== Keyed build items and per-key build steps
+
+When multiple extensions handle _named resources_ (e.g. datasources, persistence units, cache regions),
+build steps often follow the same loop-and-filter boilerplate: consume a full list of multi build items,
+iterate over unique names, and filter every list to the current name.
+
+A `@Key` parameter on a `@BuildStep` method eliminates this boilerplate.
+When a method has a `@Key`-annotated `String` parameter, the engine generates a synthetic
+build step that:
+
+1. Collects all keyed build items and discovers the set of unique key values.
+2. For each key value, injects the key value into the `@Key` parameter, filters every keyed list to matching items, and invokes the method.
+
+The `@io.quarkus.deployment.annotations.Key` annotation is placed on a `String` parameter.
+Its `value` attribute is any class that identifies this key dimension (e.g. `DataSource`, `SearchMapping`),
+grouping build items and build step methods into the same key family.
+Multi build items whose `@Key` has the same key type as the method parameter are filtered automatically;
+all other parameters (non-keyed multi lists, simple build items, producers) pass through unchanged.
+
+TIP: Methods without a `@Key` parameter in the same class remain regular (non-keyed) build steps.
+
+.Example of a keyed multi build item
+[source%nowrap,java]
+----
+public final class DataSourceConfiguredBuildItem extends MultiBuildItem {
+    @Key(DataSource.class)
+    private final String dataSourceName;
+    private final String url;
+
+    public DataSourceConfiguredBuildItem(String dataSourceName, String url) {
+        this.dataSourceName = dataSourceName;
+        this.url = url;
+    }
+
+    // getters...
+}
+----
+
+[source%nowrap,java]
+.Build step class *without* @Key: manual loop and filter
+----
+// Before: manual loop and filter
+@BuildStep
+void createBeans(List<DataSourceDefinedBuildItem> dataSources,
+        List<MigrationBuildItem> migrations,
+        BuildProducer<SyntheticBeanBuildItem> beans) {
+    for (DataSourceDefinedBuildItem dataSource : dataSources) {
+        String name = dataSource.getName();
+        List<MigrationBuildItem> filtered = new ArrayList<>();
+        for (MigrationBuildItem m : migrations) {
+            if (m.getDataSourceName().equals(name)) {
+                filtered.add(m);
+            }
+        }
+        // ... use name, item, and filtered
+    }
+}
+----
+
+[source%nowrap,java]
+.Build step class *with* @Key: implied loop and filter
+----
+class DataSourceProcessor {
+    @BuildStep
+    void createBeans(@Key(DataSource.class) String dataSourceName,
+            DataSourceDefinedBuildItem dataSource, // <1>
+            List<MigrationBuildItem> migrations, // <2>
+            BuildProducer<SyntheticBeanBuildItem> beans) {
+        // items and migrations are already filtered to this dataSourceName
+        // ... use dataSourceName, items, and migrations directly
+    }
+}
+----
+<1> If a keyed multi build item has exactly one instance per key value, you can declare it as a bare
+parameter instead of `List<>`. The engine will filter by key and inject the single matching item directly.
+<2> If a keyed multi build item may have more than one instance per key value, it must still be declared as a `List<>`.
+
+Only one `@Key` parameter per method and one `@Key` field per build item class is supported.
+The class may use `@BuildSteps(onlyIf = ...)` for conditional activation,
+and individual methods support `@Record`, `@Consume`, `@Produce`, and other standard annotations.
+
+If a per-key build step throws an exception for one key value, execution continues for the
+remaining keys.
+The first exception is rethrown after all keys have been processed, with any subsequent
+exceptions attached as suppressed exceptions.
+This ensures that all errors are reported together rather than stopping at the first failure.
+
 [id='empty-build-items']
 ===== Empty build items
 

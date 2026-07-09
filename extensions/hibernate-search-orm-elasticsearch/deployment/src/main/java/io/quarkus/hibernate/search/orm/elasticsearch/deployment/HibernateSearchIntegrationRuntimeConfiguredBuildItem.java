@@ -1,10 +1,14 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
+import org.hibernate.SessionFactory;
+
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.annotations.Key;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 
 public final class HibernateSearchIntegrationRuntimeConfiguredBuildItem extends MultiBuildItem {
     private final String integrationName;
+    @Key(SessionFactory.class)
     private final String persistenceUnitName;
     private final HibernateOrmIntegrationRuntimeInitListener initListener;
 

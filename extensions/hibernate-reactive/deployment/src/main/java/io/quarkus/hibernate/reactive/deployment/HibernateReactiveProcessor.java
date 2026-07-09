@@ -204,7 +204,10 @@ public final class HibernateReactiveProcessor {
                 ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
         boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
-        if (jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()) {
+        // Explicit reactive override, falling back to inference from the datasource kind.
+        boolean wantReactive = persistenceUnitConfig.reactive().enabled()
+                .orElse(!(jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()));
+        if (!wantReactive) {
             LOG.debugf("The datasource '%s' is only blocking, do not create this PU '%s' as reactive",
                     persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
             return;

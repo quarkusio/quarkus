@@ -1260,7 +1260,10 @@ public final class HibernateOrmProcessor {
                 ReactiveDataSourceBuildItem::getName,
                 ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
-        if (jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()) {
+        // Explicit jdbc override, falling back to inference from the datasource kind.
+        boolean wantJdbc = persistenceUnitConfig.jdbc().enabled()
+                .orElse(!(jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()));
+        if (!wantJdbc) {
             LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking",
                     persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
             return;

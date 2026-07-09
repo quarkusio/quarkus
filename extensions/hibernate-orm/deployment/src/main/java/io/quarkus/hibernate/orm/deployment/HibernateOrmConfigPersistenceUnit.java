@@ -178,6 +178,12 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitJdbc jdbc();
 
     /**
+     * Reactive related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitReactive reactive();
+
+    /**
      * Fetching logic configuration.
      */
     @ConfigDocSection
@@ -261,6 +267,7 @@ public interface HibernateOrmConfigPersistenceUnit {
                 query().isAnyPropertySet() ||
                 database().isAnyPropertySet() ||
                 jdbc().isAnyPropertySet() ||
+                reactive().isAnyPropertySet() ||
                 !cache().isEmpty() ||
                 !secondLevelCachingEnabled() ||
                 multitenant().isPresent() ||
@@ -678,6 +685,17 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitJdbc {
 
         /**
+         * Whether to bootstrap a blocking (JDBC) Hibernate ORM instance for this persistence unit.
+         * <p>
+         * If not set, this is inferred from whether a JDBC datasource is available for this persistence unit,
+         * as well as the global `quarkus.hibernate-orm.blocking` setting.
+         *
+         * @asciidoclet
+         */
+        @WithParentName
+        Optional<Boolean> enabled();
+
+        /**
          * The time zone pushed to the JDBC driver.
          *
          * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
@@ -695,7 +713,26 @@ public interface HibernateOrmConfigPersistenceUnit {
         OptionalInt statementBatchSize();
 
         default boolean isAnyPropertySet() {
-            return timezone().isPresent() || statementFetchSize().isPresent() || statementBatchSize().isPresent();
+            return enabled().isPresent() || timezone().isPresent() || statementFetchSize().isPresent()
+                    || statementBatchSize().isPresent();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitReactive {
+
+        /**
+         * Whether to bootstrap a reactive Hibernate Reactive instance for this persistence unit.
+         * <p>
+         * If not set, this is inferred from whether a reactive datasource is available for this persistence unit.
+         *
+         * @asciidoclet
+         */
+        @WithParentName
+        Optional<Boolean> enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled().isPresent();
         }
     }
 

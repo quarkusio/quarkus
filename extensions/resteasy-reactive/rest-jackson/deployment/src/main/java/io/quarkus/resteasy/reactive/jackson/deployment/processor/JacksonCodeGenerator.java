@@ -355,6 +355,23 @@ public abstract class JacksonCodeGenerator {
         return shape != null && "ARRAY".equals(shape.asEnum());
     }
 
+    private static final DotName JSON_TYPE_INFO = DotName.createSimple(JsonTypeInfo.class);
+
+    protected boolean hasJsonTypeInfoInTypeChain(Type type) {
+        ClassInfo classInfo = jandexIndex.getClassByName(type.name());
+        if (classInfo != null && classInfo.hasDeclaredAnnotation(JSON_TYPE_INFO)) {
+            return true;
+        }
+        if (type instanceof ParameterizedType pType) {
+            for (Type arg : pType.arguments()) {
+                if (hasJsonTypeInfoInTypeChain(arg)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
         String methodName = anyGetterMethod.name();
         if (methodName.startsWith("get") && methodName.length() > 3) {

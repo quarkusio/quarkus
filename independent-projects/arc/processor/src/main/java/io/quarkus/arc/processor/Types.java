@@ -104,16 +104,25 @@ public final class Types {
         }
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
         return getTypeHandle(creator, type, null);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
         return getTypeHandle(creator, type, tccl, null);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl, IndexView index) {
         AssignableResultHandle result = creator.createVariable(Object.class);
@@ -281,6 +290,9 @@ public final class Types {
         creator.assign(variable, parameterizedTypeHandle);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
@@ -289,6 +301,9 @@ public final class Types {
         typeVariables.patchReferences(creator);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {

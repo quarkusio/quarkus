@@ -151,6 +151,12 @@ public class AmazonLambdaRecorder {
         }
     }
 
+    public void startPollLoopIfDevOrTestOrExplicit(ShutdownContext context, LaunchMode launchMode) {
+        if (launchMode.isDevOrTest() || AmazonLambdaApi.isTestMode()) {
+            startPollLoop(context, launchMode);
+        }
+    }
+
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context, LaunchMode launchMode) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,

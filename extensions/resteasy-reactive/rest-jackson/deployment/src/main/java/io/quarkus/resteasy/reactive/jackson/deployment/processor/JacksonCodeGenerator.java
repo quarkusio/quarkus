@@ -346,6 +346,15 @@ public abstract class JacksonCodeGenerator {
         return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
     }
 
+    protected static boolean isClassFormatShapeArray(ClassInfo classInfo) {
+        AnnotationInstance format = classInfo.declaredAnnotation(DotName.createSimple(JsonFormat.class.getName()));
+        if (format == null) {
+            return false;
+        }
+        AnnotationValue shape = format.value("shape");
+        return shape != null && "ARRAY".equals(shape.asEnum());
+    }
+
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
         String methodName = anyGetterMethod.name();
         if (methodName.startsWith("get") && methodName.length() > 3) {
@@ -648,13 +657,17 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonRawValue.class.getName()) != null;
         }
 
-        boolean isFormatShapeNumber() {
+        String formatShape() {
             AnnotationInstance format = annotations.get(JsonFormat.class.getName());
             if (format == null) {
-                return false;
+                return null;
             }
             AnnotationValue shape = format.value("shape");
-            return shape != null && "NUMBER".equals(shape.asEnum());
+            return shape != null ? shape.asEnum() : null;
+        }
+
+        boolean isFormatShapeNumber() {
+            return "NUMBER".equals(formatShape());
         }
 
         String formatPattern() {

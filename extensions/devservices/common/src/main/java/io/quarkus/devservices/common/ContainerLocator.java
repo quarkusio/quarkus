@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
@@ -80,7 +81,7 @@ public class ContainerLocator {
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
                                     .map(port -> {
                                         final ContainerAddress containerAddress = new ContainerAddress(
-                                                container.getId(),
+                                                ContainerUtil.toRunningContainer(inspect(container.getId())),
                                                 DockerClientFactory.instance().dockerHostIpAddress(),
                                                 containerPort.getPublicPort());
                                         log.infof("Dev Services container found: %s (%s). Connecting to: %s.",
@@ -93,6 +94,10 @@ public class ContainerLocator {
         } else {
             return Optional.empty();
         }
+    }
+
+    private static InspectContainerResponse inspect(String containerId) {
+        return DockerClientFactory.lazyClient().inspectContainerCmd(containerId).exec();
     }
 
     /**

@@ -505,6 +505,7 @@ public abstract class JacksonCodeGenerator {
         final String jsonName;
         final boolean hasExplicitJsonName;
         final String[] aliases;
+        final boolean required;
         final Type fieldType;
 
         private final Map<String, AnnotationInstance> annotations = new HashMap<>();
@@ -539,6 +540,7 @@ public abstract class JacksonCodeGenerator {
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
         FieldSpecs(ClassInfo classInfo, MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
@@ -556,6 +558,7 @@ public abstract class JacksonCodeGenerator {
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
         private void readAnnotations(AnnotationTarget target) {
@@ -585,6 +588,17 @@ public abstract class JacksonCodeGenerator {
                 }
             }
             return EMPTY_STRING_ARRAY;
+        }
+
+        private boolean isRequired() {
+            AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty != null) {
+                AnnotationValue req = jsonProperty.value("required");
+                if (req != null) {
+                    return req.asBoolean();
+                }
+            }
+            return false;
         }
 
         private record JsonNameResult(String name, boolean explicit) {

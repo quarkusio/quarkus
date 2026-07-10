@@ -5,7 +5,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.elasticsearch.javaclient.runtime.ElasticsearchJavaClientProducer;
 
@@ -25,11 +24,6 @@ class ElasticsearchJavaClientProcessor {
     ServiceProviderBuildItem serviceProvider() {
         return new ServiceProviderBuildItem("jakarta.json.spi.JsonProvider",
                 "co.elastic.clients.json.jackson.JacksonJsonProvider");
-    }
-
-    @BuildStep
-    ReflectiveClassBuildItem jsonProvider() {
-        return ReflectiveClassBuildItem.builder("org.eclipse.parsson.JsonProviderImpl").build();
     }
 
     @BuildStep

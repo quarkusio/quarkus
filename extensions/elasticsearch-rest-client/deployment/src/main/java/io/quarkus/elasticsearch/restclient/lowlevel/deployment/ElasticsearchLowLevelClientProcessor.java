@@ -1,22 +1,53 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.deployment;
 
+import java.lang.annotation.Annotation;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
+
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.sniff.Sniffer;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientProcessorUtil;
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
-import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchRestClientProducer;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchLowLevelClientRecorder;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheckCondition;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.smallrye.common.annotation.Identifier;
 
 class ElasticsearchLowLevelClientProcessor {
 
-    private static final DotName ELASTICSEARCH_CLIENT_CONFIG = DotName.createSimple(ElasticsearchClientConfig.class.getName());
+    private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
+    private static final DotName ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION = DotName
+            .createSimple(ElasticsearchClientConfig.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -24,29 +55,230 @@ class ElasticsearchLowLevelClientProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem build() {
-        return AdditionalBeanBuildItem.unremovableOf(ElasticsearchRestClientProducer.class);
+    public void collectLowLevelClientReferences(
+            BeanRegistrationPhaseBuildItem registrationPhase,
+            ElasticsearchBuildTimeConfig config,
+            BuildProducer<ElasticsearchLowLevelClientReferenceBuildItem> references) {
+        Set<String> userProvidedClientNames = findUserProvidedRestClientNames(registrationPhase);
+
+        Set<String> clientNames = new HashSet<>();
+        for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(registrationPhase,
+                Set.of(REST_CLIENT))) {
+            if (userProvidedClientNames.contains(name)) {
+                continue;
+            }
+            clientNames.add(name);
+        }
+
+        // Discover client names from HttpClientConfigCallback beans
+        for (BeanInfo bean : registrationPhase.getContext().beans()
+                .withBeanType(RestClientBuilder.HttpClientConfigCallback.class)) {
+            String name = extractClientName(bean);
+            if (!userProvidedClientNames.contains(name)) {
+                clientNames.add(name);
+            }
+        }
+
+        // Because we may have not found some of the injections e.g. programmatic ones,
+        //  or the ones we add in synthetic beans, so we say that there should be at least some build-time prop
+        //  that we can work things out from.
+        // Skip the default entry that @WithDefaults always creates:
+        for (String clientName : config.clients().keySet()) {
+            if (!ElasticsearchClientBeanUtil.isDefault(clientName)
+                    && !userProvidedClientNames.contains(clientName)) {
+                clientNames.add(clientName);
+            }
+        }
+
+        // If no named client was found in injection points or configuration,
+        // assume the default client is needed
+        boolean hasNamedClient = clientNames.stream()
+                .anyMatch(n -> !ElasticsearchClientBeanUtil.isDefault(n));
+        if (!hasNamedClient) {
+            clientNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+        }
+
+        for (String name : clientNames) {
+            references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(name));
+        }
     }
 
+    private static Set<String> findUserProvidedRestClientNames(BeanRegistrationPhaseBuildItem registrationPhase) {
+        Set<String> names = new HashSet<>();
+        for (BeanInfo bean : registrationPhase.getContext().beans().withBeanType(RestClient.class)) {
+            if (bean.hasDefaultQualifiers()) {
+                names.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+            }
+            for (AnnotationInstance qualifier : bean.getQualifiers()) {
+                if (qualifier.name().equals(DotNames.IDENTIFIER)) {
+                    names.add(qualifier.value().asString());
+                }
+            }
+        }
+        return names;
+    }
+
+    @SuppressWarnings("removal")
     @BuildStep
     void elasticsearchClientConfigSupport(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         // add the @ElasticsearchClientConfig class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(ElasticsearchClientConfig.class).build());
 
+        // Keep @ElasticsearchClientConfig as bean-defining annotation for backward compatibility
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG, DotNames.APPLICATION_SCOPED, false));
+                .produce(new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION,
+                        DotNames.APPLICATION_SCOPED, false));
+
+        // Ensure HttpClientConfigCallback beans are not removed by ArC (they are only looked up programmatically)
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(RestClientBuilder.HttpClientConfigCallback.class));
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    ConfiguredElasticsearchLowLevelClientBuildItem generateElasticsearchBeans(
+            ElasticsearchLowLevelClientRecorder recorder,
+            ElasticsearchBuildTimeConfig config,
+            List<ElasticsearchLowLevelClientReferenceBuildItem> elasticsearchLowLevelClientReferenceBuildItems,
+            BuildProducer<SyntheticBeanBuildItem> producer,
+            Capabilities capabilities) {
+        boolean healthChecksPossible = capabilities.isPresent(Capability.SMALLRYE_HEALTH);
+
+        Set<String> clientNames = new HashSet<>();
+        for (ElasticsearchLowLevelClientReferenceBuildItem buildItem : elasticsearchLowLevelClientReferenceBuildItems) {
+            String clientName = buildItem.getName();
+            clientNames.add(clientName);
+            createRequiredBeans(clientName, recorder, config, producer, healthChecksPossible);
+        }
+
+        return new ConfiguredElasticsearchLowLevelClientBuildItem(clientNames);
+    }
+
+    private void createRequiredBeans(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            ElasticsearchBuildTimeConfig config, BuildProducer<SyntheticBeanBuildItem> producer, boolean healthChecksPossible) {
+        produceRestClientBean(clientName, recorder, producer);
+        produceRestClientSnifferBean(clientName, recorder, producer);
+        ElasticsearchLowLevelClientBuildTimeConfig clientConfig = config.clients().get(clientName);
+        if (healthChecksPossible && (clientConfig == null || clientConfig.healthEnabled())) {
+            produceHealthCheckBean(clientName, recorder, producer);
+        }
     }
 
     @BuildStep
-    HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
-                buildTimeConfig.healthEnabled());
+    public void devServices(
+            List<ElasticsearchLowLevelClientReferenceBuildItem> clients,
+            BuildProducer<DevservicesElasticsearchBuildItem> producer) {
+        for (ElasticsearchLowLevelClientReferenceBuildItem client : clients) {
+            producer.produce(new DevservicesElasticsearchBuildItem(client.getName(), hostConfigProperty(client.getName())));
+        }
+    }
+
+    private String hostConfigProperty(String clientName) {
+        if (ElasticsearchClientBeanUtil.isDefault(clientName)) {
+            return "quarkus.elasticsearch.hosts";
+        } else {
+            return "quarkus.elasticsearch.\"%s\".hosts".formatted(clientName);
+        }
     }
 
     @BuildStep
-    DevservicesElasticsearchBuildItem devServices() {
-        return new DevservicesElasticsearchBuildItem("quarkus.elasticsearch.hosts");
+    HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
+        boolean healthChecksPossible = capabilities.isPresent(Capability.SMALLRYE_HEALTH);
+        boolean atLeastOneHealthCheckEnabled = false;
+        for (ElasticsearchLowLevelClientBuildTimeConfig config : buildTimeConfig.clients().values()) {
+            if (config.healthEnabled()) {
+                atLeastOneHealthCheckEnabled = true;
+            }
+        }
+        if (healthChecksPossible) {
+            return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
+                    atLeastOneHealthCheckEnabled);
+        }
+        return null;
+    }
+
+    private void produceRestClientBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        producer.produce(createSyntheticBean(
+                clientName,
+                RestClient.class,
+                Singleton.class,
+                ElasticsearchClientBeanUtil.isDefault(clientName),
+                recorder.checkActiveRestClientSupplier(clientName))
+                .createWith(recorder.restClientSupplier(clientName))
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .done());
+    }
+
+    private void produceRestClientSnifferBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        producer.produce(createSyntheticBean(
+                clientName,
+                Sniffer.class,
+                Singleton.class,
+                ElasticsearchClientBeanUtil.isDefault(clientName),
+                recorder.checkActiveSnifferSupplier(clientName))
+                .createWith(recorder.restClientSnifferSupplier(clientName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(RestClient.class)), qualifier(clientName))
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .done());
+    }
+
+    private void produceHealthCheckBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        // Do not use defaultBean() for health check conditions — ArC's ambiguity resolution
+        // eliminates default beans when non-default beans of the same type exist,
+        // which would cause the default client's condition to not be returned when we ask for @All...
+        producer.produce(createSyntheticBean(
+                clientName,
+                ElasticsearchHealthCheckCondition.class,
+                ApplicationScoped.class,
+                false,
+                recorder.checkActiveHealthCheckSupplier(clientName))
+                .createWith(recorder.restClientHealthCheckConditionSupplier(clientName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(RestClient.class)), qualifier(clientName))
+                .done());
+    }
+
+    private static <T> SyntheticBeanBuildItem.ExtendedBeanConfigurator createSyntheticBean(String clientName,
+            Class<T> type,
+            Class<? extends Annotation> scope,
+            boolean defaultBean,
+            Supplier<ActiveResult> checkActiveSupplier) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(type)
+                .scope(scope)
+                .unremovable()
+                .setRuntimeInit()
+                .checkActive(checkActiveSupplier)
+                .startup();
+
+        if (defaultBean) {
+            configurator.defaultBean();
+            configurator.addQualifier(Default.class);
+        }
+
+        configurator.addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", clientName).done();
+
+        return configurator;
+    }
+
+    private static AnnotationInstance qualifier(String clientName) {
+        if (clientName == null || ElasticsearchClientBeanUtil.isDefault(clientName)) {
+            return AnnotationInstance.builder(Default.class).build();
+        } else {
+            return AnnotationInstance.builder(Identifier.class).value(clientName).build();
+        }
+    }
+
+    private static String extractClientName(BeanInfo bean) {
+        for (AnnotationInstance qualifier : bean.getQualifiers()) {
+            if (qualifier.name().equals(DotNames.IDENTIFIER)) {
+                return qualifier.value().asString();
+            }
+        }
+        return ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME;
     }
 
 }

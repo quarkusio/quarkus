@@ -6,11 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Iterator;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * All DevUI tests check the same api call, with different configuration and different expected results.
@@ -79,5 +84,13 @@ public abstract class AbstractDevUITest extends DevUIJsonRPCTest {
         assertNotNull(getNumberOfEntityTypesResponse);
         assertTrue(getNumberOfEntityTypesResponse.isInt());
         assertEquals(expectedClassName == null ? 0 : 1, getNumberOfEntityTypesResponse.asInt());
+    }
+
+    // Service to inject a client so that devservices would start an instance
+    @ApplicationScoped
+    public static class RestClientStarterService {
+        @Inject
+        @Identifier("another-es")
+        RestClient restClient;
     }
 }

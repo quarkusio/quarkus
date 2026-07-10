@@ -1244,7 +1244,7 @@ jobs:
             }
 
             const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
-            if (branch == 'main') {
+            if (branch == '3.x') {
               return 'development'
             } else {
               return branch

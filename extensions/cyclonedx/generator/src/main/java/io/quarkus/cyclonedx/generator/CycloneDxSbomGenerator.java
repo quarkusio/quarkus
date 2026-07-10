@@ -390,6 +390,10 @@ public class CycloneDxSbomGenerator {
     }
 
     private Component renderComponentCore(ComponentDescriptor descriptor) {
+        return renderComponentCore(descriptor, false);
+    }
+
+    private Component renderComponentCore(ComponentDescriptor descriptor, boolean bundled) {
         Component c = new Component();
 
         // Identity from Purl
@@ -419,7 +423,7 @@ public class CycloneDxSbomGenerator {
 
         // POM metadata for Maven components
         if (Purl.TYPE_MAVEN.equals(purl.getType())) {
-            addPomMetadata(toArtifactCoords(purl), c);
+            addPomMetadata(toArtifactCoords(purl), c, bundled);
         }
 
         // Evidence/occurrence from distribution path
@@ -470,7 +474,7 @@ public class CycloneDxSbomGenerator {
 
         // Nested (bundled) components
         for (ComponentDescriptor nested : descriptor.getComponents()) {
-            c.addComponent(renderComponentCore(nested));
+            c.addComponent(renderComponentCore(nested, true));
         }
 
         c.setProperties(props);
@@ -511,7 +515,31 @@ public class CycloneDxSbomGenerator {
     }
 
     private void addPomMetadata(ArtifactCoords dep, org.cyclonedx.model.Component component) {
-        var model = modelResolver == null ? null : modelResolver.resolveEffectiveModel(dep);
+        addPomMetadata(dep, component, false);
+    }
+
+    private void addPomMetadata(ArtifactCoords dep, org.cyclonedx.model.Component component, boolean bundled) {
+        if (modelResolver == null) {
+            return;
+        }
+        final Model model;
+        if (bundled) {
+            // Bundled (shaded) components are discovered from pom.properties entries found inside JARs.
+            // Their POMs may not be available in any configured repository (e.g. build-time-only artifacts
+            // that were shaded into a published JAR), so a resolution failure must not fail the build.
+            try {
+                model = modelResolver.resolveEffectiveModel(dep);
+            } catch (Exception e) {
+                log.warnf(
+                        "Failed to resolve the effective model of the bundled component %s; "
+                                + "SBOM will omit POM metadata for this component",
+                        dep.toCompactCoords());
+                log.debug("Failed to resolve the effective model of the bundled component " + dep.toCompactCoords(), e);
+                return;
+            }
+        } else {
+            model = modelResolver.resolveEffectiveModel(dep);
+        }
         if (model != null) {
             extractComponentMetadata(model, component);
         }

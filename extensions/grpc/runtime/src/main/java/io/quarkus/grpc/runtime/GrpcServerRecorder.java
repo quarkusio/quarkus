@@ -229,11 +229,16 @@ public class GrpcServerRecorder {
 
         LOGGER.info("Enabling gRPC server");
 
+        MaxConnectionAgeEnforcer maxConnectionAgeEnforcer = MaxConnectionAgeEnforcer.of(vertx, configuration);
+
         Route route = router.route()
                 .handler(ctx -> {
                     if (!isGrpc(ctx)) {
                         ctx.next();
                     } else {
+                        if (maxConnectionAgeEnforcer != null) {
+                            maxConnectionAgeEnforcer.register(ctx.request().connection());
+                        }
                         if (securityPresent) {
                             GrpcSecurityInterceptor.propagateSecurityIdentityWithDuplicatedCtx(ctx);
                         }

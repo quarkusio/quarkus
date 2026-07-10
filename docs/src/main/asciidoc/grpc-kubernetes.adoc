@@ -92,3 +92,19 @@ If your application does not use any Quarkus extension that exposes an HTTP serv
 ----
 quarkus.kubernetes.readiness-probe.grpc-action-enabled=true
 ----
+
+== Client-side load balancing and long-lived connections
+
+gRPC uses long-lived HTTP/2 connections.
+When you scale out your service, existing clients keep using their established connections and do not notice the new instances (see https://kubernetes.io/blog/2018/11/07/grpc-load-balancing-on-kubernetes-without-tears/[gRPC Load Balancing on Kubernetes without Tears]).
+
+To force clients to periodically re-establish their connections, and thus to re-resolve and pick up new instances, configure a maximum connection age (the gRPC https://grpc.io/docs/guides/keepalive/[`MAX_CONNECTION_AGE`] setting).
+Once a connection reaches its maximum age, the server sends a `GOAWAY` frame, and the client transparently opens a new connection for subsequent calls:
+
+[source,properties]
+----
+quarkus.grpc.server.max-connection-age=5m <1>
+quarkus.grpc.server.max-connection-age-grace=1m <2>
+----
+<1> Maximum time a connection may exist. A jitter of ±10% is applied to avoid all connections being shut down at the same time.
+<2> Grace period given to in-flight calls to complete after the connection reaches its maximum age. When not set, in-flight calls are given an unlimited amount of time to complete.

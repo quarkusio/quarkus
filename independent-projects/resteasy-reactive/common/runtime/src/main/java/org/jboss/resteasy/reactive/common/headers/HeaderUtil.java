@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.EntityTag;
@@ -207,6 +208,29 @@ public class HeaderUtil {
             sb.append(headerToString(s));
         }
         return sb.toString();
+    }
+
+    public static boolean containsHeaderString(MultivaluedMap<String, ? extends Object> headers, String name,
+            String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        List<? extends Object> values = headers.get(name);
+        if (values == null) {
+            return false;
+        }
+        for (Object value : values) {
+            String str = headerToString(value);
+            if (valueSeparatorRegex != null) {
+                for (String token : str.split(valueSeparatorRegex)) {
+                    if (valuePredicate.test(token.trim())) {
+                        return true;
+                    }
+                }
+            } else {
+                if (valuePredicate.test(str.trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings(value = "unchecked")

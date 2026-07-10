@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.EntityTag;
@@ -20,6 +21,7 @@ import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.StatusType;
 
+import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ContainerResponseContextImpl implements ContainerResponseContext {
@@ -67,6 +69,12 @@ public class ContainerResponseContextImpl implements ContainerResponseContext {
     @Override
     public String getHeaderString(String name) {
         return response().getHeaderString(name);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return HeaderUtil.containsHeaderString(response().getHeaders(), name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

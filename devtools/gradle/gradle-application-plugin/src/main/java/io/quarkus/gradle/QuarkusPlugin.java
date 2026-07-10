@@ -251,7 +251,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                             normalClasspath, LaunchMode.NORMAL,
                             "quarkus/application-model/quarkus-app-model-build.dat");
                 });
-        tasks.register(QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
+        TaskProvider<QuarkusShowEffectiveConfig> quarkusShowEffectiveConfig = tasks.register(
+                QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
                 QuarkusShowEffectiveConfig.class, task -> {
                     configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     task.setDescription("Show effective Quarkus build configuration.");
@@ -263,7 +264,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
                     task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
                 });
-        project.afterEvaluate(evaluated -> addDependencyOnJandexIfConfigured(evaluated, quarkusBuildDependencies));
 
         Property<Boolean> cacheLargeArtifacts = quarkusExt.getCacheLargeArtifacts();
 
@@ -308,31 +308,42 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                 });
 
-        tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, task -> {
+        TaskProvider<ImageBuild> imageBuildTask = tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, task -> {
             task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.finalizedBy(quarkusBuild);
         });
 
-        tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, task -> {
+        TaskProvider<ImagePush> imagePushTask = tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, task -> {
             task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.finalizedBy(quarkusBuild);
         });
 
-        tasks.register(DEPLOY_TASK_NAME, Deploy.class, task -> {
+        TaskProvider<Deploy> deployTask = tasks.register(DEPLOY_TASK_NAME, Deploy.class, task -> {
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
             task.finalizedBy(quarkusBuild);
         });
 
-        tasks.register(BUILD_AOT_ENHANCED_IMAGE_TASK_NAME, BuildAotEnhancedImage.class, task -> {
-            configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
-        });
+        TaskProvider<BuildAotEnhancedImage> buildAotEnhancedImageTask = tasks.register(BUILD_AOT_ENHANCED_IMAGE_TASK_NAME,
+                BuildAotEnhancedImage.class, task -> {
+                    configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
+                });
 
         TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,
                 quarkusExt);
+
+        project.afterEvaluate(evaluated -> addDependencyOnJandexIfConfigured(evaluated,
+                quarkusShowEffectiveConfig,
+                quarkusBuildDependencies,
+                quarkusBuildCacheableAppParts,
+                imageBuildTask,
+                imagePushTask,
+                deployTask,
+                buildAotEnhancedImageTask,
+                quarkusDev));
         TaskProvider<QuarkusRun> quarkusRun = tasks.register(QUARKUS_RUN_TASK_NAME, QuarkusRun.class,
                 build -> {
                     configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider, customFs, quarkusExt);
@@ -778,13 +789,17 @@ public class QuarkusPlugin implements Plugin<Project> {
         visitProjectDependencies(dep, visited);
     }
 
-    private void addDependencyOnJandexIfConfigured(Project project, TaskProvider<? extends Task> quarkusTask) {
+    private void addDependencyOnJandexIfConfigured(Project project, TaskProvider<?>... quarkusTasks) {
         for (String taskName : new String[] {
                 // This is the task of the 'org.kordamp.gradle.jandex' Gradle plugin
                 "jandex",
                 // This is the task of the 'com.github.vlsi.jandex' Gradle plugin
                 "processJandexIndex" }) {
-            getLazyTask(project, taskName).ifPresent(t -> quarkusTask.configure(qd -> qd.mustRunAfter(t)));
+            getLazyTask(project, taskName).ifPresent(t -> {
+                for (TaskProvider<?> tp : quarkusTasks) {
+                    tp.configure(qd -> qd.mustRunAfter(t));
+                }
+            });
         }
     }
 

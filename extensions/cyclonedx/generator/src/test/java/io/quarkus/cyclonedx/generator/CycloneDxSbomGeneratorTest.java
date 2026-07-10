@@ -9,6 +9,7 @@ import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Dependency;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
@@ -298,6 +299,42 @@ class CycloneDxSbomGeneratorTest {
         assertThat(nestedComp.getName()).isEqualTo("bundled-dep");
         assertThat(nestedComp.getGroup()).isEqualTo("org.bundled");
         assertThat(nestedComp.getVersion()).isEqualTo("2.0.0");
+    }
+
+    @Test
+    void unresolvableBundledComponentPomDoesNotFailGeneration() {
+        // https://github.com/quarkusio/quarkus/issues/55373
+        // org.jacoco:org.jacoco.agent:runtime bundles org.jacoco.agent.rt, whose POM
+        // is never published to Maven Central. Resolving POM metadata for such bundled
+        // components must not fail the SBOM generation.
+        ComponentDescriptor nested = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.jacoco", "org.jacoco.agent.rt", "0.8.15", "jar", null))
+                .setBomRef("pkg:maven/org.jacoco/org.jacoco.agent.rt@0.8.15?type=jar#bundled")
+                .build();
+        ComponentDescriptor parent = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.jacoco", "org.jacoco.agent", "0.8.15", "jar", "runtime"))
+                .addComponent(nested)
+                .build();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if (coords.getArtifactId().equals("org.jacoco.agent.rt")) {
+                throw new RuntimeException("Failed to resolve " + coords.toCompactCoords());
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(parent))))
+                .generateText().get(0));
+
+        org.cyclonedx.model.Component parentComp = bom.getComponents().stream()
+                .filter(c -> c.getName().equals("org.jacoco.agent"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(parentComp.getComponents()).hasSize(1);
+        assertThat(parentComp.getComponents().get(0).getName()).isEqualTo("org.jacoco.agent.rt");
     }
 
     private static Bom parseBom(String json) {

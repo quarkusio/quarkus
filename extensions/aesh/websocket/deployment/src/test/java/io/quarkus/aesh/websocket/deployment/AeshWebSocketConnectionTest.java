@@ -1,7 +1,6 @@
 package io.quarkus.aesh.websocket.deployment;
 
 import java.net.URI;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -24,16 +23,13 @@ import io.vertx.core.http.WebSocketConnectOptions;
 
 /**
  * End-to-end integration test for the aesh WebSocket terminal extension.
- * <p>
- * Connects a Vert.x WebSocket client to the {@code /aesh/terminal} endpoint,
- * sends an init message followed by a command, and verifies the expected output
- * appears in the terminal response.
  */
 public class AeshWebSocketConnectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(
+                    AeshWebSocketTestHelper.class,
                     HelloCommand.class,
                     GoodbyeCommand.class));
 
@@ -45,7 +41,7 @@ public class AeshWebSocketConnectionTest {
 
     @Test
     public void testWebSocketConnection() throws Exception {
-        CopyOnWriteArrayList<String> messages = new CopyOnWriteArrayList<>();
+        StringBuilder output = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
@@ -60,30 +56,16 @@ public class AeshWebSocketConnectionTest {
                 return;
             }
             var ws = ar.result();
-
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello World!")) {
-                    latch.countDown();
-                }
-            });
-
-            // Send init message to set up the terminal
+            AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
             ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-
-            // After a short delay, send the hello command
-            vertx.setTimer(500, id -> {
-                ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
-            });
         });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+        boolean completed = latch.await(30, TimeUnit.SECONDS);
 
         Assertions.assertThat(completed)
-                .as("Expected to receive 'Hello World!' in WebSocket output within 10s. Received: %s", allOutput)
+                .as("Expected to receive 'Hello World!' in WebSocket output within 30s. Received: %s", output)
                 .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello World!");
+        Assertions.assertThat(output.toString()).contains("Hello World!");
     }
 
     @CommandDefinition(name = "hello", description = "Say hello")

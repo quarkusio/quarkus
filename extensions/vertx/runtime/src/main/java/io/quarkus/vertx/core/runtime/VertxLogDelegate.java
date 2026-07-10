@@ -8,6 +8,9 @@ import org.jboss.logmanager.Logger;
 import io.vertx.core.spi.logging.LogDelegate;
 
 public class VertxLogDelegate implements LogDelegate {
+
+    private static final String MISSING_LOG_MESSAGE = "<missing-log-message>";
+
     private final Logger logger;
 
     public VertxLogDelegate(String name) {
@@ -129,6 +132,18 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.TRACE, message, t, params);
     }
 
+    static String logMessage(Object message, Throwable cause) {
+        String msg;
+        if (message != null) {
+            msg = message.toString();
+        } else if (cause != null) {
+            msg = cause.getMessage();
+        } else {
+            msg = null;
+        }
+        return msg != null ? msg : MISSING_LOG_MESSAGE;
+    }
+
     private void log(Level level, Object message) {
         log(level, message, null);
     }
@@ -137,7 +152,7 @@ public class VertxLogDelegate implements LogDelegate {
         if (!logger.isLoggable(level)) {
             return;
         }
-        String msg = (message == null) ? "NULL" : message.toString();
+        String msg = logMessage(message, t);
         LogRecord record = new LogRecord(level, msg);
         record.setLoggerName(logger.getName());
         if (t != null) {

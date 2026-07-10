@@ -6,6 +6,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingSpanNameExtractor;
@@ -19,10 +20,12 @@ import io.vertx.core.spi.tracing.TagExtractor;
 public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<Message, Message> {
     private final Instrumenter<Message, Message> consumerInstrumenter;
     private final Instrumenter<Message, Message> producerInstrumenter;
+    private final TextMapPropagator propagator;
 
     public EventBusInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         this.consumerInstrumenter = getConsumerInstrumenter(openTelemetry, runtimeConfig);
         this.producerInstrumenter = getProducerInstrumenter(openTelemetry, runtimeConfig);
+        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
     }
 
     @Override
@@ -48,6 +51,11 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     @Override
     public Instrumenter<Message, Message> getReceiveResponseInstrumenter() {
         return producerInstrumenter;
+    }
+
+    @Override
+    public TextMapPropagator getPropagator() {
+        return propagator;
     }
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,

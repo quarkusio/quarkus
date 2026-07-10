@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.jackson.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -127,7 +128,7 @@ public class RestMultiResponseTest {
         @GET
         @Path("/event")
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        public void event(@Context SseEventSink sink, @Context Sse sse) {
+        public void event(@Context SseEventSink sink, @Context Sse sse) throws IOException {
             try (sink) {
                 sink.send(sse.newEventBuilder()
                         .id("1")

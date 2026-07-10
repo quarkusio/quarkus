@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.UriMatch;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 /**
@@ -211,6 +212,36 @@ public class UriInfoImpl implements UriInfo {
             }
         }
         return matched;
+    }
+
+    @Override
+    public String getMatchedResourceTemplate() {
+        if (currentRequest.getTarget() == null) {
+            return "";
+        }
+        List<UriMatch> matchedURIs = currentRequest.getMatchedURIs();
+        if (matchedURIs == null || matchedURIs.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        String prefix = currentRequest.getDeployment().getPrefix();
+        if (!prefix.isEmpty()) {
+            sb.append(prefix);
+        }
+        for (int i = matchedURIs.size() - 1; i >= 0; i--) {
+            UriMatch match = matchedURIs.get(i);
+            if (match.resource != null) {
+                URITemplate classPath = match.resource.getClassPath();
+                if (classPath != null && classPath.template.length() > 1) {
+                    sb.append(classPath.template);
+                }
+                URITemplate path = match.resource.getPath();
+                if (path != null && path.template.length() > 1) {
+                    sb.append(path.template);
+                }
+            }
+        }
+        return sb.length() == 0 ? "" : sb.toString();
     }
 
     @Override

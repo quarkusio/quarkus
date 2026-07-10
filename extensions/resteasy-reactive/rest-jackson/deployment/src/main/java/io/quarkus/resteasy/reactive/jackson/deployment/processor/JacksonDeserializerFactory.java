@@ -321,6 +321,20 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle fieldValue = lookupJsonField(deserData.methodCreator, deserData.jsonNode, fieldSpecs,
                     deserData.strategyHandle);
 
+            if (fieldSpecs.required) {
+                BytecodeCreator missingBranch = deserData.methodCreator.ifNull(fieldValue).trueBranch();
+                ResultHandle parser = deserData.methodCreator.getMethodParam(0);
+                ResultHandle targetClass = missingBranch.loadClass(deserData.classInfo.name().toString());
+                ResultHandle message = missingBranch.load(
+                        "Missing required creator property '" + fieldSpecs.jsonName + "'");
+                ResultHandle exception = missingBranch.invokeStaticMethod(
+                        ofMethod(MismatchedInputException.class, "from",
+                                MismatchedInputException.class,
+                                JsonParser.class, Class.class, String.class),
+                        parser, targetClass, message);
+                missingBranch.throwException(exception);
+            }
+
             params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
         }

@@ -525,6 +525,7 @@
                             <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
+                                    <banDuplicatePomDependencyVersions/>
                                     <dependencyConvergence/>
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>

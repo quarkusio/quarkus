@@ -222,11 +222,12 @@ public class ResteasyReactiveCommonProcessor {
             if (filterSourceMethod != null) {
                 interceptor.metadata = Map.of(FILTER_SOURCE_METHOD_METADATA_KEY, filterSourceMethod);
             }
-        } else if (filterItem instanceof ContainerResponseFilterBuildItem) {
-            MethodInfo filterSourceMethod = ((ContainerResponseFilterBuildItem) filterItem).getFilterSourceMethod();
+        } else if (filterItem instanceof ContainerResponseFilterBuildItem crfbi) {
+            MethodInfo filterSourceMethod = crfbi.getFilterSourceMethod();
             if (filterSourceMethod != null) {
                 interceptor.metadata = Map.of(FILTER_SOURCE_METHOD_METADATA_KEY, filterSourceMethod);
             }
+            interceptor.setCancellable(crfbi.isCancellable());
         }
         if (interceptors instanceof PreMatchInterceptorContainer
                 && ((ContainerRequestFilterBuildItem) filterItem).isPreMatching()) {

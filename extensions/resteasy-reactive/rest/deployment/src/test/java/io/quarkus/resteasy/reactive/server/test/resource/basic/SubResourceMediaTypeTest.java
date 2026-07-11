@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import static io.restassured.RestAssured.config;
+import static io.restassured.RestAssured.given;
+import static io.restassured.config.EncoderConfig.encoderConfig;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.io.IOException;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 public class SubResourceMediaTypeTest {
     @RegisterExtension
@@ -92,6 +96,16 @@ public class SubResourceMediaTypeTest {
             RestAssured.given().accept("text/plain").multiPart("file", "name1,street1,city1,state1,zip")
                     .post("/store/addresses").then().statusCode(200).body(equalTo("name1,street1,city1,state1,zip"));
         }
+    }
+
+    @Test
+    public void malformedContentType() {
+        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid/@@##", ContentType.TEXT)))
+                .body("dummy")
+                .contentType("invalid/@@##")
+                .post("/store/addresses")
+                .then()
+                .statusCode(415);
     }
 
     @Path("store")

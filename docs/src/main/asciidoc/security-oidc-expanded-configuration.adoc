@@ -606,6 +606,7 @@ Session cookie is created after an authorizaion code flow is completed. An expir
 
 |quarkus.oidc.token.refresh-expired |false| Allow refreshing token
 |quarkus.oidc.token.refresh-token-time-skew || Refresh token time skew
+|quarkus.oidc.token.refresh-token-cache-time-to-live |0 (disabled)| Duration for which a completed refresh result is cached to deduplicate concurrent requests
 |quarkus.oidc.authentication.session-age-extension |5 minutes| Session age extension
 |quarkus.oidc.authentication.session-expired-path || Session expired path
 |quarkus.oidc.authentication.cache-control || Set of Cache-Control header directives
@@ -621,6 +622,8 @@ You can use this property to request the refresh if a still valid ID token is du
 For example, let's assume the ID token age is 6 hours and therefore the session cookie age is also 6 hours. If the user accessed Quarkus 1 hour before it was about to expire, and then stayed idle for 2 hours, then, after the user accesses Quarkus again, 7 hours after the session cookie was created and 1 hour after it and the ID token got expired and removed by the browser, Quarkus OIDC can only request the user re-authentication since it can no longer see the session cookie. To minimize a number of re-authentication attempts, consider extending the session age, for example, by 3 hours. Now, given the last example, Quarkus OIDC may still get access to the expired ID token and do somethnig useful with it if required - refresh it or offer a user a session expired page, instead of immediately requesting a new authentication.
 
 The `quarkus.oidc.token.refresh-token` property is automatically enabled if the `quarkus.oidc.token.refresh-token-time-skew` property is configured.
+
+`quarkus.oidc.token.refresh-token-cache-time-to-live` controls how long the tokens returned in the refresh token grant response are kept in memory. When multiple concurrent requests carry the same expired session and the OIDC provider restricts how many times a refresh token can be used, duplicate refresh attempts may be rejected. Set this property to a short duration (for example, `5S`) to ensure only one refresh call is made and subsequent requests reuse the cached result. Avoid setting this property unless concurrent refresh requests are expected and the provider restricts refresh token reuse.
 
 `quarkus.oidc.authentication.session-expired-path` can be used to present the user whose session has expired with the page explaining that the session has expired and letting user follow a link to re-authenticate. It improves the user experience, since otherwise, the authenticated user, whose session has expired, may get surprised after getting an unexpected OIDC provider's authentication challenge screen, when accessing the Quarkus application, following some delay after successfully authenticating earlier.
 

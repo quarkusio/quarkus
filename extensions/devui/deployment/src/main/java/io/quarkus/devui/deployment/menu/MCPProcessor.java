@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.runtime.DevUIRecorder;
 import io.quarkus.devui.runtime.mcp.McpDevUIJsonRpcService;
 import io.quarkus.devui.runtime.mcp.McpResourcesService;
@@ -20,6 +21,7 @@ import io.quarkus.devui.spi.page.SettingPageBuildItem;
 import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 
 public class MCPProcessor {
 
@@ -63,6 +65,7 @@ public class MCPProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @io.quarkus.deployment.annotations.Record(ExecutionTime.STATIC_INIT)
     void registerStreamableHTTPHandlers(
+            DevUIConfig devUIConfig,
             BuildProducer<RouteBuildItem> routeProducer,
             DevUIRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
@@ -70,6 +73,18 @@ public class MCPProcessor {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
+        }
+
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .orderedRoute(DEVMCP, -2 * SecurityHandlerPriorities.CORS)
+                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null)))
+                .build());
+
+        if (devUIConfig.cors().enabled()) {
+            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .orderedRoute(DEVMCP, -1 * SecurityHandlerPriorities.CORS)
+                    .handler(recorder.createDevUICorsFilter(devUIConfig.hosts().orElse(null)))
+                    .build());
         }
 
         // Streamable HTTP for JsonRPC comms

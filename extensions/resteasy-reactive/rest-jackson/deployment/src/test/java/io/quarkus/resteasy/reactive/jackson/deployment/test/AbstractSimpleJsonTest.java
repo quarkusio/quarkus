@@ -1343,6 +1343,24 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void finalCollectionField_shouldDeserializeWithoutSetter() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"name": "test", "items": ["a", "b", "c"]}
+                        """)
+                .when()
+                .post("/simple/final-collection")
+                .then()
+                .statusCode(200)
+                .body("name", CoreMatchers.is("test"))
+                .body("items.size()", CoreMatchers.is(3))
+                .body("items[0]", CoreMatchers.is("a"))
+                .body("items[1]", CoreMatchers.is("b"))
+                .body("items[2]", CoreMatchers.is("c"));
+    }
+
+    @Test
     void sensor_metadata_shouldDeserialize() {
         given()
                 .when()

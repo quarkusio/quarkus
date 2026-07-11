@@ -260,9 +260,9 @@ public abstract class JacksonCodeGenerator {
         }
     }
 
-    private static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
+    protected static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
     private static final DotName SET_NAME = DotName.createSimple(Set.class);
-    private static final DotName MAP_NAME = DotName.createSimple(Map.class);
+    protected static final DotName MAP_NAME = DotName.createSimple(Map.class);
 
     protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
@@ -295,7 +295,7 @@ public abstract class JacksonCodeGenerator {
         return FieldKind.OBJECT;
     }
 
-    private boolean isAssignableTo(String typeName, DotName targetName) {
+    protected boolean isAssignableTo(String typeName, DotName targetName) {
         if (typeName.equals(targetName.toString())) {
             return true;
         }
@@ -344,6 +344,32 @@ public abstract class JacksonCodeGenerator {
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
         return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
+    }
+
+    protected static boolean isClassFormatShapeArray(ClassInfo classInfo) {
+        AnnotationInstance format = classInfo.declaredAnnotation(DotName.createSimple(JsonFormat.class.getName()));
+        if (format == null) {
+            return false;
+        }
+        AnnotationValue shape = format.value("shape");
+        return shape != null && "ARRAY".equals(shape.asEnum());
+    }
+
+    private static final DotName JSON_TYPE_INFO = DotName.createSimple(JsonTypeInfo.class);
+
+    protected boolean hasJsonTypeInfoInTypeChain(Type type) {
+        ClassInfo classInfo = jandexIndex.getClassByName(type.name());
+        if (classInfo != null && classInfo.hasDeclaredAnnotation(JSON_TYPE_INFO)) {
+            return true;
+        }
+        if (type instanceof ParameterizedType pType) {
+            for (Type arg : pType.arguments()) {
+                if (hasJsonTypeInfoInTypeChain(arg)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
@@ -648,13 +674,17 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonRawValue.class.getName()) != null;
         }
 
-        boolean isFormatShapeNumber() {
+        String formatShape() {
             AnnotationInstance format = annotations.get(JsonFormat.class.getName());
             if (format == null) {
-                return false;
+                return null;
             }
             AnnotationValue shape = format.value("shape");
-            return shape != null && "NUMBER".equals(shape.asEnum());
+            return shape != null ? shape.asEnum() : null;
+        }
+
+        boolean isFormatShapeNumber() {
+            return "NUMBER".equals(formatShape());
         }
 
         String formatPattern() {

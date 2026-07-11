@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
@@ -284,6 +285,8 @@ public class MicrometerRecorder {
     @RuntimeInit
     public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(boolean httpServerMetricsEnabled,
             boolean httpClientMetricsEnabled) {
+        config.binder().http().additionalMethods()
+                .ifPresent(HttpCommonTags::setAdditionalHttpMethods);
         return new RuntimeValue<HttpBinderConfiguration>(
                 new HttpBinderConfiguration(httpServerMetricsEnabled, httpClientMetricsEnabled, httpServerConfig.getValue(),
                         httpClientConfig.getValue(), vertxConfig.getValue()));

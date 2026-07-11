@@ -44,6 +44,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
+import io.vertx.core.impl.ContextInternal;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -62,10 +63,18 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
         this.providers = new ProvidersImpl(restClientRequestContext);
 
-        // Always create a duplicated context because each REST Client invocation must have its own context
-        // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
+        // Always create a duplicated context because each REST Client invocation must have its own context.
+        // A separate context allows integrations like OTel to create a separate Span for each invocation (expected).
+        // We use createNewDuplicatedContext (which always duplicates from the root) instead of newNestedContext
+        // to avoid creating a chain of parent references that prevents GC of previous calls' contexts.
         Context current = client.vertx.getOrCreateContext();
-        this.context = VertxContext.newNestedContext(current);
+        this.context = VertxContext.createNewDuplicatedContext(current);
+        if (VertxContext.isDuplicatedContext(current)) {
+            // Copy old-style locals from the caller context so they remain visible
+            ((ContextInternal) this.context).localContextData()
+                    .putAll(((ContextInternal) current).localContextData());
+        }
+        this.context.putLocal(VertxContext.PARENT_CONTEXT, current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

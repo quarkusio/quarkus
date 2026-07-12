@@ -67,6 +67,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.internal.http.HttpClientInternal;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.core.streams.Pipe;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
@@ -79,6 +80,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private final ClientLogger clientLogger;
     private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
     private final List<Consumer<HttpClientRequest>> clientRequestCustomizers;
+    private final String domainSocketPath;
     private final int maxChunkSize;
     private final int inputStreamChunkSize;
 
@@ -86,7 +88,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             boolean followRedirects,
             LoggingScope loggingScope, ClientLogger logger,
             Map<Class<?>, MultipartResponseData> multipartResponseDataMap,
-            List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers,
+            String domainSocketPath) {
         this.maxChunkSize = httpClientOptions.getMaxChunkSize();
         this.inputStreamChunkSize = httpClientOptions.getMaxChunkSize();
         this.httpClientOptions = httpClientOptions;
@@ -95,6 +98,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         this.clientLogger = logger;
         this.multipartResponseDataMap = multipartResponseDataMap;
         this.clientRequestCustomizers = clientRequestCustomizers;
+        this.domainSocketPath = domainSocketPath;
     }
 
     @Override
@@ -513,6 +517,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         int port = getPort(isHttps, uri.getPort());
         requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
                 .setPort(port).setSsl(isHttps));
+
+        if (domainSocketPath != null) {
+            requestOptions = requestOptions.onItem().invoke(
+                    new Consumer<RequestOptions>() {
+                        @Override
+                        public void accept(RequestOptions requestOptions) {
+                            requestOptions.setServer(SocketAddress.domainSocketAddress(domainSocketPath));
+                        }
+                    });
+        }
 
         return requestOptions.onItem()
                 .transform(r -> {

@@ -92,7 +92,7 @@ class RuntimeMappingDeployment {
                     null, null,
                     new ServerRestHandler[] { mapper }, null, new Class[0], null, false,
                     false, null, null, null, null, null,
-                    Collections.emptyMap());
+                    resources.get(0).getClassExceptionMappers());
             currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
         }
     }

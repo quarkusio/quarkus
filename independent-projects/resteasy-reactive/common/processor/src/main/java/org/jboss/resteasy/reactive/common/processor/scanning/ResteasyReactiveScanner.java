@@ -388,6 +388,22 @@ public class ResteasyReactiveScanner {
                 requestScopedResources.add(classInfo.name());
             }
             possibleSubResources.put(classInfo.name(), classInfo);
+            // If a concrete leaf sub-resource class declares @ServerExceptionMapper, treat it as
+            // scoped to that sub-resource rather than global. Abstract classes, interfaces, and classes with subclasses
+            // are excluded because we cannot reliably distinguish actual sub-resources from other
+            // classes with JAX-RS annotations at this point without unnecessary complexity
+            if (!classInfo.isAbstract() && !classInfo.isInterface()
+                    && index.getAllKnownSubclasses(classInfo.name()).isEmpty()) {
+                List<AnnotationInstance> exceptionMapperAnnotationInstances = classInfo.annotationsMap()
+                        .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
+                if (exceptionMapperAnnotationInstances != null) {
+                    for (AnnotationInstance exMapperInstance : exceptionMapperAnnotationInstances) {
+                        if (exMapperInstance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                            methodExceptionMappers.add(exMapperInstance.target().asMethod());
+                        }
+                    }
+                }
+            }
             //we need to also look for all subclasses and interfaces
             //they may have type variables that need to be handled
             toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));

@@ -58,7 +58,7 @@
         <mutiny.version>3.3.0</mutiny.version>
         <smallrye-mutiny-vertx-core.version>3.23.0</smallrye-mutiny-vertx-core.version>
         <smallrye-common.version>2.19.0</smallrye-common.version>
-        <vertx.version>4.5.28</vertx.version>
+        <vertx.version>4.5.30</vertx.version>
         <rest-assured.version>6.0.0</rest-assured.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.22.0</jackson-bom.version>

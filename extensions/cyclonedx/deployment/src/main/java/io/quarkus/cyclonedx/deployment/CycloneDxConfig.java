@@ -54,6 +54,15 @@ public interface CycloneDxConfig {
     boolean prettyPrint();
 
     /**
+     * Whether to include only library components in generated SBOMs, excluding
+     * generic file components such as non-Maven JARs and other files.
+     *
+     * @return whether to include only library components
+     */
+    @WithDefault("false")
+    boolean librariesOnly();
+
+    /**
      * Embedded dependency SBOM configuration
      */
     @ConfigDocSection

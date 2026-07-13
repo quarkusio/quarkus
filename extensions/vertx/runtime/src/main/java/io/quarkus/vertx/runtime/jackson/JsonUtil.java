@@ -14,7 +14,7 @@ import io.vertx.core.shareddata.Shareable;
 
 /**
  * Implementation utilities (details) affecting the way JSON objects are wrapped.
- *
+ * <p>
  * This class is copied from {@code io.vertx.core.json.impl.JsonUtil} as it is internal to Vert.x
  */
 public final class JsonUtil {
@@ -50,16 +50,17 @@ public final class JsonUtil {
      * @param val java type
      * @return wrapped type or {@code val} if not applicable.
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static Object wrapJsonValue(Object val) {
         if (val == null) {
             return null;
         }
 
         // perform wrapping
-        if (val instanceof Map) {
-            val = new JsonObject((Map) val);
-        } else if (val instanceof List) {
-            val = new JsonArray((List) val);
+        if (val instanceof Map map) {
+            val = new JsonObject(map);
+        } else if (val instanceof List list) {
+            val = new JsonArray(list);
         } else if (val instanceof Instant) {
             val = ISO_INSTANT.format((Instant) val);
         } else if (val instanceof byte[]) {
@@ -73,7 +74,7 @@ public final class JsonUtil {
         return val;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "StatementWithEmptyBody", "rawtypes" })
     public static Object checkAndCopy(Object val) {
         if (val == null) {
             // OK
@@ -92,12 +93,10 @@ public final class JsonUtil {
             // Shareable objects know how to copy themselves, this covers:
             // JsonObject, JsonArray or any user defined Shareable type
             val = ((Shareable) val).copy();
-        } else if (val instanceof Map) {
-            val = (new JsonObject((Map) val)).copy();
-        } else if (val instanceof List) {
-            val = (new JsonArray((List) val)).copy();
-        } else if (val instanceof Buffer) {
-            val = ((Buffer) val).copy();
+        } else if (val instanceof Map map) {
+            val = (new JsonObject(map)).copy();
+        } else if (val instanceof List list) {
+            val = (new JsonArray(list)).copy();
         } else if (val instanceof byte[]) {
             // OK
         } else if (val instanceof Instant) {

@@ -301,7 +301,8 @@ public abstract class AbstractLambdaPollLoop {
         // if we are running in test mode, or native mode outside the lambda container, then don't output stack trace for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
-        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT;
+        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT
+                || AmazonLambdaApi.isTestMode();
         boolean graceful = ((ex instanceof SocketException) && testOrDevEnv)
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 

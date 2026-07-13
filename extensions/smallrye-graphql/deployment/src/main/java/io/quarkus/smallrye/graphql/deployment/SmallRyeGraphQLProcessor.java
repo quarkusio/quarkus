@@ -976,10 +976,6 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getAllAdapterClasses(IndexView index) {
         Set<String> adapterClasses = new HashSet<>();
         adapterClasses.addAll(getAdapterClasses(index, DotName.createSimple(AdaptWith.class.getName())));
-        adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
-        adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         return adapterClasses;
     }
 

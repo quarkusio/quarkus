@@ -120,14 +120,14 @@ public class GraphQLClientTester {
 
         // set the lucky number to 15
         Response response = client.executeSync(setLuckyNumberMutation);
-        int returnedNumber = response.getData().getInt("set");
+        int returnedNumber = response.getData().get("set").asInt();
         if (returnedNumber != 15) {
             throw new RuntimeException("Unexpected response: " + response);
         }
 
         // get the lucky number and assert that it's 15
         response = client.executeSync(getLuckyNumberQuery);
-        returnedNumber = response.getData().getInt("get");
+        returnedNumber = response.getData().get("get").asInt();
         if (returnedNumber != 15) {
             throw new RuntimeException("Unexpected response: " + response);
         }
@@ -146,7 +146,7 @@ public class GraphQLClientTester {
                     .asStream()
                     .collect(Collectors.toList());
             for (int i = 0; i < expectedNumbers.size(); i++) {
-                if (expectedNumbers.get(i) != responses.get(i).getData().getInt("primeNumbers")
+                if (expectedNumbers.get(i) != responses.get(i).getData().get("primeNumbers").asInt()
                         || responses.get(i).hasError()) {
                     throw new RuntimeException("Unexpected response: " + responses.get(i));
                 }
@@ -165,7 +165,7 @@ public class GraphQLClientTester {
             Response response = client.executeSync(query);
 
             final String expectedResult = "3.14159";
-            final String result = response.getData().getString("piNumber");
+            final String result = response.getData().get("piNumber").asText();
             if (!result.equals(expectedResult)) {
                 throw new RuntimeException("Unexpected response: " + response);
             }

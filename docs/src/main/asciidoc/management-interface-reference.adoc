@@ -263,6 +263,38 @@ quarkus.management.cors.origins=http://example.com
 
 When CORS is enabled without configuring specific origins, only same-origin requests are allowed.
 
+== HTTP Host header validation
+
+The management interface supports the same HTTP `Host` header validation as the main HTTP server, but with separate configuration under `quarkus.management.host-validation.*`.
+
+When `quarkus.management.host` is set to a localhost name (`localhost`, `127.0.0.1`, or `[::1]`), host validation is automatically enabled in **dev** and **production** modes.
+
+[WARNING]
+====
+This automatic behavior is a change from previous Quarkus versions.
+If the management interface is accessed through a reverse proxy or a non-localhost host name, configure the allowed hosts explicitly or disable automatic validation.
+====
+
+For example, to restrict requests to specific host names:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host-validation.allowed-hosts=management.example.com
+----
+
+To disable automatic localhost validation:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host-validation.require-localhost=false
+----
+
+For more details on the available options and reverse proxy considerations, see the xref:http-reference.adoc#host-header-validation[HTTP Host header validation] section in the HTTP reference guide.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.management.host-validation.adoc[leveloffset=+1, opts=optional]
+
 == Security
 
 Security for the management endpoints exposed in the separate HTTP server needs to be enabled explicitly like in the example below:

@@ -65,6 +65,7 @@ import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoo
 import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
+import org.hibernate.temporal.spi.ChangesetCoordinator;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
@@ -167,6 +168,11 @@ public class FastBootMetadataBuilder {
             providedServices.add(new ProvidedService(postBuildProvidedService,
                     standardServiceRegistry.getService(postBuildProvidedService)));
         }
+
+        // The ChangesetCoordinator is configured during metadata building (AuditHelper.contributeIdentifierSupplier)
+        // and must be preserved as a ProvidedService to survive registry resetAndReactivate() at runtime.
+        providedServices.add(new ProvidedService<>(ChangesetCoordinator.class,
+                standardServiceRegistry.getService(ChangesetCoordinator.class)));
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
         // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning

@@ -2,12 +2,16 @@ package io.quarkus.cyclonedx.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
 import org.cyclonedx.model.Bom;
+import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Dependency;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -335,6 +339,109 @@ class CycloneDxSbomGeneratorTest {
                 .orElseThrow();
         assertThat(parentComp.getComponents()).hasSize(1);
         assertThat(parentComp.getComponents().get(0).getName()).isEqualTo("org.jacoco.agent.rt");
+    }
+
+    @Test
+    void librariesOnlyExcludesFileComponents(@TempDir Path tempDir) throws Exception {
+        // Create a temporary file so the descriptor has a real path
+        Path runnerJar = tempDir.resolve("quarkus-run.jar");
+        Files.createFile(runnerJar);
+
+        // Main component (APPLICATION type, should be kept)
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0",
+                List.of(ArtifactCoords.jar("io.quarkus", "quarkus-rest", "3.0.0")));
+        ResolvedDependency restDep = resolvedDep("io.quarkus", "quarkus-rest", "3.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .addComponent(restDep)
+                .toSbomContribution();
+
+        // FILE component: generic PURL with a distribution path
+        ComponentDescriptor fileComponent = ComponentDescriptor.builder()
+                .setPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .setDistributionPath("quarkus-run.jar")
+                .build();
+
+        // FILE component: generic PURL with a file system path
+        ComponentDescriptor fileWithPath = ComponentDescriptor.builder()
+                .setPurl(Purl.generic("app-data.dat", "1.0.0"))
+                .setPath(runnerJar)
+                .build();
+
+        // LIBRARY component: npm package (should be kept)
+        ComponentDescriptor npmLib = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+
+        SbomContribution extContribution = SbomContribution.of(
+                List.of(fileComponent, fileWithPath, npmLib),
+                List.of(ComponentDependencies.of(
+                        fileComponent.getBomRef(),
+                        List.of(npmLib.getBomRef()))));
+
+        // Generate with librariesOnly=true
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setLibrariesOnly(true)
+                .setContributions(List.of(coreContribution, extContribution))
+                .generateText().get(0));
+
+        List<String> componentNames = bom.getComponents().stream()
+                .map(Component::getName)
+                .toList();
+
+        // Library and main components should be present
+        assertThat(componentNames).contains("react", "quarkus-rest", "acme-app");
+        // File components should be excluded
+        assertThat(componentNames).doesNotContain("quarkus-run.jar", "app-data.dat");
+
+        // Dependency graph should not reference excluded components
+        List<String> allDepRefs = bom.getDependencies().stream()
+                .map(Dependency::getRef)
+                .toList();
+        assertThat(allDepRefs).doesNotContain(fileComponent.getBomRef(), fileWithPath.getBomRef());
+
+        // References to excluded components should be removed from other entries' dependsOn
+        for (Dependency dep : bom.getDependencies()) {
+            if (dep.getDependencies() != null) {
+                List<String> depRefs = dep.getDependencies().stream()
+                        .map(Dependency::getRef)
+                        .toList();
+                assertThat(depRefs)
+                        .as("Dependency %s should not reference excluded file components", dep.getRef())
+                        .doesNotContain(fileComponent.getBomRef(), fileWithPath.getBomRef());
+            }
+        }
+    }
+
+    @Test
+    void librariesOnlyDisabledIncludesFileComponents() {
+        // FILE component: generic PURL with a distribution path
+        ComponentDescriptor fileComponent = ComponentDescriptor.builder()
+                .setPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .setDistributionPath("quarkus-run.jar")
+                .build();
+
+        ComponentDescriptor npmLib = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(fileComponent, npmLib));
+
+        // Generate with librariesOnly=false (default)
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setLibrariesOnly(false)
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        List<String> componentNames = bom.getComponents().stream()
+                .map(Component::getName)
+                .toList();
+
+        // Both should be present when librariesOnly is off
+        assertThat(componentNames).contains("react", "quarkus-run.jar");
     }
 
     private static Bom parseBom(String json) {

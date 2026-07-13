@@ -184,6 +184,35 @@ By default, generated JSON SBOMs are not pretty-printed. To enable pretty-printi
 quarkus.cyclonedx.pretty-print=true
 ----
 
+=== Libraries-only mode
+
+By default, the generated SBOM includes all components of the application distribution, including generic file components such as non-Maven JARs and other generated files. To include only components identified as libraries (i.e., those with a recognized package type such as Maven or npm), use:
+
+[source,properties]
+----
+quarkus.cyclonedx.libraries-only=true
+----
+
+When enabled, components that would be classified as `file` type in CycloneDX (generic PURL components with a file system path or distribution path) are excluded from the generated SBOM along with their dependency relationships.
+
+=== CycloneDX schema version
+
+By default, the SBOM is generated using the latest CycloneDX schema version supported by the integrated library. A specific version can be requested:
+
+[source,properties]
+----
+quarkus.cyclonedx.schema-version=1.5
+----
+
+=== License text
+
+License text is not included in generated SBOMs by default. To include the full text of resolved licenses:
+
+[source,properties]
+----
+quarkus.cyclonedx.include-license-text=true
+----
+
 === Pedigree
 
 Pedigree is a way to provide information that patches or modifications have been applied to a component.

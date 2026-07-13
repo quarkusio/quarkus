@@ -43,6 +43,9 @@ public class HeaderUtil {
     };
 
     public static String headerToString(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         if (obj instanceof String) {
             return (String) obj;
         } else {
@@ -198,14 +201,18 @@ public class HeaderUtil {
             return null;
         }
         if (list.size() == 1) {
-            return headerToString(list.get(0));
+            String s = headerToString(list.get(0));
+            return s != null ? s : "";
         }
         StringBuilder sb = new StringBuilder();
         for (Object s : list) {
-            if (!sb.isEmpty()) {
-                sb.append(",");
+            String str = headerToString(s);
+            if (str != null) {
+                if (!sb.isEmpty()) {
+                    sb.append(",");
+                }
+                sb.append(str);
             }
-            sb.append(headerToString(s));
         }
         return sb.toString();
     }

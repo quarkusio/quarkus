@@ -174,7 +174,7 @@ public final class JsonEscaper implements ResultMapper {
 
     @Override
     public boolean appliesTo(Origin origin, Object result) {
-        if (result instanceof RawString) {
+        if (result instanceof RawString || Results.isNotFound(result)) {
             return false;
         }
         Optional<Variant> variant = origin.getVariant();

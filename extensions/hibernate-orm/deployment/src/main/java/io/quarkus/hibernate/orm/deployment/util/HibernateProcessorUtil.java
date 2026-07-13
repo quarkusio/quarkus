@@ -39,6 +39,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
@@ -104,6 +105,25 @@ public final class HibernateProcessorUtil {
 
     public static boolean isHibernateValidatorPresent(Capabilities capabilities) {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
+    }
+
+    /**
+     * @deprecated use
+     *             {@link #setDialectAndStorageEngine(String, Optional, Optional, Optional, HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect, List, BiConsumer)
+     *             instead}
+     */
+    @Deprecated(forRemoval = true)
+    public static Optional<SupportedDatabaseKind> setDialectAndStorageEngine(
+            String persistenceUnitName,
+            Optional<String> dbKind,
+            Optional<String> explicitDialect,
+            Optional<String> explicitDbMinVersion,
+            HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
+            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BiConsumer<String, String> puPropertiesCollector) {
+        return setDialectAndStorageEngine(persistenceUnitName, dbKind, explicitDialect, explicitDbMinVersion, dialectConfig,
+                dbKindDialectBuildItems, puPropertiesCollector);
     }
 
     public static Optional<SupportedDatabaseKind> setDialectAndStorageEngine(

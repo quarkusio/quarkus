@@ -654,6 +654,42 @@ quarkus.http.proxy.trusted-proxy[1].subject-dn=CN=envoy-client,O=MyOrg
 
 NOTE: Configure enough DN components to uniquely identify your proxy. Using only `CN=my-proxy` will match any certificate with that CN, regardless of issuing organization.
 
+When multiple CAs are trusted, different CAs could issue certificates with the same Subject DN.
+To also verify the trust anchor, reference a certificate alias in the HTTP server's truststore.
+Both conditions must match — the Subject DN and the trust anchor.
+The following example uses the xref:./tls-registry-reference.adoc[TLS centralized configuration] to set up mTLS and proxy trust:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+quarkus.tls.trust-store.p12.path=server-truststore.p12 <1>
+quarkus.tls.trust-store.p12.password=secret
+quarkus.http.ssl.client-auth=request
+
+# Proxy trust
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-forwarded=true
+quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-proxy,O=MyOrg
+quarkus.http.proxy.trusted-proxy[0].truststore-alias=my-proxy-ca <2>
+----
+<1> The truststore must be configured via the TLS registry and must contain a certificate entry with alias `my-proxy-ca`.
+<2> The alias is resolved from `server-truststore.p12`.
+
+When the truststore is configured with PEM certificates, aliases are assigned automatically as `cert-0`, `cert-1`, and so on, based on the order in the configuration:
+
+[source,properties]
+----
+quarkus.tls.trust-store.pem.certs=proxy-ca.crt,other-ca.crt <1>
+quarkus.http.proxy.trusted-proxy[0].truststore-alias=cert-0 <2>
+----
+<1> `proxy-ca.crt` becomes `cert-0`, `other-ca.crt` becomes `cert-1`.
+<2> References `proxy-ca.crt`.
+
+Since PEM aliases depend on ordering, we recommend using a xref:tls-registry-reference.adoc#pkcs12_truststores[PKCS12 truststore] to avoid certificate list ordering issues.
+
+WARNING: The configured Subject DN is trusted to be unique only among clients signed by the CA referenced by the truststore alias. Only reference a CA that you control or trust not to issue another certificate with the same Subject DN.
+
 Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client.
 
 By default, the `proto` values from `Forwarded` and `X-Forwarded-Proto` headers are validated against the https://datatracker.ietf.org/doc/html/rfc3986#section-3.1[URI scheme syntax].

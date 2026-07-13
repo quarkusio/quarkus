@@ -43,8 +43,15 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     AnyGetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
+                                    DateFormatBean.class,
+                                    ZonedDateTimeFormatBean.class,
                                     FormatShape.class,
                                     FormatBean.class,
+                                    FormatArrayShapeBean.class,
+                                    FormatArrayShapeNoOrderBean.class,
+                                    FormatStringShapeBean.class,
+                                    FormatNumberBooleanBean.class,
+                                    FormatDateTimestampBean.class,
                                     GetterSetterBean.class,
                                     IgnoredType.class,
                                     IgnoreTypeBean.class,
@@ -52,7 +59,12 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     PropertyOrderBean.class,
                                     RawValueBean.class,
                                     PackageProtectedBean.class,
-                                    SpecialCharPropertyBean.class)
+                                    SpecialCharPropertyBean.class,
+                                    TestWithJsonPropertyDto.class,
+                                    UnwrappedIgnorePropertiesBean.class,
+                                    UnwrappedIgnorePropertiesBean.User.class,
+                                    UnwrappedWithPrefixBean.class,
+                                    UnwrappedWithPrefixBean.Address.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),

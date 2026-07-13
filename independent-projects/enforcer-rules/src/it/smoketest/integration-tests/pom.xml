@@ -44,4 +44,40 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>CustomGroupIdPrefix</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-deployment-deps</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requiresMinimalDeploymentDependency>
+                                            <groupIdPrefix>com.example</groupIdPrefix>
+                                        </requiresMinimalDeploymentDependency>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>@project.groupId@</groupId>
+                                <artifactId>@project.artifactId@</artifactId>
+                                <version>@project.version@</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

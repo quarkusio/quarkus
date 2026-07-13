@@ -25,7 +25,8 @@ public final class TokenConfigBuilder {
     private record TokenImpl(Optional<String> issuer, Optional<List<String>> audience, boolean subjectRequired,
             Map<String, Set<String>> requiredClaims, Optional<String> tokenType, OptionalInt lifespanGrace,
             Optional<Duration> age, boolean issuedAtRequired, Optional<String> principalClaim, boolean refreshExpired,
-            Optional<Duration> refreshTokenTimeSkew, Duration forcedJwkRefreshInterval, Optional<String> header,
+            Optional<Duration> refreshTokenTimeSkew, Duration refreshTokenCacheTimeToLive,
+            Duration forcedJwkRefreshInterval, Optional<String> header,
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
             Optional<String> decryptionKeyLocation, Optional<Boolean> decryptIdToken, boolean decryptAccessToken,
             boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
@@ -45,6 +46,7 @@ public final class TokenConfigBuilder {
     private Optional<String> principalClaim;
     private boolean refreshExpired;
     private Optional<Duration> refreshTokenTimeSkew;
+    private Duration refreshTokenCacheTimeToLive;
     private Duration forcedJwkRefreshInterval;
     private Optional<String> header;
     private String authorizationScheme;
@@ -81,6 +83,7 @@ public final class TokenConfigBuilder {
         this.principalClaim = token.principalClaim();
         this.refreshExpired = token.refreshExpired();
         this.refreshTokenTimeSkew = token.refreshTokenTimeSkew();
+        this.refreshTokenCacheTimeToLive = token.refreshTokenCacheTimeToLive();
         this.forcedJwkRefreshInterval = token.forcedJwkRefreshInterval();
         this.header = token.header();
         this.authorizationScheme = token.authorizationScheme();
@@ -293,6 +296,15 @@ public final class TokenConfigBuilder {
     }
 
     /**
+     * @param refreshTokenCacheTimeToLive {@link OidcTenantConfig.Token#refreshTokenCacheTimeToLive()}
+     * @return this builder
+     */
+    public TokenConfigBuilder refreshTokenCacheTimeToLive(Duration refreshTokenCacheTimeToLive) {
+        this.refreshTokenCacheTimeToLive = Objects.requireNonNull(refreshTokenCacheTimeToLive);
+        return this;
+    }
+
+    /**
      * @param forcedJwkRefreshInterval {@link OidcTenantConfig.Token#forcedJwkRefreshInterval()}
      * @return this builder
      */
@@ -487,6 +499,7 @@ public final class TokenConfigBuilder {
                 : Optional.of(List.copyOf(audience));
         return new TokenImpl(issuer, optionalAudience, subjectRequired, Map.copyOf(requiredClaims), tokenType,
                 lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
+                refreshTokenCacheTimeToLive,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
                 decryptIdToken,
                 decryptAccessToken, allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection,

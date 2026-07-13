@@ -501,7 +501,9 @@ public class VertxHttpRecorder {
 
         warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfig.proxy());
         root = HttpServerCommonHandlers.applyProxy(httpConfig.proxy(), root, vertx,
-                getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
+                getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode),
+                getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode),
+                "quarkus.http");
 
         boolean quarkusWrapperNeeded = false;
 
@@ -607,7 +609,8 @@ public class VertxHttpRecorder {
 
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr, mustResumeRequest);
             handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx,
-                    managementBuildTimeConfig.tlsClientAuth());
+                    managementBuildTimeConfig.tlsClientAuth(), managementConfig.getValue().tlsConfigurationName(),
+                    "quarkus.management");
 
             int routesBeforeMiEvent = mr.getRoutes().size();
             event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));

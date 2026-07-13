@@ -569,6 +569,7 @@ To configure a PEM truststore:
 quarkus.tls.trust-store.pem.certs=ca.crt,ca2.pem
 ----
 
+[[pkcs12_truststores]]
 ==== PKCS12 truststores
 
 PKCS12 truststores are single-file containers for certificates.

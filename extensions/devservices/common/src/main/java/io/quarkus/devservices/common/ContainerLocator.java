@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
@@ -41,26 +42,38 @@ public class ContainerLocator {
 
     private final BiPredicate<Container, String> filter;
     private final int port;
+    private final boolean inspect;
 
     public ContainerLocator(String devServiceLabel, int port) {
-        this((container, expectedLabel) -> expectedLabel.equals(container.getLabels().get(devServiceLabel)), port);
+        this((container, expectedLabel) -> expectedLabel.equals(container.getLabels().get(devServiceLabel)), port, false);
     }
 
-    public ContainerLocator(BiPredicate<Container, String> filter, int port) {
+    public ContainerLocator(BiPredicate<Container, String> filter, int port, boolean inspect) {
         // Always tack on an extra filter to rule out containers which were clearly created by this process
         this.filter = filter.and(IS_NOT_CREATED_BY_US_SELECTOR);
         this.port = port;
+        this.inspect = inspect;
     }
 
     public static ContainerLocator locateContainerWithLabels(int port, String... devServiceLabels) {
         return new ContainerLocator(
                 (container, expectedLabel) -> hasDevServiceLabels(container, expectedLabel::equals, devServiceLabels),
-                port);
+                port, false);
+    }
+
+    public static ContainerLocator locateContainerWithLabels(int port, boolean inspect, String... devServiceLabels) {
+        return new ContainerLocator(
+                (container, expectedLabel) -> hasDevServiceLabels(container, expectedLabel::equals, devServiceLabels),
+                port, inspect);
     }
 
     private Stream<Container> lookup(String expectedLabelValue) {
         return DockerClientFactory.lazyClient().listContainersCmd().exec().stream()
                 .filter(container -> filter.test(container, expectedLabelValue));
+    }
+
+    private InspectContainerResponse inspect(Container container) {
+        return DockerClientFactory.lazyClient().inspectContainerCmd(container.getId()).exec();
     }
 
     private Optional<ContainerPort> getMappedPort(Container container, int port) {
@@ -79,10 +92,19 @@ public class ContainerLocator {
                     .flatMap(container -> getMappedPort(container, port).stream()
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
                                     .map(port -> {
-                                        final ContainerAddress containerAddress = new ContainerAddress(
-                                                container.getId(),
-                                                DockerClientFactory.instance().dockerHostIpAddress(),
-                                                containerPort.getPublicPort());
+                                        final ContainerAddress containerAddress;
+                                        if (inspect) {
+                                            InspectContainerResponse containerInfo = inspect(container);
+                                            containerAddress = new ContainerAddress(
+                                                    ContainerUtil.toRunningContainer(containerInfo),
+                                                    DockerClientFactory.instance().dockerHostIpAddress(),
+                                                    containerPort.getPublicPort());
+                                        } else {
+                                            containerAddress = new ContainerAddress(
+                                                    container.getId(),
+                                                    DockerClientFactory.instance().dockerHostIpAddress(),
+                                                    containerPort.getPublicPort());
+                                        }
                                         log.infof("Dev Services container found: %s (%s). Connecting to: %s.",
                                                 container.getId(),
                                                 container.getImage(),

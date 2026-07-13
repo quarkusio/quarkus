@@ -1339,7 +1339,7 @@ public class GreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved by the _Failsafe Maven Plugin_.
 <2> We extend our previous tests as a convenience, but you can also implement your tests.
 
-More information can be found in the link:building-native-image#testing-the-native-executable[Testing the native executable Guide].
+More information can be found in the xref:building-native-image.adoc#testing-the-native-executable[Testing the native executable Guide].
 
 [IMPORTANT]
 ====

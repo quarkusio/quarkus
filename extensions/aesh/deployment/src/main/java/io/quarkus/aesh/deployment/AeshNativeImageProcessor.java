@@ -24,7 +24,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -46,8 +45,7 @@ class AeshNativeImageProcessor {
     void reflectionConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
-            BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxies,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+            BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxies) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<DotName> annotationsToAnalyze = Arrays.asList(

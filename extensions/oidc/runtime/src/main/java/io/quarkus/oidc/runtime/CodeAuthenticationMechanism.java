@@ -1050,21 +1050,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String logAuthenticationError(RoutingContext context, Throwable t) {
-        String errorMessage = null;
-        final boolean accessTokenFailure = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null;
-        if (accessTokenFailure) {
-            errorMessage = """
-                    Access token verification has failed: %s
-                    """.formatted(errorMessage(t));
-            LOG.error(errorMessage);
-        } else {
-            errorMessage = """
-                    ID token verification has failed: %s
-                    """.formatted(errorMessage(t));
-            LOG.error(errorMessage);
-        }
-
-        return errorMessage;
+        String tokenType = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null ? "Access" : "ID";
+        String errorMessage = errorMessage(t);
+        String authenticationError = String.format("%s token verification has failed%s",
+                tokenType, errorMessage.isEmpty() ? "" : ": " + errorMessage);
+        LOG.error(authenticationError, t);
+        return authenticationError;
     }
 
     private static boolean prepareNonceForVerification(RoutingContext context, OidcTenantConfig oidcConfig,
@@ -1083,7 +1074,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String errorMessage(Throwable t) {
-        return t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+        String message = t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+        return message != null ? message : "";
     }
 
     private CodeAuthenticationStateBean getCodeAuthenticationBean(String[] parsedStateCookieValue,
@@ -1461,7 +1453,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
-                            LOG.debugf("ID token refresh has failed: %s", errorMessage(t));
+                            String detail = errorMessage(t);
+                            LOG.debugf("ID token refresh has failed%s", detail.isEmpty() ? "" : ": " + detail);
                             if (autoRefresh) {
                                 // Token refresh was initiated while ID token was still valid
                                 if (fallback != null) {
@@ -1509,7 +1502,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.warnf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
+                                            String detail = errorMessage(tInner);
+                                            LOG.warnf("Verifying the refreshed ID token failed%s",
+                                                    detail.isEmpty() ? "" : ": " + detail);
                                             return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });

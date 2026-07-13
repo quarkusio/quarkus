@@ -18,6 +18,7 @@
         <oracle.reactive.url/><!-- Default URL is empty, meaning we'll use dev services -->
         <oracle.username/>
         <oracle.password/>
+        <oracle.db-version/>
     </properties>
 
     <dependencies>

@@ -7,13 +7,15 @@ import org.hibernate.StatelessSession;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractStatelessJpaOperations;
 import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import io.quarkus.panache.common.Sort;
 
 public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperations<PanacheBlockingQuery<?>> {
 
     @Override
-    protected PanacheBlockingQuery<?> createPanacheQuery(StatelessSession session, String query, String originalQuery,
-            String orderBy, Object paramsArrayOrMap) {
-        return new PanacheBlockingQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+    protected PanacheBlockingQuery<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
+            String originalQuery,
+            Sort sort, Object paramsArrayOrMap) {
+        return new PanacheBlockingQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @Override

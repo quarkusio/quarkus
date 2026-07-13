@@ -90,7 +90,7 @@
         <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
         <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2025-latest</mssql.image>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
         <mysql.image>docker.io/library/mysql:9.5</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -100,7 +100,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.6.2</keycloak.server.version>
+        <keycloak.server.version>26.7.0</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
@@ -113,11 +113,11 @@
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.54.0</artemis.version>
+        <artemis.version>2.55.0</artemis.version>
 
         <!-- Dev Services Images -->
         <!-- TODO switch to apache/activemq-artemis to match the artemis version-->
-        <amqp.image>quay.io/artemiscloud/activemq-artemis-broker:1.0.25</amqp.image>
+        <amqp.image>quay.io/arkmq-org/arkmq-org-broker:artemis.2.55.0</amqp.image>
         <apicurio-registry.image>quay.io/apicurio/apicurio-registry:3.1.7</apicurio-registry.image>
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
         <rabbitmq.image>docker.io/library/rabbitmq:3.12-management</rabbitmq.image>

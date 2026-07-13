@@ -31,6 +31,7 @@ import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -38,7 +39,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
@@ -63,6 +63,21 @@ public final class HibernateProcessorUtil {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private HibernateProcessorUtil() {
+    }
+
+    public record FormatMappers(Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper,
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
+    }
+
+    public static FormatMappers resolveFormatMappers(Capabilities capabilities, HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
+                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        return new FormatMappers(jsonMapper, xmlMapper, jsonFormatterCustomizationCheck(capabilities, jsonMapper));
     }
 
     public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
@@ -98,7 +113,6 @@ public final class HibernateProcessorUtil {
             Optional<String> explicitDbMinVersion,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector) {
         Optional<String> dialect = explicitDialect;
         Optional<String> dbProductName = Optional.empty();
@@ -143,11 +157,15 @@ public final class HibernateProcessorUtil {
 
         Optional<SupportedDatabaseKind> supportedDbKind = dbKind.flatMap(SupportedDatabaseKind::from);
 
-        handleDialectSpecificSettings(
-                persistenceUnitName,
-                puPropertiesCollector,
-                dialectConfig,
-                supportedDbKind);
+        // dialectConfig is null for persistence units contributed through the SPI, which do not support
+        // storage-engine or dialect-specific customization.
+        if (dialectConfig != null) {
+            handleDialectSpecificSettings(
+                    persistenceUnitName,
+                    puPropertiesCollector,
+                    dialectConfig,
+                    supportedDbKind);
+        }
 
         return supportedDbKind;
     }
@@ -478,10 +496,25 @@ public final class HibernateProcessorUtil {
         for (var regionEntry : config.cache().entrySet()) {
             String cacheName = regionEntry.getKey();
             var cacheConfig = regionEntry.getValue();
+            var memory = cacheConfig.memory();
+
+            // Validate mutual exclusivity
+            if (memory.objectCount().isPresent() && memory.maximumWeight().isPresent()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'object-count' and 'maximum-weight' are mutually exclusive. "
+                                + "Use 'object-count' for count-based eviction or 'maximum-weight' for weight-based eviction.");
+            }
+            if (memory.weigherClass().isPresent() && memory.maximumWeight().isEmpty()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'weigher-class' requires 'maximum-weight' to be set.");
+            }
+
             caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(
-                    cacheConfig.memory().objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),
+                    memory.objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),
                     cacheConfig.expiration().maxIdle()
-                            .orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxIdle())));
+                            .orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxIdle()),
+                    memory.maximumWeight().orElse(-1L),
+                    memory.weigherClass().orElse(null)));
         }
         return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }

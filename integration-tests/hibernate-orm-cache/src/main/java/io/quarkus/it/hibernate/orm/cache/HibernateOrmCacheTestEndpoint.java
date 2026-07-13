@@ -72,6 +72,24 @@ public class HibernateOrmCacheTestEndpoint {
                 .orElse("unlimited");
     }
 
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/maximum-weight/{region}")
+    public String maximumWeight(@PathParam("region") String region) {
+        CaffeineConfiguration<?, ?> config = getCacheConfig(region);
+        return toOptionalObject(config.getMaximumWeight())
+                .map(Object::toString)
+                .orElse("not-set");
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/has-weigher/{region}")
+    public String hasWeigher(@PathParam("region") String region) {
+        CaffeineConfiguration<?, ?> config = getCacheConfig(region);
+        return String.valueOf(config.getWeigherFactory().isPresent());
+    }
+
     private Cache<?, ?> getRegionCache(String region) {
         var sessionFactory = emf.unwrap(SessionFactory.class);
         var cache = (CacheImplementor) sessionFactory.getCache();

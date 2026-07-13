@@ -199,11 +199,6 @@
                 <jdk>[21,)</jdk>
             </activation>
 
-            <properties>
-                <maven.compiler.target>21</maven.compiler.target>
-                <maven.compiler.source>21</maven.compiler.source>
-                <maven.compiler.release>21</maven.compiler.release>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -220,6 +215,17 @@
                                     <sources>
                                         <source>src/test/java21</source>
                                     </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-testCompile</id>
+                                <configuration>
+                                    <release>21</release>
                                 </configuration>
                             </execution>
                         </executions>

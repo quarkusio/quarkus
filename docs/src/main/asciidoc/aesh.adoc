@@ -126,7 +126,8 @@ class CalcCommand implements Command<CommandInvocation> {
 }
 ----
 
-With two commands, console mode is auto-detected:
+With two commands, console mode is auto-detected. Without arguments, the interactive
+REPL starts:
 
 [source,shell]
 ----
@@ -137,6 +138,17 @@ Hello Aesh!
 Result: 8
 [quarkus]$ exit
 ----
+
+If command-line arguments are provided, the command is executed once and the application
+exits -- just like runtime mode:
+
+[source,shell]
+----
+$ java -jar myapp.jar greet --name=Aesh
+Hello Aesh!
+----
+
+This allows console mode applications to be used both interactively and in scripts.
 
 The prompt, exit command, and other console settings are configurable via `quarkus.aesh.*` properties.
 
@@ -365,6 +377,64 @@ $ java -jar myapp.jar info
 CLI App v1.0
 ----
 
+==== Programmatic sub-commands with GroupCommand
+
+Instead of declaring sub-commands in the `groupCommands` annotation attribute, you can implement the `GroupCommand` interface and override `getCommands()` to register sub-commands programmatically.
+This is useful when sub-commands need constructor arguments or when the set of sub-commands is determined at runtime:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import java.util.List;
+
+import jakarta.inject.Inject;
+
+import org.aesh.command.Command;
+import org.aesh.command.CommandDefinition;
+import org.aesh.command.CommandResult;
+import org.aesh.command.GroupCommand;
+import org.aesh.command.invocation.CommandInvocation;
+
+@CommandDefinition(name = "tools", description = "Developer tools")
+public class ToolsCommand implements GroupCommand<CommandInvocation> { // <1>
+
+    @Inject
+    StatusCommand statusSub; // <2>
+
+    @Override
+    public List<Command<CommandInvocation>> getCommands() { // <3>
+        return List.of(statusSub);
+    }
+
+    @Override
+    public CommandResult execute(CommandInvocation invocation) {
+        invocation.println("Use a sub-command: status");
+        return CommandResult.SUCCESS;
+    }
+}
+
+@CommandDefinition(name = "status", description = "Show status")
+class StatusCommand implements Command<CommandInvocation> {
+
+    @Inject
+    StatusService statusService; // <4>
+
+    @Override
+    public CommandResult execute(CommandInvocation invocation) {
+        invocation.println(statusService.getStatus());
+        return CommandResult.SUCCESS;
+    }
+}
+----
+<1> Implement `GroupCommand` instead of plain `Command`. Do not use `groupCommands` in the annotation -- the sub-commands come from `getCommands()` instead.
+<2> Inject the sub-command via CDI so that `@Inject` fields in the sub-command are properly populated.
+<3> Return CDI-managed instances from `getCommands()`. Aesh uses these instances directly, preserving CDI injection.
+<4> CDI injection works in sub-commands because they are managed by CDI, not created with `new`.
+
+IMPORTANT: Sub-commands returned by `getCommands()` must be injected via `@Inject` (not created with `new`) if they need CDI services.
+Creating sub-commands with `new` bypasses CDI, and `@Inject` fields will not be populated.
+
 == Custom option completers, converters, and validators
 
 Aesh supports custom implementations for tab-completion, type conversion, option validation, and more.
@@ -570,6 +640,55 @@ public class MyCliSettings implements CliSettings {
 ----
 
 Multiple `CliSettings` beans can be registered. They are applied in arbitrary order, so avoid conflicting settings across implementations.
+
+== Command execution listener
+
+Implement `CommandExecutionListener` as a CDI bean to receive a callback after each command completes.
+This is useful for logging, metrics, or audit trails:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.aesh.command.CommandExecutionListener;
+import org.aesh.command.CommandResult;
+
+@ApplicationScoped
+public class CommandLogger implements CommandExecutionListener {
+
+    @Override
+    public void onCommandComplete(String commandLine, CommandResult result, long executionTimeMs) {
+        System.out.println("Executed: " + commandLine + " in " + executionTimeMs + "ms");
+    }
+}
+----
+
+The listener fires in both console mode (after each REPL command) and when arguments are provided on the command line.
+
+== Command not found handler
+
+Implement `CommandNotFoundHandler` as a CDI bean to customize the error message when an unknown command is typed:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.aesh.command.CommandNotFoundHandler;
+import org.aesh.command.shell.Shell;
+
+@ApplicationScoped
+public class MyNotFoundHandler implements CommandNotFoundHandler {
+
+    @Override
+    public void handleCommandNotFound(String line, Shell shell) {
+        shell.writeln("Unknown command: " + line + ". Type 'help' for available commands.");
+    }
+}
+----
 
 == Build-time validation
 

@@ -3,13 +3,15 @@ package io.quarkus.hibernate.reactive.panache.common.runtime;
 import org.hibernate.Filter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 public class CommonManagedPanacheQueryImpl<Entity> extends CommonAbstractPanacheQueryImpl<Entity, Mutiny.Session> {
 
-    public CommonManagedPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+    public CommonManagedPanacheQueryImpl(Uni<Mutiny.Session> em, Class<?> entityClass, String query, String originalQuery,
+            Sort sort,
             Object paramsArrayOrMap) {
-        super(em, query, originalQuery, orderBy, paramsArrayOrMap);
+        super(em, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     protected CommonManagedPanacheQueryImpl(CommonManagedPanacheQueryImpl<?> previousQuery, String newQueryString,

@@ -440,6 +440,68 @@ port.
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
+[[host-header-validation]]
+== HTTP Host header validation
+
+Quarkus can validate the HTTP `Host` header on incoming requests to protect against DNS rebinding attacks and host header poisoning.
+
+When `quarkus.http.host` is set to a localhost name (`localhost`, `127.0.0.1`, or `[::1]`), host validation is automatically enabled in **dev** and **production** modes.
+Only requests whose `Host` header matches one of the known localhost names are accepted; all others receive a `400 Bad Request` response.
+
+[WARNING]
+====
+This automatic behavior is a change from previous Quarkus versions, where no `Host` header validation was performed.
+If your application runs behind a reverse proxy that rewrites the `Host` header, you may need to either:
+
+* configure the allowed hosts explicitly with `quarkus.http.host-validation.allowed-hosts`, or
+* disable the automatic validation with `quarkus.http.host-validation.require-localhost=false`.
+====
+
+=== Configuring allowed hosts
+
+To restrict requests to a specific set of host names, use `allowed-hosts`:
+
+[source, properties]
+----
+quarkus.http.host-validation.allowed-hosts=example.com,api.example.com
+----
+
+The check is case-insensitive and only validates the host name, not the port.
+
+=== Requiring localhost only
+
+To explicitly require that only localhost names are accepted:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=true
+----
+
+To disable automatic localhost validation when the server is bound to a localhost address:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=false
+----
+
+NOTE: `allowed-hosts` and `require-localhost` are mutually exclusive.
+Setting both results in a configuration error.
+
+=== Reverse proxy considerations
+
+When running behind a reverse proxy, enable proxy header forwarding so that Quarkus validates the forwarded host instead of the proxy's internal host name:
+
+[source, properties]
+----
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-forwarded=true
+quarkus.http.host-validation.allowed-hosts=public-api.example.com
+----
+
+This works with both the standard `Forwarded` header and the `X-Forwarded-Host` header.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.host-validation.adoc[leveloffset=+1, opts=optional]
+
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]
@@ -763,9 +825,10 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_ACCESS_LOG_HANDLER` | Access-log handler, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_RECORD_START_TIME` | Handler adding the start-time, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HOT_REPLACEMENT` | -replacement body handler.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HEADERS` | Handlers that add headers specified in the configuration.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT` | Host validation handler of the management router.
+| `Integer.MIN_VALUE + 2` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 3` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_BODY_HANDLER` | Body handler.
 | `-2` | `ROUTE_ORDER_UPLOAD_LIMIT` | Route that enforces the upload body size limit.
 | `0` | `ROUTE_ORDER_COMPRESSION` | Compression handler.

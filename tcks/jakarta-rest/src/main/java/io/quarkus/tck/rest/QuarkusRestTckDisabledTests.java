@@ -178,6 +178,36 @@ public class QuarkusRestTckDisabledTests implements ExecutionCondition {
 
         disable("jaxrs21.ee.client.executor.rx.JAXRSClientIT", "deleteTest", THREADING_MODEL);
         disable("jaxrs21.ee.client.executor.rx.JAXRSClientIT", "optionsTest", THREADING_MODEL);
+
+        // =====================================================================
+        // Method-level exclusions: Empty query param values treated as null
+        // =====================================================================
+
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamEntityWithConstructorTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamEntityWithValueOfTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamListEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieParamSortedSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldParamEntityWithConstructorTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldParamEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldParamEntityWithValueOfTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldParamListEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldParamSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.JAXRSClientIT", "cookieFieldSortedSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamEntityWithConstructorTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamEntityWithValueOfTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamListEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieParamSortedSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamEntityWithConstructorTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamEntityWithValueOfTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamListEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+        disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldSortedSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
     }
 
     private static void disableClass(String shortClassName, DisableReason reason) {

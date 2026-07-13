@@ -21,7 +21,8 @@ public enum DisableReason {
     NOT_IMPLEMENTED_YET("Not yet implemented in Quarkus REST"),
     FILE_HANDLING("File handling should be done by Vert.x"),
     SIGNATURE_TEST("Signature test library not available"),
-    THREADING_MODEL("Threading model incompatibility");
+    THREADING_MODEL("Threading model incompatibility"),
+    EMPTY_PARAM_IS_NULL("Quarkus REST deliberately treats empty parameter values as null");
 
     private final String description;
 

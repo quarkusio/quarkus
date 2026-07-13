@@ -85,13 +85,13 @@
         <postgres.image>docker.io/library/postgres:18</postgres.image>
         <postgis.image>docker.io/postgis/postgis:18-3.6</postgis.image>
         <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
-        <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
+        <mariadb.image>docker.io/library/mariadb:12.3</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2025-latest</mssql.image>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
-        <mysql.image>docker.io/library/mysql:9.5</mysql.image>
+        <mysql.image>docker.io/library/mysql:9.7</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
-        <mongo.image>docker.io/library/mongo:7.0</mongo.image>
+        <mongo.image>docker.io/library/mongo:8.3</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
@@ -119,7 +119,7 @@
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
         <rabbitmq.image>docker.io/library/rabbitmq:3.12-management</rabbitmq.image>
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
-        <redis.image>docker.io/library/redis:7</redis.image>
+        <redis.image>docker.io/library/redis:8</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
         <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
 

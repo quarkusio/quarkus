@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -128,7 +127,11 @@ public abstract class JacksonCodeGenerator {
 
     public Collection<String> create(Collection<ClassInfo> classInfos) {
         Set<String> createdClasses = new HashSet<>();
-        toBeGenerated.addAll(classInfos);
+        for (ClassInfo classInfo : classInfos) {
+            if (shouldGenerateCodeFor(classInfo)) {
+                toBeGenerated.add(classInfo);
+            }
+        }
 
         while (!toBeGenerated.isEmpty()) {
             create(toBeGenerated.removeFirst()).ifPresent(createdClasses::add);
@@ -257,9 +260,9 @@ public abstract class JacksonCodeGenerator {
         }
     }
 
-    private static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
+    protected static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
     private static final DotName SET_NAME = DotName.createSimple(Set.class);
-    private static final DotName MAP_NAME = DotName.createSimple(Map.class);
+    protected static final DotName MAP_NAME = DotName.createSimple(Map.class);
 
     protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
@@ -292,7 +295,7 @@ public abstract class JacksonCodeGenerator {
         return FieldKind.OBJECT;
     }
 
-    private boolean isAssignableTo(String typeName, DotName targetName) {
+    protected boolean isAssignableTo(String typeName, DotName targetName) {
         if (typeName.equals(targetName.toString())) {
             return true;
         }
@@ -340,7 +343,33 @@ public abstract class JacksonCodeGenerator {
     }
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
-        return !classInfo.isEnum();
+        return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
+    }
+
+    protected static boolean isClassFormatShapeArray(ClassInfo classInfo) {
+        AnnotationInstance format = classInfo.declaredAnnotation(DotName.createSimple(JsonFormat.class.getName()));
+        if (format == null) {
+            return false;
+        }
+        AnnotationValue shape = format.value("shape");
+        return shape != null && "ARRAY".equals(shape.asEnum());
+    }
+
+    private static final DotName JSON_TYPE_INFO = DotName.createSimple(JsonTypeInfo.class);
+
+    protected boolean hasJsonTypeInfoInTypeChain(Type type) {
+        ClassInfo classInfo = jandexIndex.getClassByName(type.name());
+        if (classInfo != null && classInfo.hasDeclaredAnnotation(JSON_TYPE_INFO)) {
+            return true;
+        }
+        if (type instanceof ParameterizedType pType) {
+            for (Type arg : pType.arguments()) {
+                if (hasJsonTypeInfoInTypeChain(arg)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
@@ -355,8 +384,7 @@ public abstract class JacksonCodeGenerator {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
-                        || fieldInfo.hasAnnotation(JsonProperty.class)
-                        || classInfo.hasDeclaredAnnotation(KOTLIN_METADATA))) {
+                        || fieldInfo.hasAnnotation(JsonProperty.class))) {
             return namedAccessor;
         }
         String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());
@@ -374,111 +402,10 @@ public abstract class JacksonCodeGenerator {
                         .filter(ctor -> ctor.parametersCount() == 0)
                         .findFirst();
             }
-            if (classInfo.isRecord()) {
-                return Optional.of(classInfo.canonicalRecordConstructor());
-            }
-            ctorOpt = findUsableConstructor(classInfo);
+            ctorOpt = classInfo.isRecord() ? Optional.of(classInfo.canonicalRecordConstructor())
+                    : classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
         }
         return ctorOpt;
-    }
-
-    protected Optional<MethodInfo> findUsableConstructor(ClassInfo classInfo) {
-        List<MethodInfo> usableConstructors = classInfo.constructors().stream()
-                .filter(ctor -> Modifier.isPublic(ctor.flags()))
-                .filter(ctor -> isUsableKotlinAwareConstructor(classInfo, ctor))
-                .toList();
-        if (usableConstructors.isEmpty()) {
-            return Optional.empty();
-        }
-        MethodInfo selectedConstructor = null;
-        int minParameterCount = Integer.MAX_VALUE;
-        for (MethodInfo constructor : usableConstructors) {
-            int parameterCount = countRealParameters(constructor);
-            if (parameterCount < minParameterCount) {
-                minParameterCount = parameterCount;
-                selectedConstructor = constructor;
-            }
-        }
-        return Optional.of(selectedConstructor);
-    }
-
-    protected static boolean isKotlinSyntheticParameter(Type parameterType, String parameterName) {
-        if (parameterName != null) {
-            return false;
-        }
-        String typeName = parameterType.name().toString();
-        if (typeName.startsWith("kotlin.jvm.internal.")) {
-            return true;
-        }
-        // Kotlin constructors with default arguments add an unnamed int bitmask parameter
-        // before DefaultConstructorMarker; it is compiler-generated and not a real property.
-        return "int".equals(typeName);
-    }
-
-    protected static int countRealParameters(MethodInfo constructor) {
-        int count = 0;
-        for (MethodParameterInfo parameter : constructor.parameters()) {
-            if (!isKotlinSyntheticParameter(parameter.type(), parameter.name())) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    protected static boolean isInstanceField(FieldInfo field) {
-        return !Modifier.isStatic(field.flags()) && !field.isSynthetic();
-    }
-
-    protected static int countInstanceFields(ClassInfo classInfo) {
-        int count = 0;
-        for (FieldInfo field : classInfo.fields()) {
-            if (isInstanceField(field)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    protected static List<String> listInstanceFieldNames(ClassInfo classInfo) {
-        return classInfo.fields().stream()
-                .filter(JacksonCodeGenerator::isInstanceField)
-                .map(field -> demangleKotlinInlinePropertyName(field.name()))
-                .toList();
-    }
-
-    protected static boolean isUsableKotlinAwareConstructor(ClassInfo classInfo, MethodInfo constructor) {
-        return countRealParameters(constructor) > 0;
-    }
-
-    protected String resolveFieldNameFromParameterIndex(ClassInfo classInfo, MethodInfo constructor, int parameterIndex) {
-        List<String> instanceFieldNames = listInstanceFieldNames(classInfo);
-        int realParameterIndex = 0;
-        for (int i = 0; i < constructor.parameters().size(); i++) {
-            MethodParameterInfo parameter = constructor.parameters().get(i);
-            if (isKotlinSyntheticParameter(parameter.type(), parameter.name())) {
-                continue;
-            }
-            if (i == parameterIndex) {
-                return realParameterIndex < instanceFieldNames.size() ? instanceFieldNames.get(realParameterIndex) : null;
-            }
-            realParameterIndex++;
-        }
-        return parameterIndex < instanceFieldNames.size() ? instanceFieldNames.get(parameterIndex) : null;
-    }
-
-    protected static String demangleKotlinInlinePropertyName(String name) {
-        if (name == null) {
-            return null;
-        }
-        int dash = name.lastIndexOf('-');
-        if (dash <= 0 || dash == name.length() - 1) {
-            return name;
-        }
-        String suffix = name.substring(dash + 1);
-        if (suffix.chars().allMatch(Character::isLetterOrDigit) && suffix.length() >= 4) {
-            return name.substring(0, dash);
-        }
-        return name;
     }
 
     protected PropertyNamingStrategy getNamingStrategy(ClassInfo classInfo) {
@@ -567,13 +494,9 @@ public abstract class JacksonCodeGenerator {
         return null;
     }
 
-    protected FieldSpecs fieldSpecsFromFieldParam(ClassInfo classInfo, MethodInfo constructor, int parameterIndex,
-            MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
-        String fieldName = paramInfo.name();
-        if (fieldName == null && classInfo != null && constructor != null) {
-            fieldName = resolveFieldNameFromParameterIndex(classInfo, constructor, parameterIndex);
-        }
-        return new FieldSpecs(classInfo, paramInfo, fieldName, namingStrategy);
+    protected FieldSpecs fieldSpecsFromFieldParam(ClassInfo classInfo, MethodParameterInfo paramInfo,
+            PropertyNamingStrategy namingStrategy) {
+        return new FieldSpecs(classInfo, paramInfo, namingStrategy);
     }
 
     protected static class FieldSpecs {
@@ -582,6 +505,7 @@ public abstract class JacksonCodeGenerator {
         final String jsonName;
         final boolean hasExplicitJsonName;
         final String[] aliases;
+        final boolean required;
         final Type fieldType;
 
         private final Map<String, AnnotationInstance> annotations = new HashMap<>();
@@ -616,27 +540,25 @@ public abstract class JacksonCodeGenerator {
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
-        FieldSpecs(ClassInfo classInfo, MethodParameterInfo paramInfo, String fieldName,
-                PropertyNamingStrategy namingStrategy) {
+        FieldSpecs(ClassInfo classInfo, MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
             if (classInfo != null) {
-                String lookupName = fieldName != null ? fieldName : paramInfo.name();
-                if (lookupName != null) {
-                    FieldInfo field = classInfo.field(lookupName);
-                    if (field != null) {
-                        this.fieldInfo = field;
-                        readAnnotations(field);
-                    }
+                FieldInfo field = classInfo.field(paramInfo.name());
+                if (field != null) {
+                    this.fieldInfo = field;
+                    readAnnotations(field);
                 }
             }
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
-            this.fieldName = fieldName != null ? fieldName : demangleKotlinInlinePropertyName(paramInfo.name());
+            this.fieldName = paramInfo.name();
             JsonNameResult result = jsonName(null, namingStrategy);
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
         private void readAnnotations(AnnotationTarget target) {
@@ -668,6 +590,17 @@ public abstract class JacksonCodeGenerator {
             return EMPTY_STRING_ARRAY;
         }
 
+        private boolean isRequired() {
+            AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty != null) {
+                AnnotationValue req = jsonProperty.value("required");
+                if (req != null) {
+                    return req.asBoolean();
+                }
+            }
+            return false;
+        }
+
         private record JsonNameResult(String name, boolean explicit) {
         }
 
@@ -679,9 +612,9 @@ public abstract class JacksonCodeGenerator {
             if (jsonProperty == null) {
                 jsonProperty = annotations.get(JsonSetter.class.getName());
             }
-            if (jsonProperty == null && constructor != null && fieldName != null) {
+            if (jsonProperty == null && constructor != null) {
                 jsonProperty = constructor.parameters().stream()
-                        .filter(parameter -> fieldName.equals(parameter.name())).findFirst()
+                        .filter(parameter -> parameter.name().equals(fieldName)).findFirst()
                         .map(parameter -> parameter.annotation(JsonProperty.class.getName()))
                         .orElse(null);
             }
@@ -692,20 +625,14 @@ public abstract class JacksonCodeGenerator {
                     return new JsonNameResult(value.asString(), true);
                 }
             }
-            if (namingStrategy != null && fieldName != null) {
+            if (namingStrategy != null) {
                 return new JsonNameResult(namingStrategy.nameForField(null, null, fieldName), true);
             }
-            return new JsonNameResult(fieldName != null ? fieldName : "", false);
+            return new JsonNameResult(fieldName, false);
         }
 
         private String fieldName() {
-            if (fieldInfo != null) {
-                return JacksonCodeGenerator.demangleKotlinInlinePropertyName(fieldInfo.name());
-            }
-            if (methodInfo != null) {
-                return JacksonCodeGenerator.demangleKotlinInlinePropertyName(fieldNameFromMethod(methodInfo));
-            }
-            return null;
+            return fieldInfo != null ? fieldInfo.name() : fieldNameFromMethod(methodInfo);
         }
 
         private String fieldNameFromMethod(MethodInfo methodInfo) {
@@ -761,13 +688,17 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonRawValue.class.getName()) != null;
         }
 
-        boolean isFormatShapeNumber() {
+        String formatShape() {
             AnnotationInstance format = annotations.get(JsonFormat.class.getName());
             if (format == null) {
-                return false;
+                return null;
             }
             AnnotationValue shape = format.value("shape");
-            return shape != null && "NUMBER".equals(shape.asEnum());
+            return shape != null ? shape.asEnum() : null;
+        }
+
+        boolean isFormatShapeNumber() {
+            return "NUMBER".equals(formatShape());
         }
 
         String formatPattern() {

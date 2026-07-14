@@ -2,9 +2,11 @@ package io.quarkus.tls.deployment;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Singleton;
 
@@ -14,24 +16,28 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.KeyStoreFactory;
 import io.quarkus.tls.KeyStoreProvider;
+import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.TrustStoreFactory;
 import io.quarkus.tls.TrustStoreProvider;
 import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.tls.runtime.CertificateRecorder;
+import io.quarkus.tls.runtime.CertificateRegistryImpl;
 import io.quarkus.tls.runtime.LetsEncryptRecorder;
+import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
 
 public class CertificatesProcessor {
 
@@ -46,36 +52,50 @@ public class CertificatesProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     public TlsRegistryBuildItem initializeCertificate(
             Optional<VertxBuildItem> vertx,
-            BeanDiscoveryFinishedBuildItem beadDiscovery,
-            CertificateRecorder recorder,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            ActionBuilder action,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            List<TlsCertificateBuildItem> otherCertificates,
-            ShutdownContextBuildItem shutdown) {
+            List<TlsCertificateBuildItem> otherCertificates) {
 
-        if (vertx.isPresent()) {
-            var providerBucketNames = getProviderBucketNames(beadDiscovery);
-            recorder.validateCertificates(providerBucketNames, vertx.get().getVertx(), shutdown);
-        }
+        Set<String> providerBucketNames = vertx.isPresent()
+                ? Set.copyOf(getProviderBucketNames(beanDiscovery))
+                : Set.of();
 
-        for (TlsCertificateBuildItem certificate : otherCertificates) {
-            recorder.register(certificate.name, certificate.supplier);
-        }
+        // capture additional certificate suppliers for the lambda;
+        // suppliers must be records or other capturable types
+        Map<String, Supplier<TlsConfiguration>> capturedCerts = Map.copyOf(
+                otherCertificates.stream().collect(Collectors.toMap(c -> c.name, c -> c.supplier)));
 
-        Supplier<TlsConfigurationRegistry> supplier = recorder.getSupplier();
+        action
+                .forService(TlsConfigurationRegistry.class)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(TlsConfig.class)
+                .request(Vertx.class)
+                .action((ctx, tlsConfig, vertxOpt) -> {
+                    CertificateRegistryImpl registry = new CertificateRegistryImpl(tlsConfig);
+                    vertxOpt.ifPresent(v -> {
+                        registry.validateCertificates(providerBucketNames, (Vertx) v);
+                        ctx.onStop(registry::closeReloader);
+                    });
+                    for (var entry : capturedCerts.entrySet()) {
+                        registry.register(entry.getKey(), entry.getValue().get());
+                    }
+                    return registry;
+                });
 
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+        // temporary bridge: supplier for unconverted consumers
+        syntheticBeans.produce(SyntheticBeanBuildItem
                 .configure(TlsConfigurationRegistry.class)
-                .supplier(supplier)
+                .runtimeValue(action.serviceAsRuntimeValue(TlsConfigurationRegistry.class))
                 .scope(Singleton.class)
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .done());
 
-        syntheticBeans.produce(configurator.done());
-
-        return new TlsRegistryBuildItem(supplier);
+        return new TlsRegistryBuildItem(
+                action.serviceAsRecorderSupplier(TlsConfigurationRegistry.class));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

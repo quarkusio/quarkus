@@ -192,7 +192,7 @@ public class TaskBean {
 ----
 <1> Inject the underlying `org.quartz.Scheduler` instance.
 <2> Schedule a new job using the Quartz API.
-<3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a link:cdi-reference[bean archive].
+<3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a xref:cdi-reference.adoc[bean archive].
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.
 

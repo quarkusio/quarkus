@@ -64,7 +64,12 @@ public final class ValueResolvers {
         }
 
         public boolean appliesTo(EvalContext context) {
-            if (context.getBase() == null) {
+            Object base = context.getBase();
+            if (base == null) {
+                return false;
+            }
+            // Skip Results.NotFound - let the property-not-found-strategy handle it
+            if (Results.isNotFound(base)) {
                 return false;
             }
             String name = context.getName();

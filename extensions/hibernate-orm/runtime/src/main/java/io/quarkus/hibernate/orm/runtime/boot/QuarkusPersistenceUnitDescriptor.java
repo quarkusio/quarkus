@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
+import jakarta.persistence.FetchType;
 import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
@@ -13,7 +14,6 @@ import jakarta.persistence.ValidationMode;
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 
 import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
 import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitProviderHelper;
@@ -128,15 +128,14 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     @Override
-    public PersistenceUnitTransactionType getPersistenceUnitTransactionType() {
-        return persistenceUnitTransactionType;
+    public FetchType getDefaultToOneFetchType() {
+        // TODO Luca this is going to be discussed
+        return FetchType.LAZY;
     }
 
     @Override
-    @Deprecated
-    @SuppressWarnings("removal")
-    public jakarta.persistence.spi.PersistenceUnitTransactionType getTransactionType() {
-        return PersistenceUnitTransactionTypeHelper.toDeprecatedForm(getPersistenceUnitTransactionType());
+    public PersistenceUnitTransactionType getPersistenceUnitTransactionType() {
+        return persistenceUnitTransactionType;
     }
 
     @Override
@@ -151,6 +150,11 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
 
     @Override
     public List<String> getManagedClassNames() {
+        return managedClassNames;
+    }
+
+    @Override
+    public List<String> getAllClassNames() {
         return managedClassNames;
     }
 
@@ -193,13 +197,19 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         return null;
     }
 
+    @Override
+    public boolean isClassTransformerRegistrationDisabled() {
+        // TODO Luca discuss this
+        return true;
+    }
+
     public boolean isReactive() {
         return reactive;
     }
 
     @Override
-    public void pushClassTransformer(final EnhancementContext enhancementContext) {
-        // has never been supported
+    public ClassTransformer pushClassTransformer(final EnhancementContext enhancementContext) {
+        throw new UnsupportedOperationException("has never been supported");
     }
 
     private static void verifyIgnoredFields(final PersistenceUnitDescriptor toClone) {
@@ -237,11 +247,5 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 ", properties=" + properties +
                 ", isReactive=" + reactive +
                 '}';
-    }
-
-    @Override
-    public ClassTransformer getClassTransformer() {
-        // We transform classes during the build, not on bootstrap.
-        return null;
     }
 }

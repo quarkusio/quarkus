@@ -4,8 +4,13 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
@@ -100,6 +105,31 @@ public class JacksonMapperUtil {
             formatter = formatter.withZone(ZoneId.of(timezone));
         }
         generator.writeString(formatter.format((TemporalAccessor) value));
+    }
+
+    public static void serializeTemporalAsTimestamp(Object value, JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+        } else if (value instanceof Instant i) {
+            generator.writeNumber(toBigDecimal(i.getEpochSecond(), i.getNano()));
+        } else if (value instanceof ZonedDateTime zdt) {
+            Instant inst = zdt.toInstant();
+            generator.writeNumber(toBigDecimal(inst.getEpochSecond(), inst.getNano()));
+        } else if (value instanceof OffsetDateTime odt) {
+            Instant inst = odt.toInstant();
+            generator.writeNumber(toBigDecimal(inst.getEpochSecond(), inst.getNano()));
+        } else if (value instanceof Duration d) {
+            generator.writeNumber(toBigDecimal(d.getSeconds(), d.getNano()));
+        } else {
+            generator.writeString(value.toString());
+        }
+    }
+
+    private static BigDecimal toBigDecimal(long seconds, int nanoseconds) {
+        if (nanoseconds == 0) {
+            return BigDecimal.valueOf(seconds);
+        }
+        return new BigDecimal(seconds + "." + String.format("%09d", nanoseconds));
     }
 
     public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {

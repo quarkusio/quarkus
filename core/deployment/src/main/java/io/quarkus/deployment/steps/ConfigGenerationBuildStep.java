@@ -48,6 +48,7 @@ import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.ConfigBuildTimeConfig;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -137,6 +138,7 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     void buildTimeRunTimeConfig(
+            ConfigBuildTimeConfig configBuildTimeConfig,
             ConfigurationBuildItem configItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -163,6 +165,15 @@ public class ConfigGenerationBuildStep {
                 if (entry.getValue().getValue() != null) {
                     clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
                             clinit.load(entry.getValue().getValue()));
+                }
+            }
+
+            if (configBuildTimeConfig.fixedAtBuildTime()) {
+                for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+                    if (entry.getValue().getValue() != null) {
+                        clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                                clinit.load(entry.getValue().getValue()));
+                    }
                 }
             }
 

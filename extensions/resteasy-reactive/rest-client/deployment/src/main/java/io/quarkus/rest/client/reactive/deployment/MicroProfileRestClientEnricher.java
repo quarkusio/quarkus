@@ -855,11 +855,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         }
                         headerFillingMethod = findMethod(clazz, declaringClass, staticMethodName,
                                 CLIENT_HEADER_PARAM.toString());
-                    } else if (accessibleType == AccessibleType.INTERFACE_METHOD) {
+                    } else {
                         headerFillingMethod = findMethod(declaringClass, declaringClass, accessibleName,
                                 CLIENT_HEADER_PARAM.toString());
-                    } else {
-                        throw new IllegalStateException("Unknown type " + accessibleType);
                     }
 
                     Type valueType = null;

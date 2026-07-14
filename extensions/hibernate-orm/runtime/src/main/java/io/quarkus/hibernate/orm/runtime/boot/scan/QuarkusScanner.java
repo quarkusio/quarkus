@@ -1,11 +1,11 @@
 package io.quarkus.hibernate.orm.runtime.boot.scan;
 
-import org.hibernate.boot.archive.spi.InputStreamAccess;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import org.hibernate.boot.archive.spi.InputStreamAccess;
 
 /**
  * A hard coded scanner. This scanner is serialized to bytecode, and used to avoid scanning on Hibernate startup.
@@ -49,18 +49,18 @@ public class QuarkusScanner implements io.quarkus.hibernate.orm.runtime.boot.sca
 
             for (PackageDescriptorImpl packageDescriptor : packageDescriptors) {
                 // TODO Luca figure out this if if it's tested
-//                if (scanOptions.canDetectUnlistedClassesInRoot() ||
-//                        scanEnvironment.getExplicitlyListedClassNames().contains(packageDescriptor.getName())) {
-                    this.selectedPackageDescriptors.add(packageDescriptor);
-//                }
+                //                if (scanOptions.canDetectUnlistedClassesInRoot() ||
+                //                        scanEnvironment.getExplicitlyListedClassNames().contains(packageDescriptor.getName())) {
+                this.selectedPackageDescriptors.add(packageDescriptor);
+                //                }
             }
 
             for (ClassDescriptorImpl classDescriptor : classDescriptors) {
-//                if (scanOptions.canDetectUnlistedClassesInRoot() ||
-//                        scanEnvironment.getExplicitlyListedClassNames().contains(classDescriptor.getName())) {
-                    this.selectedClassDescriptors.add(classDescriptor);
-                }
-//            }
+                //                if (scanOptions.canDetectUnlistedClassesInRoot() ||
+                //                        scanEnvironment.getExplicitlyListedClassNames().contains(classDescriptor.getName())) {
+                this.selectedClassDescriptors.add(classDescriptor);
+            }
+            //            }
         }
 
         @Override

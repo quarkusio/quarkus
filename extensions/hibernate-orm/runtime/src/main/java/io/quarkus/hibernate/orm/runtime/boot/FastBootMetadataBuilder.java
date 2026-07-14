@@ -28,7 +28,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
@@ -68,6 +67,7 @@ import org.hibernate.temporal.spi.ChangesetCoordinator;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -186,9 +186,9 @@ public class FastBootMetadataBuilder {
         // TODO No need to ask Hibernate to scan as it's now responsibility of the container
         // https://docs.hibernate.org/orm/8.0/migration-guide/#scanning
 
-//        if (scanner != null) {
-//            this.metamodelBuilder.applyScanner(scanner);
-//        }
+        //        if (scanner != null) {
+        //            this.metamodelBuilder.applyScanner(scanner);
+        //        }
         populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions);
 
         this.managedResources = MetadataBuildingProcess.prepare(metadataSources,
@@ -628,10 +628,10 @@ public class FastBootMetadataBuilder {
 
         ((MetadataBuilderImplementor) metamodelBuilder).getBootstrapContext().markAsJpaBootstrap();
 
-//        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
-//        metamodelBuilder.applyScanOptions(new StandardScanOptions(
-//                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
-//                persistenceUnit.isExcludeUnlistedClasses()));
+        //        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
+        //        metamodelBuilder.applyScanOptions(new StandardScanOptions(
+        //                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
+        //                persistenceUnit.isExcludeUnlistedClasses()));
 
         if (cacheRegionDefinitions != null) {
             cacheRegionDefinitions.forEach(metamodelBuilder::applyCacheRegionDefinition);

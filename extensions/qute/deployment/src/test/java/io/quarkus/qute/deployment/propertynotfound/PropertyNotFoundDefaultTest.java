@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Template;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class PropertyNotFoundNoopTest {
+public class PropertyNotFoundDefaultTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -22,7 +22,6 @@ public class PropertyNotFoundNoopTest {
                             new StringAsset(
                                     "name:{item.name} nonExistent:{item.nonExistent}"),
                             "templates/beantest.txt"))
-            .overrideConfigKey("quarkus.qute.property-not-found-strategy", "noop")
             .overrideConfigKey("quarkus.qute.strict-rendering", "false");
 
     @Inject
@@ -32,16 +31,14 @@ public class PropertyNotFoundNoopTest {
     Template beantest;
 
     @Test
-    public void testNoop() {
-        // Missing top-level template data key should produce empty output
-        assertEquals("foos:", test.render());
+    public void testDefaultTopLevel() {
+        assertEquals("foos:NOT_FOUND", test.render());
     }
 
     @Test
-    public void testNoopBeanProperty() {
-        // NOOP strategy should also apply to missing bean properties;
-        // i.e. {item.nonExistent} should produce empty output, not "NOT_FOUND"
-        assertEquals("name:Hello nonExistent:", beantest.data("item", new Item("Hello")).render());
+    public void testDefaultBeanProperty() {
+        assertEquals("name:Hello nonExistent:NOT_FOUND",
+                beantest.data("item", new Item("Hello")).render());
     }
 
     public static class Item {

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.hibernate.boot.archive.scan.spi.Scanner;
+import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;

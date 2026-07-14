@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import javax.xml.namespace.QName;
 
+import io.quarkus.hibernate.orm.runtime.boot.scan.Categorization;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 import jakarta.persistence.PersistenceUnitTransactionType;
@@ -48,8 +49,6 @@ import jakarta.xml.bind.JAXBElement;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 import org.hibernate.annotations.processing.SQL;
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.MappingSettings;
@@ -1747,16 +1746,16 @@ public final class HibernateOrmProcessor {
      */
     public static QuarkusScanner buildQuarkusScanner(JpaModelBuildItem jpaModel) {
         QuarkusScanner scanner = new QuarkusScanner();
-        Set<PackageDescriptor> packageDescriptors = new LinkedHashSet<>();
+        Set<QuarkusScanner.PackageDescriptorImpl> packageDescriptors = new LinkedHashSet<>();
         for (String packageName : jpaModel.getAllModelPackageNames()) {
             QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
             packageDescriptors.add(desc);
         }
         scanner.setPackageDescriptors(packageDescriptors);
-        Set<ClassDescriptor> classDescriptors = new LinkedHashSet<>();
+        Set<QuarkusScanner.ClassDescriptorImpl> classDescriptors = new LinkedHashSet<>();
         for (String className : jpaModel.getEntityClassNames()) {
             QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
-                    ClassDescriptor.Categorization.MODEL);
+                    Categorization.MODEL);
             classDescriptors.add(desc);
         }
         scanner.setClassDescriptors(classDescriptors);

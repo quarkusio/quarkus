@@ -11,6 +11,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import jakarta.persistence.Cache;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
@@ -19,7 +20,6 @@ import jakarta.persistence.spi.LoadState;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.engine.spi.SessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
@@ -76,7 +76,7 @@ public class HibernateOrmRecorder {
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
+                                              Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();
         for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
             if (i.getConfig().getDataSource().isPresent()) {

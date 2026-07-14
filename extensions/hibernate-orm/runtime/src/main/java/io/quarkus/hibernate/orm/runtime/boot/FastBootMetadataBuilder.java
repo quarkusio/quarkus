@@ -28,14 +28,13 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.FunctionContributor;
@@ -52,7 +51,6 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.StringHelper;
-import org.hibernate.jpa.boot.internal.StandardJpaScanEnvironmentImpl;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.TypeContributorList;
@@ -185,9 +183,12 @@ public class FastBootMetadataBuilder {
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
-        if (scanner != null) {
-            this.metamodelBuilder.applyScanner(scanner);
-        }
+        // TODO No need to ask Hibernate to scan as it's now responsibility of the container
+        // https://docs.hibernate.org/orm/8.0/migration-guide/#scanning
+
+//        if (scanner != null) {
+//            this.metamodelBuilder.applyScanner(scanner);
+//        }
         populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions);
 
         this.managedResources = MetadataBuildingProcess.prepare(metadataSources,
@@ -627,10 +628,10 @@ public class FastBootMetadataBuilder {
 
         ((MetadataBuilderImplementor) metamodelBuilder).getBootstrapContext().markAsJpaBootstrap();
 
-        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
-        metamodelBuilder.applyScanOptions(new StandardScanOptions(
-                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
-                persistenceUnit.isExcludeUnlistedClasses()));
+//        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
+//        metamodelBuilder.applyScanOptions(new StandardScanOptions(
+//                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
+//                persistenceUnit.isExcludeUnlistedClasses()));
 
         if (cacheRegionDefinitions != null) {
             cacheRegionDefinitions.forEach(metamodelBuilder::applyCacheRegionDefinition);

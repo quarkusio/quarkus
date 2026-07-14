@@ -177,6 +177,29 @@ public class ExtensionDescriptorTaskTest {
     }
 
     @Test
+    public void shouldFailOnInvalidStatusArray() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String invalid = "name: extension-name\n" +
+                "metadata:\n" +
+                "  status:\n" +
+                "  - stable\n" +
+                "  - deprecated\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), invalid);
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("extensionDescriptor", "-S")
+                .buildAndFail();
+
+        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.FAILED);
+        assertThat(result.getOutput()).contains("Invalid quarkus-extension.yaml metadata");
+        assertThat(result.getOutput()).contains("status");
+    }
+
+    @Test
     public void shouldGenerateDescriptorWithCapabilities() throws IOException {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
                 "capabilities { \n" +

@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 

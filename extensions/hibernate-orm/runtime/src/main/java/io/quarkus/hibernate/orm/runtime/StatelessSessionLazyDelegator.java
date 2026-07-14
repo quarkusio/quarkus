@@ -1,5 +1,12 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.ConnectionConsumer;
@@ -17,6 +24,7 @@ import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaStatement;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.sql.ResultSetMapping;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
@@ -37,13 +45,6 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Plays the exact same role as {@link org.hibernate.engine.spi.SessionLazyDelegator} for {@link org.hibernate.Session}

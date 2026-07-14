@@ -1,10 +1,12 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.CacheRetrieveMode;
@@ -32,6 +34,7 @@ import jakarta.persistence.sql.ResultSetMapping;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -64,12 +67,11 @@ import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.stat.SessionStatistics;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 public class TransactionScopedSession implements Session {
 
@@ -85,11 +87,11 @@ public class TransactionScopedSession implements Session {
     private final Instance<RequestScopedSessionHolder> requestScopedSessions;
 
     public TransactionScopedSession(TransactionManager transactionManager,
-                                    TransactionSynchronizationRegistry transactionSynchronizationRegistry,
-                                    SessionFactory sessionFactory,
-                                    String unitName,
-                                    boolean requestScopedSessionEnabled,
-                                    Instance<RequestScopedSessionHolder> requestScopedSessions) {
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
+            SessionFactory sessionFactory,
+            String unitName,
+            boolean requestScopedSessionEnabled,
+            Instance<RequestScopedSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.sessionFactory = sessionFactory;
@@ -642,7 +644,7 @@ public class TransactionScopedSession implements Session {
 
     @Override
     public ProcedureCall createStoredProcedureQuery(String procedureName,
-                                                    @SuppressWarnings("rawtypes") Class... resultClasses) {
+            @SuppressWarnings("rawtypes") Class... resultClasses) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.createStoredProcedureQuery(procedureName, resultClasses);
@@ -1453,7 +1455,6 @@ public class TransactionScopedSession implements Session {
             return emr.session.createNativeMutationQuery(sqlString);
         }
     }
-
 
     @Override
     public <R> SelectionQuery<R> createNamedSelectionQuery(String name, Class<R> resultType) {

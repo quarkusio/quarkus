@@ -21,11 +21,9 @@ import jakarta.persistence.StatementReference;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.TypedQueryReference;
-import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaStatement;
-import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.sql.ResultSetMapping;
 import jakarta.transaction.Status;
@@ -49,18 +47,16 @@ import org.hibernate.procedure.ProcedureCall;
 import org.hibernate.query.MutationOrSelectionQuery;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.NativeQuery;
-import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
+import org.jspecify.annotations.NonNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 public class TransactionScopedStatelessSession implements StatelessSession {
 

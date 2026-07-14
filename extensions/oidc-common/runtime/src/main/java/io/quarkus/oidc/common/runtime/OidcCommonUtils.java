@@ -57,6 +57,7 @@ import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.spiffe.client.SpiffeClient;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -188,14 +189,25 @@ public class OidcCommonUtils {
                             configPrefix));
         }
         Credentials.Jwt jwt = creds.jwt();
-        if (jwt.source() != Credentials.Jwt.Source.CLIENT) {
+        if (jwt.source() == Source.BEARER) {
             if (isServerConfig && jwt.tokenPath().isEmpty()) {
                 throw new ConfigurationException(
-                        "Token path must be set when the JWT source is '" + jwt.source().name().toLowerCase() + "'");
+                        String.format("'%scredentials.jwt.token-path' must be set when the JWT source is 'bearer'",
+                                configPrefix));
             }
-        } else if (jwt.tokenPath().isPresent()) {
-            throw new ConfigurationException(
-                    "Token path can only be set when the JWT source is 'bearer' or 'spiffe'");
+        } else if (jwt.source() == Source.SPIFFE_JWT) {
+            if (jwt.tokenPath().isEmpty() && Arc.container().select(SpiffeClient.class).isUnsatisfied()) {
+                throw new ConfigurationException(String.format(
+                        "'%1$scredentials.jwt.source' is set to 'spiffe-jwt', but no SPIFFE JWT-SVID provider is available."
+                                + " Either set '%1$scredentials.jwt.token-path' to a file containing the JWT-SVID,"
+                                + " or add the 'quarkus-spiffe-client' extension to fetch JWT-SVIDs"
+                                + " from the SPIFFE Workload API",
+                        configPrefix));
+            }
+        } else if (jwt.source() == Source.CLIENT && jwt.tokenPath().isPresent()) {
+            throw new ConfigurationException(String.format(
+                    "'%scredentials.jwt.token-path' can only be set when the JWT source is 'bearer' or 'spiffe-jwt'",
+                    configPrefix));
         }
     }
 
@@ -995,7 +1007,8 @@ public class OidcCommonUtils {
         });
     }
 
-    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig) {
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx,
+            Credentials credentialsConfig, Optional<String> authServerUrl) {
         var jwtConfig = credentialsConfig.jwt();
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
@@ -1004,6 +1017,20 @@ public class OidcCommonUtils {
                 LOG.warnf("Cannot find a valid %s token at path: %s, deferring token loading to request time",
                         jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer",
                         jwtConfig.tokenPath().get());
+            }
+            return clientAssertionProvider;
+        } else if (jwtConfig.source() == Source.SPIFFE_JWT) {
+            var audience = jwtConfig.audience().or(() -> authServerUrl).orElseThrow(
+                    () -> new ConfigurationException(
+                            "'credentials.jwt.source' is set to 'spiffe-jwt', but no audience is available."
+                                    + " Either set 'credentials.jwt.audience' or 'auth-server-url'"));
+            var clientAssertionProvider = SpiffeClientAssertionProvider.forAudience(vertx, audience);
+            if (clientAssertionProvider == null) {
+                throw new ConfigurationException(
+                        "'credentials.jwt.source' is set to 'spiffe-jwt', but no SPIFFE JWT-SVID provider is available."
+                                + " Either set 'credentials.jwt.token-path' to a file containing the JWT-SVID,"
+                                + " or add the 'quarkus-spiffe-client' extension to fetch JWT-SVIDs"
+                                + " from the SPIFFE Workload API");
             }
             return clientAssertionProvider;
         }

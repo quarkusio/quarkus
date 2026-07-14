@@ -265,7 +265,7 @@ https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Stand
 |Property name |Default |Description
 
 |quarkus.oidc.credentials.jwt.token-key-id ||The token key id (`kid`) header value
-|quarkus.oidc.credentials.jwt.audience |OIDC token endpoint address|Audience (`aud`) claim value
+|quarkus.oidc.credentials.jwt.audience |Token audience|Audience (`aud`) claim value
 |quarkus.oidc.credentials.jwt.keep-audience-trailing-slash |false|Whether to keep a trailing slash in the audience value
 |quarkus.oidc.credentials.jwt.issuer |OIDC client id|Issuer (`iss`) claim value
 |quarkus.oidc.credentials.jwt.subject |OIDC client id|Subject (`sub`) cliam value
@@ -275,6 +275,8 @@ https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Stand
 
 `quarkus.oidc.credentials.jwt.token-key-id` can be used to set a key identifier (`kid`) header value to help the OIDC provider with fidning a token verification key.
 All other properties listed in the table above can be used to customize JWT claim values.
+In the typical OIDC client authentication case, the token audience defaults to the OIDC token endpoint address.
+When `quarkus.oidc.credentials.jwt.source` is `spiffe-jwt`, it defaults to `quarkus.oidc.auth-server-url`.
 
 
 ==== JWT Bearer
@@ -292,6 +294,10 @@ By default, when a client JWT authentication token must be produced, it is gener
 
 Set `quarkus.oidc.credentials.jwt.source=bearer` if the client authentication token is provided by Kubernetes, and use `quarkus.oidc.credentials.jwt.token-path` to point to the file resource containing this token.
 Set `quarkus.oidc.credentials.for-all-endpoints=true` when the OIDC provider enforces authenticated access to the discovery and JWKS endpoints. See xref:security-oidc-code-flow-authentication.adoc#authenticated-access-to-all-oidc-endpoints[Authenticated access to all OIDC endpoints] for more information.
+
+Set `quarkus.oidc.credentials.jwt.source=spiffe-jwt` to use a SPIFFE JWT-SVID token as the client assertion.
+When `quarkus.oidc.credentials.jwt.token-path` is set, the token is read from the file system and reloaded when it expires.
+When the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present and no token path is set, the token is fetched directly from the local SPIRE Agent.
 
 === Mutual TLS
 

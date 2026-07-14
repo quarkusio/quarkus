@@ -1,0 +1,22 @@
+// SPIFFE Workload API (JWT-SVID subset) — from https://github.com/spiffe/spiffe/blob/main/standards/workloadapi.proto
+syntax = "proto3";
+
+package spiffe.workload;
+
+option java_package = "io.quarkus.spiffe.client.runtime.internal.proto";
+option java_multiple_files = true;
+
+message JWTSVIDRequest {
+    repeated string audience = 1;
+    string spiffe_id = 2;
+}
+
+message JWTSVIDResponse {
+    repeated JWTSVID svids = 1;
+}
+
+message JWTSVID {
+    string spiffe_id = 1;
+    string svid = 2;
+    string hint = 3;
+}

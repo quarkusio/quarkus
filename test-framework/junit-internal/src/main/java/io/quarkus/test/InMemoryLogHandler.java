@@ -3,6 +3,7 @@ package io.quarkus.test;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
+import java.util.logging.Filter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -22,8 +23,20 @@ public class InMemoryLogHandler extends ExtHandler {
 
     @Override
     public void publish(LogRecord record) {
-        if (predicate.test(record)) {
+        if (isLoggable(record) && predicate.test(record)) {
             records.add(record);
+        }
+    }
+
+    /**
+     * Retroactively filters already-captured records when a new filter is installed,
+     * so that records captured before the filter was set are also filtered.
+     */
+    @Override
+    public void setFilter(Filter newFilter) throws SecurityException {
+        super.setFilter(newFilter);
+        if (newFilter != null) {
+            records.removeIf(record -> !newFilter.isLoggable(record));
         }
     }
 

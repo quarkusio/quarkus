@@ -1877,9 +1877,7 @@ For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUni
 [[json_xml_serialization_deserialization]]
 == Customizing JSON/XML serialization/deserialization
 
-By default, Quarkus will try to automatically configure format mappers depending on available extensions.
-Globally configured `ObjectMapper` (or `Jsonb`) will be used for serialization/deserialization operations when Jackson (or JSON-B) is available.
-Jackson will take precedence if both Jackson and JSON-B are available at the same time.
+By default, Quarkus will delegate to Hibernate ORM for configuring the appropriate format mappers.
 
 JSON and XML serialization/deserialization in Hibernate ORM can be customized by implementing a `org.hibernate.type.format.FormatMapper`
 and annotating the implementation with the appropriate qualifiers:

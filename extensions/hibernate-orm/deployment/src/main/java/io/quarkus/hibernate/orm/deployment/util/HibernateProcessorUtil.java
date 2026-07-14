@@ -31,7 +31,6 @@ import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -48,9 +47,6 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
-import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -63,43 +59,6 @@ public final class HibernateProcessorUtil {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private HibernateProcessorUtil() {
-    }
-
-    public record FormatMappers(Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
-    }
-
-    public static FormatMappers resolveFormatMappers(Capabilities capabilities, HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        return new FormatMappers(jsonMapper, xmlMapper, jsonFormatterCustomizationCheck(capabilities, jsonMapper));
-    }
-
-    public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
-        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
-            return Optional.empty();
-        }
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            return Optional.of(FormatMapperKind.JACKSON);
-        } else if (capabilities.isPresent(Capability.JSONB)) {
-            return Optional.of(FormatMapperKind.JSONB);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
-        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
-            return Optional.empty();
-        }
-        return capabilities.isPresent(Capability.JAXB)
-                ? Optional.of(FormatMapperKind.JAXB)
-                : Optional.empty();
     }
 
     public static boolean isHibernateValidatorPresent(Capabilities capabilities) {
@@ -600,13 +559,6 @@ public final class HibernateProcessorUtil {
 
         //Disable implicit loading of the default import script (import.sql)
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
-    }
-
-    public static JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck(Capabilities capabilities,
-            Optional<FormatMapperKind> jsonMapper) {
-        return jsonMapper.isEmpty() ? JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(false, false)
-                : JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(true,
-                        capabilities.isPresent(Capability.JACKSON));
     }
 
     private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {

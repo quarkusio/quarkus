@@ -5,8 +5,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureProperties;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonFormatterCustomizationCheck;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.resolveFormatMappers;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
@@ -55,7 +53,6 @@ import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
-import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.FormatMappers;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
@@ -239,8 +236,6 @@ public final class HibernateReactiveProcessor {
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
-        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
-
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
         Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
         entityClassNames.retainAll(model.entityClassNames());
@@ -259,13 +254,11 @@ public final class HibernateReactiveProcessor {
                         entityClassNames,
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
-                        hibernateOrmConfig.mapping().format().global(),
-                        formatMappers.jsonFormatterCustomizationCheck(),
                         persistenceUnitConfig.unsupportedProperties()),
                 null,
                 model.xmlMappings(),
                 false,
-                isHibernateValidatorPresent(capabilities), formatMappers.jsonMapper(), formatMappers.xmlMapper()));
+                isHibernateValidatorPresent(capabilities)));
     }
 
     @BuildStep

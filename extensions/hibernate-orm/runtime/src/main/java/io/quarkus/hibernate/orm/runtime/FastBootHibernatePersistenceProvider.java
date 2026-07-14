@@ -227,8 +227,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     runtimeSettingsResult.settings(),
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
-                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck(),
                     runtimeSettingsResult.importScripts());
         }
 

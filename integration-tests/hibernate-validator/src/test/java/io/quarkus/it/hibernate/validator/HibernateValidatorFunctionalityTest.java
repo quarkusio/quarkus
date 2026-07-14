@@ -77,6 +77,7 @@ public class HibernateValidatorFunctionalityTest {
     public void testCustomClassLevelConstraint() throws Exception {
         StringBuilder expected = new StringBuilder();
         expected.append("failed:  (invalid MyOtherBean)").append("\n");
+        expected.append("failed:  (service-loaded invalid MyOtherBean)").append("\n");
         expected.append("passed");
 
         RestAssured.when()

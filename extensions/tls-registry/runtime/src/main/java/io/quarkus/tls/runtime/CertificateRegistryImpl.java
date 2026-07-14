@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Default;
@@ -16,9 +15,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.KeyStoreFactory;
 import io.quarkus.tls.KeyStoreProvider;
@@ -36,19 +32,27 @@ import io.quarkus.tls.runtime.keystores.PemKeyStores;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 
-@Recorder
-public class CertificateRecorder implements TlsConfigurationRegistry {
+/**
+ * Implementation of {@link TlsConfigurationRegistry} that validates and manages
+ * TLS certificate configurations.
+ */
+public class CertificateRegistryImpl implements TlsConfigurationRegistry {
 
-    private static final Logger LOGGER = Logger.getLogger(CertificateRecorder.class);
+    private static final Logger LOGGER = Logger.getLogger(CertificateRegistryImpl.class);
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
     private volatile TlsCertificateUpdater reloader;
     private volatile Vertx vertx;
 
-    private final RuntimeValue<TlsConfig> runtimeConfig;
+    private final TlsConfig config;
 
-    public CertificateRecorder(final RuntimeValue<TlsConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
+    /**
+     * Construct a new instance.
+     *
+     * @param config the TLS configuration (must not be {@code null})
+     */
+    public CertificateRegistryImpl(TlsConfig config) {
+        this.config = config;
     }
 
     /**
@@ -61,17 +65,14 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      *        {@link KeyStoreProvider} or {@link TrustStoreProvider} beans
      * @param vertx the Vert.x instance
      */
-    public void validateCertificates(Set<String> providerBucketNames,
-            RuntimeValue<Vertx> vertx,
-            ShutdownContext shutdownContext) {
-        this.vertx = vertx.getValue();
+    public void validateCertificates(Set<String> providerBucketNames, Vertx vertx) {
+        this.vertx = vertx;
         // Verify the default config
-        if (runtimeConfig.getValue().defaultCertificateConfig().isPresent()) {
-            verifyCertificateConfig(runtimeConfig.getValue().defaultCertificateConfig().get(), vertx.getValue(),
-                    TlsConfig.DEFAULT_NAME);
+        if (config.defaultCertificateConfig().isPresent()) {
+            verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx, TlsConfig.DEFAULT_NAME);
         }
 
-        var bucketNames = new HashSet<>(runtimeConfig.getValue().namedCertificateConfig().keySet());
+        var bucketNames = new HashSet<>(config.namedCertificateConfig().keySet());
         bucketNames.addAll(providerBucketNames);
 
         // Verify the named configs
@@ -86,17 +87,18 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                         "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
                                 + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust or override it");
             }
-            verifyCertificateConfig(runtimeConfig.getValue().namedCertificateConfig().get(name), vertx.getValue(), name);
+            verifyCertificateConfig(config.namedCertificateConfig().get(name), vertx, name);
         }
+    }
 
-        shutdownContext.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                if (reloader != null) {
-                    reloader.close();
-                }
-            }
-        });
+    /**
+     * Close the certificate reloader, if one was started.
+     * Called from the service's {@code onStop} handler.
+     */
+    public void closeReloader() {
+        if (reloader != null) {
+            reloader.close();
+        }
     }
 
     private void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
@@ -210,7 +212,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         if (TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME.equals(name)) {
             final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME, k -> {
                 final TrustStoreAndTrustOptions ts = JavaxNetSslTrustStoreProvider.getTrustStore(vertx);
-                return new VertxCertificateHolder(vertx, k, runtimeConfig.getValue().namedCertificateConfig().get(k), null, ts);
+                return new VertxCertificateHolder(vertx, k, config.namedCertificateConfig().get(k), null, ts);
             });
             return Optional.ofNullable(result);
         }
@@ -239,19 +241,6 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
             throw new IllegalArgumentException("The TLS configuration to register cannot be null");
         }
         certificates.put(name, configuration);
-    }
-
-    public Supplier<TlsConfigurationRegistry> getSupplier() {
-        return new Supplier<TlsConfigurationRegistry>() {
-            @Override
-            public TlsConfigurationRegistry get() {
-                return CertificateRecorder.this;
-            }
-        };
-    }
-
-    public void register(String name, Supplier<TlsConfiguration> supplier) {
-        register(name, supplier.get());
     }
 
     static <T> InstanceHandle<T> lookupProvider(Class<T> type, String bucketName) {

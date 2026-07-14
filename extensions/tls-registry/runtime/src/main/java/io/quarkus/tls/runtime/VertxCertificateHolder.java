@@ -260,7 +260,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Reload keystore
         if (keyStore != null) {
             try {
-                keyStoreUpdateResult = CertificateRecorder.getKeyStore(config, vertx, name);
+                keyStoreUpdateResult = CertificateRegistryImpl.getKeyStore(config, vertx, name);
             } catch (Exception e) {
                 return false;
             }
@@ -269,7 +269,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Reload truststore
         if (trustStore != null) {
             try {
-                trustStoreUpdateResult = CertificateRecorder.getTrustStore(config, vertx, name);
+                trustStoreUpdateResult = CertificateRegistryImpl.getTrustStore(config, vertx, name);
             } catch (Exception e) {
                 return false;
             }

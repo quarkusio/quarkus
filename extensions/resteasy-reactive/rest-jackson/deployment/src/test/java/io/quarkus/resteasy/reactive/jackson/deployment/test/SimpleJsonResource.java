@@ -572,6 +572,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ItemJsonValuePrivateField(value);
     }
 
+    @GET
+    @Path("/json-value-inherited-from-interface")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.Wrapper echoJsonValueInheritedFromInterface(@RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.Wrapper(value);
+    }
+
     @POST
     @Path("/product-price")
     @Consumes(MediaType.APPLICATION_JSON)

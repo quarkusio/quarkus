@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_PORT_NUMBER;
@@ -11,15 +12,19 @@ import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPo
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.jboss.logging.Logger;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.IngressRuleBuilder;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
+import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -49,6 +54,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
     private static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
+    private static final Logger log = Logger.getLogger(BaseVanillaKubernetesProcessor.class);
 
     @Override
     protected AddPortToKubernetesConfig portConfigurator(Port port) {
@@ -98,9 +104,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         final var config = config();
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
         if (managementPortIsEnabled()
-                && (config.ingress() == null
-                        || !config.ingress().expose()
-                        || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
+                && !isExposingManagementPort(config)) {
             context.add(new RemovePortFromServiceDecorator(context.name(), MANAGEMENT_PORT_NAME));
         }
 
@@ -114,8 +118,25 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         service(context, config);
 
         ingress(context, ports, config);
+        gateway(context, ports, config);
 
         return context;
+    }
+
+    private static boolean isExposingManagementPort(KubernetesConfig config) {
+        return isIngressExposingManagement(config) || isGatewayExposingManagement(config);
+    }
+
+    private static boolean isIngressExposingManagement(KubernetesConfig config) {
+        return config.ingress() != null
+                && config.ingress().expose()
+                && MANAGEMENT_PORT_NAME.equals(config.ingress().targetPort());
+    }
+
+    private static boolean isGatewayExposingManagement(KubernetesConfig config) {
+        return config.gateway() != null
+                && config.gateway().expose()
+                && MANAGEMENT_PORT_NAME.equals(config.gateway().targetPort());
     }
 
     protected void ingress(DecoratorsContext context, List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
@@ -138,6 +159,123 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                             .withServicePortNumber(rule.servicePortNumber().orElse(-1))
                             .build()));
         }
+    }
+
+    protected void gateway(DecoratorsContext context, List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
+        if (config.gateway() == null || !config.gateway().expose()) {
+            return;
+        }
+
+        GatewayConfig gateway = config.gateway();
+
+        if (config.ingress() != null && config.ingress().expose()) {
+            log.warn("Both quarkus.kubernetes.ingress.expose and quarkus.kubernetes.gateway.expose are true; "
+                    + "generating both Ingress and Gateway API resources.");
+        }
+
+        boolean hasParentRefs = gateway.parentRefs() != null && !gateway.parentRefs().isEmpty();
+        if (!gateway.generateGateway() && !hasParentRefs) {
+            throw new IllegalArgumentException(
+                    "quarkus.kubernetes.gateway.expose=true requires either "
+                            + "quarkus.kubernetes.gateway.parent-refs.<id>.name or "
+                            + "quarkus.kubernetes.gateway.generate-gateway=true");
+        }
+
+        if (gateway.generateGateway() && gateway.gatewayClassName().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "quarkus.kubernetes.gateway.generate-gateway=true requires "
+                            + "quarkus.kubernetes.gateway.gateway-class-name");
+        }
+
+        if (gateway.generateGateway() && hasParentRefs) {
+            log.warn("Both quarkus.kubernetes.gateway.generate-gateway and "
+                    + "quarkus.kubernetes.gateway.parent-refs are set; "
+                    + "HTTPRoute will use parent-refs and the generated Gateway may be unused.");
+        }
+
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, gateway.targetPort());
+        int backendPort = port.map(AddServiceResourceDecorator::calculateHostPort).orElse(DEFAULT_HTTP_PORT);
+
+        String path = gateway.path();
+        PortConfig portConfig = config.ports().get(gateway.targetPort());
+        if (portConfig != null && portConfig.path().isPresent()) {
+            path = portConfig.path().get();
+        }
+
+        List<String> hostnames = AddHttpRouteResourceDecorator.combineHostnames(gateway.host(), gateway.hosts());
+        String resourceName = context.name();
+
+        if (gateway.generateGateway()) {
+            warnUnsupportedTlsListeners(gateway.listeners());
+            context.add(new AddGatewayResourceDecorator(
+                    resourceName,
+                    gateway.gatewayClassName().get(),
+                    gateway.listeners(),
+                    gateway.annotations(),
+                    hostnames.stream().findFirst()));
+        }
+
+        List<AddHttpRouteResourceDecorator.Rule> extraRules = new ArrayList<>();
+        if (gateway.rules() != null) {
+            for (GatewayConfig.GatewayRuleConfig rule : gateway.rules().values()) {
+                int rulePort = resolveGatewayBackendPort(ports, config, resourceName, rule, backendPort);
+                extraRules.add(new AddHttpRouteResourceDecorator.Rule(
+                        rule.path(),
+                        rule.pathType(),
+                        rule.serviceName().orElse(resourceName),
+                        rulePort));
+            }
+        }
+
+        context.add(new AddHttpRouteResourceDecorator(
+                resourceName,
+                hostnames,
+                path,
+                gateway.pathType(),
+                resourceName,
+                backendPort,
+                gateway.parentRefs(),
+                extraRules,
+                gateway.annotations(),
+                gateway.generateGateway(),
+                resourceName));
+    }
+
+    private static void warnUnsupportedTlsListeners(Map<String, GatewayConfig.ListenerConfig> listeners) {
+        if (listeners == null) {
+            return;
+        }
+        for (GatewayConfig.ListenerConfig listener : listeners.values()) {
+            String protocol = listener.protocol();
+            if ("HTTPS".equalsIgnoreCase(protocol) || "TLS".equalsIgnoreCase(protocol)) {
+                log.warnf(
+                        "Gateway listener '%s' uses protocol %s, but quarkus.kubernetes.gateway does not generate "
+                                + "listener TLS certificateRefs yet; the Gateway may be invalid until TLS is configured "
+                                + "out-of-band.",
+                        listener.name(), protocol);
+            }
+        }
+    }
+
+    private static int resolveGatewayBackendPort(List<KubernetesPortBuildItem> ports, KubernetesConfig config,
+            String applicationServiceName, GatewayConfig.GatewayRuleConfig rule, int defaultPort) {
+        if (rule.servicePortNumber().isPresent()) {
+            return rule.servicePortNumber().get();
+        }
+
+        Optional<String> customService = rule.serviceName()
+                .filter(name -> !name.equals(applicationServiceName));
+        if (customService.isPresent()) {
+            throw new IllegalArgumentException(
+                    "quarkus.kubernetes.gateway.rules.<id>.service-port-number is required when "
+                            + "service-name points to a different service ('" + customService.get() + "'). "
+                            + "Named ports from the current application cannot be resolved for another service.");
+        }
+
+        String portName = rule.servicePortName().orElse(config.gateway().targetPort());
+        return KubernetesCommonHelper.getPort(ports, config, portName)
+                .map(AddServiceResourceDecorator::calculateHostPort)
+                .orElse(defaultPort);
     }
 
     protected void service(DecoratorsContext context, KubernetesConfig config) {

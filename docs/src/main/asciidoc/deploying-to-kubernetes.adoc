@@ -912,6 +912,103 @@ Now, Kubernetes will validate all the incoming connections using SSL with the ce
 More information about how to create the secret in https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[here].
 ====
 
+==== Exposing with the Kubernetes Gateway API
+
+The https://gateway-api.sigs.k8s.io/[Kubernetes Gateway API] is the successor to Ingress.
+Some implementations (for example kgateway) only support Gateway API resources.
+
+To generate an `HTTPRoute` that attaches to an existing `Gateway`:
+
+[source,properties]
+----
+quarkus.kubernetes.gateway.expose=true
+quarkus.kubernetes.gateway.parent-refs.main.name=my-gateway
+quarkus.kubernetes.gateway.parent-refs.main.namespace=infra
+quarkus.kubernetes.gateway.host=myapp.example.com
+# Optional: additional hostnames
+# quarkus.kubernetes.gateway.hosts=api.example.com,admin.example.com
+# Optional: named Service port used as HTTPRoute backend (default is http)
+# quarkus.kubernetes.gateway.target-port=http
+# Optional: annotations (quote keys that contain dots)
+# quarkus.kubernetes.gateway.annotations."example.com/gate"=enabled
+----
+
+This generates an `HTTPRoute` similar to:
+
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: infra
+      kind: Gateway
+      group: gateway.networking.k8s.io
+  hostnames:
+    - myapp.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: myapp
+          kind: Service
+          port: 8080
+----
+
+Optionally also generate a namespaced `Gateway` (the cluster must still provide a matching `GatewayClass`).
+By default a single HTTP listener on port `80` named `http` is created and uses `quarkus.kubernetes.gateway.host`
+(or the first `hosts` entry) as the listener hostname:
+
+[source,properties]
+----
+quarkus.kubernetes.gateway.expose=true
+quarkus.kubernetes.gateway.generate-gateway=true
+quarkus.kubernetes.gateway.gateway-class-name=istio
+quarkus.kubernetes.gateway.host=myapp.example.com
+----
+
+Custom listeners can be defined with `quarkus.kubernetes.gateway.listeners.<id>.*`.
+When any listener is configured, Quarkus no longer synthesizes the default HTTP/80 listener,
+and each listener must set its own `hostname` if needed:
+
+[source,properties]
+----
+quarkus.kubernetes.gateway.listeners.http.name=http
+quarkus.kubernetes.gateway.listeners.http.protocol=HTTP
+quarkus.kubernetes.gateway.listeners.http.port=80
+quarkus.kubernetes.gateway.listeners.http.hostname=myapp.example.com
+----
+
+[NOTE]
+====
+HTTPS/TLS listener `certificateRefs` are not generated yet.
+Prefer `HTTP` listeners, or configure TLS on the Gateway out-of-band.
+====
+
+Additional HTTPRoute rules can be defined similarly to Ingress rules.
+When `service-name` points to a different Service, `service-port-number` is required
+(Gateway API backends use numeric ports, and Quarkus cannot resolve named ports of another Service):
+
+[source,properties]
+----
+quarkus.kubernetes.gateway.rules.api.path=/api
+quarkus.kubernetes.gateway.rules.api.path-type=PathPrefix
+quarkus.kubernetes.gateway.rules.alt.path=/ea
+quarkus.kubernetes.gateway.rules.alt.service-name=updated-service
+quarkus.kubernetes.gateway.rules.alt.service-port-number=8080
+----
+
+[NOTE]
+====
+The cluster must install Gateway API CRDs and a controller.
+Quarkus only generates the manifests; it does not install CRDs or controllers.
+====
+
 === Using the Kubernetes client
 
 Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:

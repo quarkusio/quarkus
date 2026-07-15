@@ -69,6 +69,9 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String USE_ARG_FILE = "quarkus.generate-code.grpc.use-arg-file";
 
     private static final String GENERATE_KOTLIN = "quarkus.generate-code.grpc.kotlin.generate";
+    private static final String SRC_MAIN_PROTO_DIR = "src/main/proto/";
+    private static final String SRC_TEST_PROTO_DIR = "src/test/proto/";
+    private static final String PROTO_DIR = "proto/";
 
     private Executables executables;
     private String input;
@@ -397,60 +400,65 @@ public class GrpcCodeGen implements CodeGenProvider {
             Set<String> protoDirectories, ResolvedDependency artifact, Collection<String> filesToInclude,
             Collection<String> filesToExclude, boolean isDependency) throws CodeGenException {
 
+        // Proto files from dependencies are always copied to a work directory with known
+        // path prefixes (src/main/proto/, src/test/proto/, proto/) stripped. This ensures
+        // consistent --proto_path entries for protoc regardless of whether the artifact
+        // resolved to a JAR (archive) or a directory (e.g. workspace project's target/classes).
+        Path protoOutputDir = getProtoOutputDir(workDir, artifact);
         try {
             artifact.getContentTree(new PathFilter(filesToInclude, filesToExclude)).walk(
                     pathVisit -> {
                         Path path = pathVisit.getPath();
                         if (Files.isRegularFile(path) && path.getFileName().toString().endsWith(PROTO)) {
-                            Path root = pathVisit.getRoot();
-                            if (Files.isDirectory(root)) {
-                                protoFiles.add(path);
-                                protoDirectories.add(path.getParent().normalize().toAbsolutePath().toString());
-                            } else { // archive
-                                Path relativePath = path.getRoot().relativize(path);
-                                String relativePathStr = relativePath.toString().replace('\\', '/');
-                                if (relativePathStr.startsWith("src/main/proto/")) {
-                                    relativePathStr = relativePathStr.substring("src/main/proto/".length());
-                                } else if (relativePathStr.startsWith("src/test/proto/")) {
-                                    relativePathStr = relativePathStr.substring("src/test/proto/".length());
-                                } else if (relativePathStr.startsWith("proto/")) {
-                                    relativePathStr = relativePathStr.substring("proto/".length());
+                            String strippedPathStr = stripProtoPrefix(pathVisit.getResourceName());
+                            try {
+                                Files.createDirectories(protoOutputDir);
+                                protoDirectories.add(protoOutputDir.toString());
+                            } catch (IOException e) {
+                                throw new GrpcCodeGenException("Failed to create directory: " + protoOutputDir, e);
+                            }
+                            Path outPath = protoOutputDir.resolve(strippedPathStr);
+                            try {
+                                Files.createDirectories(outPath.getParent());
+                                if (isDependency) {
+                                    copySanitizedProtoFile(artifact, path, outPath);
+                                } else {
+                                    Files.copy(path, outPath, StandardCopyOption.REPLACE_EXISTING);
                                 }
-                                String uniqueName = artifact.getGroupId() + ":" + artifact.getArtifactId();
-                                if (artifact.getVersion() != null) {
-                                    uniqueName += ":" + artifact.getVersion();
-                                }
-                                if (artifact.getClassifier() != null) {
-                                    uniqueName += "-" + artifact.getClassifier();
-                                }
-                                Path protoUnzipDir = workDir
-                                        .resolve(HashUtil.sha1(uniqueName))
-                                        .normalize().toAbsolutePath();
-                                try {
-                                    Files.createDirectories(protoUnzipDir);
-                                    protoDirectories.add(protoUnzipDir.toString());
-                                } catch (IOException e) {
-                                    throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
-                                }
-                                Path outPath = protoUnzipDir.resolve(relativePathStr);
-                                try {
-                                    Files.createDirectories(outPath.getParent());
-                                    if (isDependency) {
-                                        copySanitizedProtoFile(artifact, path, outPath);
-                                    } else {
-                                        Files.copy(path, outPath, StandardCopyOption.REPLACE_EXISTING);
-                                    }
-                                    protoFiles.add(outPath);
-                                } catch (IOException e) {
-                                    throw new GrpcCodeGenException("Failed to extract proto file" + path + " to target: "
-                                            + outPath, e);
-                                }
+                                protoFiles.add(outPath);
+                            } catch (IOException e) {
+                                throw new GrpcCodeGenException("Failed to extract proto file" + path + " to target: "
+                                        + outPath, e);
                             }
                         }
                     });
         } catch (GrpcCodeGenException e) {
             throw new CodeGenException(e.getMessage(), e);
         }
+    }
+
+    private static String stripProtoPrefix(String relativePathStr) {
+        if (relativePathStr.startsWith(SRC_MAIN_PROTO_DIR)) {
+            return relativePathStr.substring(SRC_MAIN_PROTO_DIR.length());
+        }
+        if (relativePathStr.startsWith(SRC_TEST_PROTO_DIR)) {
+            return relativePathStr.substring(SRC_TEST_PROTO_DIR.length());
+        }
+        if (relativePathStr.startsWith(PROTO_DIR)) {
+            return relativePathStr.substring(PROTO_DIR.length());
+        }
+        return relativePathStr;
+    }
+
+    private static Path getProtoOutputDir(Path workDir, ResolvedDependency artifact) {
+        String uniqueName = artifact.getGroupId() + ":" + artifact.getArtifactId();
+        if (artifact.getVersion() != null) {
+            uniqueName += ":" + artifact.getVersion();
+        }
+        if (artifact.getClassifier() != null) {
+            uniqueName += "-" + artifact.getClassifier();
+        }
+        return workDir.resolve(HashUtil.sha1(uniqueName)).normalize().toAbsolutePath();
     }
 
     private String escapeWhitespace(String path) {

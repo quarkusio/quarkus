@@ -113,7 +113,8 @@ public class HttpServerOptionsUtils {
         if (bucket != null) {
             ServerSSLOptions sslOptions = createSslOptionsFromTlsConfiguration(bucket);
             sslOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
-            applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
+            applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols,
+                    httpConfig.determineSslHost());
             return new ServerConfig(config, sslOptions);
         }
 
@@ -123,7 +124,8 @@ public class HttpServerOptionsUtils {
             return null;
         }
         sslOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
-        applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols,
+                httpConfig.determineSslHost());
         return new ServerConfig(config, sslOptions);
     }
 
@@ -222,7 +224,7 @@ public class HttpServerOptionsUtils {
         int port = httpConfig.determinePort(launchMode);
         config.setPort(port);
 
-        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols, httpConfig.host());
         return config;
     }
 
@@ -256,7 +258,7 @@ public class HttpServerOptionsUtils {
             return null;
         }
         HttpServerConfig config = new HttpServerConfig();
-        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols, httpConfig.host());
         config.setHost(httpConfig.domainSocket());
         return config;
     }
@@ -284,8 +286,9 @@ public class HttpServerOptionsUtils {
             HttpServerConfig config,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             VertxHttpConfig httpConfig,
-            List<String> websocketSubProtocols) {
-        config.setHost(httpConfig.host());
+            List<String> websocketSubProtocols,
+            String host) {
+        config.setHost(host);
         setIdleTimeout(httpConfig, config);
 
         // HTTP/1.1 config

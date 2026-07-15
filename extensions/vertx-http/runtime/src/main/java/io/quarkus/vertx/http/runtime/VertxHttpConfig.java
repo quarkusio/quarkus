@@ -53,6 +53,16 @@ public interface VertxHttpConfig {
     String host();
 
     /**
+     * The HTTPS host.
+     * <p>
+     * When not set, defaults to the value of {@link #host()}.
+     * <p>
+     * This allows binding plain HTTP and HTTPS to different network interfaces. For example, HTTP can listen on
+     * {@code 127.0.0.1} for local health checks while HTTPS listens on {@code 0.0.0.0} for remote clients.
+     */
+    Optional<String> sslHost();
+
+    /**
      * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running and
      * listening on the host specified by this property.
      */
@@ -456,6 +466,10 @@ public interface VertxHttpConfig {
 
     default int determineSslPort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testSslPort() : sslPort();
+    }
+
+    default String determineSslHost() {
+        return sslHost().orElse(host());
     }
 
     enum InsecureRequests {

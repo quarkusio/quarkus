@@ -156,7 +156,7 @@
         <redis.image>docker.io/library/redis:8</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
         <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
-        <kafka.redpanda.image>docker.io/redpandadata/redpanda:v24.1.2</kafka.redpanda.image>
+        <kafka.redpanda.image>docker.io/redpandadata/redpanda:v26.1.12</kafka.redpanda.image>
         <kafka.strimzi.image>quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0</kafka.strimzi.image>
         <kafka.native.image>quay.io/ogunalp/kafka-native:latest</kafka.native.image>
         <kafka.upstream.image>docker.io/apache/kafka:4.2.0</kafka.upstream.image>

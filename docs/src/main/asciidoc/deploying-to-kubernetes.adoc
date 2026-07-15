@@ -1088,6 +1088,7 @@ Here are some examples:
 The table below describe all the available configuration options.
 
 .Kubernetes
+[[duration-note-anchor-quarkus-kubernetes_quarkus-kubernetes]]
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes_quarkus.kubernetes.adoc[opts=optional, leveloffset=+1]
 
@@ -1116,6 +1117,7 @@ quarkus.kubernetes-client.trust-certs=true
 
 The full list of the Kubernetes client configuration properties is provided below.
 
+[[duration-note-anchor-quarkus-kubernetes-client_quarkus-kubernetes-client]]
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
@@ -1227,6 +1229,7 @@ relieves OpenShift users of the necessity of setting the `deployment-target` pro
 The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .OpenShift
+[[duration-note-anchor-quarkus-kubernetes_quarkus-openshift]]
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
 
@@ -1292,6 +1295,7 @@ kubectl apply -f target/kubernetes/knative.json
 The generated service can be customized using the following properties:
 
 .Knative
+[[duration-note-anchor-quarkus-kubernetes_quarkus-knative]]
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes_quarkus.knative.adoc[opts=optional, leveloffset=+1]
 

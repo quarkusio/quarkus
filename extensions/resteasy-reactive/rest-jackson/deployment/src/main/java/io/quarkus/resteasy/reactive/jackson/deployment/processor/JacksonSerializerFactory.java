@@ -550,10 +550,16 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeFormattedValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if ("STRING".equals(formatShape) && writeMethodForPrimitiveFields(typeName) != null) {
                 writeStringShapedValue(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);
+            } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaTimeDateType(typeName)) {
+                writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
+            } else if ("STRING".equals(formatShape) && isJavaUtilDateType(typeName)) {
+                writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isBooleanType(typeName)) {
                 writeNumberShapedBoolean(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isJavaUtilDateType(typeName)) {
                 writeDateAsTimestamp(fieldSpecs, bytecode, ctx, pkgName, arg);
+            } else if (fieldSpecs.isFormatShapeNumber() && isJavaTimeDateType(typeName)) {
+                writeTemporalAsTimestamp(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.formatPattern() != null && isJavaUtilDateType(typeName)) {
                 writeFormattedDateValue(fieldSpecs, bytecode, ctx, pkgName, arg, false);
             } else if (fieldSpecs.formatPattern() != null && isJavaTimeDateType(typeName)) {
@@ -606,6 +612,18 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 ctx.jsonGenerator);
     }
 
+    private static void writeToStringValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,
+            String pkgName, ResultHandle arg) {
+        writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
+        MethodDescriptor writeString = MethodDescriptor.ofMethod(JsonGenerator.class, "writeString", void.class, String.class);
+        BranchResult nullCheck = bytecode.ifNotNull(arg);
+        ResultHandle strValue = nullCheck.trueBranch().invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Object.class, "toString", String.class), arg);
+        nullCheck.trueBranch().invokeVirtualMethod(writeString, ctx.jsonGenerator, strValue);
+        nullCheck.falseBranch().invokeVirtualMethod(
+                MethodDescriptor.ofMethod(JsonGenerator.class, "writeNull", void.class), ctx.jsonGenerator);
+    }
+
     private static void writeStringShapedValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,
             String pkgName, String typeName, ResultHandle arg) {
         writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
@@ -644,6 +662,14 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
         MethodDescriptor serializeMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class,
                 "serializeDateAsTimestamp", void.class, java.util.Date.class, JsonGenerator.class);
+        bytecode.invokeStaticMethod(serializeMethod, arg, ctx.jsonGenerator);
+    }
+
+    private static void writeTemporalAsTimestamp(FieldSpecs fieldSpecs, BytecodeCreator bytecode, SerializationContext ctx,
+            String pkgName, ResultHandle arg) {
+        writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
+        MethodDescriptor serializeMethod = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                "serializeTemporalAsTimestamp", void.class, Object.class, JsonGenerator.class);
         bytecode.invokeStaticMethod(serializeMethod, arg, ctx.jsonGenerator);
     }
 

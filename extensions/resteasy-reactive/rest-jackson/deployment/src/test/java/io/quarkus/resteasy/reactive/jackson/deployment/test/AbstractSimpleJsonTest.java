@@ -1361,6 +1361,32 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonCreatorRequiredPropertyEnforced() {
+        // Omit the required "name" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void testJsonCreatorRequiredPropertyPresent() {
+        // Include the required "name" property — should succeed
+        RestAssured
+                .with()
+                .body("{\"name\":\"test\",\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(200)
+                .body("name", CoreMatchers.is("test"))
+                .body("value", CoreMatchers.is("hello"));
+    }
+
+    @Test
     void sensor_metadata_shouldDeserialize() {
         given()
                 .when()

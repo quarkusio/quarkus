@@ -22,17 +22,21 @@ public final class RouteConstants {
      */
     public static final int ROUTE_ORDER_HOT_REPLACEMENT = Integer.MIN_VALUE;
     /**
-     * Order value ({@value #ROUTE_ORDER_BODY_HANDLER_MANAGEMENT}) for the body handler for the management router.
-     */
-    public static final int ROUTE_ORDER_BODY_HANDLER_MANAGEMENT = Integer.MIN_VALUE;
-    /**
      * Order value ({@value #ROUTE_ORDER_HEADERS}) for the handlers that add headers specified in the configuration.
      */
     public static final int ROUTE_ORDER_HEADERS = Integer.MIN_VALUE;
     /**
+     * Order value ({@value #ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT}) for the Host header validation of the management router.
+     */
+    public static final int ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT = Integer.MIN_VALUE + 1;
+    /**
      * Order value ({@value #ROUTE_ORDER_CORS_MANAGEMENT}) for the CORS-Origin handler of the management router.
      */
-    public static final int ROUTE_ORDER_CORS_MANAGEMENT = Integer.MIN_VALUE;
+    public static final int ROUTE_ORDER_CORS_MANAGEMENT = Integer.MIN_VALUE + 2;
+    /**
+     * Order value ({@value #ROUTE_ORDER_BODY_HANDLER_MANAGEMENT}) for the body handler for the management router.
+     */
+    public static final int ROUTE_ORDER_BODY_HANDLER_MANAGEMENT = Integer.MIN_VALUE + 3;
     /**
      * Order value ({@value #ROUTE_ORDER_BODY_HANDLER}) for the body handler.
      */

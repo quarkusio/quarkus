@@ -615,6 +615,31 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("dateTime", Matchers.is("2024-03-13T10:05:01.000Z"));
     }
 
+    // --- @JsonFormat(shape=NUMBER) with Instant and Duration ---
+
+    @Test
+    public void testFormatTemporalAsNumberSerialization() {
+        RestAssured.get("/generated/number-shaped-temporal")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("number-shaped"))
+                .body("instant", Matchers.is(1710324301.5f))
+                .body("duration", Matchers.is(76975.5f));
+    }
+
+    // --- @JsonFormat(shape=STRING) with Duration ---
+
+    @Test
+    public void testFormatDurationAsStringSerialization() {
+        RestAssured.get("/generated/duration-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("duration-test"))
+                .body("duration", Matchers.is("PT21H22M55S"));
+    }
+
     // --- @JsonFormat ---
 
     @Test

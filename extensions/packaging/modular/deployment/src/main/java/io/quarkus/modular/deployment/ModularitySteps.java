@@ -251,15 +251,26 @@ public final class ModularitySteps {
         for (Set<TransformedClassesBuildItem.TransformedClass> set : transformedClasses.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass tc : set) {
                 String bn = tc.getClassName();
+                String fileName = tc.getFileName();
                 String pn;
-                int idx = bn.lastIndexOf('.');
-                if (idx == -1) {
-                    pn = "";
+                if (bn == null) {
+                    // a removed resource rather than a transformed class (see TransformedClassesBuildItem);
+                    // derive the package from the resource path, as is done for generated resources above
+                    int idx = fileName.lastIndexOf('/');
+                    if (idx == -1) {
+                        pn = "";
+                    } else {
+                        pn = fileName.substring(0, idx).replace('/', '.');
+                    }
                 } else {
-                    pn = bn.substring(0, idx);
+                    int idx = bn.lastIndexOf('.');
+                    if (idx == -1) {
+                        pn = "";
+                    } else {
+                        pn = bn.substring(0, idx);
+                    }
                 }
                 // replace any existing entry
-                String fileName = tc.getFileName();
                 byte[] data = tc.getData();
                 if (data == null) {
                     // TODO

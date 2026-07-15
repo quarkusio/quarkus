@@ -46,7 +46,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaProcessor {
@@ -303,16 +302,13 @@ public final class AmazonLambdaProcessor {
         recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = NativeBuild.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     void startPoolLoopDevOrTest(AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem) {
-        LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (mode.isDevOrTest()) {
-            recorder.startPollLoop(shutdownContextBuildItem, mode);
-        }
+        recorder.startPollLoopIfDevOrTestOrExplicit(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep

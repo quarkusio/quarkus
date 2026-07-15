@@ -35,12 +35,24 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
 public class HeaderUtil {
     private static final List<Locale> LANGUAGE_WILDCARD = List.of(new Locale("*"));
 
-    private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
-        @Override
-        protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
-            return RuntimeDelegate.getInstance().createHeaderDelegate(type);
-        }
-    };
+    private static volatile ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = newHeaderDelegateCache();
+
+    private static ClassValue<RuntimeDelegate.HeaderDelegate<?>> newHeaderDelegateCache() {
+        return new ClassValue<>() {
+            @Override
+            protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
+                return RuntimeDelegate.getInstance().createHeaderDelegate(type);
+            }
+        };
+    }
+
+    /**
+     * Clears the cached {@link RuntimeDelegate.HeaderDelegate} instances. This is only needed in test
+     * scenarios where the {@link RuntimeDelegate} is swapped between tests (e.g., the Jakarta REST TCK).
+     */
+    public static void clearHeaderDelegateCache() {
+        HEADER_DELEGATE_CACHE = newHeaderDelegateCache();
+    }
 
     public static String headerToString(Object obj) {
         if (obj == null) {

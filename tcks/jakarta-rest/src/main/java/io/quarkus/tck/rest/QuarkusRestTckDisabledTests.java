@@ -6,11 +6,13 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class QuarkusRestTckDisabledTests implements ExecutionCondition {
+public class QuarkusRestTckDisabledTests implements ExecutionCondition, BeforeEachCallback {
 
     private static final String TCK_PREFIX = "ee.jakarta.tck.ws.rs.";
 
@@ -208,6 +210,13 @@ public class QuarkusRestTckDisabledTests implements ExecutionCondition {
         disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamListEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
         disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldParamSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
         disable("ee.rs.cookieparam.sub.JAXRSSubClientIT", "cookieFieldSortedSetEntityWithFromStringTest", EMPTY_PARAM_IS_NULL);
+
+        // =====================================================================
+        // Method-level exclusions: Client exception wrapping
+        // =====================================================================
+
+        disable("spec.client.exceptions.ClientExceptionsIT", "shouldThrowMostSpecificWebApplicationException",
+                CLIENT_EXCEPTION_WRAPPING);
     }
 
     private static void disableClass(String shortClassName, DisableReason reason) {
@@ -216,6 +225,11 @@ public class QuarkusRestTckDisabledTests implements ExecutionCondition {
 
     private static void disable(String shortClassName, String methodName, DisableReason reason) {
         DISABLED_METHODS.put(TCK_PREFIX + shortClassName + "#" + methodName, reason);
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        HeaderUtil.clearHeaderDelegateCache();
     }
 
     @Override

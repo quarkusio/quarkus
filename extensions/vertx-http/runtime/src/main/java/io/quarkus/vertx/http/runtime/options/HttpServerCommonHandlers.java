@@ -105,31 +105,45 @@ public class HttpServerCommonHandlers {
                 var order = filterConfig.order().orElse(Integer.MIN_VALUE);
                 var methods = filterConfig.methods();
                 var headers = filterConfig.header();
+                var applyOnSuccess = filterConfig.applyOnSuccess();
+                Handler<RoutingContext> handler = new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        applyFilterHeaders(event, headers, applyOnSuccess);
+                        event.next();
+                    }
+                };
                 if (methods.isEmpty()) {
                     httpRouteRouter.routeWithRegex(matches)
                             .order(order)
-                            .handler(new Handler<RoutingContext>() {
-                                @Override
-                                public void handle(RoutingContext event) {
-                                    addFilterHeaders(event, headers);
-                                    event.next();
-                                }
-
-                            });
+                            .handler(handler);
                 } else {
                     for (var method : methods.get()) {
                         httpRouteRouter.routeWithRegex(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), matches)
                                 .order(order)
-                                .handler(new Handler<RoutingContext>() {
-                                    @Override
-                                    public void handle(RoutingContext event) {
-                                        addFilterHeaders(event, headers);
-                                        event.next();
-                                    }
-                                });
+                                .handler(handler);
                     }
                 }
             }
+        }
+    }
+
+    static void applyFilterHeaders(RoutingContext event, Map<String, String> headers, boolean applyOnSuccess) {
+        if (applyOnSuccess) {
+            event.addHeadersEndHandler(new Handler<Void>() {
+                @Override
+                public void handle(Void unused) {
+                    int status = event.response().getStatusCode();
+                    // Only final successful (2xx) responses — intentionally excludes 1xx informational
+                    // statuses (e.g. 100 Continue), which are interim and not the cacheable outcome.
+                    // addHeadersEndHandler runs against the completed response, which in practice is not 1xx.
+                    if (status >= 200 && status < 300) {
+                        addFilterHeaders(event, headers);
+                    }
+                }
+            });
+        } else {
+            addFilterHeaders(event, headers);
         }
     }
 

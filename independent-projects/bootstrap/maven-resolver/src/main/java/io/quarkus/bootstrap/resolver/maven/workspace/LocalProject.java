@@ -117,6 +117,34 @@ public class LocalProject {
         return wsLoader.load();
     }
 
+    /**
+     * Creates a workspace from provided modules without filesystem discovery.
+     *
+     * @param ctx bootstrap maven context
+     * @param currentProjectPom POM of the current project
+     * @param providedModules pre-loaded modules to populate the workspace with
+     * @return current project with the workspace or null if the current project is not among the provided modules
+     */
+    public static LocalProject createFromProvidedModules(BootstrapMavenContext ctx, Path currentProjectPom,
+            List<WorkspaceModulePom> providedModules) {
+        final LocalWorkspace workspace = new LocalWorkspace();
+        workspace.setBootstrapMavenContext(ctx);
+        LocalProject currentProject = null;
+        final Path currentProjectDir = currentProjectPom.normalize().toAbsolutePath().getParent();
+        for (var module : providedModules) {
+            var project = new LocalProject(
+                    module.getResolvedGroupId(),
+                    module.getResolvedVersion(),
+                    module.getModel(),
+                    module.effectiveModel,
+                    workspace);
+            if (currentProject == null && project.getDir().equals(currentProjectDir)) {
+                currentProject = project;
+            }
+        }
+        return currentProject;
+    }
+
     static Model readModel(Path pom) throws BootstrapMavenException {
         try {
             final Model model = ModelUtils.readModel(pom);

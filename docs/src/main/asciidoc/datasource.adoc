@@ -720,6 +720,8 @@ Use a remote connection to a separate database, or use Dev Services to run the d
 ifndef::no-deprecated-test-resource[]
 ==== Run an integration test
 
+WARNING: `H2DatabaseTestResource` is deprecated. Dev Services for H2 automatically starts an in-process database when `quarkus.datasource.db-kind=h2` is set and no JDBC URL is configured. See xref:databases-dev-services.adoc[Dev Services for databases] for details.
+
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
 +
 * `io.quarkus:quarkus-test-h2` for H2

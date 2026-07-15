@@ -51,6 +51,9 @@ public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
         if (jacksonBuildTimeConfig.writeDurationsAsTimestamps()) {
             builder.enable(DateTimeFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
         }
+        if (jacksonBuildTimeConfig.useGettersAsSetters()) {
+            builder.enable(MapperFeature.USE_GETTERS_AS_SETTERS);
+        }
         if (jacksonBuildTimeConfig.acceptCaseInsensitiveEnums()) {
             builder.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         }

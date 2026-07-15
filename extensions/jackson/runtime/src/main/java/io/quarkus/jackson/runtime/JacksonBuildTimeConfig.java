@@ -69,6 +69,16 @@ public interface JacksonBuildTimeConfig {
     boolean writeDurationsAsTimestamps();
 
     /**
+     * If enabled, Jackson will use getters of Collection and Map types as setters,
+     * so that values can be added to the collection/map by calling the getter and
+     * modifying the returned instance. This is disabled by default to match the
+     * default Jackson 3 behavior.
+     * Note that Jackson 2 defaulted to {@code true}.
+     */
+    @WithDefault("false")
+    boolean useGettersAsSetters();
+
+    /**
      * If enabled, Jackson will ignore case during Enum deserialization.
      */
     @WithDefault("false")

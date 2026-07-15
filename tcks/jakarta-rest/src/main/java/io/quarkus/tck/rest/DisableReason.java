@@ -22,7 +22,9 @@ public enum DisableReason {
     FILE_HANDLING("File handling should be done by Vert.x"),
     SIGNATURE_TEST("Signature test library not available"),
     THREADING_MODEL("Threading model incompatibility"),
-    EMPTY_PARAM_IS_NULL("Quarkus REST deliberately treats empty parameter values as null");
+    EMPTY_PARAM_IS_NULL("Quarkus REST deliberately treats empty parameter values as null"),
+    CLIENT_EXCEPTION_WRAPPING(
+            "Client exceptions wrapped in ClientWebApplicationException for security reasons");
 
     private final String description;
 

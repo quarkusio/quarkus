@@ -313,6 +313,11 @@ include::{includes}/devtools/dev.adoc[]
 $ curl -d "{\"name\":\"John\"}" -X POST http://localhost:8080
 ----
 
+If you also have an HTTP extension on the classpath (for example `quarkus-rest`), both Vert.x HTTP and the
+Lambda mock event server would otherwise default to port `8080`. In that case Quarkus automatically assigns an
+ephemeral port to the mock event server in Dev Mode and logs the chosen address so you can still invoke it.
+You can also set the port explicitly (see below).
+
 For your unit tests, you can also invoke on the mock event server using any HTTP client you want.  Here's an example
 using rest-assured.  Quarkus starts up a separate Mock Event server under port 8081.
 The default port for Rest Assured is automatically set to 8081 by Quarkus, so you can invoke

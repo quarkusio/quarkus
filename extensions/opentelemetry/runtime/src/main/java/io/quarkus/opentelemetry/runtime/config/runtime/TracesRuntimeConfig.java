@@ -61,6 +61,6 @@ public interface TracesRuntimeConfig {
      * Defaults to `1.0d`.
      */
     @WithName("sampler.arg")
-    @WithDefault("1.0d")
+    @WithDefault("0.1d")
     Optional<String> samplerArg();
 }

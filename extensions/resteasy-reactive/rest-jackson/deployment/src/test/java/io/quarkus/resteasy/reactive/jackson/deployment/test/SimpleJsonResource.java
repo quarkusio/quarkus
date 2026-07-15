@@ -760,6 +760,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return holder;
     }
 
+    @POST
+    @Path("/required-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public RequiredCreatorProperty echoRequiredCreatorProperty(RequiredCreatorProperty obj) {
+        return obj;
+    }
+
     @GET
     @Path("/sensor-metadata")
     public SensorMetadata sensorMetadata() {

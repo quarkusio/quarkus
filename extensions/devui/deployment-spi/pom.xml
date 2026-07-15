@@ -16,6 +16,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devjsonrpc-deployment-spi</artifactId>
+        </dependency>
     </dependencies>
     
 </project>

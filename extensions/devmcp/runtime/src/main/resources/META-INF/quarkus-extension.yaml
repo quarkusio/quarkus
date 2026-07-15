@@ -1,0 +1,5 @@
+---
+name: "Quarkus Dev MCP"
+metadata:
+  unlisted: true
+  hide-in-dev-ui: true

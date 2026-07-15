@@ -1,7 +1,7 @@
 package io.quarkus.devui.runtime.js;
 
-import io.quarkus.devui.runtime.comms.JsonRpcResponseWriter;
-import io.quarkus.devui.runtime.comms.MessageType;
+import io.quarkus.devjsonrpc.runtime.comms.JsonRpcResponseWriter;
+import io.quarkus.devjsonrpc.runtime.comms.MessageType;
 import io.vertx.core.http.ServerWebSocket;
 
 public class JavaScriptResponseWriter implements JsonRpcResponseWriter {

@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import io.grpc.Context;
 import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
@@ -166,7 +167,8 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
-            VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state);
+            boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state, deferHalfCloseUntilMessage);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
@@ -184,7 +186,8 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
-            ReplayListener<ReqT> replay = new ReplayListener<>(state);
+            boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            ReplayListener<ReqT> replay = new ReplayListener<>(state, deferHalfCloseUntilMessage);
             vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
@@ -218,6 +221,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
         private final Context grpcContext;
+        private final boolean deferHalfCloseUntilMessage;
 
         // exclusive to event loop context
         private volatile ServerCall.Listener<ReqT> delegate;
@@ -228,10 +232,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         // preserve the request-before-half-close invariant before draining.
         private final Deque<ReplayEvent<ReqT>> incomingEvents = new ArrayDeque<>();
         private volatile boolean isConsumingFromIncomingEvents;
+        private boolean messageReceived;
 
-        private ReplayListener(InjectableContext.ContextState requestContextState) {
+        private ReplayListener(InjectableContext.ContextState requestContextState, boolean deferHalfCloseUntilMessage) {
             this.requestContextState = requestContextState;
             this.grpcContext = Context.current();
+            this.deferHalfCloseUntilMessage = deferHalfCloseUntilMessage;
         }
 
         /**
@@ -241,15 +247,24 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * @param delegate the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
-            ReplayEvent<ReqT> first = null;
             synchronized (incomingEvents) {
                 this.delegate = delegate;
-                if (!this.isConsumingFromIncomingEvents) {
-                    reorderForRequestBeforeHalfClose(incomingEvents);
-                    first = incomingEvents.poll();
-                    if (first != null) {
-                        this.isConsumingFromIncomingEvents = true;
-                    }
+            }
+            tryStartDraining();
+        }
+
+        private void tryStartDraining() {
+            ReplayEvent<ReqT> first = null;
+            synchronized (incomingEvents) {
+                if (this.delegate == null || this.isConsumingFromIncomingEvents) {
+                    return;
+                }
+                if (!prepareDrainQueue(deferHalfCloseUntilMessage, messageReceived, incomingEvents)) {
+                    return;
+                }
+                first = incomingEvents.poll();
+                if (first != null) {
+                    this.isConsumingFromIncomingEvents = true;
                 }
             }
             if (first != null) {
@@ -260,7 +275,14 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
             Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
             synchronized (incomingEvents) {
-                if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
+                if (event.kind == EventKind.MESSAGE) {
+                    messageReceived = true;
+                }
+                boolean canRunDirectly = this.delegate != null
+                        && !this.isConsumingFromIncomingEvents
+                        && incomingEvents.isEmpty()
+                        && !(deferHalfCloseUntilMessage && event.kind == EventKind.HALF_CLOSE && !messageReceived);
+                if (canRunDirectly) {
                     toRunDirectly = event.action;
                     this.isConsumingFromIncomingEvents = true;
                 } else {
@@ -269,6 +291,8 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             }
             if (toRunDirectly != null) {
                 executeBlockingWithRequestContext(toRunDirectly);
+            } else {
+                tryStartDraining();
             }
         }
 
@@ -300,7 +324,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             vertx.executeBlocking(blockingHandler, false).onComplete(p -> {
                 ReplayEvent<ReqT> next;
                 synchronized (incomingEvents) {
-                    next = incomingEvents.poll();
+                    ReplayEvent<ReqT> polled = null;
+                    if (prepareDrainQueue(deferHalfCloseUntilMessage, messageReceived, incomingEvents)) {
+                        polled = incomingEvents.poll();
+                    }
+                    next = polled;
                     if (next == null) {
                         this.isConsumingFromIncomingEvents = false;
                     }
@@ -342,12 +370,13 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      * When injected, replay the events.
      * <p>
      * Note that event must be executed in order, explaining why incomingEvents
-     * are executed sequentially
+     * are executed sequentially.
      * <p>
      * This replay listener is only used for virtual threads.
      */
     private class VirtualReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
+        private final boolean deferHalfCloseUntilMessage;
 
         // exclusive to event loop context
         private ServerCall.Listener<ReqT> delegate;
@@ -355,9 +384,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         // rationale on why this is reordered before draining.
         private final Deque<ReplayEvent<ReqT>> incomingEvents = new ArrayDeque<>();
         private volatile boolean isConsumingFromIncomingEvents = false;
+        private boolean messageReceived;
 
-        private VirtualReplayListener(InjectableContext.ContextState requestContextState) {
+        private VirtualReplayListener(InjectableContext.ContextState requestContextState,
+                boolean deferHalfCloseUntilMessage) {
             this.requestContextState = requestContextState;
+            this.deferHalfCloseUntilMessage = deferHalfCloseUntilMessage;
         }
 
         /**
@@ -367,15 +399,24 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * @param delegate the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
-            ReplayEvent<ReqT> first = null;
             synchronized (incomingEvents) {
                 this.delegate = delegate;
-                if (!this.isConsumingFromIncomingEvents) {
-                    reorderForRequestBeforeHalfClose(incomingEvents);
-                    first = incomingEvents.poll();
-                    if (first != null) {
-                        this.isConsumingFromIncomingEvents = true;
-                    }
+            }
+            tryStartDraining();
+        }
+
+        private void tryStartDraining() {
+            ReplayEvent<ReqT> first = null;
+            synchronized (incomingEvents) {
+                if (this.delegate == null || this.isConsumingFromIncomingEvents) {
+                    return;
+                }
+                if (!prepareDrainQueue(deferHalfCloseUntilMessage, messageReceived, incomingEvents)) {
+                    return;
+                }
+                first = incomingEvents.poll();
+                if (first != null) {
+                    this.isConsumingFromIncomingEvents = true;
                 }
             }
             if (first != null) {
@@ -386,7 +427,14 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         private void scheduleOrEnqueue(ReplayEvent<ReqT> event) {
             Consumer<ServerCall.Listener<ReqT>> toRunDirectly = null;
             synchronized (incomingEvents) {
-                if (this.delegate != null && !this.isConsumingFromIncomingEvents && incomingEvents.isEmpty()) {
+                if (event.kind == EventKind.MESSAGE) {
+                    messageReceived = true;
+                }
+                boolean canRunDirectly = this.delegate != null
+                        && !this.isConsumingFromIncomingEvents
+                        && incomingEvents.isEmpty()
+                        && !(deferHalfCloseUntilMessage && event.kind == EventKind.HALF_CLOSE && !messageReceived);
+                if (canRunDirectly) {
                     toRunDirectly = event.action;
                     this.isConsumingFromIncomingEvents = true;
                 } else {
@@ -395,6 +443,8 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             }
             if (toRunDirectly != null) {
                 executeVirtualWithRequestContext(toRunDirectly);
+            } else {
+                tryStartDraining();
             }
         }
 
@@ -416,7 +466,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                     finalBlockingHandler.call();
                     ReplayEvent<ReqT> next;
                     synchronized (incomingEvents) {
-                        next = incomingEvents.poll();
+                        ReplayEvent<ReqT> polled = null;
+                        if (prepareDrainQueue(deferHalfCloseUntilMessage, messageReceived, incomingEvents)) {
+                            polled = incomingEvents.poll();
+                        }
+                        next = polled;
                         if (next == null) {
                             this.isConsumingFromIncomingEvents = false;
                         }
@@ -454,6 +508,29 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         public void onReady() {
             scheduleOrEnqueue(new ReplayEvent<>(EventKind.OTHER, ServerCall.Listener::onReady));
         }
+    }
+
+    /**
+     * Unary and server-streaming RPCs require an inbound request message before the client's
+     * half-close can be delivered to the grpc-stub listener. Client-streaming and bidi may
+     * legitimately half-close with zero messages (empty client stream).
+     */
+    private static boolean deferHalfCloseUntilMessage(MethodDescriptor.MethodType type) {
+        return type == MethodDescriptor.MethodType.UNARY
+                || type == MethodDescriptor.MethodType.SERVER_STREAMING;
+    }
+
+    /**
+     * Prepares the event queue for draining. Always reorders messages ahead of half-close for
+     * every method type; optionally blocks draining when a unary / server-streaming call has
+     * not yet received its request message.
+     *
+     * @return {@code true} if the caller may poll the queue; {@code false} if draining must wait
+     */
+    private static <ReqT> boolean prepareDrainQueue(boolean deferHalfCloseUntilMessage, boolean messageReceived,
+            Deque<ReplayEvent<ReqT>> queue) {
+        reorderForRequestBeforeHalfClose(queue);
+        return !deferHalfCloseUntilMessage || messageReceived;
     }
 
     /**

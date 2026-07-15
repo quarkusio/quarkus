@@ -209,6 +209,17 @@ public class BootstrapMavenContext {
                     }
                 }
             }
+        } else if (config.providedModules != null && !config.providedModules.isEmpty()) {
+            final Path currentPom = getCurrentProjectPomOrNull();
+            if (currentPom != null) {
+                currentProject = LocalProject.createFromProvidedModules(this, currentPom, config.providedModules);
+                this.workspace = currentProject == null ? null : currentProject.getWorkspace();
+                if (workspace != null
+                        && config.repoSession == null && repoSession != null
+                        && repoSession.getWorkspaceReader() == null) {
+                    repoSession = new DefaultRepositorySystemSession(repoSession).setWorkspaceReader(workspace);
+                }
+            }
         }
     }
 

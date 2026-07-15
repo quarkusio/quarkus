@@ -38,7 +38,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -237,37 +236,36 @@ public class QuarkusBootstrapProvider implements Closeable {
         private CuratedApplication testApp;
 
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode) {
-            try {
-                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config()
-                            // it's important to pass user settings in case the process was not launched using the original mvn script,
-                            // for example, using org.codehaus.plexus.classworlds.launcher.Launcher
-                            .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
-                            .setCurrentProject(getOriginalPomFile(mojo.mavenProject()).toString())
-                            .setPreferPomsFromWorkspace(true)
-                            // pass the repositories since Maven extensions could manipulate repository configs
-                            .setRemoteRepositories(mojo.remoteRepositories())
-                            .setEffectiveModelBuilder(BootstrapMavenContextConfig
-                                    .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties()));
-                    setProjectModels(config, mojo.mavenSession().getAllProjects(), mojo.reloadPoms);
-                    var resolver = workspaceProvider.createArtifactResolver(config);
-                    final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
-                    if (currentProject != null && workspaceId == 0) {
-                        workspaceId = currentProject.getWorkspace().getId();
-                    }
-                    return resolver;
-                }
-                // PROD packaging mode with workspace discovery disabled
-                return MavenArtifactResolver.builder()
-                        .setWorkspaceDiscovery(false)
-                        .setRepositorySystem(repoSystem)
-                        .setRepositorySystemSession(mojo.repositorySystemSession())
+            if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
+                final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config()
+                        // it's important to pass user settings in case the process was not launched using the original mvn script,
+                        // for example, using org.codehaus.plexus.classworlds.launcher.Launcher
+                        .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
+                        .setCurrentProject(getOriginalPomFile(mojo.mavenProject()).toString())
+                        .setPreferPomsFromWorkspace(true)
+                        // pass the repositories since Maven extensions could manipulate repository configs
                         .setRemoteRepositories(mojo.remoteRepositories())
-                        .setRemoteRepositoryManager(remoteRepoManager)
-                        .build();
-            } catch (BootstrapMavenException e) {
-                throw new RuntimeException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
+                        .setEffectiveModelBuilder(BootstrapMavenContextConfig
+                                .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties()));
+                setProjectModels(config, mojo.mavenSession().getAllProjects(), mojo.reloadPoms);
+                var resolver = workspaceProvider.createArtifactResolver(config);
+                final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
+                if (currentProject != null && workspaceId == 0) {
+                    workspaceId = currentProject.getWorkspace().getId();
+                }
+                return resolver;
             }
+            // PROD packaging mode: workspace from reactor projects only, no filesystem discovery
+            final BootstrapMavenContextConfig<?> prodConfig = BootstrapMavenContext.config()
+                    .setWorkspaceDiscovery(false)
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(mojo.repositorySystemSession())
+                    .setRemoteRepositories(mojo.remoteRepositories())
+                    .setRemoteRepositoryManager(remoteRepoManager)
+                    .setCurrentProject(getOriginalPomFile(mojo.mavenProject()).toString())
+                    .setPreferPomsFromWorkspace(true);
+            setProjectModels(prodConfig, mojo.mavenSession().getAllProjects(), mojo.reloadPoms);
+            return workspaceProvider.createArtifactResolver(prodConfig);
         }
 
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,

@@ -2823,6 +2823,15 @@ At that point the JVM has to jump out of the compiled code into the interpreter 
 That requires keeping runtime info that allow a compiled stack frame to be replaced with one or more interpreter frames.
 It also requires runtime extensible profile counters to be allocated and updated to track what has or has not been executed.
 
+==== Native mode inliners
+The community edition of GraalVM Native Image has 2 inliners. There is the trivial inliner, which is responsible for inlining very small methods. There is also the single callsite inliner, which is responsible for inlining methods with only one caller.
+
+Both inliners are enabled by default when available. The trivial inliner is available in all versions of GraalVM. The single callsite inliner is only available with GraalVM community edition 25.0.4+ and Mandrel 25.0.4+.
+
+To disable the trivial inliner use: `quarkus.native.additional-build-args=-H:-AOTTrivialInline`.
+
+To disable the single callsite inliner use: `quarkus.native.additional-build-args=-H:-AOTTrivialInline`.
+
 === Why are native executables “big”?
 
 This can be attributed to a number of different reasons:

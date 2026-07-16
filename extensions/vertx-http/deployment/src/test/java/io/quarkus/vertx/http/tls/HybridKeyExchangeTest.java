@@ -64,10 +64,28 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
     }
 
     @Test
+    @EnabledIf("isJdk27OrLater")
+    void testJdkSslClientConnectsToStrictServer() {
+        // JDK 27+ supports X25519MLKEM768 natively — no OpenSSL engine needed on the client side.
+        // The server still requires OpenSSL 3.5 for strict enforcement (class-level @EnabledIf).
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+
+        WebClient client = WebClient.create(vertx, options);
+        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                .send().toCompletionStage().toCompletableFuture().join();
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+    }
+
+    @Test
     void testNonHybridClientRejected() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("x25519"));
 
         WebClient client = WebClient.create(vertx, options);
         assertThatThrownBy(() -> client.getAbs(url.toExternalForm())

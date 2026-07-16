@@ -166,6 +166,13 @@ public class FunctionZipProcessor {
 
     private void copyZipEntry(ZipArchiveOutputStream zip, InputStream zinput, ZipArchiveEntry from) throws Exception {
         ZipArchiveEntry entry = new ZipArchiveEntry(from);
+        // Runner jars often lack Unix modes (especially when built on Windows). SAM CLI and the
+        // Lambda runtime expect permission bits in the zip external attributes; without them
+        // local SAM on Windows logs "does not have permission information" for every entry.
+        // See https://github.com/quarkusio/quarkus/issues/46633
+        if (entry.getUnixMode() == 0) {
+            entry.setUnixMode(entry.isDirectory() ? 0755 : 0644);
+        }
         zip.putArchiveEntry(entry);
         zinput.transferTo(zip);
         zip.closeArchiveEntry();

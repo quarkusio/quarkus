@@ -40,7 +40,7 @@ dependencies {
     implementation("{dep}")
 {/for}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
-    annotationProcessor("org.hibernate.orm:hibernate-processor")
+    annotationProcessor("io.quarkus:quarkus-data-processor")
 {/if}
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-infinispan-client')}
     annotationProcessor("org.infinispan.protostream:protostream-processor")

@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client;
 
+import java.util.Map;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -23,6 +25,10 @@ public class OidcClientResource {
     TokenProvider publicTokenProvider;
 
     @Inject
+    @NamedOidcClient("scopes-as-additional-params")
+    TokenProvider scopesAsAdditionalParamsTokenProvider;
+
+    @Inject
     @NamedOidcClient("key")
     OidcClient keyClient;
 
@@ -42,6 +48,12 @@ public class OidcClientResource {
     @Path("tokenprovider")
     public Uni<String> tokenProvider() {
         return tokenProvider.getAccessToken();
+    }
+
+    @GET
+    @Path("tokenprovider-with-params")
+    public Uni<String> tokenProviderWithParams() {
+        return scopesAsAdditionalParamsTokenProvider.getAccessToken(Map.of("scope", "openid"));
     }
 
     @GET

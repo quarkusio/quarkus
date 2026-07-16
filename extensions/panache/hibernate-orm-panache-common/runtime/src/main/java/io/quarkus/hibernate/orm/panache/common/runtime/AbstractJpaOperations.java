@@ -343,7 +343,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
 
     private SelectionQuery<?> extractNamedSelectionQuery(Class<?> entityClass, String query) {
         String namedQueryName = extractNamedQueryName(entityClass, query);
-        return getSession(entityClass).createNamedSelectionQuery(namedQueryName);
+        // TODO Luca it seems this method is only used in count queries
+        return getSession(entityClass).createNamedSelectionQuery(namedQueryName, Long.class);
     }
 
     private MutationQuery extractNamedMutationQuery(Class<?> entityClass, String query) {

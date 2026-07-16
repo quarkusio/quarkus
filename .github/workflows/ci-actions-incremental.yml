@@ -1091,14 +1091,6 @@ jobs:
             runs-on: true
           }
           - {
-            name: "17 Windows",
-            java-version: 17,
-            java-distribution: "temurin",
-            os-name: "windows-latest",
-            tag: "kubernetes-jdk-25-windows",
-            runs-on: false
-          }
-          - {
             name: "25 Semeru",
             java-version: 25,
             java-distribution: "semeru",

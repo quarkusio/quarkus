@@ -4,11 +4,13 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.KEEP_ALIVE_ENABLED;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_HEADER_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_INITIAL_LINE_LENGTH;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.NAME;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SHARED;
 
 import java.net.URI;
@@ -144,6 +146,20 @@ public class ClientImpl implements Client {
         Object maxRedirects = configuration.getProperty(MAX_REDIRECTS);
         if (maxRedirects != null) {
             options.setMaxRedirects((Integer) maxRedirects);
+        }
+
+        @SuppressWarnings("unchecked")
+        Set<String> sameOriginRedirectBlockedHeaders = (Set<String>) configuration
+                .getProperty(SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS);
+        if (sameOriginRedirectBlockedHeaders != null) {
+            options.setSameOriginRedirectBlockedHeaders(sameOriginRedirectBlockedHeaders);
+        }
+
+        @SuppressWarnings("unchecked")
+        Set<String> crossOriginRedirectBlockedHeaders = (Set<String>) configuration
+                .getProperty(CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS);
+        if (crossOriginRedirectBlockedHeaders != null) {
+            options.setCrossOriginRedirectBlockedHeaders(crossOriginRedirectBlockedHeaders);
         }
 
         Object maxHeaderSize = configuration.getProperty(MAX_HEADER_SIZE);

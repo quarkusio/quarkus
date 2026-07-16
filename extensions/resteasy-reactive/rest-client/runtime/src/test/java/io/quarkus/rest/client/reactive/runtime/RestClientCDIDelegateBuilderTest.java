@@ -5,11 +5,13 @@ import static org.eclipse.microprofile.rest.client.ext.QueryParamStyle.COMMA_SEP
 import static org.eclipse.microprofile.rest.client.ext.QueryParamStyle.MULTI_PAIRS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.KEEP_ALIVE_ENABLED;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_CHUNK_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MULTIPART_ENCODER_MODE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.STATIC_HEADERS;
 import static org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder.EncoderMode.HTML5;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,6 +31,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
@@ -146,6 +149,9 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(MAX_REDIRECTS, 104);
         verify(restClientBuilderMock).property(MAX_CHUNK_SIZE, 1024);
         verify(restClientBuilderMock).followRedirects(true);
+        verify(restClientBuilderMock).property(SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS, Set.of("cookie"));
+        verify(restClientBuilderMock).property(CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS,
+                Set.of("authorization", "cookie"));
         verify(restClientBuilderMock).register(MyResponseFilter1.class);
         verify(restClientBuilderMock).queryParamStyle(COMMA_SEPARATED);
 
@@ -201,6 +207,9 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(MAX_REDIRECTS, 204);
         verify(restClientBuilderMock).property(MAX_CHUNK_SIZE, 1024);
         verify(restClientBuilderMock).followRedirects(true);
+        verify(restClientBuilderMock).property(SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS, Set.of("cookie", "content-length"));
+        verify(restClientBuilderMock).property(CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS,
+                Set.of("authorization", "cookie", "proxy-authorization"));
         verify(restClientBuilderMock).register(MyResponseFilter2.class);
         verify(restClientBuilderMock).queryParamStyle(MULTI_PAIRS);
 
@@ -229,6 +238,9 @@ class RestClientCDIDelegateBuilderTest {
         rootConfig.put("quarkus.rest-client.max-redirects", "204");
         rootConfig.put("quarkus.rest-client.multipart-max-chunk-size", "1024");
         rootConfig.put("quarkus.rest-client.follow-redirects", "true");
+        rootConfig.put("quarkus.rest-client.same-origin-redirect-blocked-headers", "cookie,content-length");
+        rootConfig.put("quarkus.rest-client.cross-origin-redirect-blocked-headers",
+                "authorization,cookie,proxy-authorization");
         rootConfig.put("quarkus.rest-client.max-chunk-size", "1024");
         rootConfig.put("quarkus.rest-client.providers",
                 "io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter2");
@@ -264,6 +276,9 @@ class RestClientCDIDelegateBuilderTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".keep-alive-enabled", "false");
         clientConfig.put("quarkus.rest-client." + restClientName + ".max-redirects", "104");
         clientConfig.put("quarkus.rest-client." + restClientName + ".follow-redirects", "true");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".same-origin-redirect-blocked-headers", "cookie");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".cross-origin-redirect-blocked-headers",
+                "authorization,cookie");
         clientConfig.put("quarkus.rest-client." + restClientName + ".max-chunk-size", "1024");
         clientConfig.put("quarkus.rest-client." + restClientName + ".providers",
                 "io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");

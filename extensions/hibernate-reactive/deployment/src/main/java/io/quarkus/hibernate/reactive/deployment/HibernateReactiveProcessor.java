@@ -6,6 +6,7 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 
 import java.util.ArrayList;
 import java.util.Collections;

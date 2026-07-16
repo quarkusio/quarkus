@@ -944,7 +944,7 @@ public class NativeImageBuildStep {
 
                 if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
                         && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
-                        && graalVMVersion.getDistribution() != Distribution.ORACLE) {
+                        && graalVMVersion.getDistribution() == Distribution.MANDREL) {
                     final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
                     if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
                         log.info(

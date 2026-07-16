@@ -246,6 +246,8 @@ public final class LauncherUtil {
         private final CountDownLatch signal;
         private final AtomicReference<ListeningAddress> resultReference;
         private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
+        private final Pattern managementListeningRegex = Pattern
+                .compile("Management interface listening on\\s+(https?)://[^:]*:(\\d+)");
         private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
@@ -281,7 +283,13 @@ public final class LauncherUtil {
 
                         Matcher regexMatcher = listeningRegex.matcher(line);
                         if (regexMatcher.find()) {
-                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)));
+                            Matcher managementRegexMatcher = managementListeningRegex.matcher(line);
+                            if (managementRegexMatcher.find()) {
+                                dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)),
+                                        managementRegexMatcher.group(1), Integer.valueOf(managementRegexMatcher.group(2)));
+                            } else {
+                                dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)), null, null);
+                            }
                             return;
                         } else {
                             if (line.contains("Failed to start application (with profile")) {
@@ -297,7 +305,7 @@ public final class LauncherUtil {
                         // or waiting the next check interval will exceed the bailout time, it's time to finish waiting:
                         if (now + LOG_CHECK_INTERVAL > bailoutTime || now - 2 * LOG_CHECK_INTERVAL > timeStarted) {
                             if (started) {
-                                dataDetermined(null, null); // no http, all is null
+                                dataDetermined(null, null, null, null); // no http, all is null
                             } else {
                                 unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
                                         + " to contain info about the listening port and protocol but no such info was found. "
@@ -339,8 +347,10 @@ public final class LauncherUtil {
             return false;
         }
 
-        private void dataDetermined(String protocolValue, Integer portValue) {
-            this.resultReference.set(new ListeningAddress(portValue, protocolValue));
+        private void dataDetermined(String protocolValue, Integer portValue, String managementProtocolValue,
+                Integer managementPortValue) {
+            this.resultReference
+                    .set(new ListeningAddress(portValue, protocolValue, managementPortValue, managementProtocolValue));
             signal.countDown();
         }
 

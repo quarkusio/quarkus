@@ -420,6 +420,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodInfo anyGetterMethod = findAnyGetterMethod(deserData.classInfo);
         if (anyGetterMethod != null) {
             ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        } else {
+            FieldInfo anyGetterField = findAnyGetterField(deserData.classInfo);
+            if (anyGetterField != null) {
+                ignoredProperties.add(anyGetterField.name());
+            }
         }
         deserData.constructorFields.addAll(ignoredProperties);
 
@@ -434,8 +439,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         MethodInfo anySetterMethod = findAnySetterMethod(deserData.classInfo);
+        FieldInfo anySetterField = anySetterMethod == null ? findAnySetterField(deserData.classInfo) : null;
         handleUnknownFields(deserData, ignoredProperties, ctorFields, strSwitch, deserializationContext, fieldName,
-                fieldValue, objHandle, anySetterMethod);
+                fieldValue, objHandle, anySetterMethod, anySetterField);
         return result;
     }
 
@@ -522,9 +528,10 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
     }
 
-    private static void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,
+    private void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,
             Set<String> ctorFields, Switch.StringSwitch strSwitch, ResultHandle deserializationContext,
-            ResultHandle fieldName, ResultHandle fieldValue, ResultHandle objHandle, MethodInfo anySetterMethod) {
+            ResultHandle fieldName, ResultHandle fieldValue, ResultHandle objHandle, MethodInfo anySetterMethod,
+            FieldInfo anySetterField) {
         // add no-op cases for explicitly ignored properties
         for (String ignoredProp : ignoredProperties) {
             if (!ctorFields.contains(ignoredProp)) {
@@ -545,6 +552,25 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 } else {
                     bytecode.invokeVirtualMethod(anySetterMethod, objHandle, castedFieldName, deserializedValue);
                 }
+            });
+        } else if (anySetterField != null) {
+            ClassInfo classInfo = deserData.classInfo;
+            strSwitch.defaultCase(bytecode -> {
+                ResultHandle deserializedValue = bytecode.invokeVirtualMethod(
+                        ofMethod(DeserializationContext.class, "readTreeAsValue", Object.class, JsonNode.class, Class.class),
+                        deserializationContext, fieldValue,
+                        bytecode.loadClass(Object.class));
+                ResultHandle castedFieldName = bytecode.checkCast(fieldName, String.class);
+                MethodInfo getter = findMethod(classInfo, "get" + ucFirst(anySetterField.name()));
+                ResultHandle map;
+                if (getter != null) {
+                    map = bytecode.invokeVirtualMethod(MethodDescriptor.of(getter), objHandle);
+                } else {
+                    map = bytecode.readInstanceField(FieldDescriptor.of(anySetterField), objHandle);
+                }
+                bytecode.invokeInterfaceMethod(
+                        ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
+                        map, castedFieldName, deserializedValue);
             });
         } else if (shouldIgnoreUnknownProperties(deserData.classInfo)) {
             strSwitch.defaultCase(bytecode -> {
@@ -793,6 +819,16 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                     && method.parametersCount() == 2
                     && !Modifier.isStatic(method.flags())) {
                 return method;
+            }
+        }
+        return null;
+    }
+
+    private FieldInfo findAnySetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnySetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
             }
         }
         return null;

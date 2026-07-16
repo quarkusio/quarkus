@@ -118,6 +118,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.Http1ServerConfig;
@@ -836,10 +837,11 @@ public class VertxHttpRecorder {
                             if (httpManagementSslOptions != null
                                     && (managementConfig.ssl().certificate().reloadPeriod().isPresent())) {
                                 try {
+                                    ClientAuth clientAuth = managementBuildTimeConfig.tlsClientAuth();
                                     long l = TlsCertificateReloader.initCertReloadingAction(
                                             vertx, ar.result(), httpManagementServerConfig, httpManagementSslOptions,
                                             managementConfig.ssl(), registry,
-                                            managementConfig.tlsConfigurationName());
+                                            managementConfig.tlsConfigurationName(), clientAuth);
                                     if (l != -1) {
                                         refresTaskIds.add(l);
                                     }
@@ -850,10 +852,11 @@ public class VertxHttpRecorder {
                             }
 
                             if (httpManagementSslOptions != null) {
+                                ClientAuth clientAuth = managementBuildTimeConfig.tlsClientAuth();
                                 CDI.current().select(HttpCertificateUpdateEventListener.class).get()
                                         .register(ar.result(),
                                                 managementConfig.tlsConfigurationName().orElse(TlsConfig.DEFAULT_NAME),
-                                                "management interface");
+                                                "management interface", clientAuth);
                             }
 
                             actualManagementPort = ar.result().actualPort();
@@ -1456,9 +1459,10 @@ public class VertxHttpRecorder {
 
                         if (https && (httpConfig.ssl().certificate().reloadPeriod().isPresent())) {
                             try {
+                                ClientAuth clientAuth = getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode);
                                 long l = TlsCertificateReloader.initCertReloadingAction(
                                         vertx, httpsServer, httpsConfig_server, sslOptions, httpConfig.ssl(), registry,
-                                        getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode));
+                                        getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode), clientAuth);
                                 if (l != -1) {
                                     reloadingTasks.add(l);
                                 }
@@ -1469,11 +1473,12 @@ public class VertxHttpRecorder {
                         }
 
                         if (https) {
+                            ClientAuth clientAuth = getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode);
                             container.instance(HttpCertificateUpdateEventListener.class).get()
                                     .register(event.result(),
                                             getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode)
                                                     .orElse(TlsConfig.DEFAULT_NAME),
-                                            "http server");
+                                            "http server", clientAuth);
                         }
 
                         if (notifyStartObservers) {

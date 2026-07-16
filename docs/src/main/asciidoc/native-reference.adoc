@@ -2824,7 +2824,7 @@ That requires keeping runtime info that allow a compiled stack frame to be repla
 It also requires runtime extensible profile counters to be allocated and updated to track what has or has not been executed.
 
 ==== Native mode inliners
-The community edition of GraalVM Native Image has 2 inliners. There is the trivial inliner, which is responsible for inlining very small methods. There is also the single callsite inliner, which is responsible for inlining methods with only one caller.
+The community edition of GraalVM 25.0 Native Image has 2 inliners. There is the trivial inliner, which is responsible for inlining very small methods. There is also the single callsite inliner, which is responsible for inlining methods with only one caller.
 
 Both inliners are enabled by default when available. The trivial inliner is available in all versions of GraalVM. The single callsite inliner is only available with GraalVM community edition 25.0.4+ and Mandrel 25.0.4+.
 

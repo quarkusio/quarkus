@@ -9,7 +9,8 @@ public class TargetQuarkusVersionGroup {
     public String streamId;
 
     @CommandLine.Option(paramLabel = "targetPlatformVersion", names = { "-P",
-            "--platform-version" }, description = "A specific target Quarkus platform version, for example:%n"
+            "--platform-version" },
+            description = "A specific target Quarkus platform version, for example:%n"
                     + "  3.15.2%n")
     public String platformVersion;
 

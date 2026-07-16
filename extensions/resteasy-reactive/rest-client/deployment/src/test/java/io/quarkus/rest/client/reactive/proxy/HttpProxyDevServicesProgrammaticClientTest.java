@@ -43,7 +43,8 @@ public class HttpProxyDevServicesProgrammaticClientTest {
                 }
             });
 
-    @ConfigProperty(name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesProgrammaticClientTest$Client\".override-uri")
+    @ConfigProperty(
+            name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesProgrammaticClientTest$Client\".override-uri")
     String proxyUrl;
 
     @Test

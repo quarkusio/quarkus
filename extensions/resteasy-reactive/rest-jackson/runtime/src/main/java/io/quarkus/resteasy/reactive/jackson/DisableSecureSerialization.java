@@ -13,7 +13,8 @@ import io.smallrye.common.annotation.Experimental;
  * will proceed as if the annotation did not exist.
  * Placing it on a class, is equivalent of placing it on all JAX-RS methods of the class.
  */
-@Experimental(value = "Remains to be determined if this is the best possible API for users to configure security of serialized fields")
+@Experimental(
+        value = "Remains to be determined if this is the best possible API for users to configure security of serialized fields")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface DisableSecureSerialization {

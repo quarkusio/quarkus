@@ -20,7 +20,8 @@ import org.jboss.logging.Logger;
 import io.smallrye.certs.ca.CaGenerator;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "generate-quarkus-ca", mixinStandardHelpOptions = true, description = "Generate Quarkus Dev CA certificate and private key.")
+@CommandLine.Command(name = "generate-quarkus-ca", mixinStandardHelpOptions = true,
+        description = "Generate Quarkus Dev CA certificate and private key.")
 public class GenerateCACommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-i",
@@ -28,7 +29,8 @@ public class GenerateCACommand implements Callable<Integer> {
     boolean install;
 
     @CommandLine.Option(names = { "-t",
-            "--truststore" }, description = "Generate a PKCS12 (`.p12`) truststore containing the generated CA.", defaultValue = "false")
+            "--truststore" }, description = "Generate a PKCS12 (`.p12`) truststore containing the generated CA.",
+            defaultValue = "false")
     boolean truststore;
 
     @CommandLine.Option(names = { "-r",

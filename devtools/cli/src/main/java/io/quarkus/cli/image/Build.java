@@ -7,14 +7,19 @@ import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image.", description = "%n"
-        + "This command will build a container image for the project.", subcommands = { Docker.class,
+@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Build a container image.", description = "%n"
+                + "This command will build a container image for the project.",
+        subcommands = { Docker.class,
                 Podman.class,
                 Buildpack.class,
                 Jib.class,
-                Openshift.class }, footer = { "%n"
-                        + "For example (using default values), it will create a container image using docker with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'."
-                        + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+                Openshift.class },
+        footer = { "%n"
+                + "For example (using default values), it will create a container image using docker with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'."
+                + "%n" },
+        headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n",
+        optionListHeading = "Options:%n")
 public class Build extends BaseImageCommand {
 
     private static final String FALLBACK_BUILDER = "docker";

@@ -13,7 +13,8 @@ import io.quarkus.runtime.LaunchMode;
 /**
  * The test mojo, that starts continuous testing outside of dev mode
  */
-@Mojo(name = "test", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
+@Mojo(name = "test", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST,
+        threadSafe = true)
 public class TestMojo extends DevMojo {
 
     @Override

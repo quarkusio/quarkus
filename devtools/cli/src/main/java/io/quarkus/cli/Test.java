@@ -17,7 +17,8 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "test", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in continuous testing mode.")
+@CommandLine.Command(name = "test", showEndOfOptionsDelimiterInUsageHelp = true,
+        header = "Run the current project in continuous testing mode.")
 public class Test extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nContinuous Test Mode options:%n")

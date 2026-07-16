@@ -75,7 +75,8 @@ public class YearMonthParamTest {
 
         @POST
         public String helloForm(
-                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) YearMonth date) {
+                @FormParam("date") @DateFormat(
+                        dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) YearMonth date) {
             return "hello:" + date;
         }
 

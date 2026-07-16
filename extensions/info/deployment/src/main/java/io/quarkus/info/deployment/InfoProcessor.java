@@ -53,7 +53,8 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
-@DevMcpBuildTimeTool(name = "getApplicationAndEnvironmentInfo", description = "Information about the environment where this Quarkus application is running. Things like Operating System, Java version, Git information and application details.")
+@DevMcpBuildTimeTool(name = "getApplicationAndEnvironmentInfo",
+        description = "Information about the environment where this Quarkus application is running. Things like Operating System, Java version, Git information and application details.")
 public class InfoProcessor {
 
     private static final Logger log = Logger.getLogger(InfoProcessor.class);

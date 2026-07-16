@@ -28,7 +28,8 @@ public class ReportIssuesJsonRPCService {
     private static final Logger LOG = Logger.getLogger(ReportIssuesJsonRPCService.class);
 
     @Inject
-    @ConfigProperty(name = "quarkus.devui.report-issues.url", defaultValue = "https://github.com/quarkusio/quarkus/issues/new?labels=kind%2Fbug&template=bug_report.yml")
+    @ConfigProperty(name = "quarkus.devui.report-issues.url",
+            defaultValue = "https://github.com/quarkusio/quarkus/issues/new?labels=kind%2Fbug&template=bug_report.yml")
     String reportURL;
 
     @JsonRpcDescription("Creates a url that if opened, will go to issue report for the Quarkus project with some of the value pre-filled")

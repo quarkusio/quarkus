@@ -18,7 +18,8 @@ import io.quarkus.deployment.cmd.DeployCommandDeclarationHandler;
 import io.quarkus.deployment.cmd.DeployCommandDeclarationResultBuildItem;
 import io.quarkus.deployment.cmd.DeployCommandHandler;
 
-@Mojo(name = "deploy", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "deploy", defaultPhase = LifecyclePhase.PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class DeployMojo extends AbstractDeploymentMojo {
 
     @Override

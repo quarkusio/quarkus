@@ -4,11 +4,12 @@ import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "tls", mixinStandardHelpOptions = true, sortOptions = false, header = "Install and Manage TLS development certificates", subcommands = {
-        GenerateCACommand.class,
-        GenerateCertificateCommand.class,
-        LetsEncryptCommand.class
-})
+@CommandLine.Command(name = "tls", mixinStandardHelpOptions = true, sortOptions = false,
+        header = "Install and Manage TLS development certificates", subcommands = {
+                GenerateCACommand.class,
+                GenerateCertificateCommand.class,
+                LetsEncryptCommand.class
+        })
 public class TlsCommand implements Callable<Integer> {
 
     @CommandLine.Spec

@@ -27,7 +27,8 @@ import io.smallrye.stork.utils.StorkAddressUtils;
  */
 @ServiceDiscoveryType("delayed")
 @ServiceDiscoveryAttribute(name = "address-list", description = "comma-separated host:port list served once the delay elapses")
-@ServiceDiscoveryAttribute(name = "available-after-ms", description = "milliseconds after the first lookup before instances become available")
+@ServiceDiscoveryAttribute(name = "available-after-ms",
+        description = "milliseconds after the first lookup before instances become available")
 public class DelayedServiceDiscoveryProvider implements ServiceDiscoveryProvider<DelayedConfiguration> {
 
     @Override

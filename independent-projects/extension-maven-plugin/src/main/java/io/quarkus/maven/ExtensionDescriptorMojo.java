@@ -89,7 +89,8 @@ import io.quarkus.platform.tools.ExtensionMetadataValidator;
  *
  * @author Alexey Loubyansky
  */
-@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
     public static class RemovedResources {

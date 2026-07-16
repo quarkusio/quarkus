@@ -118,7 +118,8 @@ final class Substitutions {
      * This Substitution provides a delegate to the GraalVM lazy implementation, expanding the lazy check to each
      * individual method of {@link Properties}.
      */
-    @TargetClass(className = "com.oracle.svm.core.jdk.SystemPropertiesSupport", onlyWith = Target_SystemPropertiesSupport.SystemPropertiesSupportGetPropertiesPresent.class)
+    @TargetClass(className = "com.oracle.svm.core.jdk.SystemPropertiesSupport",
+            onlyWith = Target_SystemPropertiesSupport.SystemPropertiesSupportGetPropertiesPresent.class)
     static final class Target_SystemPropertiesSupport {
         @Alias
         private Properties properties;
@@ -450,7 +451,8 @@ final class Substitutions {
         }
     }
 
-    @TargetClass(className = "com.oracle.svm.core.jdk.SystemPropertiesSupport", onlyWith = Target_SystemPropertiesSupport_post_21.SystemPropertiesSupportGetCurrentPropertiesPresent.class)
+    @TargetClass(className = "com.oracle.svm.core.jdk.SystemPropertiesSupport",
+            onlyWith = Target_SystemPropertiesSupport_post_21.SystemPropertiesSupportGetCurrentPropertiesPresent.class)
     static final class Target_SystemPropertiesSupport_post_21 {
 
         @Alias

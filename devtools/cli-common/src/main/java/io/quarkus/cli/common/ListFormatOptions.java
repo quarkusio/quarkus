@@ -14,7 +14,8 @@ public class ListFormatOptions {
     boolean concise = false;
 
     @CommandLine.Option(names = {
-            "--full" }, order = 6, description = "Display extension artifactId, name, version, platform origin, and other information.")
+            "--full" }, order = 6,
+            description = "Display extension artifactId, name, version, platform origin, and other information.")
     boolean full = false;
 
     @CommandLine.Option(names = {
@@ -22,7 +23,8 @@ public class ListFormatOptions {
     boolean origins = false;
 
     @CommandLine.Option(names = {
-            "--support-scope" }, order = 7, description = "Display extension artifactId, name, version, and support scope in case it's associated with an extension.")
+            "--support-scope" }, order = 7,
+            description = "Display extension artifactId, name, version, and support scope in case it's associated with an extension.")
     boolean supportScope = false;
 
     /**

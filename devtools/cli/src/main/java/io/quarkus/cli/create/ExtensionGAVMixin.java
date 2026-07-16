@@ -15,12 +15,13 @@ public class ExtensionGAVMixin {
     String extensionId = null;
     String version = null;
 
-    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]", description = "Quarkus extension project identifiers%n"
-            + "  " + EXAMPLE_GAV + "%n"
-            + "  Examples:%n"
-            + "     my-extension%n"
-            + "     my.group:my-extension%n"
-            + "     my.group:my-extension:0.1%n")
+    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]",
+            description = "Quarkus extension project identifiers%n"
+                    + "  " + EXAMPLE_GAV + "%n"
+                    + "  Examples:%n"
+                    + "     my-extension%n"
+                    + "     my.group:my-extension%n"
+                    + "     my.group:my-extension:0.1%n")
     String gav = null;
 
     void projectGav() {

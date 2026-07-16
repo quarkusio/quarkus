@@ -34,7 +34,8 @@ public abstract class QuarkusListCategories extends QuarkusPlatformTask {
         return format;
     }
 
-    @Option(description = "Select the output format among 'id' (display the categoryId only), 'concise' (display name and categoryId) and 'full' (name, categoryId and description columns).", option = "format")
+    @Option(description = "Select the output format among 'id' (display the categoryId only), 'concise' (display name and categoryId) and 'full' (name, categoryId and description columns).",
+            option = "format")
     public void setFormat(String format) {
         this.format = format;
     }

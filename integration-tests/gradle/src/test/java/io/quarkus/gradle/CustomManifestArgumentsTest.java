@@ -17,7 +17,8 @@ import org.junit.jupiter.api.condition.OS;
 public class CustomManifestArgumentsTest extends QuarkusGradleWrapperTestBase {
 
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "for whatever reason, this is not working anymore on Widndows, the customSection is null...")
+    @DisabledOnOs(value = OS.WINDOWS,
+            disabledReason = "for whatever reason, this is not working anymore on Widndows, the customSection is null...")
     public void shouldContainsSpecificManifestProperty() throws Exception {
         File projectDir = getProjectDir("custom-config-java-module");
 

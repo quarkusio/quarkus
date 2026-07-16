@@ -294,7 +294,8 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     @SuppressWarnings("unused")
-    @Option(description = "Additional parameters to pass to javac when recompiling changed source files", option = "compiler-args")
+    @Option(description = "Additional parameters to pass to javac when recompiling changed source files",
+            option = "compiler-args")
     public void setCompilerArgs(List<String> compilerArgs) {
         getCompilerArguments().set(compilerArgs);
     }
@@ -329,7 +330,8 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     @SuppressWarnings("unused")
-    @Option(description = "Sets test class or method name to be included (for continuous testing), '*' is supported.", option = "tests")
+    @Option(description = "Sets test class or method name to be included (for continuous testing), '*' is supported.",
+            option = "tests")
     public void setTests(List<String> tests) {
         getTests().set(tests);
     }

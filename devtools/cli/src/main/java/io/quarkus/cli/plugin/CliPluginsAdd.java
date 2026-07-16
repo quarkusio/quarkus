@@ -20,7 +20,8 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
             "--description" }, paramLabel = "Plugin description", order = 5, description = "The plugin description")
     Optional<String> description;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME", description = " The plugin name or location (e.g. url, path or maven coordinates in GACTV form)")
+    @CommandLine.Parameters(arity = "1", paramLabel = "PLUGIN_NAME",
+            description = " The plugin name or location (e.g. url, path or maven coordinates in GACTV form)")
     String nameOrLocation;
 
     @Override

@@ -25,11 +25,15 @@ import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
  * without requiring continuous testing to be started.
  */
 @DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_TESTS_NAME, description = OneShotTestingProcessor.RUN_TESTS_DESC)
-@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_AFFECTED_TESTS_NAME, description = OneShotTestingProcessor.RUN_AFFECTED_TESTS_DESC)
-@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_TEST_NAME, description = OneShotTestingProcessor.RUN_TEST_DESC, params = {
-        @DevMcpParam(name = "className", description = "The fully qualified test class name, e.g. com.example.MyTest"),
-        @DevMcpParam(name = "methodName", description = "The test method name to run. If not provided, all tests in the class are run.", required = false)
-})
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_AFFECTED_TESTS_NAME,
+        description = OneShotTestingProcessor.RUN_AFFECTED_TESTS_DESC)
+@DevMcpBuildTimeTool(name = OneShotTestingProcessor.RUN_TEST_NAME, description = OneShotTestingProcessor.RUN_TEST_DESC,
+        params = {
+                @DevMcpParam(name = "className", description = "The fully qualified test class name, e.g. com.example.MyTest"),
+                @DevMcpParam(name = "methodName",
+                        description = "The test method name to run. If not provided, all tests in the class are run.",
+                        required = false)
+        })
 @DevMcpBuildTimeTool(name = OneShotTestingProcessor.CANCEL_TESTS_NAME, description = OneShotTestingProcessor.CANCEL_TESTS_DESC)
 @DevMcpBuildTimeTool(name = OneShotTestingProcessor.RESET_TESTS_NAME, description = OneShotTestingProcessor.RESET_TESTS_DESC)
 public class OneShotTestingProcessor {

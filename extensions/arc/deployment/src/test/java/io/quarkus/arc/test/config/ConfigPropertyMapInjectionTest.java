@@ -43,7 +43,8 @@ public class ConfigPropertyMapInjectionTest {
     @ConfigProperty(name = "versions")
     Map<String, Version> versions;
 
-    @ConfigProperty(name = "default.versions", defaultValue = "v0.1=0.The version 0;v1\\=1\\;2\\;3=1.The version 1\\;2\\;3;v2\\=2\\;1\\;0=2.The version 2\\;1\\;0")
+    @ConfigProperty(name = "default.versions",
+            defaultValue = "v0.1=0.The version 0;v1\\=1\\;2\\;3=1.The version 1\\;2\\;3;v2\\=2\\;1\\;0=2.The version 2\\;1\\;0")
     Map<String, Version> versionsDefault;
 
     @Test

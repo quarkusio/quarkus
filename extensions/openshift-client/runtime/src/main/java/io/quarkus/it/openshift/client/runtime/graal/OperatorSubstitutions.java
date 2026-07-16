@@ -20,7 +20,8 @@ import io.fabric8.openshift.client.dsl.OpenShiftOperatorAPIGroupDSL;
 /**
  * Allows the exclusion of the openshift-model-operator model without breaking the --link-at-build-time check.
  */
-@TargetClass(className = "io.fabric8.openshift.client.impl.OpenShiftClientImpl", onlyWith = OperatorSubstitutions.NoOpenShiftOperatorModel.class)
+@TargetClass(className = "io.fabric8.openshift.client.impl.OpenShiftClientImpl",
+        onlyWith = OperatorSubstitutions.NoOpenShiftOperatorModel.class)
 public final class OperatorSubstitutions {
 
     @Substitute

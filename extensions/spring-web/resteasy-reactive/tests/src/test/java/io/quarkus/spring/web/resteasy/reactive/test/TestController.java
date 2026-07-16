@@ -93,7 +93,8 @@ public class TestController {
         return someClass.getMessage();
     }
 
-    @RequestMapping(path = "/json2", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN, consumes = MediaType.APPLICATION_JSON)
+    @RequestMapping(path = "/json2", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN,
+            consumes = MediaType.APPLICATION_JSON)
     public String postWithJsonBodyFromRequestMapping(@RequestBody SomeClass someClass) {
         return someClass.getMessage();
     }

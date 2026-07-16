@@ -13,7 +13,8 @@ import io.quarkus.test.junit.virtual.VirtualThreadUnit;
  */
 @VirtualThreadUnit
 @EnabledForJreRange(min = JRE.JAVA_21)
-@DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
+@DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*",
+        disabledReason = "Semeru doesn't support JFR yet")
 public class Java25FieldsTest {
 
     @Test

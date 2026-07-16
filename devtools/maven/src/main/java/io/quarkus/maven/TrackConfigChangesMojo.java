@@ -35,7 +35,8 @@ import io.quarkus.runtime.LaunchMode;
  * both configuration files could be compared by tools caching build goal outcomes to check whether the previous
  * outcome of the {@link BuildMojo} needs to be rebuilt.
  */
-@Mojo(name = "track-config-changes", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "track-config-changes", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
 
     /**

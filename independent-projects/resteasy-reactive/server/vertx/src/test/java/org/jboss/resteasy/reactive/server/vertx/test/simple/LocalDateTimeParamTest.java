@@ -151,7 +151,8 @@ public class LocalDateTimeParamTest {
 
         @POST
         public String helloForm(
-                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
+                @FormParam("date") @DateFormat(
+                        dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
             if (date == null) {
                 return "hello:null";
             }
@@ -161,7 +162,8 @@ public class LocalDateTimeParamTest {
         @POST
         @Path("list")
         public String helloFormSet(
-                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDateTime> dates) {
+                @FormParam("date") @DateFormat(
+                        dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDateTime> dates) {
             String joinedDays = dates.stream()
                     .map(LocalDateTime::getDayOfMonth)
                     .sorted()

@@ -100,13 +100,15 @@ public class LocalDateParamTest {
 
         @POST
         public String helloForm(
-                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDate date) {
+                @FormParam("date") @DateFormat(
+                        dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDate date) {
             return "hello:" + date;
         }
 
         @POST
         public String helloFormSet(
-                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDate> dates) {
+                @FormParam("date") @DateFormat(
+                        dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDate> dates) {
             String formattedDates = dates.stream()
                     .map(date -> date.format(CustomDateTimeFormatterProvider.FORMATTER))
                     .collect(Collectors.joining(","));

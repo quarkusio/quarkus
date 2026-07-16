@@ -26,9 +26,11 @@ import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-management-interface-alias-test", password = "secret", formats = {
-        Format.JKS, Format.PKCS12,
-        Format.PEM }, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost")))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "ssl-management-interface-alias-test", password = "secret", formats = {
+                Format.JKS, Format.PKCS12,
+                Format.PEM },
+                aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost")))
 public class ManagementWithP12WithAliasTest {
     private static final String configuration = """
             quarkus.management.enabled=true

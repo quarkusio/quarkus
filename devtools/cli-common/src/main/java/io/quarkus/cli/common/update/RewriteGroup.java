@@ -8,7 +8,8 @@ public class RewriteGroup {
     public RewriteRun run;
 
     @CommandLine.Option(order = 0, names = {
-            "--quarkus-update-recipes" }, description = "Use custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.")
+            "--quarkus-update-recipes" },
+            description = "Use custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.")
     public String quarkusUpdateRecipes;
 
     @CommandLine.Option(order = 1, names = {
@@ -16,7 +17,8 @@ public class RewriteGroup {
     public String pluginVersion;
 
     @CommandLine.Option(order = 2, names = {
-            "--additional-update-recipes" }, description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.")
+            "--additional-update-recipes" },
+            description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.")
     public String additionalUpdateRecipes;
 
     public static class RewriteRun {
@@ -28,7 +30,8 @@ public class RewriteGroup {
         @CommandLine.Option(order = 5, names = {
                 "--dry-run",
                 "-n"
-        }, description = "Do a dry run of the suggested update recipe for this project and create a patch file.", defaultValue = "false")
+        }, description = "Do a dry run of the suggested update recipe for this project and create a patch file.",
+                defaultValue = "false")
         public boolean dryRun = false;
 
         @CommandLine.Option(order = 4, names = {

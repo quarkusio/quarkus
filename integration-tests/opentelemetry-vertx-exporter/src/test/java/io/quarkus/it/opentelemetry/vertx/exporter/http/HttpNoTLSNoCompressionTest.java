@@ -7,7 +7,8 @@ import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(value = OtelCollectorLifecycleManager.class, initArgs = @ResourceArg(name = "protocol", value = "http/protobuf"), restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = OtelCollectorLifecycleManager.class,
+        initArgs = @ResourceArg(name = "protocol", value = "http/protobuf"), restrictToAnnotatedClass = true)
 public class HttpNoTLSNoCompressionTest extends AbstractExporterTest {
 
 }

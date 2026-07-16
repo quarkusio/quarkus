@@ -44,7 +44,8 @@ public class Person {
     private Address someAddress;
 
     @ManyToMany
-    @JoinTable(name = "liked_songs", joinColumns = @JoinColumn(name = "person_id"), inverseJoinColumns = @JoinColumn(name = "song_id"))
+    @JoinTable(name = "liked_songs", joinColumns = @JoinColumn(name = "person_id"),
+            inverseJoinColumns = @JoinColumn(name = "song_id"))
     private Set<Song> likedSongs;
 
     public Person(String name) {

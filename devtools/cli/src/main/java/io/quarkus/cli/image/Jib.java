@@ -12,9 +12,13 @@ import java.util.stream.Collectors;
 import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"
-        + "This command will build or push a container image for the project, using Jib.", footer = "%n"
-                + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Build a container image using Jib.", description = "%n"
+                + "This command will build or push a container image for the project, using Jib.",
+        footer = "%n"
+                + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.",
+        headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n",
+        optionListHeading = "Options:%n")
 public class Jib extends BaseImageSubCommand {
 
     private static final String JIB = "jib";
@@ -58,19 +62,23 @@ public class Jib extends BaseImageSubCommand {
     public String user;
 
     @CommandLine.Option(order = 14, names = {
-            "--always-cache-base-image" }, description = "Controls the optimization which skips downloading base image layers that exist in a target registry.")
+            "--always-cache-base-image" },
+            description = "Controls the optimization which skips downloading base image layers that exist in a target registry.")
     public boolean alwaysCacheBaseImage;
 
     @CommandLine.Option(order = 15, names = {
-            "--platform" }, description = "The target platforms defined using the pattern <os>[/arch][/variant]|<os>/<arch>[/variant]")
+            "--platform" },
+            description = "The target platforms defined using the pattern <os>[/arch][/variant]|<os>/<arch>[/variant]")
     public Set<String> platforms = new HashSet<>();
 
     @CommandLine.Option(order = 16, names = {
-            "--image-digest-file" }, description = "The path of a file that will be written containing the digest of the generated image.")
+            "--image-digest-file" },
+            description = "The path of a file that will be written containing the digest of the generated image.")
     public String imageDigestFile;
 
     @CommandLine.Option(order = 17, names = {
-            "--image-id-file" }, description = "The path of a file that will be written containing the id of the generated image.")
+            "--image-id-file" },
+            description = "The path of a file that will be written containing the id of the generated image.")
     public String imageIdFile;
 
     @Override

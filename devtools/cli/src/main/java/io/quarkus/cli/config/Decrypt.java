@@ -17,7 +17,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "decrypt", aliases = "dec", header = "Decrypt Secrets", description = "Decrypt a Secret value using the AES/GCM/NoPadding algorithm as a default.")
+@Command(name = "decrypt", aliases = "dec", header = "Decrypt Secrets",
+        description = "Decrypt a Secret value using the AES/GCM/NoPadding algorithm as a default.")
 public class Decrypt extends BaseConfigCommand implements Callable<Integer> {
     @Parameters(index = "0", paramLabel = "SECRET", description = "The secret value to decrypt")
     String secret;

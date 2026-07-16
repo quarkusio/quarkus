@@ -32,7 +32,8 @@ import io.quarkus.deployment.pkg.builditem.BuildPgoOptimizedNativeResultBuildIte
  * <li>PGO-optimized native images (from GraalVM PGO profiling)</li>
  * </ul>
  */
-@Mojo(name = "build-enhanced-artifact", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "build-enhanced-artifact", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildEnhancedArtifactMojo extends QuarkusBootstrapMojo {
 
     private static final String PGO_PROFILE_NAME = "default.iprof";

@@ -29,7 +29,8 @@ final class ShareGroupSubstitutions {
     }
 }
 
-@TargetClass(className = "io.smallrye.reactive.messaging.kafka.commit.KafkaShareGroupCommit", onlyWith = ShareGroupSubstitutions.IsAcquisitionLockTimeoutMsMissing.class)
+@TargetClass(className = "io.smallrye.reactive.messaging.kafka.commit.KafkaShareGroupCommit",
+        onlyWith = ShareGroupSubstitutions.IsAcquisitionLockTimeoutMsMissing.class)
 final class Target_io_smallrye_reactive_messaging_kafka_commit_KafkaShareGroupCommit {
 
     @Alias

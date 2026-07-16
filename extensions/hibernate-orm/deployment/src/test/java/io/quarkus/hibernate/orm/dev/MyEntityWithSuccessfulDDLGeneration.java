@@ -11,7 +11,8 @@ import jakarta.persistence.Table;
 
 @Entity(name = MyEntityWithSuccessfulDDLGeneration.NAME)
 @Table(name = MyEntityWithSuccessfulDDLGeneration.TABLE_NAME)
-@NamedQuery(name = "MyEntity.findAll", query = "SELECT e FROM MyEntity e ORDER BY e.name", hints = @QueryHint(name = "org.hibernate.cacheable", value = "true"))
+@NamedQuery(name = "MyEntity.findAll", query = "SELECT e FROM MyEntity e ORDER BY e.name",
+        hints = @QueryHint(name = "org.hibernate.cacheable", value = "true"))
 @NamedNativeQuery(name = "MyEntity.nativeFindAll", query = "SELECT e FROM MyEntityTable e ORDER BY e.name")
 public class MyEntityWithSuccessfulDDLGeneration {
     public static final String NAME = "MyEntity";

@@ -41,7 +41,8 @@ public class RetryConfigBean {
 
     private long lastStartTime = 0;
 
-    @Retry(abortOn = TestConfigExceptionA.class, delay = 0, jitter = 0, maxRetries = 1000, maxDuration = 10, durationUnit = ChronoUnit.SECONDS)
+    @Retry(abortOn = TestConfigExceptionA.class, delay = 0, jitter = 0, maxRetries = 1000, maxDuration = 10,
+            durationUnit = ChronoUnit.SECONDS)
     public void jitter() {
         long startTime = System.nanoTime();
         if (lastStartTime != 0) {

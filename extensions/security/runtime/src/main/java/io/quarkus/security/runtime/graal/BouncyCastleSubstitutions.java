@@ -18,7 +18,8 @@ final class BouncyCastlePackages {
             .map(p -> p.getName()).filter(p -> p.startsWith(ORG_BOUNCYCASTLE_CRYPTO_PACKAGE)).collect(Collectors.toSet());
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.DSA$1", onlyWith = BouncyCastleCryptoGeneral.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.DSA$1",
+        onlyWith = BouncyCastleCryptoGeneral.class)
 final class Target_org_bouncycastle_crypto_general_DSA$1 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -26,7 +27,8 @@ final class Target_org_bouncycastle_crypto_general_DSA$1 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.DSTU4145$2", onlyWith = BouncyCastleCryptoGeneral.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.DSTU4145$2",
+        onlyWith = BouncyCastleCryptoGeneral.class)
 final class Target_org_bouncycastle_crypto_general_DSTU4145$2 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -34,7 +36,8 @@ final class Target_org_bouncycastle_crypto_general_DSTU4145$2 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.ECGOST3410$2", onlyWith = BouncyCastleCryptoGeneral.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.ECGOST3410$2",
+        onlyWith = BouncyCastleCryptoGeneral.class)
 final class Target_org_bouncycastle_crypto_general_ECGOST3410$2 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -42,7 +45,8 @@ final class Target_org_bouncycastle_crypto_general_ECGOST3410$2 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.GOST3410$1", onlyWith = BouncyCastleCryptoGeneral.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.GOST3410$1",
+        onlyWith = BouncyCastleCryptoGeneral.class)
 final class Target_org_bouncycastle_crypto_general_GOST3410$1 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -50,7 +54,8 @@ final class Target_org_bouncycastle_crypto_general_GOST3410$1 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsDSA$2", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsDSA$2",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_FipsDSA$2 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -58,7 +63,8 @@ final class Target_org_bouncycastle_crypto_fips_FipsDSA$2 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsEC$1", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsEC$1",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_FipsEC$1 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -66,7 +72,8 @@ final class Target_org_bouncycastle_crypto_fips_FipsEC$1 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsRSA$3", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsRSA$3",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_FipsRSA$3 {
     @com.oracle.svm.core.annotate.Substitute
     public boolean hasTestPassed(Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair kp) {
@@ -74,7 +81,8 @@ final class Target_org_bouncycastle_crypto_fips_FipsRSA$3 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsRSA$EngineProvider$1", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.FipsRSA$EngineProvider$1",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_FipsRSA$EngineProvider$1 {
     @com.oracle.svm.core.annotate.Substitute
     public void evaluate(Target_org_bouncycastle_crypto_fips_RsaBlindedEngine rsaEngine) {
@@ -82,15 +90,18 @@ final class Target_org_bouncycastle_crypto_fips_FipsRSA$EngineProvider$1 {
     }
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.internal.AsymmetricCipherKeyPair", onlyWith = BouncyCastleCryptoInternal.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.internal.AsymmetricCipherKeyPair",
+        onlyWith = BouncyCastleCryptoInternal.class)
 final class Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair {
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.RsaBlindedEngine", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.RsaBlindedEngine",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_RsaBlindedEngine {
 }
 
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider", onlyWith = BouncyCastleCryptoFips.class)
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider",
+        onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_jcajce_provider_BouncyCastleFipsProvider {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //

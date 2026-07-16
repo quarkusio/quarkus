@@ -15,7 +15,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "User_")
 @NamedQuery(name = "User.getUserByFullNameUsingNamedQuery", query = "select u from User u where u.fullName=:name")
-@NamedQueries(@NamedQuery(name = "User.getUserByFullNameUsingNamedQueries", query = "select u from User u where u.fullName=:name"))
+@NamedQueries(@NamedQuery(name = "User.getUserByFullNameUsingNamedQueries",
+        query = "select u from User u where u.fullName=:name"))
 public class User {
 
     @Id

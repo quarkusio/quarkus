@@ -18,12 +18,13 @@ public class TargetGAVGroup {
     String artifactId = CreateProjectHelper.DEFAULT_ARTIFACT_ID;
     String version = CreateProjectHelper.DEFAULT_VERSION;
 
-    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]ARTIFACT-ID[:VERSION]", description = "Java project identifiers%n"
-            + "  default: " + DEFAULT_GAV + "%n"
-            + "  Examples:%n"
-            + "     my-project%n"
-            + "     my.group:my-project%n"
-            + "     my.group:my-project:0.1%n")
+    @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]ARTIFACT-ID[:VERSION]",
+            description = "Java project identifiers%n"
+                    + "  default: " + DEFAULT_GAV + "%n"
+                    + "  Examples:%n"
+                    + "     my-project%n"
+                    + "     my.group:my-project%n"
+                    + "     my.group:my-project:0.1%n")
     String gav = null;
 
     boolean initialized = false;

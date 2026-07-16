@@ -24,7 +24,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.http.ClientAuth;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 class FluentApiMechanismPrioritizationTest {
 
     @RegisterExtension

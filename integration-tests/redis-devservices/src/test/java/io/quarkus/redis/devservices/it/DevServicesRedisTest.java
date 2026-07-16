@@ -41,7 +41,8 @@ public class DevServicesRedisTest {
 
     // For some reason, the quarkus.test.native isn't being set in the failsafe path with -Pnative
     // We'll just use a different property that is being set instead
-    @DisabledIfSystemProperty(named = "native.image.path", matches = ".*", disabledReason = "Not working; tracked by https://github.com/quarkusio/quarkus/issues/50085")
+    @DisabledIfSystemProperty(named = "native.image.path", matches = ".*",
+            disabledReason = "Not working; tracked by https://github.com/quarkusio/quarkus/issues/50085")
     @Test
     @DisplayName("given redis container must have been preloaded with contents of import.redis")
     public void shouldReturnPreloadKeys() {

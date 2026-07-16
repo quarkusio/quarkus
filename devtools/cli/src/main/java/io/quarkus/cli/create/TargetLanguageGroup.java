@@ -21,7 +21,8 @@ public class TargetLanguageGroup {
     }
 
     @CommandLine.Option(names = {
-            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DETECT_JAVA_RUNTIME_VERSION)
+            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}",
+            completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DETECT_JAVA_RUNTIME_VERSION)
     String javaVersion = JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
 
     @CommandLine.Option(names = { "--kotlin" }, description = "Use Kotlin")

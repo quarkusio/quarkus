@@ -12,7 +12,8 @@ public class SecuredBean {
         return record.propertyOne();
     }
 
-    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class, params = "record.secondTier.thirdTier.propertyOne")
+    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class,
+            params = "record.secondTier.thirdTier.propertyOne")
     public String nestedRecordParam_ThreeTiers(TopTierRecord record) {
         return record.secondTier().thirdTier().propertyOne();
     }
@@ -22,17 +23,20 @@ public class SecuredBean {
         return simpleParam.propertyOne;
     }
 
-    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class, params = "complexParam.nestedFieldParam.simpleFieldParam.propertyOne")
+    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class,
+            params = "complexParam.nestedFieldParam.simpleFieldParam.propertyOne")
     public String nestedFieldParam_ThreeTiers(ComplexFieldParam complexParam) {
         return complexParam.nestedFieldParam.simpleFieldParam.propertyOne;
     }
 
-    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class, params = "obj.second.third.fourth.propertyOne")
+    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class,
+            params = "obj.second.third.fourth.propertyOne")
     public String multipleNestedMethods(NestedMethodsObject obj) {
         return obj.second().third().fourth().getPropertyOne();
     }
 
-    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class, params = "obj.paramField.myVal.propertyOne")
+    @PermissionsAllowed(value = "ignored", permission = CustomPermissionWithStringArg.class,
+            params = "obj.paramField.myVal.propertyOne")
     public String combinedParam(CombinedAccessParam obj) {
         return obj.paramField.myVal().propertyOne;
     }

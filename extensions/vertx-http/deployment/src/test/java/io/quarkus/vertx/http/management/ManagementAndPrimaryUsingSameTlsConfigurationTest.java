@@ -29,8 +29,9 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
-        Format.JKS, Format.PKCS12, Format.PEM }))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
+                Format.JKS, Format.PKCS12, Format.PEM }))
 public class ManagementAndPrimaryUsingSameTlsConfigurationTest {
     private static final String APP_PROPS = """
             quarkus.management.enabled=true

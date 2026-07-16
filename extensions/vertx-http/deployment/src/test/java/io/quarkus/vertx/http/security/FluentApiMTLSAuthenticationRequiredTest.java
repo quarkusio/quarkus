@@ -29,7 +29,8 @@ import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 public class FluentApiMTLSAuthenticationRequiredTest {
 
     @RegisterExtension

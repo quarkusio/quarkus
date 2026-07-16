@@ -22,8 +22,9 @@ import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "prepare", mixinStandardHelpOptions = true, description = "Prepare the environment to receive Let's Encrypt certificates."
-        + " Make sure to restart the application after having run this command.")
+@CommandLine.Command(name = "prepare", mixinStandardHelpOptions = true,
+        description = "Prepare the environment to receive Let's Encrypt certificates."
+                + " Make sure to restart the application after having run this command.")
 public class LetsEncryptPrepareCommand implements Callable<Integer> {
 
     static Logger LOGGER = Logger.getLogger(LetsEncryptPrepareCommand.class);
@@ -33,7 +34,8 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
     String domain;
 
     @CommandLine.Option(names = { "-n",
-            "--tls-configuration-name" }, description = "The name of the TLS configuration to be used, if not set, the default configuration is used")
+            "--tls-configuration-name" },
+            description = "The name of the TLS configuration to be used, if not set, the default configuration is used")
     String tlsConfigurationName;
 
     @Override

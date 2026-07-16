@@ -97,7 +97,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         return rewriteQuarkusUpdateRecipes;
     }
 
-    @Option(description = "Use a custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.", option = "quarkusUpdateRecipes")
+    @Option(description = "Use a custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.",
+            option = "quarkusUpdateRecipes")
     public QuarkusUpdate setRewriteQuarkusUpdateRecipes(String rewriteQuarkusUpdateRecipes) {
         this.rewriteQuarkusUpdateRecipes = rewriteQuarkusUpdateRecipes;
         return this;
@@ -109,7 +110,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         return rewriteAdditionalUpdateRecipes;
     }
 
-    @Option(description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.", option = "additionalUpdateRecipes")
+    @Option(description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.",
+            option = "additionalUpdateRecipes")
     public QuarkusUpdate setRewriteAdditionalUpdateRecipes(String rewriteAdditionalUpdateRecipes) {
         this.rewriteAdditionalUpdateRecipes = rewriteAdditionalUpdateRecipes;
         return this;

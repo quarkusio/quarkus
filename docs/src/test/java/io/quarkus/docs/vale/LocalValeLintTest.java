@@ -16,7 +16,8 @@ import io.quarkus.docs.vale.ValeAsciidocLint.ChecksBySeverity;
 
 public class LocalValeLintTest {
     @Test
-    @EnabledIfSystemProperty(named = "vale", matches = ".*", disabledReason = "Requires a container runtime. Specifiy -Dvale to enable.")
+    @EnabledIfSystemProperty(named = "vale", matches = ".*",
+            disabledReason = "Requires a container runtime. Specifiy -Dvale to enable.")
     public void testAsciidocFiles() throws Exception {
         Path srcDir = Path.of("").resolve("src/main/asciidoc");
         Path targetDir = Path.of("").resolve("target");

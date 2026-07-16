@@ -30,7 +30,8 @@ import io.quarkus.sbom.SbomContribution;
 /**
  * Quarkus application SBOM generator
  */
-@Mojo(name = "dependency-sbom", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
+@Mojo(name = "dependency-sbom", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.TEST,
+        threadSafe = true)
 public class DependencySbomMojo extends AbstractMojo {
 
     @Component

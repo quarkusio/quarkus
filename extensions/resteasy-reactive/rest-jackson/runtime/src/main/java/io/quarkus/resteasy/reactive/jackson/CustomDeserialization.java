@@ -16,7 +16,8 @@ import io.smallrye.common.annotation.Experimental;
  * Annotation that can be used on RESTEasy Reactive Resource method to allow users to configure Jackson deserialization
  * for that method only, without affecting the global Jackson configuration.
  */
-@Experimental(value = "Remains to be determined if this is the best possible API for users to configure per Resource Method Deserialization")
+@Experimental(
+        value = "Remains to be determined if this is the best possible API for users to configure per Resource Method Deserialization")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface CustomDeserialization {

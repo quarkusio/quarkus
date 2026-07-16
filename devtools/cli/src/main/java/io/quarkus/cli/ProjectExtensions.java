@@ -10,7 +10,8 @@ import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "extension", aliases = {
-        "ext" }, header = "Configure extensions of an existing project.", subcommands = {
+        "ext" }, header = "Configure extensions of an existing project.",
+        subcommands = {
                 ProjectExtensionsList.class,
                 ProjectExtensionsCategories.class,
                 ProjectExtensionsAdd.class,

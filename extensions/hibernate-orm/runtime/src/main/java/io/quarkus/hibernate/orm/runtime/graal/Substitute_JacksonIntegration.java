@@ -13,7 +13,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 /**
  * Substitution for {@code JacksonIntegration} when Jackson is not on the classpath.
  */
-@TargetClass(className = "org.hibernate.type.format.jackson.JacksonIntegration", onlyWith = Substitute_JacksonIntegration.IsJacksonAbsent.class)
+@TargetClass(className = "org.hibernate.type.format.jackson.JacksonIntegration",
+        onlyWith = Substitute_JacksonIntegration.IsJacksonAbsent.class)
 final class Substitute_JacksonIntegration {
 
     static final class IsJacksonAbsent implements BooleanSupplier {

@@ -17,9 +17,10 @@ public class Function extends BaseFunction {
 
     @FunctionName(QUARKUS_HTTP)
     public HttpResponseMessage run(
-            @HttpTrigger(name = "req", dataType = "binary", route = "{*path}", authLevel = AuthorizationLevel.ANONYMOUS, methods = {
-                    GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE,
-                    PATCH }) HttpRequestMessage<Optional<String>> request,
+            @HttpTrigger(name = "req", dataType = "binary", route = "{*path}", authLevel = AuthorizationLevel.ANONYMOUS,
+                    methods = {
+                            GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE,
+                            PATCH }) HttpRequestMessage<Optional<String>> request,
             ExecutionContext context) {
 
         return dispatch(request);

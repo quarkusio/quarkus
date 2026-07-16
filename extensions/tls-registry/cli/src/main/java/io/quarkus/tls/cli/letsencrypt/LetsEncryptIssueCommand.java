@@ -14,9 +14,10 @@ import org.jboss.logging.Logger;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "issue-certificate", mixinStandardHelpOptions = true, description = "Issue a certificate from let's encrypt. This command runs the HTTP 01 challenge of let's encrypt. "
-        +
-        "Make sure the application is running before running this command.")
+@CommandLine.Command(name = "issue-certificate", mixinStandardHelpOptions = true,
+        description = "Issue a certificate from let's encrypt. This command runs the HTTP 01 challenge of let's encrypt. "
+                +
+                "Make sure the application is running before running this command.")
 public class LetsEncryptIssueCommand implements Callable<Integer> {
 
     static Logger LOGGER = Logger.getLogger(LetsEncryptIssueCommand.class);
@@ -26,12 +27,14 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
     String domain;
 
     @CommandLine.Option(names = { "-n",
-            "--tls-configuration-name" }, description = "The name of the TLS configuration to be used, if not set, the default configuration is used")
+            "--tls-configuration-name" },
+            description = "The name of the TLS configuration to be used, if not set, the default configuration is used")
     String tlsConfigurationName;
 
     // TODO Check if /lets-encrypt is appended
     @CommandLine.Option(names = {
-            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge", required = true)
+            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge",
+            required = true)
     String managementUrl;
 
     @CommandLine.Option(names = {
@@ -51,7 +54,9 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
     boolean staging;
 
     @CommandLine.Option(names = {
-            "--insecure" }, description = "Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)", defaultValue = "false")
+            "--insecure" },
+            description = "Disable SSL certificate validation for the management endpoint (INSECURE - development/testing only)",
+            defaultValue = "false")
     boolean insecure;
 
     @CommandLine.Option(names = {

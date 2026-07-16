@@ -2,7 +2,8 @@ package io.quarkus.it.picocli;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "default-value-provider", mixinStandardHelpOptions = false, defaultValueProvider = CustomDefaultValueProvider.class)
+@CommandLine.Command(name = "default-value-provider", mixinStandardHelpOptions = false,
+        defaultValueProvider = CustomDefaultValueProvider.class)
 public class DefaultValueProviderCommand implements Runnable {
 
     @CommandLine.Option(names = "--defaulted")

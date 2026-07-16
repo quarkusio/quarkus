@@ -24,7 +24,8 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "extension", header = "Create a Quarkus extension project", description = "%n"
         + "Quarkus extensions are built from multiple modules: runtime, deployment, integration-test and "
         + "docs. This command will generate a Maven multi-module project in a directory called EXTENSION-ID "
-        + "by applying naming conventions to the specified EXTENSION-ID.", footer = { "%nDefault Naming conventions%n",
+        + "by applying naming conventions to the specified EXTENSION-ID.",
+        footer = { "%nDefault Naming conventions%n",
                 " GROUP-ID: io.quarkiverse.<EXTENSION-ID>",
                 " EXTENSION-NAME: EXTENSION-ID converted to Capitalized Words",
                 " NAMESPACE-NAME: NAMESPACE-ID converted to Capitalized Words",
@@ -88,7 +89,8 @@ public class CreateExtension extends BaseCreateCommand {
 
     // Ideally we should use TargetLanguageGroup once we support creating extensions with Kotlin
     @CommandLine.Option(names = {
-            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION)
+            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}",
+            completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION)
     String javaVersion;
 
     @CommandLine.ArgGroup(order = 2, exclusive = false, heading = "%nGenerated artifacts%n")

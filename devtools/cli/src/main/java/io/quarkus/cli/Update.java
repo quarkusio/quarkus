@@ -8,7 +8,10 @@ import io.quarkus.cli.common.update.RewriteGroup;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "update", aliases = { "up",
-        "upgrade" }, sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Suggest project updates and create a recipe with the possibility to apply it.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+        "upgrade" }, sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Suggest project updates and create a recipe with the possibility to apply it.", headerHeading = "%n",
+        commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n",
+        optionListHeading = "%nOptions:%n")
 public class Update extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.ArgGroup(order = 0, heading = "%nTarget Quarkus version:%n", multiplicity = "0..1")

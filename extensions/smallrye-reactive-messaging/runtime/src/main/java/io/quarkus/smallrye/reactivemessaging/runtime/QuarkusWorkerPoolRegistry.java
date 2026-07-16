@@ -62,7 +62,8 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     }
 
     public void terminate(
-            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(Interceptor.Priority.PLATFORM_BEFORE) @BeforeDestroyed(ApplicationScoped.class) Object event) {
+            @Observes(
+                    notifyObserver = Reception.IF_EXISTS) @Priority(Interceptor.Priority.PLATFORM_BEFORE) @BeforeDestroyed(ApplicationScoped.class) Object event) {
         log.debug("Terminating messaging worker pools");
         if (!workerExecutors.isEmpty()) {
             closed = true;

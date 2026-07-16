@@ -26,7 +26,8 @@ public class CodeGenerationGroup {
     public boolean includeWrapper = true;
 
     @CommandLine.Option(names = {
-            "--no-code" }, description = "Include starter code provided by extensions or generate an empty project", negatable = true)
+            "--no-code" }, description = "Include starter code provided by extensions or generate an empty project",
+            negatable = true)
     public boolean includeCode = true;
 
     @CommandLine.Option(names = {
@@ -34,7 +35,8 @@ public class CodeGenerationGroup {
     public boolean includeDockerfiles = true;
 
     @CommandLine.Option(names = { "-c",
-            "--app-config" }, description = "Configuration attributes to be set in the application.properties/yml file. Specify as 'key1=value1,key2=value2'")
+            "--app-config" },
+            description = "Configuration attributes to be set in the application.properties/yml file. Specify as 'key1=value1,key2=value2'")
     void setAppConfig(String config) {
         if (config.trim().length() > 0) {
             appConfig = ToolsUtils.stringToMap(config, ",", "=");

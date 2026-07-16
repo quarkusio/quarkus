@@ -175,7 +175,8 @@ public class TestResource {
     @GET
     @Path("/with-rest-link-id/{id}")
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
-    @RestLink(entityType = TestRecordWithRestLinkId.class, title = "The with rest link title", type = MediaType.APPLICATION_JSON)
+    @RestLink(entityType = TestRecordWithRestLinkId.class, title = "The with rest link title",
+            type = MediaType.APPLICATION_JSON)
     @InjectRestLinks
     public TestRecordWithRestLinkId getWithRestLinkId(@PathParam("id") int id) {
         return REST_LINK_ID_RECORDS.stream()

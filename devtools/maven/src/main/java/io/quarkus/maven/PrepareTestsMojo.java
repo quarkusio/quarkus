@@ -7,7 +7,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 @Deprecated
-@Mojo(name = "prepare-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "prepare-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class PrepareTestsMojo extends GenerateCodeTestsMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {

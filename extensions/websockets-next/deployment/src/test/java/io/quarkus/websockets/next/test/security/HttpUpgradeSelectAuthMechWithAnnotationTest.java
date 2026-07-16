@@ -62,7 +62,8 @@ import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBase {
 
     @RegisterExtension

@@ -27,7 +27,8 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test-sni", password = "secret", formats = {
-        Format.JKS, Format.PKCS12, Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com", aliases = {
+        Format.JKS, Format.PKCS12, Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com",
+        aliases = {
                 @Alias(name = "alias", cn = "foo.com", subjectAlternativeNames = "DNS:acme.org", password = "secret"),
                 @Alias(name = "alias-2", cn = "bar.biz", subjectAlternativeNames = "DNS:localhost", password = "secret")
         }))

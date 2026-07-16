@@ -23,7 +23,8 @@ import io.quarkus.test.junit.QuarkusTest;
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
         @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
         //We actually have a single warning, caused by the intentional peculiarities of io.quarkus.it.jpa.h2.CompanyCustomer:
-        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.metamodel\\.internal\\.EntityRepresentationStrategyPojoStandard"),
+        @ResourceArg(name = LogCollectingTestResource.EXCLUDE,
+                value = "org\\.hibernate\\.metamodel\\.internal\\.EntityRepresentationStrategyPojoStandard"),
 })
 public class HibernateOrmNoWarningsTest {
     @Test

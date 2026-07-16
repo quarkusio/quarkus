@@ -25,7 +25,8 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 public class FluentApiMTLSAuthenticationRequiredDevModeTest {
 
     private static final String HOT_RELOAD_FILTER = "HotReloadFilter.java";

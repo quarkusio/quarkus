@@ -10,7 +10,8 @@ import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
 @TestProfile(ReusableDataProfile.class)
-@QuarkusTestResource(value = OtelCollectorLifecycleManager.class, initArgs = @ResourceArg(name = "protocol", value = "http/protobuf"), restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = OtelCollectorLifecycleManager.class,
+        initArgs = @ResourceArg(name = "protocol", value = "http/protobuf"), restrictToAnnotatedClass = true)
 public class HttpNoTLSReusableDataTest extends AbstractExporterTest {
 
 }

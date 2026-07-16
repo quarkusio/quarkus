@@ -31,7 +31,8 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 /**
  * Displays Quarkus application build dependency tree including the deployment ones.
  */
-@Mojo(name = "dependency-tree", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.NONE, threadSafe = true)
+@Mojo(name = "dependency-tree", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.NONE,
+        threadSafe = true)
 public class DependencyTreeMojo extends AbstractMojo {
 
     @Component

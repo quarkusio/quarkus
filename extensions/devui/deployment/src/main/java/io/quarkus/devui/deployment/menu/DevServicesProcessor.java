@@ -23,7 +23,8 @@ import io.quarkus.devui.spi.page.Page;
 /**
  * This creates DevServices Page
  */
-@DevMcpBuildTimeTool(name = "getDevServices", description = "Get all the DevServices started by this Quarkus app, including information on container and the config that is being set automatically")
+@DevMcpBuildTimeTool(name = "getDevServices",
+        description = "Get all the DevServices started by this Quarkus app, including information on container and the config that is being set automatically")
 public class DevServicesProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

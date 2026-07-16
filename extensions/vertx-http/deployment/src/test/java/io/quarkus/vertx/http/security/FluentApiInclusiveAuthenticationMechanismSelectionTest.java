@@ -43,7 +43,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 class FluentApiInclusiveAuthenticationMechanismSelectionTest {
 
     @RegisterExtension

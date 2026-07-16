@@ -25,7 +25,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-reload-fail-A", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:localhost"),
+        @Certificate(name = "test-reload-fail-A", password = "password", formats = Format.PKCS12,
+                subjectAlternativeNames = "dns:localhost"),
 })
 public class ReloadFailureTest {
 

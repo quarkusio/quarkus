@@ -36,7 +36,8 @@ public class SpringDelayedTest {
         static final CountDownLatch LATCH = new CountDownLatch(4);
 
         @Scheduled(fixedRate = 1000, initialDelay = 1000)
-        @Scheduled(fixedRateString = "${springScheduledSimpleJobs.fixedRate}", initialDelayString = "${springScheduledSimpleJobs.initialDelay}")
+        @Scheduled(fixedRateString = "${springScheduledSimpleJobs.fixedRate}",
+                initialDelayString = "${springScheduledSimpleJobs.initialDelay}")
         void ping() {
             LATCH.countDown();
         }

@@ -16,8 +16,10 @@ import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 @RegisterRestClient
 @RegisterClientHeaders(MyHeadersFactory.class)
 @ClientHeaderParam(name = "my-header", value = "constant-header-value")
-@ClientHeaderParam(name = "computed-header", value = "{io.quarkus.rest.client.reactive.registerclientheaders.ComputedHeader.get}")
-@ClientHeaderParam(name = "Content-Type", value = "{io.quarkus.rest.client.reactive.registerclientheaders.ComputedHeader.contentType}")
+@ClientHeaderParam(name = "computed-header",
+        value = "{io.quarkus.rest.client.reactive.registerclientheaders.ComputedHeader.get}")
+@ClientHeaderParam(name = "Content-Type",
+        value = "{io.quarkus.rest.client.reactive.registerclientheaders.ComputedHeader.contentType}")
 @RegisterProvider(TestJacksonBasicMessageBodyReader.class)
 public interface MultipleHeadersBindingClient {
     @GET

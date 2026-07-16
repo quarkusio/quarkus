@@ -11,6 +11,7 @@ import org.infinispan.protostream.annotations.Proto;
 @Proto
 @Indexed
 public record Book(@Text String title,
-        @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed", norms = false) String description,
+        @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed",
+                norms = false) String description,
         int publicationYear, Set<Author> authors, Type bookType, BigDecimal price) {
 }

@@ -7,8 +7,11 @@ import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
-        + "This command will build and push a container image for the project.", footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Push a container image.", description = "%n"
+                + "This command will build and push a container image for the project.",
+        footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ",
+        parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Push extends BaseImageCommand {
 
     protected static final String QUARKUS_CONTAINER_IMAGE_EXTENSION = "io.quarkus:quarkus-container-image";

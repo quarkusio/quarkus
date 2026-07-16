@@ -34,15 +34,18 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @CommandLine.Option(names = { "-i",
-            "--installable" }, defaultValue = "false", order = 2, description = "List extensions that can be installed (relative)")
+            "--installable" }, defaultValue = "false", order = 2,
+            description = "List extensions that can be installed (relative)")
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",
-            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3, description = "Search for matching extensions (simple glob using '*' and '?').")
+            "--search" }, defaultValue = "*", paramLabel = "PATTERN", order = 3,
+            description = "Search for matching extensions (simple glob using '*' and '?').")
     String searchPattern;
 
     @CommandLine.Option(names = { "-c",
-            "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4, description = "Only list extensions from the specified category.")
+            "--category" }, defaultValue = "", paramLabel = "CATEGORY_ID", order = 4,
+            description = "Only list extensions from the specified category.")
     String category;
 
     @CommandLine.ArgGroup(heading = "%nOutput format:%n")

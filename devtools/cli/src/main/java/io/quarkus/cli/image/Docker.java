@@ -6,9 +6,13 @@ import java.util.Optional;
 import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "docker", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Docker.", description = "%n"
-        + "This command will build or push a container image for the project, using Docker.", footer = "%n"
-                + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "docker", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Build a container image using Docker.", description = "%n"
+                + "This command will build or push a container image for the project, using Docker.",
+        footer = "%n"
+                + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.",
+        headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n",
+        optionListHeading = "Options:%n")
 public class Docker extends BaseImageSubCommand {
 
     private static final String DOCKER = "docker";

@@ -65,7 +65,8 @@ public class JarRunnerIT extends MojoTestBase {
      * @see <a href="https://github.com/quarkusio/quarkus/issues/11511"/>
      */
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "With maven-compiler-plugin 2.11.0, this test is not working anymore on Windows: Error while storing the mojo status: Input length = 1")
+    @DisabledOnOs(value = OS.WINDOWS,
+            disabledReason = "With maven-compiler-plugin 2.11.0, this test is not working anymore on Windows: Error while storing the mojo status: Input length = 1")
     public void testNonAsciiDir() throws Exception {
         final File testDir = initProject("projects/classic", "projects/ěščřžýáíéůú");
         final RunningInvoker running = new RunningInvoker(testDir, false);

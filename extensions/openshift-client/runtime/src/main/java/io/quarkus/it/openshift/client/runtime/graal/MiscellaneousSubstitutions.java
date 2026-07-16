@@ -29,7 +29,8 @@ import io.fabric8.openshift.api.model.miscellaneous.metal3.v1beta1.Metal3Remedia
 /**
  * Allows the exclusion of the openshift-model-miscellaneous model without breaking the --link-at-build-time check.
  */
-@TargetClass(className = "io.fabric8.openshift.client.impl.OpenShiftClientImpl", onlyWith = MiscellaneousSubstitutions.NoOpenShiftMiscellaneousModel.class)
+@TargetClass(className = "io.fabric8.openshift.client.impl.OpenShiftClientImpl",
+        onlyWith = MiscellaneousSubstitutions.NoOpenShiftMiscellaneousModel.class)
 public final class MiscellaneousSubstitutions {
 
     @Substitute

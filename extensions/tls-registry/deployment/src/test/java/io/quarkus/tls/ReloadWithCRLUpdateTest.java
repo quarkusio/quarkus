@@ -24,8 +24,10 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-reload-crl-A", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:localhost"),
-        @Certificate(name = "test-reload-crl-B", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:acme.org")
+        @Certificate(name = "test-reload-crl-A", password = "password", formats = Format.PKCS12,
+                subjectAlternativeNames = "dns:localhost"),
+        @Certificate(name = "test-reload-crl-B", password = "password", formats = Format.PKCS12,
+                subjectAlternativeNames = "dns:acme.org")
 })
 @DisabledOnOs(OS.WINDOWS)
 public class ReloadWithCRLUpdateTest {

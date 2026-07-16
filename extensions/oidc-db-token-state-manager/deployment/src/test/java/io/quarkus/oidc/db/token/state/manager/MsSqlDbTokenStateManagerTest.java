@@ -7,7 +7,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 
 // Becomes flaky in Github CI due to limited resources
-@EnabledIfSystemProperty(named = "run-mssql-db-token-state-manager-test", disabledReason = "Insufficient GH CI resources", matches = "true")
+@EnabledIfSystemProperty(named = "run-mssql-db-token-state-manager-test", disabledReason = "Insufficient GH CI resources",
+        matches = "true")
 public class MsSqlDbTokenStateManagerTest extends AbstractDbTokenStateManagerTest {
 
     @RegisterExtension

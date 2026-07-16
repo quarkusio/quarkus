@@ -18,8 +18,9 @@ import io.smallrye.certs.junit5.Certificates;
 /**
  * Verifies that auto-TLS is skipped when TLS is explicitly configured.
  */
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "http3-explicit-test", password = "secret", formats = {
-        Format.JKS }))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "http3-explicit-test", password = "secret", formats = {
+                Format.JKS }))
 class Http3ExplicitTlsTest {
 
     @RegisterExtension

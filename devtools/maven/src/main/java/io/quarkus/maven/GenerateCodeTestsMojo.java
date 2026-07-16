@@ -22,7 +22,8 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 
-@Mojo(name = "generate-code-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "generate-code-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class GenerateCodeTestsMojo extends GenerateCodeMojo {
 
     /**

@@ -12,7 +12,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
 
-@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Parsing the stdout is not working on Github Windows, maybe because of the console formatting. I did try it in a Windows box and it works fine.")
+@DisabledOnOs(value = OS.WINDOWS,
+        disabledReason = "Parsing the stdout is not working on Github Windows, maybe because of the console formatting. I did try it in a Windows box and it works fine.")
 public class DecryptTest {
     @TempDir
     Path tempDir;

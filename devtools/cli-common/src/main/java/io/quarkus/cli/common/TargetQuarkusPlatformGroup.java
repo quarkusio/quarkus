@@ -35,7 +35,8 @@ public class TargetQuarkusPlatformGroup {
     }
 
     @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-P",
-            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n"
+            "--platform-bom" },
+            description = "A specific Quarkus platform BOM, for example:%n"
                     + "  " + FULL_EXAMPLE + "%n"
                     + "  io.quarkus::999-SNAPSHOT"
                     + "  3.15.2%n"

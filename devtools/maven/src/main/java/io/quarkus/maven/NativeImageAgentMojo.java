@@ -28,7 +28,8 @@ import io.quarkus.bootstrap.json.JsonValue;
 /**
  * Post-processes native image agent generated configuration to trim any unnecessary configuration.
  */
-@Mojo(name = "native-image-agent", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "native-image-agent", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
 
     private final Pattern resourceSkipPattern;

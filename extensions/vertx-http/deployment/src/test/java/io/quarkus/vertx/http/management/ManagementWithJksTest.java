@@ -25,8 +25,9 @@ import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
-        Format.JKS, Format.PKCS12, Format.PEM }))
+@Certificates(baseDir = "target/certs",
+        certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
+                Format.JKS, Format.PKCS12, Format.PEM }))
 public class ManagementWithJksTest {
     private static final String configuration = """
             quarkus.management.enabled=true

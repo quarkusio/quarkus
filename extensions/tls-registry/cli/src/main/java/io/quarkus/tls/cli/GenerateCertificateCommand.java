@@ -34,23 +34,28 @@ import io.smallrye.certs.Format;
 import io.smallrye.common.os.OS;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "generate-certificate", mixinStandardHelpOptions = true, description = "Generate a TLS certificate with the Quarkus Dev CA if available.")
+@CommandLine.Command(name = "generate-certificate", mixinStandardHelpOptions = true,
+        description = "Generate a TLS certificate with the Quarkus Dev CA if available.")
 public class GenerateCertificateCommand implements Callable<Integer> {
 
     @CommandLine.Option(names = { "-n",
-            "--name" }, description = "Name of the certificate. It will be used as file name and alias in the keystore", required = true)
+            "--name" }, description = "Name of the certificate. It will be used as file name and alias in the keystore",
+            required = true)
     String name;
 
     @CommandLine.Option(names = { "-p",
-            "--password" }, description = "The password of the keystore. Default is 'password'", defaultValue = "password", required = false)
+            "--password" }, description = "The password of the keystore. Default is 'password'", defaultValue = "password",
+            required = false)
     String password;
 
     @CommandLine.Option(names = { "-c",
-            "--cn" }, description = "The common name of the certificate. Default is 'localhost'", defaultValue = "localhost", required = false)
+            "--cn" }, description = "The common name of the certificate. Default is 'localhost'", defaultValue = "localhost",
+            required = false)
     String cn;
 
     @CommandLine.Option(names = { "-d",
-            "--directory" }, description = "The directory in which the certificates will be created. Default is `.certs`", defaultValue = ".certs")
+            "--directory" }, description = "The directory in which the certificates will be created. Default is `.certs`",
+            defaultValue = ".certs")
     Path directory;
 
     @CommandLine.Option(names = { "-r",

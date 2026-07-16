@@ -42,7 +42,8 @@ public class HttpProxyDevServicesDeclarativeClientTest {
     @RestClient
     Client client;
 
-    @ConfigProperty(name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesDeclarativeClientTest$Client\".override-uri")
+    @ConfigProperty(
+            name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesDeclarativeClientTest$Client\".override-uri")
     String proxyUrl;
 
     @Test

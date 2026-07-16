@@ -68,7 +68,8 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
                 }
             });
 
-    @ConfigProperty(name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client\".override-uri")
+    @ConfigProperty(
+            name = "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client\".override-uri")
     String proxyUrl;
 
     @Test

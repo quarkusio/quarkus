@@ -14,7 +14,8 @@ import io.vertx.core.spi.json.JsonCodec;
  * and {@code DatabindCodec}). GraalVM's static analysis resolves all referenced types at build time,
  * so the try/catch fallback in the original method is not sufficient.
  */
-@TargetClass(className = "io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory", onlyWith = JacksonDatabindMissingSelector.class)
+@TargetClass(className = "io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory",
+        onlyWith = JacksonDatabindMissingSelector.class)
 final class Target_QuarkusJacksonFactory {
 
     @Substitute

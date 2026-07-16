@@ -60,7 +60,8 @@ public class AdvancedClientHeaderParamExpressionTest {
     public interface Client {
 
         @GET
-        @ClientHeaderParam(name = "method-header", value = "${my.property-value}-{calculate}-{io.quarkus.rest.client.reactive.headers.DummyHeaderCalculator.calculate2}")
+        @ClientHeaderParam(name = "method-header",
+                value = "${my.property-value}-{calculate}-{io.quarkus.rest.client.reactive.headers.DummyHeaderCalculator.calculate2}")
         String call();
 
         @GET

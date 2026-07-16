@@ -22,7 +22,9 @@ public class DebugOptions {
     public String host = LOCALHOST;
 
     @CommandLine.Option(order = 9, names = {
-            "--debug-mode" }, description = "Valid values: ${COMPLETION-CANDIDATES}.%nEither connect to or listen on <host>:<port>.", defaultValue = "listen")
+            "--debug-mode" },
+            description = "Valid values: ${COMPLETION-CANDIDATES}.%nEither connect to or listen on <host>:<port>.",
+            defaultValue = "listen")
     public DebugMode mode = DebugMode.listen;
 
     @CommandLine.Option(order = 10, names = {
@@ -30,7 +32,8 @@ public class DebugOptions {
     public int port = DEFAULT_PORT;
 
     @CommandLine.Option(order = 11, names = {
-            "--suspend" }, description = "In listen mode, suspend until a debugger is attached. Disabled by default.", negatable = true)
+            "--suspend" }, description = "In listen mode, suspend until a debugger is attached. Disabled by default.",
+            negatable = true)
     public boolean suspend = false;
 
     public String getJvmDebugParameter() {

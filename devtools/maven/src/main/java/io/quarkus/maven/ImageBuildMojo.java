@@ -10,7 +10,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 /**
  * Builds a container image.
  */
-@Mojo(name = "image-build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "image-build", defaultPhase = LifecyclePhase.PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ImageBuildMojo extends AbstractImageMojo {
 
     @Override

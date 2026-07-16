@@ -1634,7 +1634,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
+    @DisabledOnOs(value = OS.WINDOWS,
+            disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
     public void testExternalReloadableArtifacts() throws Exception {
         final String rootProjectPath = "projects/external-reloadable-artifacts";
 
@@ -1695,7 +1696,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
      * Same test as @{link testExternalReloadableArtifacts} but the external JAR is outside the project directory.
      */
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
+    @DisabledOnOs(value = OS.WINDOWS,
+            disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
     public void testReloadableArtifactsOutsideProjectDirectory() throws Exception {
         final String rootProjectPath = "projects/external-reloadable-artifacts-with-external-lib";
         final String externalJarPath = "projects/external-lib";

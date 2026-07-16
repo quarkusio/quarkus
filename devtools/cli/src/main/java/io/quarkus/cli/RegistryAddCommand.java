@@ -16,10 +16,11 @@ import picocli.CommandLine;
         + "This command will add a Quarkus extension registry to the registry client configuration unless it's already present.")
 public class RegistryAddCommand extends BaseRegistryCommand {
 
-    @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to add to the registry client configuration%n"
-            + "  Example:%n"
-            + "    registry.quarkus.io%n"
-            + "    registry.quarkus.acme.com,registry.quarkus.io%n")
+    @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]",
+            description = "Registry ID to add to the registry client configuration%n"
+                    + "  Example:%n"
+                    + "    registry.quarkus.io%n"
+                    + "    registry.quarkus.acme.com,registry.quarkus.io%n")
     List<String> registryIds;
 
     @Override

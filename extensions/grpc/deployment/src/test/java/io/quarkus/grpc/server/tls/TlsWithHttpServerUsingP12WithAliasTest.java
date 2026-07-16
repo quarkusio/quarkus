@@ -28,7 +28,8 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "grpc-alias", password = "password", formats = { Format.JKS, Format.PEM,
-                Format.PKCS12 }, client = true, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost"))
+                Format.PKCS12 }, client = true,
+                aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost"))
 })
 public class TlsWithHttpServerUsingP12WithAliasTest {
 

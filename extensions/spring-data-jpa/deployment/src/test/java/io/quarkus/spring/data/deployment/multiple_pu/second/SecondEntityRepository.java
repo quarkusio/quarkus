@@ -25,10 +25,12 @@ public interface SecondEntityRepository extends org.springframework.data.reposit
 
     Page<SecondEntity> findByName(String name, Pageable pageable);
 
-    @Query(value = "SELECT se FROM SecondEntity se WHERE name=?1", countQuery = "SELECT COUNT(*) FROM SecondEntity se WHERE name=?1")
+    @Query(value = "SELECT se FROM SecondEntity se WHERE name=?1",
+            countQuery = "SELECT COUNT(*) FROM SecondEntity se WHERE name=?1")
     Page<SecondEntity> findByNameQueryIndexed(String name, Pageable pageable);
 
-    @Query(value = "SELECT se FROM SecondEntity se WHERE name=:name", countQuery = "SELECT COUNT(*) FROM SecondEntity se WHERE name=:name")
+    @Query(value = "SELECT se FROM SecondEntity se WHERE name=:name",
+            countQuery = "SELECT COUNT(*) FROM SecondEntity se WHERE name=:name")
     Page<SecondEntity> findByNameQueryNamed(@Param("name") String name, Pageable pageable);
 
 }

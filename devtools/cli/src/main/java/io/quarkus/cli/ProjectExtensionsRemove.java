@@ -16,7 +16,8 @@ public class ProjectExtensionsRemove extends BaseBuildCommand implements Callabl
     @CommandLine.Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.", split = ",")
+    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.",
+            split = ",")
     Set<String> extensions;
 
     @Override

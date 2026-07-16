@@ -10,9 +10,13 @@ import java.util.stream.Collectors;
 import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using OpenShift.", description = "%n"
-        + "This command will build or push a container image for the project, using Openshift.", footer = "%n"
-                + "For example (using default values), it will create a container image in OpenShift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false,
+        header = "Build a container image using OpenShift.", description = "%n"
+                + "This command will build or push a container image for the project, using Openshift.",
+        footer = "%n"
+                + "For example (using default values), it will create a container image in OpenShift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.",
+        headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n",
+        optionListHeading = "Options:%n")
 public class Openshift extends BaseImageSubCommand implements Callable<Integer> {
 
     private static final String OPENSHIFT = "openshift";
@@ -46,7 +50,8 @@ public class Openshift extends BaseImageSubCommand implements Callable<Integer> 
     public String dockerfile;
 
     @CommandLine.Option(order = 11, names = {
-            "--artifact-directory" }, description = "The directory where the jar/native binary is added during the assemble phase.")
+            "--artifact-directory" },
+            description = "The directory where the jar/native binary is added during the assemble phase.")
     public String artifactDirectory;
 
     @CommandLine.Option(order = 12, names = { "--artifact-filename" }, description = "The filename of the jar/native binary.")

@@ -89,7 +89,8 @@ class VirtualThreadExtensionTest {
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
+    @DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*",
+            disabledReason = "Semeru doesn't support JFR yet")
     void afterEachShouldPinButNoEvents() throws NoSuchMethodException {
         extensionContext.setMethod(TestClass.class.getDeclaredMethod("methodShouldPinButDoesnt"));
         assertThatThrownBy(() -> extension.afterEach(extensionContext))

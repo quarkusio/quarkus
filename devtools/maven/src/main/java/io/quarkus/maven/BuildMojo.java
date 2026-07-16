@@ -32,7 +32,8 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 /**
  * Builds the Quarkus application.
  */
-@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends QuarkusBootstrapMojo {
 
     @Component

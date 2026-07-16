@@ -27,11 +27,13 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
     boolean installable = false;
 
     @CommandLine.Option(names = { "-s",
-            "--search" }, defaultValue = "*", order = 5, paramLabel = "PATTERN", description = "Search for matching plugins (simple glob using '*' and '?').")
+            "--search" }, defaultValue = "*", order = 5, paramLabel = "PATTERN",
+            description = "Search for matching plugins (simple glob using '*' and '?').")
     String searchPattern;
 
     @CommandLine.Option(names = { "-c",
-            "--show-command" }, defaultValue = "false", order = 6, description = "Show the command that corresponds to the plugin")
+            "--show-command" }, defaultValue = "false", order = 6,
+            description = "Show the command that corresponds to the plugin")
     boolean showCommand = false;
 
     Map<String, Plugin> installedPlugins = new HashMap<>();

@@ -126,7 +126,8 @@ import io.smallrye.common.expression.Expression;
  * <p>
  * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
-@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
+@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST,
+        threadSafe = true)
 public class DevMojo extends AbstractMojo {
 
     private static final Set<String> IGNORED_PHASES = Set.of(

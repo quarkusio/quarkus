@@ -27,8 +27,9 @@ import io.vertx.core.http.HttpServerRequest;
  * @see ForwardedServerRequestWrapper#isSSL() for reasons why it can indicate SSL/TLS communicate
  *      while {@link ForwardedServerRequestWrapper#sslSession()} is null
  */
-@Certificates(baseDir = "target/certs", replaceIfExists = true, certificates = @Certificate(name = ForwardedProtoHttpsOnHttpConnectionTest.CERT_NAME, password = PASSWORD, formats = {
-        Format.PKCS12 }, client = true))
+@Certificates(baseDir = "target/certs", replaceIfExists = true,
+        certificates = @Certificate(name = ForwardedProtoHttpsOnHttpConnectionTest.CERT_NAME, password = PASSWORD, formats = {
+                Format.PKCS12 }, client = true))
 class ForwardedProtoHttpsOnHttpConnectionTest {
 
     static final String CERT_NAME = "forwarded-proto-https-on-http";

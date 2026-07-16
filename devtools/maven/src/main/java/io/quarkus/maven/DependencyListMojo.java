@@ -37,7 +37,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 /**
  * Lists dependencies of a Quarkus application as resolved by the Quarkus bootstrap dependency resolver.
  */
-@Mojo(name = "dependency-list", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.NONE, threadSafe = true)
+@Mojo(name = "dependency-list", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.NONE,
+        threadSafe = true)
 public class DependencyListMojo extends AbstractMojo {
 
     @Inject

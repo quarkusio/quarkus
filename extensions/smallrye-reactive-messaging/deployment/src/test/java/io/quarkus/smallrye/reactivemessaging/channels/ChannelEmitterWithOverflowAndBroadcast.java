@@ -27,7 +27,8 @@ public class ChannelEmitterWithOverflowAndBroadcast {
 
     @Inject
     public void setEmitter(@Channel("sink-1") @Broadcast Emitter<String> sink1,
-            @Channel("sink-2") @Broadcast @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 4) Emitter<String> sink2) {
+            @Channel("sink-2") @Broadcast @OnOverflow(value = OnOverflow.Strategy.BUFFER,
+                    bufferSize = 4) Emitter<String> sink2) {
         this.emitterForSink1 = sink1;
         this.emitterForSink2 = sink2;
     }

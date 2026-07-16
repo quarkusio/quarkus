@@ -11,9 +11,11 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "image", sortOptions = false, mixinStandardHelpOptions = false, header = "Build or push project container image.", subcommands = {
-        Build.class, Push.class
-}, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "image", sortOptions = false, mixinStandardHelpOptions = false,
+        header = "Build or push project container image.", subcommands = {
+                Build.class, Push.class
+        }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ",
+        optionListHeading = "%nOptions:%n")
 public class Image implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")

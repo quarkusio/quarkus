@@ -28,10 +28,11 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PfxOptions;
 
 @Certificates(certificates = {
-        @Certificate(name = TrustedProxyPerEntryCheckTest.CERT_NAME, password = PASSWORD, formats = Format.PKCS12, subjectAlternativeNames = "DNS:localhost", client = true, aliases = {
-                @Alias(name = "proxy-a", cn = "proxy-a", client = true, password = PASSWORD),
-                @Alias(name = "proxy-b", cn = "proxy-b", client = true, password = PASSWORD)
-        })
+        @Certificate(name = TrustedProxyPerEntryCheckTest.CERT_NAME, password = PASSWORD, formats = Format.PKCS12,
+                subjectAlternativeNames = "DNS:localhost", client = true, aliases = {
+                        @Alias(name = "proxy-a", cn = "proxy-a", client = true, password = PASSWORD),
+                        @Alias(name = "proxy-b", cn = "proxy-b", client = true, password = PASSWORD)
+                })
 }, replaceIfExists = true, baseDir = "target/certs")
 class TrustedProxyPerEntryCheckTest {
 

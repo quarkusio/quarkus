@@ -12,7 +12,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.graal.Substitute_FastBootHibernateReactivePersistenceProvider.IsAgroalAbsent;
 
-@TargetClass(className = "io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider", onlyWith = IsAgroalAbsent.class)
+@TargetClass(className = "io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider",
+        onlyWith = IsAgroalAbsent.class)
 public final class Substitute_FastBootHibernateReactivePersistenceProvider {
 
     @Substitute

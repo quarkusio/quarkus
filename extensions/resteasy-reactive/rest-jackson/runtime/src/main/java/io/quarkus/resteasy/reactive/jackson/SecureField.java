@@ -16,7 +16,8 @@ import io.smallrye.common.annotation.Experimental;
  * Users that wish to use the feature and have the ability to configure the response of the JAX-RS method are advised to
  * use {@link org.jboss.resteasy.reactive.RestResponse}.
  */
-@Experimental(value = "Remains to be determined if this is the best possible API for users to configure security of serialized fields")
+@Experimental(
+        value = "Remains to be determined if this is the best possible API for users to configure security of serialized fields")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.FIELD })
 public @interface SecureField {

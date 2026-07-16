@@ -462,6 +462,23 @@ grpc_client_processing_duration_seconds_max{method="SayHello",methodType="UNARY"
 
 The service name, method and type can be found in the _tags_.
 
+By default, processing duration is exported as a Prometheus summary (`_count`, `_sum`, `_max`).
+To publish aggregatable histogram buckets (for example for `histogram_quantile`), enable:
+
+[source, properties]
+----
+quarkus.micrometer.binder.grpc-client.histogram=true
+----
+
+Optional custom bucket boundaries (defaults are `5ms,10ms,25ms,50ms,100ms,250ms,500ms,1s,5s`):
+
+[source, properties]
+----
+quarkus.micrometer.binder.grpc-client.slos=5ms,10ms,25ms,50ms,100ms,1s
+----
+
+Histograms are disabled by default because they increase memory usage and metric cardinality.
+
 === Disabling metrics collection
 
 To disable the gRPC client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:

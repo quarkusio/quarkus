@@ -335,8 +335,14 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 missingBranch.throwException(exception);
             }
 
-            params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
+            ResultHandle paramValue = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
+            if (paramValue == null) {
+                // the value of this parameter cannot be deserialized in a reflection-free way (e.g. its
+                // type is polymorphic), so give up generating the deserializer for the whole class
+                return null;
+            }
+            params[i++] = paramValue;
         }
         return deserData.methodCreator.newInstance(deserData.constructor, params);
     }

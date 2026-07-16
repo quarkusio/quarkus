@@ -12,7 +12,7 @@ public class EntityWithGenericGenerator {
 
     @Id
     @GeneratedValue(generator = "gen_gen")
-    @GenericGenerator(name = "gen_gen", type = SequenceStyleGenerator.class)
+    @GenericGenerator(type = SequenceStyleGenerator.class)
     Long id;
 
     public EntityWithGenericGenerator() {

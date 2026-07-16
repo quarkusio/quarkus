@@ -375,8 +375,9 @@ public final class HibernateProcessorUtil {
             desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
             //When statistics are enabled, the default in Hibernate ORM is to also log them after each
             // session; turn that off by default as it's very noisy:
-            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
+            // TODO Luca LOG_SESSION_METRICS is no more in 8.0
+            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
+            //                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
         }
 
         // Caching

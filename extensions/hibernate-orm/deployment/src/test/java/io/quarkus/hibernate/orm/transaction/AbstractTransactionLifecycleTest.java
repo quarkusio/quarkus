@@ -17,8 +17,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
 
-import org.hibernate.BaseSessionEventListener;
 import org.hibernate.Session;
+import org.hibernate.engine.internal.SessionEventListenerManagerImpl;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.junit.jupiter.api.BeforeAll;
@@ -206,7 +206,7 @@ public abstract class AbstractTransactionLifecycleTest {
         }
     }
 
-    private static class LifecycleListener extends BaseSessionEventListener {
+    private static class LifecycleListener extends SessionEventListenerManagerImpl {
         private final List<LifecycleOperation> operations = new ArrayList<>();
 
         @Override

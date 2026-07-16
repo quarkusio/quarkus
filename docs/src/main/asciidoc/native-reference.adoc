@@ -2830,7 +2830,7 @@ Both inliners are enabled by default when available. The trivial inliner is avai
 
 To disable the trivial inliner use: `quarkus.native.additional-build-args=-H:-AOTTrivialInline`.
 
-To disable the single callsite inliner use: `quarkus.native.additional-build-args=-H:-AOTTrivialInline`.
+To disable the single callsite inliner use: `-Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline`. To enable the single callsite inliner on non-Mandrel builds use: `-Dquarkus.native.additional-build-args-append=-H:+AOTSingleCallsiteInline`
 
 === Why are native executables “big”?
 

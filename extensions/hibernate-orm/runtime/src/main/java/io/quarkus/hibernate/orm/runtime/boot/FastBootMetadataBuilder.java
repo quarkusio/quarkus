@@ -67,6 +67,7 @@ import org.hibernate.temporal.spi.ChangesetCoordinator;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -173,10 +174,16 @@ public class FastBootMetadataBuilder {
                 standardServiceRegistry.getService(ChangesetCoordinator.class)));
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
-        // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
-        // XML mappings, however, cannot be contributed through the scanner,
-        // which only allows specifying mappings as files/resources,
-        // and we really don't want any XML parsing here...
+        // As for 8.0 the container is responsabile to populate annotatedClassNames/annotatedPackages and XML mappings
+        QuarkusScanner.Result scan = scanner.scan();
+        for (QuarkusScanner.ClassDescriptorImpl a : scan.getLocatedClasses()) {
+            metadataSources.addAnnotatedClassName(a.getName());
+        }
+
+        for (QuarkusScanner.PackageDescriptorImpl a : scan.getLocatedPackages()) {
+            metadataSources.addPackage(a.getName());
+        }
+
         for (RecordableXmlMapping mapping : puDefinition.getXmlMappings()) {
             metadataSources.addXmlBinding(mapping.toHibernateOrmBinding());
         }

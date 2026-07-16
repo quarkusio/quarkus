@@ -19,6 +19,7 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.OpenSSLEngineOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
@@ -50,6 +51,7 @@ public class HybridKeyExchangeClientNegotiatedTest extends AbstractHybridKeyExch
     void testPqcClientConnects() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
+        options.setSslEngineOptions(new OpenSSLEngineOptions());
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
         options.setTrustAll(true);
 

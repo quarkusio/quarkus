@@ -14,6 +14,7 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.ProviderUtil;
@@ -34,6 +35,8 @@ import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -485,6 +488,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
+    public @NonNull ClassTransformer getClassTransformer(@NonNull PersistenceUnitInfo info, @Nullable Map<?, ?> properties) {
+        return null;
+    }
+
+    @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.
@@ -496,6 +504,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //checks and possibly reject if it's not a suitable.
         return getJdbcHibernatePersistenceProviderDelegate().createEntityManagerFactory(configuration);
+    }
+
+    @Override
+    public boolean generateSchema(@NonNull PersistenceConfiguration configuration) {
+        // TODO Luca Hibernate Reactive not ready yet
+        return false;
     }
 
     @Override

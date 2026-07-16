@@ -228,8 +228,11 @@ public class ResteasyReactiveScanningProcessor {
                     new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
         }
 
+        Set<String> singletonClasses = applicationResultBuildItem.getResult().getSingletonClasses();
         for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers().entrySet()) {
-            beanBuilder.addBeanClass(i.getValue().getClassName());
+            if (!singletonClasses.contains(i.getValue().getClassName())) {
+                beanBuilder.addBeanClass(i.getValue().getClassName());
+            }
         }
         for (ExceptionMapperBuildItem additionalExceptionMapper : mappers.stream()
                 .sorted(Comparator.comparing(ExceptionMapperBuildItem::getClassName)).toList()) {
@@ -339,9 +342,12 @@ public class ResteasyReactiveScanningProcessor {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ContextResolvers resolvers = ResteasyReactiveContextResolverScanner.scanForContextResolvers(index,
                 applicationResultBuildItem.getResult());
+        Set<String> singletonClasses = applicationResultBuildItem.getResult().getSingletonClasses();
         for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.getResolvers().entrySet()) {
             for (ResourceContextResolver i : entry.getValue()) {
-                beanBuilder.addBeanClass(i.getClassName());
+                if (!singletonClasses.contains(i.getClassName())) {
+                    beanBuilder.addBeanClass(i.getClassName());
+                }
             }
         }
         for (ContextResolverBuildItem i : additionalResolvers) {

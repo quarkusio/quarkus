@@ -33,7 +33,8 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery,
+                entityClass);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
@@ -48,7 +49,8 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery,
+                entityClass);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
@@ -86,7 +88,7 @@ public class AdditionalJpaOperations {
                 .getEntityPersister(entityClass.getName(), null)
                 .getPropertyCascadeStyles();
         boolean doCascade = Arrays.stream(propertyCascadeStyles)
-                .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.DELETE));
+                .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.REMOVE));
         boolean hasElementCollection = declaredAttributes.stream()
                 .anyMatch(attribute -> attribute.getPersistentAttributeType()
                         .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));

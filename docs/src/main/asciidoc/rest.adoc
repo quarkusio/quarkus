@@ -3429,6 +3429,7 @@ Or plain text:
 < {"name":"roquefort"}
 ----
 
+[[http-compression]]
 === HTTP Compression
 
 The body of an HTTP response is not compressed by default.
@@ -3447,6 +3448,10 @@ The response body is never compressed if:
 TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+You can also set a minimum response body size (in bytes) for compression using `quarkus.http.compression-content-size-threshold`, control the compression level with `quarkus.http.compression-level`, and enable Brotli by adding `br` to `quarkus.http.compressors`.
+
+TIP: See the xref:http-reference.adoc#http-compression[HTTP reference guide] for the full list of compression configuration options including minimum response size, compression level, Brotli, and request decompression.
 
 
 == Include/Exclude Jakarta REST classes

@@ -458,8 +458,18 @@ public abstract class JacksonCodeGenerator {
         for (MethodInfo method : classMethods(classInfo)) {
             if (method.hasAnnotation(JsonAnyGetter.class)
                     && method.parametersCount() == 0
-                    && !java.lang.reflect.Modifier.isStatic(method.flags())) {
+                    && !Modifier.isStatic(method.flags())) {
                 return method;
+            }
+        }
+        return null;
+    }
+
+    protected FieldInfo findAnyGetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnyGetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
             }
         }
         return null;

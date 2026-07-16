@@ -406,8 +406,14 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         String classInclude = getClassIncludeValue(classInfo);
 
         MethodInfo anyGetterMethod = findAnyGetterMethod(classInfo);
+        FieldInfo anyGetterField = null;
         if (anyGetterMethod != null) {
             ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        } else {
+            anyGetterField = findAnyGetterField(classInfo);
+            if (anyGetterField != null) {
+                ignoredProperties.add(anyGetterField.name());
+            }
         }
 
         List<FieldSpecs> allFieldSpecs = collectAllFieldSpecs(classInfo, namingStrategy);
@@ -457,7 +463,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         }
 
         if (pkgName != null) {
-            serializeAnyGetter(anyGetterMethod, bytecode, ctx);
+            serializeAnyGetter(classInfo, anyGetterMethod, anyGetterField, bytecode, ctx);
         }
     }
 
@@ -514,13 +520,24 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return fieldSpecs;
     }
 
-    private void serializeAnyGetter(MethodInfo anyGetterMethod, MethodCreator bytecode, SerializationContext ctx) {
-        if (anyGetterMethod == null) {
+    private void serializeAnyGetter(ClassInfo classInfo, MethodInfo anyGetterMethod, FieldInfo anyGetterField,
+            MethodCreator bytecode, SerializationContext ctx) {
+        ResultHandle map;
+        if (anyGetterMethod != null) {
+            map = anyGetterMethod.declaringClass().isInterface()
+                    ? bytecode.invokeInterfaceMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle)
+                    : bytecode.invokeVirtualMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle);
+        } else if (anyGetterField != null) {
+            MethodInfo getter = findMethod(classInfo,
+                    "get" + ucFirst(anyGetterField.name()));
+            if (getter != null) {
+                map = bytecode.invokeVirtualMethod(MethodDescriptor.of(getter), ctx.valueHandle);
+            } else {
+                map = bytecode.readInstanceField(FieldDescriptor.of(anyGetterField), ctx.valueHandle);
+            }
+        } else {
             return;
         }
-        ResultHandle map = anyGetterMethod.declaringClass().isInterface()
-                ? bytecode.invokeInterfaceMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle)
-                : bytecode.invokeVirtualMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle);
         bytecode.invokeStaticMethod(
                 MethodDescriptor.ofMethod(JacksonMapperUtil.class, "serializeAnyGetterMap", void.class,
                         Map.class, JsonGenerator.class, SerializerProvider.class),

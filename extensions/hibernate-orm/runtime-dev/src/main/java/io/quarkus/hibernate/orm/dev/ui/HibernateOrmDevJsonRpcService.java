@@ -20,8 +20,8 @@ import org.hibernate.ScrollableResults;
 import org.hibernate.Transaction;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.query.Query;
-import org.hibernate.query.spi.SqmQuery;
+import org.hibernate.query.MutationOrSelectionQuery;
+import org.hibernate.query.SelectionQuery;
 import org.hibernate.tool.language.internal.MetamodelJsonSerializerImpl;
 import org.hibernate.tool.language.internal.ResultsJsonSerializerImpl;
 import org.jboss.logging.Logger;
@@ -221,8 +221,8 @@ public class HibernateOrmDevJsonRpcService {
         return sf.fromSession(session -> {
             Transaction transaction = session.beginTransaction();
             try {
-                Query<Object> query = session.createQuery(hql, null);
-                if (isMutation(((SqmQuery) query).getSqmStatement())) {
+                MutationOrSelectionQuery query = session.createQuery(hql);
+                if (query.isMutationQuery()) {
                     // DML query, execute update within transaction and return custom message with affected rows
                     int updateCount = query.executeUpdate();
                     transaction.commit();
@@ -238,7 +238,7 @@ public class HibernateOrmDevJsonRpcService {
                     long resultCount;
                     if (pageNumber != null && pageSize != null) {
                         // This executes a separate count query
-                        resultCount = query.getResultCount();
+                        resultCount = query.asSelectionQuery().getResultCount();
 
                         // scroll the current page results
                         try (ScrollableResults<Object> scroll = query.scroll(ScrollMode.SCROLL_INSENSITIVE)) {
@@ -257,7 +257,7 @@ public class HibernateOrmDevJsonRpcService {
 
                     // manually serialize data within the transaction to ensure lazy-loading can function
                     ResultsJsonSerializerImpl serializer = new ResultsJsonSerializerImpl(sf);
-                    String json = serializer.toString(results, query);
+                    String json = serializer.toString(results, (SelectionQuery<Object>)query.asSelectionQuery());
                     DataSet ds = new DataSet(
                             json,
                             hql,

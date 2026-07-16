@@ -1397,6 +1397,32 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonCreatorWithPolymorphicProperty() {
+        // A @JsonCreator parameter with a polymorphic (@JsonTypeInfo) type cannot be handled by the
+        // generated reflection-free deserializer and must fall back to the reflection-based one
+        RestAssured
+                .with()
+                .body("{\"item\":{\"type\":\"type_a\",\"value\":\"hello\"}}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(200)
+                .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicPropertyMissing() {
+        // Omit the required polymorphic "item" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     void sensor_metadata_shouldDeserialize() {
         given()
                 .when()

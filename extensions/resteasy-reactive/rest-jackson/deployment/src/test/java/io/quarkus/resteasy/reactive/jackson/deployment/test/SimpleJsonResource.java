@@ -775,6 +775,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return obj;
     }
 
+    @POST
+    @Path("/polymorphic-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PolymorphicCreatorProperty echoPolymorphicCreatorProperty(PolymorphicCreatorProperty obj) {
+        return obj;
+    }
+
     @GET
     @Path("/sensor-metadata")
     public SensorMetadata sensorMetadata() {

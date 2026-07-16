@@ -942,6 +942,8 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--install-exit-handlers");
                 }
 
+                // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
+                // The feature is not yet available upstream, so do not enable for versions >= 25.1
                 if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
                         && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
                         && graalVMVersion.getDistribution() == Distribution.MANDREL) {

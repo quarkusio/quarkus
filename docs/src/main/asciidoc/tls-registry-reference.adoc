@@ -805,6 +805,16 @@ Use this when you want PQC where available without breaking existing clients.
 Clients that do not negotiate a PQC group are rejected.
 Use this when all clients are known to support PQC.
 
+[IMPORTANT]
+====
+`pqc-enforcement-policy` does more than enforce PQC: it controls which SSL engine Vert.x selects.
+Setting `pqc-enforcement-policy` to `client-negotiated` or `strict` activates the native OpenSSL engine (requires OpenSSL 3.5+), which negotiates PQC key exchange groups.
+With the default `relaxed` policy, Vert.x uses the JDK SSL engine, which ignores any PQC key-exchange groups before JDK 27 — meaning that configuring PQC groups without also setting the enforcement policy results in no PQC key exchange at all.
+On JDK 27+, the JDK natively supports `X25519MLKEM768` and PQC key exchange works without changing the enforcement policy.
+
+Quarkus logs a warning at startup if you configure a PQC group with `relaxed` policy to help catch this misconfiguration.
+====
+
 [NOTE]
 ====
 When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must include at least one PQC-capable group such as `X25519MLKEM768`.
@@ -822,6 +832,14 @@ Ensure all clients are upgraded before enabling this mode.
 Policy enforcement (`strict` and `client-negotiated`) is not supported when using the JDK SSL engine.
 If you are running on JDK 27+, or on JDK 25+ once the PQC backport ships (expected October 2026), you can still enable PQC key exchange by setting `quarkus.tls.key-exchange-groups` — the negotiation will work correctly without policy enforcement.
 For full enforcement, OpenSSL 3.5+ via the native SSL engine is required.
+====
+
+[IMPORTANT]
+====
+PQC enforcement (`client-negotiated` and `strict`) relies on a native OpenSSL 3.5+ library.
+Quarkus bundles this library only for **Linux x86_64** and **Linux aarch64**.
+Other operating systems and architectures (macOS, Windows, Alpine Linux, Linux on RISC-V, etc.) are *not supported*: attempting to use `client-negotiated` or `strict` on an unsupported platform will fail at runtime because the native OpenSSL engine is unavailable.
+On those platforms, use `relaxed` with JDK 27+ for PQC key exchange.
 ====
 
 ==== Certificate Revocation List (CRL)

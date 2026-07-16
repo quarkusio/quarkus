@@ -122,12 +122,23 @@ public class VertxCertificateHolder implements TlsConfiguration {
         };
     }
 
+    private static final List<String> PQC_GROUPS = List.of("X25519MLKEM768", "SECP256R1MLKEM768", "SECP384R1MLKEM1024");
+
     private synchronized void populateCommonSSLOptions(SSLOptions options) {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
         if (config().keyExchangeGroups().isPresent()) {
-            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+            List<String> groups = config().keyExchangeGroups().get();
+            options.setKeyExchangeGroups(groups);
+            if (config().pqcEnforcementPolicy() == PqcEnforcementPolicy.RELAXED
+                    && groups.stream().anyMatch(g -> PQC_GROUPS.contains(g.toUpperCase()))) {
+                LOGGER.warnf("TLS configuration '%s' includes PQC key-exchange groups (%s) but " +
+                        "'pqc-enforcement-policy' is 'relaxed'. The JDK SSL engine ignores PQC groups " +
+                        "before JDK 27 — no PQC key exchange will occur. Set 'pqc-enforcement-policy' to " +
+                        "'client-negotiated' or 'strict' to activate the OpenSSL engine, or upgrade to " +
+                        "JDK 27+ for native PQC support.", name, groups);
+            }
         }
         options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);

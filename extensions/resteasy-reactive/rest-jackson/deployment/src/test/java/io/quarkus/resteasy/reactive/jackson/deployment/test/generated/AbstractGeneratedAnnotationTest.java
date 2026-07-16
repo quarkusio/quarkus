@@ -578,6 +578,36 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("props_size", CoreMatchers.is(2));
     }
 
+    // --- @JsonAnySetter on field ---
+
+    @Test
+    public void testFieldAnySetterDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"test\",\"extra1\":\"a\",\"extra2\":\"b\"}")
+                .when()
+                .post("/generated/field-any-setter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", CoreMatchers.is("test"))
+                .body("extras_size", CoreMatchers.is(2));
+    }
+
+    // --- @JsonAnyGetter on field ---
+
+    @Test
+    public void testFieldAnyGetterSerialization() {
+        RestAssured.get("/generated/field-any-getter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("color", Matchers.is("red"))
+                .body("size", Matchers.is("large"))
+                .body(not(containsString("additionalProperties")));
+    }
+
     // --- @JsonManagedReference + @JsonBackReference ---
 
     @Test

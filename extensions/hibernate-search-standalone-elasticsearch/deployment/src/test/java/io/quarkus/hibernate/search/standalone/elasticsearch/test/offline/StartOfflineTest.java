@@ -41,7 +41,7 @@ public class StartOfflineTest {
         try (var searchSession = searchMapping.createSession()) {
             assertThatThrownBy(() -> searchSession.schemaManager(IndexedEntity.class).createIfMissing())
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Elasticsearch request failed: Connection refused");
+                    .hasMessageContaining("Connection refused");
         }
     }
 
@@ -51,7 +51,7 @@ public class StartOfflineTest {
             assertThatThrownBy(() -> searchSession.search(IndexedEntity.class)
                     .where(f -> f.matchAll()).fetchHits(20))
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Elasticsearch request failed: Connection refused");
+                    .hasMessageContaining("Connection refused");
         }
     }
 

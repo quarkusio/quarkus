@@ -19,4 +19,10 @@ public class MockitoConfiguration extends DefaultMockitoConfiguration {
             throw new RuntimeException("Failed to load MutinyAnswer from the TCCL", e);
         }
     }
+
+    // Per-test class loaders + Objenesis name-based cache break thenThrow(Exception.class) across tests (#55093)
+    @Override
+    public boolean enableClassCache() {
+        return false;
+    }
 }

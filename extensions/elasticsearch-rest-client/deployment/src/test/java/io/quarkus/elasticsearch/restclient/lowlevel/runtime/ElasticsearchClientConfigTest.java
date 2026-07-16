@@ -5,8 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.elasticsearch.client.RestClientBuilder;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfigConfigurer;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class ElasticsearchClientConfigTest {
@@ -35,14 +35,13 @@ public class ElasticsearchClientConfigTest {
 
     @ElasticsearchClientConfig
     @ApplicationScoped
-    public static class TestConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+    public static class TestConfigurator implements ElasticsearchClientConfigConfigurer {
 
         private static boolean invoked = false;
 
         @Override
-        public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder builder) {
+        public void accept(HttpAsyncClientBuilder builder) {
             invoked = true;
-            return builder;
         }
     }
 

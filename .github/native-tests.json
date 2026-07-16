@@ -20,8 +20,8 @@
         },
         {
             "category": "Data3",
-            "timeout": 75,
-            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
+            "timeout": 80,
+            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, hibernate-orm-temporal, liquibase, liquibase-mongodb",
             "os-name": "ubuntu-latest"
         },
         {
@@ -81,7 +81,7 @@
         {
             "category": "Security2",
             "timeout": 75,
-            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services, oidc-spiffe",
             "os-name": "ubuntu-latest"
         },
         {
@@ -100,6 +100,12 @@
             "category": "HTTP",
             "timeout": 130,
             "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools, smallrye-stork-consul-registration, http-3-rest, http-3-rest-client",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Native Transport",
+            "timeout": 55,
+            "test-modules": "vertx-native-transport/epoll, vertx-native-transport/nio-fallback, vertx-native-transport/native-transport-disabled",
             "os-name": "ubuntu-latest"
         },
         {

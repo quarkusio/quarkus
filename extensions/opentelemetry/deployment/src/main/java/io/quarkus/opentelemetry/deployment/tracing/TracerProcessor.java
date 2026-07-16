@@ -43,17 +43,22 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
+import io.quarkus.opentelemetry.runtime.config.build.SamplerType;
+import io.quarkus.opentelemetry.runtime.config.build.TracesBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.websockets.WebSocketTracesInterceptorImpl;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
@@ -127,6 +132,33 @@ public class TracerProcessor {
         }
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
+    }
+
+    /**
+     * Checks the {@link LaunchModeBuildItem} to see if we are in {@linkplain LaunchMode#DEVELOPMENT development mode}.
+     * <p>
+     * Checks the {@link TracesBuildConfig#sampler()} for a value of {@code parentbased_traceidratio} or
+     * {@code traceidration}. If set to one of those values, the {@code quarkus.otel.traces.sampler.arg} is defaulted
+     * to 100% (1.0d) in dev mode.
+     * </p>
+     *
+     * @param launchMode the current launch mode
+     * @param buildConfig the build configuration used to determine if the sampler arg needs to be overridden in dev mode
+     *
+     * @return a new build item setting the sampler argument to 100% if we are in dev mode, otherwise returns {@code null}
+     */
+    @BuildStep
+    RunTimeConfigurationDefaultBuildItem setDevModeSamplerDefault(LaunchModeBuildItem launchMode, OTelBuildConfig buildConfig) {
+        // In dev mode, use 100% sampling for better debugging experience
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            final String sampler = buildConfig.traces().sampler();
+            if (SamplerType.PARENT_BASED_TRACE_ID_RATIO.getValue().equals(sampler)
+                    || SamplerType.TRACE_ID_RATIO.getValue().equals(sampler)) {
+                return new RunTimeConfigurationDefaultBuildItem("quarkus.otel.traces.sampler.arg", "1.0d");
+            }
+        }
+        // Let the default configuration apply
+        return null;
     }
 
     @BuildStep

@@ -578,6 +578,36 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("props_size", CoreMatchers.is(2));
     }
 
+    // --- @JsonAnySetter on field ---
+
+    @Test
+    public void testFieldAnySetterDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"test\",\"extra1\":\"a\",\"extra2\":\"b\"}")
+                .when()
+                .post("/generated/field-any-setter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", CoreMatchers.is("test"))
+                .body("extras_size", CoreMatchers.is(2));
+    }
+
+    // --- @JsonAnyGetter on field ---
+
+    @Test
+    public void testFieldAnyGetterSerialization() {
+        RestAssured.get("/generated/field-any-getter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("color", Matchers.is("red"))
+                .body("size", Matchers.is("large"))
+                .body(not(containsString("additionalProperties")));
+    }
+
     // --- @JsonManagedReference + @JsonBackReference ---
 
     @Test
@@ -601,6 +631,43 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("name", Matchers.is("date-test"))
                 .body("date", Matchers.is("2025-06-15"));
+    }
+
+    // --- @JsonFormat with ZonedDateTime ---
+
+    @Test
+    public void testFormatZonedDateTimePatternSerialization() {
+        RestAssured.get("/generated/zoned-date-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("zoned-date-test"))
+                .body("dateTime", Matchers.is("2024-03-13T10:05:01.000Z"));
+    }
+
+    // --- @JsonFormat(shape=NUMBER) with Instant and Duration ---
+
+    @Test
+    public void testFormatTemporalAsNumberSerialization() {
+        RestAssured.get("/generated/number-shaped-temporal")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("number-shaped"))
+                .body("instant", Matchers.is(1710324301.5f))
+                .body("duration", Matchers.is(76975.5f));
+    }
+
+    // --- @JsonFormat(shape=STRING) with Duration ---
+
+    @Test
+    public void testFormatDurationAsStringSerialization() {
+        RestAssured.get("/generated/duration-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("duration-test"))
+                .body("duration", Matchers.is("PT21H22M55S"));
     }
 
     // --- @JsonFormat ---
@@ -627,6 +694,165 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("name", Matchers.is("round-trip"))
                 .body("shape", Matchers.is(2));
+    }
+
+    // --- @JsonFormat(shape = ARRAY) on class ---
+
+    @Test
+    public void testFormatArrayShapeSerialization() {
+        RestAssured.get("/generated/format-array-shape")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0]", Matchers.is(1.0f))
+                .body("[1]", Matchers.is(2.0f));
+    }
+
+    @Test
+    public void testFormatArrayShapeDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("[3.0,4.0]")
+                .when()
+                .post("/generated/format-array-shape")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0]", Matchers.is(3.0f))
+                .body("[1]", Matchers.is(4.0f));
+    }
+
+    @Test
+    public void testFormatArrayShapeListRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("[[1.0,2.0],[3.0,4.0]]")
+                .when()
+                .post("/generated/format-array-shape-list")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0][0]", Matchers.is(1.0f))
+                .body("[0][1]", Matchers.is(2.0f))
+                .body("[1][0]", Matchers.is(3.0f))
+                .body("[1][1]", Matchers.is(4.0f));
+    }
+
+    // --- @JsonFormat(shape = ARRAY) on class without @JsonPropertyOrder ---
+
+    @Test
+    public void testFormatArrayShapeNoOrderSerialization() {
+        RestAssured.get("/generated/format-array-shape-no-order")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0]", Matchers.is("hello"))
+                .body("[1]", Matchers.is(42));
+    }
+
+    @Test
+    public void testFormatArrayShapeNoOrderDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("[\"world\",99]")
+                .when()
+                .post("/generated/format-array-shape-no-order")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0]", Matchers.is("world"))
+                .body("[1]", Matchers.is(99));
+    }
+
+    // --- @JsonFormat(shape = STRING) on primitives ---
+
+    @Test
+    public void testFormatStringShapeSerialization() {
+        RestAssured.get("/generated/format-string-shape")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("string-shape"))
+                .body("count", Matchers.is("42"))
+                .body("score", Matchers.is("3.14"))
+                .body("active", Matchers.is("true"))
+                .body("bigNumber", Matchers.is("123456789"));
+    }
+
+    @Test
+    public void testFormatStringShapeDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"rt\",\"count\":\"7\",\"score\":\"1.5\",\"active\":\"false\",\"bigNumber\":\"99\"}")
+                .when()
+                .post("/generated/format-string-shape")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("rt"))
+                .body("count", Matchers.is("7"))
+                .body("score", Matchers.is("1.5"))
+                .body("active", Matchers.is("false"))
+                .body("bigNumber", Matchers.is("99"));
+    }
+
+    // --- @JsonFormat(shape = NUMBER) on boolean ---
+
+    @Test
+    public void testFormatNumberBooleanSerialization() {
+        RestAssured.get("/generated/format-number-boolean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("bool-as-number"))
+                .body("enabled", Matchers.is(1))
+                .body("optional", Matchers.is(0));
+    }
+
+    @Test
+    public void testFormatNumberBooleanDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"rt\",\"enabled\":0,\"optional\":1}")
+                .when()
+                .post("/generated/format-number-boolean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("rt"))
+                .body("enabled", Matchers.is(0))
+                .body("optional", Matchers.is(1));
+    }
+
+    // --- @JsonFormat(shape = NUMBER) on Date (timestamp millis) ---
+
+    @Test
+    public void testFormatDateTimestampSerialization() {
+        RestAssured.get("/generated/format-date-timestamp")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("timestamp-test"))
+                .body("timestamp", Matchers.is(1750000000000L));
+    }
+
+    @Test
+    public void testFormatDateTimestampDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"rt\",\"timestamp\":1750000000000}")
+                .when()
+                .post("/generated/format-date-timestamp")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("rt"))
+                .body("timestamp", Matchers.is(1750000000000L));
     }
 
     // --- @JsonGetter + @JsonSetter ---

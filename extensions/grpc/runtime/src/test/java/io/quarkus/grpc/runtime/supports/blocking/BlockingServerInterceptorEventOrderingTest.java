@@ -289,6 +289,182 @@ class BlockingServerInterceptorEventOrderingTest {
                 .containsExactly("onMessage:first", "onMessage:second", "onHalfClose");
     }
 
+    /**
+     * {@code onHalfClose} alone is queued before the deferred executor runs; {@code onMessage} arrives only
+     * after {@code setDelegate}.
+     */
+    @Test
+    @Timeout(10)
+    void virtualThreadPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("unary"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/unary");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.UNARY);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        runAllDeferredTasks();
+        replayListener.onMessage("hi");
+        runAllDeferredTasks();
+
+        next.awaitEvents(2);
+        assertThat(next.events)
+                .as("onMessage must be delivered after setDelegate even if onHalfClose was queued first")
+                .containsExactly("onMessage:hi", "onHalfClose");
+    }
+
+    /**
+     * Same deferred-message race on the {@code @Blocking} path.
+     */
+    @Test
+    @Timeout(10)
+    void blockingPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
+                Collections.emptyList());
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/unary");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.UNARY);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        next.startCallGate.set(true);
+
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        next.startCallGate.set(false);
+        synchronized (next.startCallGate) {
+            next.startCallGate.notifyAll();
+        }
+        replayListener.onMessage("hi");
+
+        next.awaitEvents(2);
+        assertThat(next.events)
+                .as("onMessage must be delivered after setDelegate even if onHalfClose was queued first")
+                .containsExactly("onMessage:hi", "onHalfClose");
+    }
+
+    @Test
+    @Timeout(10)
+    void serverStreaming_virtualThreadPath_defersHalfCloseUntilRequestMessage() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("serverStreaming"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/serverStreaming");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.SERVER_STREAMING);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        runAllDeferredTasks();
+        assertThat(next.events).isEmpty();
+
+        replayListener.onMessage("hi");
+        runAllDeferredTasks();
+
+        next.awaitEvents(2);
+        assertThat(next.events).containsExactly("onMessage:hi", "onHalfClose");
+    }
+
+    @Test
+    @Timeout(10)
+    void clientStreaming_virtualThreadPath_promotesMultipleMessagesBeforeHalfClose() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("clientStreaming"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/clientStreaming");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.CLIENT_STREAMING);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        replayListener.onMessage("first");
+        replayListener.onMessage("second");
+        runAllDeferredTasks();
+
+        next.awaitEvents(3);
+        assertThat(next.events).containsExactly("onMessage:first", "onMessage:second", "onHalfClose");
+    }
+
+    @Test
+    @Timeout(10)
+    void clientStreaming_virtualThreadPath_allowsHalfCloseWithoutRequestMessage() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("clientStreaming"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/clientStreaming");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.CLIENT_STREAMING);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+
+        replayListener.onHalfClose();
+        runAllDeferredTasks();
+
+        next.awaitEvents(1);
+        assertThat(next.events).containsExactly("onHalfClose");
+    }
+
+    @Test
+    @Timeout(10)
+    void virtualThreadPath_messageReceivedSetUnderLockBeforeSetDelegateDrains() throws Exception {
+        BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
+                Collections.singletonList("unary"));
+
+        ServerCall serverCall = mock(ServerCall.class);
+        MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/unary");
+        when(methodDescriptor.getType()).thenReturn(MethodDescriptor.MethodType.UNARY);
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        RecordingServerCallHandler next = new RecordingServerCallHandler();
+        next.blockStartCallUntilMessageReceived.set(true);
+
+        ServerCall.Listener replayListener = interceptor.interceptCall(serverCall, new Metadata(), next);
+        replayListener.onHalfClose();
+
+        Thread executorThread = new Thread(() -> {
+            Runnable task = deferred.poll();
+            if (task != null) {
+                task.run();
+            }
+        });
+        executorThread.start();
+        executorThread.join(2000);
+
+        assertThat(next.events).isEmpty();
+
+        replayListener.onMessage("hi");
+        next.blockStartCallUntilMessageReceived.set(false);
+        synchronized (next.blockStartCallUntilMessageReceived) {
+            next.blockStartCallUntilMessageReceived.notifyAll();
+        }
+        executorThread.join(2000);
+        runAllDeferredTasks();
+
+        next.awaitEvents(2);
+        assertThat(next.events).containsExactly("onMessage:hi", "onHalfClose");
+    }
+
     private BlockingServerInterceptor newInterceptor(List<String> blocking, List<String> virtual) {
         return new BlockingServerInterceptor(vertx, blocking, virtual, controllableVirtualExecutor, false) {
             @Override
@@ -318,6 +494,8 @@ class BlockingServerInterceptorEventOrderingTest {
 
         final List<String> events = new CopyOnWriteArrayList<>();
         final java.util.concurrent.atomic.AtomicBoolean startCallGate = new java.util.concurrent.atomic.AtomicBoolean(false);
+        final java.util.concurrent.atomic.AtomicBoolean blockStartCallUntilMessageReceived = new java.util.concurrent.atomic.AtomicBoolean(
+                false);
 
         @Override
         public ServerCall.Listener startCall(ServerCall serverCall, Metadata metadata) {
@@ -327,6 +505,16 @@ class BlockingServerInterceptorEventOrderingTest {
                 while (startCallGate.get()) {
                     try {
                         startCallGate.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            synchronized (blockStartCallUntilMessageReceived) {
+                while (blockStartCallUntilMessageReceived.get()) {
+                    try {
+                        blockStartCallUntilMessageReceived.wait(50);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException(e);
@@ -371,4 +559,5 @@ class BlockingServerInterceptorEventOrderingTest {
             }
         }
     }
+
 }

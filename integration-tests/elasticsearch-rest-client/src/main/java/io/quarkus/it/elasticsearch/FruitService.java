@@ -8,20 +8,21 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Response;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class FruitService {
     @Inject
-    RestClient restClient;
+    Rest5Client restClient;
 
     public void index(Fruit fruit) throws IOException {
         Request request = new Request(
@@ -31,7 +32,7 @@ public class FruitService {
         restClient.performRequest(request);
     }
 
-    public Fruit get(String id) throws IOException {
+    public Fruit get(String id) throws IOException, ParseException {
         Request request = new Request(
                 "GET",
                 "/fruits/_doc/" + id);
@@ -41,15 +42,15 @@ public class FruitService {
         return json.getJsonObject("_source").mapTo(Fruit.class);
     }
 
-    public List<Fruit> searchByColor(String color) throws IOException {
+    public List<Fruit> searchByColor(String color) throws IOException, ParseException {
         return search("color", color);
     }
 
-    public List<Fruit> searchByName(String name) throws IOException {
+    public List<Fruit> searchByName(String name) throws IOException, ParseException {
         return search("name", name);
     }
 
-    private List<Fruit> search(String term, String match) throws IOException {
+    private List<Fruit> search(String term, String match) throws IOException, ParseException {
         Request request = new Request(
                 "GET",
                 "/fruits/_search");

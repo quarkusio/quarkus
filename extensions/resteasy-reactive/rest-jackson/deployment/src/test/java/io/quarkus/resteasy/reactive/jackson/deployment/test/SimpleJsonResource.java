@@ -572,6 +572,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ItemJsonValuePrivateField(value);
     }
 
+    @GET
+    @Path("/json-value-inherited-from-interface")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.Wrapper echoJsonValueInheritedFromInterface(@RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.Wrapper(value);
+    }
+
     @POST
     @Path("/product-price")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -750,6 +757,30 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Produces(MediaType.APPLICATION_JSON)
     public ObjectNode objectNode(ObjectNode body) {
         return body;
+    }
+
+    @POST
+    @Path("/final-collection")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public FinalCollectionHolder echoFinalCollection(FinalCollectionHolder holder) {
+        return holder;
+    }
+
+    @POST
+    @Path("/required-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public RequiredCreatorProperty echoRequiredCreatorProperty(RequiredCreatorProperty obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/polymorphic-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PolymorphicCreatorProperty echoPolymorphicCreatorProperty(PolymorphicCreatorProperty obj) {
+        return obj;
     }
 
     @GET

@@ -127,6 +127,12 @@ public interface VertxHttpConfig {
     CORSConfig cors();
 
     /**
+     * The HTTP Host header validation
+     */
+    @ConfigDocSection(generated = true)
+    HostValidationConfig hostValidation();
+
+    /**
      * The SSL config
      */
     ServerSslConfig ssl();

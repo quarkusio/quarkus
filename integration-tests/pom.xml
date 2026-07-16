@@ -235,8 +235,10 @@
                 <module>hibernate-orm-envers</module>
                 <module>hibernate-orm-spatial</module>
                 <module>hibernate-orm-vector</module>
+                <module>hibernate-orm-temporal</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
+                <module>vertx-native-transport</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
@@ -272,6 +274,7 @@
                 <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-dpop</module>
+                <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>

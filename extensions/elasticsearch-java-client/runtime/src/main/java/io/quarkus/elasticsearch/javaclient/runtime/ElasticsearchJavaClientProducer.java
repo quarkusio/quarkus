@@ -11,22 +11,21 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import org.elasticsearch.client.RestClient;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 
 @ApplicationScoped
 public class ElasticsearchJavaClientProducer {
 
     @Inject
     @Default
-    RestClient restClient;
+    Rest5Client restClient;
 
     @Inject
     ObjectMapper objectMapper;
@@ -37,7 +36,7 @@ public class ElasticsearchJavaClientProducer {
 
     @PostConstruct
     void initTransport() {
-        this.transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+        this.transport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
     }
 
     @Produces

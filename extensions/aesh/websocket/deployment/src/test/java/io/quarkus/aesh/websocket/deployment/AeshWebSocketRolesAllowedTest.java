@@ -35,6 +35,7 @@ public class AeshWebSocketRolesAllowedTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(
+                    AeshWebSocketTestHelper.class,
                     HelloCommand.class,
                     GoodbyeCommand.class,
                     TestIdentityProvider.class,
@@ -81,7 +82,7 @@ public class AeshWebSocketRolesAllowedTest {
 
     @Test
     public void testCorrectRoleSucceeds() throws Exception {
-        CopyOnWriteArrayList<String> messages = new CopyOnWriteArrayList<>();
+        StringBuilder output = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
@@ -97,28 +98,16 @@ public class AeshWebSocketRolesAllowedTest {
                 return;
             }
             var ws = ar.result();
-
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello World!")) {
-                    latch.countDown();
-                }
-            });
-
+            AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
             ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-
-            vertx.setTimer(500, id -> {
-                ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
-            });
         });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+        boolean completed = latch.await(30, TimeUnit.SECONDS);
 
         Assertions.assertThat(completed)
-                .as("Expected to receive 'Hello World!' in WebSocket output within 10s. Received: %s", allOutput)
+                .as("Expected to receive 'Hello World!' in WebSocket output within 30s. Received: %s", output)
                 .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello World!");
+        Assertions.assertThat(output.toString()).contains("Hello World!");
     }
 
     private static String basicAuth(String username, String password) {

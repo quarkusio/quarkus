@@ -32,12 +32,17 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
                                     PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
-                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class,
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class,
+                                    ItemJsonValueInheritedFromInterface.class,
+                                    ItemJsonValueInheritedFromInterface.HasValue.class,
+                                    ItemJsonValueInheritedFromInterface.Wrapper.class, StringWrapper.class,
                                     JsonAliasRecord.class, AnnotationNamingRequest.class, Pair.class, Score.class,
                                     ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class,
                                     UnwrappedResult.class, UnwrappedResultsResponse.class, Detail.class, ErrorInfo.class,
                                     PolymorphicItemResponse.class, PolymorphicItem.class,
-                                    SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class)
+                                    SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
+                                    FinalCollectionHolder.class, RequiredCreatorProperty.class,
+                                    PolymorphicCreatorProperty.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

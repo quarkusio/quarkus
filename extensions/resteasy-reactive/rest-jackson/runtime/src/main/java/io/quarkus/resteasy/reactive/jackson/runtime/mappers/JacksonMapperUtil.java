@@ -4,9 +4,18 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +69,18 @@ public class JacksonMapperUtil {
                 .isIsGetterVisible(VISIBILITY_TEST_METHOD);
     }
 
+    public static void serializeBooleanAsNumber(boolean value, JsonGenerator generator) throws IOException {
+        generator.writeNumber(value ? 1 : 0);
+    }
+
+    public static void serializeDateAsTimestamp(Date value, JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        generator.writeNumber(value.getTime());
+    }
+
     public static void serializeFormattedDate(Object value, String pattern, String timezone,
             JsonGenerator generator) throws IOException {
         if (value == null) {
@@ -71,6 +92,44 @@ public class JacksonMapperUtil {
             sdf.setTimeZone(TimeZone.getTimeZone(timezone));
         }
         generator.writeString(sdf.format(value));
+    }
+
+    public static void serializeFormattedTemporal(Object value, String pattern, String timezone,
+            JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        if (timezone != null) {
+            formatter = formatter.withZone(ZoneId.of(timezone));
+        }
+        generator.writeString(formatter.format((TemporalAccessor) value));
+    }
+
+    public static void serializeTemporalAsTimestamp(Object value, JsonGenerator generator) throws IOException {
+        if (value == null) {
+            generator.writeNull();
+        } else if (value instanceof Instant i) {
+            generator.writeNumber(toBigDecimal(i.getEpochSecond(), i.getNano()));
+        } else if (value instanceof ZonedDateTime zdt) {
+            Instant inst = zdt.toInstant();
+            generator.writeNumber(toBigDecimal(inst.getEpochSecond(), inst.getNano()));
+        } else if (value instanceof OffsetDateTime odt) {
+            Instant inst = odt.toInstant();
+            generator.writeNumber(toBigDecimal(inst.getEpochSecond(), inst.getNano()));
+        } else if (value instanceof Duration d) {
+            generator.writeNumber(toBigDecimal(d.getSeconds(), d.getNano()));
+        } else {
+            generator.writeString(value.toString());
+        }
+    }
+
+    private static BigDecimal toBigDecimal(long seconds, int nanoseconds) {
+        if (nanoseconds == 0) {
+            return BigDecimal.valueOf(seconds);
+        }
+        return new BigDecimal(seconds + "." + String.format("%09d", nanoseconds));
     }
 
     public static boolean isViewIncluded(Class<?> activeView, Class<?>[] viewClasses) {

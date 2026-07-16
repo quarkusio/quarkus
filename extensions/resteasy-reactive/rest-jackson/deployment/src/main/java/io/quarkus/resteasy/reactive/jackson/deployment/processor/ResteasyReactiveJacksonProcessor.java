@@ -62,7 +62,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
@@ -386,7 +385,6 @@ public class ResteasyReactiveJacksonProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SynthesisFinishedBuildItem.class)
     public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
             Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {
@@ -568,8 +566,14 @@ public class ResteasyReactiveJacksonProcessor {
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
         }
         return effectiveReturnType;

@@ -155,7 +155,8 @@ public interface SmallRyeGraphQLRuntimeConfig {
     OptionalInt instrumentationQueryComplexity();
 
     /**
-     * Abort a query if the total depth of the query exceeds the defined limit. Default to no limit
+     * Abort a query if the total depth of the query exceeds the defined limit.
      */
+    @WithDefault("10")
     OptionalInt instrumentationQueryDepth();
 }

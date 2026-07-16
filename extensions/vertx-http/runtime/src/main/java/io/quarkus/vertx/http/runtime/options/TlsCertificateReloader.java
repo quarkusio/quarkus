@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.options;
 
+import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.createServerSslOptions;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getFileContent;
 
 import java.io.IOException;
@@ -25,6 +26,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -49,7 +51,7 @@ public class TlsCertificateReloader {
     public static long initCertReloadingAction(Vertx vertx, HttpServer server,
             io.vertx.core.http.HttpServerConfig httpServerConfig, ServerSSLOptions sslOptions,
             ServerSslConfig sslConfig,
-            TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {
+            TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName, ClientAuth clientAuth) {
 
         if (httpServerConfig == null) {
             throw new IllegalArgumentException(
@@ -103,7 +105,7 @@ public class TlsCertificateReloader {
                     public ServerSSLOptions call() throws Exception {
                         if (reloadFromRegistry) {
                             if (registryConfiguration.reload()) {
-                                return registryConfiguration.getServerSSLOptions();
+                                return createServerSslOptions(registryConfiguration, clientAuth);
                             } else {
                                 return null;
                             }

@@ -100,17 +100,67 @@ Quarkus validates these values at build time.
 
 This feature can be used in both development and production environments.
 
+[[http-compression]]
 === HTTP Compression
 
-The response body of a static resource is not compressed by default.
-You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
-If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
+The response body of an HTTP response is not compressed by default.
+You can enable HTTP compression support by setting `quarkus.http.enable-compression=true`.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
+If compression is enabled, the response body is compressed when the `Content-Type` header matches one of the media types configured via `quarkus.http.compress-media-types`.
 
-NOTE: If the client does not indicate its support for HTTP compression in a request header, e.g. `Accept-Encoding: deflate, gzip, br`, then the response body is not compressed.
+TIP: By default, the following media types are compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json`, and `application/xhtml+xml`.
 
-TIP: Brotli compression is not available by default. You can enable it by setting `quarkus.http.compressors=deflate,gzip,br`. In case of building native image, it adds around 1MB to your executable size.
+NOTE: If the client does not indicate support for HTTP compression in the request (e.g., `Accept-Encoding: deflate, gzip, br`), the response body is not compressed.
+
+==== Minimum response size
+
+By default, all responses matching the configured media types are compressed regardless of their size.
+Use `quarkus.http.compression-content-size-threshold` to set a minimum response body size (in bytes) that triggers compression.
+Responses smaller than this threshold are sent uncompressed, avoiding the CPU overhead of compressing small payloads.
+
+[source,properties]
+----
+quarkus.http.enable-compression=true
+# Only compress responses larger than 1KB
+quarkus.http.compression-content-size-threshold=1024
+----
+
+NOTE: The threshold only applies when the response `Content-Length` is known. Chunked responses (where the total size is not known upfront) are always eligible for compression when compression is enabled.
+
+==== Compression level
+
+Use `quarkus.http.compression-level` to control the compression level for gzip and deflate.
+Higher values produce smaller output at the cost of more CPU usage.
+When not set, the compressor's default level is used.
+
+[source,properties]
+----
+quarkus.http.enable-compression=true
+quarkus.http.compression-level=6
+----
+
+==== Brotli compression
+
+Brotli compression is not available by default.
+Enable it by adding `br` to the compressors list:
+
+[source,properties]
+----
+quarkus.http.compressors=deflate,gzip,br
+----
+
+TIP: Enabling Brotli adds approximately 1MB to native executable size because it requires bundling the Brotli4J native library.
+
+==== Per-endpoint control
+
+The RESTEasy Reactive and Reactive Routes extensions allow enabling or disabling compression on individual endpoints using the `@io.quarkus.vertx.http.Compressed` and `@io.quarkus.vertx.http.Uncompressed` annotations.
+See the xref:rest.adoc#http-compression[Quarkus REST] and xref:reactive-routes.adoc#http-compression[Reactive Routes] guides for details.
+
+==== Request decompression
+
+Quarkus can also decompress incoming request bodies.
+Enable this with `quarkus.http.enable-decompression=true`.
+The client must indicate the compression format in the `Content-Encoding` request header (e.g., `gzip`, `deflate`, or `br`).
 
 [[static-resources-config]]
 === Other Configurations
@@ -448,6 +498,68 @@ port.
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
+[[host-header-validation]]
+== HTTP Host header validation
+
+Quarkus can validate the HTTP `Host` header on incoming requests to protect against DNS rebinding attacks and host header poisoning.
+
+When `quarkus.http.host` is set to a localhost name (`localhost`, `127.0.0.1`, or `[::1]`), host validation is automatically enabled in **dev** and **production** modes.
+Only requests whose `Host` header matches one of the known localhost names are accepted; all others receive a `400 Bad Request` response.
+
+[WARNING]
+====
+This automatic behavior is a change from previous Quarkus versions, where no `Host` header validation was performed.
+If your application runs behind a reverse proxy that rewrites the `Host` header, you may need to either:
+
+* configure the allowed hosts explicitly with `quarkus.http.host-validation.allowed-hosts`, or
+* disable the automatic validation with `quarkus.http.host-validation.require-localhost=false`.
+====
+
+=== Configuring allowed hosts
+
+To restrict requests to a specific set of host names, use `allowed-hosts`:
+
+[source, properties]
+----
+quarkus.http.host-validation.allowed-hosts=example.com,api.example.com
+----
+
+The check is case-insensitive and only validates the host name, not the port.
+
+=== Requiring localhost only
+
+To explicitly require that only localhost names are accepted:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=true
+----
+
+To disable automatic localhost validation when the server is bound to a localhost address:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=false
+----
+
+NOTE: `allowed-hosts` and `require-localhost` are mutually exclusive.
+Setting both results in a configuration error.
+
+=== Reverse proxy considerations
+
+When running behind a reverse proxy, enable proxy header forwarding so that Quarkus validates the forwarded host instead of the proxy's internal host name:
+
+[source, properties]
+----
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-forwarded=true
+quarkus.http.host-validation.allowed-hosts=public-api.example.com
+----
+
+This works with both the standard `Forwarded` header and the `X-Forwarded-Host` header.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.host-validation.adoc[leveloffset=+1, opts=optional]
+
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]
@@ -772,9 +884,10 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_ACCESS_LOG_HANDLER` | Access-log handler, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_RECORD_START_TIME` | Handler adding the start-time, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HOT_REPLACEMENT` | -replacement body handler.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HEADERS` | Handlers that add headers specified in the configuration.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT` | Host validation handler of the management router.
+| `Integer.MIN_VALUE + 2` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 3` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_BODY_HANDLER` | Body handler.
 | `-2` | `ROUTE_ORDER_UPLOAD_LIMIT` | Route that enforces the upload body size limit.
 | `0` | `ROUTE_ORDER_COMPRESSION` | Compression handler.

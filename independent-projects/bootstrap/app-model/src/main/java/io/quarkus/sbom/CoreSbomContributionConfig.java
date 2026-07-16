@@ -81,6 +81,7 @@ public class CoreSbomContributionConfig {
     private Purl mainPurl;
     private ResolvedDependency mainArtifact;
     private Collection<ArtifactCoords> mainDependencies;
+    private Map<ArtifactKey, String> pedigrees;
     private List<ComponentHolder> additionalComponents = new ArrayList<>();
     private Map<Path, List<Path>> extraFileDependencies = new HashMap<>();
 
@@ -136,6 +137,19 @@ public class CoreSbomContributionConfig {
      */
     public CoreSbomContributionConfig setMainDependencies(Collection<ArtifactCoords> dependencies) {
         this.mainDependencies = dependencies;
+        return this;
+    }
+
+    /**
+     * Sets pedigree notes for application model dependencies, keyed by artifact.
+     * The pedigree for each dependency is applied when
+     * {@link #toSbomContribution()} creates its component descriptor.
+     *
+     * @param pedigrees artifact-key-to-pedigree map, or {@code null}
+     * @return this config
+     */
+    public CoreSbomContributionConfig setPedigrees(Map<ArtifactKey, String> pedigrees) {
+        this.pedigrees = pedigrees;
         return this;
     }
 
@@ -269,7 +283,14 @@ public class CoreSbomContributionConfig {
         addComponentHolder(toMavenDescriptor(appArtifact), appArtifact, compArtifacts, compPaths, compList);
         registerBomRef(appArtifact.toCompactCoords(), bomRefCounters);
         for (ResolvedDependency dep : applicationModel.getDependencies()) {
-            ComponentHolder holder = addComponentHolder(toMavenDescriptor(dep), dep, compArtifacts, compPaths, compList);
+            ComponentDescriptor.Builder builder = toMavenDescriptor(dep);
+            if (pedigrees != null) {
+                String pedigree = pedigrees.get(dep.getKey());
+                if (pedigree != null) {
+                    builder.setPedigree(pedigree);
+                }
+            }
+            ComponentHolder holder = addComponentHolder(builder, dep, compArtifacts, compPaths, compList);
             registerBomRef(holder.component.getBomRef(), bomRefCounters);
             detectShadedContent(dep, holder, bomRefCounters);
         }

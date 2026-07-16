@@ -5,10 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureProperties;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonFormatterCustomizationCheck;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofClassAnnotation;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
@@ -145,8 +142,6 @@ import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterStateManagementForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -250,6 +245,16 @@ public final class HibernateOrmProcessor {
                     "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider")
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .methods().fields().build());
+
+            // Register custom cache weigher classes for reflection (native image support)
+            for (var puConfig : config.persistenceUnits().values()) {
+                for (var cacheEntry : puConfig.cache().entrySet()) {
+                    cacheEntry.getValue().memory().weigherClass().ifPresent(weigherClass -> reflective
+                            .produce(ReflectiveClassBuildItem.builder(weigherClass)
+                                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                                    .build()));
+                }
+            }
         }
     }
 
@@ -264,8 +269,7 @@ public final class HibernateOrmProcessor {
                 // See https://github.com/quarkusio/quarkus/issues/1886
                 DialectVersions.Defaults.H2));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MARIADB, "MariaDB",
-                Set.of("org.hibernate.dialect.MariaDBDialect"),
-                DialectVersions.Defaults.MARIADB));
+                Set.of("org.hibernate.dialect.MariaDBDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MSSQL, "Microsoft SQL Server",
                 Set.of("org.hibernate.dialect.SQLServerDialect"),
                 DialectVersions.Defaults.MSSQL));
@@ -284,6 +288,16 @@ public final class HibernateOrmProcessor {
                 && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             validationErrors.produce(new ValidationErrorBuildItem(
                     new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.")));
+        }
+    }
+
+    @BuildStep
+    void checkFormatMapperConfig(HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<ValidationErrorBuildItem> validationError) {
+        try {
+            hibernateOrmConfig.mapping().format().global().action();
+        } catch (ConfigurationException e) {
+            validationError.produce(new ValidationErrorBuildItem(e));
         }
     }
 
@@ -437,7 +451,6 @@ public final class HibernateOrmProcessor {
             String puName = xmlDescriptor.getName();
             Optional<JdbcDataSourceBuildItem> jdbcDataSource = findDefaultDataSource(jdbcDataSources);
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
-            FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(
                             QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor),
@@ -452,13 +465,10 @@ public final class HibernateOrmProcessor {
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                                     hibernateOrmConfig.database().ormCompatibilityVersion(),
-                                    hibernateOrmConfig.mapping().format().global(),
-                                    formatMappers.jsonFormatterCustomizationCheck(),
                                     Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            true, isHibernateValidatorPresent(capabilities), formatMappers.jsonMapper(),
-                            formatMappers.xmlMapper()));
+                            true, isHibernateValidatorPresent(capabilities)));
         }
 
         if (persistenceXmlDescriptors.isEmpty() && impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -543,8 +553,6 @@ public final class HibernateOrmProcessor {
                     true, "org.postgresql.jdbc.PgConnection", "getSchema"));
         }
 
-        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
-
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
@@ -556,14 +564,11 @@ public final class HibernateOrmProcessor {
                                 entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
-                                hibernateOrmConfig.mapping().format().global(),
-                                formatMappers.jsonFormatterCustomizationCheck(),
                                 Collections.emptyMap()),
                         null,
                         jpaModel.getXmlMappings(persistenceUnitName),
                         false,
-                        isHibernateValidatorPresent(capabilities), formatMappers.jsonMapper(),
-                        formatMappers.xmlMapper()));
+                        isHibernateValidatorPresent(capabilities)));
     }
 
     @BuildStep
@@ -1303,7 +1308,6 @@ public final class HibernateOrmProcessor {
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
-        FormatMappers formatMappers = resolveFormatMappers(capabilities, hibernateOrmConfig, unremovableBeans);
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
@@ -1315,14 +1319,11 @@ public final class HibernateOrmProcessor {
                                 entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
-                                hibernateOrmConfig.mapping().format().global(),
-                                formatMappers.jsonFormatterCustomizationCheck(),
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         model.xmlMappings(),
                         false,
-                        isHibernateValidatorPresent(capabilities), formatMappers.jsonMapper(),
-                        formatMappers.xmlMapper()));
+                        isHibernateValidatorPresent(capabilities)));
     }
 
     private static Optional<DatabaseKind.SupportedDatabaseKind> collectDialectConfig(String persistenceUnitName,
@@ -1366,21 +1367,6 @@ public final class HibernateOrmProcessor {
         }
 
         return supportedDatabaseKind;
-    }
-
-    private static FormatMappers resolveFormatMappers(Capabilities capabilities, HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
-        jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
-                .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
-        return new FormatMappers(jsonMapper, xmlMapper, jsonFormatterCustomizationCheck(capabilities, jsonMapper));
-    }
-
-    private record FormatMappers(Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,

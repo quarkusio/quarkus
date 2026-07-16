@@ -1,9 +1,11 @@
 plugins {
-    id("com.gradle.develocity") version "4.4.3"
+    id("com.gradle.develocity") version "4.5.0"
 }
 
 develocity {
-    val isAuthenticated = !System.getenv("DEVELOCITY_ACCESS_KEY").isNullOrEmpty()
+	val isAuthenticated = providers.environmentVariable("DEVELOCITY_ACCESS_KEY")
+		.map(String::isNotEmpty)
+		.getOrElse(false)
     if(isAuthenticated) {
         server = "https://ge.quarkus.io"
     }
@@ -14,7 +16,9 @@ develocity {
             termsOfUseAgree.set("yes")
         }
         publishing.onlyIf { it.buildResult.failures.isNotEmpty() }
-        uploadInBackground = System.getenv("CI").isNullOrEmpty()
+		uploadInBackground = providers.environmentVariable("CI")
+			.map(String::isEmpty)
+			.getOrElse(true)
     }
 }
 

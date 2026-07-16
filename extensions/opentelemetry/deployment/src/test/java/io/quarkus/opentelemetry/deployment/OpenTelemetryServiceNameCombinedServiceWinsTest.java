@@ -17,5 +17,6 @@ public class OpenTelemetryServiceNameCombinedServiceWinsTest extends OpenTelemet
                     .addClass(TestSpanExporterProvider.class))
             .overrideConfigKey("quarkus.application.name", "application-name-must-fail")
             .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50")// speed up test
-            .overrideRuntimeConfigKey("quarkus.otel.resource.attributes", "service.name=" + SERVICE_NAME);
+            .overrideRuntimeConfigKey("quarkus.otel.resource.attributes", "service.name=" + SERVICE_NAME)
+            .overrideRuntimeConfigKey("quarkus.otel.traces.sampler.arg", "1.0d");
 }

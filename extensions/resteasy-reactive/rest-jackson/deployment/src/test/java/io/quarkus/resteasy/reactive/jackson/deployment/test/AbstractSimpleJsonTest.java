@@ -927,6 +927,16 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonValueInheritedFromInterface() {
+        RestAssured.given()
+                .queryParam("value", "ENABLED")
+                .get("/simple/json-value-inherited-from-interface")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"ENABLED\""));
+    }
+
+    @Test
     public void testPojoWithJsonCreator() {
         RestAssured
                 .with()
@@ -1340,6 +1350,76 @@ public abstract class AbstractSimpleJsonTest {
                 .contentType("application/json")
                 .body("name", is(""))
                 .body("limit", is(42));
+    }
+
+    @Test
+    void finalCollectionField_shouldDeserializeWithoutSetter() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {"name": "test", "items": ["a", "b", "c"]}
+                        """)
+                .when()
+                .post("/simple/final-collection")
+                .then()
+                .statusCode(200)
+                .body("name", CoreMatchers.is("test"))
+                .body("items.size()", CoreMatchers.is(3))
+                .body("items[0]", CoreMatchers.is("a"))
+                .body("items[1]", CoreMatchers.is("b"))
+                .body("items[2]", CoreMatchers.is("c"));
+    }
+
+    @Test
+    void testJsonCreatorRequiredPropertyEnforced() {
+        // Omit the required "name" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void testJsonCreatorRequiredPropertyPresent() {
+        // Include the required "name" property — should succeed
+        RestAssured
+                .with()
+                .body("{\"name\":\"test\",\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(200)
+                .body("name", CoreMatchers.is("test"))
+                .body("value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicProperty() {
+        // A @JsonCreator parameter with a polymorphic (@JsonTypeInfo) type cannot be handled by the
+        // generated reflection-free deserializer and must fall back to the reflection-based one
+        RestAssured
+                .with()
+                .body("{\"item\":{\"type\":\"type_a\",\"value\":\"hello\"}}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(200)
+                .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicPropertyMissing() {
+        // Omit the required polymorphic "item" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(400);
     }
 
     @Test

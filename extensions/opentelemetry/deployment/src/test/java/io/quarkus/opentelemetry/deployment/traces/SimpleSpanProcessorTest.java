@@ -45,6 +45,7 @@ public class SimpleSpanProcessorTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.simple", "true")
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
+            .overrideConfigKey("quarkus.otel.traces.sampler.arg", "1.0d")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none");
 

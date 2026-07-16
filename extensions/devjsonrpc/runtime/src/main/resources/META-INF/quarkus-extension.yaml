@@ -1,0 +1,5 @@
+---
+name: "Quarkus Dev JSON-RPC"
+metadata:
+  unlisted: true
+  hide-in-dev-ui: true

@@ -104,6 +104,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
     private String userAgent;
     private Boolean disableDefaultMapper;
     private Boolean enableCompression;
+    private String domainSocketPath;
     private Consumer<HttpClientOptions> clientOptionsCustomizer;
 
     @Override
@@ -312,6 +313,11 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
     public RestClientBuilderImpl enableCompression(boolean enableCompression) {
         this.enableCompression = enableCompression;
+        return this;
+    }
+
+    public RestClientBuilderImpl domainSocket(String path) {
+        this.domainSocketPath = path;
         return this;
     }
 
@@ -659,6 +665,10 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         }
         if (effectiveEnableCompression != null) {
             clientBuilder.enableCompression(effectiveEnableCompression);
+        }
+
+        if (domainSocketPath != null) {
+            clientBuilder.domainSocket(domainSocketPath);
         }
 
         if (proxyHost != null) {

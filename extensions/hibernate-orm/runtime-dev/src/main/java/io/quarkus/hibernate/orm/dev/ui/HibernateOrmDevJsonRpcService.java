@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.dev.ui;
 
-import static org.hibernate.query.sqm.internal.SqmUtil.isMutation;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -257,7 +255,7 @@ public class HibernateOrmDevJsonRpcService {
 
                     // manually serialize data within the transaction to ensure lazy-loading can function
                     ResultsJsonSerializerImpl serializer = new ResultsJsonSerializerImpl(sf);
-                    String json = serializer.toString(results, (SelectionQuery<Object>)query.asSelectionQuery());
+                    String json = serializer.toString(results, (SelectionQuery<Object>) query.asSelectionQuery());
                     DataSet ds = new DataSet(
                             json,
                             hql,

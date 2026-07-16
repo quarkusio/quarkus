@@ -21,7 +21,7 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.SelectionQuery;
-import org.hibernate.query.spi.SqmQuery;
+import org.hibernate.query.sqm.tree.SqmQuery;
 
 import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
@@ -134,7 +134,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            SelectionQuery<?> q = session.createNamedSelectionQuery(query.substring(1));
+            SelectionQuery<?> q = session.createNamedSelectionQuery(query.substring(1), type);
             selectQuery = getQueryString(q);
         }
 
@@ -593,10 +593,7 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("rawtypes")
     public static String getQueryString(SelectionQuery hibernateQuery) {
         if (hibernateQuery instanceof SqmQuery) {
-            return ((SqmQuery) hibernateQuery).getQueryString();
-        } else if (hibernateQuery instanceof org.hibernate.query.Query) {
-            // In theory we never use a Query, but who knows.
-            return ((org.hibernate.query.Query) hibernateQuery).getQueryString();
+            return hibernateQuery.getQueryString();
         } else {
             throw new IllegalArgumentException("Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
                     + SqmQuery.class.getName() + "' or '"

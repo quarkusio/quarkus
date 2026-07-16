@@ -24,7 +24,9 @@ public enum DisableReason {
     THREADING_MODEL("Threading model incompatibility"),
     EMPTY_PARAM_IS_NULL("Quarkus REST deliberately treats empty parameter values as null"),
     CLIENT_EXCEPTION_WRAPPING(
-            "Client exceptions wrapped in ClientWebApplicationException for security reasons");
+            "Client exceptions wrapped in ClientWebApplicationException for security reasons"),
+    UNSUPPORTED_CONTEXT_RESOLVER_JSONB(
+            "ContextResolver<Jsonb> is not supported (https://github.com/quarkusio/quarkus/issues/55514)");
 
     private final String description;
 

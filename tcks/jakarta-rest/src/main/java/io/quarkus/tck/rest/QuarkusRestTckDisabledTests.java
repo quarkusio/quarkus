@@ -28,6 +28,10 @@ public class QuarkusRestTckDisabledTests implements ExecutionCondition, BeforeEa
 
         disableClass("spec.context.server.JAXRSClientIT", UNSUPPORTED_APPLICATION_SINGLETONS);
 
+        // NOTE: this test also requires testable=true to run correctly, because it uses the
+        // Jakarta REST Client API which needs to run inside the Quarkus classloader
+        disableClass("spec.contextprovider.JsonbContextProviderIT", UNSUPPORTED_CONTEXT_RESOLVER_JSONB);
+
         disableClass("ee.rs.cookieparam.locator.JAXRSLocatorClientIT", LOCATOR_ISSUES);
         disableClass("ee.rs.formparam.locator.JAXRSLocatorClientIT", LOCATOR_ISSUES);
         disableClass("ee.rs.headerparam.locator.JAXRSLocatorClientIT", LOCATOR_ISSUES);

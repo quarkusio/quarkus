@@ -817,6 +817,13 @@ Vert.x validates this at startup and throws an exception if no compatible engine
 Ensure all clients are upgraded before enabling this mode.
 ====
 
+[NOTE]
+====
+Policy enforcement (`strict` and `client-negotiated`) is not supported when using the JDK SSL engine.
+If you are running on JDK 27+, or on JDK 25+ once the PQC backport ships (expected October 2026), you can still enable PQC key exchange by setting `quarkus.tls.key-exchange-groups` — the negotiation will work correctly without policy enforcement.
+For full enforcement, OpenSSL 3.5+ via the native SSL engine is required.
+====
+
 ==== Certificate Revocation List (CRL)
 
 A Certificate Revocation List (CRL) is a list of certificates that the issuing Certificate Authority (CA) revoked before their scheduled expiration date.

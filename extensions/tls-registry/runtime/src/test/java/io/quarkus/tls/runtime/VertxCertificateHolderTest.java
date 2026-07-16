@@ -14,10 +14,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
-import io.quarkus.tls.runtime.config.PqcEnforcePolicyEnum;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
-import io.vertx.core.net.PqcEnforcementPolicy;
 
 class VertxCertificateHolderTest {
 
@@ -67,8 +66,8 @@ class VertxCertificateHolderTest {
             }
 
             @Override
-            public PqcEnforcePolicyEnum pqcEnforcementPolicy() {
-                return PqcEnforcePolicyEnum.STRICT;
+            public PqcEnforcementPolicy pqcEnforcementPolicy() {
+                return PqcEnforcementPolicy.STRICT;
             }
 
             @Override
@@ -103,7 +102,7 @@ class VertxCertificateHolderTest {
 
     @Test
     void testPqcEnforcementPolicy() {
-        assertEquals(PqcEnforcementPolicy.STRICT, holder.getSSLOptions().getPqcEnforcementPolicy());
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.STRICT, holder.getSSLOptions().getPqcEnforcementPolicy());
     }
 
     @Test

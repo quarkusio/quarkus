@@ -21,13 +21,12 @@ import org.jboss.logging.Logger;
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TrustStoreAndTrustOptions;
-import io.quarkus.tls.runtime.config.PqcEnforcePolicyEnum;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.PqcEnforcementPolicy;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -113,11 +112,11 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return sslContext;
     }
 
-    private static PqcEnforcementPolicy toVertxPqcPolicy(PqcEnforcePolicyEnum policy) {
+    private static io.vertx.core.net.PqcEnforcementPolicy toVertxPqcPolicy(PqcEnforcementPolicy policy) {
         return switch (policy) {
-            case STRICT -> PqcEnforcementPolicy.STRICT;
-            case CLIENT_NEGOTIATED -> PqcEnforcementPolicy.CLIENT_NEGOTIATED;
-            case RELAXED -> PqcEnforcementPolicy.RELAXED;
+            case STRICT -> io.vertx.core.net.PqcEnforcementPolicy.STRICT;
+            case CLIENT_NEGOTIATED -> io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED;
+            case RELAXED -> io.vertx.core.net.PqcEnforcementPolicy.RELAXED;
         };
     }
 

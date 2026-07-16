@@ -76,8 +76,9 @@ public interface TlsBucketConfig {
     /**
      * Sets the PQC enforcement policy.
      * <p>
-     * {@code STRICT}: a connection will be refused unless both the client and the server support PQC
-     * ({@code X25519MLKEM768}). The server requires PQC-capable clients.
+     * {@code STRICT}: a connection will be refused unless both the client and the server support a PQC-capable group
+     * ({@code X25519MLKEM768}, {@code SecP256r1MLKEM768}, {@code SecP384r1MLKEM1024}).
+     * The server requires PQC-capable clients.
      * <p>
      * {@code CLIENT_NEGOTIATED}: the server advertises PQC groups but will not refuse a connection if the client
      * does not support them, allowing fallback to classical key exchange.
@@ -85,7 +86,7 @@ public interface TlsBucketConfig {
      * {@code RELAXED}: no PQC enforcement; standard TLS key exchange negotiation applies.
      */
     @WithDefault("relaxed")
-    PqcEnforcePolicyEnum pqcEnforcementPolicy();
+    PqcEnforcementPolicy pqcEnforcementPolicy();
 
     /**
      * Sets the ordered list of enabled TLS key exchange groups (supported groups).

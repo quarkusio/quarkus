@@ -78,6 +78,11 @@ public class TlsConfigUtils {
                         "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
                         options.getClass().getName());
             }
+
+            if (sslOptions.getKeyExchangeGroups() != null && !sslOptions.getKeyExchangeGroups().isEmpty()) {
+                options.getSslOptions().setKeyExchangeGroups(sslOptions.getKeyExchangeGroups());
+            }
+            options.getSslOptions().setPqcEnforcementPolicy(sslOptions.getPqcEnforcementPolicy());
         }
     }
 
@@ -89,6 +94,8 @@ public class TlsConfigUtils {
      * @param configuration the configuration to use
      */
     public static void configure(TCPSSLOptions options, TlsConfiguration configuration) {
+        var sslOptions = configuration.getServerSSLOptions();
+
         options.setSsl(true);
         if (configuration.getTrustStoreOptions() != null) {
             options.setTrustOptions(configuration.getTrustStoreOptions());

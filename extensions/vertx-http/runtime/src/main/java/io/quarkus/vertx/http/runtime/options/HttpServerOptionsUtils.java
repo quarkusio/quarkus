@@ -195,6 +195,10 @@ public class HttpServerOptionsUtils {
         if (!other.isUseAlpn()) {
             sslOptions.setUseAlpn(false);
         }
+        if (other.getKeyExchangeGroups() != null && !other.getKeyExchangeGroups().isEmpty()) {
+            sslOptions.setKeyExchangeGroups(other.getKeyExchangeGroups());
+        }
+        sslOptions.setPqcEnforcementPolicy(other.getPqcEnforcementPolicy());
         sslOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
 
         sslOptions.setClientAuth(clientAuth);

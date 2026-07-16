@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TrustStoreAndTrustOptions;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
@@ -113,10 +114,22 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return sslContext;
     }
 
+    private static io.vertx.core.net.PqcEnforcementPolicy toVertxPqcPolicy(PqcEnforcementPolicy policy) {
+        return switch (policy) {
+            case STRICT -> io.vertx.core.net.PqcEnforcementPolicy.STRICT;
+            case CLIENT_NEGOTIATED -> io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED;
+            case RELAXED -> io.vertx.core.net.PqcEnforcementPolicy.RELAXED;
+        };
+    }
+
     private synchronized void populateCommonSSLOptions(SSLOptions options) {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+        if (config().keyExchangeGroups().isPresent()) {
+            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+        }
+        options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());

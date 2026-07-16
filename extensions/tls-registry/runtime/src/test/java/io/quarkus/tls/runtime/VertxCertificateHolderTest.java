@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 
@@ -62,6 +63,16 @@ class VertxCertificateHolderTest {
             @Override
             public boolean alpn() {
                 return false;
+            }
+
+            @Override
+            public PqcEnforcementPolicy pqcEnforcementPolicy() {
+                return PqcEnforcementPolicy.RELAXED;
+            }
+
+            @Override
+            public Optional<List<String>> keyExchangeGroups() {
+                return Optional.empty();
             }
 
             @Override

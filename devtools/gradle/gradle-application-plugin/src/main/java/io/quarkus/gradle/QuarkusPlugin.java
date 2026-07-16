@@ -40,7 +40,6 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
-import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.actions.BeforeTestAction;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
@@ -75,6 +74,7 @@ import io.quarkus.gradle.tasks.QuarkusUpdate;
 import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
+import io.quarkus.gradle.tooling.GradleVersionEnforcer;
 import io.quarkus.gradle.tooling.ProjectDescriptorBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyDataCollector;
@@ -144,7 +144,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        verifyGradleVersion();
+        GradleVersionEnforcer.verifyGradleVersion(project.getLogger());
 
         // Apply the `java` plugin
         project.getPluginManager().apply(JavaPlugin.class);
@@ -720,13 +720,6 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     private void registerModel() {
         registry.register(new GradleApplicationModelBuilder());
-    }
-
-    private void verifyGradleVersion() {
-        if (GradleVersion.current().compareTo(GradleVersion.version("6.1")) < 0) {
-            throw new GradleException("Quarkus plugin requires Gradle 6.1 or later. Current version is: " +
-                    GradleVersion.current());
-        }
     }
 
     private void configureBuildNativeTask(Project project) {

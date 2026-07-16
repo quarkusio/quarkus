@@ -1,13 +1,16 @@
 package io.quarkus.it.jpa.postgresql;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
@@ -18,10 +21,14 @@ import com.github.dockerjava.api.model.ContainerPort;
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 class DevServicesPostgresqFixedPortTest extends MojoTestBase {
 
     private static final int FIXED_PORT = 55434;
+
+    private RunningInvoker run;
+    private DevModeClient devModeClient;
 
     @BeforeAll
     static void checkPortIsClear() {
@@ -38,26 +45,58 @@ class DevServicesPostgresqFixedPortTest extends MojoTestBase {
         }
     }
 
+    @AfterEach
+    void cleanup() {
+        if (run != null) {
+            run.stop();
+        }
+        if (devModeClient != null) {
+            devModeClient.awaitUntilServerDown();
+        }
+        String containerId = findContainerOnPort(FIXED_PORT);
+        if (containerId != null) {
+            DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
     @Test
-    void testContainerFixedPort() throws Exception {
-        List<String> goals = List.of("clean", "test", "-Dquarkus.analytics.disabled=true");
-
-        Map<String, String> envVars = Map.of();
+    void testContainerFixedPortInDevMode() throws Exception {
         File testDir = initProject("projects/devservices-postgresql-fixed-port",
-                "projects/devservices-postgresql-fixed-port-run");
+                "projects/devservices-postgresql-fixed-port-dev");
 
-        // Should start a container on port 55434 and pass
-        RunningInvoker run = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult firstResult = run.execute(goals, envVars);
-        assertThat(firstResult.getProcess().waitFor())
-                .as("Launch should succeed")
-                .isZero();
-        run.stop();
+        run = new RunningInvoker(testDir, false);
+        run.execute(List.of("compile", "quarkus:dev",
+                "-Dquarkus.analytics.disabled=true", "-Ddebug=false",
+                "-Dquarkus.enforceBuildGoal=false",
+                "-Djvm.args=-Xmx128m"), Map.of());
 
-        String firstContainerId = findContainerOnPort(FIXED_PORT);
-        assertThat(firstContainerId)
-                .as("A container should be running on port %d after the test is run", FIXED_PORT)
+        devModeClient = new DevModeClient(8084);
+        devModeClient.getHttpResponse("/fruits");
+
+        String containerId = findContainerOnPort(FIXED_PORT);
+        assertThat(containerId)
+                .as("A container should be running on port %d while the app is in dev mode", FIXED_PORT)
                 .isNotNull();
+    }
+
+    @Test
+    void testContainerFixedPortInTestMode() throws Exception {
+        File testDir = initProject("projects/devservices-postgresql-fixed-port",
+                "projects/devservices-postgresql-fixed-port-test");
+
+        run = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = run.execute(
+                List.of("clean", "test", "-Dquarkus.analytics.disabled=true"), Map.of());
+
+        await().atMost(3, TimeUnit.MINUTES)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(() -> assertThat(findContainerOnPort(FIXED_PORT))
+                        .as("A container should be running on port %d while the test is executing", FIXED_PORT)
+                        .isNotNull());
+
+        assertThat(result.getProcess().waitFor())
+                .as("Test run should succeed")
+                .isZero();
     }
 
     static String findContainerOnPort(int publicPort) {

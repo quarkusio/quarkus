@@ -40,7 +40,8 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     PolymorphicItemResponse.class, PolymorphicItem.class,
                                     SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
                                     FinalCollectionHolder.class, RequiredCreatorProperty.class, NoArgConstructorPojo.class,
-                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class)
+                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class,
+                                    PolymorphicCreatorProperty.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

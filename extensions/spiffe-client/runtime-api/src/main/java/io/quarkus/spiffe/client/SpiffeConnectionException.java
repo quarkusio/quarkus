@@ -1,10 +1,9 @@
 package io.quarkus.spiffe.client;
 
 /**
- * Thrown when a JWT-SVID cannot be obtained from the SPIRE Agent. Common causes include
+ * Thrown when an SVID cannot be obtained from the SPIRE Agent. Common causes include
  * a missing or misconfigured endpoint socket, the agent not running, a network timeout,
- * an unexpected gRPC error, or an invalid response (for example a JWT-SVID missing the
- * required {@code aud} claim).
+ * an unexpected gRPC error, or an invalid response.
  */
 public final class SpiffeConnectionException extends Exception {
 

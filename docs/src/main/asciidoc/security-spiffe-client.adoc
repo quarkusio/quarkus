@@ -11,8 +11,8 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-spiffe-client
 
 https://spiffe.io/[SPIFFE] (Secure Production Identity Framework for Everyone) provides cryptographic workload identities in zero-trust environments.
-The SPIFFE client extension uses the https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md[Workload API] to retrieve https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md[JWT Verifiable Identity Documents (JWT-SVIDs)] for Quarkus workloads directly from the local https://spiffe.io/docs/latest/spire-about/spire-concepts/[SPIRE Agent].
-It simplifies deployment by eliminating the need for a SPIFFE client sidecar that stores JWT-SVIDs on a mounted file path for Quarkus to read.
+The SPIFFE client extension uses the https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md[Workload API] to retrieve https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md[JWT-SVIDs] and https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md[X.509-SVIDs] for Quarkus workloads directly from the local https://spiffe.io/docs/latest/spire-about/spire-concepts/[SPIRE Agent].
+It simplifies deployment by eliminating the need for a SPIFFE client sidecar that stores SVIDs on a mounted file path for Quarkus to read.
 
 include::{includes}/extension-status.adoc[]
 
@@ -119,6 +119,79 @@ When explicit audiences are provided, they take precedence over the configured d
 ----
 return spiffeClient.getWorkloadJsonWebToken("https://other-service.example.com").map(WorkloadJsonWebToken::token);
 ----
+
+== Retrieve X.509-SVID
+
+The extension can also retrieve an X.509 workload certificate document (X.509-SVID), which includes a certificate chain, private key, and trust bundle.
+The certificate document provides Vert.x key-cert and trust options directly, so you can configure mTLS on any Vert.x or Quarkus HTTP client.
+
+=== Vert.x WebClient
+
+When using the Vert.x WebClient, pass the key-cert and trust options directly:
+
+[source,java]
+----
+import io.quarkus.spiffe.client.SpiffeClient;
+import io.quarkus.spiffe.client.WorkloadCertificateDocument;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+
+WorkloadCertificateDocument cert = spiffeClient.getWorkloadCertificate()
+        .await().indefinitely();
+var options = new WebClientOptions()
+        .setSsl(true)
+        .setVerifyHost(false) <1>
+        .setKeyCertOptions(cert.keyMaterial().asVertxKeyCertOptions()) <2>
+        .setTrustOptions(cert.trustMaterial().asVertxTrustOptions()); <3>
+WebClient client = WebClient.create(vertx, options);
+----
+<1> Per the https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md[X.509-SVID specification], workload identity is conveyed in the URI SAN, not the DNS SAN. Standard hostname verification is disabled because `asVertxTrustOptions()` enforces SPIFFE https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#52-leaf-validation[leaf validation] instead. Do not disable hostname verification without using SPIFFE-validated trust options.
+<2> Configures client identity from the SPIFFE certificate chain and private key.
+<3> Configures trust material from the trust bundle CA certificates with SPIFFE https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#52-leaf-validation[X.509-SVID leaf validation].
+
+=== Quarkus REST Client
+
+The same certificate material can be wrapped in a `TlsConfiguration` for use with a programmatic Quarkus REST client:
+
+[source,java]
+----
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.spiffe.client.SpiffeClient;
+import io.quarkus.spiffe.client.WorkloadCertificateDocument;
+import io.quarkus.tls.BaseTlsConfiguration;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.TrustOptions;
+
+WorkloadCertificateDocument cert = spiffeClient.getWorkloadCertificate()
+        .await().indefinitely();
+
+TlsConfiguration tlsConfiguration = new BaseTlsConfiguration() { <1>
+    @Override
+    public KeyCertOptions getKeyStoreOptions() {
+        return cert.keyMaterial().asVertxKeyCertOptions(); <2>
+    }
+
+    @Override
+    public TrustOptions getTrustStoreOptions() {
+        return cert.trustMaterial().asVertxTrustOptions(); <3>
+    }
+
+    @Override
+    public Optional<String> getHostnameVerificationAlgorithm() {
+        return Optional.of("NONE"); <4>
+    }
+};
+
+MyServiceClient client = QuarkusRestClientBuilder.newBuilder()
+        .baseUri(URI.create("https://my-service:8443"))
+        .tlsConfiguration(tlsConfiguration)
+        .build(MyServiceClient.class);
+----
+<1> Creates a TLS configuration from the SPIFFE certificate material.
+<2> Configures client identity from the SPIFFE certificate chain and private key.
+<3> Configures trust material from the trust bundle CA certificates with SPIFFE https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#52-leaf-validation[X.509-SVID leaf validation].
+<4> Per the https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md[X.509-SVID specification], workload identity is conveyed in the URI SAN, not the DNS SAN. Standard hostname verification is disabled because `asVertxTrustOptions()` enforces SPIFFE https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#52-leaf-validation[leaf validation] instead. Do not disable hostname verification without using SPIFFE-validated trust options.
 
 == Testing
 

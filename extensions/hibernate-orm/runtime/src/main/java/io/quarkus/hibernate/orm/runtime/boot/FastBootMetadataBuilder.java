@@ -67,8 +67,6 @@ import org.hibernate.temporal.spi.ChangesetCoordinator;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
-import io.quarkus.hibernate.orm.runtime.boot.scan.Scanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -116,7 +114,7 @@ public class FastBootMetadataBuilder {
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
-    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
+    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getPersistenceUnitDescriptor();
         this.isReactive = puDefinition.isReactive();
@@ -174,14 +172,15 @@ public class FastBootMetadataBuilder {
                 standardServiceRegistry.getService(ChangesetCoordinator.class)));
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
-        // As for 8.0 the container is responsabile to populate annotatedClassNames/annotatedPackages and XML mappings
-        QuarkusScanner.Result scan = scanner.scan();
-        for (QuarkusScanner.ClassDescriptorImpl a : scan.getLocatedClasses()) {
-            metadataSources.addAnnotatedClassName(a.getName());
+        // As of ORM 8.0 the container is responsible for populating annotatedClassNames/annotatedPackages
+        // https://docs.hibernate.org/orm/8.0/migration-guide/#scanning
+        for (String className : persistenceUnit.getManagedClassNames()) {
+            metadataSources.addAnnotatedClassName(className);
         }
 
-        for (QuarkusScanner.PackageDescriptorImpl a : scan.getLocatedPackages()) {
-            metadataSources.addPackage(a.getName());
+        QuarkusPersistenceUnitDescriptor quarkusPU = (QuarkusPersistenceUnitDescriptor) persistenceUnit;
+        for (String packageName : quarkusPU.getManagedPackageNames()) {
+            metadataSources.addPackage(packageName);
         }
 
         for (RecordableXmlMapping mapping : puDefinition.getXmlMappings()) {
@@ -190,12 +189,6 @@ public class FastBootMetadataBuilder {
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
-        // TODO No need to ask Hibernate to scan as it's now responsibility of the container
-        // https://docs.hibernate.org/orm/8.0/migration-guide/#scanning
-
-        //        if (scanner != null) {
-        //            this.metamodelBuilder.applyScanner(scanner);
-        //        }
         populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions);
 
         this.managedResources = MetadataBuildingProcess.prepare(metadataSources,

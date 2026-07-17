@@ -18,9 +18,9 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.opentelemetry.api.metrics.MeterProvider;
-import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
-import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
-import io.opentelemetry.exporter.internal.http.HttpExporter;
+import io.opentelemetry.exporter.internal.EndpointUtil;
+import io.opentelemetry.exporter.otlp.internal.GrpcExporter;
+import io.opentelemetry.exporter.otlp.internal.HttpExporter;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
@@ -400,7 +400,7 @@ public class OTelExporterRecorder {
         if (endpoint.isEmpty()) {
             return null;
         }
-        return ExporterBuilderUtil.validateEndpoint(endpoint);
+        return EndpointUtil.validateEndpoint(endpoint);
     }
 
     private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
@@ -408,7 +408,7 @@ public class OTelExporterRecorder {
         if (endpoint.isEmpty()) {
             return null;
         }
-        return ExporterBuilderUtil.validateEndpoint(endpoint);
+        return EndpointUtil.validateEndpoint(endpoint);
     }
 
     private URI getLogsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
@@ -416,7 +416,7 @@ public class OTelExporterRecorder {
         if (endpoint.isEmpty()) {
             return null;
         }
-        return ExporterBuilderUtil.validateEndpoint(endpoint);
+        return EndpointUtil.validateEndpoint(endpoint);
     }
 
     static String resolveTraceEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {

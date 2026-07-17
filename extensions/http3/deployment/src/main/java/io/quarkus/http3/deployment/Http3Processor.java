@@ -95,7 +95,7 @@ class Http3Processor {
 
     @BuildStep
     FilterBuildItem altSvcFilter(Http3BuildTimeConfig config, Http3EnabledBuildItem http3Enabled) {
-        if (!config.altSvc()) {
+        if (!config.enabled() || !config.altSvc()) {
             return null;
         }
         return new FilterBuildItem(new Http3AltSvcHandler(), 10);

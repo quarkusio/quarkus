@@ -458,7 +458,7 @@ public class OidcClientResource {
 
 
 [[named-oidc-clients]]
-=== Inject named OidcClient and tokens
+=== Inject named OidcClient, Tokens and TokenProvider
 
 If multiple `OidcClient` objects are configured, you can specify the `OidcClient` injection target with the `@NamedOidcClient` qualifier instead of working with `OidcClients`:
 
@@ -532,6 +532,15 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
         requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.getAccessToken());
     }
 }
+----
+
+The same qualifier can also be used to specify the `OidcClient` used for a `TokenProvider` injection:
+
+[source,java]
+----
+@Inject
+@NamedOidcClient("jwt-secret")
+TokenProvider tokenProvider;
 ----
 
 Additionally, if you want to do a programmatic lookup of an `OidcClient`,
@@ -892,7 +901,7 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 
 The `Tokens` producer will acquire and refresh the tokens, and the custom filter will decide how and when to use the token.
 
-You can also inject named `Tokens`, see <<named-oidc-clients,Inject named OidcClient and Tokens>>
+You can also inject named `Tokens`, see <<named-oidc-clients>>
 
 [[refresh-access-tokens]]
 === Refreshing access tokens

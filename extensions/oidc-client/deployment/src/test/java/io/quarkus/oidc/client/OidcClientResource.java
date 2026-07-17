@@ -19,6 +19,10 @@ public class OidcClientResource {
     TokenProvider tokenProvider;
 
     @Inject
+    @NamedOidcClient("public")
+    TokenProvider publicTokenProvider;
+
+    @Inject
     @NamedOidcClient("key")
     OidcClient keyClient;
 
@@ -38,6 +42,12 @@ public class OidcClientResource {
     @Path("tokenprovider")
     public Uni<String> tokenProvider() {
         return tokenProvider.getAccessToken();
+    }
+
+    @GET
+    @Path("public-tokenprovider")
+    public Uni<String> publicTokenProvider() {
+        return publicTokenProvider.getAccessToken();
     }
 
     @GET

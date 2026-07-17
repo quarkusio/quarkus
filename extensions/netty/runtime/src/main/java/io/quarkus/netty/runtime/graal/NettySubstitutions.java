@@ -7,18 +7,25 @@ import static io.netty.handler.codec.http.HttpHeaderValues.X_DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_GZIP;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -102,6 +109,90 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator {
     @Alias
     static boolean isAlpnSupported() {
         return true;
+    }
+}
+
+/**
+ * OpenJdkSelfSignedCertGenerator is package-private; alias its generate() method so
+ * Target_io_netty_handler_ssl_util_SelfSignedCertificate can call it directly.
+ */
+@TargetClass(className = "io.netty.handler.ssl.util.OpenJdkSelfSignedCertGenerator")
+final class Target_io_netty_handler_ssl_util_OpenJdkSelfSignedCertGenerator {
+
+    @Alias
+    static native String[] generate(String fqdn, KeyPair keypair, SecureRandom random, Date notBefore, Date notAfter,
+            String algorithm) throws Exception;
+}
+
+/**
+ * SelfSignedCertificate's constructor unconditionally attempts BouncyCastleSelfSignedCertGenerator.generate(...)
+ * first, falling back to OpenJdkSelfSignedCertGenerator when that fails. native-image must be able to link the
+ * Bouncy Castle call even when Bouncy Castle isn't on the classpath, which fails the build in that case;
+ * BouncyCastleSelfSignedCertGenerator itself can't be substituted directly either, since its own imports make it
+ * unloadable without Bouncy Castle present. This substitution only applies when Bouncy Castle is absent
+ * (IsBouncyNotThere) and goes straight to the JDK fallback, reproducing exactly the outcome already exercised
+ * today in that case. When Bouncy Castle is present, this substitution does not apply and the original
+ * BC-preferred constructor is used unmodified (Bouncy Castle links fine when it's actually there).
+ */
+@TargetClass(className = "io.netty.handler.ssl.util.SelfSignedCertificate", onlyWith = IsBouncyNotThere.class)
+final class Target_io_netty_handler_ssl_util_SelfSignedCertificate {
+
+    @Alias
+    File certificate;
+
+    @Alias
+    File privateKey;
+
+    @Alias
+    X509Certificate cert;
+
+    @Alias
+    PrivateKey key;
+
+    @Substitute
+    Target_io_netty_handler_ssl_util_SelfSignedCertificate(String fqdn, SecureRandom random, int bits,
+            Date notBefore, Date notAfter, String algorithm) throws CertificateException {
+        if (!"EC".equalsIgnoreCase(algorithm) && !"RSA".equalsIgnoreCase(algorithm)) {
+            throw new IllegalArgumentException("Algorithm not valid: " + algorithm);
+        }
+
+        final KeyPair keypair;
+        try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
+            keyGen.initialize(bits, random);
+            keypair = keyGen.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            // Should not reach here because every Java implementation must have RSA and EC key pair generator.
+            throw new Error(e);
+        }
+
+        String[] paths;
+        try {
+            paths = Target_io_netty_handler_ssl_util_OpenJdkSelfSignedCertGenerator.generate(
+                    fqdn, keypair, random, notBefore, notAfter, algorithm);
+        } catch (Throwable t) {
+            throw new CertificateException(
+                    "No provider succeeded to generate a self-signed certificate. See debug log for the root cause.",
+                    t);
+        }
+
+        certificate = new File(paths[0]);
+        privateKey = new File(paths[1]);
+        key = keypair.getPrivate();
+        FileInputStream certificateInput = null;
+        try {
+            certificateInput = new FileInputStream(certificate);
+            cert = (X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(certificateInput);
+        } catch (Exception e) {
+            throw new CertificateEncodingException(e);
+        } finally {
+            if (certificateInput != null) {
+                try {
+                    certificateInput.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
     }
 }
 
@@ -631,7 +722,9 @@ class IsBouncyNotThere implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         try {
-            NettySubstitutions.class.getClassLoader().loadClass("org.bouncycastle.openssl.PEMParser");
+            ClassLoader classLoader = NettySubstitutions.class.getClassLoader();
+            classLoader.loadClass("org.bouncycastle.openssl.PEMParser");
+            classLoader.loadClass("org.bouncycastle.cert.X509v3CertificateBuilder");
             return false;
         } catch (Exception e) {
             return true;

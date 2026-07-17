@@ -21,9 +21,12 @@ import java.util.spi.ToolProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.ParamVar;
@@ -38,8 +41,6 @@ import io.quarkus.modular.spi.model.AppModuleModel;
 import io.quarkus.modular.spi.model.DependencyInfo;
 import io.quarkus.modular.spi.model.ModuleInfo;
 import io.smallrye.common.io.Files2;
-import io.smallrye.common.resource.MemoryResource;
-import io.smallrye.common.resource.Resource;
 import io.smallrye.modules.desc.Dependency;
 
 /**
@@ -65,21 +66,53 @@ public final class JLinkSteps {
     }
 
     /**
+     * Generate the jlink launcher main class early so it is visible to the tree-shaker
+     * as a {@link GeneratedClassBuildItem}. This ensures the launcher module has a reachable
+     * class and is not pruned by module tree-shaking.
+     *
+     * @param curateOutcome provides the application model (for the app module name)
+     * @param generatedClasses producer for generated class build items
+     */
+    @BuildStep
+    void generateLauncherMainClass(
+            CurateOutcomeBuildItem curateOutcome,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+
+        String appModuleName = curateOutcome.getApplicationModel().getAppArtifact().getModuleName();
+        Gizmo gizmo = Gizmo.create((path, bytes) -> generatedClasses.produce(
+                new GeneratedClassBuildItem(false, APP_MAIN, bytes)));
+        gizmo.class_(APP_MAIN, cc -> {
+            cc.public_();
+            cc.staticMethod("main", mc -> {
+                mc.public_();
+                ParamVar args = mc.parameter("args", String[].class);
+                mc.body(b0 -> {
+                    b0.invokeStatic(
+                            MethodDesc.of(JLinkAppLauncher.class, "run", void.class, String.class, String[].class),
+                            Const.of(appModuleName),
+                            args);
+                    b0.return_();
+                });
+            });
+        });
+    }
+
+    /**
      * Steps to stage the jlink output into directories so it can be processed by the tool itself.
      *
-     * @param curateOutcome the curate outcome item (must not be {@code null})
      * @param moduleInfoItem the modular model item (must not be {@code null})
      * @return the staged jlink output (not {@code null})
      * @throws IOException if a file operation fails
      */
     @BuildStep
     public JLinkStagedOutputItem stageOutput(
-            CurateOutcomeBuildItem curateOutcome,
-            ApplicationModuleInfoBuildItem moduleInfoItem) throws IOException {
+            ApplicationModuleInfoBuildItem moduleInfoItem,
+            JarTreeShakeBuildItem treeShakeResult) throws IOException {
 
         // gather information we'll need
         AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();
+        Set<String> reachable = treeShakeResult.isClassesShaken() ? treeShakeResult.getReachableClassNames() : null;
 
         // create the staging directory
         final Path staging = config.outputDirectory().resolve(config.stagingDirectory());
@@ -93,29 +126,11 @@ public final class JLinkSteps {
             if (moduleInfo == null) {
                 throw new IllegalStateException("Boot module listed in model is missing from the module index");
             }
-            // our special launcher module
+            // the launcher module gets extra dependencies on all other boot modules
+            // and the main class set (the AppMain class itself was generated earlier
+            // by generateLauncherMainClass so it is visible to the tree-shaker)
             if (moduleName.equals("io.quarkus.jlink.launcher")) {
-                // the list of resources produced by generating the main class
-                List<Resource> dynModuleResources = new ArrayList<>();
-                // generate the simple main class which runs the launcher with the app module info
-                Gizmo gizmo = Gizmo.create((path, bytes) -> dynModuleResources.add(new MemoryResource(path, bytes)));
-                gizmo.class_(APP_MAIN, cc -> {
-                    cc.public_();
-                    cc.staticMethod("main", mc -> {
-                        mc.public_();
-                        ParamVar args = mc.parameter("args", String[].class);
-                        mc.body(b0 -> {
-                            b0.invokeStatic(
-                                    MethodDesc.of(JLinkAppLauncher.class, "run", void.class, String.class, String[].class),
-                                    Const.of(moduleInfoItem.model().appModuleInfo().name()),
-                                    args);
-                            b0.return_();
-                        });
-                    });
-                });
-                // create a derived launcher module which includes our generated class and a dep on the app module
                 moduleInfo = moduleInfo
-                        .withMoreResources(dynModuleResources)
                         .withMoreDependencies(model.bootModules().stream().filter(n -> !n.equals(moduleName))
                                 .map(n -> new DependencyInfo(n,
                                         Dependency.Modifier.Set.of(Dependency.Modifier.LINKED, Dependency.Modifier.READ,
@@ -139,8 +154,7 @@ public final class JLinkSteps {
                 }
                 return null;
             });
-            // write the JAR
-            bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, manifest, true));
+            bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, manifest, true, reachable));
         }
         return new JLinkStagedOutputItem(staging, bmp);
     }
@@ -162,7 +176,8 @@ public final class JLinkSteps {
     @BuildStep
     public JLinkImageBuildItem jlink(
             JLinkStagedOutputItem stagedOutput,
-            ApplicationModuleInfoBuildItem moduleInfoItem) throws BuildException, IOException {
+            ApplicationModuleInfoBuildItem moduleInfoItem,
+            JarTreeShakeBuildItem treeShakeResult) throws BuildException, IOException {
         Path imagePath = config.outputDirectory().resolve(config.imagePath());
 
         // the image must be deleted or jlink will complain
@@ -178,7 +193,9 @@ public final class JLinkSteps {
 
         // JVM args
 
-        String addedModules = "ALL-MODULE-PATH,jdk.jdwp.agent," + String.join(",", moduleInfoItem.model().jdkModulesUsed());
+        List<String> jdkModules = moduleInfoItem.model().jdkModulesUsed();
+        log.debugf("JDK modules included in image (%d): %s", jdkModules.size(), jdkModules);
+        String addedModules = "ALL-MODULE-PATH,jdk.jdwp.agent," + String.join(",", jdkModules);
 
         // access to module internals
         jvmArgs.add("--add-exports=java.base/jdk.internal.module=io.smallrye.modules");
@@ -257,6 +274,7 @@ public final class JLinkSteps {
         Files.createDirectories(lib);
         final AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();
+        Set<String> reachable = treeShakeResult.isClassesShaken() ? treeShakeResult.getReachableClassNames() : null;
         for (ModuleInfo moduleInfo : modulesByName.values()) {
             String moduleName = moduleInfo.name();
             if (model.bootModules().contains(moduleName)) {
@@ -264,7 +282,7 @@ public final class JLinkSteps {
                 continue;
             }
             // TODO: create an actual manifest (if needed)
-            ModuleWriter.writeModule(moduleInfo, lib.resolve(moduleInfo.name()), new Manifest(), false);
+            ModuleWriter.writeModule(moduleInfo, lib.resolve(moduleInfo.name()), new Manifest(), false, reachable);
         }
 
         log.infof("JLink image produced in %s at %s; to run the image, execute %s in that directory",

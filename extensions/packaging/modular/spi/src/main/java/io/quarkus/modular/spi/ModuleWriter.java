@@ -76,6 +76,26 @@ public final class ModuleWriter {
      */
     public static Path writeModule(ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest, final boolean bootModule)
             throws IOException {
+        return writeModule(moduleInfo, outputDirectory, manifest, bootModule, null);
+    }
+
+    /**
+     * Write a patched module to the given output directory, optionally filtering out unreachable classes.
+     * Only class entries are filtered; generated entries and non-class resources are always written.
+     * The packages of the given module descriptor must already match the filtered content
+     * (see {@link io.quarkus.modular.spi.model.ModuleTreeShaker#cleanModule}).
+     *
+     * @param moduleInfo the module information (must not be {@code null})
+     * @param outputDirectory the output directory (must not be {@code null})
+     * @param manifest the JAR manifest (must not be {@code null})
+     * @param bootModule {@code true} if this module is a boot module (and thus requires a {@code module-info.class})
+     * @param reachableClassNames dot-separated names of reachable classes, or {@code null} to include all classes
+     * @return the path of the written module
+     * @throws IOException if writing fails for some reason
+     */
+    public static Path writeModule(ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest, final boolean bootModule,
+            Set<String> reachableClassNames)
+            throws IOException {
         Assert.checkNotNullParam("moduleInfo", moduleInfo);
         Assert.checkNotNullParam("outputDirectory", outputDirectory);
         Assert.checkNotNullParam("manifest", manifest);
@@ -170,9 +190,11 @@ public final class ModuleWriter {
                         }
                     }
                 } else {
-                    if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
-                            || rp.endsWith("/module-info.class")) {
+                    if (rp.equals("META-INF/MANIFEST.MF") || ClassPathUtils.isModuleInfoEntry(rp)) {
                         // skip
+                        return;
+                    }
+                    if (reachableClassNames != null && ClassPathUtils.isUnreachableClassEntry(rp, reachableClassNames)) {
                         return;
                     }
                     int idx = rp.lastIndexOf('/');

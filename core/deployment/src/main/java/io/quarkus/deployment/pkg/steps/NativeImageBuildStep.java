@@ -950,7 +950,7 @@ public class NativeImageBuildStep {
                     final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
                     if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
                         log.info(
-                                "Single callsite inlining has been enabled for this build. It aims to improve runtime performance at the expense of 1-2% binary size increase. To disable this feature use quarkus.native.additional-build-args=-H:-AOTSingleCallsiteInline");
+                                "Single callsite inlining has been enabled for this build. It aims to improve runtime performance at the expense of 1-2% binary size increase. To disable this feature use -Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline");
                         addExperimentalVMOption(nativeImageArgs, "-H:+AOTSingleCallsiteInline");
                     }
                 }

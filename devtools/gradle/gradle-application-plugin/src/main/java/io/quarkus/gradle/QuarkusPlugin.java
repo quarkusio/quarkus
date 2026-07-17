@@ -7,8 +7,10 @@ import static io.quarkus.gradle.tooling.dependency.DependencyDataCollector.decla
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -507,10 +509,12 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class,
                             compileJava -> {
-                                // add the code gen sources
                                 final SourceSet generatedSourceSet = sourceSets
                                         .getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
-                                addCodeGenSourceDirs(compileJava, generatedSourceSet);
+                                // Use generate-code task outputs (not a raw File) so Gradle tracks
+                                // generated files as compile inputs, including Quarkiverse providers
+                                // such as open-api. See #50123.
+                                addCodeGenSourceDirs(compileJava, quarkusGenerateCode);
                                 // quarkusGenerateCode is a dependency
                                 compileJava.dependsOn(quarkusGenerateCode);
                                 // quarkusGenerateCodeDev must run before compileJava in case quarkusDev is the target
@@ -528,13 +532,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                             });
                     tasks.named(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME, JavaCompile.class,
                             compileTestJava -> {
-                                // add the code gen test sources
-                                final SourceSet generatedSourceSet = sourceSets
+                                final SourceSet generatedTestSourceSet = sourceSets
                                         .getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
-                                addCodeGenSourceDirs(compileTestJava, generatedSourceSet);
+                                addCodeGenSourceDirs(compileTestJava, quarkusGenerateCodeTests);
                                 compileTestJava.dependsOn(quarkusGenerateCode, quarkusGenerateCodeTests);
-                                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
-                                    compileTestJava.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                                if (tasks.contains(new NamedImpl(generatedTestSourceSet.getCompileJavaTaskName()))) {
+                                    compileTestJava.mustRunAfter(tasks.named(generatedTestSourceSet.getCompileJavaTaskName()));
                                 }
                                 if (project.getGradle().getStartParameter().getTaskNames().contains(QUARKUS_DEV_TASK_NAME)) {
                                     compileTestJava.getOptions().setFailOnError(false);
@@ -548,7 +551,7 @@ public class QuarkusPlugin implements Plugin<Project> {
             final SourceSet generatedSourceSet = ssc.getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
             final SourceSet generatedTestSourceSet = ssc.getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
             tasks.named("compileKotlin", task -> {
-                addCodeGenSourceDirs(task, generatedSourceSet);
+                addCodeGenSourceDirs(task, quarkusGenerateCode);
                 task.dependsOn(quarkusGenerateCode);
                 task.mustRunAfter(quarkusGenerateCodeDev);
                 if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
@@ -560,7 +563,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                 }
             });
             tasks.named("compileTestKotlin", task -> {
-                addCodeGenSourceDirs(task, generatedTestSourceSet);
+                addCodeGenSourceDirs(task, quarkusGenerateCodeTests);
                 task.dependsOn(quarkusGenerateCodeTests);
                 if (tasks.contains(new NamedImpl(generatedTestSourceSet.getCompileJavaTaskName()))) {
                     task.mustRunAfter(tasks.named(generatedTestSourceSet.getCompileJavaTaskName()));
@@ -578,31 +581,54 @@ public class QuarkusPlugin implements Plugin<Project> {
             //  * [2] https://github.com/quarkusio/quarkus/issues/50486
             project.getPlugins().withId("org.jetbrains.kotlin.kapt", kaptPlugin -> {
                 tasks.matching(t -> t.getName().equals("kaptGenerateStubsKotlin")).configureEach(task -> {
-                    addCodeGenSourceDirs(task, generatedSourceSet);
+                    addCodeGenSourceDirs(task, quarkusGenerateCode);
                     task.dependsOn(quarkusGenerateCode);
                 });
                 tasks.matching(t -> t.getName().equals("kaptGenerateStubsTestKotlin")).configureEach(task -> {
-                    addCodeGenSourceDirs(task, generatedTestSourceSet);
+                    addCodeGenSourceDirs(task, quarkusGenerateCodeTests);
                     task.dependsOn(quarkusGenerateCodeTests);
                 });
             });
         });
     }
 
-    private static void addCodeGenSourceDirs(JavaCompile compileJava, SourceSet generatedSourceSet) {
-        final File baseDir = generatedSourceSet.getJava().getClassesDirectory().get().getAsFile();
-        compileJava.source(baseDir);
+    /**
+     * Registers codegen outputs as sources of a compile task.
+     * <p>
+     * Codegen writes to {@code <generated>/<providerId>/...} (see
+     * {@link io.quarkus.deployment.CodeGenProvider#providerId()}). Each provider directory must be its own
+     * source root so package paths match. Roots are taken from {@link QuarkusGenerateCode} task outputs so
+     * Gradle tracks generated files as compile inputs for every provider id — including Quarkiverse ones such
+     * as {@code open-api} — without attaching those outputs to the main SourceSet (that reintroduces KSP
+     * cycles; see #29698 and #50123).
+     */
+    private static void addCodeGenSourceDirs(JavaCompile compileJava,
+            TaskProvider<? extends QuarkusGenerateCode> generateCode) {
+        compileJava.source(codeGenSourceRoots(generateCode));
     }
 
-    private static void addCodeGenSourceDirs(Task compileKotlin, SourceSet generatedSourceSet) {
-        final File baseDir = generatedSourceSet.getJava().getClassesDirectory().get().getAsFile();
-        final Object[] codeGenDirs = new Object[] { baseDir };
+    private static void addCodeGenSourceDirs(Task compileKotlin,
+            TaskProvider<? extends QuarkusGenerateCode> generateCode) {
         try {
             var sourcesMethod = compileKotlin.getClass().getMethod("source", Object[].class);
-            sourcesMethod.invoke(compileKotlin, new Object[] { codeGenDirs });
+            sourcesMethod.invoke(compileKotlin, new Object[] { new Object[] { codeGenSourceRoots(generateCode) } });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Provider<List<File>> codeGenSourceRoots(TaskProvider<? extends QuarkusGenerateCode> generateCode) {
+        return generateCode.flatMap(task -> task.getGeneratedOutputDirectory().map(dir -> {
+            File root = dir.getAsFile();
+            File[] providerDirs = root.listFiles(f -> f.isDirectory() && !f.getName().startsWith("."));
+            if (providerDirs == null || providerDirs.length == 0) {
+                // Directory may be empty at configuration time; compile still scans this root after
+                // quarkusGenerateCode runs (task dependency + output tracking).
+                return List.<File> of(root);
+            }
+            Arrays.sort(providerDirs);
+            return Arrays.asList(providerDirs);
+        }));
     }
 
     private ApplicationDeploymentClasspathBuilder getDeploymentClasspathBuilder(Project project, LaunchMode mode) {

@@ -221,7 +221,7 @@ final class SpiffeClientImpl implements SpiffeClient {
                 throw new ConfigurationException(
                         "The SPIFFE client extension does not support unix scheme on Windows, use tcp:// instead.");
             }
-            return new DomainSocketAddressWithAuthority(SocketAddress.domainSocketAddress(uri.getPath()));
+            return SocketAddress.domainSocketAddress(uri.getPath());
         }
         return SocketAddress.inetSocketAddress(uri.getPort(), uri.getHost());
     }
@@ -235,55 +235,6 @@ final class SpiffeClientImpl implements SpiffeClient {
         }
         if (audience.indexOf(' ') >= 0) {
             throw new IllegalArgumentException("Audience must not contain spaces: '" + audience + "'");
-        }
-    }
-
-    /**
-     * Works around <a href="https://github.com/eclipse-vertx/vert.x/issues/6220">Vert.x #6220 issue</a>.
-     * Setting invalid host is enough to avoid validation failure while still using the domain socket.
-     * TODO: drop this when Quarkus moves to Vert.x 5.1.4, however we will still need it for Quarkus 3.x
-     */
-    private record DomainSocketAddressWithAuthority(SocketAddress delegate) implements SocketAddress {
-
-        @Override
-        public String host() {
-            // https://www.rfc-editor.org/rfc/rfc2606.html#section-2 says '.invalid' is reserved for invalid domain names
-            return "uds.invalid";
-        }
-
-        @Override
-        public int port() {
-            return 0;
-        }
-
-        @Override
-        public String path() {
-            return delegate.path();
-        }
-
-        @Override
-        public String hostName() {
-            return delegate.hostName();
-        }
-
-        @Override
-        public String hostAddress() {
-            return delegate.hostAddress();
-        }
-
-        @Override
-        public boolean isInetSocket() {
-            return delegate.isInetSocket();
-        }
-
-        @Override
-        public boolean isDomainSocket() {
-            return delegate.isDomainSocket();
-        }
-
-        @Override
-        public String toString() {
-            return delegate.toString();
         }
     }
 }

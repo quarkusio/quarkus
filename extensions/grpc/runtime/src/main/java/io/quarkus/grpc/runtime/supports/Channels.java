@@ -115,6 +115,11 @@ public class Channels {
         String nameResolver = clientConfig.nameResolver();
 
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
+        boolean useDomainSocket = clientConfig.domainSocket().isPresent();
+        if (useDomainSocket && stork) {
+            throw new IllegalArgumentException(
+                    "gRPC client '" + name + "' cannot use both domain-socket and Stork name resolver");
+        }
 
         String[] resolverSplit = nameResolver.split(":");
         String resolver = resolverSplit[0];
@@ -217,13 +222,22 @@ public class Channels {
                 options);
 
         Channel channel;
+        String authority;
         if (stork) {
             ManagedExecutor executor = container.instance(ManagedExecutor.class).get();
-            channel = new StorkGrpcChannel(client, clientConfig.host(), clientConfig.stork(), executor); // host = service-name
+            channel = new StorkGrpcChannel(client, clientConfig.host(), clientConfig.stork(), executor);
+            authority = host + ":" + port;
+            LOGGER.debugf("Target for client '%s': %s (stork)", name, host);
+        } else if (useDomainSocket) {
+            String socketPath = clientConfig.domainSocket().get();
+            authority = "localhost";
+            channel = new GrpcIoClientChannel(client, new DomainSocketAddress(socketPath));
+            LOGGER.debugf("Target for client '%s': unix:%s", name, socketPath);
         } else {
             channel = new GrpcIoClientChannel(client, SocketAddress.inetSocketAddress(port, host));
+            authority = host + ":" + port;
+            LOGGER.debugf("Target for client '%s': %s", name, authority);
         }
-        LOGGER.debugf("Target for client '%s': %s", name, host + ":" + port);
 
         List<ClientInterceptor> interceptors = new ArrayList<>();
         interceptors.addAll(interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors));
@@ -232,7 +246,7 @@ public class Channels {
         LOGGER.debug("Creating Vert.x gRPC channel ...");
 
         return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors),
-                host + ":" + port);
+                authority);
 
     }
 
@@ -329,6 +343,49 @@ public class Channels {
         @Override
         public String authority() {
             return authority;
+        }
+    }
+
+    /**
+     * gRPC over HTTP/2 requires the {@code :authority} pseudo-header, which Vert.x derives from
+     * {@link SocketAddress#host()}. The standard {@code SocketAddress.domainSocketAddress()} returns
+     * {@code null} for host, so we provide {@code "localhost"} to satisfy the gRPC protocol requirement.
+     */
+    private record DomainSocketAddress(String path) implements SocketAddress {
+
+        @Override
+        public String host() {
+            return "localhost";
+        }
+
+        @Override
+        public String hostName() {
+            return "localhost";
+        }
+
+        @Override
+        public int port() {
+            return 0;
+        }
+
+        @Override
+        public boolean isDomainSocket() {
+            return true;
+        }
+
+        @Override
+        public boolean isInetSocket() {
+            return false;
+        }
+
+        @Override
+        public String hostAddress() {
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return path;
         }
     }
 }

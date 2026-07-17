@@ -44,8 +44,8 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
                     .addAsResource(new File("target/certs/ssl-hybrid-test.crt"), "server-cert.pem"))
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
-            .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "relaxed")
-            .overrideConfigKey("quarkus.tls.key-exchange-groups", "x25519,x25519mlkem768")
+            .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "strict")
+            .overrideConfigKey("quarkus.tls.key-exchange-groups", "x25519mlkem768")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test
@@ -64,14 +64,14 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
     }
 
     @Test
-    //    @EnabledIf("isJdk27OrLater")
+    @EnabledIf("isJdk27OrLater")
     void testJdkSslClientConnectsToStrictServer() {
         // JDK 27+ supports X25519MLKEM768 natively — no OpenSSL engine needed on the client side.
         // The server still requires OpenSSL 3.5 for strict enforcement (class-level @EnabledIf).
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setTrustAll(true);
-        options.getSslOptions().setKeyExchangeGroups(List.of("X25519"));
+        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
 
         WebClient client = WebClient.create(vertx, options);
         HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())

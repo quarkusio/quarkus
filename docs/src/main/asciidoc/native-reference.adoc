@@ -2828,7 +2828,7 @@ The community edition of GraalVM 25.0 Native Image has 2 inliners. There is the 
 
 Both inliners are enabled by default when available. The trivial inliner is available in all versions of GraalVM. The single callsite inliner is only available with GraalVM community edition 25.0.4+ and Mandrel 25.0.4+.
 
-To disable the trivial inliner use: `quarkus.native.additional-build-args=-H:-AOTTrivialInline`.
+To disable the trivial inliner use: `-Dquarkus.native.additional-build-args-append=-H:-AOTTrivialInline`.
 
 To disable the single callsite inliner use: `-Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline`. To enable the single callsite inliner on non-Mandrel builds use: `-Dquarkus.native.additional-build-args-append=-H:+AOTSingleCallsiteInline`
 

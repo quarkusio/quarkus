@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -11,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -31,7 +33,6 @@ import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.util.HashUtil;
 
 public class ToolingUtils {
 
@@ -227,31 +228,52 @@ public class ToolingUtils {
         try {
             if (file.isDirectory()) {
                 final Path root = file.toPath();
-                final StringBuilder sb = new StringBuilder();
+                final MessageDigest digest = sha1Digest();
                 try (Stream<Path> stream = Files.walk(root)) {
                     // normalize separators and sort so the hash is identical across operating systems
                     stream.filter(Files::isRegularFile)
                             .map(p -> Map.entry(root.relativize(p).toString().replace('\\', '/'), p))
                             .sorted(Map.Entry.comparingByKey())
-                            .forEach(e -> sb.append(e.getKey()).append(':')
-                                    .append(sha1(e.getValue())).append('\n'));
+                            .forEach(e -> {
+                                String fileEntry = e.getKey() + ':' + cachedSha1(e.getValue()) + '\n';
+                                digest.update(fileEntry.getBytes(StandardCharsets.UTF_8));
+                            });
                 }
-                return HashUtil.sha1(sb.toString());
+                return HexFormat.of().formatHex(digest.digest());
             }
-            return sha1(file.toPath());
+            return cachedSha1(file.toPath());
         } catch (IOException | UncheckedIOException e) {
             // never fail the model build on an unreadable file, like lastModified() never did
             return String.valueOf(file.lastModified());
         }
     }
 
-    private static String sha1(Path file) {
-        final MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-1");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
+    private static final Map<String, FileDigest> DIGEST_CACHE = new ConcurrentHashMap<>();
+
+    private record FileDigest(long lastModified, long length, String hash) {
+    }
+
+    /**
+     * Returns the SHA-1 of a file's content, reusing the cached digest while the file's metadata is unchanged.
+     */
+    private static String cachedSha1(Path file) {
+        final File f = file.toFile();
+        final long lastModified = f.lastModified();
+        final long length = f.length();
+        final FileDigest cached = DIGEST_CACHE.get(f.getAbsolutePath());
+        if (cached != null && cached.lastModified() == lastModified && cached.length() == length) {
+            return cached.hash();
         }
+        final String hash = sha1(file);
+        DIGEST_CACHE.put(f.getAbsolutePath(), new FileDigest(lastModified, length, hash));
+        return hash;
+    }
+
+    /**
+     * Computes the hex-encoded SHA-1 of a file's content, streaming it without loading it into memory.
+     */
+    private static String sha1(Path file) {
+        final MessageDigest digest = sha1Digest();
         try (InputStream in = Files.newInputStream(file)) {
             final byte[] buffer = new byte[8192];
             for (int read = in.read(buffer); read >= 0; read = in.read(buffer)) {
@@ -261,5 +283,13 @@ public class ToolingUtils {
             throw new UncheckedIOException("Failed to hash content of " + file, e);
         }
         return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static MessageDigest sha1Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

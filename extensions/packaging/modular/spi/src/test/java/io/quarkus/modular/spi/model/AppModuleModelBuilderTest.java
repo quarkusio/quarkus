@@ -11,18 +11,29 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.smallrye.modules.desc.Dependency;
 import io.smallrye.modules.desc.ModuleDescriptor;
+import io.smallrye.modules.desc.PackageAccess;
+import io.smallrye.modules.desc.PackageInfo;
 
 /**
  * Tests for {@link AppModuleModel.Builder}.
  */
 class AppModuleModelBuilderTest {
 
-    private ModuleInfo moduleInfo(String groupId, String artifactId, String name) {
+    private static ModuleInfo moduleInfo(String groupId, String artifactId, String name) {
         ResolvedDependency rd = TestResolvedDependency.create(groupId, artifactId, "1.0");
         return new ModuleInfo(
                 name, "1.0", ModuleDescriptor.Modifier.Set.of(), rd, null,
                 Map.of(), List.of(), List.of(), Set.of(), Map.of(), List.of());
+    }
+
+    private static ModuleInfo moduleInfo(String groupId, String artifactId, String name,
+            Map<String, PackageInfo> packages, List<DependencyInfo> dependencies) {
+        ResolvedDependency rd = TestResolvedDependency.create(groupId, artifactId, "1.0");
+        return new ModuleInfo(
+                name, "1.0", ModuleDescriptor.Modifier.Set.of(), rd, null,
+                packages, dependencies, List.of(), Set.of(), Map.of(), List.of());
     }
 
     @Test
@@ -164,6 +175,88 @@ class AppModuleModelBuilderTest {
                 .bootModule("boot.d")
                 .build();
         assertThat(model.bootModules()).containsExactlyInAnyOrder("boot.a", "boot.b", "boot.c", "boot.d");
+    }
+
+    // -- stale package access cleanup --
+    //
+    // Package access entries (add-exports/add-opens) can reference packages that don't
+    // exist in the target module. This happens when:
+    //  - a hardcoded workaround in ModularitySteps references a package that was removed
+    //    or renamed in a newer version of the library
+    //  - tree-shaking removes all classes from a package, eliminating it from the
+    //    target module's package map
+    // Stale entries cause warnings from the module runtime at startup. The builder
+    // strips them so the written descriptors stay consistent with actual module content.
+
+    @Test
+    void stalePackageAccessRemovedOnBuild() {
+        // lib.module declares package "com.lib.api" but NOT "com.lib.internal"
+        ModuleInfo libModule = moduleInfo("org.lib", "lib", "lib.module",
+                Map.of("com.lib.api", PackageInfo.EXPORTED), List.of());
+
+        // app.module depends on lib.module and requests access to both packages
+        DependencyInfo depToLib = new DependencyInfo("lib.module",
+                Dependency.Modifier.Set.of(Dependency.Modifier.LINKED),
+                Map.of("com.lib.api", PackageAccess.EXPORTED,
+                        "com.lib.internal", PackageAccess.EXPORTED));
+        ModuleInfo appModule = moduleInfo("org.app", "app", "app.module",
+                Map.of(), List.of(depToLib));
+
+        AppModuleModel model = AppModuleModel.builder()
+                .appModuleInfo(appModule)
+                .moduleInfo(libModule)
+                .build();
+
+        ModuleInfo cleanedApp = model.modulesByName().get("app.module");
+        DependencyInfo cleanedDep = cleanedApp.dependencies().stream()
+                .filter(d -> d.moduleName().equals("lib.module"))
+                .findFirst().orElseThrow();
+        assertThat(cleanedDep.packageAccesses()).containsKey("com.lib.api");
+        assertThat(cleanedDep.packageAccesses()).doesNotContainKey("com.lib.internal");
+    }
+
+    @Test
+    void validPackageAccessesPreservedOnBuild() {
+        ModuleInfo libModule = moduleInfo("org.lib", "lib", "lib.module",
+                Map.of("com.lib.api", PackageInfo.EXPORTED,
+                        "com.lib.spi", PackageInfo.EXPORTED),
+                List.of());
+
+        DependencyInfo depToLib = new DependencyInfo("lib.module",
+                Dependency.Modifier.Set.of(Dependency.Modifier.LINKED),
+                Map.of("com.lib.api", PackageAccess.EXPORTED,
+                        "com.lib.spi", PackageAccess.OPEN));
+        ModuleInfo appModule = moduleInfo("org.app", "app", "app.module",
+                Map.of(), List.of(depToLib));
+
+        AppModuleModel model = AppModuleModel.builder()
+                .appModuleInfo(appModule)
+                .moduleInfo(libModule)
+                .build();
+
+        ModuleInfo cleanedApp = model.modulesByName().get("app.module");
+        DependencyInfo cleanedDep = cleanedApp.dependencies().stream()
+                .filter(d -> d.moduleName().equals("lib.module"))
+                .findFirst().orElseThrow();
+        assertThat(cleanedDep.packageAccesses()).containsOnlyKeys("com.lib.api", "com.lib.spi");
+    }
+
+    @Test
+    void packageAccessToExternalModuleNotCleaned() {
+        // dependency to a module not in the model (e.g. JDK) should be left alone
+        DependencyInfo depToJdk = new DependencyInfo("java.base",
+                Dependency.Modifier.Set.of(Dependency.Modifier.LINKED),
+                Map.of("java.lang", PackageAccess.EXPORTED));
+        ModuleInfo appModule = moduleInfo("org.app", "app", "app.module",
+                Map.of(), List.of(depToJdk));
+
+        AppModuleModel model = AppModuleModel.builder()
+                .appModuleInfo(appModule)
+                .build();
+
+        ModuleInfo cleanedApp = model.modulesByName().get("app.module");
+        DependencyInfo cleanedDep = cleanedApp.dependencies().get(0);
+        assertThat(cleanedDep.packageAccesses()).containsKey("java.lang");
     }
 
     // -- immutability --

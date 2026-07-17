@@ -173,6 +173,110 @@ public record ModuleInfo(
                 generated);
     }
 
+    /**
+     * Replace the entire packages map with the given one.
+     * Unlike {@link #withMorePackages(Map)}, which merges additively, this method replaces
+     * the entire map — useful for removing packages after tree-shaking.
+     *
+     * @param packages the new packages map (must not be {@code null})
+     * @return a new {@link ModuleInfo} with the replaced packages, or {@code this} if equal
+     */
+    public ModuleInfo withPackages(final Map<String, PackageInfo> packages) {
+        if (packages.equals(this.packages)) {
+            return this;
+        }
+        return new ModuleInfo(
+                name,
+                version,
+                modifiers,
+                resolvedArtifact,
+                mainClassName,
+                packages,
+                dependencies,
+                autoDependencies,
+                uses,
+                provides,
+                generated);
+    }
+
+    /**
+     * Replace the entire dependencies list with the given one.
+     * Unlike {@link #withMoreDependencies(List)}, which merges additively, this method replaces
+     * the entire list — useful for removing stale requires after module pruning.
+     *
+     * @param dependencies the new dependencies list (must not be {@code null})
+     * @return a new {@link ModuleInfo} with the replaced dependencies, or {@code this} if equal
+     */
+    public ModuleInfo withDependencies(final List<DependencyInfo> dependencies) {
+        if (dependencies.equals(this.dependencies)) {
+            return this;
+        }
+        return new ModuleInfo(
+                name,
+                version,
+                modifiers,
+                resolvedArtifact,
+                mainClassName,
+                packages,
+                dependencies,
+                autoDependencies,
+                uses,
+                provides,
+                generated);
+    }
+
+    /**
+     * Replace the entire auto-dependencies list with the given one.
+     * Auto-dependencies are groups of transitive Maven dependencies computed for automatic modules.
+     * This method replaces the entire list — useful for removing groups whose host module was pruned.
+     *
+     * @param autoDependencies the new auto-dependencies list (must not be {@code null})
+     * @return a new {@link ModuleInfo} with the replaced auto-dependencies, or {@code this} if equal
+     */
+    public ModuleInfo withAutoDependencies(final List<AutoDependencyGroup> autoDependencies) {
+        if (autoDependencies.equals(this.autoDependencies)) {
+            return this;
+        }
+        return new ModuleInfo(
+                name,
+                version,
+                modifiers,
+                resolvedArtifact,
+                mainClassName,
+                packages,
+                dependencies,
+                autoDependencies,
+                uses,
+                provides,
+                generated);
+    }
+
+    /**
+     * Replace the entire service provider map ({@code provides ... with ...}) with the given one.
+     * Unlike {@link #withMoreServices(Map)}, which merges additively, this method replaces
+     * the entire map — useful for removing dead service implementations after tree-shaking.
+     *
+     * @param provides the new provides map (must not be {@code null})
+     * @return a new {@link ModuleInfo} with the replaced provides, or {@code this} if equal
+     */
+    public ModuleInfo withProvides(final Map<String, List<String>> provides) {
+        if (provides.equals(this.provides)) {
+            return this;
+        }
+        return new ModuleInfo(
+                name,
+                version,
+                modifiers,
+                resolvedArtifact,
+                mainClassName,
+                packages,
+                dependencies,
+                autoDependencies,
+                uses,
+                provides,
+                generated);
+    }
+
     public ModuleInfo withMoreResources(final List<Resource> moreResources) {
         if (moreResources.isEmpty()) {
             return this;

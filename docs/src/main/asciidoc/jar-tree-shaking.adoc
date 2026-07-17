@@ -108,6 +108,18 @@ The algorithm runs in several stages:
                                      ▼
                     ┌───────────────────────────────────┐
                     │  Compute removals, produce JAR    │
+                    └────────────────┬──────────────────┘
+                                     │
+                            jlink extension active?
+                           ╱                ╲
+                         yes                 no ──► done
+                          │
+                          ▼
+                    ┌───────────────────────────────────┐
+                    │  Module-level tree-shaking        │
+                    │  • Remove class-dead modules      │
+                    │  • Clean stale requires/provides  │
+                    │  • Recompute JDK module set       │
                     └───────────────────────────────────┘
 ----
 
@@ -157,6 +169,26 @@ The chain analysis runs in an incremental fixed-point loop: the reverse caller i
 For example, BouncyCastle's `BouncyCastleProvider` constructor calls `setup()` which calls `loadAlgorithms()` which calls `loadServiceClass()` which calls `ClassUtil.loadClass()`.
 The tree-shaker identifies `BouncyCastleProvider` as the entry point, instantiates it in the recording class loader, and captures all dynamically loaded algorithm classes.
 
+=== Module-level tree-shaking
+
+When the Quarkus jlink extension is present, tree-shaking also operates at the module level.
+After the class-level analysis determines which classes are reachable, the module tree-shaker evaluates each module in the application's module model:
+
+* A module is *class-dead* if it contains `.class` entries but none of them are in the reachable set. Class-dead modules are removed entirely from the jlink image.
+* A module with no `.class` entries at all (a resource-only JAR) is kept alive — it may provide configuration files, native libraries, or other resources needed at runtime.
+* A module with an empty content tree (no content to contribute) is treated as dead.
+
+After dead modules are removed, surviving modules are cleaned up:
+
+* `requires` directives pointing to removed modules are dropped.
+* Auto-dependency groups whose entries all point to removed modules are dropped.
+* Service provider entries (`provides ... with ...`) whose implementation classes are not in the reachable set are removed.
+* The set of JDK modules included in the jlink image is recomputed from surviving modules only, which can reduce the image size.
+
+The module tree-shaker also performs a graph reachability analysis — a BFS from root modules (the application module and boot modules) through the dependency graph.
+Modules that are not reachable from any root but still contain reachable classes are *not* removed, since they may be accessed via reflection, service loading, or from automatic modules without explicit `requires` directives.
+A warning is logged for such modules to help diagnose missing dependency declarations.
+
 == Excluding artifacts from tree-shaking
 
 Some libraries may not work correctly if classes are removed — for example, libraries that perform self-integrity checks (e.g., BouncyCastle FIPS) or that load classes through mechanisms the tree-shaker cannot detect.
@@ -177,6 +209,7 @@ Extensions can also exclude artifacts programmatically by producing a `JarTreeSh
 * Tree-shaking is not supported for the `mutable-jar` package type, since re-augmentation requires all classes to be present.
 * Only classes from runtime dependencies are candidates for removal. Application classes are never removed.
 * The `classes` level only removes class files. Other resources (such as configuration files, property files, and `META-INF` entries) are preserved. Dependencies from which all classes have been removed are still included in the final JAR, since they may contain resources required at runtime.
+* Module-level tree-shaking (removing entire modules) is only performed when the jlink extension is present. Without jlink, only class-level removal applies.
 
 == Troubleshooting
 

@@ -29,6 +29,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final ValidationMode validationMode;
     private final SharedCacheMode sharedCacheMode;
     private final List<String> managedClassNames;
+    private final List<String> managedPackageNames;
     private final Properties properties;
     private final boolean reactive;
 
@@ -36,6 +37,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
             QuarkusPersistenceUnitProviderHelper providerHelper,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
+            List<String> managedPackageNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.providerHelper = providerHelper;
@@ -45,6 +47,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         this.validationMode = null;
         this.sharedCacheMode = null;
         this.managedClassNames = managedClassNames;
+        this.managedPackageNames = managedPackageNames;
         this.properties = properties;
         this.reactive = reactive;
     }
@@ -61,6 +64,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
             String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
+            List<String> managedPackageNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.providerHelper = providerHelper;
@@ -70,6 +74,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         this.validationMode = validationMode;
         this.sharedCacheMode = sharedCacheMode;
         this.managedClassNames = managedClassNames;
+        this.managedPackageNames = managedPackageNames;
         this.properties = properties;
         this.reactive = reactive;
     }
@@ -94,7 +99,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
-                Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
+                Collections.unmodifiableList(toClone.getManagedClassNames()), Collections.emptyList(),
+                toClone.getProperties(), false);
     }
 
     @Override
@@ -151,6 +157,10 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     @Override
     public List<String> getManagedClassNames() {
         return managedClassNames;
+    }
+
+    public List<String> getManagedPackageNames() {
+        return managedPackageNames;
     }
 
     @Override
@@ -244,6 +254,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 ", validationMode=" + validationMode +
                 ", sharedCacheMode=" + sharedCacheMode +
                 ", managedClassNames=" + managedClassNames +
+                ", managedPackageNames=" + managedPackageNames +
                 ", properties=" + properties +
                 ", isReactive=" + reactive +
                 '}';

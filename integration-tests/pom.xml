@@ -390,6 +390,11 @@
                 <module>micrometer-prometheus</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
+                <module>observation</module>
+                <module>observation-opentelemetry</module>
+                <module>observation-micrometer-opentelemetry</module>
+                <module>observation-prometheus</module>
+                <module>observation-reactive</module>
                 <module>opentelemetry</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>

@@ -8,8 +8,8 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide observability for interactive web applications.
-:topics: observability,opentelemetry, micrometer, jfr, logging, metrics, tracing, monitoring, devservice
-:extensions: io.quarkus:quarkus-opentelemetry,io.quarkus:quarkus-micrometer,io.quarkus:quarkus-jfr
+:topics: observability,opentelemetry, micrometer, observation, jfr, logging, metrics, tracing, monitoring, devservice
+:extensions: io.quarkus:quarkus-opentelemetry,io.quarkus:quarkus-micrometer,io.quarkus:quarkus-observation,io.quarkus:quarkus-jfr
 
 Observability can be defined as the capability to allow a human to ask and answer questions about a system.
 
@@ -64,6 +64,14 @@ The following table provides an overview of the observability extensions availab
 |
 |
 |X
+
+|xref:telemetry-micrometer-observation.adoc[quarkus-observation]
+|
+|X
+|X
+|
+|
+|
 
 |xref:jfr.adoc[quarkus-jfr]
 |
@@ -134,9 +142,13 @@ More recently, OpenTelemetry Metrics has become available in the xref:openteleme
 
 The solution is to use the xref:telemetry-micrometer-to-opentelemetry.adoc[`quarkus-micrometer-opentelemetry`] extension to allow using *Micrometer metrics* and *OpenTelemetry logs and traces* at the same time with a unified output using the OTLP protocol. Manual OpenTelemetry metrics can also be created with this extension and all signals are enabled by default, for convenience.
 
+The xref:telemetry-micrometer-observation.adoc[`quarkus-observation`] extension provides the https://docs.micrometer.io/micrometer/reference/observation.html[Micrometer Observation API], which produces both metrics and traces from a single instrumentation point. It can be combined with any Micrometer registry (Prometheus, OpenTelemetry bridge) and optionally with `quarkus-opentelemetry` for tracing.
+
 === Tracing
 
 Quarkus uses OpenTelemetry Tracing to provide tracing capabilities to the application. The xref:opentelemetry.adoc[`quarkus-opentelemetry`] and the xref:telemetry-micrometer-to-opentelemetry.adoc[`quarkus-micrometer-opentelemetry`] extensions are the recommended way to use for tracing.
+
+The xref:telemetry-micrometer-observation.adoc[`quarkus-observation`] extension also provides tracing through the Micrometer Observation API when combined with `quarkus-opentelemetry`. Observations produce OpenTelemetry spans with parent-child relationships and distributed context propagation.
 
 === Profiling
 

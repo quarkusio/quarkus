@@ -2,8 +2,8 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp.metrics;
 
 import java.util.Collection;
 
-import io.opentelemetry.exporter.internal.http.HttpExporter;
 import io.opentelemetry.exporter.internal.otlp.metrics.MetricReusableDataMarshaler;
+import io.opentelemetry.exporter.otlp.internal.HttpExporter;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.opentelemetry.sdk.metrics.Aggregation;

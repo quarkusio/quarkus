@@ -1239,6 +1239,38 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullCharacterFieldInBean() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
+    public void testNullCharacterFieldInRecord() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
     void testShouldDeserializePolymorphicItems() {
         RestAssured
                 .with()

@@ -1,8 +1,5 @@
 package io.quarkus.spring.web.runtime.common;
 
-import java.util.List;
-import java.util.Map;
-
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -21,9 +18,9 @@ public class ResponseStatusExceptionMapper implements ExceptionMapper<ResponseSt
     }
 
     private void addHeaders(Response.ResponseBuilder responseBuilder, HttpHeaders springHeaders) {
-        for (Map.Entry<String, List<String>> entry : springHeaders.entrySet()) {
-            for (String headerValue : entry.getValue()) {
-                responseBuilder.header(entry.getKey(), headerValue);
+        for (String name : springHeaders.headerNames()) {
+            for (String headerValue : springHeaders.getValuesAsList(name)) {
+                responseBuilder.header(name, headerValue);
             }
         }
     }

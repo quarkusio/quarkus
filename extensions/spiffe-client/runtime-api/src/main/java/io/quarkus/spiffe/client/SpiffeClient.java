@@ -12,6 +12,16 @@ import io.smallrye.mutiny.Uni;
 public interface SpiffeClient {
 
     /**
+     * Returns X.509 workload certificate document (X.509-SVID) which includes a client certificate chain and private key,
+     * as well as a server trust bundle.
+     *
+     * @return a {@link Uni} that emits a single {@link WorkloadCertificateDocument}, never {@code null}; fails with
+     *         {@link SpiffeAuthorizationException} when the workload is not authorized for any
+     *         identity, or {@link SpiffeConnectionException} when the SPIRE Agent is unreachable
+     */
+    Uni<WorkloadCertificateDocument> getWorkloadCertificate();
+
+    /**
      * Returns a SPIFFE JSON Web Token (JWT-SVID) from the Workload API for configured default audiences.
      *
      * @return a {@link Uni} that emits a single {@link WorkloadJsonWebToken}, never {@code null}; fails with

@@ -28,7 +28,7 @@ import io.restassured.RestAssured;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(SpiffeKeycloakTestResource.class)
+@QuarkusTestResource(value = SpiffeKeycloakTestResource.class, restrictToAnnotatedClass = true)
 @TestMethodOrder(OrderAnnotation.class)
 class SpiffeOidcTest {
 

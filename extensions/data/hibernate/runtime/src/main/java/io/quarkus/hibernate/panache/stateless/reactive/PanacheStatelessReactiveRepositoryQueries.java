@@ -3,7 +3,6 @@ package io.quarkus.hibernate.panache.stateless.reactive;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
@@ -38,18 +37,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Object... params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
-    }
-
-    @Override
     default PanacheReactiveQuery<Entity> find(String query, Map<String, Object> params) {
         return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, params);
-    }
-
-    @Override
-    default PanacheReactiveQuery<Entity> find(String query, Order<?> order, Map<String, Object> params) {
-        return (PanacheReactiveQuery<Entity>) operations().find(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -58,18 +47,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default PanacheReactiveQuery<Entity> findAll(Order<?> order) {
-        return (PanacheReactiveQuery<Entity>) operations().findAll(getEntityClass(), order);
-    }
-
-    @Override
     default Uni<List<Entity>> list(String query, Object... params) {
         return (Uni) operations().list(getEntityClass(), query, params);
-    }
-
-    @Override
-    default Uni<List<Entity>> list(String query, Order<?> order, Object... params) {
-        return (Uni) operations().list(getEntityClass(), query, order, params);
     }
 
     @Override
@@ -78,18 +57,8 @@ public interface PanacheStatelessReactiveRepositoryQueries<Entity, Id> extends P
     }
 
     @Override
-    default Uni<List<Entity>> list(String query, Order<?> order, Map<String, Object> params) {
-        return (Uni) operations().list(getEntityClass(), query, order, params);
-    }
-
-    @Override
     default Uni<List<Entity>> listAll() {
         return (Uni) operations().listAll(getEntityClass());
-    }
-
-    @Override
-    default Uni<List<Entity>> listAll(Order<?> order) {
-        return (Uni) operations().listAll(getEntityClass(), order);
     }
 
     @Override

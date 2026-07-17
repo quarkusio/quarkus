@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.data.Limit;
+import jakarta.data.Order;
 import jakarta.data.page.PageRequest;
 import jakarta.persistence.LockModeType;
 
@@ -14,6 +15,7 @@ import io.quarkus.hibernate.panache.reactive.PanacheReactiveQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.CommonManagedPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Uni;
 
 public class PanacheManagedReactiveQueryImpl<Entity> implements PanacheReactiveQuery<Entity> {
@@ -139,6 +141,12 @@ public class PanacheManagedReactiveQueryImpl<Entity> implements PanacheReactiveQ
 
     PanacheManagedReactiveQueryImpl(CommonManagedPanacheQueryImpl<Entity> delegate) {
         this.delegate = delegate;
+    }
+
+    @Override
+    public PanacheManagedReactiveQueryImpl<Entity> sort(Order<? super Entity> order) {
+        delegate.sort(PanacheJpaUtil.toSort(order));
+        return this;
     }
 
     @Override

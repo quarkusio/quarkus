@@ -3,7 +3,6 @@ package io.quarkus.hibernate.panache.runtime.spi;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.panache.runtime.hr.ManagedReactiveOperations;
@@ -69,27 +68,15 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
 
     Query find(Class<?> entityClass, String query, Object... params);
 
-    Query find(Class<?> entityClass, String query, Order<?> order, Object... params);
-
     Query find(Class<?> entityClass, String query, Map<String, Object> params);
-
-    Query find(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params);
 
     Query findAll(Class<?> entityClass);
 
-    Query findAll(Class<?> entityClass, Order<?> order);
-
     Many list(Class<?> entityClass, String query, Object... params);
-
-    Many list(Class<?> entityClass, String query, Order<?> order, Object... params);
 
     Many list(Class<?> entityClass, String query, Map<String, Object> params);
 
-    Many list(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params);
-
     Many listAll(Class<?> entityClass);
-
-    Many listAll(Class<?> entityClass, Order<?> order);
 
     Count count(Class<?> entityClass);
 

@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import jakarta.data.Order;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Session;
@@ -26,13 +25,7 @@ public interface PanacheBlockingOperations extends
 
     Stream<?> stream(Class<?> entityClass, String query, Object... params);
 
-    Stream<?> stream(Class<?> entityClass, String query, Order<?> order, Object... params);
-
     Stream<?> stream(Class<?> entityClass, String query, Map<String, Object> params);
-
-    Stream<?> stream(Class<?> entityClass, String query, Order<?> order, Map<String, Object> params);
-
-    Stream<?> streamAll(Class<?> entityClass, Order<?> order);
 
     Stream<?> streamAll(Class<?> entityClass);
 }

@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import jakarta.data.Limit;
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
@@ -15,20 +17,23 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.query.Page;
 
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
+
 /**
  * <p>
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
  * operating on {@link List} or {@link Stream}.
  * </p>
  * <p>
- * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
- * modified, and instances of this interface can be reused to obtain multiple pages of results.
+ * Instances of this interface cannot mutate the query itself or its parameters: only paging and sort
+ * information can be modified, and instances of this interface can be reused to obtain multiple pages of results.
  * </p>
  *
  * @author Stéphane Épardaud
- * @param <Entity> The entity type being queried
+ * @param <Entity> The result type returned by single-result operations
+ * @param <SortEntity> The entity type used for typed sorting
  */
-public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityList, QueryAfterCount, Confirmation, Count>, Entity, EntityList, QueryAfterCount, Confirmation, Count> {
+public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, SortEntity, EntityList, QueryAfterCount, Confirmation, Count>, Entity, SortEntity, EntityList, QueryAfterCount, Confirmation, Count> {
 
     /**
      * Provides operations for limiting the number of results returned by a query using absolute row indices.
@@ -38,7 +43,7 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
      *
      * @param <Query> the query type, so that fluent methods return the correct query type
      */
-    public interface Limits<Query extends PanacheQuery<?, ?, ?, ?, ?, ?>> {
+    public interface Limits<Query extends PanacheQuery<?, ?, ?, ?, ?, ?, ?>> {
 
         /**
          * Returns the current limit as a Jakarta Data {@link Limit}.
@@ -109,7 +114,7 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
      * @param <Confirmation> the return type for boolean checks (may be async)
      * @param <Count> the return type for count values (may be async)
      */
-    public interface Pages<Query extends PanacheQuery<?, ?, ?, ?, ?, ?>, QueryAfterCount, Confirmation, Count> {
+    public interface Pages<Query extends PanacheQuery<?, ?, ?, ?, ?, ?, ?>, QueryAfterCount, Confirmation, Count> {
 
         /**
          * Returns the current page as a Jakarta Data {@link PageRequest}.
@@ -231,6 +236,24 @@ public interface PanacheQuery<Query extends PanacheQuery<Query, Entity, EntityLi
     Pages<Query, QueryAfterCount, Confirmation, Count> pages();
 
     // Builder
+
+    /**
+     * Applies sort criteria to this query.
+     *
+     * @param order the sort order to use
+     * @return this query, modified
+     */
+    public Query sort(Order<? super SortEntity> order);
+
+    /**
+     * Applies sort criteria to this query.
+     *
+     * @param sort the sort strategy to use
+     * @return this query, modified
+     */
+    default Query sort(Sort<? super SortEntity> sort) {
+        return sort(PanacheJpaUtil.toOrder(sort));
+    }
 
     /**
      * Define the locking strategy used for this query.

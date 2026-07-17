@@ -181,10 +181,11 @@ public class LoggingSetupRecorder {
         LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements, shutdownNotifier);
         final java.util.logging.Logger julRootLogger = LogManager.getLogManager().getLogger("");
         for (Handler handler : julRootLogger.getHandlers()) {
-            // Drop any non-JBoss-LogManager handler from the JUL root logger.
             if (handler instanceof ExtHandler) {
                 handler.setFilter(cleanupFiler);
             } else {
+                // Drop any non-JBoss-LogManager handler from the JUL root logger.
+                log.debugf("Removing foreign handler %s from the root logger", handler.getClass().getName());
                 julRootLogger.removeHandler(handler);
             }
         }

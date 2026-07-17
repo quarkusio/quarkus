@@ -26,6 +26,8 @@ public class TestLoggingOutputCaptureTest extends QuarkusGradleWrapperTestBase {
 
         String output = buildResult.getOutput();
 
+        assertThat(output).contains("testLoggerOutput");
+
         // Logger output should NOT appear in the build output because showStandardStreams = false
         assertThat(output).doesNotContain("MARKER_INFO_LOG_OUTPUT");
         assertThat(output).doesNotContain("MARKER_WARN_LOG_OUTPUT");

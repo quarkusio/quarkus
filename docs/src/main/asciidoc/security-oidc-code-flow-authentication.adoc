@@ -221,6 +221,8 @@ quarkus.oidc.credentials.jwt.key-id=mykeyAlias
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that a client secret is not sent to the OIDC provider, thereby avoiding the risk of interception by a 'man-in-the-middle' attack.
 
 [[jwt-bearer-client-authentication]]
+==== JWT Bearer
+
 .Example: Using a JWT Bearer token to authenticate a client
 
 [source,properties]
@@ -235,10 +237,13 @@ For more information, see the link:https://www.rfc-editor.org/rfc/rfc7523#sectio
 <2> Path to a JWT bearer token.
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
 
-.Example: Using a SPIFFE JWT-SVID token to authenticate a client
+[[spiffe-jwt-client-authentication]]
+==== SPIFFE JWT-SVID
 
 link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
 When the JWT source is set to `spiffe-jwt`, the `client_assertion_type` parameter is set to `urn:ietf:params:oauth:client-assertion-type:jwt-spiffe` and the token's `sub` claim must contain a valid SPIFFE ID starting with `spiffe://`.
+
+.Example: Using a SPIFFE JWT-SVID token to authenticate a client
 
 [source,properties]
 ----
@@ -249,10 +254,12 @@ quarkus.oidc.credentials.jwt.token-path=/var/run/secrets/tokens <2>
 ----
 <1> Use a SPIFFE JWT-SVID token to authenticate the OIDC provider client.
 <2> Path to a SPIFFE JWT-SVID token.
+
 Quarkus loads a new token from the filesystem and reloads it when the token expires.
 The token's `sub` claim is verified to start with the `spiffe://` scheme.
 
-When no `token-path` is set but the xref:security-spiffe-client.adoc[SPIFFE Client extension] is present, Quarkus retrieves JWT-SVID tokens directly from the local SPIRE Agent instead of reading them from the file system.
+When no `quarkus.oidc.credentials.jwt.token-path` is set but the xref:security-spiffe-client.adoc[SPIFFE Client extension] is present, Quarkus retrieves JWT-SVID tokens directly from the local SPIRE Agent instead of reading them from the file system.
+
 Tokens are cached and refreshed automatically before they expire.
 
 [source,properties]
@@ -297,6 +304,8 @@ quarkus.oidc.credentials.jwt.subject=custom-subject
 quarkus.oidc.credentials.jwt.issuer=custom-issuer
 ----
 
+You can also use `quarkus.oidc.credentials.jwt.audience` to customize a SPIFFE JWT-SVID audience when `quarkus.oidc.credentials.jwt.source=spiffe-jwt` but no `quarkus.oidc.credentials.jwt.token-path` is set and the xref:security-spiffe-client.adoc[SPIFFE Client extension] is present. See the <<spiffe-jwt-client-authentication>> for more information.
+
 ==== Apple POST JWT
 
 The Apple OIDC provider uses a `client_secret_post` method, in which the secret is a JWT produced with a `private_key_jwt` authentication method, but with the Apple account-specific issuer and subject claims.
@@ -317,7 +326,7 @@ quarkus.oidc.credentials.jwt.subject=${apple.subject}
 quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
 ----
 
-==== mutual TLS (mTLS)
+==== Mutual TLS (mTLS)
 
 Some OIDC providers might require that a client be authenticated as part of the mutual TLS  authentication process.
 

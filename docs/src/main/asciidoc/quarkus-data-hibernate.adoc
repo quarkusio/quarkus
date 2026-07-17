@@ -1248,24 +1248,9 @@ For `Sort` and `Order`, prefix the property name with `-` to indicate descending
 
 When binding sort parameters from REST endpoints to `PanacheQuery`, prefer `Order<Cat>` over
 `Sort<Cat>`. A missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty
-`Order.by()` for `Order<Cat>`. Only call `sort()` when the client requested sorting:
-
-[source,java]
-----
-import jakarta.data.Order;
-import jakarta.ws.rs.GET;
-
-import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
-
-@GET
-public List<Cat> list(Order<Cat> order) {
-    PanacheBlockingQuery<Cat> query = Cat_.managedBlocking().findAll();
-    if (!order.sorts().isEmpty()) {
-        query = query.sort(order);
-    }
-    return query.list();
-}
-----
+`Order.by()` for `Order<Cat>`. If you use `Sort<Cat>` and the parameter is `null`, you can
+safely call `.sort(null)` and it is a no-op; `Order` is still preferred when multiple columns
+may be requested.
 
 NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
 by this REST integration. Only offset-based pagination is available via query parameters.
@@ -1304,8 +1289,6 @@ import jakarta.ws.rs.Path;
 
 import java.util.List;
 
-import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
-
 @Path("cats")
 public class CatResource {
 
@@ -1314,11 +1297,7 @@ public class CatResource {
 
     @GET
     public List<Cat> list(PageRequest pageRequest, Order<Cat> order) { // <1>
-        PanacheBlockingQuery<Cat> query = repo.findAll().pages().request(pageRequest);
-        if (!order.sorts().isEmpty()) {
-            query = query.sort(order);
-        }
-        return query.list();
+        return repo.findAll().pages().request(pageRequest).sort(order).list();
     }
 }
 ----

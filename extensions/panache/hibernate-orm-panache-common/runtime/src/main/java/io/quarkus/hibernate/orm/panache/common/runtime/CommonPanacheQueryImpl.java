@@ -126,6 +126,11 @@ public class CommonPanacheQueryImpl<Entity> {
 
     // Builder
 
+    public CommonPanacheQueryImpl<Entity> sort(Sort sort) {
+        this.sort = sort;
+        return this;
+    }
+
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {

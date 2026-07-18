@@ -1248,6 +1248,14 @@ public final class HibernateOrmProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
 
+        // Explicit override: 'jdbc=false' always disables blocking bootstrap for this PU,
+        // regardless of which datasources are available.
+        if (!persistenceUnitConfig.jdbc().enabled().orElse(true)) {
+            LOG.debugf("Persistence unit '%s' has blocking (JDBC) bootstrap explicitly disabled"
+                    + " through 'jdbc=false', skipping", persistenceUnitName);
+            return;
+        }
+
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
                 persistenceUnitName,
                 jdbcDataSources,
@@ -1260,10 +1268,7 @@ public final class HibernateOrmProcessor {
                 ReactiveDataSourceBuildItem::getName,
                 ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
-        // Explicit jdbc override, falling back to inference from the datasource kind.
-        boolean wantJdbc = persistenceUnitConfig.jdbc().enabled()
-                .orElse(!(jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()));
-        if (!wantJdbc) {
+        if (jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()) {
             LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking",
                     persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
             return;

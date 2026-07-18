@@ -191,6 +191,14 @@ public final class HibernateReactiveProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
 
+        // Explicit override: 'reactive=false' always disables reactive bootstrap for this PU,
+        // regardless of which datasources are available.
+        if (!persistenceUnitConfig.reactive().enabled().orElse(true)) {
+            LOG.debugf("Persistence unit '%s' has reactive bootstrap explicitly disabled"
+                    + " through 'reactive=false', skipping", persistenceUnitName);
+            return;
+        }
+
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
                 persistenceUnitName,
                 jdbcDataSources,
@@ -204,10 +212,7 @@ public final class HibernateReactiveProcessor {
                 ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
         boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
-        // Explicit reactive override, falling back to inference from the datasource kind.
-        boolean wantReactive = persistenceUnitConfig.reactive().enabled()
-                .orElse(!(jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()));
-        if (!wantReactive) {
+        if (jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()) {
             LOG.debugf("The datasource '%s' is only blocking, do not create this PU '%s' as reactive",
                     persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
             return;

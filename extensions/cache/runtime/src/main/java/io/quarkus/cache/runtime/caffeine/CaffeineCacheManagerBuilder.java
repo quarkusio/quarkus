@@ -43,9 +43,10 @@ public class CaffeineCacheManagerBuilder {
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debugf(
                                     "Building Caffeine cache [%s] with [initialCapacity=%s], [maximumSize=%s], [expireAfterWrite=%s], "
-                                            + "[expireAfterAccess=%s] and [metricsEnabled=%s]",
+                                            + "[expireAfterAccess=%s], [expireAfterVariable=%s] and [metricsEnabled=%s]",
                                     cacheInfo.name, cacheInfo.initialCapacity, cacheInfo.maximumSize,
-                                    cacheInfo.expireAfterWrite, cacheInfo.expireAfterAccess, cacheInfo.metricsEnabled);
+                                    cacheInfo.expireAfterWrite, cacheInfo.expireAfterAccess, cacheInfo.expireAfterVariable,
+                                    cacheInfo.metricsEnabled);
                         }
                         /*
                          * Metrics will be recorded for the current cache if:

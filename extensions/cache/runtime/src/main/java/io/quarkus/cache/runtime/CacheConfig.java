@@ -76,6 +76,17 @@ public interface CacheConfig {
             Optional<Duration> expireAfterAccess();
 
             /**
+             * Enables per-entry expiration. When enabled, cache entries may use an individual
+             * {@link io.quarkus.cache.CacheExpiry}
+             * (or {@link io.quarkus.cache.CacheEntry}) instead of only the cache-wide {@code expire-after-write} /
+             * {@code expire-after-access} durations.
+             * <p>
+             * This has a small memory overhead because Caffeine must store expiration metadata for every entry. Leave this
+             * disabled unless you need per-entry TTLs.
+             */
+            Optional<Boolean> expireAfterVariable();
+
+            /**
              * Whether or not metrics are recorded if the application depends on the Micrometer extension. Setting this
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */

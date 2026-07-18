@@ -23,4 +23,24 @@ public interface ConfigBuildTimeConfig {
     @WithName("sources.system-only")
     @WithDefault("false")
     boolean systemOnly();
+
+    /**
+     * If set to {@code true}, all configuration is frozen at build time. All values from
+     * {@code application.properties} and similar file-based sources are baked into the application artifact at the
+     * highest priority. At runtime, no external configuration sources are consulted: no {@code application.properties},
+     * no {@code .env} files, no system properties, and no environment variables can affect configuration values.
+     * <p>
+     * The only exceptions are a small set of JVM environment properties ({@code java.io.tmpdir},
+     * {@code user.home}, {@code user.dir}) which are resolved at runtime to support
+     * {@code @WithDefault} expressions whose values are inherently machine-dependent.
+     * <p>
+     * This is useful for CLI applications and sealed/immutable deployments where the binary's behavior must be
+     * fully determined at build time.
+     * <p>
+     * Computed defaults ({@code @WithDefault}) and programmatic values set by recorders still work normally.
+     * When enabled, this supersedes {@code quarkus.config.sources.system-only}.
+     */
+    @WithName("fixed-at-build-time")
+    @WithDefault("false")
+    boolean fixedAtBuildTime();
 }

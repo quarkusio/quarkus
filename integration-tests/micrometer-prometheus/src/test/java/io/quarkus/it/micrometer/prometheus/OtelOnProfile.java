@@ -10,7 +10,8 @@ public class OtelOnProfile implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
         Map<String, String> config = new HashMap<>(Map.of(
-                "quarkus.otel.enabled", "true"));
+                "quarkus.otel.enabled", "true",
+                "quarkus.otel.traces.sampler", "always_on"));
         return config;
     }
 }

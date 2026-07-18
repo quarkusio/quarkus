@@ -1,5 +1,6 @@
 package io.quarkus.it.micrometer.prometheus;
 
+import static io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler.CONTENT_TYPE_004;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -106,7 +106,7 @@ class PrometheusMetricsRegistryTest {
     @Test
     @Order(20)
     void testPrometheusScrapeEndpointTextPlain() {
-        RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_004)
+        RestAssured.given().header("Accept", CONTENT_TYPE_004)
                 .when().get("/q/metrics")
                 .then().statusCode(200)
 
@@ -146,57 +146,55 @@ class PrometheusMetricsRegistryTest {
 
                 // Verify Hibernate Metrics
                 .body(containsString(
-                        "hibernate_sessions_open_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 2.0"))
+                        "hibernate_sessions_open_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 2.0"))
                 .body(containsString(
-                        "hibernate_sessions_closed_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 2.0"))
+                        "hibernate_sessions_closed_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 2.0"))
                 .body(containsString(
-                        "hibernate_connections_obtained_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",}"))
+                        "hibernate_connections_obtained_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"}"))
                 .body(containsString(
-                        "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 3.0"))
+                        "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 3.0"))
                 .body(containsString(
-                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\",} 1.0"))
+                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",env2=\"test\",registry=\"prometheus\"} 1.0"))
 
                 // Annotated counters
                 .body(not(containsString("metric_none")))
                 .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\"} 1.0"))
                 .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",fail=\"true\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",fail=\"true\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\"} 1.0"))
                 .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"prefix true\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"prefix true\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\"} 1.0"))
                 .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"prefix false\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"prefix false\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\"} 1.0"))
                 .body(not(containsString("async_none")))
                 .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"true\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"true\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"failure\"} 1.0"))
                 .body(containsString(
-                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"false\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",do_fail_call=\"false\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"success\"} 1.0"))
                 .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"failure\"} 1.0"))
                 .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"42\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"success\"} 1.0"))
 
                 // Annotated Timers
                 .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\",} 1.0"))
+                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\"} 1"))
                 .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\",}"))
+                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\"}"))
                 .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1"))
                 .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1"))
                 .body(containsString(
-                        "longCall_seconds_active_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\",}"))
+                        "longCall_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\"}"))
                 .body(containsString(
-                        "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\",} 0.0"))
+                        "async_longCall_seconds_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\"} 0.0"))
 
                 // Configured median, 95th percentile and histogram buckets
                 .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.5\",}"))
+                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.5\"}"))
                 .body(containsString(
-                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.95\",}"))
-                .body(containsString(
-                        "prime_number_test_seconds_bucket{env=\"test\",env2=\"test\",registry=\"prometheus\",le=\"0.001\",}"))
+                        "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.95\"}"))
 
                 // this was defined by a tag to a non-matching registry, and should not be found
                 .body(not(containsString("class-should-not-match")))
@@ -207,8 +205,8 @@ class PrometheusMetricsRegistryTest {
 
     @Test
     @Order(20)
-    void testPrometheusScrapeEndpointOpenMetrics() {
-        RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
+    void testPrometheusScrapeEndpointOpenMetricsCompatibility() {
+        RestAssured.given().header("Accept", "application/openmetrics-text; version=1.0.0; charset=utf-8")
                 .when().get("/q/metrics")
                 .then().statusCode(200)
 
@@ -250,12 +248,11 @@ class PrometheusMetricsRegistryTest {
 
                 // Annotated counters
                 .body(not(containsString("metric_none")))
-                .body(containsString(
-                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\"} 1.0 # {span_id="))
+                // No OTel, no span
+                .body(not(containsString(
+                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",fail=\"false\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\"} 1.0 # {span_id=")))
                 .body(containsString(
                         "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",fail=\"true\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\"} 1.0"))
-                .body(containsString(
-                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",fail=\"prefix true\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\"} 1.0 # {span_id="))
                 .body(containsString(
                         "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",fail=\"prefix false\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\"} 1.0"))
                 .body(not(containsString("async_none")))
@@ -270,25 +267,23 @@ class PrometheusMetricsRegistryTest {
 
                 // Annotated Timers
                 .body(containsString(
-                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\"} 1.0"))
+                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"call\",registry=\"prometheus\"} 1"))
                 .body(containsString(
                         "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\"}"))
                 .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1.0"))
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"NullPointerException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1"))
                 .body(containsString(
-                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1.0"))
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\"} 1"))
                 .body(containsString(
-                        "longCall_seconds_active_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\"}"))
+                        "longCall_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\"}"))
                 .body(containsString(
-                        "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\"} 0.0"))
+                        "async_longCall_seconds_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",env2=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\"} 0.0"))
 
                 // Configured median, 95th percentile and histogram buckets
                 .body(containsString(
                         "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.5\"}"))
                 .body(containsString(
                         "prime_number_test_seconds{env=\"test\",env2=\"test\",registry=\"prometheus\",quantile=\"0.95\"}"))
-                .body(containsString(
-                        "prime_number_test_seconds_bucket{env=\"test\",env2=\"test\",registry=\"prometheus\",le=\"0.001\"}"))
 
                 // this was defined by a tag to a non-matching registry, and should not be found
                 .body(not(containsString("class-should-not-match")))

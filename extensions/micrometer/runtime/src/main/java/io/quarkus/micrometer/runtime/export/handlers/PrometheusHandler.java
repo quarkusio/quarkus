@@ -11,8 +11,7 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
@@ -22,6 +21,10 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class PrometheusHandler implements Handler<RoutingContext> {
+    // see io.micrometer.prometheusmetrics.PrometheusMeterRegistry.Format
+    public static final String CONTENT_TYPE_004 = "text/plain; version=0.0.4; charset=utf-8";
+    public static final String CONTENT_TYPE_OPENMETRICS_100 = "application/openmetrics-text; version=1.0.0; charset=utf-8";
+
     private static final Logger log = Logger.getLogger(PrometheusHandler.class);
     private final boolean enableCompression;
     private final Set<String> compressMediaTypes;
@@ -83,12 +86,12 @@ public class PrometheusHandler implements Handler<RoutingContext> {
 
     private String chooseContentType(String acceptHeader) {
         if (acceptHeader == null) {
-            return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+            return CONTENT_TYPE_OPENMETRICS_100;
         }
         if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {
-            return TextFormat.CONTENT_TYPE_004;
+            return CONTENT_TYPE_004;
         }
-        return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+        return CONTENT_TYPE_OPENMETRICS_100;
     }
 
     private void doHandle(HttpServerResponse response, String acceptHeader) {

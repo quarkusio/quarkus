@@ -21,7 +21,7 @@ import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
 import io.quarkus.micrometer.runtime.export.exemplars.EmptyExemplarSamplerProvider;
 import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarContextUnwrapper;
-import io.quarkus.micrometer.runtime.export.exemplars.OpentelemetryExemplarSamplerProvider;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarSamplerProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -35,7 +35,7 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 public class PrometheusRegistryProcessor {
     private static final Logger log = Logger.getLogger(PrometheusRegistryProcessor.class);
 
-    static final String REGISTRY_CLASS_NAME = "io.micrometer.prometheus.PrometheusMeterRegistry";
+    static final String REGISTRY_CLASS_NAME = "io.micrometer.prometheusmetrics.PrometheusMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
     public static class PrometheusEnabled implements BooleanSupplier {
@@ -79,7 +79,7 @@ public class PrometheusRegistryProcessor {
     void registerOpentelemetryExemplarSamplerProvider(
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(OpentelemetryExemplarSamplerProvider.class)
+                .addBeanClass(OpenTelemetryExemplarSamplerProvider.class)
                 .addBeanClass(OpenTelemetryExemplarContextUnwrapper.class)
                 .setUnremovable()
                 .build());

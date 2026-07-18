@@ -60,7 +60,7 @@ do
   # - trailing "|" (after EXPR) avoids grep return code > 0 if nothing matches (which is a valid case)
   # - "paste" joins all matches to get a single line
   FILTERED=$(echo -n "${modules}" | grep -Po "${EXPR}|" | paste -sd " " -)
-  JSON=$(echo -n "${JSON}" | sed "s|${modules}|${FILTERED}|")
+  JSON=$(echo -n "${JSON}" | sed "s|\"test-modules\": \"${modules}\"|\"test-modules\": \"${FILTERED}\"|")
 done < <(echo -n "${JSON}" | jq -r '.include[] | ."test-modules"')
 
 # Step 3: delete entire elements from "include" array that now have an empty "test-modules" list

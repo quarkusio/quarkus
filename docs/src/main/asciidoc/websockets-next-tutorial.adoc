@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :diataxis-type: tutorial
-:summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. This guide uses the WebSockets Next extension
+:summary: Get started with WebSockets Next to create interactive web applications.
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
 

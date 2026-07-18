@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-messaging-amqp
 :topics: messaging,amqp
 
-This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
+This guide is the companion to the xref:amqp.adoc[Getting Started with AMQP 1.0].
 It explains in more details the configuration and usage of the AMQP connector for reactive messaging.
 
 TIP: This documentation does not cover all the details of the connector.

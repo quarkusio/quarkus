@@ -6,7 +6,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -97,6 +100,42 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                         return cast(caffeineValue);
                     }
                 });
+    }
+
+    @Override
+    public <K, V> V getSynchronous(K key, Function<K, V> valueLoader) {
+        return getSynchronous(key, valueLoader, -1);
+    }
+
+    /**
+     * Sync compute-if-absent for {@code @CacheResult} on non-async methods.
+     * Joins {@link #getFromCaffeine} directly so Mutiny {@code Uni.await()} is not involved.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public <K, V> V getSynchronous(K key, Function<K, V> valueLoader, long lockTimeoutMillis) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        try {
+            CompletableFuture<Object> future = getFromCaffeine(key, valueLoader);
+            if (lockTimeoutMillis <= 0) {
+                return (V) future.get();
+            }
+            return (V) future.get(lockTimeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            throw new io.smallrye.mutiny.TimeoutException();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CacheException(e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new CacheException(cause);
+        }
     }
 
     @Override

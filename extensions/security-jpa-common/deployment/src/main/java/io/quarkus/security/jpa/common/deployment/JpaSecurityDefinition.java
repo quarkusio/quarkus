@@ -11,13 +11,12 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
 
 public class JpaSecurityDefinition {
 
@@ -53,12 +52,12 @@ public class JpaSecurityDefinition {
             return JavaBeanUtil.getPropertyNameFromGetter(getter.name());
         }
 
-        public ResultHandle readValue(BytecodeCreator bytecodeCreator, ResultHandle userVar) {
+        public Expr readValue(BlockCreator bc, Expr userVar) {
             // favour the getter
             if (getter != null) {
-                return bytecodeCreator.invokeVirtualMethod(MethodDescriptor.of(getter), userVar);
+                return bc.invokeVirtual(Jandex2Gizmo.methodDescOf(getter), userVar);
             }
-            return bytecodeCreator.readInstanceField(FieldDescriptor.of(field), userVar);
+            return bc.get(userVar.field(Jandex2Gizmo.fieldDescOf(field)));
         }
 
         public Type type() {

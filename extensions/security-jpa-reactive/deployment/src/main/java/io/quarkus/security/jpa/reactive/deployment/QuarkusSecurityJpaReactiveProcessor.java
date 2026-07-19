@@ -1,15 +1,12 @@
 package io.quarkus.security.jpa.reactive.deployment;
 
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildIdentity;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildTrustedIdentity;
 
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import jakarta.inject.Singleton;
@@ -27,19 +24,20 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -93,106 +91,127 @@ class QuarkusSecurityJpaReactiveProcessor {
     private static void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
             BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaReactiveIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
-            FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
-                    .setModifiers(0) // removes default modifier => makes field package-private
-                    .getFieldDescriptor();
+        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
+            cc.extends_(JpaReactiveIdentityProvider.class);
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
+            FieldDesc passwordProviderField = cc.field("passwordProvider", ifc -> {
+                ifc.setType(PasswordProvider.class);
+                // package-private (default access)
+            });
 
-            MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveIdentityProvider.class, "authenticate",
-                    Uni.class, Mutiny.Session.class, UsernamePasswordAuthenticationRequest.class);
-            try (MethodCreator methodCreator = classCreator.getMethodCreator(methodToImpl)) {
-                methodCreator.setModifiers(Modifier.PUBLIC);
+            cc.method("authenticate", mc -> {
+                mc.public_();
+                mc.returning(Uni.class);
+                var sessionParam = mc.parameter("session", Mutiny.Session.class);
+                var requestParam = mc.parameter("request", UsernamePasswordAuthenticationRequest.class);
+                mc.body(bc -> {
+                    LocalVar username = bc.localVar("username", bc.invokeVirtual(
+                            MethodDesc.of(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
+                            requestParam));
 
-                ResultHandle username = methodCreator.invokeVirtualMethod(
-                        ofMethod(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
-                        methodCreator.getMethodParam(1));
+                    Expr userUni = lookupUserById(jpaSecurityDefinition, bc, sessionParam, username);
 
-                ResultHandle userUni = lookupUserById(jpaSecurityDefinition, methodCreator, username);
+                    // .map(user -> { /* build identity */ })
+                    Expr identityUni = bc.invokeInterface(
+                            MethodDesc.of(Uni.class, "map", Uni.class, Function.class),
+                            userUni, bc.lambda(Function.class, lc -> {
+                                Var thisCapture = lc.capture("this", cc.this_());
+                                Var reqCapture = lc.capture("request", requestParam);
+                                Expr user = lc.parameter("user", 0);
+                                lc.body(lbc -> {
+                                    buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue,
+                                            panacheEntityPredicate, passwordProviderField, thisCapture, reqCapture,
+                                            user, lbc);
+                                });
+                            }));
 
-                // .map(user -> { /* build identity */ })
-                ResultHandle identityUni = uniMap(methodCreator, userUni,
-                        (body, user) -> buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue,
-                                panacheEntityPredicate, passwordProviderField, methodCreator, user, body));
-
-                methodCreator.returnValue(identityUni);
-            }
-        }
+                    bc.return_(identityUni);
+                });
+            });
+        });
     }
 
     private static void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaReactiveTrustedIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
+        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
+            cc.extends_(JpaReactiveTrustedIdentityProvider.class);
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
 
-            MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveTrustedIdentityProvider.class, "authenticate",
-                    Uni.class, Mutiny.Session.class, TrustedAuthenticationRequest.class);
-            try (MethodCreator methodCreator = classCreator.getMethodCreator(methodToImpl)) {
-                methodCreator.setModifiers(Modifier.PUBLIC);
+            cc.method("authenticate", mc -> {
+                mc.public_();
+                mc.returning(Uni.class);
+                var sessionParam = mc.parameter("session", Mutiny.Session.class);
+                var requestParam = mc.parameter("request", TrustedAuthenticationRequest.class);
+                mc.body(bc -> {
+                    LocalVar username = bc.localVar("username", bc.invokeVirtual(
+                            MethodDesc.of(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
+                            requestParam));
 
-                ResultHandle username = methodCreator.invokeVirtualMethod(
-                        ofMethod(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
-                        methodCreator.getMethodParam(1));
+                    Expr userUni = lookupUserById(jpaSecurityDefinition, bc, sessionParam, username);
 
-                ResultHandle userUni = lookupUserById(jpaSecurityDefinition, methodCreator, username);
+                    // .map(user -> { /* build identity */ })
+                    Expr identityUni = bc.invokeInterface(
+                            MethodDesc.of(Uni.class, "map", Uni.class, Function.class),
+                            userUni, bc.lambda(Function.class, lc -> {
+                                Var reqCapture = lc.capture("request", requestParam);
+                                Expr user = lc.parameter("user", 0);
+                                lc.body(lbc -> {
+                                    buildTrustedIdentity(index, jpaSecurityDefinition, panacheEntityPredicate,
+                                            reqCapture, user, lbc);
+                                });
+                            }));
 
-                // .map(user -> { /* build identity */ })
-                ResultHandle identityUni = uniMap(methodCreator, userUni,
-                        (body, user) -> buildTrustedIdentity(index, jpaSecurityDefinition, panacheEntityPredicate,
-                                methodCreator, user, body));
-
-                methodCreator.returnValue(identityUni);
-            }
-        }
+                    bc.return_(identityUni);
+                });
+            });
+        });
     }
 
-    private static ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, MethodCreator methodCreator,
-            ResultHandle username) {
+    private static Expr lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, BlockCreator bc,
+            Expr session, Expr username) {
 
         // two strategies, depending on whether the username is natural id
         AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(NATURAL_ID);
 
         // PlainUserEntity.class
         String userEntityClassName = jpaSecurityDefinition.annotatedClass.name().toString();
-        var userEntityClass = methodCreator.loadClass(userEntityClassName);
-
-        // 'Mutiny.Session' session
-        ResultHandle session = methodCreator.getMethodParam(0);
+        Expr userEntityClass = bc.classForName(Const.of(userEntityClassName));
 
         boolean fetchJoinRoles = shouldFetchJoinRoles(jpaSecurityDefinition);
-        ResultHandle user;
+        Expr user;
         if (naturalIdAnnotation != null) {
 
             // Identifier.id("name", username)
-            ResultHandle id = methodCreator.invokeStaticMethod(
-                    ofMethod(Identifier.class, "id", Identifier.Id.class, String.class, Object.class),
-                    methodCreator.load(jpaSecurityDefinition.username.name()), username);
+            Expr id = bc.invokeStatic(
+                    MethodDesc.of(Identifier.class, "id", Identifier.Id.class, String.class, Object.class),
+                    Const.of(jpaSecurityDefinition.username.name()), username);
 
             // session.find(PlainUserEntity.class, Identifier.id("name", username))
-            user = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Session.class, "find", Uni.class, Class.class, Identifier.class),
+            user = bc.invokeInterface(
+                    MethodDesc.of(Mutiny.Session.class, "find", Uni.class, Class.class, Identifier.class),
                     session, userEntityClass, id);
 
             if (fetchJoinRoles) {
                 // .flatMap(user -> session.fetch(user))
-                String userClassName = jpaSecurityDefinition.annotatedClass.name().toString();
-                user = uniFlatMap(methodCreator, user, (body, user1) -> body.invokeInterfaceMethod(
-                        ofMethod(Mutiny.Session.class, "fetch", Uni.class, userClassName),
-                        session, user1));
+                user = bc.invokeInterface(
+                        MethodDesc.of(Uni.class, "flatMap", Uni.class, Function.class),
+                        user, bc.lambda(Function.class, lc -> {
+                            Var sessionCapture = lc.capture("session", session);
+                            Expr user1 = lc.parameter("user1", 0);
+                            lc.body(lbc -> {
+                                lbc.return_(lbc.invokeInterface(
+                                        MethodDesc.of(Mutiny.Session.class, "fetch", Uni.class, Object.class),
+                                        sessionCapture, user1));
+                            });
+                        }));
             }
         } else {
 
@@ -209,19 +228,19 @@ class QuarkusSecurityJpaReactiveProcessor {
             }
 
             // session.createQuery("<<HQL>>", UserEntity.class)
-            ResultHandle query1 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Session.class, "createQuery", Mutiny.SelectionQuery.class, String.class, Class.class),
-                    session, methodCreator.load(hql), userEntityClass);
+            Expr query1 = bc.invokeInterface(
+                    MethodDesc.of(Mutiny.Session.class, "createQuery", Mutiny.SelectionQuery.class, String.class, Class.class),
+                    session, Const.of(hql), userEntityClass);
 
             // .setParameter("name", username)
-            ResultHandle query2 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.SelectionQuery.class, "setParameter", Mutiny.SelectionQuery.class, String.class,
+            Expr query2 = bc.invokeInterface(
+                    MethodDesc.of(Mutiny.SelectionQuery.class, "setParameter", Mutiny.SelectionQuery.class, String.class,
                             Object.class),
-                    query1, methodCreator.load("name"), username);
+                    query1, Const.of("name"), username);
 
             // .getSingleResultOrNull()
-            user = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.SelectionQuery.class, "getSingleResultOrNull", Uni.class),
+            user = bc.invokeInterface(
+                    MethodDesc.of(Mutiny.SelectionQuery.class, "getSingleResultOrNull", Uni.class),
                     query2);
         }
 
@@ -234,26 +253,5 @@ class QuarkusSecurityJpaReactiveProcessor {
                 DotName.createSimple(ManyToMany.class),
                 DotName.createSimple(OneToMany.class),
                 DotName.createSimple(ManyToOne.class));
-    }
-
-    private static ResultHandle uniMap(MethodCreator creator, ResultHandle uniInstance,
-            BiConsumer<BytecodeCreator, ResultHandle> fun) {
-        return uniLambda(creator, uniInstance, fun, "map");
-    }
-
-    private static ResultHandle uniFlatMap(BytecodeCreator creator, ResultHandle uniInstance,
-            BiConsumer<BytecodeCreator, ResultHandle> fun) {
-        return uniLambda(creator, uniInstance, fun, "flatMap");
-    }
-
-    private static ResultHandle uniLambda(BytecodeCreator creator, ResultHandle uniInstance,
-            BiConsumer<BytecodeCreator, ResultHandle> function, String name) {
-        FunctionCreator lambda = creator.createFunction(Function.class);
-        BytecodeCreator body = lambda.getBytecode();
-        ResultHandle user = body.getMethodParam(0);
-        function.accept(body, user);
-
-        return creator.invokeInterfaceMethod(ofMethod(Uni.class, name, Uni.class, Function.class),
-                uniInstance, lambda.getInstance());
     }
 }

@@ -347,17 +347,17 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
         final String permissionName;
         final String action;
-        // incoming value is either in format perm1:action1 or perm1 (with or withot action)
+        // incoming value is either in format perm1:action1 or perm1 (only the first separator is used)
         if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
             // perm1:action1
-            var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
-            if (permToActions.length != 2) {
+            final int separatorIdx = permissionToAction.indexOf(PERMISSION_TO_ACTION_SEPARATOR);
+            permissionName = permissionToAction.substring(0, separatorIdx).trim();
+            action = permissionToAction.substring(separatorIdx + 1).trim();
+            if (action.isEmpty()) {
                 throw new ConfigurationException(
-                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
-                                permissionToAction));
+                        String.format("Invalid permission format '%s', expected 'permissionName%2$saction' or 'permissionName'",
+                                permissionToAction, PERMISSION_TO_ACTION_SEPARATOR));
             }
-            permissionName = permToActions[0].trim();
-            action = permToActions[1].trim();
         } else {
             // perm1
             permissionName = permissionToAction.trim();

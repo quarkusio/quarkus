@@ -598,16 +598,16 @@ interface PermissionSecurityChecks {
                     }
                 } else if (permissionValExpression.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
 
-                    // expected format: permission:action
-                    final String[] permissionToActionArr = permissionValExpression.split(PERMISSION_TO_ACTION_SEPARATOR);
-                    if (permissionToActionArr.length != 2) {
+                    // expected format: permission:action (only the first separator is used)
+                    final int separatorIdx = permissionValExpression.indexOf(PERMISSION_TO_ACTION_SEPARATOR);
+                    final String permissionName = permissionValExpression.substring(0, separatorIdx);
+                    final String action = permissionValExpression.substring(separatorIdx + 1);
+                    if (permissionName.isEmpty() || action.isEmpty()) {
                         throw new RuntimeException(String.format(
-                                "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
+                                "PermissionsAllowed value '%s' has empty permission name or action, expected format is 'permissionName%2$saction'",
                                 permissionValExpression, PERMISSION_TO_ACTION_SEPARATOR));
                     }
-                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionToActionArr[0],
-                            null);
-                    final String action = permissionToActionArr[1];
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionName, null);
                     if (permissionToActions.containsKey(permissionNameKey)) {
                         permissionToActions.get(permissionNameKey).add(action);
                     } else {

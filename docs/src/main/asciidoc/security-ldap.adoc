@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Security with an LDAP Realm
 include::_attributes.adoc[]
 :categories: security
-:summary: This guide demonstrates how your Quarkus application can use a LDAP directory to store your user identities.
+:summary: This guide demonstrates how your Quarkus application can use an LDAP directory to store your user identities.
 :topics: security,identity-providers,ldap
 :extensions: io.quarkus:quarkus-elytron-security-ldap
 

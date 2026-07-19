@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Simplified Hibernate ORM with Panache
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:summary: Panache focuses on making your Hibernate ORM entities trivial and fun to write.
 :config-file: application.properties
 :topics: data,hibernate-orm,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm

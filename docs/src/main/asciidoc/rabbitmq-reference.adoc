@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-messaging-rabbitmq
 
-This guide is the companion from the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
+This guide is the companion to the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
 It explains in more details the configuration and usage of the RabbitMQ connector for reactive messaging.
 
 TIP: This documentation does not cover all the details of the connector.

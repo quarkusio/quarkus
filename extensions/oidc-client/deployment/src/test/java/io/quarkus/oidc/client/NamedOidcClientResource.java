@@ -8,6 +8,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.oidc.client.spi.TokenProvider;
 import io.smallrye.mutiny.Uni;
 
 @Path("/")
@@ -28,6 +29,14 @@ public class NamedOidcClientResource {
     @Inject
     @NamedOidcClient("client2")
     Tokens tokens2;
+
+    @Inject
+    @NamedOidcClient("client1")
+    TokenProvider tokenProvider1;
+
+    @Inject
+    @NamedOidcClient("client2")
+    TokenProvider tokenProvider2;
 
     @Inject
     @Any
@@ -55,6 +64,18 @@ public class NamedOidcClientResource {
     @Path("/client2/token/singleton")
     public String accessToken2() {
         return tokens2.getAccessToken();
+    }
+
+    @GET
+    @Path("/client1/tokenprovider")
+    public Uni<String> tokenProvider1() {
+        return tokenProvider1.getAccessToken();
+    }
+
+    @GET
+    @Path("/client2/tokenprovider")
+    public Uni<String> tokenProvider2() {
+        return tokenProvider2.getAccessToken();
     }
 
     @GET

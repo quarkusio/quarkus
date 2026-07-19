@@ -127,31 +127,51 @@ public abstract class CacheInterceptor {
 
     protected Object getCacheKey(Cache cache, Class<? extends CacheKeyGenerator> keyGeneratorClass,
             List<Short> cacheKeyParameterPositions, Method method, Object[] methodParameterValues) {
+        // Kotlin suspend functions have a synthetic Continuation as last parameter — never use it as a cache key.
+        Object[] keyParameters = excludeKotlinContinuationParameter(method, methodParameterValues);
         if (keyGeneratorClass != UndefinedCacheKeyGenerator.class) {
-            return generateKey(keyGeneratorClass, method, methodParameterValues);
-        } else if (methodParameterValues == null || methodParameterValues.length == 0) {
+            return generateKey(keyGeneratorClass, method, keyParameters);
+        } else if (keyParameters == null || keyParameters.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
         } else if (cacheKeyParameterPositions.size() == 1) {
             // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time, then this
             // parameter will be used as the cache key.
-            return methodParameterValues[cacheKeyParameterPositions.get(0)];
+            return keyParameters[cacheKeyParameterPositions.get(0)];
         } else if (cacheKeyParameterPositions.size() >= 2) {
             // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time, then a
             // composite cache key built from all these parameters will be used.
             List<Object> keyElements = new ArrayList<>();
             for (short position : cacheKeyParameterPositions) {
-                keyElements.add(methodParameterValues[position]);
+                keyElements.add(keyParameters[position]);
             }
             return new CompositeCacheKey(keyElements.toArray(new Object[0]));
-        } else if (methodParameterValues.length == 1) {
+        } else if (keyParameters.length == 1) {
             // If the intercepted method has exactly one parameter, then this parameter will be used as the cache key.
-            return methodParameterValues[0];
+            return keyParameters[0];
         } else {
             // If the intercepted method has two or more parameters, then a composite cache key built from all these parameters
             // will be used.
-            return new CompositeCacheKey(methodParameterValues);
+            return new CompositeCacheKey(keyParameters);
         }
+    }
+
+    /**
+     * Drops the Kotlin {@code Continuation} parameter from cache-key material when present.
+     */
+    protected static Object[] excludeKotlinContinuationParameter(Method method, Object[] methodParameterValues) {
+        if (methodParameterValues == null || methodParameterValues.length == 0) {
+            return methodParameterValues;
+        }
+        if (!KotlinSuspendSupport.isSuspendedFunction(method)) {
+            return methodParameterValues;
+        }
+        if (methodParameterValues.length == 1) {
+            return new Object[0];
+        }
+        Object[] withoutContinuation = new Object[methodParameterValues.length - 1];
+        System.arraycopy(methodParameterValues, 0, withoutContinuation, 0, withoutContinuation.length);
+        return withoutContinuation;
     }
 
     private <T extends CacheKeyGenerator> Object generateKey(Class<T> keyGeneratorClass, Method method,

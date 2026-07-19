@@ -46,7 +46,7 @@ jobs:
             echo -e "\n\`\`\`" >> $GITHUB_STEP_SUMMARY;
           fi
       - name: Inject build scans in reports
-        uses: quarkusio/action-helpers@main
+        uses: quarkusio/action-helpers@4f05abc46fce576bd83fe6d61df45506783f60d1 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           action: inject-build-scans

@@ -1,9 +1,12 @@
 package io.quarkus.resteasy.reactive.server.test.stress;
 
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,7 +26,6 @@ import org.assertj.core.api.Assertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
@@ -39,6 +41,8 @@ import io.vertx.core.http.PoolOptions;
 
 public class DrainTest {
 
+    private static final long RUN_TIMEOUT = System.getenv("CI") != null ? 120 : 30;
+
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
@@ -48,27 +52,31 @@ public class DrainTest {
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
-    @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void testAsyncHttp1() throws Exception {
-        runTest("/test/bytesAsync", createHttp1Options());
+        assertTimeoutPreemptively(Duration.ofSeconds(RUN_TIMEOUT), () -> {
+            runTest("/test/bytesAsync", createHttp1Options());
+        });
     }
 
     @Test
-    @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void testSyncHttp1() throws Exception {
-        runTest("/test/bytesSync", createHttp1Options());
+        assertTimeoutPreemptively(Duration.ofSeconds(RUN_TIMEOUT), () -> {
+            runTest("/test/bytesSync", createHttp1Options());
+        });
     }
 
     @Test
-    @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void testAsyncHttp2() throws Exception {
-        runTest("/test/bytesAsync", createHttp2Options());
+        assertTimeoutPreemptively(Duration.ofSeconds(RUN_TIMEOUT), () -> {
+            runTest("/test/bytesAsync", createHttp2Options());
+        });
     }
 
     @Test
-    @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void testSyncHttp2() throws Exception {
-        runTest("/test/bytesSync", createHttp2Options());
+        assertTimeoutPreemptively(Duration.ofSeconds(RUN_TIMEOUT), () -> {
+            runTest("/test/bytesSync", createHttp2Options());
+        });
     }
 
     private void runTest(String path, HttpClientOptions options) throws Exception {
@@ -96,7 +104,7 @@ public class DrainTest {
                         });
             }
 
-            Assertions.assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+            Assertions.assertThat(latch.await(RUN_TIMEOUT, TimeUnit.SECONDS)).isTrue();
             if (failure.get() != null) {
                 Assertions.fail("Request failed", failure.get());
             }

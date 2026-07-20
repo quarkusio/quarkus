@@ -49,7 +49,10 @@ public abstract class AbstractTransactionLifecycleTest {
                     && !record.getMessage().contains("has been blocked for") //sometimes CI has a super slow moment and this triggers the blocked thread detector
                     && !record.getMessage().contains("Using Java versions older than 11 to build Quarkus applications")
                     && !record.getMessage().contains("Agroal does not support detecting if a connection is still usable")
-                    && !record.getMessage().contains("Netty DefaultChannelId initialization"))
+                    && !record.getMessage().contains("Netty DefaultChannelId initialization")
+                    // TODO remove when upgrading past ORM 8.0.0.Beta1:
+                    // https://github.com/hibernate/hibernate-orm/commit/c6c885cdfb
+                    && !record.getMessage().contains("already-stopped"))
             .assertLogRecords(records -> assertThat(records)
                     .extracting(LogRecord::getMessage) // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
                     .isEmpty());

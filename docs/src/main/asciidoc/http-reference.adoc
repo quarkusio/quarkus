@@ -401,6 +401,17 @@ quarkus.http.filter.any-order.matches=/paths/order.*
 
 Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
 
+When using aggressive cache headers (for example, for static assets behind a CDN), you can set `apply-on-success=true`
+to apply headers only on successful (2xx) responses.
+This prevents CDNs from caching error responses such as 403 or 500.
+
+[source, properties]
+----
+quarkus.http.filter.static.header."Cache-Control"=public, max-age=31536000, immutable
+quarkus.http.filter.static.matches=/static/.*
+quarkus.http.filter.static.apply-on-success=true
+----
+
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.adoc[leveloffset=+1, opts=optional]
 
 == Support 100-Continue in vert.x

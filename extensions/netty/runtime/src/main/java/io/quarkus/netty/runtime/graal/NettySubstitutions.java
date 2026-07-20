@@ -114,7 +114,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator {
  * OpenJdkSelfSignedCertGenerator is package-private; alias its generate() method so
  * Target_io_netty_handler_ssl_util_SelfSignedCertificate can call it directly.
  */
-@TargetClass(className = "io.netty.handler.ssl.util.OpenJdkSelfSignedCertGenerator")
+@TargetClass(className = "io.netty.handler.ssl.util.OpenJdkSelfSignedCertGenerator", onlyWith = IsBouncyNotThere.class)
 final class Target_io_netty_handler_ssl_util_OpenJdkSelfSignedCertGenerator {
 
     @Alias

@@ -44,8 +44,8 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
                     .addAsResource(new File("target/certs/ssl-hybrid-test.crt"), "server-cert.pem"))
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
-            .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "strict")
-            .overrideConfigKey("quarkus.tls.key-exchange-groups", "x25519mlkem768")
+            .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "client-negotiated")
+            .overrideConfigKey("quarkus.tls.key-exchange-groups", "X25519MLKEM768")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test
@@ -78,6 +78,20 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
                 .send().toCompletionStage().toCompletableFuture().join();
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+    }
+
+    @Test
+    void testHybridKeyExchangeHandshakeRejectWrongGroup() {
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setSslEngineOptions(new OpenSSLEngineOptions());
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768"));
+
+        WebClient client = WebClient.create(vertx, options);
+        assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+                .send().toCompletionStage().toCompletableFuture().join())
+                .hasRootCauseInstanceOf(SSLException.class);
     }
 
     @Test

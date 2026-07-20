@@ -17,7 +17,10 @@ public class DefaultSqlLoadScriptAbsentTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application.properties"))
-            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
+                    // TODO remove when upgrading past ORM 8.0.0.Beta1:
+                    // https://github.com/hibernate/hibernate-orm/commit/c6c885cdfb
+                    && !record.getMessage().contains("already-stopped"))
             // In particular, we don't want Hibernate ORM to log
             // "Specified schema generation script file [import.sql] did not exist for reading"
             // when "import.sql" is just the Quarkus default.

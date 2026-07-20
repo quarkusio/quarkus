@@ -14,4 +14,8 @@ public abstract class AbstractHybridKeyExchangeTest {
         return OpenSsl.isAvailable() && OpenSsl.version() >= 0x30500000L;
     }
 
+    static boolean isJdk27OrLater() {
+        return Runtime.version().feature() >= 27;
+    }
+
 }

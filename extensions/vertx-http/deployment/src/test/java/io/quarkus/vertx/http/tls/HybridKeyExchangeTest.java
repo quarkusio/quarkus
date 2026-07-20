@@ -57,10 +57,67 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
         options.setTrustAll(true);
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        } finally {
+            client.close();
+        }
+    }
+
+    // TODO should work when vertx SslEngineUtils.resolveKeyExchangeGroups(...) is fixed
+    //    @Test
+    //    void testClientWithOnlyUnadvertisedPqcGroupFails() {
+    //        WebClientOptions options = new WebClientOptions();
+    //        options.setSsl(true);
+    //        options.setSslEngineOptions(new OpenSSLEngineOptions());
+    //        options.setTrustAll(true);
+    //        options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768"));
+    //
+    //        WebClient client = WebClient.create(vertx, options);
+    //        assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+    //                .send().toCompletionStage().toCompletableFuture().join())
+    //                .hasRootCauseInstanceOf(SSLException.class);
+    //    }
+
+    // TODO should work when vertx SslEngineUtils.resolveKeyExchangeGroups(...) is fixed
+    //    @Test
+    //    void testClientWithUnadvertisedPqcGroupFailsInStrictMode() {
+    //        // Client offers SecP256r1MLKEM768 (not advertised by the server) with X25519 as a fallback.
+    //        // Strict mode only advertises X25519MLKEM768, so there is no common group — handshake fails.
+    //        WebClientOptions options = new WebClientOptions();
+    //        options.setSsl(true);
+    //        options.setSslEngineOptions(new OpenSSLEngineOptions());
+    //        options.setTrustAll(true);
+    //        options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768", "X25519"));
+    //
+    //        WebClient client = WebClient.create(vertx, options);
+    //        assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+    //                .send().toCompletionStage().toCompletableFuture().join())
+    //                .hasRootCauseInstanceOf(SSLException.class);
+    //    }
+
+    @Test
+    @EnabledIf("isJdk27OrLater")
+    void testJdkSslClientConnectsToStrictServer() {
+        // JDK 27+ supports X25519MLKEM768 natively — no OpenSSL engine needed on the client side.
+        // The server still requires OpenSSL 3.5 for strict enforcement (class-level @EnabledIf).
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+
+        WebClient client = WebClient.create(vertx, options);
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -68,11 +125,16 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("x25519"));
 
         WebClient client = WebClient.create(vertx, options);
-        assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join())
-                .hasRootCauseInstanceOf(SSLException.class);
+        try {
+            assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join())
+                    .hasRootCauseInstanceOf(SSLException.class);
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped
@@ -89,4 +151,5 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
         }
 
     }
+
 }

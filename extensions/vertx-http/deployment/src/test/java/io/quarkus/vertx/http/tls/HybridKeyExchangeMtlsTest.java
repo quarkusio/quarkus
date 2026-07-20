@@ -62,10 +62,14 @@ public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
                 .setPassword("secret"));
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("mtls-hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("mtls-hybrid-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped

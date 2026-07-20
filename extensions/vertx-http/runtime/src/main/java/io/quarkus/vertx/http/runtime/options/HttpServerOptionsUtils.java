@@ -229,6 +229,7 @@ public class HttpServerOptionsUtils {
 
     public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
         serverOptions.setSsl(true);
+        bucket.getSslEngineOptions().ifPresent(serverOptions::setSslEngineOptions);
         setJdkHeapBufferPooling(serverOptions);
 
         KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();

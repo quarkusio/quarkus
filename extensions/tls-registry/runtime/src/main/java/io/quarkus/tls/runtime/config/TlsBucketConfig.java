@@ -98,6 +98,14 @@ public interface TlsBucketConfig {
     Optional<List<String>> keyExchangeGroups();
 
     /**
+     * Sets the SSL engine that the application should use.
+     * If not set, Vert.x selects the engine automatically — choosing OpenSSL when the PQC
+     * enforcement policy requires it and OpenSSL 3.5+ is available.
+     * If set explicitly, the chosen engine must support all configured features (e.g. PQC groups).
+     */
+    Optional<SslEngineType> sslEngine();
+
+    /**
      * Sets the list of revoked certificates (paths to files).
      * <p>
      * A Certificate Revocation List (CRL) is a list of digital certificates that have been revoked by the issuing

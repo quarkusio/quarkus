@@ -26,7 +26,10 @@ import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -302,6 +305,14 @@ public class VertxCertificateHolder implements TlsConfiguration {
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public Optional<SSLEngineOptions> getSslEngineOptions() {
+        return config().sslEngine().map(e -> switch (e) {
+            case OPENSSL -> (SSLEngineOptions) new OpenSSLEngineOptions();
+            case JDKSSL -> new JdkSSLEngineOptions();
+        });
     }
 
     public TlsBucketConfig config() {

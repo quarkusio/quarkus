@@ -96,6 +96,7 @@ public class TlsConfigUtils {
             }
             options.getSslOptions().setPqcEnforcementPolicy(sslOptions.getPqcEnforcementPolicy());
         }
+        configuration.getSslEngineOptions().ifPresent(options::setSslEngineOptions);
     }
 
     /**

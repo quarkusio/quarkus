@@ -1,10 +1,13 @@
 package io.quarkus.vertx.http.tls;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import java.io.File;
 import java.net.URL;
 import java.util.List;
+
+import javax.net.ssl.SSLException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -44,7 +47,7 @@ public class HybridKeyExchangeClientNegotiatedTest extends AbstractHybridKeyExch
             .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "client-negotiated")
             // Advertise both PQC and classical groups so non-PQC clients have a fallback (x25519).
             // With STRICT, x25519 alone would be rejected; CLIENT_NEGOTIATED allows it.
-            .overrideConfigKey("quarkus.tls.key-exchange-groups", "x25519mlkem768,x25519")
+            .overrideConfigKey("quarkus.tls.key-exchange-groups", "X25519MLKEM768,X25519")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test
@@ -56,10 +59,75 @@ public class HybridKeyExchangeClientNegotiatedTest extends AbstractHybridKeyExch
         options.setTrustAll(true);
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        } finally {
+            client.close();
+        }
+    }
+
+    @Test
+    void testClientWithOnlyUnadvertisedPqcGroupFails() {
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setSslEngineOptions(new OpenSSLEngineOptions());
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768"));
+
+        WebClient client = WebClient.create(vertx, options);
+        try {
+            assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join())
+                    .hasRootCauseInstanceOf(SSLException.class);
+        } finally {
+            client.close();
+        }
+    }
+
+    @Test
+    void testClientWithUnadvertisedPqcGroupFallsBackToClassical() {
+        // Client prefers SecP256r1MLKEM768 (not in server's group list) but also supports X25519.
+        // TLS negotiates X25519 as a common group; CLIENT_NEGOTIATED allows the classical fallback
+        // whereas STRICT would reject it.
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setSslEngineOptions(new OpenSSLEngineOptions());
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768", "X25519"));
+
+        WebClient client = WebClient.create(vertx, options);
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        } finally {
+            client.close();
+        }
+    }
+
+    @Test
+    @EnabledIf("isJdk27OrLater")
+    void testJdkSslClientConnectsToClientNegotiatedServer() {
+        // JDK 27+ supports X25519MLKEM768 natively — no OpenSSL engine needed on the client side.
+        // The server still requires OpenSSL 3.5 for client-negotiated enforcement (class-level @EnabledIf).
+        WebClientOptions options = new WebClientOptions();
+        options.setSsl(true);
+        options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+
+        WebClient client = WebClient.create(vertx, options);
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -70,10 +138,14 @@ public class HybridKeyExchangeClientNegotiatedTest extends AbstractHybridKeyExch
         options.setTrustAll(true);
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-negotiated-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped
@@ -87,4 +159,5 @@ public class HybridKeyExchangeClientNegotiatedTest extends AbstractHybridKeyExch
         }
 
     }
+
 }

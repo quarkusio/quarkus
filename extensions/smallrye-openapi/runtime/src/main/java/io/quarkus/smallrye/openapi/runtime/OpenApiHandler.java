@@ -28,17 +28,17 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private static final String QUERY_PARAM_FORMAT = "format";
 
     private final String documentName;
-    private final boolean alwaysRunFilter;
+    private final boolean hasRequestFilters;
     private final Event<SecurityIdentity> securityIdentityEvent;
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext requestContext;
 
-    public OpenApiHandler(String documentName, boolean alwaysRunFilter) {
+    public OpenApiHandler(String documentName, boolean hasRequestFilters) {
         this.documentName = documentName;
-        this.alwaysRunFilter = alwaysRunFilter;
+        this.hasRequestFilters = hasRequestFilters;
 
-        if (alwaysRunFilter) {
+        if (hasRequestFilters) {
             this.securityIdentityEvent = Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
             this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
             this.requestContext = Arc.container().requestContext();
@@ -53,14 +53,14 @@ public class OpenApiHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext context) {
-        boolean manageRequestContext = alwaysRunFilter && !requestContext.isActive();
+        boolean manageRequestContext = hasRequestFilters && !requestContext.isActive();
 
         try {
             if (manageRequestContext) {
                 requestContext.activate();
                 currentVertxRequest.setCurrent(context);
             }
-            if (alwaysRunFilter) {
+            if (hasRequestFilters) {
                 associateSecurityIdentity(context);
             }
             invoke(context);

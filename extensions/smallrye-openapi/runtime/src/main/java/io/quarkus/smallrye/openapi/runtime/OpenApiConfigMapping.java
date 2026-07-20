@@ -89,8 +89,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
                 propertyName(documentName, QUARKUS_SCAN_PROFILES_SUFFIX));
         mapKey(relocations, SmallRyeOASConfig.SCAN_EXCLUDE_PROFILES,
                 propertyName(documentName, QUARKUS_SCAN_EXCLUDE_PROFILES_SUFFIX));
-        mapKey(relocations, propertyName(OpenApiConstants.DEFAULT_DOCUMENT_NAME, QUARKUS_ALWAYS_RUN_FILTER_SUFFIX),
-                propertyName(documentName, QUARKUS_ALWAYS_RUN_FILTER_SUFFIX));
         return Collections.unmodifiableMap(relocations);
     }
 
@@ -114,7 +112,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final String QUARKUS_MERGE_SCHEMA_EXAMPLES_SUFFIX = "merge-schema-examples";
     private static final String QUARKUS_SCAN_PROFILES_SUFFIX = "scan-profiles";
     private static final String QUARKUS_SCAN_EXCLUDE_PROFILES_SUFFIX = "scan-exclude-profiles";
-    private static final String QUARKUS_ALWAYS_RUN_FILTER_SUFFIX = "always-run-filter";
 
     private String propertyName(String documentName, String suffix) {
         String quarkusPrefix = "quarkus.smallrye-openapi";

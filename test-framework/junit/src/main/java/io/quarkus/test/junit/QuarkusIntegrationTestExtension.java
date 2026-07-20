@@ -172,9 +172,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reset the failed state if we changed test class
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
-        if (isNewTestClass && state != null) {
-            state.setTestFailed(null);
+        if (isNewTestClass) {
+            clearBootFailure();
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
+            if (state != null) {
+                state.setTestFailed(null);
+            }
         }
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = false;
@@ -210,6 +213,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
                 failedBoot = true;
                 firstException = e;
+                getStoreFromContext(extensionContext).put(FailedCleanup.class.getName(), new FailedCleanup());
             }
         }
         return state;
@@ -421,6 +425,18 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             throw new RuntimeException(throwable);
         } else {
             throw new TestAbortedException("Boot failed");
+        }
+    }
+
+    static void clearBootFailure() {
+        firstException = null;
+        failedBoot = false;
+    }
+
+    static final class FailedCleanup implements AutoCloseable {
+        @Override
+        public void close() {
+            clearBootFailure();
         }
     }
 

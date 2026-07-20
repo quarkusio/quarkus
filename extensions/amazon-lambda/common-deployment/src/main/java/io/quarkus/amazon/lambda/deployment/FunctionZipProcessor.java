@@ -8,7 +8,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -17,7 +16,6 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -39,7 +37,11 @@ public class FunctionZipProcessor {
 
     /**
      * Function.zip is same as the runner jar plus dependencies in lib/
-     * plus anything in src/main/zip.jvm
+     * plus anything in src/main/zip.jvm.
+     * <p>
+     * Only produced for {@code legacy-jar}, which is the layout expected by ZIP/SAM
+     * Lambda deployments. Other jar types (for example {@code fast-jar} for JVM
+     * container images) skip zip generation so the build can succeed.
      *
      * @param target
      * @param artifactResultProducer
@@ -53,9 +55,13 @@ public class FunctionZipProcessor {
             JarBuildItem jar) throws Exception {
 
         if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
-            throw new BuildException("Lambda deployments need to use a legacy JAR, " +
-                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
-                    List.of());
+            log.infof(
+                    "Skipping function.zip generation because quarkus.package.jar.type=%s. "
+                            + "function.zip is only produced for legacy-jar (ZIP/SAM Lambda deployments). "
+                            + "Use quarkus.package.jar.type=legacy-jar for ZIP deployments, "
+                            + "or fast-jar for JVM container images.",
+                    packageConfig.jar().type());
+            return;
         }
 
         Path zipPath = target.getOutputDirectory().resolve("function.zip");

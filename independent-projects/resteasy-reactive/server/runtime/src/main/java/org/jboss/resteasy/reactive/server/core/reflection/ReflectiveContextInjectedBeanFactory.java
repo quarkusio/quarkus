@@ -23,6 +23,8 @@ import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
     public static final Function<Class<?>, BeanFactory<?>> FACTORY = new Function<Class<?>, BeanFactory<?>>() {
         @Override
@@ -126,6 +128,7 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
         }
     }
 
+    @SuppressForbidden(reason = "Context parameter injection requires dynamic proxy for lazy delegation")
     private Object extractContextParam(Class<?> type) {
         ContextParamExtractor contextParamExtractor = new ContextParamExtractor(type);
         Object contextParam = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),

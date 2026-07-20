@@ -27,6 +27,7 @@ import jakarta.persistence.ValidationMode;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.SchemaToolingSettings;
+import org.hibernate.cfg.ValidationSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -482,19 +483,21 @@ public final class HibernateProcessorUtil {
 
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
+        String validationMode;
         if (!config.validation().enabled()) {
-            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
-            // TODO ASK JPA 4.0 / ORM 8.0: validation constraints (@Size, @NotNull, ...) now influence DDL by default.
-            // When validation is disabled, also disable their effect on schema generation.
+            validationMode = ValidationMode.NONE.name();
+        } else {
+            validationMode = config.validation().mode()
+                    .stream()
+                    .map(Enum::name)
+                    .collect(Collectors.joining(","));
+        }
+        descriptor.getProperties().setProperty(ValidationSettings.JAKARTA_VALIDATION_MODE, validationMode);
+        // JPA 4.0 / ORM 8.0: validation constraints (@Size, @NotNull, ...) now influence DDL by default.
+        // When validation is disabled, also disable their effect on schema generation.
+        if (validationMode.equals(ValidationMode.NONE.name())) {
             descriptor.getProperties().setProperty(
                     SchemaToolingSettings.APPLY_VALIDATION_CONSTRAINTS, "DISABLED");
-        } else {
-            descriptor.getProperties().setProperty(
-                    AvailableSettings.JAKARTA_VALIDATION_MODE,
-                    config.validation().mode()
-                            .stream()
-                            .map(Enum::name)
-                            .collect(Collectors.joining(",")));
         }
     }
 

@@ -4,12 +4,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.persistence.NonUniqueResultException;
 
 import io.quarkus.hibernate.panache.PanacheQuery;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public interface PanacheBlockingQuery<Entity>
-        extends PanacheQuery<PanacheBlockingQuery<Entity>, Entity, List<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> {
+        extends
+        PanacheQuery<PanacheBlockingQuery<Entity>, Entity, Entity, List<Entity>, PanacheBlockingQuery<Entity>, Boolean, Long> {
+
+    @Override
+    PanacheBlockingQuery<Entity> sort(Order<? super Entity> order);
+
+    @Override
+    default PanacheBlockingQuery<Entity> sort(Sort<? super Entity> sort) {
+        return sort(PanacheJpaUtil.toOrder(sort));
+    }
 
     /**
      * Defines a projection class. This will transform the returned values into instances of the given type using the following

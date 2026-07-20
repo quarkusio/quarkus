@@ -101,6 +101,11 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     // Builder
 
+    public CommonAbstractPanacheQueryImpl<Entity, SessionType> sort(Sort sort) {
+        this.sort = sort;
+        return this;
+    }
+
     public <T> CommonAbstractPanacheQueryImpl<T, SessionType> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {

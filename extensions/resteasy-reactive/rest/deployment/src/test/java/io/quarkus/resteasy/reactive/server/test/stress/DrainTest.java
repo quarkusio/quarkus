@@ -74,8 +74,8 @@ public class DrainTest {
     private void runTest(String path, HttpClientOptions options) throws Exception {
         int num = 10_000;
         Vertx vertx = Vertx.vertx();
+        HttpClient client = vertx.createHttpClient(options, new PoolOptions().setHttp1MaxSize(64));
         try {
-            HttpClient client = vertx.createHttpClient(options, new PoolOptions().setHttp1MaxSize(64));
             CountDownLatch latch = new CountDownLatch(num);
             AtomicLong sum = new AtomicLong();
             AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -89,7 +89,9 @@ public class DrainTest {
                             latch.countDown();
                         })
                         .onFailure(err -> {
-                            failure.compareAndSet(null, err);
+                            if (!failure.compareAndSet(null, err)) {
+                                failure.get().addSuppressed(err);
+                            }
                             latch.countDown();
                         });
             }
@@ -100,7 +102,8 @@ public class DrainTest {
             }
             Assertions.assertThat(sum.get()).isEqualTo(1_000_000_000L);
         } finally {
-            vertx.close().toCompletionStage().toCompletableFuture().get();
+            client.shutdown().await();
+            vertx.close().await();
         }
     }
 

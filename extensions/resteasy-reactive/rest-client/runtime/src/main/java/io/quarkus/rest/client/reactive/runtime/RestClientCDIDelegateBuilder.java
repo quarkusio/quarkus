@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -215,6 +216,22 @@ public class RestClientCDIDelegateBuilder<T> {
         Optional<Boolean> maybeFollowRedirects = oneOf(restClientConfig.followRedirects(), configRoot.followRedirects());
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
+        }
+
+        Optional<Set<String>> sameOriginBlockedHeaders = oneOf(
+                restClientConfig.sameOriginRedirectBlockedHeaders(),
+                configRoot.sameOriginRedirectBlockedHeaders());
+        if (sameOriginBlockedHeaders.isPresent()) {
+            builder.property(QuarkusRestClientProperties.SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS,
+                    sameOriginBlockedHeaders.get());
+        }
+
+        Optional<Set<String>> crossOriginBlockedHeaders = oneOf(
+                restClientConfig.crossOriginRedirectBlockedHeaders(),
+                configRoot.crossOriginRedirectBlockedHeaders());
+        if (crossOriginBlockedHeaders.isPresent()) {
+            builder.property(QuarkusRestClientProperties.CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS,
+                    crossOriginBlockedHeaders.get());
         }
     }
 

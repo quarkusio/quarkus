@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -178,6 +179,30 @@ public interface RestClientsConfig {
      * Can be overwritten by client-specific settings.
      */
     Optional<Boolean> followRedirects();
+
+    /**
+     * The set of HTTP headers that are removed on same-origin redirect responses.
+     * <p>
+     * When not set, the Vert.x default is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("cookie,content-length")
+    Optional<Set<String>> sameOriginRedirectBlockedHeaders();
+
+    /**
+     * The set of HTTP headers that are removed on cross-origin redirect responses.
+     * <p>
+     * When not set, the Vert.x default is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("authorization,cookie,proxy-authorization,content-length")
+    Optional<Set<String>> crossOriginRedirectBlockedHeaders();
 
     /**
      * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider` annotation.
@@ -584,6 +609,24 @@ public interface RestClientsConfig {
          * This property is not applicable to the RESTEasy Client.
          */
         OptionalInt maxRedirects();
+
+        /**
+         * The set of HTTP headers that are removed on same-origin redirect responses.
+         * <p>
+         * When not set, the global setting or the Vert.x default is used.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Set<String>> sameOriginRedirectBlockedHeaders();
+
+        /**
+         * The set of HTTP headers that are removed on cross-origin redirect responses.
+         * <p>
+         * When not set, the global setting or the Vert.x default is used.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Set<String>> crossOriginRedirectBlockedHeaders();
 
         /**
          * The HTTP headers that should be applied to all requests of the rest client.

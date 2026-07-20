@@ -68,6 +68,10 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.keepAliveEnabled().get()).isTrue();
         assertThat(configRoot.maxRedirects().getAsInt()).isEqualTo(2);
         assertThat(configRoot.followRedirects().get()).isTrue();
+        assertThat(configRoot.sameOriginRedirectBlockedHeaders().get())
+                .containsExactlyInAnyOrder("cookie", "content-length");
+        assertThat(configRoot.crossOriginRedirectBlockedHeaders().get())
+                .containsExactlyInAnyOrder("authorization", "cookie", "proxy-authorization", "content-length");
         assertThat(configRoot.providers().get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");
         assertThat(configRoot.queryParamStyle().get()).isEqualTo(QueryParamStyle.MULTI_PAIRS);

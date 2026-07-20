@@ -77,7 +77,8 @@ public class MultiplePersistenceUnitsCdiStatelessSessionTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .cause()
                 .isInstanceOf(UnknownEntityTypeException.class)
-                .hasMessageContaining("Unknown entity type 'io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User'");
+                .hasMessageContaining(
+                        "Unknown entity type 'io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User'");
 
     }
 }

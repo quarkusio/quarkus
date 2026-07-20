@@ -9,8 +9,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.hibernate.annotations.TimeZoneColumn;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;

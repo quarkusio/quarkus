@@ -67,7 +67,8 @@
 <setting id="org.eclipse.jdt.core.formatter.comment.format_block_comments" value="true"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_header" value="false"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_html" value="true"/>
-<setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="true"/>
+<setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="false"/>
+<setting id="org.eclipse.jdt.core.formatter.comment.format_markdown_comments" value="false"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_line_comments" value="false"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_source_code" value="true"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.indent_parameter_description" value="false"/>

@@ -15,7 +15,6 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.arc.processor.types.Bar;

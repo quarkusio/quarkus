@@ -5,7 +5,6 @@ import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
 import static io.quarkus.panache.common.deployment.PanacheConstants.DOTNAME_GENERATE_BRIDGE;
 import static java.util.stream.Collectors.toList;
-import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ARRAYLENGTH;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.CHECKCAST;

@@ -1,7 +1,5 @@
 package io.quarkus.arc.test.startup;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 

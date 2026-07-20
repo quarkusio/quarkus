@@ -25,9 +25,8 @@
         <version.deploy.plugin>3.1.4</version.deploy.plugin>
         <version.enforcer.plugin>3.6.3</version.enforcer.plugin>
         <version.exec.plugin>3.6.3</version.exec.plugin>
-        <version.formatter.plugin>2.27.0</version.formatter.plugin>
         <version.gpg.plugin>3.2.8</version.gpg.plugin>
-        <version.impsort.plugin>1.13.0</version.impsort.plugin>
+        <version.spotless.plugin>3.7.0</version.spotless.plugin>
         <version.install.plugin>3.1.4</version.install.plugin>
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
          <version.jar.plugin>3.5.0</version.jar.plugin>
@@ -361,35 +360,32 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>net.revelc.code.formatter</groupId>
-                    <artifactId>formatter-maven-plugin</artifactId>
-                    <version>${version.formatter.plugin}</version>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${version.spotless.plugin}</version>
                     <dependencies>
                         <dependency>
-                            <artifactId>quarkus-ide-config</artifactId>
                             <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-ide-config</artifactId>
                             <version>${project.version}</version>
                         </dependency>
                     </dependencies>
                     <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/formatter-maven-plugin-${version.formatter.plugin}</cachedir>
-                        <configFile>eclipse-format.xml</configFile>
-                        <lineEnding>LF</lineEnding>
+                        <lineEndings>UNIX</lineEndings>
                         <skip>${format.skip}</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code</groupId>
-                    <artifactId>impsort-maven-plugin</artifactId>
-                    <version>${version.impsort.plugin}</version>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/impsort-maven-plugin-${version.impsort.plugin}</cachedir>
-                        <groups>java.,javax.,jakarta.,org.,com.</groups>
-                        <staticGroups>*</staticGroups>
-                        <skip>${format.skip}</skip>
-                        <removeUnused>true</removeUnused>
+                        <upToDateChecking>
+                            <enabled>true</enabled>
+                            <indexFile>${project.basedir}/.cache/spotless-index</indexFile>
+                        </upToDateChecking>
+                        <java>
+                            <removeUnusedImports />
+                            <importOrder>
+                                <order>\#,java,javax,jakarta,org,com,</order>
+                            </importOrder>
+                            <eclipse>
+                                <file>eclipse-format.xml</file>
+                            </eclipse>
+                        </java>
                     </configuration>
                 </plugin>
                 <plugin>

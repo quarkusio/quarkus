@@ -1,11 +1,3 @@
-package io.quarkus.vertx.http.proxy.fakedns;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /*
  *  Licensed to the Apache Software Foundation (ASF) under one
  *  or more contributor license agreements.  See the NOTICE file
@@ -25,6 +17,14 @@ import java.util.Map;
  *  under the License.
  *
  */
+package io.quarkus.vertx.http.proxy.fakedns;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.directory.server.dns.io.encoder.*;
 import org.apache.directory.server.dns.messages.DnsMessage;
 import org.apache.directory.server.dns.messages.MessageType;

@@ -2029,7 +2029,7 @@ jobs:
           HybridKeyExchangeStrictIllGroupsTest,HybridKeyExchangeClientNegotiatedNoGroupsTest,\
           HybridKeyExchangeClientNegotiatedIllGroupsTest,HybridKeyExchangeRelaxedTest,\
           HybridKeyExchangeRelaxedNoGroupsTest,HybridKeyExchangeJdkSslStrictInvalidTest,\
-          HybridKeyExchangeJdkSslClientNegotiatedInvalidTest,HybridKeyExchangeNamedBucketTest\
+          HybridKeyExchangeJdkSslClientNegotiatedInvalidTest,HybridKeyExchangeNamedBucketTest \
           -f extensions/vertx-http/deployment test
       - name: Run PQC tests resteasy-reactive
         run: |

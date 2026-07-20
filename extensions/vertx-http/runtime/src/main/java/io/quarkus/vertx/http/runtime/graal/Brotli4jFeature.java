@@ -20,8 +20,6 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
 
-import io.quarkus.runtime.graal.GraalVM;
-
 public class Brotli4jFeature implements Feature {
 
     @Override
@@ -43,12 +41,6 @@ public class Brotli4jFeature implements Feature {
 
         // Static initializer tries to load the native library in Brotli4jLoader; must be done at runtime.
         RuntimeClassInitialization.initializeAtRunTime("com.aayushatharva.brotli4j.Brotli4jLoader");
-        final GraalVM.Version v = GraalVM.Version.getCurrent();
-        // Newer 23.1+ GraalVM/Mandrel does not need this explicitly marked for runtime init thanks
-        // to a different strategy: https://github.com/oracle/graal/blob/vm-23.1.0/substratevm/CHANGELOG.md?plain=1#L10
-        if (v.compareTo(GraalVM.Version.VERSION_23_1_0) <= 0) {
-            RuntimeClassInitialization.initializeAtRunTime("io.netty.handler.codec.compression.Brotli");
-        }
     }
 
     // Verbatim copy from https://github.com/hyperxpro/Brotli4j/blob/32e3d3827fa3124ca945b75ae2138492c9c775b3/brotli4j/src/main/java/com/aayushatharva/brotli4j/Brotli4jLoader.java#L118C1-L150C6

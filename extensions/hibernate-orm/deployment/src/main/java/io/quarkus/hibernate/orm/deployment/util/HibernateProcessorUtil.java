@@ -26,6 +26,7 @@ import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
 
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.SchemaToolingSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -483,6 +484,10 @@ public final class HibernateProcessorUtil {
             HibernateOrmConfigPersistenceUnit config) {
         if (!config.validation().enabled()) {
             descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+            // TODO ASK JPA 4.0 / ORM 8.0: validation constraints (@Size, @NotNull, ...) now influence DDL by default.
+            // When validation is disabled, also disable their effect on schema generation.
+            descriptor.getProperties().setProperty(
+                    SchemaToolingSettings.APPLY_VALIDATION_CONSTRAINTS, "DISABLED");
         } else {
             descriptor.getProperties().setProperty(
                     AvailableSettings.JAKARTA_VALIDATION_MODE,

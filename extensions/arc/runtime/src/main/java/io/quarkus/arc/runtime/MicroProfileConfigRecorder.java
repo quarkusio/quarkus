@@ -86,7 +86,7 @@ public class MicroProfileConfigRecorder {
                 }
             }
             SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-            ConfigMappings.registerConfigProperties(config, configClasses);
+            ConfigMappings.registerConfigClasses(config, configClasses, false);
         } catch (ConfigValidationException e) {
             throw new DeploymentException(e.getMessage(), e);
         }

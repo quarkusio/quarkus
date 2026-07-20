@@ -3,7 +3,6 @@ package io.quarkus.deployment.steps;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.CONFIG_RUNTIME_NAME;
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.CONFIG_STATIC_NAME;
-import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toSet;
@@ -18,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,10 +31,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BooleanSupplier;
 
 import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
@@ -48,6 +50,7 @@ import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.ConfigBuildTimeConfig;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -75,6 +78,7 @@ import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.DotNames;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
@@ -83,6 +87,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -103,7 +108,10 @@ import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
+import io.quarkus.runtime.configuration.SystemOnlySourcesConfigBuilder;
+import io.quarkus.runtime.graal.InetRunTime;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigMappingHandler;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingInterface.LeafProperty;
 import io.smallrye.config.ConfigMappingInterface.MapProperty;
@@ -115,6 +123,7 @@ import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.ConfigValidator;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SecretKeysHandler;
@@ -122,18 +131,39 @@ import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class ConfigGenerationBuildStep {
+    private static final String SERVICES_PREFIX = "META-INF/services/";
+
+    @BuildStep
+    void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
+        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(InetRunTime.class.getName()));
+        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(
+                "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
+    }
+
+    @BuildStep
+    void nativeServiceProviders(BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
+        providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
+                SmallRyeConfigProviderResolver.class.getName()));
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        // TODO - radcortez - Move these services to be registered directly with the builder
+        for (Class<?> serviceClass : Arrays.asList(
+                ConfigValidator.class,
+                ConfigMappingHandler.class)) {
+            String serviceName = serviceClass.getName();
+            Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
+            if (!names.isEmpty()) {
+                providerProducer.produce(new ServiceProviderBuildItem(serviceName, names));
+            }
+        }
+    }
+
     private static final MethodDescriptor CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigBuilder.class,
             "configBuilder", SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class);
     private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "withSources", SmallRyeConfigBuilder.class, ConfigSource[].class);
-
-    @BuildStep
-    void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
-        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(
-                "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
-    }
 
     @BuildStep
     void buildTimeRunTimeConfig(
@@ -336,6 +366,23 @@ public class ConfigGenerationBuildStep {
             registerImplicitConverter(property.asOptional().getNestedProperty(), reflectiveClasses);
         } else if (property.isCollection()) {
             registerImplicitConverter(property.asCollection().getElement(), reflectiveClasses);
+        }
+    }
+
+    @BuildStep(onlyIf = SystemOnlySources.class)
+    void systemOnlySources(BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        // TODO - radcortez - YAML sources are still available because they are registered directly.
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+    }
+
+    private static class SystemOnlySources implements BooleanSupplier {
+        ConfigBuildTimeConfig configBuildTimeConfig;
+
+        @Override
+        public boolean getAsBoolean() {
+            return configBuildTimeConfig.systemOnly();
         }
     }
 

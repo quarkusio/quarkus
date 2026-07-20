@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.reactive.config;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +27,7 @@ public class SettingsSpyingIdentifierGenerator implements IdentifierGenerator {
     }
 
     @Override
-    public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
+    public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         throw new IllegalStateException("This should not be called");
     }
 }

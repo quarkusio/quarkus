@@ -328,7 +328,8 @@ public final class HibernateReactiveProcessor {
                 persistenceUnitName,
                 new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
-                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassAndPackageNames()),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassNames()),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.modelPackageNames()),
                 new Properties(),
                 true);
 

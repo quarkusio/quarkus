@@ -42,6 +42,7 @@ import javax.xml.namespace.QName;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
 import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.xml.bind.JAXBElement;
 
@@ -151,6 +152,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.hibernate.orm.runtime.tenant.MultiTenancyResolverClasses;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.hibernate.validator.spi.BeanValidationTraversableResolverBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
@@ -1020,6 +1022,43 @@ public final class HibernateOrmProcessor {
                     .produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_CONNECTION_RESOLVER)));
             unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(ClassNames.TENANT_RESOLVER)));
         }
+    }
+
+    /**
+     * {@code TenantResolver} and {@code TenantConnectionResolver} are generic interfaces, so their implementations
+     * expose a parameterized bean type (e.g. {@code TenantResolver<Long>}) that Arc typesafe resolution does not match
+     * against the raw interface type. We collect the implementation classes here and expose them as an immutable
+     * {@link MultiTenancyResolverClasses} bean so they can be looked up by their concrete class at runtime.
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void collectTenantResolverClasses(HibernateOrmRecorder recorder,
+            RecorderContext recorderContext,
+            CombinedIndexBuildItem combinedIndex,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        boolean multitenancyEnabled = persistenceUnitDescriptors.stream()
+                .anyMatch(pu -> pu.getConfig().getMultiTenancyStrategy() != MultiTenancyStrategy.NONE);
+        if (!multitenancyEnabled) {
+            return;
+        }
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MultiTenancyResolverClasses.class)
+                .scope(Singleton.class)
+                .unremovable()
+                .setRuntimeInit()
+                .supplier(recorder.multiTenancyResolverClasses(
+                        resolverClassProxies(combinedIndex, recorderContext, ClassNames.TENANT_RESOLVER),
+                        resolverClassProxies(combinedIndex, recorderContext, ClassNames.TENANT_CONNECTION_RESOLVER)))
+                .done());
+    }
+
+    private static Set<Class<?>> resolverClassProxies(CombinedIndexBuildItem combinedIndex,
+            RecorderContext recorderContext, DotName resolverInterface) {
+        Set<Class<?>> classProxies = new HashSet<>();
+        for (ClassInfo implementor : combinedIndex.getIndex().getAllKnownImplementors(resolverInterface)) {
+            classProxies.add(recorderContext.classProxy(implementor.name().toString()));
+        }
+        return classProxies;
     }
 
     @BuildStep

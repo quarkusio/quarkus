@@ -215,6 +215,11 @@ public abstract class AbstractTransactionLifecycleTest {
         }
 
         @Override
+        public void jdbcExecuteBatchStart() {
+            operations.add(LifecycleOperation.STATEMENT);
+        }
+
+        @Override
         public void flushStart() {
             operations.add(LifecycleOperation.FLUSH);
         }

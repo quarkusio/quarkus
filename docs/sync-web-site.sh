@@ -11,12 +11,12 @@ cd "${SCRIPTDIR}"
 #
 # In quarkusio/quarkusio.github.io repo for nightly sync (.github/workflows/sync-main-doc.yml)
 # Both the branch and the target website directory are specified.
-# This will skip the website repo clone and will sync files into _versions, _generated_config, etc.
+# This will skip the website repo clone and will sync files into content/versions, content/_generated-doc, etc.
 #
 # $ .quarkus-main-repository/docs/sync-web-site.sh main ${PWD}
 #
 # For local development leave all arguments out.
-# This will clone the website repo clone and sync files into _versions, _generated_config, etc.
+# This will clone the website repo clone and sync files into content/versions, content/_generated-doc, etc.
 # (use the version dropdown to select the nightly snapshot to preview changes)
 #
 # $ ./sync-web-site.sh
@@ -46,12 +46,12 @@ if [ -z "$TARGET_DIR" ]; then
 fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
-  TARGET_GUIDES=${TARGET_DIR}/_guides
-  TARGET_GENERATED_DOC=${TARGET_DIR}/_generated-doc/latest
+  TARGET_GUIDES=${TARGET_DIR}/content/guides
+  TARGET_GENERATED_DOC=${TARGET_DIR}/content/_generated-doc/latest
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/latest/index
 else
-  TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
-  TARGET_GENERATED_DOC=${TARGET_DIR}/_generated-doc/${BRANCH}
+  TARGET_GUIDES=${TARGET_DIR}/content/versions/${BRANCH}/guides
+  TARGET_GENERATED_DOC=${TARGET_DIR}/content/_generated-doc/${BRANCH}
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
   mkdir -p ${TARGET_GUIDES}
   mkdir -p ${TARGET_INDEX}
@@ -61,7 +61,7 @@ else
       cat <<EOF > ${TARGET_GUIDES}/_attributes-local.adoc
 // tag::xref-attributes[]
 :doc-examples: ./_examples
-:generated-dir: ../../../_generated-doc/${BRANCH}
+:generated-dir: ../../../../_generated-doc/${BRANCH}
 :code-examples: {generated-dir}/examples
 :imagesdir: ./images
 :includes: ./_includes
@@ -79,7 +79,7 @@ EOF
 ---
 layout: documentation
 title: Guides
-permalink: /version/${BRANCH}/guides/
+link: /version/${BRANCH}/guides/
 ---
 EOF
     fi
@@ -109,6 +109,43 @@ rsync -vr --delete \
     --exclude='**/_templates' \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
+
+echo
+echo "Post-processing synced guides for Roq..."
+echo
+
+# Move static assets to assets/ subdirectory
+echo "Moving static assets to assets/ subdirectory..."
+for ext in py sh zip jar tar.gz; do
+  find "$TARGET_GUIDES" -maxdepth 1 -name "*.$ext" -exec bash -c '
+    mkdir -p "$(dirname "$1")/assets"
+    mv "$1" "$(dirname "$1")/assets/"
+  ' _ {} \;
+done
+
+# Update AsciiDoc links to reference ../assets/
+echo "Updating asset links in .adoc files..."
+for ext in py sh zip jar tar.gz; do
+  find "$TARGET_GUIDES" -maxdepth 1 -name "*.adoc" -exec sed -i "s|link:\([a-zA-Z0-9_-]*\.$ext\)|link:../assets/\1|g" {} \;
+done
+
+# Ensure index.html files exist in resource directories
+echo "Ensuring index.html exists in resource directories..."
+for subdir in images javascript assets; do
+  dir="$TARGET_GUIDES/$subdir"
+  if [ -d "$dir" ] && [ ! -f "$dir/index.html" ]; then
+    rel_path=$(echo "$dir" | sed "s|${TARGET_DIR}/content/||")
+    printf '%s\n' '---' "link: /${rel_path}/" '---' '<html><body></body></html>' > "$dir/index.html"
+    echo "Created index.html for $subdir/"
+  fi
+done
+
+# Escape Qute syntax in qute-reference guides
+echo "Escaping Qute syntax in qute-reference guides..."
+find "$TARGET_GUIDES" -name "*qute-reference.adoc" -exec sed -i 's/|}/|\\}/g; s/{|/\\{|/g' {} \;
+
+echo "Post-processing complete."
+echo
 
 if [ -d target/quarkus-generated-doc/ ]; then
   echo
@@ -155,27 +192,12 @@ else
     echo "
 Run one of the following command to check the web site (if not done already):
 
-- If you have Jekyll set up locally:
+- If you have Maven set up locally:
 
     ./target/web-site/serve-only-latest-guides.sh
 
-    OR if you want to generate all versions include the maintenance branches (2.7, 2.13...):
+    OR to preview all versions:
 
-    (cd target/web-site && bundle exec jekyll serve)
-
-- If you have Docker or Podman:
-
-    cd target/web-site
-    docker run --rm --volume=\"$PWD:/srv/jekyll:Z\" \\
-        --publish 4000:4000 jekyll/jekyll:4.1.0 jekyll serve --incremental
-
-- If you have Podman, something similar should work, but...
-  - you may need to set the Jekyll user/group id to match yours: -e JEKYLL_UID=501 -e JEKYLL_GID=503
-  - you may need to add an environment variable if you are running rootless: -e JEKYLL_ROOTLESS=1
-  - More: https://github.com/envygeeks/jekyll-docker/blob/master/README.md
-
-- For either Docker/Podman, you may want to add a volume to store built bundles:
-      docker volume create quarkus-jekyll-bundles
-  - Add the volume to the command: --volume quarkus-jekyll-bundles:/usr/local/bundle
+    (cd target/web-site && mvn quarkus:dev)
 "
 fi

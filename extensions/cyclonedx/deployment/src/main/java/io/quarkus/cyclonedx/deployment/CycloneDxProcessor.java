@@ -72,6 +72,7 @@ public class CycloneDxProcessor {
                     .setSchemaVersion(cdxSbomConfig.schemaVersion().orElse(null))
                     .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
                     .setPrettyPrint(cdxSbomConfig.prettyPrint())
+                    .setLibrariesOnly(cdxSbomConfig.librariesOnly())
                     .setContributions(contributions)
                     .generate()) {
                 sbomProducer.produce(new SbomBuildItem(sbom));
@@ -162,6 +163,7 @@ public class CycloneDxProcessor {
                 .setSchemaVersion(cdxConfig.schemaVersion().orElse(null))
                 .setIncludeLicenseText(cdxConfig.includeLicenseText())
                 .setPrettyPrint(cdxConfig.prettyPrint())
+                .setLibrariesOnly(cdxConfig.librariesOnly())
                 .setContributions(collectContributions(coreContribution, sbomContributions))
                 .generateText();
 

@@ -1268,6 +1268,47 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+== Multiple `@Consumes` media types
+
+Some REST Client interface methods may have a `@Consumes` annotation with multiple media type values, for example:
+
+[source, java]
+----
+@Path("/orders")
+@RegisterRestClient
+public interface OrderService {
+
+    record OrderReference(String orderReference) {
+    };
+
+    @POST
+    @Consumes({"application/json", "application/yaml"}) <1>
+    Response addOrderReference(OrderReference orderReference);
+}
+----
+<1> REST server accepts OrderReference representations in either JSON or YAML formats.
+
+REST Client must set a `Content-Type` for the `POST /orders` requests. When it sees `@Consumes` with multiple media type values, it sorts them and chooses the first media type as a `Content-Type` value. It must not impact the client code that makes calls such as `OrderService#addOrderReference` as all the listed `@Consumes` values are expected to be supported by the REST server.
+
+Register a custom `ClientRequestFiler` as explained in the <<customize-rest-client-request>> section if you prefer to set a different `Content-Type` such as `application/yaml` which is also supported according to the `OrderService` interface definition:
+
+[source, java]
+----
+@Provider
+public class RestClientContentTypeRequestFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext rc) throws IOException {
+        String contentType = rc.getHeaderString("Content-Type"));
+        if ("application/json".equals(contentType)) {
+            rc.getHeaders().putSingle("Content-Type", "application/yaml");
+        }
+    }
+
+}
+----
+
+[[customize-rest-client-request]]
 == Customizing the request
 
 The REST Client supports further customization of the final request to be sent to the server via filters. The filters must implement either the interface `ClientRequestFilter` or `ResteasyReactiveClientRequestFilter`.

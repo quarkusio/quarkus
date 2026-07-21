@@ -2653,12 +2653,19 @@ public class JaxrsClientReactiveProcessor {
             if (consumes != null && consumes.length > 0) {
 
                 if (consumes.length > 1) {
-                    throw new IllegalArgumentException(
-                            "Multiple `@Consumes` values used in a MicroProfile Rest Client: " +
-                                    restClientInterface.name().toString()
-                                    + " Unable to determine a single `Content-Type`.");
+                    Set<String> uniqueConsumes = Set.of(consumes);
+                    mediaTypeValue = uniqueConsumes.iterator().next();
+                    if (uniqueConsumes.size() > 1) {
+                        log.debugf("MicroProfile Rest Client `%s`'s method `%s` has multiple `@Consumes` values `%s`,"
+                                + " Content-Type will be set to `%s`."
+                                + " You can change Content-Type in a custom jakarta.ws.rs.ClientRequestFilter implementation.",
+                                restClientInterface.name().toString(), jandexMethod.name(),
+                                uniqueConsumes.stream().collect(Collectors.joining(", ")),
+                                mediaTypeValue);
+                    }
+                } else {
+                    mediaTypeValue = consumes[0];
                 }
-                mediaTypeValue = consumes[0];
             } else if (formParams != null) {
                 mediaTypeValue = multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_FORM_URLENCODED;
             }

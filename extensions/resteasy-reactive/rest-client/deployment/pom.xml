@@ -142,6 +142,12 @@
             <classifier>linux-x86_64</classifier>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-openssl</artifactId>
+            <classifier>linux-aarch_64</classifier>
+            <scope>test</scope>
+        </dependency>
    </dependencies>
 
     <build>

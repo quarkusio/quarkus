@@ -112,6 +112,11 @@ class VertxCertificateHolderTest {
     }
 
     @Test
+    void testSslEngine() {
+        assertEquals(Optional.empty(), holder.getSslEngineOptions());
+    }
+
+    @Test
     void testWarnIfOldProtocols_withSSL() {
         assertTrue(holder.warnIfOldProtocols(Set.of("SSLv3"), "test"));
         assertTrue(holder.warnIfOldProtocols(Set.of("SSLv2", "TLSv1.3"), "test"));

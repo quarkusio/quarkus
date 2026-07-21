@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 
@@ -13,7 +12,7 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
     void init(T t);
 
-    Optional<ListeningAddress> start() throws IOException;
+    ListeningAddresses start() throws IOException;
 
     LaunchResult runToCompletion(String[] args);
 

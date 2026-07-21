@@ -23,4 +23,10 @@ public class HttpServerTest {
         assertEquals(-1, webServer.getSecurePort());
         assertEquals(-1, webServer.getManagementPort());
     }
+
+    @Test
+    void uris() {
+        assertTrue(webServer.getLocalBaseUri().toString().contains(String.valueOf(webServer.getPort())));
+        assertTrue(webServer.getManagementBaseUri().isEmpty());
+    }
 }

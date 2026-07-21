@@ -4,6 +4,7 @@ import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
 import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
 import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
+import static io.quarkus.test.common.ListeningAddress.MANAGEMENT_LISTENING_ADDRESS;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -61,6 +62,7 @@ import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.test.common.ListeningAddresses;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -356,12 +358,20 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             activateLogging();
 
             // Start Quarkus, capture the listening port if available and register it in ValueRegistry
-            Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
+            ListeningAddresses listeningData = startLauncher(launcher, additionalProperties);
+            Optional<ListeningAddress> listeningAddress = listeningData.address();
             if (listeningAddress.isPresent()) {
                 listeningAddress.get().register(valueRegistry, newConfig);
                 valueRegistry.register(LISTENING_ADDRESS, listeningAddress);
             } else {
                 valueRegistry.register(LISTENING_ADDRESS, Optional.empty());
+            }
+            Optional<ListeningAddress> managementAddress = listeningData.managementAddress();
+            if (managementAddress.isPresent()) {
+                managementAddress.get().registerManagement(valueRegistry, newConfig);
+                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, managementAddress);
+            } else {
+                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, Optional.empty());
             }
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();

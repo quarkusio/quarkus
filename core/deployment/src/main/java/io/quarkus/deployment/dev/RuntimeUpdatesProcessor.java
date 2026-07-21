@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -430,9 +431,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public void updateFile(String file, byte[] data) {
-        if (file.startsWith("/")) {
-            file = file.substring(1);
-        }
+        file = normalizeFile(file);
+        requireNonNull(data, "data");
         try {
             Path resolve = applicationRoot.resolve(file).normalize();
             if (!resolve.startsWith(applicationRoot)) {
@@ -450,6 +450,25 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void deleteFile(String file) {
+        file = normalizeFile(file);
+        try {
+            Path resolve = applicationRoot.resolve(file);
+            Files.deleteIfExists(resolve);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String normalizeFile(String file) {
+        requireNonNull(file, "file");
+        if (file.startsWith("/")) {
+            file = file.substring(1);
+        }
+        return file;
     }
 
     @Override

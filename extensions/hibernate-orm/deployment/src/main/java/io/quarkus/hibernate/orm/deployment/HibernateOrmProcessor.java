@@ -1413,6 +1413,15 @@ public final class HibernateOrmProcessor {
         for (String className : additionalClassNames) {
             try {
                 byte[] bytes = IoUtil.readClassAsBytes(HibernateOrmProcessor.class.getClassLoader(), className);
+                if (bytes == null) {
+                    bytes = IoUtil.readClassAsBytes(Thread.currentThread().getContextClassLoader(), className);
+                }
+                if (bytes == null) {
+                    throw new RuntimeException("Failed to read class bytes for '" + className
+                            + "', class not present in class loaders: "
+                            + HibernateOrmProcessor.class.getClassLoader()
+                            + ", " + Thread.currentThread().getContextClassLoader());
+                }
                 byte[] enhanced = hibernateEntityEnhancer.enhance(className, bytes);
                 additionalClasses.produce(new GeneratedClassBuildItem(false, className, enhanced != null ? enhanced : bytes));
             } catch (IOException e) {

@@ -17,7 +17,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Verifies that {@code quarkus.hibernate-orm."<pu>".jdbc=false} lets a specific persistence unit opt out of
+ * Verifies that {@code quarkus.hibernate-orm."<pu>".jdbc.enabled=false} lets a specific persistence unit opt out of
  * blocking (JDBC) bootstrap, even though an H2 JDBC datasource is available for it, without affecting sibling
  * persistence units. Uses only in-memory H2 datasources, so it doesn't require any external service/container.
  */

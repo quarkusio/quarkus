@@ -20,7 +20,7 @@ public class ORMReactiveCompatibilityNamedPersistenceUnitJdbcDisabledUnitTest ex
 
     // The named datasource is available for both jdbc and reactive, so blocking Hibernate ORM
     // would normally be bootstrapped for the "named-pu" persistence unit too. We explicitly disable it for
-    // that PU only, using quarkus.hibernate-orm."named-pu".jdbc=false, while leaving the reactive
+    // that PU only, using quarkus.hibernate-orm."named-pu".jdbc.enabled=false, while leaving the reactive
     // persistence unit for that same datasource unaffected.
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -32,7 +32,7 @@ public class ORMReactiveCompatibilityNamedPersistenceUnitJdbcDisabledUnitTest ex
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".datasource", "named-datasource")
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".packages", "io.quarkus.hibernate.reactive.entities")
-            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".jdbc", "false")
+            .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".jdbc.enabled", "false")
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)

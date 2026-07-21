@@ -687,12 +687,15 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Whether to bootstrap a blocking (JDBC) Hibernate ORM instance for this persistence unit.
          * <p>
+         * Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence units.
+         * This does not deprecate or replace {@code quarkus.hibernate-orm.blocking}.
+         * <p>
          * If not set, this is inferred from whether a JDBC datasource is available for this persistence unit,
          * as well as the global `quarkus.hibernate-orm.blocking` setting.
          *
          * @asciidoclet
          */
-        @WithParentName
         Optional<Boolean> enabled();
 
         /**
@@ -724,11 +727,13 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Whether to bootstrap a reactive Hibernate Reactive instance for this persistence unit.
          * <p>
+         * Use {@code quarkus.hibernate-orm.reactive.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".reactive.enabled} for named persistence units.
+         * <p>
          * If not set, this is inferred from whether a reactive datasource is available for this persistence unit.
          *
          * @asciidoclet
          */
-        @WithParentName
         Optional<Boolean> enabled();
 
         default boolean isAnyPropertySet() {

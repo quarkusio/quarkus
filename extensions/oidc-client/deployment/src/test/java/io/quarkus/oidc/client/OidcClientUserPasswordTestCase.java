@@ -64,6 +64,19 @@ public class OidcClientUserPasswordTestCase {
                 .statusCode(200)
                 .body(equalTo("alice"));
 
+        assertFalse(OidcCommonUtils.decodeJwtContent(token).getString("scope").contains("openid"));
+    }
+
+    @Test
+    public void testPasswordGrantTokenProviderWithAdditionalParams() {
+        String token = RestAssured.when().get("/client/tokenprovider-with-params").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+        assertTrue(OidcCommonUtils.decodeJwtContent(token).getString("scope").contains("openid"));
     }
 
     @Test

@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.spi;
 
+import java.util.Map;
+
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -20,4 +22,12 @@ public interface TokenProvider {
      * @return the access token
      */
     Uni<String> getAccessToken();
+
+    /**
+     * Get a valid, if necessary refreshed, access token, using additional input parameters.
+     *
+     * @param additionalParameters additional parameters
+     * @return the access token
+     */
+    Uni<String> getAccessToken(Map<String, String> additionalParameters);
 }

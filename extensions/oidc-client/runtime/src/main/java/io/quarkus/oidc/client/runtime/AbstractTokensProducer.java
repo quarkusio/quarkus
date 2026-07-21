@@ -81,6 +81,10 @@ public abstract class AbstractTokensProducer {
     }
 
     public Uni<Tokens> getTokens() {
+        return getTokens(additionalParameters());
+    }
+
+    public Uni<Tokens> getTokens(Map<String, String> additionalParameters) {
         if (isClientFeatureDisabled()) {
             throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`"
                     + " but the getTokens() method is called.");
@@ -91,7 +95,7 @@ public abstract class AbstractTokensProducer {
             LOG.debugf("%s OidcClient will discard the current access and refresh tokens",
                     clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
         }
-        return tokensHelper.getTokens(oidcClient, additionalParameters(), forceNewTokens);
+        return tokensHelper.getTokens(oidcClient, additionalParameters, forceNewTokens);
     }
 
     public Tokens awaitTokens() {

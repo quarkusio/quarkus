@@ -251,10 +251,72 @@ public class OidcClientResource {
 ----
 <1> `io.quarkus.oidc.client.runtime.TokensHelper` manages the access token acquisition and refresh.
 
-=== Inject tokens
+=== Inject TokenProvider
 
-You can inject `Tokens` that use `OidcClient` internally.
-`Tokens` can be used to acquire the access tokens and refresh them if necessary:
+You can inject `TokenProvider` that uses `OidcClient` internally to acquire the access tokens and refresh them asynchronously:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.oidc.client.spi.TokenProvider;
+
+@Path("/service")
+public class OidcClientResource {
+
+   @Inject
+   TokenProvider tokenProvider;
+
+   public Uni<String> getAccessToken() {
+       return tokenProvider.getAccessToken();
+   }
+}
+----
+
+You can also inject a `TokenProvider` that is bound to a named OIDC client, see <<named-oidc-clients>>.
+
+When a Quarkus extension must acquire OIDC tokens by using one of the token grants supported by the OIDC client, it can also use `TokenProvider` while depending only on the OIDC Client SPI:
+
+. Add the following dependency:
++
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client-spi</artifactId>
+</dependency>
+----
+
+Now, the extension is able to use a `TokenProvider` when an application that uses this extension also includes a `quarkus-oidc-client` dependency.
+Since the extension itself depends only on `quarkus-oidc-client-spi`, it must inject `TokenProvider` using `jakarta.enterprise.inject.Instance` and expect that `TokenProvider` may not be available.
+
+For example:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import io.quarkus.oidc.client.spi.TokenProvider;
+
+public class CustomExtensionTokenProvider {
+
+   @Inject
+   Instance<TokenProvider> tokenProvider;
+
+   public Uni<String> getAccessToken() {
+       return tokenProvider.isResolvable() ? tokenProvider.get().getAccessToken() : Uni.createFrom().nullItem();
+   }
+}
+----
+
+Currently, when an extensions injects `io.quarkus.oidc.client.spi.TokenProvider`, only a default OIDC client configuration can be used.
+
+=== Inject Tokens
+
+You can inject a `Tokens` class that uses `OidcClient` internally.
+`Tokens` can be used to acquire the access tokens and refresh them if necessary but also blocking the current request:
 
 [source,java]
 ----
@@ -901,7 +963,7 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 
 The `Tokens` producer will acquire and refresh the tokens, and the custom filter will decide how and when to use the token.
 
-You can also inject named `Tokens`, see <<named-oidc-clients>>
+You can also inject named `Tokens`, see <<named-oidc-clients>>.
 
 [[refresh-access-tokens]]
 === Refreshing access tokens
@@ -1253,43 +1315,6 @@ For example, the Kubernetes API server acts as an OIDC provider for service acco
 To send client credentials to the discovery endpoint, set `quarkus.oidc-client.credentials.for-all-endpoints=true`.
 Since the discovery endpoint is accessed with an HTTP GET request, only authentication methods that use the HTTP `Authorization` header are effective, such as `client_secret_basic` and <<oidc-client-jwt-bearer,JWT bearer>>.
 Alternatively, you can use <<oidc-client-ref-oidc-request-filters,OidcRequestFilter>> to customize the authentication.
-
-=== OIDC Client SPI
-
-When your custom extension must acquire OIDC tokens by using one of the token grants supported by the OIDC client, the extension can depend only on the OIDC Client SPI and let the OIDC client itself acquire and refresh access tokens as needed.
-
-. Add the following dependency:
-+
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-client-spi</artifactId>
-</dependency>
-----
-
-. Update your extension to use the `io.quarkus.oidc.client.spi.TokenProvider` CDI bean as required.
-For example:
-+
-[source,java]
-----
-package org.acme.extension;
-
-import jakarta.inject.Inject;
-import io.quarkus.oidc.client.spi.TokenProvider;
-
-public class ExtensionOAuth2Support {
-
-   @Inject
-   TokenProvider tokenProvider;
-
-   public Uni<String> getAccessToken() {
-       return tokenProvider.getAccessToken();
-   }
-}
-----
-+
-Currently, `io.quarkus.oidc.client.spi.TokenProvider` is available only for default OIDC clients because custom extensions are unlikely to be aware of multiple named OIDC clients.
 
 [[integration-testing-oidc-client]]
 === Testing

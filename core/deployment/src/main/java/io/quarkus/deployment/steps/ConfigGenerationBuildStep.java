@@ -143,14 +143,27 @@ public class ConfigGenerationBuildStep {
                 "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
     }
 
+    /**
+     * Registers all config components descriptors for native image.
+     * <p>
+     * The initialized Config used by Quarkus does not require them, but users may be instantiating their own Config.
+     */
     @BuildStep
     void nativeServiceProviders(BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
         providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
                 SmallRyeConfigProviderResolver.class.getName()));
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        // TODO - radcortez - Move these services to be registered directly with the builder
         for (Class<?> serviceClass : Arrays.asList(
+                Converter.class,
+                ConfigSource.class,
+                ConfigSourceProvider.class,
+                ConfigSourceFactory.class,
+                ConfigSourceInterceptor.class,
+                ConfigSourceInterceptorFactory.class,
+                SecretKeysHandler.class,
+                SecretKeysHandlerFactory.class,
                 ConfigValidator.class,
+                SmallRyeConfigBuilderCustomizer.class,
                 ConfigMappingHandler.class)) {
             String serviceName = serviceClass.getName();
             Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);

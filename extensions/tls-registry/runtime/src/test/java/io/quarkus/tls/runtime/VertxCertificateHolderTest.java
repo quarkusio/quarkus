@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
+import io.quarkus.tls.runtime.config.SslEngineType;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 
@@ -82,6 +83,11 @@ class VertxCertificateHolderTest {
 
             @Override
             public Optional<Duration> reloadPeriod() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<SslEngineType> sslEngine() {
                 return Optional.empty();
             }
         };

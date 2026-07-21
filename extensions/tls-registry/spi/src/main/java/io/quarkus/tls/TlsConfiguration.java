@@ -7,6 +7,7 @@ import javax.net.ssl.SSLContext;
 
 import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -107,6 +108,16 @@ public interface TlsConfiguration {
      * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
      */
     boolean reload();
+
+    /**
+     * Returns the SSL engine options to use, if explicitly configured.
+     * When empty, Vert.x selects the engine automatically based on the PQC enforcement policy.
+     *
+     * @return the {@link SSLEngineOptions} if configured, or empty.
+     */
+    default Optional<SSLEngineOptions> getSslEngineOptions() {
+        return Optional.empty();
+    }
 
     /**
      * Returns the name which was associated with this configuration

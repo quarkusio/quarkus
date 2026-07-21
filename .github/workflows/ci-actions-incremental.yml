@@ -2024,7 +2024,7 @@ jobs:
           ./mvnw $COMMON_MAVEN_ARGS install -Dquickly -T1C
       - name: Run PQC tests Vertx-http
         run: |
-          ./mvnw $COMMON_MAVEN_ARGS -Dtest-containers -Dstart-containers -Dtest=HybridKeyExchangeTest,HybridKeyExchangeMtlsTest,HybridKeyExchangeClientNegotiatedTest -f extensions/vertx-http/deployment test
+          ./mvnw $COMMON_MAVEN_ARGS -Dtest-containers -Dstart-containers -Dtest=HybridKeyExchangeTest,HybridKeyExchangeMtlsTest,HybridKeyExchangeClientNegotiatedTest,HybridKeyExchangeClientNegotiatedNoGroupsTest,HybridKeyExchangeClientNegotiatedIllGroupsTest,HybridKeyExchangeStrictNoGroupsTest,HybridKeyExchangeStrictIllGroupsTest,HybridKeyExchangeRelaxedTest,HybridKeyExchangeRelaxedNoGroupsTest,HybridKeyExchangeJdkSslStrictInvalidTest,HybridKeyExchangeJdkSslClientNegotiatedInvalidTest,HybridKeyExchangeNamedBucketTest -f extensions/vertx-http/deployment test
       - name: Run PQC tests resteasy-reactive
         run: |
           ./mvnw $COMMON_MAVEN_ARGS -Dtest-containers -Dstart-containers -Dtest=PqcKeyExchangeTest -f extensions/resteasy-reactive/rest-client/deployment test

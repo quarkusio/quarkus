@@ -98,6 +98,18 @@ public interface TlsBucketConfig {
     Optional<List<String>> keyExchangeGroups();
 
     /**
+     * Forces the SSL engine to use.
+     * <p>
+     * When not set, Vert.x selects the engine automatically: if {@code pqc-enforcement-policy} is
+     * {@code strict} or {@code client-negotiated}, it prefers the JDK engine (JDK 27+) or falls back
+     * to OpenSSL. For {@code relaxed} policy it uses the JDK engine by default.
+     * <p>
+     * Use {@code OPENSSL} to force netty-tcnative (requires the native library on the classpath).
+     * Use {@code JDKSSL} to force the standard JDK SSL engine.
+     */
+    Optional<SslEngineType> sslEngine();
+
+    /**
      * Sets the list of revoked certificates (paths to files).
      * <p>
      * A Certificate Revocation List (CRL) is a list of digital certificates that have been revoked by the issuing

@@ -125,6 +125,7 @@ public class TlsConfigUtils {
             options.setTrustAll(sslOptions.isTrustAll());
         }
         applySSLOptions(options, sslOptions);
+        configuration.getSslEngineOptions().ifPresent(options::setSslEngineOptions);
         return sslOptions;
     }
 

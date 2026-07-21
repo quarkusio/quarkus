@@ -114,7 +114,8 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator {
  * OpenJdkSelfSignedCertGenerator is package-private; alias its generate() method so
  * Target_io_netty_handler_ssl_util_SelfSignedCertificate can call it directly.
  */
-@TargetClass(className = "io.netty.handler.ssl.util.OpenJdkSelfSignedCertGenerator")
+@TargetClass(className = OpenJdkSelfSignedCertGeneratorPresent.CLASS_NAME, onlyWith = {
+        OpenJdkSelfSignedCertGeneratorPresent.class, IsBouncyNotThere.class })
 final class Target_io_netty_handler_ssl_util_OpenJdkSelfSignedCertGenerator {
 
     @Alias
@@ -132,7 +133,8 @@ final class Target_io_netty_handler_ssl_util_OpenJdkSelfSignedCertGenerator {
  * today in that case. When Bouncy Castle is present, this substitution does not apply and the original
  * BC-preferred constructor is used unmodified (Bouncy Castle links fine when it's actually there).
  */
-@TargetClass(className = "io.netty.handler.ssl.util.SelfSignedCertificate", onlyWith = IsBouncyNotThere.class)
+@TargetClass(className = SelfSignedCertificatePresent.CLASS_NAME, onlyWith = { SelfSignedCertificatePresent.class,
+        IsBouncyNotThere.class })
 final class Target_io_netty_handler_ssl_util_SelfSignedCertificate {
 
     @Alias
@@ -662,7 +664,7 @@ final class Alias_PemReader {
 /**
  * If BouncyCastle is not on the classpath, we must not try to read the PEM file using the BouncyCatle PEM reader.
  */
-@TargetClass(className = "io.netty.handler.ssl.SslContext", onlyWith = IsBouncyNotThere.class)
+@TargetClass(className = SslContextPresent.CLASS_NAME, onlyWith = { SslContextPresent.class, IsBouncyNotThere.class })
 final class Target_SslContext {
 
     @Substitute
@@ -717,6 +719,54 @@ class IsBouncyNotThere implements BooleanSupplier {
             return false;
         } catch (Exception e) {
             return true;
+        }
+    }
+}
+
+class SslContextPresent extends ClassAvailable implements BooleanSupplier {
+    public static final String CLASS_NAME = "io.netty.handler.ssl.SslContext";
+
+    @Override
+    public boolean getAsBoolean() {
+        return isClassPresent(CLASS_NAME);
+    }
+}
+
+class SelfSignedCertificatePresent extends ClassAvailable implements BooleanSupplier {
+    public static final String CLASS_NAME = "io.netty.handler.ssl.util.SelfSignedCertificate";
+
+    @Override
+    public boolean getAsBoolean() {
+        return isClassPresent(CLASS_NAME);
+    }
+}
+
+class OpenJdkSelfSignedCertGeneratorPresent extends ClassAvailable implements BooleanSupplier {
+    public static final String CLASS_NAME = "io.netty.handler.ssl.util.OpenJdkSelfSignedCertGenerator";
+
+    @Override
+    public boolean getAsBoolean() {
+        return isClassPresent(CLASS_NAME);
+    }
+}
+
+class ClassAvailable {
+    private final ClassLoader classLoader;
+
+    ClassAvailable() {
+        try {
+            this.classLoader = NettySubstitutions.class.getClassLoader();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    protected boolean isClassPresent(String clazz) {
+        try {
+            this.classLoader.loadClass(clazz);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

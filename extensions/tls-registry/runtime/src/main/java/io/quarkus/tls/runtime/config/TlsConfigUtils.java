@@ -94,8 +94,6 @@ public class TlsConfigUtils {
      * @param configuration the configuration to use
      */
     public static void configure(TCPSSLOptions options, TlsConfiguration configuration) {
-        var sslOptions = configuration.getServerSSLOptions();
-
         options.setSsl(true);
         if (configuration.getTrustStoreOptions() != null) {
             options.setTrustOptions(configuration.getTrustStoreOptions());
@@ -105,8 +103,8 @@ public class TlsConfigUtils {
         if (configuration.getKeyStoreOptions() != null) {
             options.setKeyCertOptions(configuration.getKeyStoreOptions());
         }
-
         applySSLOptions(options, configuration.getServerSSLOptions());
+        configuration.getSslEngineOptions().ifPresent(options::setSslEngineOptions);
     }
 
     /**

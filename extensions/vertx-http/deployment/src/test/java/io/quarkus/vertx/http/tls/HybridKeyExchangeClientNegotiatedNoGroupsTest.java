@@ -25,62 +25,68 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-/**
- * Tests client-negotiated PQC enforcement with no explicit key-exchange-groups.
- * Both PQC and classical clients should succeed.
- */
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-hybrid-cn-no-groups-test", password = "secret", formats = {
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-hybrid-client-neg-no-groups-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
 @EnabledIf("isOpenSsl35Available")
 public class HybridKeyExchangeClientNegotiatedNoGroupsTest extends AbstractHybridKeyExchangeTest {
 
-    @TestHTTPResource(value = "/hybrid", tls = true)
+    @TestHTTPResource(value = "/client-neg-no-groups", tls = true)
     URL url;
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
-                    .addAsResource(new File("target/certs/ssl-hybrid-cn-no-groups-test.key"), "server-key.pem")
-                    .addAsResource(new File("target/certs/ssl-hybrid-cn-no-groups-test.crt"), "server-cert.pem"))
+                    .addAsResource(new File("target/certs/ssl-hybrid-client-neg-no-groups-test.key"), "server-key.pem")
+                    .addAsResource(new File("target/certs/ssl-hybrid-client-neg-no-groups-test.crt"), "server-cert.pem"))
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
             .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "client-negotiated")
+            // key-exchange-groups intentionally omitted — Vert.x overrides to PQC + classical defaults
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test
-    void pqcClientSucceeds() {
+    void testPqcClientConnects() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
-        options.setTrustAll(true);
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+        options.setTrustAll(true);
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-neg-no-groups-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
-    void classicalClientSucceeds() {
+    void testClassicClientAlsoConnects() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setTrustAll(true);
-        options.getSslOptions().setKeyExchangeGroups(List.of("x25519"));
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("client-neg-no-groups-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped
     static class MyBean {
+
         public void register(@Observes Router router) {
-            router.get("/hybrid").handler(rc -> rc.response().end("hybrid-ok"));
+            router.get("/client-neg-no-groups").handler(rc -> rc.response().end("client-neg-no-groups-ok"));
         }
+
     }
 }

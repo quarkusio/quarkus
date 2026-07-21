@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive.tls;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 
@@ -32,7 +33,7 @@ public class PqcKeyExchangeTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
+                    .addClasses(Client.class, DefaultClient.class, Resource.class)
                     .addAsResource(new File("target/certs/tls-pqc-rc-test.key"), "server-key.pem")
                     .addAsResource(new File("target/certs/tls-pqc-rc-test.crt"), "server-cert.pem")
                     .addAsResource(new File("target/certs/tls-pqc-rc-test-ca.crt"), "server-ca.pem"))
@@ -48,16 +49,32 @@ public class PqcKeyExchangeTest {
             .overrideConfigKey("quarkus.tls.rest-client.key-exchange-groups", "x25519mlkem768")
             .overrideConfigKey("quarkus.tls.rest-client.pqc-enforcement-policy", "client-negotiated")
             .overrideConfigKey("quarkus.rest-client.rc.url", "https://localhost:${quarkus.http.test-ssl-port:8444}")
-            .overrideConfigKey("quarkus.rest-client.rc.tls-configuration-name", "rest-client");
+            .overrideConfigKey("quarkus.rest-client.rc.tls-configuration-name", "rest-client")
+            // Default REST client: trust store only, no PQC groups configured
+            .overrideConfigKey("quarkus.tls.no-pqc.trust-store.pem.certs", "server-ca.pem")
+            .overrideConfigKey("quarkus.rest-client.rc-no-pqc.url",
+                    "https://localhost:${quarkus.http.test-ssl-port:8444}")
+            .overrideConfigKey("quarkus.rest-client.rc-no-pqc.tls-configuration-name", "no-pqc");
 
     @RestClient
     Client client;
+
+    @RestClient
+    DefaultClient defaultClient;
 
     @Test
     void restClientConnectsToStrictPqcServer() {
         // A non-PQC client would fail the STRICT server handshake.
         // Success proves key-exchange-groups propagated from TLS registry to HttpClientOptions.
         assertThat(client.ping()).isEqualTo("pong");
+    }
+
+    @Test
+    void restClientWithoutPqcConfigFailsToConnectToStrictServer() {
+        // A REST client with no PQC groups (JDK SSL engine, classical groups only) cannot
+        // negotiate a PQC group with the strict server — the handshake fails.
+        assertThatThrownBy(() -> defaultClient.ping())
+                .isNotNull();
     }
 
     static boolean isOpenSsl35Available() {
@@ -67,6 +84,13 @@ public class PqcKeyExchangeTest {
     @Path("/pqc-ping")
     @RegisterRestClient(configKey = "rc")
     public interface Client {
+        @GET
+        String ping();
+    }
+
+    @Path("/pqc-ping")
+    @RegisterRestClient(configKey = "rc-no-pqc")
+    public interface DefaultClient {
         @GET
         String ping();
     }

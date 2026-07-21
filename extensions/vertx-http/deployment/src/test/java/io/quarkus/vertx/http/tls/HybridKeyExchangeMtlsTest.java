@@ -55,17 +55,21 @@ public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
-        options.setTrustAll(true);
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+        options.setTrustAll(true);
         options.setKeyCertOptions(new JksOptions()
                 .setPath("target/certs/mtls-hybrid-test-client-keystore.jks")
                 .setPassword("secret"));
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("mtls-hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("mtls-hybrid-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped

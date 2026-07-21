@@ -28,17 +28,12 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-/**
- * Tests strict PQC enforcement with invalid/unknown key-exchange-groups.
- * In strict mode Vert.x overrides the configured groups with all PQC-compliant groups,
- * so invalid names are silently ignored and the server behaves correctly.
- */
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-hybrid-strict-ill-groups-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
 @EnabledIf("isOpenSsl35Available")
 public class HybridKeyExchangeStrictIllGroupsTest extends AbstractHybridKeyExchangeTest {
 
-    @TestHTTPResource(value = "/hybrid", tls = true)
+    @TestHTTPResource(value = "/strict-ill-groups", tls = true)
     URL url;
 
     @RegisterExtension
@@ -50,41 +45,52 @@ public class HybridKeyExchangeStrictIllGroupsTest extends AbstractHybridKeyExcha
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", "server-cert.pem")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", "server-key.pem")
             .overrideConfigKey("quarkus.tls.pqc-enforcement-policy", "strict")
-            .overrideConfigKey("quarkus.tls.key-exchange-groups", "not-a-real-group")
+            // classical-only group — Vert.x overrides to PQC defaults for strict
+            .overrideConfigKey("quarkus.tls.key-exchange-groups", "X25519")
             .overrideConfigKey("quarkus.http.insecure-requests", "disabled");
 
     @Test
-    void pqcClientSucceeds() {
+    void testPqcClientConnects() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
-        options.setTrustAll(true);
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
+        options.setTrustAll(true);
 
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join();
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.bodyAsString()).isEqualTo("hybrid-ok");
+        try {
+            HttpResponse<Buffer> response = client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join();
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.bodyAsString()).isEqualTo("strict-ill-groups-ok");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
-    void nonPqcClientRejected() {
+    void testNonHybridClientRejected() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setTrustAll(true);
         options.getSslOptions().setKeyExchangeGroups(List.of("x25519"));
 
         WebClient client = WebClient.create(vertx, options);
-        assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
-                .send().toCompletionStage().toCompletableFuture().join())
-                .hasRootCauseInstanceOf(SSLException.class);
+        try {
+            assertThatThrownBy(() -> client.getAbs(url.toExternalForm())
+                    .send().toCompletionStage().toCompletableFuture().join())
+                    .hasRootCauseInstanceOf(SSLException.class);
+        } finally {
+            client.close();
+        }
     }
 
     @ApplicationScoped
     static class MyBean {
+
         public void register(@Observes Router router) {
-            router.get("/hybrid").handler(rc -> rc.response().end("hybrid-ok"));
+            router.get("/strict-ill-groups").handler(rc -> rc.response().end("strict-ill-groups-ok"));
         }
+
     }
 }

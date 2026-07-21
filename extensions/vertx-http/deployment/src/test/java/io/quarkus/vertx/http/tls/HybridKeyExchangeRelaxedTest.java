@@ -51,8 +51,8 @@ public class HybridKeyExchangeRelaxedTest extends AbstractHybridKeyExchangeTest 
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
-        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
         options.setTrustAll(true);
+        options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
 
         WebClient client = WebClient.create(vertx, options);
         try {

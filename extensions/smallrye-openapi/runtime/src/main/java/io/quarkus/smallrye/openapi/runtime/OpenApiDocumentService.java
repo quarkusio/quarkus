@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.openapi.runtime;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -10,14 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
@@ -27,8 +29,8 @@ import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.runtime.io.Format;
 
 /**
- * Loads the document and make it available
- */
+ * Loads the document and make it available.
+ **/
 @ApplicationScoped
 public class OpenApiDocumentService {
 
@@ -44,59 +46,86 @@ public class OpenApiDocumentService {
         ClassLoader loader = Optional.ofNullable(OpenApiConstants.classLoader)
                 .orElseGet(Thread.currentThread()::getContextClassLoader);
 
-        boolean isDefaultDocument = OpenApiConstants.DEFAULT_DOCUMENT_NAME.equals(documentName);
-        String name = OpenApiConstants.BASE_NAME + (isDefaultDocument ? "" : ("-" + documentName));
+        Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
+        boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
+                .orElse(false);
 
-        try (InputStream source = loader.getResourceAsStream(name + ".JSON")) {
-            if (source != null) {
-                Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
-                boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
-                        .orElse(false);
+        Set<String> startupFilters = new LinkedHashSet<>(filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_STARTUP));
+        Set<String> requestFilters = new LinkedHashSet<>(
+                filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
+        if (!dynamic) {
+            startupFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
+        } else {
+            requestFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
+        }
 
-                SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
-                        .withConfig(wrappedConfig)
-                        .withApplicationClassLoader(loader)
-                        .enableModelReader(false)
-                        .enableStandardStaticFiles(false)
-                        .enableAnnotationScan(false)
-                        .enableStandardFilter(false)
-                        .withCustomStaticFile(() -> source);
+        boolean hasStartup = !startupFilters.isEmpty();
+        boolean hasRequest = !requestFilters.isEmpty();
 
-                // Auth-security and disabled endpoint filters will only run once
-                Optional.ofNullable(autoSecurityFilter)
-                        .ifPresent(builder::addFilter);
-                DisabledRestEndpointsFilter.maybeGetInstance()
-                        .ifPresent(builder::addFilter);
-
-                Set<String> startupFilters = new LinkedHashSet<>(filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_STARTUP));
-                Set<String> requestFilters = new LinkedHashSet<>(
-                        filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
-                if (!dynamic) {
-                    startupFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
-                } else {
-                    requestFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
-                }
-
-                var startupFilterSetup = addFilters(startupFilters, loader);
-                startupFilterSetup.accept(builder);
-                if (requestFilters.isEmpty()) {
-                    this.documentHolders.put(documentName, new StaticDocument(builder.build()));
-                } else {
-                    // Mark the model as intermediate so that private extensions remain
-                    // available for filters running at each request.
-                    builder.withIntermediateModel(true);
-                    var perRequestFilterSetup = addFilters(requestFilters, loader);
-                    // Only regenerate the OpenAPI document when configured and there are filters to run
-                    this.documentHolders.put(documentName,
-                            new DynamicDocument(builder.build().model(), loader, wrappedConfig, perRequestFilterSetup));
-                }
-
-            } else {
-                this.documentHolders.put(documentName, new EmptyDocument());
+        var startupFilterSetup = addFilters(startupFilters, loader);
+        Consumer<SmallRyeOpenAPI.Builder> builderSetup = b -> {
+            if (hasRequest) {
+                // Mark the model as intermediate so that private extensions remain
+                // available for filters running at each request.
+                b.withIntermediateModel(true);
             }
+            startupFilterSetup.accept(b);
+        };
+
+        Supplier<SmallRyeOpenAPI.Builder> builderSupplier = baseBuilderSupplier(wrappedConfig, autoSecurityFilter,
+                documentName, loader, builderSetup);
+
+        if (builderSupplier == null) {
+            this.documentHolders.put(documentName, EMPTY_DOCUMENT);
+            return;
+        }
+
+        OpenApiDocumentHolder holder;
+        if (!hasRequest) {
+            holder = new StaticDocument(hasStartup, builderSupplier);
+        } else {
+            holder = new DynamicDocument(hasStartup, builderSupplier, loader, wrappedConfig,
+                    addFilters(requestFilters, loader));
+        }
+        this.documentHolders.put(documentName, holder);
+    }
+
+    private Supplier<SmallRyeOpenAPI.Builder> baseBuilderSupplier(Config wrappedConfig,
+            AutoSecurityFilter autoSecurityFilter,
+            String documentName, ClassLoader loader, Consumer<SmallRyeOpenAPI.Builder> builderSetup) {
+        boolean isDefaultDocument = OpenApiConstants.DEFAULT_DOCUMENT_NAME.equals(documentName);
+        String documentResourceName = OpenApiConstants.BASE_NAME + (isDefaultDocument ? "" : ("-" + documentName)) + ".JSON";
+
+        byte[] documentBytes;
+        try (InputStream source = loader.getResourceAsStream(documentResourceName)) {
+            if (source == null) {
+                return null;
+            }
+
+            documentBytes = source.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+
+        return () -> {
+            SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
+                    .withConfig(wrappedConfig)
+                    .withApplicationClassLoader(loader)
+                    .enableModelReader(false)
+                    .enableStandardStaticFiles(false)
+                    .enableAnnotationScan(false)
+                    .enableStandardFilter(false)
+                    .withCustomStaticFile(() -> new ByteArrayInputStream(documentBytes));
+
+            builderSetup.accept(builder);
+
+            // Auth-security and disabled endpoint filters will only run once
+            Optional.ofNullable(autoSecurityFilter)
+                    .ifPresent(builder::addFilter);
+            DisabledRestEndpointsFilter.maybeGetInstance()
+                    .ifPresent(builder::addFilter);
+            return builder;
+        };
     }
 
     public byte[] getDocument(String documentName, Format format) {
@@ -141,6 +170,42 @@ public class OpenApiDocumentService {
         return Arc.container().instance(filterClass).get();
     }
 
+    /**
+     * Deferred allows to lazily execute the loader. The loader is discarded after the first call. <br/>
+     * In case the action happened before construction of the Deferred, an already materialized value can be provided, so that
+     * the same API can be used in deferred and non defered code paths.
+     */
+    static class Deferred<T> {
+        private final ReentrantLock lock = new ReentrantLock();
+        private volatile Supplier<T> loader;
+
+        private T materialized;
+
+        public Deferred(Supplier<T> loader) {
+            this.loader = loader;
+        }
+
+        public Deferred(T materialized) {
+            this.materialized = materialized;
+        }
+
+        public T get() {
+            if (this.loader != null) {
+                lock.lock();
+                try {
+                    if (this.loader != null) {
+                        materialized = loader.get();
+                        loader = null;
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
+
+            return materialized;
+        }
+    }
+
     static class EmptyDocument implements OpenApiDocumentHolder {
         static final byte[] EMPTY = new byte[0];
 
@@ -154,24 +219,36 @@ public class OpenApiDocumentService {
     }
 
     /**
-     * Generate the document once on creation.
+     * Generate the document once when resolved by the deferred openapi.
      */
     static class StaticDocument implements OpenApiDocumentHolder {
 
-        private byte[] jsonDocument;
-        private byte[] yamlDocument;
+        private record Formats(byte[] json, byte[] yaml) {
+            public Formats(SmallRyeOpenAPI openAPI) {
+                this(openAPI.toJSON().getBytes(StandardCharsets.UTF_8), openAPI.toYAML().getBytes(StandardCharsets.UTF_8));
+            }
+        }
 
-        StaticDocument(SmallRyeOpenAPI openAPI) {
-            jsonDocument = openAPI.toJSON().getBytes(StandardCharsets.UTF_8);
-            yamlDocument = openAPI.toYAML().getBytes(StandardCharsets.UTF_8);
+        private final Deferred<Formats> formats;
+
+        StaticDocument(boolean hasStartup, Supplier<SmallRyeOpenAPI.Builder> openAPISupplier) {
+            if (hasStartup) {
+                SmallRyeOpenAPI openAPI = openAPISupplier.get().build();
+                this.formats = new Deferred<>(new Formats(openAPI));
+            } else {
+                this.formats = new Deferred<>(() -> {
+                    SmallRyeOpenAPI openAPI = openAPISupplier.get().build();
+                    return new Formats(openAPI);
+                });
+            }
         }
 
         public byte[] getJsonDocument() {
-            return this.jsonDocument;
+            return this.formats.get().json;
         }
 
         public byte[] getYamlDocument() {
-            return this.yamlDocument;
+            return this.formats.get().yaml;
         }
     }
 
@@ -180,14 +257,20 @@ public class OpenApiDocumentService {
      */
     static class DynamicDocument implements OpenApiDocumentHolder {
 
-        private final OpenAPI generatedOnBuild;
         private final ClassLoader loader;
         private final Config config;
-        private Consumer<SmallRyeOpenAPI.Builder> filterSetup;
+        private final Consumer<SmallRyeOpenAPI.Builder> filterSetup;
 
-        DynamicDocument(OpenAPI generatedOnBuild, ClassLoader loader, Config config,
+        private final Deferred<SmallRyeOpenAPI> baseOpenAPI;
+
+        DynamicDocument(boolean hasStartup, Supplier<SmallRyeOpenAPI.Builder> model, ClassLoader loader, Config config,
                 Consumer<SmallRyeOpenAPI.Builder> filterSetup) {
-            this.generatedOnBuild = generatedOnBuild;
+            if (hasStartup) {
+                this.baseOpenAPI = new Deferred<>(model.get().build());
+            } else {
+                this.baseOpenAPI = new Deferred<>(() -> model.get().build());
+            }
+
             this.loader = loader;
             this.config = config;
             this.filterSetup = filterSetup;
@@ -197,13 +280,14 @@ public class OpenApiDocumentService {
             SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
                     .withConfig(config)
                     .withApplicationClassLoader(loader)
-                    .withInitialModel(generatedOnBuild)
+                    .withInitialModel(baseOpenAPI.get().model())
                     .enableModelReader(false)
                     .enableStandardStaticFiles(false)
                     .enableAnnotationScan(false)
                     .enableStandardFilter(false);
 
             filterSetup.accept(builder);
+
             return builder.build();
         }
 

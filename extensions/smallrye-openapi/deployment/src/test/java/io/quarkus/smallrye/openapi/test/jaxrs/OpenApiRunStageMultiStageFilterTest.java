@@ -89,7 +89,7 @@ class OpenApiRunStageMultiStageFilterTest {
                 matchesRegex(patternFormat.formatted(BuildAndPerRequestFilter.EXTENSION_NAME, 1)));
         assertThat(buildTimeDocument, not(containsString(StartupAndPerRequestFilter.EXTENSION_NAME)));
 
-        // Verify which filters have run during runtime startup
+        // verify which filters where explicitly only run during RUNTIME_STARTUP stage
         assertThat(buildAndPerRequestFilter.currentCLInvocationCount, is(0));
         assertThat(startupAndPerRequestFilter.currentCLInvocationCount, is(1));
 

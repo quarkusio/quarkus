@@ -27,18 +27,16 @@ import io.quarkus.smallrye.openapi.OpenApiFilter.RunStage;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.test.QuarkusExtensionTest;
 
-class OpenApiRunStageFilterTest {
+class OpenApiRunStageNoRequestFilterTest {
 
-    private static final String STORE_SCHEMA_DIRECTORY = "target/generated/OpenApiRunStageFilterTest/";
+    private static final String STORE_SCHEMA_DIRECTORY = "target/generated/OpenApiRunStageNoRequestFilterTest/";
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(BuildFilter.class)
                     .addClass(RuntimeStartupFilter.class)
-                    .addClass(RuntimePerRequestFilter.class)
                     .addClass(RunFilter.class)
-                    .addClass(BothFilter.class)
                     .addAsResource(
                             new StringAsset(
                                     "quarkus.smallrye-openapi.store-schema-directory=" + STORE_SCHEMA_DIRECTORY),
@@ -88,16 +86,6 @@ class OpenApiRunStageFilterTest {
     }
 
     @Singleton
-    @OpenApiFilter(stages = RunStage.RUNTIME_PER_REQUEST)
-    public static class RuntimePerRequestFilter extends BaseFilter implements OASFilter {
-        public static final String EXTENSION_NAME = EXTENSION_NAME_PREFIX + "-runtime-per-request";
-
-        public String getExtensionName() {
-            return EXTENSION_NAME;
-        }
-    }
-
-    @Singleton
     @OpenApiFilter(stages = RunStage.RUN)
     public static class RunFilter extends BaseFilter implements OASFilter {
         public static final String EXTENSION_NAME = EXTENSION_NAME_PREFIX + "-run";
@@ -107,30 +95,14 @@ class OpenApiRunStageFilterTest {
         }
     }
 
-    @Singleton
-    @OpenApiFilter(stages = RunStage.BOTH)
-    public static class BothFilter extends BaseFilter implements OASFilter {
-        public static final String EXTENSION_NAME = EXTENSION_NAME_PREFIX + "-both";
-
-        public String getExtensionName() {
-            return EXTENSION_NAME;
-        }
-    }
+    @Inject
+    OpenApiRunStageNoRequestFilterTest.BuildFilter buildFilter;
 
     @Inject
-    OpenApiRunStageFilterTest.BuildFilter buildFilter;
+    OpenApiRunStageNoRequestFilterTest.RuntimeStartupFilter runtimeStartupFilter;
 
     @Inject
-    OpenApiRunStageFilterTest.RuntimeStartupFilter runtimeStartupFilter;
-
-    @Inject
-    OpenApiRunStageFilterTest.RuntimePerRequestFilter runtimePerRequestFilter;
-
-    @Inject
-    OpenApiRunStageFilterTest.RunFilter runFilter;
-
-    @Inject
-    OpenApiRunStageFilterTest.BothFilter bothFilter;
+    OpenApiRunStageNoRequestFilterTest.RunFilter runFilter;
 
     @Test
     public void testFiltersApplied() throws IOException {
@@ -145,25 +117,19 @@ class OpenApiRunStageFilterTest {
         // verify which filters where run during BUILD stage
         assertThat(buildTimeDocument, matchesRegex(patternFormat.formatted(buildFilter.getExtensionName(), 1)));
         assertThat(buildTimeDocument, not(containsString(runtimeStartupFilter.getExtensionName())));
-        assertThat(buildTimeDocument, not(containsString(runtimePerRequestFilter.getExtensionName())));
         assertThat(buildTimeDocument, not(containsString(runFilter.getExtensionName())));
-        assertThat(buildTimeDocument, matchesRegex(patternFormat.formatted(bothFilter.getExtensionName(), 1)));
 
         // Verify which filters run during SmallRyeOpenApiProcessor.applyRuntimeFilters
         // should just be the (already run) build stage + runtime startup stage
         String storedDocument = Files.readString(Paths.get(STORE_SCHEMA_DIRECTORY, "openapi.json"));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(buildFilter.getExtensionName(), 1)));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(runtimeStartupFilter.getExtensionName(), 1)));
-        assertThat(storedDocument, not(containsString(runtimePerRequestFilter.getExtensionName())));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(runFilter.getExtensionName(), 1)));
-        assertThat(storedDocument, matchesRegex(patternFormat.formatted(bothFilter.getExtensionName(), 2)));
 
         // verify which filters where explicitly only run during RUNTIME_STARTUP stage
         assertThat(buildFilter.currentCLInvocationCount, is(0));
         assertThat(runtimeStartupFilter.currentCLInvocationCount, is(1));
-        assertThat(runtimePerRequestFilter.currentCLInvocationCount, is(0));
         assertThat(runFilter.currentCLInvocationCount, is(1));
-        assertThat(bothFilter.currentCLInvocationCount, is(1));
 
         // now verify which filters are run at runtime request
         // results should be build stage + run stage + runtime request stage
@@ -173,14 +139,10 @@ class OpenApiRunStageFilterTest {
                 .statusCode(200)
                 .body(buildFilter.getExtensionName(), equalTo(1))
                 .body(runtimeStartupFilter.getExtensionName(), equalTo(1))
-                .body(runtimePerRequestFilter.getExtensionName(), equalTo(1))
-                .body(runFilter.getExtensionName(), equalTo(1))
-                .body(bothFilter.getExtensionName(), equalTo(2));
+                .body(runFilter.getExtensionName(), equalTo(1));
         assertThat(buildFilter.currentCLInvocationCount, is(0));
         assertThat(runtimeStartupFilter.currentCLInvocationCount, is(1));
-        assertThat(runtimePerRequestFilter.currentCLInvocationCount, is(1));
         assertThat(runFilter.currentCLInvocationCount, is(1));
-        assertThat(bothFilter.currentCLInvocationCount, is(1));
 
         // Verify that only the runtime request filters are run again on another request
         // however, changes from previous run runtime request filters are not persisted, i.e. invocation count is still 1 in the extension, but in the var will be 2
@@ -190,14 +152,10 @@ class OpenApiRunStageFilterTest {
                 .statusCode(200)
                 .body(buildFilter.getExtensionName(), equalTo(1))
                 .body(runtimeStartupFilter.getExtensionName(), equalTo(1))
-                .body(runtimePerRequestFilter.getExtensionName(), equalTo(1))
-                .body(runFilter.getExtensionName(), equalTo(1))
-                .body(bothFilter.getExtensionName(), equalTo(2));
+                .body(runFilter.getExtensionName(), equalTo(1));
         assertThat(buildFilter.currentCLInvocationCount, is(0));
         assertThat(runtimeStartupFilter.currentCLInvocationCount, is(1));
-        assertThat(runtimePerRequestFilter.currentCLInvocationCount, is(2));
         assertThat(runFilter.currentCLInvocationCount, is(1));
-        assertThat(bothFilter.currentCLInvocationCount, is(1));
     }
 
     private String readBuildTimeDocument() throws IOException {

@@ -1248,11 +1248,11 @@ public final class HibernateOrmProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
 
-        // Explicit override: 'jdbc=false' always disables blocking bootstrap for this PU,
+        // Explicit override: 'jdbc.enabled=false' always disables blocking bootstrap for this PU,
         // regardless of which datasources are available.
         if (!persistenceUnitConfig.jdbc().enabled().orElse(true)) {
             LOG.debugf("Persistence unit '%s' has blocking (JDBC) bootstrap explicitly disabled"
-                    + " through 'jdbc=false', skipping", persistenceUnitName);
+                    + " through 'jdbc.enabled=false', skipping", persistenceUnitName);
             return;
         }
 

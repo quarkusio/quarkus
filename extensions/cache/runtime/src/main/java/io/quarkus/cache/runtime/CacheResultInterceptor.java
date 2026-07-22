@@ -51,6 +51,25 @@ public class CacheResultInterceptor extends CacheInterceptor {
         LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
 
         try {
+            if (KotlinSuspendSupport.isSuspendedFunction(invocationContext.getMethod())) {
+                Uni<Object> cacheValue = cache.getAsync(key, new Function<Object, Uni<Object>>() {
+                    @Override
+                    public Uni<Object> apply(Object k) {
+                        return KotlinSuspendSupport.invokeSuspendedAsUni(invocationContext);
+                    }
+                });
+                if (binding.lockTimeout() > 0) {
+                    cacheValue = cacheValue.ifNoItem().after(Duration.ofMillis(binding.lockTimeout()))
+                            .recoverWithUni(new Supplier<Uni<?>>() {
+                                @Override
+                                public Uni<?> get() {
+                                    return KotlinSuspendSupport.invokeSuspendedAsUni(invocationContext);
+                                }
+                            });
+                }
+                return KotlinSuspendSupport.resumeContinuationFromUni(invocationContext, cacheValue);
+            }
+
             ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
             if (returnType != ReturnType.NonAsync) {
                 Uni<Object> cacheValue = cache.getAsync(key, new Function<Object, Uni<Object>>() {

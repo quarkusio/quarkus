@@ -160,7 +160,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         this.copyResourceNotification = copyResourceNotification;
         this.classTransformers = classTransformers;
         this.testSupport = testSupport;
-        if (testSupport != null) {
+        if (testSupport != null && !usesExternalBuildOutputs()) {
             testSupport.addListener(new TestListener() {
                 @Override
                 public void testsEnabled() {
@@ -198,9 +198,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         try {
             return BuildOutputChangesTransports.connect(
                     context == null ? null : context.getExternalBuildOutputTransport(),
-                    changes -> processBuildOutputChanges(changes)
-                            ? BuildOutputChangesApplyStatus.APPLIED
-                            : BuildOutputChangesApplyStatus.NOT_APPLIED);
+                    this::processBuildOutputChanges);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to connect external build output transport", e);
         }
@@ -215,7 +213,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         final List<ModuleInfo> allModules = context.getAllModules();
         final List<Path> paths = new ArrayList<>(allModules.size());
         for (DevModeContext.ModuleInfo i : allModules) {
-            paths.add(Path.of(i.getMain().getClassesPath()));
+            paths.addAll(i.getMain().getClassesPaths());
         }
         return paths;
     }
@@ -552,8 +550,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             }
 
             if (context != null && context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL) {
-                // External build output handling currently covers production code only.
-                // Test output routing will be wired separately through TestSupport.
+                // External build output handling is driven exclusively by
+                // processBuildOutputChanges(...), including test outputs.
                 return false;
             }
 
@@ -569,34 +567,117 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
     }
 
-    boolean processBuildOutputChanges(BuildOutputChanges changes) {
+    BuildOutputChangesApplyStatus processBuildOutputChanges(BuildOutputChanges changes) {
         requireNonNull(changes, "changes");
         scanLock.lock();
         codeGenLock.lock();
 
         try {
             if (changes.sequence() <= lastProcessedBuildOutputSequence) {
-                return false;
+                return BuildOutputChangesApplyStatus.REJECTED;
+            }
+            if (!hasKnownOutputRoots(changes)) {
+                lastProcessedBuildOutputSequence = changes.sequence();
+                return BuildOutputChangesApplyStatus.REJECTED;
             }
             lastProcessedBuildOutputSequence = changes.sequence();
-            if (!liveReloadEnabled && !changes.forceRestart()) {
-                return false;
-            }
             if (changes.status() != BuildOutputChangeStatus.BUILD_SUCCEEDED) {
-                return false;
+                processExternalBuildStatus(changes);
+                return BuildOutputChangesApplyStatus.APPLIED;
             }
 
-            // This first cut consumes production output changes only. Test class
-            // and resource changes are intentionally deferred until TestSupport
-            // routing is added.
-            ClassScanResult changedClassResults = toClassScanResult(changes.mainClassChanges());
-            Set<String> filesChanged = toChangedFileSet(changes.mainResourceChanges());
-            return processApplicationChanges(changes.userInitiated(), changes.forceRestart(), System.nanoTime(),
-                    changedClassResults, filesChanged);
+            setRemoteProblem(null);
+            if (testSupport != null) {
+                testSupport.testCompileSucceeded();
+            }
+
+            ClassScanResult mainClassChanges = toClassScanResult(changes.mainClassChanges());
+            Set<String> mainResourceChanges = toChangedFileSet(changes.mainResourceChanges());
+            boolean productionChanges = mainClassChanges.isChanged() || !mainResourceChanges.isEmpty();
+            boolean productionAccepted = !productionChanges || liveReloadEnabled || changes.forceRestart();
+            if (productionAccepted) {
+                processApplicationChanges(changes.userInitiated(), changes.forceRestart(), System.nanoTime(),
+                        mainClassChanges, mainResourceChanges);
+            }
+
+            if (productionAccepted && testSupport != null && testSupport.isStarted()) {
+                ClassScanResult testClassChanges = toClassScanResult(changes.testClassChanges());
+                ClassScanResult allClassChanges = ClassScanResult.merge(testClassChanges, mainClassChanges);
+                if (!changes.mainResourceChanges().isEmpty() || !changes.testResourceChanges().isEmpty()) {
+                    testSupport.runTests(null);
+                } else if (allClassChanges.isChanged()) {
+                    testSupport.runTests(allClassChanges);
+                }
+            }
+            return BuildOutputChangesApplyStatus.APPLIED;
         } finally {
             scanLock.unlock();
             codeGenLock.unlock();
         }
+    }
+
+    private void processExternalBuildStatus(BuildOutputChanges changes) {
+        if (changes.status() != BuildOutputChangeStatus.BUILD_FAILED) {
+            return;
+        }
+        ExternalBuildException failure = new ExternalBuildException(changes.failureSummary());
+        if (changes.failureKind() == BuildOutputFailureKind.TEST) {
+            if (testSupport != null) {
+                testSupport.testCompileFailed(failure);
+            }
+            return;
+        }
+        setRemoteProblem(failure);
+        if (testSupport != null) {
+            testSupport.testCompileFailed(failure);
+        }
+    }
+
+    private boolean hasKnownOutputRoots(BuildOutputChanges changes) {
+        if (context == null || context.getApplicationRoot() == null) {
+            return true;
+        }
+        Set<Path> mainClassRoots = new HashSet<>();
+        Set<Path> mainResourceRoots = new HashSet<>();
+        Set<Path> testClassRoots = new HashSet<>();
+        Set<Path> testResourceRoots = new HashSet<>();
+        for (ModuleInfo module : context.getAllModules()) {
+            addNormalized(mainClassRoots, module.getMain().getClassesPaths());
+            addNormalized(mainResourceRoots, module.getMain().getResourcesOutputPath());
+            module.getTest().ifPresent(testUnit -> {
+                addNormalized(testClassRoots, testUnit.getClassesPaths());
+                addNormalized(testResourceRoots, testUnit.getResourcesOutputPath());
+            });
+        }
+        return haveKnownRoots(changes.mainClassChanges(), mainClassRoots)
+                && haveKnownRoots(changes.mainResourceChanges(), mainResourceRoots)
+                && haveKnownRoots(changes.testClassChanges(), testClassRoots)
+                && haveKnownRoots(changes.testResourceChanges(), testResourceRoots);
+    }
+
+    private static boolean haveKnownRoots(List<BuildOutputPathChange> changes, Set<Path> knownRoots) {
+        for (BuildOutputPathChange change : changes) {
+            if (!knownRoots.contains(change.outputRoot().toAbsolutePath().normalize())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void addNormalized(Set<Path> roots, Collection<Path> paths) {
+        for (Path path : paths) {
+            roots.add(path.toAbsolutePath().normalize());
+        }
+    }
+
+    private static void addNormalized(Set<Path> roots, String path) {
+        if (path != null && !path.isBlank()) {
+            roots.add(Path.of(path).toAbsolutePath().normalize());
+        }
+    }
+
+    private boolean usesExternalBuildOutputs() {
+        return context != null && context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL;
     }
 
     private static ClassScanResult toClassScanResult(List<BuildOutputPathChange> changes) {

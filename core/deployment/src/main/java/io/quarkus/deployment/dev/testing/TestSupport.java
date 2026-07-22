@@ -203,15 +203,20 @@ public class TestSupport implements TestController {
                         // 1) we resolve an application model for test mode;
                         // 2) we create a new CT base classloader that includes parent-first test scoped dependencies
                         // so that they are not loaded by augment and base runtime classloaders.
-                        var appModelFactory = curatedApplication.getQuarkusBootstrap().newAppModelFactory();
-                        appModelFactory.setBootstrapAppModelResolver(null);
-                        appModelFactory.setTest(true);
-                        appModelFactory.setLocalArtifacts(Set.of());
-                        if (!mainModule) {
-                            appModelFactory.setAppArtifact(null);
-                            appModelFactory.setProjectRoot(projectDir);
+                        final ApplicationModel testModel;
+                        if (mainModule && context.getExternalTestApplicationModel() != null) {
+                            testModel = context.getExternalTestApplicationModel();
+                        } else {
+                            var appModelFactory = curatedApplication.getQuarkusBootstrap().newAppModelFactory();
+                            appModelFactory.setBootstrapAppModelResolver(null);
+                            appModelFactory.setTest(true);
+                            appModelFactory.setLocalArtifacts(Set.of());
+                            if (!mainModule) {
+                                appModelFactory.setAppArtifact(null);
+                                appModelFactory.setProjectRoot(projectDir);
+                            }
+                            testModel = appModelFactory.resolveAppModel().getApplicationModel();
                         }
-                        final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
                         bootstrapConfig.setExistingModel(testModel);
 
                         // TODO I don't think we should have both this and AppMakerHelper, doing apparently the same thing?
@@ -250,7 +255,8 @@ public class TestSupport implements TestController {
                         }
                     }
                     var testCuratedApplication = bootstrapConfig.build().bootstrap();
-                    if (mainModule) {
+                    if (mainModule
+                            && context.getBuildUpdateSource() != DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL) {
                         //horrible hack
                         //we really need a compiler per module but we are not setup for this yet
                         //if a module has test scoped dependencies that are not in the application then
@@ -300,7 +306,7 @@ public class TestSupport implements TestController {
             }
         };
         module.getTest().ifPresent(test -> {
-            paths.accept(Path.of(test.getClassesPath()));
+            test.getClassesPaths().forEach(paths);
             if (test.getResourcesOutputPath() != null) {
                 paths.accept(Path.of(test.getResourcesOutputPath()));
             }
@@ -308,7 +314,7 @@ public class TestSupport implements TestController {
         if (mainModule) {
             curatedApplication.getQuarkusBootstrap().getApplicationRoot().forEach(paths::accept);
         } else {
-            paths.accept(Path.of(module.getMain().getClassesPath()));
+            module.getMain().getClassesPaths().forEach(paths);
         }
         return pathBuilder.build();
     }

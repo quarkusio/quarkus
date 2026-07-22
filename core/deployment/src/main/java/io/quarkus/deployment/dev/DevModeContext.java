@@ -15,8 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -48,6 +51,7 @@ public class DevModeContext implements Serializable {
     private boolean abortOnFailedStart;
     private BuildUpdateSource buildUpdateSource = BuildUpdateSource.QUARKUS;
     private ExternalBuildOutputTransport externalBuildOutputTransport = ExternalBuildOutputTransport.disabled();
+    private ApplicationModel externalTestApplicationModel;
     // the jar file which is used to launch the DevModeMain
     private File devModeRunnerJarFile;
     private boolean localProjectDiscovery = true;
@@ -161,6 +165,14 @@ public class DevModeContext implements Serializable {
         this.externalBuildOutputTransport = externalBuildOutputTransport == null
                 ? ExternalBuildOutputTransport.disabled()
                 : externalBuildOutputTransport;
+    }
+
+    public ApplicationModel getExternalTestApplicationModel() {
+        return externalTestApplicationModel;
+    }
+
+    public void setExternalTestApplicationModel(ApplicationModel externalTestApplicationModel) {
+        this.externalTestApplicationModel = externalTestApplicationModel;
     }
 
     public enum BuildUpdateSource {
@@ -450,6 +462,11 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
+            public Builder setClassesPaths(Collection<Path> classesPaths) {
+                this.classesPath = joinPaths(classesPaths);
+                return this;
+            }
+
             public Builder setResourcePaths(PathCollection resourcePaths) {
                 this.resourcePaths = resourcePaths;
                 return this;
@@ -483,6 +500,18 @@ public class DevModeContext implements Serializable {
             public Builder setTestClassesPath(String testClassesPath) {
                 this.testClassesPath = testClassesPath;
                 return this;
+            }
+
+            public Builder setTestClassesPaths(Collection<Path> testClassesPaths) {
+                this.testClassesPath = joinPaths(testClassesPaths);
+                return this;
+            }
+
+            private static String joinPaths(Collection<Path> paths) {
+                if (paths == null || paths.isEmpty()) {
+                    return null;
+                }
+                return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
             }
 
             public Builder setTestResourcePaths(PathCollection testResourcePaths) {
@@ -531,6 +560,19 @@ public class DevModeContext implements Serializable {
 
         public String getClassesPath() {
             return classesPath;
+        }
+
+        public List<Path> getClassesPaths() {
+            if (classesPath == null || classesPath.isBlank()) {
+                return List.of();
+            }
+            List<Path> paths = new ArrayList<>();
+            for (String path : classesPath.split(Pattern.quote(File.pathSeparator))) {
+                if (!path.isBlank()) {
+                    paths.add(Path.of(path));
+                }
+            }
+            return List.copyOf(paths);
         }
 
         public PathCollection getResourcePaths() {

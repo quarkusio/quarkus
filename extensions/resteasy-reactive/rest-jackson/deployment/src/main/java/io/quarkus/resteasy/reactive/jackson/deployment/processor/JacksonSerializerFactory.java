@@ -17,9 +17,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -178,6 +180,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private static final String CLASS_NAME_SUFFIX = "$quarkusjacksonserializer";
     private static final String SUPER_CLASS_NAME = GeneratedSerializer.class.getName();
     private static final String SER_STRINGS_CLASS_NAME = "SerializedStrings$quarkusjacksonserializer";
+    private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
     private final Map<String, Map<String, String>> generatedFields = new HashMap<>();
 
@@ -325,9 +328,11 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private Optional<FieldSpecs> jsonValueFieldSpecs(ClassInfo classInfo) {
         var jsonValueAnnotationFound = classInfo.hasAnnotation(JsonValue.class);
         if (!jsonValueAnnotationFound) {
-            //  Early exit;don't generate reflection-free serializer
-            //  based on JsonValue
-            return Optional.empty();
+            var inherited = findInheritedJsonValueMethod(classInfo);
+            if (inherited == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new FieldSpecs(inherited));
         }
         var jsonValueMethodFieldSpecs = classInfo.methods().stream()
                 .filter(mi -> mi.annotation(JsonValue.class) != null)
@@ -349,6 +354,39 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return jsonValueMethodFieldSpecs;
     }
 
+    private MethodInfo findInheritedJsonValueMethod(ClassInfo classInfo) {
+        for (DotName ifaceName : classInfo.interfaceNames()) {
+            ClassInfo iface = jandexIndex.getClassByName(ifaceName);
+            if (iface == null) {
+                continue;
+            }
+            for (MethodInfo mi : iface.methods()) {
+                if (mi.annotation(JsonValue.class) != null && isJsonValueMethod(mi)) {
+                    MethodInfo override = classInfo.method(mi.name(),
+                            mi.parameterTypes().toArray(EMPTY_TYPE_ARRAY));
+                    if (override != null && isJsonValueMethod(override)) {
+                        return override;
+                    }
+                }
+            }
+            MethodInfo found = findInheritedJsonValueMethod(iface);
+            if (found != null) {
+                MethodInfo override = classInfo.method(found.name(),
+                        found.parameterTypes().toArray(EMPTY_TYPE_ARRAY));
+                if (override != null && isJsonValueMethod(override)) {
+                    return override;
+                }
+            }
+        }
+        if (classInfo.superName() != null && !classInfo.superName().toString().equals("java.lang.Object")) {
+            ClassInfo superClass = jandexIndex.getClassByName(classInfo.superName());
+            if (superClass != null) {
+                return findInheritedJsonValueMethod(superClass);
+            }
+        }
+        return null;
+    }
+
     private void serializeJsonValue(SerializationContext ctx, MethodCreator bytecode, FieldSpecs jsonValueFieldSpecs) {
         String typeName = jsonValueFieldSpecs.fieldType.name().toString();
         ResultHandle arg = jsonValueFieldSpecs.toValueReaderHandle(bytecode, ctx.valueHandle);
@@ -368,8 +406,14 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         String classInclude = getClassIncludeValue(classInfo);
 
         MethodInfo anyGetterMethod = findAnyGetterMethod(classInfo);
+        FieldInfo anyGetterField = null;
         if (anyGetterMethod != null) {
             ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        } else {
+            anyGetterField = findAnyGetterField(classInfo);
+            if (anyGetterField != null) {
+                ignoredProperties.add(anyGetterField.name());
+            }
         }
 
         List<FieldSpecs> allFieldSpecs = collectAllFieldSpecs(classInfo, namingStrategy);
@@ -419,7 +463,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         }
 
         if (pkgName != null) {
-            serializeAnyGetter(anyGetterMethod, bytecode, ctx);
+            serializeAnyGetter(classInfo, anyGetterMethod, anyGetterField, bytecode, ctx);
         }
     }
 
@@ -476,13 +520,24 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return fieldSpecs;
     }
 
-    private void serializeAnyGetter(MethodInfo anyGetterMethod, MethodCreator bytecode, SerializationContext ctx) {
-        if (anyGetterMethod == null) {
+    private void serializeAnyGetter(ClassInfo classInfo, MethodInfo anyGetterMethod, FieldInfo anyGetterField,
+            MethodCreator bytecode, SerializationContext ctx) {
+        ResultHandle map;
+        if (anyGetterMethod != null) {
+            map = anyGetterMethod.declaringClass().isInterface()
+                    ? bytecode.invokeInterfaceMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle)
+                    : bytecode.invokeVirtualMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle);
+        } else if (anyGetterField != null) {
+            MethodInfo getter = findMethod(classInfo,
+                    "get" + ucFirst(anyGetterField.name()));
+            if (getter != null) {
+                map = bytecode.invokeVirtualMethod(MethodDescriptor.of(getter), ctx.valueHandle);
+            } else {
+                map = bytecode.readInstanceField(FieldDescriptor.of(anyGetterField), ctx.valueHandle);
+            }
+        } else {
             return;
         }
-        ResultHandle map = anyGetterMethod.declaringClass().isInterface()
-                ? bytecode.invokeInterfaceMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle)
-                : bytecode.invokeVirtualMethod(MethodDescriptor.of(anyGetterMethod), ctx.valueHandle);
         bytecode.invokeStaticMethod(
                 MethodDescriptor.ofMethod(JacksonMapperUtil.class, "serializeAnyGetterMap", void.class,
                         Map.class, JsonGenerator.class, SerializerProvider.class),

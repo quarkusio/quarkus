@@ -17,6 +17,17 @@ public class QuarkusRestClientProperties {
      * maximum number of redirects for a client call. Works only if the client has `followingRedirects enabled
      */
     public static final String MAX_REDIRECTS = "io.quarkus.rest.client.max-redirects";
+
+    /**
+     * Set of HTTP headers blocked on same-origin redirects. Replaces the Vert.x default when set.
+     */
+    public static final String SAME_ORIGIN_REDIRECT_BLOCKED_HEADERS = "io.quarkus.rest.client.same-origin-redirect-blocked-headers";
+
+    /**
+     * Set of HTTP headers blocked on cross-origin redirects. Replaces the Vert.x default when set.
+     */
+    public static final String CROSS_ORIGIN_REDIRECT_BLOCKED_HEADERS = "io.quarkus.rest.client.cross-origin-redirect-blocked-headers";
+
     /**
      * maximum length of all headers for HTTP/1.x.
      */

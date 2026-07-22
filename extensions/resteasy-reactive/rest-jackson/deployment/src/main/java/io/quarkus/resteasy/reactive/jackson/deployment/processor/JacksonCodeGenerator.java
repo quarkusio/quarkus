@@ -61,6 +61,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -458,8 +460,18 @@ public abstract class JacksonCodeGenerator {
         for (MethodInfo method : classMethods(classInfo)) {
             if (method.hasAnnotation(JsonAnyGetter.class)
                     && method.parametersCount() == 0
-                    && !java.lang.reflect.Modifier.isStatic(method.flags())) {
+                    && !Modifier.isStatic(method.flags())) {
                 return method;
+            }
+        }
+        return null;
+    }
+
+    protected FieldInfo findAnyGetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnyGetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
             }
         }
         return null;
@@ -761,7 +773,7 @@ public abstract class JacksonCodeGenerator {
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeVirtualMethod(
+                case "char" -> bytecode.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(String.class, "charAt", char.class, int.class), valueHandle,
                         bytecode.load(0));
                 default -> valueHandle;
@@ -772,8 +784,16 @@ public abstract class JacksonCodeGenerator {
             ResultHandle handle = accessorHandle(bytecode, valueHandle);
 
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeStaticMethod(
+                case "char" -> bytecode.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle);
+                case "java.lang.Character" -> {
+                    AssignableResultHandle result = bytecode.createVariable(String.class);
+                    BranchResult nullCheck = bytecode.ifNull(handle);
+                    nullCheck.trueBranch().assign(result, nullCheck.trueBranch().loadNull());
+                    nullCheck.falseBranch().assign(result, nullCheck.falseBranch().invokeStaticMethod(
+                            MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle));
+                    yield result;
+                }
                 default -> handle;
             };
         }

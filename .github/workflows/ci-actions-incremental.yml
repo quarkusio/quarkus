@@ -604,6 +604,29 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
+      - name: Set up Linux containers on Windows via WSL2
+        if: startsWith(matrix.java.os-name, 'windows') && matrix.java.container-support
+        shell: pwsh
+        run: |
+          Write-Host "Installing WSL with Ubuntu (no-launch to avoid interactive setup)..."
+          wsl --set-default-version 2
+          wsl --install -d Ubuntu --no-launch
+          Write-Host "Enabling systemd (required for Docker)..."
+          wsl -d Ubuntu --user root bash -c "printf '[boot]\nsystemd=true\n' > /etc/wsl.conf"
+          wsl --shutdown
+          Start-Sleep -Seconds 5
+          Write-Host "Installing Docker CE in WSL..."
+          wsl -d Ubuntu --user root -- bash -c "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq > /dev/null && apt-get install -y -qq ca-certificates curl > /dev/null"
+          wsl -d Ubuntu --user root -- bash -c "install -m 0755 -d /etc/apt/keyrings && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && chmod a+r /etc/apt/keyrings/docker.asc"
+          wsl -d Ubuntu --user root -- bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo ${UBUNTU_CODENAME:-$VERSION_CODENAME}) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null'
+          wsl -d Ubuntu --user root -- bash -c "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq > /dev/null && apt-get install -y -qq docker-ce docker-ce-cli containerd.io > /dev/null"
+          Write-Host "Configuring Docker to listen on TCP for Windows-side access..."
+          wsl -d Ubuntu --user root -- bash -c 'mkdir -p /etc/systemd/system/docker.service.d && printf "[Service]\nExecStart=\nExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375\n" > /etc/systemd/system/docker.service.d/override.conf'
+          wsl -d Ubuntu --user root -- bash -c "systemctl daemon-reload && systemctl enable --now docker"
+          echo "DOCKER_HOST=tcp://localhost:2375" >> $env:GITHUB_ENV
+          Write-Host "Verifying Docker setup..."
+          wsl -d Ubuntu --user root -- docker run --rm hello-world
+          Write-Host "Linux container support is ready."
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           # this is important for Scalpel to work
@@ -688,6 +711,10 @@ jobs:
           # IMPORTANT: we cannot simply replace all spaces with new lines as we have a module with spaces in the name (to test spaces are supported)
           echo -e "$MATRIX_JAVA_MODULES" >> .mvn/maven.config
           ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
+      - name: Prune containers on Windows
+        if: always() && startsWith(matrix.java.os-name, 'windows') && matrix.java.container-support
+        shell: cmd
+        run: .github\docker-prune.bat
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp

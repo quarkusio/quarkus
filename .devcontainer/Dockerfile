@@ -1,5 +1,5 @@
 ARG VARIANT=17
-FROM mcr.microsoft.com/vscode/devcontainers/java:0-${VARIANT}
+FROM mcr.microsoft.com/devcontainers/java:3-${VARIANT}-bookworm
 
 ARG USER=vscode
 VOLUME /home/$USER/.m2

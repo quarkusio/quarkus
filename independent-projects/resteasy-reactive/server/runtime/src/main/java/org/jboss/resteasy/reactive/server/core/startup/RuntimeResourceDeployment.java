@@ -215,8 +215,8 @@ public class RuntimeResourceDeployment {
             } else {
                 if (method.isRunOnVirtualThread()) {
                     //should not happen
-                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered " +
-                            "@RunOnVirtual and blocking");
+                    log.error("a method was both @NonBlocking and @RunOnVirtualThread, it is now considered " +
+                            "@RunOnVirtualThread and @Blocking");
                     handlers.add(blockingHandlerVirtualThread);
                     score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {

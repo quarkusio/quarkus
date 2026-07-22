@@ -929,7 +929,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (defaultValue == BlockingDefault.BLOCKING) {
             return true;
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            return false;
+            return true;
         } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
             return false;
         }

@@ -136,7 +136,7 @@ using `@RunOnVirtualThread` enforces concurrent message processing without prese
 
 === Methods signatures eligible to @RunOnVirtualThread
 
-Only method can be annotated with `@Blocking` can use `@RunOnVirtualThreads`.
+Only a method that can be annotated with `@Blocking` can use `@RunOnVirtualThread`.
 The eligible method signatures are:
 
 -  `@Outgoing("channel-out") O generator()`

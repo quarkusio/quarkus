@@ -4,6 +4,7 @@ import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIS
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,7 +14,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -44,7 +44,6 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.UsageMessageSpec;
 import picocli.CommandLine.MutuallyExclusiveArgsException;
 import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
@@ -112,7 +111,7 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
         boolean pluginSyncCommand = pluginCommand && args.length >= 2 && args[1].equals("sync");
 
         try {
-            Optional<String> missingCommand = checkMissingCommand(cmd, args);
+            Optional<String> missingCommand = findMissingCommand(cmd, args);
 
             boolean existingCommand = missingCommand.isEmpty();
             // If the command already exists and is not a help command (that lists subcommands) or plugin command, then just execute
@@ -158,67 +157,95 @@ public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<
     }
 
     /**
-     * Process the arguments passed and return an identifier of the potentially missing subcommand if any.
+     * Resolve the command path from arguments without parsing options.
+     * Stops at the first flag ({@code -...}), {@code --}, or end of arguments.
+     */
+    static List<String> extractCommandPath(String[] args) {
+        List<String> path = new ArrayList<>();
+        boolean endOfOptions = false;
+        for (String arg : args) {
+            if (endOfOptions) {
+                path.add(arg);
+                continue;
+            }
+            if ("--".equals(arg)) {
+                endOfOptions = true;
+                continue;
+            }
+            if (arg.startsWith("-")) {
+                break;
+            }
+            path.add(arg);
+        }
+        return path;
+    }
+
+    static CommandLine findSubcommand(CommandLine parent, String name) {
+        Map<String, CommandLine> subcommands = parent.getSubcommands();
+        CommandLine subcommand = subcommands.get(name);
+        if (subcommand != null) {
+            return subcommand;
+        }
+        for (CommandLine candidate : subcommands.values()) {
+            if (candidate.getCommandSpec().names().contains(name)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Determine whether the command path refers to a missing subcommand by walking
+     * the command tree using positional tokens only (no option parsing).
+     * <p>
+     * Once a leaf command (no subcommands) is reached, remaining tokens are treated as
+     * parameters rather than missing subcommands. Catch-all commands (e.g. {@code create})
+     * always resolve as present so hybrid usage like {@code create my-project} does not
+     * trigger plugin lookup.
      *
      * @param root the root command
      * @param args the arguments passed to the root command
-     * @return the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
+     * @return the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing
      */
-    public Optional<String> checkMissingCommand(CommandLine root, String[] args) {
-        if (args.length == 0) {
+    public Optional<String> findMissingCommand(CommandLine root, String[] args) {
+        List<String> path = extractCommandPath(args);
+        if (path.isEmpty()) {
             return Optional.empty();
         }
 
-        try {
-            ParseResult currentParseResult = root.parseArgs(args);
+        CommandLine current = root;
+        StringBuilder commandId = new StringBuilder();
 
-            // some commands are catch all and they will match always
-            if (CATCH_ALL_COMMANDS.contains(currentParseResult.commandSpec().name())) {
+        for (int i = 0; i < path.size(); i++) {
+            String segment = path.get(i);
+            CommandLine next = findSubcommand(current, segment);
+            if (next == null) {
+                // Leaf command: leftover positional tokens are parameters (e.g. encrypt/decrypt).
+                if (current.getSubcommands().isEmpty()) {
+                    return Optional.empty();
+                }
+                StringBuilder missing = new StringBuilder(commandId);
+                if (!missing.isEmpty()) {
+                    missing.append("-");
+                }
+                // Only the first unmatched segment is the candidate plugin/command name.
+                missing.append(segment);
+                return Optional.of(missing.toString());
+            }
+
+            current = next;
+            String name = current.getCommandSpec().name();
+            if (CATCH_ALL_COMMANDS.contains(name)) {
                 return Optional.empty();
             }
 
-            StringBuilder missingCommand = new StringBuilder();
-
-            do {
-                if (!missingCommand.isEmpty()) {
-                    missingCommand.append("-");
-                }
-                missingCommand.append(currentParseResult.commandSpec().name());
-
-                List<String> unmatchedSubcommands = currentParseResult.unmatched().stream()
-                        .takeWhile(u -> !u.startsWith("-"))
-                        .collect(Collectors.toList());
-                if (!unmatchedSubcommands.isEmpty()) {
-                    missingCommand.append("-").append(unmatchedSubcommands.get(0));
-                    // We don't want the root itself to be added to the result
-                    return Optional.of(stripRootPrefix(missingCommand.toString(), root.getCommandName() + "-"));
-                }
-
-                currentParseResult = currentParseResult.subcommand();
-            } while (currentParseResult != null);
-
-            return Optional.empty();
-        } catch (UnmatchedArgumentException e) {
-            // the first element was matched so it's not missing
-            if (e.getCommandLine() != root) {
-                return Optional.empty();
+            if (!commandId.isEmpty()) {
+                commandId.append("-");
             }
-
-            return Optional.of(args[0]);
-        } catch (Exception e) {
-            // For any other exceptions (e.g. MissingParameterException), we should just ignore.
-            // The problem is not that the command is missing but that the options might not be adequate.
-            // This will be handled by Picocli at a later step.
-            return Optional.empty();
-        }
-    }
-
-    private static String stripRootPrefix(String command, String rootPrefix) {
-        if (!command.startsWith(rootPrefix)) {
-            return command;
+            commandId.append(name);
         }
 
-        return command.substring(rootPrefix.length());
+        return Optional.empty();
     }
 
     @Override

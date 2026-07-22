@@ -1,5 +1,9 @@
 package io.quarkus.deployment.pkg;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.AOT_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
+
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -8,8 +12,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.deployment.pkg.PackageConfig.JarConfig.AotConfig;
-import io.quarkus.deployment.pkg.PackageConfig.JarConfig.AppcdsConfig;
+import org.eclipse.microprofile.config.spi.Converter;
+
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -17,7 +22,9 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Packaging the application
@@ -47,19 +54,24 @@ public interface PackageConfig {
      * The directory into which the output package(s) should be written.
      * Relative paths are resolved from the build systems target directory.
      */
-    Optional<Path> outputDirectory();
+    @WithName("output-directory")
+    @WithConverter(OutputDirectoryConverter.class)
+    Path outputDirectory();
 
     /**
      * The name of the final artifact, excluding the suffix and file extension.
      */
-    Optional<String> outputName();
+    @WithDefault("${quarkus.build.base-name:application}")
+    String outputName();
 
     /**
      * The timestamp used as a reference for generating the packages (e.g. for the creation timestamp of ZIP entries).
      * <p>
      * The approach is similar to what is done by the maven-jar-plugin with `project.build.outputTimestamp`.
      */
-    Optional<Instant> outputTimestamp();
+    @WithDefault(("${quarkus.build.timestamp:now}"))
+    @WithConverter(InstantConverter.class)
+    Instant outputTimestamp();
 
     /**
      * Setting this switch to {@code true} will cause Quarkus to write the transformed application bytecode
@@ -509,5 +521,22 @@ public interface PackageConfig {
          */
         @WithDefault("${user.home}/.quarkus")
         String jarDirectory();
+    }
+
+    class OutputDirectoryConverter implements Converter<Path> {
+        @Override
+        public Path convert(String value) throws IllegalArgumentException, NullPointerException {
+            return value != null ? Path.of(value) : Path.of("");
+        }
+    }
+
+    class InstantConverter implements Converter<Instant> {
+        @Override
+        public Instant convert(String value) throws IllegalArgumentException, NullPointerException {
+            if (value != null) {
+                return value.equalsIgnoreCase("now") ? Instant.now() : Instant.parse(value);
+            }
+            return null;
+        }
     }
 }

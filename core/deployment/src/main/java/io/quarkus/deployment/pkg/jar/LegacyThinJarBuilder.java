@@ -49,9 +49,9 @@ public class LegacyThinJarBuilder extends AbstractLegacyThinJarBuilder<JarBuildI
     }
 
     public JarBuildItem build() throws IOException {
-        Path runnerJar = outputTarget.getOutputDirectory()
+        Path runnerJar = outputTarget.getPackageOutputDirectory()
                 .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + DOT_JAR);
-        Path libDir = outputTarget.getOutputDirectory().resolve(LegacyThinJarFormat.LIB);
+        Path libDir = outputTarget.getPackageOutputDirectory().resolve(LegacyThinJarFormat.LIB);
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
 

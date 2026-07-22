@@ -230,9 +230,7 @@ public class InfoProcessor {
         buildData.put("artifact", artifact);
         String version = appArtifact.getVersion();
         buildData.put("version", version);
-        OffsetDateTime dateTime = packageConfig.outputTimestamp()
-                .map(i -> i.atZone(ZoneId.systemDefault()).toOffsetDateTime())
-                .orElseGet(() -> OffsetDateTime.now());
+        OffsetDateTime dateTime = packageConfig.outputTimestamp().atZone(ZoneId.systemDefault()).toOffsetDateTime();
         String time = ISO_OFFSET_DATE_TIME.format(dateTime);
         buildData.put("time", time); // TODO: what is the proper notion of build time?
         String quarkusVersion = Version.getVersion();

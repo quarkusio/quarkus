@@ -657,15 +657,11 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getNativeEnabled().set(quarkusExt.nativeConfig().enabled());
         task.getNativeSourcesOnly().set(quarkusExt.nativeConfig().sourcesOnly());
         task.getRunnerSuffix().set(quarkusExt.packageConfig().computedRunnerSuffix());
-        task.getRunnerName().set(
-                quarkusExt.packageConfig().outputName().orElseGet(quarkusExt::finalName));
-        task.getOutputDirectory()
-                .set(Path.of(quarkusExt.packageConfig().outputDirectory().map(Path::toString)
-                        .orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY)));
+        task.getRunnerName().set(quarkusExt.packageConfig().outputName());
+        task.getOutputDirectory().set(quarkusExt.packageConfig().outputDirectory());
         task.getJarType().set(quarkusExt.packageConfig().jar().type());
         task.getManifestAttributes().set(quarkusExt.manifest().getAttributes());
         task.getManifestSections().set(quarkusExt.manifest().getSections());
-
     }
 
     private static void configureGenerateCodeTask(QuarkusGenerateCode task,

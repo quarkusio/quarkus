@@ -41,6 +41,6 @@ public class UnknownBuildConfigTest {
 
         assertEquals(2, unrecognized.size());
         assertTrue(unrecognized.contains("quarkus.unknown.prop"));
-        assertTrue(unrecognized.contains("quarkus.build.unknown.prop"));
+        assertTrue(unrecognized.contains("quarkus.build-time.unknown.prop"));
     }
 }

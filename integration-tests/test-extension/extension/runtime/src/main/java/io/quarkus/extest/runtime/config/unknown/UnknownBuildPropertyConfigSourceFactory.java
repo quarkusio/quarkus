@@ -17,7 +17,7 @@ public class UnknownBuildPropertyConfigSourceFactory implements ConfigSourceFact
     public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
         ConfigValue value = context.getValue("skip.build.sources");
         if (value.getValue() == null || value.getValue().equals("false")) {
-            return List.of(new PropertiesConfigSource(Map.of("quarkus.build.unknown.prop", "value"), "", 100));
+            return List.of(new PropertiesConfigSource(Map.of("quarkus.build-time.unknown.prop", "value"), "", 100));
         } else {
             return emptyList();
         }

@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev;
 
 import java.io.File;
 import java.io.Serializable;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +46,8 @@ public class DevModeContext implements Serializable {
     private File projectDir;
     private boolean test;
     private boolean abortOnFailedStart;
+    private BuildUpdateSource buildUpdateSource = BuildUpdateSource.QUARKUS;
+    private ExternalBuildOutputTransport externalBuildOutputTransport = ExternalBuildOutputTransport.disabled();
     // the jar file which is used to launch the DevModeMain
     private File devModeRunnerJarFile;
     private boolean localProjectDiscovery = true;
@@ -140,6 +143,68 @@ public class DevModeContext implements Serializable {
 
     public void setAbortOnFailedStart(boolean abortOnFailedStart) {
         this.abortOnFailedStart = abortOnFailedStart;
+    }
+
+    public BuildUpdateSource getBuildUpdateSource() {
+        return buildUpdateSource == null ? BuildUpdateSource.QUARKUS : buildUpdateSource;
+    }
+
+    public void setBuildUpdateSource(BuildUpdateSource buildUpdateSource) {
+        this.buildUpdateSource = buildUpdateSource == null ? BuildUpdateSource.QUARKUS : buildUpdateSource;
+    }
+
+    public ExternalBuildOutputTransport getExternalBuildOutputTransport() {
+        return externalBuildOutputTransport == null ? ExternalBuildOutputTransport.disabled() : externalBuildOutputTransport;
+    }
+
+    public void setExternalBuildOutputTransport(ExternalBuildOutputTransport externalBuildOutputTransport) {
+        this.externalBuildOutputTransport = externalBuildOutputTransport == null
+                ? ExternalBuildOutputTransport.disabled()
+                : externalBuildOutputTransport;
+    }
+
+    public enum BuildUpdateSource {
+        QUARKUS,
+        EXTERNAL_BUILD_TOOL
+    }
+
+    public static class ExternalBuildOutputTransport implements Serializable {
+
+        private static final long serialVersionUID = 7138938820132266370L;
+
+        private URI uri;
+        private String token;
+
+        public static ExternalBuildOutputTransport disabled() {
+            return new ExternalBuildOutputTransport();
+        }
+
+        public static ExternalBuildOutputTransport of(URI uri, String token) {
+            ExternalBuildOutputTransport transport = new ExternalBuildOutputTransport();
+            transport.setUri(uri);
+            transport.setToken(token);
+            return transport;
+        }
+
+        public boolean isEnabled() {
+            return uri != null;
+        }
+
+        public Optional<URI> getUri() {
+            return Optional.ofNullable(uri);
+        }
+
+        public void setUri(URI uri) {
+            this.uri = uri;
+        }
+
+        public Optional<String> getToken() {
+            return Optional.ofNullable(token);
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
     }
 
     public Map<String, Set<String>> getCompilerOptions() {

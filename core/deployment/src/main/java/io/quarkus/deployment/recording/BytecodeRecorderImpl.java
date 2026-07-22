@@ -2107,7 +2107,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
 
         DeferredArrayStoreParameter(Object target, Class<?> expectedType) {
-            if (expectedType == List.class) {
+            if (expectedType == List.class || expectedType == Map.class || expectedType == Set.class
+                    || expectedType == SortedMap.class || expectedType == SortedSet.class) {
                 returnType = expectedType.getName();
             } else if (target != null && !(target instanceof Proxy) && isAccessible(target.getClass())) {
                 returnType = target.getClass().getName();

@@ -30,7 +30,7 @@ import io.grpc.ServiceDescriptor;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
@@ -43,8 +43,10 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
@@ -70,28 +72,25 @@ public class GrpcDevUIProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
         String className = "io.quarkus.grpc.internal.DelegatingGrpcBeansStorageImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(className)
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
-                .superClass(DelegatingGrpcBeansStorage.class)
-                .build()) {
-            classCreator.addAnnotation(Singleton.class.getName());
-            MethodCreator constructor = classCreator
-                    .getMethodCreator(io.quarkus.gizmo.MethodDescriptor.ofConstructor(className));
-            constructor.invokeSpecialMethod(io.quarkus.gizmo.MethodDescriptor.ofConstructor(DelegatingGrpcBeansStorage.class),
-                    constructor.getThis());
-
-            for (DelegatingGrpcBeanBuildItem delegatingBean : delegatingBeans) {
-                constructor.invokeVirtualMethod(
-                        io.quarkus.gizmo.MethodDescriptor.ofMethod(DelegatingGrpcBeansStorage.class, "addDelegatingMapping",
-                                void.class,
-                                String.class, String.class),
-                        constructor.getThis(),
-                        constructor.load(delegatingBean.userDefinedBean.name().toString()),
-                        constructor.load(delegatingBean.generatedBean.name().toString()));
-            }
-            constructor.returnValue(null);
-        }
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
+        gizmo.class_(className, cc -> {
+            cc.extends_(DelegatingGrpcBeansStorage.class);
+            cc.addAnnotation(Singleton.class);
+            cc.constructor(ctorCreator -> {
+                ctorCreator.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(DelegatingGrpcBeansStorage.class), cc.this_());
+                    for (DelegatingGrpcBeanBuildItem delegatingBean : delegatingBeans) {
+                        bc.invokeVirtual(
+                                MethodDesc.of(DelegatingGrpcBeansStorage.class, "addDelegatingMapping",
+                                        void.class, String.class, String.class),
+                                cc.this_(),
+                                Const.of(delegatingBean.userDefinedBean.name().toString()),
+                                Const.of(delegatingBean.generatedBean.name().toString()));
+                    }
+                    bc.return_();
+                });
+            });
+        });
 
         unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(className));
     }

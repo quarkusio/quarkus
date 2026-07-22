@@ -23,7 +23,7 @@ class BuildOutputChangesJsonCodecTest {
         var classesRoot = directory.resolve("classes");
         var resourcesRoot = directory.resolve("resources");
         var diagnostics = directory.resolve("diagnostics.txt");
-        var changes = new BuildOutputChanges(42, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+        var changes = new BuildOutputChanges(42, BuildOutputChangeStatus.BUILD_SUCCEEDED, BuildOutputFailureKind.TEST,
                 List.of(new BuildOutputPathChange(classesRoot, classesRoot.resolve("com/acme/Foo.class"),
                         BuildOutputChangeKind.MODIFIED)),
                 List.of(new BuildOutputPathChange(resourcesRoot, resourcesRoot.resolve("application.properties"),
@@ -40,6 +40,7 @@ class BuildOutputChangesJsonCodecTest {
         assertThat(encoded).doesNotContain("token");
         assertThat(decoded.sequence()).isEqualTo(42);
         assertThat(decoded.status()).isEqualTo(BuildOutputChangeStatus.BUILD_SUCCEEDED);
+        assertThat(decoded.failureKind()).isEqualTo(BuildOutputFailureKind.TEST);
         assertThat(decoded.mainClassChanges()).containsExactlyElementsOf(changes.mainClassChanges());
         assertThat(decoded.mainResourceChanges()).containsExactlyElementsOf(changes.mainResourceChanges());
         assertThat(decoded.testClassChanges()).containsExactlyElementsOf(changes.testClassChanges());
@@ -65,6 +66,7 @@ class BuildOutputChangesJsonCodecTest {
         assertThat(decoded.mainResourceChanges()).isEmpty();
         assertThat(decoded.testClassChanges()).isEmpty();
         assertThat(decoded.testResourceChanges()).isEmpty();
+        assertThat(decoded.failureKind()).isEqualTo(BuildOutputFailureKind.NONE);
         assertThat(decoded.userInitiated()).isFalse();
         assertThat(decoded.forceRestart()).isFalse();
     }

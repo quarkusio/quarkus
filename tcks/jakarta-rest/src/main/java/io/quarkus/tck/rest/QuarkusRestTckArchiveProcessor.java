@@ -40,6 +40,17 @@ public class QuarkusRestTckArchiveProcessor {
             props.append("quarkus.security.users.embedded.roles.tck-staff=staff,mgr,DIRECTOR\n");
             props.append("quarkus.security.users.embedded.users.tck-user=tck-user-password\n");
             props.append("quarkus.security.users.embedded.roles.tck-user=guest,OTHERROLE\n");
+            props.append("quarkus.http.auth.policy.tck-role-policy.roles-allowed=DIRECTOR,OTHERROLE\n");
+        }
+
+        if (warName.contains("securitycontext_basic")) {
+            props.append("quarkus.http.auth.permission.secured.paths=Servlet/*\n");
+            props.append("quarkus.http.auth.permission.secured.methods=GET,POST,HEAD,PUT\n");
+            props.append("quarkus.http.auth.permission.secured.policy=tck-role-policy\n");
+        } else if (warName.contains("requestcontext_security")) {
+            props.append("quarkus.http.auth.permission.secured.paths=resource/*\n");
+            props.append("quarkus.http.auth.permission.secured.methods=GET,POST\n");
+            props.append("quarkus.http.auth.permission.secured.policy=tck-role-policy\n");
         }
 
         war.addAsResource(new StringAsset(props.toString()), "application.properties");

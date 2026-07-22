@@ -682,8 +682,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             if (!headerMap.containsKey(HttpHeaders.CONTENT_TYPE)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
             }
-            if ((v.getLanguageString() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
-                headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
+            if ((v.getLanguage() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguage().toLanguageTag());
             }
             if ((v.getEncoding() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_ENCODING)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());

@@ -21,7 +21,12 @@ public enum DisableReason {
     NOT_IMPLEMENTED_YET("Not yet implemented in Quarkus REST"),
     FILE_HANDLING("File handling should be done by Vert.x"),
     SIGNATURE_TEST("Signature test library not available"),
-    THREADING_MODEL("Threading model incompatibility");
+    THREADING_MODEL("Threading model incompatibility"),
+    EMPTY_PARAM_IS_NULL("Quarkus REST deliberately treats empty parameter values as null"),
+    CLIENT_EXCEPTION_WRAPPING(
+            "Client exceptions wrapped in ClientWebApplicationException for security reasons"),
+    UNSUPPORTED_CONTEXT_RESOLVER_JSONB(
+            "ContextResolver<Jsonb> is not supported (https://github.com/quarkusio/quarkus/issues/55514)");
 
     private final String description;
 

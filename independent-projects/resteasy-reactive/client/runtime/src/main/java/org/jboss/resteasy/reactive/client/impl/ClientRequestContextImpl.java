@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Entity;
@@ -179,6 +180,11 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     @Override
     public String getHeaderString(String name) {
         return HeaderUtil.getHeaderString(headersMap, name);
+    }
+
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return HeaderUtil.containsHeaderString(headersMap, name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

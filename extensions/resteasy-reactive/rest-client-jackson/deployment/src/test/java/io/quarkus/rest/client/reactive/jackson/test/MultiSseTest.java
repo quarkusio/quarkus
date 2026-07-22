@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.jackson.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
@@ -334,7 +335,7 @@ public class MultiSseTest {
         @GET
         @Path("/event")
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        public void event(@Context SseEventSink sink, @Context Sse sse) {
+        public void event(@Context SseEventSink sink, @Context Sse sse) throws IOException {
             // send a stream of few events
             try (sink) {
                 for (int i = 0; i < 2; i++) {
@@ -352,7 +353,7 @@ public class MultiSseTest {
         @GET
         @Path("/event-with-filter")
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        public void eventWithFilter(@Context SseEventSink sink, @Context Sse sse) {
+        public void eventWithFilter(@Context SseEventSink sink, @Context Sse sse) throws IOException {
             try (sink) {
                 sink.send(sse.newEventBuilder()
                         .id("id")

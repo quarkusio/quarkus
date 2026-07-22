@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
@@ -103,6 +104,11 @@ public class ContainerRequestContextImpl implements ResteasyReactiveContainerReq
     @Override
     public String getHeaderString(String name) {
         return quarkusRestContext.getHttpHeaders().getHeaderString(name);
+    }
+
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return quarkusRestContext.getHttpHeaders().containsHeaderString(name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

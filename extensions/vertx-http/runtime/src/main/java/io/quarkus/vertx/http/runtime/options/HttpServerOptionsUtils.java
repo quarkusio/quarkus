@@ -362,7 +362,9 @@ public class HttpServerOptionsUtils {
                 settings.setHeaderTableSize(httpConfig.limits().headerTableSize().getAsLong());
             }
             settings.setPushEnabled(httpConfig.http2PushEnabled());
-            settings.setMaxConcurrentStreams(httpConfig.limits().maxConcurrentStreams().orElse(200L));
+            if (httpConfig.limits().maxConcurrentStreams().isPresent()) {
+                settings.setMaxConcurrentStreams(httpConfig.limits().maxConcurrentStreams().getAsLong());
+            }
             if (httpConfig.initialWindowSize().isPresent()) {
                 settings.setInitialWindowSize(httpConfig.initialWindowSize().getAsInt());
             }

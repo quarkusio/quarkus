@@ -304,7 +304,7 @@ class HttpServerOptionsUtilsTest {
         when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
         when(limits.maxInitialLineLength()).thenReturn(4096);
         when(limits.headerTableSize()).thenReturn(OptionalLong.empty());
-        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.empty());
+        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.of(200L));
         when(limits.maxFrameSize()).thenReturn(OptionalInt.empty());
         when(limits.maxHeaderListSize()).thenReturn(OptionalLong.empty());
         when(limits.rstFloodMaxRstFramePerWindow()).thenReturn(OptionalInt.empty());

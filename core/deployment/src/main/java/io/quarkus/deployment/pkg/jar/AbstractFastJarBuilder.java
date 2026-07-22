@@ -459,7 +459,13 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         && gact.getArtifactId().equals(appDep.getArtifactId())
                         && gact.getType().equals(appDep.getType())
                         && gact.getClassifier().equals(appDep.getClassifier()));
-        for (Path resolvedDep : appDep.getResolvedPaths()) {
+        List<Path> resolvedPaths = new ArrayList<>();
+        appDep.getResolvedPaths().forEach(resolvedPaths::add);
+        // A local project dependency may resolve to separate class and resource directories. They represent one
+        // artifact and must be written through one archive creator, otherwise each directory replaces the same JAR.
+        boolean packageDirectoryRootsTogether = resolvedPaths.size() > 1
+                && resolvedPaths.stream().allMatch(Files::isDirectory);
+        for (Path resolvedDep : resolvedPaths) {
             String fileName;
             if (forceUseArtifactIdOnlyAsName) {
                 fileName = appDep.getArtifactId() + "." + appDep.getType();
@@ -481,7 +487,11 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 // This case can happen when we are building a jar from inside the Quarkus repository
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
-                packageClasses(resolvedDep, targetPath, packageConfig, outputTargetBuildItem, executorService);
+                packageClasses(packageDirectoryRootsTogether ? resolvedPaths : List.of(resolvedDep), targetPath,
+                        packageConfig, outputTargetBuildItem, executorService);
+                if (packageDirectoryRootsTogether) {
+                    return;
+                }
             } else {
                 Set<TransformedClass> transformedFromThisArchive = transformedClasses
                         .getTransformedClassesByJar().get(resolvedDep);
@@ -531,21 +541,23 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
     }
 
-    private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
+    private static void packageClasses(List<Path> resolvedDependencies, final Path targetPath, PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
                 packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                 executorService)) {
-            Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                    new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                                throws IOException {
-                            final Path relativePath = resolvedDep.relativize(file);
-                            archiveCreator.addFile(file, relativePath.toString()); //replace only needed for testing
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
+            for (Path resolvedDependency : resolvedDependencies) {
+                Files.walkFileTree(resolvedDependency, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                        new SimpleFileVisitor<Path>() {
+                            @Override
+                            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                    throws IOException {
+                                final Path relativePath = resolvedDependency.relativize(file);
+                                archiveCreator.addFile(file, relativePath.toString()); //replace only needed for testing
+                                return FileVisitResult.CONTINUE;
+                            }
+                        });
+            }
         }
     }
 

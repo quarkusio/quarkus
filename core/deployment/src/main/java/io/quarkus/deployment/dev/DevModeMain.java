@@ -119,28 +119,21 @@ public class DevModeMain implements Closeable {
         JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
     }
 
-    private PathList getApplicationBuildDirs() {
-        final String classesDir = context.getApplicationRoot().getMain().getClassesPath();
-        final String resourcesOutputDir = context.getApplicationRoot().getMain().getResourcesOutputPath();
-        if (resourcesOutputDir == null || resourcesOutputDir.equals(classesDir)) {
-            return toListOfExistingOrEmpty(Path.of(classesDir));
+    PathList getApplicationBuildDirs() {
+        final PathList.Builder buildDirs = PathList.builder();
+        for (Path classesDir : context.getApplicationRoot().getMain().getClassesPaths()) {
+            if (Files.exists(classesDir)) {
+                buildDirs.add(classesDir);
+            }
         }
-        return toListOfExistingOrEmpty(Path.of(classesDir), Path.of(resourcesOutputDir));
-    }
-
-    private static PathList toListOfExistingOrEmpty(Path p1, Path p2) {
-        return !Files.exists(p1) ? toListOfExistingOrEmpty(p2)
-                : (!Files.exists(p2) ? toListOfExistingOrEmpty(p1) : PathList.of(p1, p2));
-    }
-
-    /**
-     * Returns a {@link PathList} containing the path if it exists, otherwise returns an empty {@link PathList}.
-     *
-     * @param path path
-     * @return {@link PathList} containing the path if it exists, otherwise returns an empty {@link PathList}
-     */
-    private static PathList toListOfExistingOrEmpty(Path path) {
-        return Files.exists(path) ? PathList.of(path) : PathList.empty();
+        final String resourcesOutputDir = context.getApplicationRoot().getMain().getResourcesOutputPath();
+        if (resourcesOutputDir != null) {
+            final Path resourcesDir = Path.of(resourcesOutputDir);
+            if (Files.exists(resourcesDir) && !buildDirs.contains(resourcesDir)) {
+                buildDirs.add(resourcesDir);
+            }
+        }
+        return buildDirs.build();
     }
 
     /**

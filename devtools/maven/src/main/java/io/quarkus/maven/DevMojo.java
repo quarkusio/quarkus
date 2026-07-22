@@ -1371,6 +1371,9 @@ public class DevMojo extends AbstractMojo {
             if (!environmentVariables.isEmpty()) {
                 processBuilder.environment().putAll(environmentVariables);
             }
+            for (Map.Entry<String, String> entry : commandLine.getLauncherEnvironmentVariables().entrySet()) {
+                processBuilder.environment().putIfAbsent(entry.getKey(), entry.getValue());
+            }
             process = processBuilder.start();
 
             //https://github.com/quarkusio/quarkus/issues/232

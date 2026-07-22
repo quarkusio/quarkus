@@ -189,7 +189,20 @@ jobs:
       maven-disable-develocity-cache: ${{ steps.develocity-cache-status.outputs.maven-disable-develocity-cache }}
       common-maven-args: ${{ steps.configure-maven-args.outputs.common-maven-args }}
       run-ci-build: ${{ steps.check-changes.outputs.run-ci-build }}
+      base-jdk-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
     steps:
+      - name: Checkout for base JDK version
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: independent-projects/parent/pom.xml
+          path: .base-jdk-checkout
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' .base-jdk-checkout/independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+          rm -rf .base-jdk-checkout
       - name: Set up JDK 25
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
@@ -308,11 +321,11 @@ jobs:
           path: main-last-build-sha.txt
           retention-days: 30
 
-  build-jdk17:
-    name: "Initial JDK 17 Build"
+  initial-build:
+    name: "Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
     needs: [ configure ]
     if: needs.configure.outputs.run-ci-build == 'true'
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'initial-jdk-17') || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'initial-build') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -324,8 +337,8 @@ jobs:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           # this is important for Scalpel to work
@@ -336,11 +349,11 @@ jobs:
         run: .github/ci-prerequisites.sh
       - name: Print disk usage before build
         run: .github/ci-disk-usage.sh
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ needs.configure.outputs.base-jdk-version }}
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         if: (github.event_name != 'push' && github.event_name != 'schedule') || github.actor == 'dependabot[bot]'
@@ -367,9 +380,9 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
+          key: develocity-cache-Initial Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
-            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-
+            develocity-cache-Initial Build-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -382,7 +395,7 @@ jobs:
         uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
-          job-name: "Initial JDK 17 Build"
+          job-name: "Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -489,7 +502,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-Initial JDK 17 Build"
+          name: "build-reports-${{ github.run_attempt }}-Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
           path: |
             build-reports.zip
           retention-days: 7
@@ -497,9 +510,9 @@ jobs:
   calculate-test-jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
-    needs: build-jdk17
+    needs: initial-build
     env:
-      SCALPEL_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.scalpel_impacted }}
+      SCALPEL_IMPACTED_MODULES: ${{ needs.initial-build.outputs.scalpel_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
@@ -578,7 +591,7 @@ jobs:
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     if: needs.calculate-test-jobs.outputs.jvm_matrix
     timeout-minutes: 400
     env:
@@ -742,7 +755,7 @@ jobs:
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -763,11 +776,11 @@ jobs:
             runs-on: true
           }
           - {
-            name: "17 Windows",
-            java-version: 17,
+            name: "${{ needs.configure.outputs.base-jdk-version }} Windows",
+            java-version: "${{ needs.configure.outputs.base-jdk-version }}",
             java-distribution: "temurin",
             os-name: "windows-latest",
-            tag: "maven-jdk-17-windows",
+            tag: "maven-jdk-${{ needs.configure.outputs.base-jdk-version }}-windows",
             runs-on: false
           }
           - {
@@ -827,7 +840,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_maven flag, Scalpel has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.scalpel_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.initial-build.outputs.scalpel_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -865,7 +878,7 @@ jobs:
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
@@ -886,10 +899,10 @@ jobs:
             runs-on: true
           }
           - {
-            name: "17 Windows",
-            java-version: 17,
+            name: "${{ needs.configure.outputs.base-jdk-version }} Windows",
+            java-version: "${{ needs.configure.outputs.base-jdk-version }}",
             os-name: "windows-latest",
-            tag: "gradle-jdk-17-windows",
+            tag: "gradle-jdk-${{ needs.configure.outputs.base-jdk-version }}-windows",
             runs-on: false
           }
     steps:
@@ -962,7 +975,7 @@ jobs:
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
     env:
@@ -982,11 +995,11 @@ jobs:
             runs-on: true
           }
           - {
-            name: "17 Windows",
-            java-version: 17,
+            name: "${{ needs.configure.outputs.base-jdk-version }} Windows",
+            java-version: "${{ needs.configure.outputs.base-jdk-version }}",
             java-distribution: "temurin",
             os-name: "windows-latest",
-            tag: "devtools-jdk-17-windows",
+            tag: "devtools-jdk-${{ needs.configure.outputs.base-jdk-version }}-windows",
             runs-on: false
           }
           - {
@@ -1071,7 +1084,7 @@ jobs:
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
     env:
@@ -1172,7 +1185,7 @@ jobs:
 #  quickstarts-tests:
 #    name: Quickstarts - JDK ${{matrix.java.name}}
 #    runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-#    needs: [configure, build-jdk17, calculate-test-jobs]
+#    needs: [configure, initial-build, calculate-test-jobs]
 #    # Skip main in forks
 #    if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
 #    env:
@@ -1256,7 +1269,7 @@ jobs:
 #        working-directory: quarkus-quickstarts
 #        env:
 #          CAPTURE_BUILD_SCAN: true
-#          SCALPEL_IMPACTED_GAV: ${{ needs.build-jdk17.outputs.scalpel_impacted_gav }}
+#          SCALPEL_IMPACTED_GAV: ${{ needs.initial-build.outputs.scalpel_impacted_gav }}
 #        run: |
 #          echo "=== SCALPEL_IMPACTED_GAV ==="
 #          echo "$SCALPEL_IMPACTED_GAV"
@@ -1288,7 +1301,7 @@ jobs:
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
     if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
     env:
@@ -1387,7 +1400,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
     env:
@@ -1467,7 +1480,7 @@ jobs:
 
   tcks-test:
     name: MicroProfile TCKs Tests
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
@@ -1479,7 +1492,7 @@ jobs:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-21" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -1489,11 +1502,11 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ needs.configure.outputs.base-jdk-version }}
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1523,7 +1536,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, Scalpel has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.scalpel_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.initial-build.outputs.scalpel_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
@@ -1557,7 +1570,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
     env:
       # leave more space for the actual native compilation and execution
@@ -1764,7 +1777,7 @@ jobs:
     # Shared environment: make extra sure not to leak a GitHub token with any permission.
     permissions:
       contents: read
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1795,11 +1808,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ needs.configure.outputs.base-jdk-version }}
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
@@ -1874,7 +1887,7 @@ jobs:
     # Shared environment: make extra sure not to leak a GitHub token with any permission.
     permissions:
       contents: read
-    needs: [configure, build-jdk17, calculate-test-jobs]
+    needs: [configure, initial-build, calculate-test-jobs]
     if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1993,8 +2006,8 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    # needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
-    needs: [configure,build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
+    # needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
+    needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2

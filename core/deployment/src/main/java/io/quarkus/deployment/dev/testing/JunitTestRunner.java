@@ -12,7 +12,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -157,6 +156,7 @@ public class JunitTestRunner {
         try {
             long start = System.currentTimeMillis();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
+            ensureTestResourcesOutputExists();
             QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader();
             deploymentClassLoader = tcl;
 
@@ -447,6 +447,13 @@ public class JunitTestRunner {
         }
     }
 
+    private void ensureTestResourcesOutputExists() throws IOException {
+        var test = moduleInfo.getTest().orElse(null);
+        if (test != null && test.getResourcesOutputPath() != null) {
+            Files.createDirectories(Path.of(test.getResourcesOutputPath()));
+        }
+    }
+
     private static List<String> toTagList(TestIdentifier testIdentifier) {
         return testIdentifier
                 .getTags()
@@ -576,6 +583,27 @@ public class JunitTestRunner {
         return resultMap;
     }
 
+    static Index indexTestClasses(List<Path> testClassesDirectories) {
+        Indexer indexer = new Indexer();
+        for (Path testClassesDir : testClassesDirectories) {
+            if (!Files.isDirectory(testClassesDir)) {
+                continue;
+            }
+            try (Stream<Path> files = Files.walk(testClassesDir)) {
+                files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
+                    try (InputStream in = Files.newInputStream(s)) {
+                        indexer.index(in);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return indexer.complete();
+    }
+
     private DiscoveryResult discoverTestClasses() {
         //maven has a lot of rules around this and is configurable
         //for now this is out of scope, we are just going to do annotation based discovery
@@ -589,27 +617,14 @@ public class JunitTestRunner {
         }
 
         //we also only run tests from the current module, which we can also revisit later
-        Path testClassesDir = Paths.get(moduleInfo.getTest().get().getClassesPath());
-        if (!Files.isDirectory(testClassesDir)) {
-            log.warn("Test classes directory does not exist: " + testClassesDir
+        List<Path> testClassesDirectories = moduleInfo.getTest().get().getClassesPaths();
+        if (testClassesDirectories.stream().noneMatch(Files::isDirectory)) {
+            log.warn("Test classes directories do not exist: " + testClassesDirectories
                     + ". This can happen after running 'mvn clean' while dev mode is active."
                     + " Trigger a hot-reload or restart the application to recompile test classes.");
             return DiscoveryResult.EMPTY;
         }
-        Indexer indexer = new Indexer();
-        try (Stream<Path> files = Files.walk(testClassesDir)) {
-            files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
-                try (InputStream in = Files.newInputStream(s)) {
-                    indexer.index(in);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Index index = indexer.complete();
+        Index index = indexTestClasses(testClassesDirectories);
         //we now have all the classes by name
         //these tests we never run
         Set<String> integrationTestClasses = new HashSet<>();
@@ -791,8 +806,10 @@ public class JunitTestRunner {
                     String.class);
 
             // Passing in the test classes is necessary because in dev mode getAnnotations() on the class returns an empty array, for some reason (plus it saves rediscovery effort)
-            String classPath = moduleInfo.getMain()
-                    .getClassesPath() + File.pathSeparator + moduleInfo.getTest().get().getClassesPath();
+            String classPath = Stream.concat(moduleInfo.getMain().getClassesPaths().stream(),
+                    moduleInfo.getTest().get().getClassesPaths().stream())
+                    .map(Path::toString)
+                    .collect(Collectors.joining(File.pathSeparator));
             classLoaderForLoadingTests = (ClassLoader) constructor.newInstance(Thread.currentThread()
                     .getContextClassLoader(), true, testApplication, profiles, quarkusTestClassesForFacadeClassLoader,
                     classPath);

@@ -32,7 +32,9 @@ public class ExtensionDescriptorTaskTest {
     @BeforeEach
     public void setupProject() throws IOException {
         buildFile = new File(testProjectDir, "build.gradle");
-
+        File quarkusExtensionsFile = new File(testProjectDir, "src/main/resources/META-INF/quarkus-extensions.yaml");
+        quarkusExtensionsFile.getParentFile().mkdirs();
+        TestUtils.writeFile(quarkusExtensionsFile, "");
         File settingFile = new File(testProjectDir, "settings.gradle");
         String settingsContent = "rootProject.name = 'test'";
         TestUtils.writeFile(settingFile, settingsContent);
@@ -42,19 +44,19 @@ public class ExtensionDescriptorTaskTest {
     public void shouldBeUpToDateWhenInputsAndOutputsAreUnchanged() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
 
-        BuildResult firstRun = runExtensionDescriptorTask();
-        assertThat(firstRun.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+        BuildResult firstRun = runProcessResourcesTask();
+        assertThat(firstRun.task(":" + QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
 
-        BuildResult secondRun = runExtensionDescriptorTask();
-        assertThat(secondRun.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+        BuildResult secondRun = runProcessResourcesTask();
+        assertThat(secondRun.task(":" + QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.UP_TO_DATE);
     }
 
     @Test
     public void shouldCreateFilesWithDefaultValues() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -94,7 +96,7 @@ public class ExtensionDescriptorTaskTest {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
                 "deploymentArtifact = 'custom.group:custom-deployment-artifact:0.1.0'");
         TestUtils.writeFile(buildFile, buildFileContent);
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -108,7 +110,7 @@ public class ExtensionDescriptorTaskTest {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
                 "conditionalDependencies= ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']");
         TestUtils.writeFile(buildFile, buildFileContent);
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -125,7 +127,7 @@ public class ExtensionDescriptorTaskTest {
                 "parentFirstArtifacts = ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']");
 
         TestUtils.writeFile(buildFile, buildFileContent);
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -144,7 +146,7 @@ public class ExtensionDescriptorTaskTest {
                         "}\n");
 
         TestUtils.writeFile(buildFile, buildFileContent);
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -165,7 +167,7 @@ public class ExtensionDescriptorTaskTest {
                 "description: this is a sample extension\n";
         TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), description);
 
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionDescriptorFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.yaml");
         assertThat(extensionDescriptorFile).exists();
@@ -191,10 +193,10 @@ public class ExtensionDescriptorTaskTest {
         BuildResult result = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
-                .withArguments("extensionDescriptor", "-S")
+                .withArguments("processResources", "-S")
                 .buildAndFail();
 
-        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.FAILED);
+        assertThat(result.task(":processResources").getOutcome()).isEqualTo(TaskOutcome.FAILED);
         assertThat(result.getOutput()).contains("Invalid quarkus-extension.yaml metadata");
         assertThat(result.getOutput()).contains("status");
     }
@@ -210,7 +212,7 @@ public class ExtensionDescriptorTaskTest {
                         "}\n");
 
         TestUtils.writeFile(buildFile, buildFileContent);
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
@@ -235,7 +237,7 @@ public class ExtensionDescriptorTaskTest {
                 "description: this is a sample extension\n";
         TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), description);
 
-        TestUtils.runExtensionDescriptorTask(testProjectDir);
+        TestUtils.runProcessResourcesTask(testProjectDir);
 
         File extensionDescriptorFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.yaml");
         assertThat(extensionDescriptorFile).exists();
@@ -246,11 +248,11 @@ public class ExtensionDescriptorTaskTest {
                 .isEqualTo("https://github.com/some/repo");
     }
 
-    private BuildResult runExtensionDescriptorTask() {
+    private BuildResult runProcessResourcesTask() {
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
+                .withArguments(QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME, "-S")
                 .build();
     }
 

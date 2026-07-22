@@ -927,6 +927,16 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonValueInheritedFromInterface() {
+        RestAssured.given()
+                .queryParam("value", "ENABLED")
+                .get("/simple/json-value-inherited-from-interface")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"ENABLED\""));
+    }
+
+    @Test
     public void testPojoWithJsonCreator() {
         RestAssured
                 .with()
@@ -1229,6 +1239,38 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullCharacterFieldInBean() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
+    public void testNullCharacterFieldInRecord() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
     void testShouldDeserializePolymorphicItems() {
         RestAssured
                 .with()
@@ -1384,6 +1426,32 @@ public abstract class AbstractSimpleJsonTest {
                 .statusCode(200)
                 .body("name", CoreMatchers.is("test"))
                 .body("value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicProperty() {
+        // A @JsonCreator parameter with a polymorphic (@JsonTypeInfo) type cannot be handled by the
+        // generated reflection-free deserializer and must fall back to the reflection-based one
+        RestAssured
+                .with()
+                .body("{\"item\":{\"type\":\"type_a\",\"value\":\"hello\"}}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(200)
+                .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicPropertyMissing() {
+        // Omit the required polymorphic "item" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(400);
     }
 
     @Test

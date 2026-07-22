@@ -101,6 +101,12 @@ class ConfigurationTest {
             assertThat(clientConfig.keepAliveEnabled().get()).isFalse();
             assertTrue(clientConfig.maxRedirects().isPresent());
             assertThat(clientConfig.maxRedirects().getAsInt()).isEqualTo(5);
+            assertTrue(clientConfig.sameOriginRedirectBlockedHeaders().isPresent());
+            assertThat(clientConfig.sameOriginRedirectBlockedHeaders().get())
+                    .containsExactlyInAnyOrder("cookie");
+            assertTrue(clientConfig.crossOriginRedirectBlockedHeaders().isPresent());
+            assertThat(clientConfig.crossOriginRedirectBlockedHeaders().get())
+                    .containsExactlyInAnyOrder("authorization", "cookie");
         }
     }
 

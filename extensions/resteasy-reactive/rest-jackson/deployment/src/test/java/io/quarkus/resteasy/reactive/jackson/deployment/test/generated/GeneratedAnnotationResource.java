@@ -304,6 +304,29 @@ public class GeneratedAnnotationResource {
                 + "\",\"props_size\":" + bean.getProperties().size() + "}";
     }
 
+    // --- FieldAnySetterBean: @JsonAnySetter on field ---
+
+    @POST
+    @Path("/field-any-setter")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String echoFieldAnySetter(FieldAnySetterBean bean) {
+        return "{\"name\":\"" + bean.getName()
+                + "\",\"extras_size\":" + bean.getExtras().size() + "}";
+    }
+
+    // --- FieldAnyGetterBean: @JsonAnyGetter on field ---
+
+    @GET
+    @Path("/field-any-getter")
+    public FieldAnyGetterBean getFieldAnyGetter() {
+        FieldAnyGetterBean bean = new FieldAnyGetterBean();
+        bean.setName("test");
+        bean.addProperty("color", "red");
+        bean.addProperty("size", "large");
+        return bean;
+    }
+
     // --- ManagedReferenceParent/Child: @JsonManagedReference + @JsonBackReference ---
 
     @GET

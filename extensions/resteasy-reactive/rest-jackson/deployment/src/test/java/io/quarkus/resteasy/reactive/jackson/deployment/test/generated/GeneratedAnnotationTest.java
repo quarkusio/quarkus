@@ -38,6 +38,8 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     IgnorePropertiesCreatorRecord.class,
                                     IgnoreAnySetterBean.class,
                                     AnyGetterBean.class,
+                                    FieldAnyGetterBean.class,
+                                    FieldAnySetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
                                     DateFormatBean.class,

@@ -24,6 +24,7 @@ public class OidcConfigurationMetadata {
     public static final String CODE_CHALLENGE_METHODS_SUPPORTED = "code_challenge_methods_supported";
     public static final String PUSHED_AUTHORIZATION_REQUEST_ENDPOINT = "pushed_authorization_request_endpoint";
     public static final String REQUIRE_PUSHED_AUTHORIZATION_REQUESTS = "require_pushed_authorization_requests";
+    public static final String AUTHORIZATION_RESPONSE_ISS_PARAMETER_SUPPORTED = "authorization_response_iss_parameter_supported";
 
     private final String discoveryUri;
     private final String tokenUri;
@@ -37,6 +38,7 @@ public class OidcConfigurationMetadata {
     private final String issuer;
     private final String pushedAuthorizationRequestUri;
     private final boolean requirePushedAuthorizationRequests;
+    private final boolean authorizationResponseIssParameterSupported;
     private final JsonObject json;
 
     public OidcConfigurationMetadata(String tokenUri,
@@ -61,6 +63,7 @@ public class OidcConfigurationMetadata {
         this.issuer = issuer;
         this.pushedAuthorizationRequestUri = pushedAuthorizationRequestUri;
         this.requirePushedAuthorizationRequests = false;
+        this.authorizationResponseIssParameterSupported = false;
         this.json = null;
     }
 
@@ -93,6 +96,8 @@ public class OidcConfigurationMetadata {
                 localMetadataConfig == null ? null : localMetadataConfig.pushedAuthorizationRequestUri);
         this.requirePushedAuthorizationRequests = Boolean
                 .parseBoolean(getMetadataValue(wellKnownConfig, REQUIRE_PUSHED_AUTHORIZATION_REQUESTS, null));
+        this.authorizationResponseIssParameterSupported = Boolean
+                .parseBoolean(getMetadataValue(wellKnownConfig, AUTHORIZATION_RESPONSE_ISS_PARAMETER_SUPPORTED, null));
         this.json = wellKnownConfig;
     }
 
@@ -181,6 +186,10 @@ public class OidcConfigurationMetadata {
 
     public boolean isRequirePushedAuthorizationRequests() {
         return requirePushedAuthorizationRequests;
+    }
+
+    public boolean isAuthorizationResponseIssParameterSupported() {
+        return authorizationResponseIssParameterSupported;
     }
 
     public boolean contains(String propertyName) {

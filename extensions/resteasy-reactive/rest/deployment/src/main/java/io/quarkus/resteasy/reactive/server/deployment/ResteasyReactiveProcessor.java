@@ -773,6 +773,11 @@ public class ResteasyReactiveProcessor {
             for (DotName methodAnnotation : result.getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -792,6 +797,11 @@ public class ResteasyReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)

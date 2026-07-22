@@ -4,7 +4,7 @@
 categories:
   - id: getting-started
     title: Getting Started
-    description: Introduction to Quarkus and getting started guides
+    description: Introduction to Quarkus and your first application
     guides:
       - getting-started.adoc
       - getting-started-dev-services.adoc

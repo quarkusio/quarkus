@@ -1,14 +1,13 @@
 package io.quarkus.avro.runtime.jackson;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecordBase;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * By default, you cannot serialize Avro specific records to JSON, as they contain non-serializable members.
@@ -23,11 +22,17 @@ public class SpecificRecordBaseSerializer extends StdSerializer<SpecificRecordBa
 
     @Override
     public void serialize(SpecificRecordBase record, JsonGenerator gen,
-            SerializerProvider provider) throws IOException {
+            SerializationContext context) {
         gen.writeStartObject();
         List<Schema.Field> fields = record.getSchema().getFields();
         for (Schema.Field field : fields) {
-            provider.defaultSerializeField(field.name(), record.get(field.pos()), gen);
+            Object value = record.get(field.pos());
+            gen.writeName(field.name());
+            if (value == null) {
+                context.defaultSerializeNullValue(gen);
+            } else {
+                context.findValueSerializer(value.getClass()).serialize(value, gen, context);
+            }
         }
         gen.writeEndObject();
     }

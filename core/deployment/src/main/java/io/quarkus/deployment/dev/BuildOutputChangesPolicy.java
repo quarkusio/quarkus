@@ -44,15 +44,21 @@ public final class BuildOutputChangesPolicy {
         }
         lastAcceptedSequence = candidate.sequence();
         if (candidate.status() != BuildOutputChangeStatus.BUILD_SUCCEEDED) {
+            pending = new PendingChanges(candidate);
             return Result.nonReloadableStatus(candidate);
         }
-        if (candidate.mainClassChanges().isEmpty() && candidate.mainResourceChanges().isEmpty()) {
+        boolean replacesFailure = pending != null && pending.status != BuildOutputChangeStatus.BUILD_SUCCEEDED;
+        if (!replacesFailure && candidate.mainClassChanges().isEmpty() && candidate.mainResourceChanges().isEmpty()
+                && candidate.testClassChanges().isEmpty() && candidate.testResourceChanges().isEmpty()) {
             return Result.noReloadableChanges(candidate.sequence());
         }
-        PendingChanges next = pending == null ? new PendingChanges(candidate) : pending.withSequence(candidate);
+        PendingChanges next = pending == null || replacesFailure ? new PendingChanges(candidate)
+                : pending.withSequence(candidate);
         coalesce(next.mainClassChanges, OutputCategory.MAIN_CLASSES, candidate.mainClassChanges());
         coalesce(next.mainResourceChanges, OutputCategory.MAIN_RESOURCES, candidate.mainResourceChanges());
-        if (next.isEmpty()) {
+        coalesce(next.testClassChanges, OutputCategory.TEST_CLASSES, candidate.testClassChanges());
+        coalesce(next.testResourceChanges, OutputCategory.TEST_RESOURCES, candidate.testResourceChanges());
+        if (!next.hasOutputChanges() && !replacesFailure) {
             pending = null;
             return Result.noReloadableChanges(candidate.sequence());
         }
@@ -62,7 +68,7 @@ public final class BuildOutputChangesPolicy {
 
     public Result deliver(Sender sender) {
         requireNonNull(sender, "sender");
-        if (pending == null || pending.isEmpty()) {
+        if (pending == null) {
             return Result.nothingToSend(lastAcceptedSequence);
         }
         BuildOutputChanges emitted = pending.toBuildOutputChanges();
@@ -72,6 +78,10 @@ public final class BuildOutputChangesPolicy {
                 pending = null;
                 return Result.sentApplied(emitted);
             }
+            if (status == BuildOutputChangesApplyStatus.REJECTED) {
+                pending = null;
+                return Result.sentRejected(emitted);
+            }
             return Result.sentNotApplied(emitted);
         } catch (IOException e) {
             return Result.sendFailed(emitted, e);
@@ -80,7 +90,7 @@ public final class BuildOutputChangesPolicy {
 
     public Result discardPending(String reason) {
         requireNonNull(reason, "reason");
-        if (pending == null || pending.isEmpty()) {
+        if (pending == null) {
             return Result.nothingToSend(lastAcceptedSequence);
         }
         BuildOutputChanges discarded = pending.toBuildOutputChanges();
@@ -89,7 +99,7 @@ public final class BuildOutputChangesPolicy {
     }
 
     public boolean hasPendingChanges() {
-        return pending != null && !pending.isEmpty();
+        return pending != null;
     }
 
     private boolean isStale(long sequence) {
@@ -144,6 +154,7 @@ public final class BuildOutputChangesPolicy {
         PENDING,
         NOTHING_TO_SEND,
         SENT_APPLIED,
+        SENT_REJECTED,
         SENT_NOT_APPLIED,
         SEND_FAILED,
         DISCARDED
@@ -192,6 +203,10 @@ public final class BuildOutputChangesPolicy {
             return new Result(Outcome.SENT_NOT_APPLIED, changes.sequence(), changes, null, null);
         }
 
+        private static Result sentRejected(BuildOutputChanges changes) {
+            return new Result(Outcome.SENT_REJECTED, changes.sequence(), changes, null, null);
+        }
+
         private static Result sendFailed(BuildOutputChanges changes, IOException failure) {
             return new Result(Outcome.SEND_FAILED, changes.sequence(), changes, failure, null);
         }
@@ -203,7 +218,9 @@ public final class BuildOutputChangesPolicy {
 
     private enum OutputCategory {
         MAIN_CLASSES,
-        MAIN_RESOURCES
+        MAIN_RESOURCES,
+        TEST_CLASSES,
+        TEST_RESOURCES
     }
 
     private record ChangeKey(OutputCategory category, Path outputRoot, Path changedPath) {
@@ -211,29 +228,40 @@ public final class BuildOutputChangesPolicy {
 
     private record PendingChanges(
             long sequence,
+            BuildOutputChangeStatus status,
+            BuildOutputFailureKind failureKind,
+            String failureSummary,
+            Path diagnosticsPath,
             boolean userInitiated,
             boolean forceRestart,
             Map<ChangeKey, BuildOutputChangeKind> mainClassChanges,
-            Map<ChangeKey, BuildOutputChangeKind> mainResourceChanges) {
+            Map<ChangeKey, BuildOutputChangeKind> mainResourceChanges,
+            Map<ChangeKey, BuildOutputChangeKind> testClassChanges,
+            Map<ChangeKey, BuildOutputChangeKind> testResourceChanges) {
 
         private PendingChanges(BuildOutputChanges candidate) {
-            this(candidate.sequence(), candidate.userInitiated(), candidate.forceRestart(), new LinkedHashMap<>(),
-                    new LinkedHashMap<>());
+            this(candidate.sequence(), candidate.status(), candidate.failureKind(), candidate.failureSummary(),
+                    candidate.diagnosticsPath(), candidate.userInitiated(), candidate.forceRestart(), new LinkedHashMap<>(),
+                    new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
         }
 
         private PendingChanges withSequence(BuildOutputChanges candidate) {
-            return new PendingChanges(candidate.sequence(), userInitiated || candidate.userInitiated(),
-                    forceRestart || candidate.forceRestart(), mainClassChanges, mainResourceChanges);
+            return new PendingChanges(candidate.sequence(), candidate.status(), candidate.failureKind(),
+                    candidate.failureSummary(), candidate.diagnosticsPath(), userInitiated || candidate.userInitiated(),
+                    forceRestart || candidate.forceRestart(), mainClassChanges, mainResourceChanges,
+                    testClassChanges, testResourceChanges);
         }
 
-        private boolean isEmpty() {
-            return mainClassChanges.isEmpty() && mainResourceChanges.isEmpty();
+        private boolean hasOutputChanges() {
+            return !mainClassChanges.isEmpty() || !mainResourceChanges.isEmpty()
+                    || !testClassChanges.isEmpty() || !testResourceChanges.isEmpty();
         }
 
         private BuildOutputChanges toBuildOutputChanges() {
-            return new BuildOutputChanges(sequence, BuildOutputChangeStatus.BUILD_SUCCEEDED,
+            return new BuildOutputChanges(sequence, status, failureKind,
                     toPathChanges(mainClassChanges), toPathChanges(mainResourceChanges),
-                    null, null, null, null, userInitiated, forceRestart);
+                    toPathChanges(testClassChanges), toPathChanges(testResourceChanges),
+                    failureSummary, diagnosticsPath, userInitiated, forceRestart);
         }
 
         private static List<BuildOutputPathChange> toPathChanges(Map<ChangeKey, BuildOutputChangeKind> changes) {

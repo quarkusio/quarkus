@@ -1,8 +1,11 @@
 package io.quarkus.micrometer.runtime.config;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build / static runtime config for gRPC Server.
@@ -19,4 +22,24 @@ public interface GrpcServerConfigGroup extends MicrometerConfig.CapabilityEnable
      */
     @Override
     Optional<Boolean> enabled();
+
+    /**
+     * Whether to publish histogram buckets for gRPC server processing duration timers.
+     * <p>
+     * Disabled by default because histograms increase memory usage and metric cardinality.
+     * When enabled, aggregatable latency buckets are published (suitable for
+     * {@code histogram_quantile} in Prometheus).
+     */
+    @WithDefault("false")
+    boolean histogram();
+
+    /**
+     * Service level objective (bucket) boundaries for the processing duration histogram.
+     * <p>
+     * Only applied when {@link #histogram()} is {@code true}. Using a fixed set of buckets
+     * keeps metric cardinality bounded compared to Micrometer's full percentile histogram
+     * generator.
+     */
+    @WithDefault("5ms,10ms,25ms,50ms,100ms,250ms,500ms,1s,5s")
+    List<Duration> slos();
 }

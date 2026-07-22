@@ -8,6 +8,7 @@ import java.util.List;
 public record BuildOutputChanges(
         long sequence,
         BuildOutputChangeStatus status,
+        BuildOutputFailureKind failureKind,
         List<BuildOutputPathChange> mainClassChanges,
         List<BuildOutputPathChange> mainResourceChanges,
         List<BuildOutputPathChange> testClassChanges,
@@ -19,10 +20,19 @@ public record BuildOutputChanges(
 
     public BuildOutputChanges {
         requireNonNull(status, "status");
+        failureKind = failureKind == null ? BuildOutputFailureKind.NONE : failureKind;
         mainClassChanges = copyOrEmpty(mainClassChanges);
         mainResourceChanges = copyOrEmpty(mainResourceChanges);
         testClassChanges = copyOrEmpty(testClassChanges);
         testResourceChanges = copyOrEmpty(testResourceChanges);
+    }
+
+    public BuildOutputChanges(long sequence, BuildOutputChangeStatus status,
+            List<BuildOutputPathChange> mainClassChanges, List<BuildOutputPathChange> mainResourceChanges,
+            List<BuildOutputPathChange> testClassChanges, List<BuildOutputPathChange> testResourceChanges,
+            String failureSummary, Path diagnosticsPath, boolean userInitiated, boolean forceRestart) {
+        this(sequence, status, BuildOutputFailureKind.NONE, mainClassChanges, mainResourceChanges,
+                testClassChanges, testResourceChanges, failureSummary, diagnosticsPath, userInitiated, forceRestart);
     }
 
     private static <T> List<T> copyOrEmpty(List<T> values) {

@@ -21,6 +21,7 @@ final class BuildOutputChangesJsonCodec {
 
     private static final String SEQUENCE = "sequence";
     private static final String STATUS = "status";
+    private static final String FAILURE_KIND = "failureKind";
     private static final String MAIN_CLASS_CHANGES = "mainClassChanges";
     private static final String MAIN_RESOURCE_CHANGES = "mainResourceChanges";
     private static final String TEST_CLASS_CHANGES = "testClassChanges";
@@ -41,6 +42,7 @@ final class BuildOutputChangesJsonCodec {
         var root = Json.object()
                 .put(SEQUENCE, changes.sequence())
                 .put(STATUS, changes.status().name())
+                .put(FAILURE_KIND, changes.failureKind().name())
                 .put(MAIN_CLASS_CHANGES, pathChanges(changes.mainClassChanges()))
                 .put(MAIN_RESOURCE_CHANGES, pathChanges(changes.mainResourceChanges()))
                 .put(TEST_CLASS_CHANGES, pathChanges(changes.testClassChanges()))
@@ -68,6 +70,7 @@ final class BuildOutputChangesJsonCodec {
         return new BuildOutputChanges(
                 requiredLong(root, SEQUENCE),
                 requiredEnum(root, STATUS, BuildOutputChangeStatus.class),
+                optionalEnum(root, FAILURE_KIND, BuildOutputFailureKind.class, BuildOutputFailureKind.NONE),
                 pathChanges(root, MAIN_CLASS_CHANGES),
                 pathChanges(root, MAIN_RESOURCE_CHANGES),
                 pathChanges(root, TEST_CLASS_CHANGES),
@@ -151,6 +154,18 @@ final class BuildOutputChangesJsonCodec {
 
     private static <E extends Enum<E>> E requiredEnum(JsonObject object, String name, Class<E> enumType) {
         String value = requiredString(object, name);
+        try {
+            return Enum.valueOf(enumType, value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid enum value for field " + name + ": " + value, e);
+        }
+    }
+
+    private static <E extends Enum<E>> E optionalEnum(JsonObject object, String name, Class<E> enumType, E defaultValue) {
+        String value = optionalString(object, name);
+        if (value == null) {
+            return defaultValue;
+        }
         try {
             return Enum.valueOf(enumType, value);
         } catch (IllegalArgumentException e) {

@@ -52,6 +52,21 @@
             <artifactId>asm-analysis</artifactId>
         </dependency>
 
+        <!-- Declared so that the reactor builds quarkus-data-processor before this module -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-data-processor</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>jakarta.data</groupId>
@@ -128,8 +143,8 @@
                         <configuration>
                             <annotationProcessorPaths>
                                 <annotationProcessorPath>
-                                    <groupId>org.hibernate.orm</groupId>
-                                    <artifactId>hibernate-processor</artifactId>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-data-processor</artifactId>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                         </configuration>

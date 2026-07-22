@@ -16,7 +16,7 @@ import io.vertx.core.http.WebSocket;
  */
 final class AeshWebSocketTestHelper {
 
-    private static final Pattern ANSI_PATTERN = Pattern.compile("\\u001B\\[[;\\d]*[a-zA-Z]");
+    private static final Pattern ANSI_PATTERN = Pattern.compile("\\u001B\\[[\\d;]*[a-zA-Z@-~]|\\u001B[()][A-Z0-9]|\\r");
 
     private AeshWebSocketTestHelper() {
     }

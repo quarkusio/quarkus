@@ -3,12 +3,15 @@ package io.quarkus.spiffe.client.deployment;
 import static io.vertx.core.http.HttpMethod.GET;
 import static io.vertx.core.http.HttpMethod.POST;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Signature;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
@@ -23,6 +26,7 @@ import java.util.function.BooleanSupplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -35,9 +39,14 @@ import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.spiffe.client.deployment.SpiffeClientBuildTimeConfig.DevServices.Transport;
 import io.quarkus.spiffe.client.deployment.SpiffeClientProcessor.SpiffeClientEnabled;
+import io.quarkus.spiffe.client.deployment.SpiffeDevServicesCertificateGenerator.CertAuthority;
+import io.quarkus.spiffe.client.deployment.SpiffeDevServicesCertificateGenerator.WorkloadSvid;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDResponse;
+import io.quarkus.spiffe.client.runtime.internal.proto.X509SVID;
+import io.quarkus.spiffe.client.runtime.internal.proto.X509SVIDRequest;
+import io.quarkus.spiffe.client.runtime.internal.proto.X509SVIDResponse;
 import io.smallrye.common.os.OS;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -51,6 +60,7 @@ import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerRequest;
 
 @BuildSteps(onlyIf = { SpiffeClientEnabled.class, SpiffeDevServicesProcessor.SpiffeDevServicesEnabled.class })
 public final class SpiffeDevServicesProcessor {
@@ -59,6 +69,7 @@ public final class SpiffeDevServicesProcessor {
 
     public static final String TEST_TRUST_DOMAIN = "spiffe://test.quarkus.io";
     public static final String DEFAULT_SPIFFE_ID = TEST_TRUST_DOMAIN + "/test-workload";
+    public static final String SECONDARY_SPIFFE_ID = TEST_TRUST_DOMAIN + "/secondary-workload";
     public static final String BUNDLE_PATH = "/bundle";
     public static final String ADMIN_API_MODE_PATH = "/api/admin/mode";
     public static final String ENDPOINT_SOCKET_CONFIG_KEY = "quarkus.spiffe-client.endpoint-socket";
@@ -90,6 +101,7 @@ public final class SpiffeDevServicesProcessor {
         devServicesResultProducer.produce(
                 DevServicesResultBuildItem.<SpiffeWorkloadApiDevServer> owned()
                         .feature(SpiffeClientProcessor.FEATURE)
+                        .serviceConfig(transport)
                         .startable(() -> new SpiffeWorkloadApiDevServer(transport))
                         .configProvider(Map.of(
                                 ENDPOINT_SOCKET_CONFIG_KEY, Startable::getConnectionInfo,
@@ -108,6 +120,13 @@ public final class SpiffeDevServicesProcessor {
 
     public enum ServerMode {
         HEALTHY,
+        HEALTHY_X509_EC_P384,
+        HEALTHY_X509_RSA_2048,
+        HEALTHY_X509_CHAIN_DEPTH_2,
+        HEALTHY_X509_CHAIN_DEPTH_3,
+        HEALTHY_X509_MULTI_SVID,
+        HEALTHY_X509_EMPTY_SVIDS,
+        HEALTHY_X509_CORRUPTED_CERT,
         PERMISSION_DENIED,
         UNAVAILABLE,
         GRPC_DOWN
@@ -116,7 +135,8 @@ public final class SpiffeDevServicesProcessor {
     private static final class SpiffeWorkloadApiDevServer implements Startable {
 
         private static final ServiceName SERVICE_NAME = ServiceName.create("SpiffeWorkloadAPI");
-        private static final String METHOD_NAME = "FetchJWTSVID";
+        private static final String FETCH_JWT_SVID_METHOD = "FetchJWTSVID";
+        private static final String FETCH_X509_SVID_METHOD = "FetchX509SVID";
         private static final String SECURITY_HEADER = "workload.spiffe.io";
         private static final long DEFAULT_TTL_SECONDS = 300;
         private static final String UNIX = "unix://";
@@ -124,6 +144,7 @@ public final class SpiffeDevServicesProcessor {
         private final Transport transport;
         private final Set<String> errorMessages;
         private volatile JwtSvidSigner signer;
+        private volatile X509CertMaterial x509Material;
         private volatile Vertx vertx;
         private volatile HttpServer grpcServer;
         private volatile HttpServer httpServer;
@@ -151,13 +172,18 @@ public final class SpiffeDevServicesProcessor {
         }
 
         private void serveBundleEndpoint(HttpServerRequest request) {
-            JsonObject bundle = new JsonObject()
-                    .put("spiffe_sequence", 1)
-                    .put("spiffe_refresh_hint", 300)
-                    .put("keys", new JsonArray().add(signer.publicKeyJwk()));
-            request.response()
-                    .putHeader("content-type", "application/json")
-                    .end(bundle.encode());
+            try {
+                JsonObject bundle = new JsonObject()
+                        .put("spiffe_sequence", 1)
+                        .put("spiffe_refresh_hint", 300)
+                        .put("keys", new JsonArray().add(signer.publicKeyJwk()));
+                request.response()
+                        .putHeader("content-type", "application/json")
+                        .end(bundle.encode());
+            } catch (Exception e) {
+                LOG.error("Failed to serve SPIFFE bundle endpoint", e);
+                request.response().setStatusCode(500).end(e.getMessage());
+            }
         }
 
         private void handleControlMode(HttpServerRequest request) {
@@ -214,30 +240,37 @@ public final class SpiffeDevServicesProcessor {
         private GrpcServer createGrpcServer() {
             GrpcServer grpcServer = GrpcServer.server(vertx);
             grpcServer.callHandler(request -> {
-                if (SERVICE_NAME.equals(request.serviceName()) && METHOD_NAME.equals(request.methodName())) {
-                    String headerValue = request.headers().get(SECURITY_HEADER);
-                    if (!"true".equals(headerValue)) {
-                        request.response()
-                                .status(GrpcStatus.INVALID_ARGUMENT)
-                                .statusMessage("security header '" + SECURITY_HEADER + ": true' is missing")
-                                .end();
-                        return;
-                    }
-                    if (mode == ServerMode.UNAVAILABLE) {
-                        request.response()
-                                .status(GrpcStatus.UNAVAILABLE)
-                                .statusMessage("agent initializing")
-                                .end();
-                        return;
-                    }
-                    if (mode == ServerMode.PERMISSION_DENIED) {
-                        request.response()
-                                .status(GrpcStatus.PERMISSION_DENIED)
-                                .statusMessage("no identity issued")
-                                .end();
-                        return;
-                    }
+                if (!SERVICE_NAME.equals(request.serviceName())) {
+                    LOG.warnf("Received a call to unimplemented service %s", request.serviceName());
+                    request.response().status(GrpcStatus.UNIMPLEMENTED).end();
+                    return;
+                }
+                String headerValue = request.headers().get(SECURITY_HEADER);
+                if (!"true".equals(headerValue)) {
+                    request.response()
+                            .status(GrpcStatus.INVALID_ARGUMENT)
+                            .statusMessage("security header '" + SECURITY_HEADER + ": true' is missing")
+                            .end();
+                    return;
+                }
+                if (mode == ServerMode.UNAVAILABLE) {
+                    request.response()
+                            .status(GrpcStatus.UNAVAILABLE)
+                            .statusMessage("agent initializing")
+                            .end();
+                    return;
+                }
+                if (mode == ServerMode.PERMISSION_DENIED) {
+                    request.response()
+                            .status(GrpcStatus.PERMISSION_DENIED)
+                            .statusMessage("no identity issued")
+                            .end();
+                    return;
+                }
+                if (FETCH_JWT_SVID_METHOD.equals(request.methodName())) {
                     request.handler(message -> handleFetchJwtSvid(request, message));
+                } else if (FETCH_X509_SVID_METHOD.equals(request.methodName())) {
+                    request.handler(message -> handleFetchX509Svid(request, message));
                 } else {
                     LOG.warnf("Received a call to unimplemented method %s/%s", request.serviceName(), request.methodName());
                     request.response().status(GrpcStatus.UNIMPLEMENTED).end();
@@ -246,14 +279,15 @@ public final class SpiffeDevServicesProcessor {
             return grpcServer;
         }
 
-        private void handleFetchJwtSvid(io.vertx.grpc.server.GrpcServerRequest<Buffer, Buffer> request, Buffer message) {
+        private void handleFetchJwtSvid(GrpcServerRequest<Buffer, Buffer> request, Buffer message) {
             JWTSVIDRequest jwtRequest;
             try {
                 jwtRequest = JWTSVIDRequest.parseFrom(message.getBytes());
             } catch (InvalidProtocolBufferException e) {
+                LOG.error("Failed to parse FetchJWTSVID request", e);
                 request.response()
                         .status(GrpcStatus.INVALID_ARGUMENT)
-                        .statusMessage("invalid protobuf request")
+                        .statusMessage("invalid protobuf request: " + e.getMessage())
                         .end();
                 return;
             }
@@ -267,16 +301,110 @@ public final class SpiffeDevServicesProcessor {
                 return;
             }
 
-            Instant expiry = Instant.now().plusSeconds(DEFAULT_TTL_SECONDS);
-            String token = signer.sign(DEFAULT_SPIFFE_ID, audiences, expiry);
-            JWTSVID svid = JWTSVID.newBuilder()
-                    .setSpiffeId(DEFAULT_SPIFFE_ID)
-                    .setSvid(token)
+            try {
+                Instant expiry = Instant.now().plusSeconds(DEFAULT_TTL_SECONDS);
+                String token = signer.sign(DEFAULT_SPIFFE_ID, audiences, expiry);
+                JWTSVID svid = JWTSVID.newBuilder()
+                        .setSpiffeId(DEFAULT_SPIFFE_ID)
+                        .setSvid(token)
+                        .build();
+                JWTSVIDResponse response = JWTSVIDResponse.newBuilder()
+                        .addSvids(svid)
+                        .build();
+                request.response().end(Buffer.buffer(response.toByteArray()));
+            } catch (Exception e) {
+                LOG.error("Failed to sign JWT-SVID in SPIFFE dev service", e);
+                request.response()
+                        .status(GrpcStatus.INTERNAL)
+                        .statusMessage("failed to sign JWT-SVID: " + e.getMessage())
+                        .end();
+            }
+        }
+
+        private void handleFetchX509Svid(GrpcServerRequest<Buffer, Buffer> request, Buffer message) {
+            try {
+                X509SVIDRequest.parseFrom(message.getBytes());
+            } catch (InvalidProtocolBufferException e) {
+                LOG.error("Failed to parse FetchX509SVID request", e);
+                request.response()
+                        .status(GrpcStatus.INVALID_ARGUMENT)
+                        .statusMessage("invalid protobuf request: " + e.getMessage())
+                        .end();
+                return;
+            }
+
+            X509CertMaterial material = x509Material;
+            X509SVIDResponse.Builder responseBuilder = X509SVIDResponse.newBuilder();
+
+            try {
+                switch (mode) {
+                    case HEALTHY_X509_EC_P384:
+                        responseBuilder.addSvids(buildX509Svid(material.p384Svid()));
+                        break;
+                    case HEALTHY_X509_RSA_2048:
+                        responseBuilder.addSvids(buildX509Svid(material.rsaSvid()));
+                        break;
+                    case HEALTHY_X509_CHAIN_DEPTH_2:
+                        responseBuilder.addSvids(buildX509Svid(material.chainDepth2Svid()));
+                        break;
+                    case HEALTHY_X509_CHAIN_DEPTH_3:
+                        responseBuilder.addSvids(buildX509Svid(material.chainDepth3Svid()));
+                        break;
+                    case HEALTHY_X509_MULTI_SVID:
+                        responseBuilder.addSvids(buildX509Svid(material.defaultSvid()));
+                        responseBuilder.addSvids(buildX509Svid(material.secondarySvid()));
+                        break;
+                    case HEALTHY_X509_EMPTY_SVIDS:
+                        break;
+                    case HEALTHY_X509_CORRUPTED_CERT:
+                        responseBuilder.addSvids(X509SVID.newBuilder()
+                                .setSpiffeId(DEFAULT_SPIFFE_ID)
+                                .setX509Svid(ByteString.copyFrom(new byte[] { 0x00, 0x01, 0x02 }))
+                                .setX509SvidKey(ByteString.copyFrom(new byte[] { 0x00 }))
+                                .setBundle(ByteString.copyFrom(new byte[] { 0x00 }))
+                                .build());
+                        break;
+                    default:
+                        responseBuilder.addSvids(buildX509Svid(material.defaultSvid()));
+                        break;
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to generate certificate material in SPIFFE dev service", e);
+                request.response()
+                        .status(GrpcStatus.INTERNAL)
+                        .statusMessage("failed to generate certificate material: " + e.getMessage())
+                        .end();
+                return;
+            }
+
+            var grpcResponse = request.response();
+            grpcResponse.write(Buffer.buffer(responseBuilder.build().toByteArray()));
+            vertx.setTimer(2000, id -> {
+                if (!grpcResponse.isCancelled()) {
+                    grpcResponse.end();
+                }
+            });
+        }
+
+        private static X509SVID buildX509Svid(WorkloadSvid svid) throws CertificateEncodingException {
+            return X509SVID.newBuilder()
+                    .setSpiffeId(svid.spiffeId())
+                    .setX509Svid(ByteString.copyFrom(concatDer(svid.chain())))
+                    .setX509SvidKey(ByteString.copyFrom(svid.privateKey().getEncoded()))
+                    .setBundle(ByteString.copyFrom(concatDer(svid.trustBundle())))
                     .build();
-            JWTSVIDResponse response = JWTSVIDResponse.newBuilder()
-                    .addSvids(svid)
-                    .build();
-            request.response().end(Buffer.buffer(response.toByteArray()));
+        }
+
+        private static byte[] concatDer(List<X509Certificate> certs) throws CertificateEncodingException {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            for (X509Certificate cert : certs) {
+                try {
+                    out.write(cert.getEncoded());
+                } catch (IOException e) {
+                    throw new CertificateEncodingException("failed to write certificate DER", e);
+                }
+            }
+            return out.toByteArray();
         }
 
         @Override
@@ -315,6 +443,7 @@ public final class SpiffeDevServicesProcessor {
         @Override
         public void start() {
             signer = new JwtSvidSigner();
+            x509Material = new X509CertMaterial();
             // trying to keep resources minimal:
             vertx = Vertx.vertx(new VertxOptions().setWorkerPoolSize(1).setEventLoopPoolSize(1));
 
@@ -383,26 +512,90 @@ public final class SpiffeDevServicesProcessor {
         }
     }
 
+    private static final class X509CertMaterial {
+
+        private final SpiffeDevServicesCertificateGenerator generator = new SpiffeDevServicesCertificateGenerator();
+        private volatile CertAuthority defaultCa;
+        private volatile CertAuthority p384Ca;
+        private volatile CertAuthority rsaCa;
+
+        private CertAuthority defaultCa() {
+            CertAuthority ca = defaultCa;
+            if (ca == null) {
+                ca = generator.createCertAuthority(TEST_TRUST_DOMAIN, "ec-p256");
+                defaultCa = ca;
+            }
+            return ca;
+        }
+
+        private CertAuthority p384Ca() {
+            CertAuthority ca = p384Ca;
+            if (ca == null) {
+                ca = generator.createCertAuthority(TEST_TRUST_DOMAIN, "ec-p384");
+                p384Ca = ca;
+            }
+            return ca;
+        }
+
+        private CertAuthority rsaCa() {
+            CertAuthority ca = rsaCa;
+            if (ca == null) {
+                ca = generator.createCertAuthority(TEST_TRUST_DOMAIN, "rsa-2048");
+                rsaCa = ca;
+            }
+            return ca;
+        }
+
+        WorkloadSvid defaultSvid() {
+            return generator.createWorkloadSvid(DEFAULT_SPIFFE_ID, defaultCa(), "ec-p256");
+        }
+
+        WorkloadSvid p384Svid() {
+            return generator.createWorkloadSvid(DEFAULT_SPIFFE_ID, p384Ca(), "ec-p384");
+        }
+
+        WorkloadSvid rsaSvid() {
+            return generator.createWorkloadSvid(DEFAULT_SPIFFE_ID, rsaCa(), "rsa-2048");
+        }
+
+        WorkloadSvid chainDepth2Svid() {
+            return generator.createWorkloadSvidWithChain(DEFAULT_SPIFFE_ID, defaultCa(), "ec-p256", 1);
+        }
+
+        WorkloadSvid chainDepth3Svid() {
+            return generator.createWorkloadSvidWithChain(DEFAULT_SPIFFE_ID, defaultCa(), "ec-p256", 2);
+        }
+
+        WorkloadSvid secondarySvid() {
+            return generator.createWorkloadSvid(SECONDARY_SPIFFE_ID, defaultCa(), "ec-p256");
+        }
+    }
+
     private static final class JwtSvidSigner {
 
         private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
         private static final String HEADER = URL_ENCODER.encodeToString("{\"alg\":\"ES256\",\"typ\":\"JWT\"}".getBytes());
         private static final int P256_COORDINATE_LENGTH = 32;
 
-        private final KeyPair keyPair;
+        private volatile KeyPair keyPair;
 
-        private JwtSvidSigner() {
-            try {
-                KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
-                generator.initialize(new ECGenParameterSpec("secp256r1"));
-                this.keyPair = generator.generateKeyPair();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to generate EC P-256 key pair", e);
+        private KeyPair keyPair() {
+            KeyPair kp = keyPair;
+            if (kp == null) {
+                try {
+                    KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+                    generator.initialize(new ECGenParameterSpec("secp256r1"));
+                    kp = generator.generateKeyPair();
+                    keyPair = kp;
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to generate EC P-256 key pair", e);
+                }
             }
+            return kp;
         }
 
         JsonObject publicKeyJwk() {
-            ECPublicKey pub = (ECPublicKey) keyPair.getPublic();
+            ECPublicKey pub = (ECPublicKey) keyPair().getPublic();
             byte[] x = toFixedLength(pub.getW().getAffineX().toByteArray());
             byte[] y = toFixedLength(pub.getW().getAffineY().toByteArray());
             return new JsonObject()
@@ -444,7 +637,7 @@ public final class SpiffeDevServicesProcessor {
 
             try {
                 Signature sig = Signature.getInstance("SHA256withECDSA");
-                sig.initSign(keyPair.getPrivate());
+                sig.initSign(keyPair().getPrivate());
                 sig.update(signingInput.getBytes());
                 byte[] derSignature = sig.sign();
                 byte[] jwsSignature = derToJws(derSignature);

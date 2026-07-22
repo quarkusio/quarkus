@@ -266,6 +266,10 @@ public class DataSources {
                             dataSourceJdbcRuntimeConfig.transactionIsolationLevel().get());
         }
 
+        if (dataSourceJdbcRuntimeConfig.readOnly().isPresent()) {
+            connectionFactoryConfiguration.readOnly(dataSourceJdbcRuntimeConfig.readOnly().get());
+        }
+
         if (dataSourceJdbcBuildTimeConfig.transactions() != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,

@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -50,6 +51,7 @@ import io.quarkus.modular.spi.model.AppModuleModel;
 import io.quarkus.modular.spi.model.AutoDependencyGroup;
 import io.quarkus.modular.spi.model.DependencyInfo;
 import io.quarkus.modular.spi.model.ModuleInfo;
+import io.quarkus.modular.spi.model.ModuleTreeShaker;
 import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.PathTree;
 import io.smallrye.classfile.Annotation;
@@ -113,7 +115,8 @@ public final class ModularitySteps {
             // TODO: List<ModuleExportBuildItem> exports,
             List<ModuleEnableNativeAccessBuildItem> nativeAccesses,
             List<AddDependencyBuildItem> extraDeps,
-            List<BootModulePathBuildItem> bootPathItems) {
+            List<BootModulePathBuildItem> bootPathItems,
+            JarTreeShakeBuildItem treeShakeResult) {
 
         /* @formatter:off
          * Build the modular application model. This is done in a few stages.
@@ -520,7 +523,14 @@ public final class ModularitySteps {
         usedJdkModuleNames.forEach(amb::jdkModuleUsed);
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
         modulesByName.values().forEach(amb::moduleInfo);
-        return new ApplicationModuleInfoBuildItem(amb.build());
+        AppModuleModel appModuleModel = amb.build();
+
+        if (treeShakeResult.isClassesShaken()) {
+            appModuleModel = new ModuleTreeShaker(appModuleModel, treeShakeResult.getReachableClassNames(),
+                    treeShakeResult.getReferencedJdkPackages()).shake();
+        }
+
+        return new ApplicationModuleInfoBuildItem(appModuleModel);
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)
@@ -742,6 +752,7 @@ public final class ModularitySteps {
             case "io.quarkus.resteasy.reactive.vertx" -> {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of("io.vertx.core.impl", PackageAccess.EXPORTED,
+                                "io.vertx.core.impl.buffer", PackageAccess.EXPORTED,
                                 "io.vertx.core.buffer.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
@@ -782,7 +793,6 @@ public final class ModularitySteps {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of(
                                 "io.vertx.core.impl", PackageAccess.EXPORTED,
-                                "io.vertx.core.impl.logging", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
             }

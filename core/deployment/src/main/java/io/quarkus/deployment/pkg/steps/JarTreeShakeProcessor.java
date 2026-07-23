@@ -49,6 +49,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
+import io.quarkus.runtime.LaunchMode;
 
 public class JarTreeShakeProcessor {
 
@@ -58,14 +59,17 @@ public class JarTreeShakeProcessor {
 
     static class TreeShakeEnabled implements BooleanSupplier {
         private final PackageConfig packageConfig;
+        private final LaunchMode launchMode;
 
-        TreeShakeEnabled(PackageConfig packageConfig) {
+        TreeShakeEnabled(PackageConfig packageConfig, LaunchMode launchMode) {
             this.packageConfig = packageConfig;
+            this.launchMode = launchMode;
         }
 
         @Override
         public boolean getAsBoolean() {
-            return packageConfig.jar().treeShake().mode() == TreeShakeConfig.TreeShakeMode.CLASSES
+            return launchMode == LaunchMode.NORMAL
+                    && packageConfig.jar().treeShake().mode() == TreeShakeConfig.TreeShakeMode.CLASSES
                     && packageConfig.jar().type() != PackageConfig.JarConfig.JarType.MUTABLE_JAR;
         }
     }
@@ -86,7 +90,7 @@ public class JarTreeShakeProcessor {
     void skipTreeShaking(BuildProducer<JarTreeShakeBuildItem> treeShakeProducer) {
         treeShakeProducer
                 .produce(new JarTreeShakeBuildItem(false, Set.of(),
-                        Map.of()));
+                        Map.of(), Set.of()));
     }
 
     @BuildStep(onlyIf = TreeShakeEnabled.class)

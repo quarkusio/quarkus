@@ -12,6 +12,9 @@ import jakarta.persistence.Id;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.H2Dialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.jboss.shrinkwrap.api.asset.ByteArrayAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -67,6 +70,15 @@ class AdditionalPersistenceUnitExternalEntityTest {
         }
     }
 
+    @Test
+    void explicitDialectIsApplied() {
+        SessionFactoryImplementor sf = externalSession.getSessionFactory().unwrap(SessionFactoryImplementor.class);
+        assertThat(sf.getJdbcServices().getDialect()).isInstanceOf(H2Dialect.class);
+        assertThat(sf.getProperties().get(AvailableSettings.DIALECT))
+                .as("hibernate.dialect property must be explicitly set when .dialect() is used")
+                .isEqualTo(H2Dialect.class.getName());
+    }
+
     private static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<>() {
             @Override
@@ -76,6 +88,7 @@ class AdditionalPersistenceUnitExternalEntityTest {
                     public void execute(BuildContext context) {
                         context.produce(AdditionalPersistenceUnitBuildItem.builder(PERSISTENCE_UNIT_NAME)
                                 .dataSourceName("vector")
+                                .dialect(H2Dialect.class.getName())
                                 .managedClass(EXTERNAL_ENTITY_CLASS_NAME)
                                 .build());
                     }

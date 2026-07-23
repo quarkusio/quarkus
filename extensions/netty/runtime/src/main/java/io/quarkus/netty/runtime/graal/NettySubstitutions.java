@@ -288,6 +288,28 @@ final class Target_io_netty_handler_ssl_SslContext {
             List<SNIServerName> serverNames,
             Map.Entry<SslContextOption<?>, Object>[] options,
             List<OpenSslCredential> credentials) throws SSLException {
+        return newClientContextInternal(provider,
+                sslContextProvider,
+                trustCert, trustManagerFactory,
+                keyCertChain, key, keyPassword, keyManagerFactory,
+                ciphers, cipherFilter, apn, protocols,
+                sessionCacheSize, sessionTimeout, false, enableOcsp,
+                secureRandom, keyStoreType, endpointIdentificationAlgorithm,
+                serverNames,
+                options, credentials);
+    }
+
+    @Substitute
+    static SslContext newClientContextInternal(SslProvider provider,
+            Provider sslContextProvider,
+            X509Certificate[] trustCert, TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
+            long sessionCacheSize, long sessionTimeout, boolean startTls, boolean enableOcsp,
+            SecureRandom secureRandom, String keyStoreType, String endpointIdentificationAlgorithm,
+            List<SNIServerName> serverNames,
+            Map.Entry<SslContextOption<?>, Object>[] options,
+            List<OpenSslCredential> credentials) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }

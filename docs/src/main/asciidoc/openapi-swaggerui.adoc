@@ -372,15 +372,7 @@ Remember that setting fields on the schema will override what has been generated
 | RUNTIME_PER_REQUEST
 | The filter executes each time the OpenAPI document is requested.
 
-| RUN
-| DEPRECATED. The filter executes at stage `RUNTIME_STARTUP` if `quarkus.smallrye-openapi.always-run-filter` is set to `false`,
-or at stage `RUNTIME_PER_REQUEST` if `quarkus.smallrye-openapi.always-run-filter` is set to `true`. (See also <<Advanced interactions of RunStages>>.)
-
-| BOTH
-| DEPRECATED. The filter executes as if both the `BUILD` and `RUN` stages were specified.
 |===
-
-NOTE: The `quarkus.smallrye-openapi.always-run-filter` configuration property is deprecated. Annotate your filters with `@OpenApiFilter(stages = OpenApiFilter.RunStage.RUNTIME_PER_REQUEST)` instead.
 
 
 === Advanced interactions of RunStages
@@ -390,14 +382,14 @@ While the `BUILD` RunStage is expected to run at build time - as the name alread
 The `quarkus-smallrye-openapi` extension saves the OpenAPI Document to a file when the `quarkus.smallrye-openapi.store-schema-directory` is configured.
 This saved version of the OpenAPI Document is useful for downstream consumers.
 
-To produce an OpenAPI Document which possibly *could* match the one produced during runtime, the `RUN` and `RUNTIME_STARTUP` RunStages are executed at build time - in a separate step from the `BUILD` RunStage.
+To produce an OpenAPI Document which possibly *could* match the one produced during runtime, the `RUNTIME_STARTUP` RunStage is executed at build time - in a separate step from the `BUILD` RunStage.
 Any exception which occurs during this additional processing step is ignored, i.e. if one of the filters throws, none will have any effect.
 
 This additional processing step is done even if `quarkus.smallrye-openapi.store-schema-directory` is *NOT* configured.
 
 === The MicroProfile OpenAPI way
 
-The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property. This filter will be run during RunStage `RUN`.
+The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property. This filter will be run during RunStage `RUNTIME_STARTUP`.
 
 == Loading OpenAPI Schema From Static Files
 

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
@@ -156,12 +157,27 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     protected boolean isNewApplication(QuarkusTestExtensionState state, Class<?> currentJUnitTestClass) {
 
-        // How do we know how to stop the current application - compare the classloader and see if it changed
-        // We could also look at the running application attached to the junit test and see if it's started
+        // Different test classloaders may still belong to the same curated application.
 
-        return (runningQuarkusApplication == null
-                || runningQuarkusApplication.getClassLoader() != currentJUnitTestClass.getClassLoader());
+        if (runningQuarkusApplication == null) {
+            return true;
+        }
 
+        ClassLoader runningApplicationClassLoader = runningQuarkusApplication.getClassLoader();
+        ClassLoader testClassLoader = currentJUnitTestClass.getClassLoader();
+        return !isSameApplication(runningApplicationClassLoader, testClassLoader);
+
+    }
+
+    static boolean isSameApplication(ClassLoader runningApplicationClassLoader, ClassLoader testClassLoader) {
+        if (runningApplicationClassLoader == testClassLoader) {
+            return true;
+        }
+        if (runningApplicationClassLoader instanceof QuarkusClassLoader runningQuarkusClassLoader
+                && testClassLoader instanceof QuarkusClassLoader testQuarkusClassLoader) {
+            return runningQuarkusClassLoader.getCuratedApplication() == testQuarkusClassLoader.getCuratedApplication();
+        }
+        return false;
     }
 
     @Override

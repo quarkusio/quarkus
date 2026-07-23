@@ -83,6 +83,12 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
         boolean forAllEndpoints();
 
         /**
+         * Client attestation authentication method.
+         * This option is currently only supported by the OIDC extension.
+         */
+        Attestation attestation();
+
+        /**
          * Supports the client authentication methods that involve sending a client secret.
          *
          * @see <a href=
@@ -280,6 +286,34 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
              */
             @WithDefault("false")
             boolean assertion();
+
+        }
+
+        /**
+         * Configures attestation-based client authentication.
+         * Only EC (Elliptic Curve) signature algorithms are currently supported: {@code ES256}, {@code ES384}, {@code ES512}.
+         */
+        interface Attestation {
+
+            enum AttestationSignatureAlgorithm {
+                ES256,
+                ES384,
+                ES512
+            }
+
+            /**
+             * Enable attestation-based client authentication.
+             */
+            @WithDefault("false")
+            boolean enabled();
+
+            /**
+             * The EC signature algorithm used for proof-of-possession (PoP) JWTs
+             * and self-attested attestation JWTs.
+             * Custom attesters may use different algorithms for signing attestation JWTs.
+             */
+            @WithDefault("ES256")
+            AttestationSignatureAlgorithm signatureAlgorithm();
 
         }
 

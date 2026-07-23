@@ -328,6 +328,18 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("tenant-attestation")
+    public String tenantAttestation() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("tenant-attestation-custom")
+    public String tenantAttestationCustom() {
+        return principal.getName() + ":" + CustomClientAttester.attestationJwtCreated;
+    }
+
+    @GET
     @Path("pushed-authorization-request/disabled-par-tenant-client-secret")
     public String pushedAuthorizationRequestTenantDisabledParClientSecret() {
         return principal.getName();

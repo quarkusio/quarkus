@@ -120,6 +120,11 @@ public final class OidcConstants {
      */
     public static final String USE_DPOP_NONCE = "use_dpop_nonce";
 
+    public static final String CLIENT_ATTESTATION_HEADER = "OAuth-Client-Attestation";
+    public static final String CLIENT_ATTESTATION_POP_HEADER = "OAuth-Client-Attestation-PoP";
+    public static final String CLIENT_ATTESTATION_JWT_TYPE = "oauth-client-attestation+jwt";
+    public static final String CLIENT_ATTESTATION_POP_JWT_TYPE = "oauth-client-attestation-pop+jwt";
+
     public static final String ACR = "acr";
     public static final String ACR_VALUES = "acr_values";
     public static final String MAX_AGE = "max_age";

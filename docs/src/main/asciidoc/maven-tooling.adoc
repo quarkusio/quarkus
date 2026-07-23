@@ -178,7 +178,61 @@ include::{includes}/devtools/maven-opts.adoc[]
 **Alternatively**, you can simply create the file
 https://maven.apache.org/configure.html#mvn-jvm-config-file[`.mvn/jvm.config`] at the root of your project:
 and any options you put in that file will be picked up by Maven, without having to set `MAVEN_OPTS`.
+
+If you use the https://maven.apache.org/guides/mini/guide-using-toolchains.html[Maven Toolchains] plugin to select a different JDK for your project, see <<maven-toolchains>>.
 ====
+
+[[maven-toolchains]]
+== Using Maven Toolchains
+
+link:https://maven.apache.org/guides/mini/guide-using-toolchains.html[Maven Toolchains] let you run Maven on one JDK while compiling, testing, and packaging a project with another. This is useful when you maintain multiple projects targeting different Java versions and do not want to change `JAVA_HOME` every time you switch projects.
+
+When the https://maven.apache.org/plugins/maven-toolchains-plugin/[Maven Toolchains Plugin] is configured, `maven-compiler-plugin` and other standard Maven plugins use the toolchain JDK. The Quarkus Maven plugin also respects the toolchain:
+
+* `quarkus:dev` launches the application with the toolchain's `java` executable.
+* The `generate-code` and `build` goals run Quarkus augmentation in a forked JVM using the toolchain JDK when it differs from the JVM Maven itself is running on.
+
+Configure the Maven Toolchains plugin in your project `pom.xml`:
+
+[source,xml]
+----
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-toolchains-plugin</artifactId>
+  <executions>
+    <execution>
+      <goals>
+        <goal>toolchain</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <toolchains>
+      <jdk>
+        <version>21</version>
+      </jdk>
+    </toolchains>
+  </configuration>
+</plugin>
+----
+
+Register the JDK locations in your Maven `toolchains.xml` file (typically `~/.m2/toolchains.xml`). See the https://maven.apache.org/guides/mini/guide-using-toolchains.html[Maven Toolchains guide] for details.
+
+When a forked JVM is used during code generation or packaging, the build log includes a message similar to:
+
+[source,text]
+----
+[INFO] Using JVM from Maven toolchain for Quarkus build: /path/to/jdk-21/bin/java
+----
+
+If the toolchain JDK matches the JVM running Maven, augmentation continues to run in-process as before.
+
+To disable forking and revert to the previous behaviour (running augmentation in Maven's JVM), set the following system property:
+
+[source,shell]
+----
+./mvnw package -Dquarkus.maven.fork-build.disabled=true
+----
 
 [[dev-mode]]
 == Development mode

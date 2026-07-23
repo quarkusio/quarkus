@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
@@ -26,8 +27,10 @@ import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Builds the Quarkus application.
@@ -138,54 +141,63 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 getLog().warn("* parallel execution                                            *");
                 getLog().warn("*****************************************************************");
             }
-            try (CuratedApplication curatedApplication = bootstrapApplication()) {
-                AugmentAction action = curatedApplication.createAugmentor();
-                AugmentResult result = action.createProductionApplication();
-                analyticsProvider.sendAnalytics(
-                        TrackEventType.BUILD,
-                        curatedApplication.getApplicationModel(),
-                        result.getGraalVMInfo(),
-                        buildDirectory);
-                Artifact original = mavenProject().getArtifact();
-                if (result.getJar() != null) {
+            AugmentResult result;
+            ApplicationModel applicationModel;
+            if (MavenForkedAugmentRunner.shouldFork(this)) {
+                applicationModel = resolveApplicationModel(LaunchMode.NORMAL);
+                Properties buildProperties = getBuildSystemProperties(true);
+                enrichBuildProperties(buildProperties);
+                result = MavenForkedAugmentRunner.runBuild(this, applicationModel, buildProperties, getLog());
+            } else {
+                try (CuratedApplication curatedApplication = bootstrapApplication()) {
+                    applicationModel = curatedApplication.getApplicationModel();
+                    AugmentAction action = curatedApplication.createAugmentor();
+                    result = action.createProductionApplication();
+                }
+            }
+            analyticsProvider.sendAnalytics(
+                    TrackEventType.BUILD,
+                    applicationModel,
+                    result.getGraalVMInfo(),
+                    buildDirectory);
+            Artifact original = mavenProject().getArtifact();
+            if (result.getJar() != null) {
 
-                    final boolean uberJarWithSuffix = result.getJar().isUberJar()
-                            && result.getJar().getOriginalArtifact() != null
-                            && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
-                    if (!skipOriginalJarRename && uberJarWithSuffix) {
-                        final Path standardJar = result.getJar().getOriginalArtifact();
-                        if (Files.exists(standardJar)) {
-                            final Path renamedOriginal = standardJar.getParent().toAbsolutePath()
-                                    .resolve(standardJar.getFileName() + ".original");
-                            try {
-                                IoUtils.recursiveDelete(renamedOriginal);
-                                Files.move(standardJar, renamedOriginal);
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                            // unless we point to the renamed file the install plugin will fail
-                            original.setFile(renamedOriginal.toFile());
+                final boolean uberJarWithSuffix = result.getJar().isUberJar()
+                        && result.getJar().getOriginalArtifact() != null
+                        && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
+                if (!skipOriginalJarRename && uberJarWithSuffix) {
+                    final Path standardJar = result.getJar().getOriginalArtifact();
+                    if (Files.exists(standardJar)) {
+                        final Path renamedOriginal = standardJar.getParent().toAbsolutePath()
+                                .resolve(standardJar.getFileName() + ".original");
+                        try {
+                            IoUtils.recursiveDelete(renamedOriginal);
+                            Files.move(standardJar, renamedOriginal);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
+                        // unless we point to the renamed file the install plugin will fail
+                        original.setFile(renamedOriginal.toFile());
                     }
-                    if (result.getJar().isUberJar()) {
-                        if (attachRunnerAsMainArtifact || result.getJar().getClassifier().isEmpty()) {
-                            original.setFile(result.getJar().getPath().toFile());
-                        } else {
-                            projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
-                                    result.getJar().getClassifier());
-                        }
-                        if (attachSboms) {
-                            for (var sbom : result.getJar().getSboms()) {
-                                projectHelper.attachArtifact(mavenProject(), sbom.getFormat(), sbom.getClassifier(),
-                                        sbom.getSbomFile().toFile());
-                            }
+                }
+                if (result.getJar().isUberJar()) {
+                    if (attachRunnerAsMainArtifact || result.getJar().getClassifier().isEmpty()) {
+                        original.setFile(result.getJar().getPath().toFile());
+                    } else {
+                        projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
+                                result.getJar().getClassifier());
+                    }
+                    if (attachSboms && result.getJar().getSboms() != null) {
+                        for (var sbom : result.getJar().getSboms()) {
+                            projectHelper.attachArtifact(mavenProject(), sbom.getFormat(), sbom.getClassifier(),
+                                    sbom.getSbomFile().toFile());
                         }
                     }
                 }
-            } finally {
-                // Clear all the system properties set by the plugin
-                propertiesToClear.forEach(System::clearProperty);
             }
+            // Clear all the system properties set by the plugin
+            propertiesToClear.forEach(System::clearProperty);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to build quarkus application", e);
         }
@@ -195,5 +207,17 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     public void setLog(Log log) {
         super.setLog(log);
         MojoLogger.delegate = log;
+    }
+
+    private void enrichBuildProperties(Properties buildProperties) {
+        for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+            if (entry.getValue() != null) {
+                buildProperties.setProperty(entry.getKey(), entry.getValue());
+            }
+        }
+        String nativeEnabled = System.getProperty("quarkus.native.enabled");
+        if (nativeEnabled != null) {
+            buildProperties.setProperty("quarkus.native.enabled", nativeEnabled);
+        }
     }
 }

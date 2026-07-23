@@ -11,6 +11,7 @@ include::_attributes.adoc[]
 
 The Quarkus Maven Plugin builds the Quarkus applications, and provides helpers to launch dev mode or build native executables.
 For more information about how to use the Quarkus Maven Plugin, please refer to the xref:maven-tooling.adoc[Maven Tooling guide].
+For Maven Toolchains support, see xref:maven-tooling.adoc#maven-toolchains[Using Maven Toolchains] in the Maven Tooling guide.
 
 == Lifecycle
 

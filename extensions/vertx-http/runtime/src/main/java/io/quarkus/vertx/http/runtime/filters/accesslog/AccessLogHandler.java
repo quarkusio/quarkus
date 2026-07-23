@@ -123,7 +123,7 @@ public class AccessLogHandler implements Handler<RoutingContext> {
         this.excludePattern = null;
     }
 
-    private static String handleCommonNames(String formatString) {
+    static String handleCommonNames(String formatString) {
         switch (formatString) {
             case "common":
                 return "%h %l %u %t \"%r\" %s %b";

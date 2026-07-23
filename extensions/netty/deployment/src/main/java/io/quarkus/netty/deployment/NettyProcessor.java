@@ -194,13 +194,6 @@ class NettyProcessor {
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
-                // Spotted with Netty 4.1.136.Final
-                .addRuntimeInitializedClass("io.netty.internal.tcnative.SSLPrivateKeyMethod")
-                .addRuntimeInitializedClass("io.netty.internal.tcnative.AsyncSSLPrivateKeyMethod")
-                .addRuntimeInitializedClass("io.netty.internal.tcnative.CertificateCompressionAlgo")
-                .addRuntimeInitializedClass("io.netty.internal.tcnative.CertificateVerifier")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.OpenSslAsyncPrivateKeyMethod")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.OpenSslPrivateKeyMethod")
                 // Spotted with Netty 4.1.135.Final
                 .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator

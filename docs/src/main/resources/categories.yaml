@@ -141,7 +141,6 @@ categories:
           - hibernate-orm-panache-kotlin.adoc
           - hibernate-reactive.adoc
           - hibernate-reactive-panache.adoc
-          - hibernate-panache-next.adoc
           - hibernate-search-orm-elasticsearch.adoc
           - hibernate-search-standalone-elasticsearch.adoc
           - blaze-persistence.adoc
@@ -550,4 +549,3 @@ categories:
     description: Business rules with Drools
     guides:
       - drools.adoc
-

@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * Inject the hierarchical category path from categories.yaml into each guide's :categories: attribute.
+ * Inject the hierarchical category path from categories.yaml into each guide's :categories-path: attribute.
  * <p>
  * Runs on the copied .adoc files in target/asciidoc/sources/ so source files are not modified.
  */
@@ -35,13 +35,13 @@ public class InjectCategories {
                 if (paths == null || paths.isEmpty()) {
                     continue;
                 }
-                String categoriesValue = String.join(",", paths);
-                injectAttribute(file, categoriesValue);
+                String categoriesPathValue = String.join(",", paths);
+                injectAttribute(file, categoriesPathValue);
                 count++;
             }
         }
 
-        System.out.println("[INFO] Injected categories into " + count + " guides");
+        System.out.println("[INFO] Injected category paths into " + count + " guides");
     }
 
     @SuppressWarnings("unchecked")
@@ -83,50 +83,76 @@ public class InjectCategories {
         }
     }
 
-    static void injectAttribute(Path file, String categoriesValue) throws IOException {
+    static void injectAttribute(Path file, String categoriesPathValue) throws IOException {
         List<String> lines = Files.readAllLines(file);
-        List<String> result = new ArrayList<>(lines.size());
-        boolean replaced = false;
-        boolean preambleDone = false;
+        List<String> result = new ArrayList<>(lines);
+        int headerEnd = findHeaderEnd(result);
 
-        for (String line : lines) {
-            if (!preambleDone && line.startsWith(":categories:")) {
-                result.add(":categories: " + categoriesValue);
-                replaced = true;
-            } else {
-                result.add(line);
-            }
-            // The preamble ends at the first blank line after the title/attributes block
-            if (!preambleDone && replaced && line.isEmpty()) {
-                preambleDone = true;
-            }
+        if (headerEnd == -1) {
+            System.out.println("[WARN] Unable to find document header in: " + file);
+            return;
         }
 
-        if (!replaced) {
-            // Insert after the include::_attributes.adoc[] line if present, otherwise after the title
-            List<String> output = new ArrayList<>(lines.size() + 1);
-            boolean inserted = false;
-            for (String line : lines) {
-                output.add(line);
-                if (!inserted && line.startsWith("include::_attributes.adoc[]")) {
-                    output.add(":categories: " + categoriesValue);
-                    inserted = true;
-                }
-            }
-            if (!inserted) {
-                for (int i = 0; i < lines.size(); i++) {
-                    if (lines.get(i).startsWith("= ")) {
-                        output = new ArrayList<>(lines.size() + 1);
-                        output.addAll(lines.subList(0, i + 1));
-                        output.add(":categories: " + categoriesValue);
-                        output.addAll(lines.subList(i + 1, lines.size()));
-                        break;
-                    }
-                }
-            }
-            result = output;
+        if (!replaceHeaderAttribute(result, headerEnd, ":categories-path:", categoriesPathValue)) {
+            int categoriesIndex = findHeaderAttribute(result, headerEnd, ":categories:");
+            int insertionIndex = categoriesIndex != -1
+                    ? categoriesIndex + 1
+                    : findAttributeInsertionIndex(result, headerEnd);
+            result.add(insertionIndex, ":categories-path: " + categoriesPathValue);
         }
-
         Files.write(file, result);
+    }
+
+    private static int findHeaderEnd(List<String> lines) {
+        int titleIndex = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).startsWith("= ")) {
+                titleIndex = i;
+                break;
+            }
+        }
+        if (titleIndex == -1) {
+            return -1;
+        }
+
+        for (int i = titleIndex + 1; i < lines.size(); i++) {
+            if (lines.get(i).isBlank()) {
+                return i;
+            }
+        }
+        return lines.size();
+    }
+
+    private static boolean replaceHeaderAttribute(List<String> lines, int headerEnd, String attribute, String value) {
+        int attributeIndex = findHeaderAttribute(lines, headerEnd, attribute);
+        if (attributeIndex == -1) {
+            return false;
+        }
+
+        lines.set(attributeIndex, attribute + " " + value);
+        return true;
+    }
+
+    private static int findHeaderAttribute(List<String> lines, int headerEnd, String attribute) {
+        for (int i = 0; i < headerEnd; i++) {
+            if (lines.get(i).startsWith(attribute)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int findAttributeInsertionIndex(List<String> lines, int headerEnd) {
+        for (int i = 0; i < headerEnd; i++) {
+            if (lines.get(i).startsWith("include::_attributes.adoc[]")) {
+                return i + 1;
+            }
+        }
+        for (int i = 0; i < headerEnd; i++) {
+            if (lines.get(i).startsWith("= ")) {
+                return i + 1;
+            }
+        }
+        return headerEnd;
     }
 }

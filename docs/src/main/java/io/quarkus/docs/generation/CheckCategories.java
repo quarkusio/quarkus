@@ -40,17 +40,38 @@ public class CheckCategories {
         Set<String> missingGuides = new TreeSet<>(allGuides);
         missingGuides.removeAll(categorizedGuides);
 
+        Set<String> staleGuides = new TreeSet<>(categorizedGuides);
+        staleGuides.removeAll(allGuides);
+
+        StringBuilder errorLog = new StringBuilder();
         if (!missingGuides.isEmpty()) {
-            StringBuilder errorLog = new StringBuilder(
-                    "The following guides are not referenced in any category in categories.yaml:\n\n");
-            for (String guide : missingGuides) {
-                errorLog.append("- ").append(guide).append("\n");
-            }
-            errorLog.append("\nPlease add them to the appropriate category in src/main/resources/categories.yaml");
+            appendGuides(errorLog,
+                    "The following guides are not referenced in any category in categories.yaml:",
+                    missingGuides);
+            errorLog.append("\nPlease add them to the appropriate category in src/main/resources/categories.yaml\n");
+        }
+        if (!staleGuides.isEmpty()) {
+            appendGuides(errorLog,
+                    "The following guides are referenced in categories.yaml but do not exist:",
+                    staleGuides);
+            errorLog.append("\nPlease remove or update these entries in src/main/resources/categories.yaml\n");
+        }
+
+        if (errorLog.length() > 0) {
             throw new IllegalStateException(errorLog.toString());
         }
 
         System.out.println("[INFO] All guides are properly categorized");
+    }
+
+    private static void appendGuides(StringBuilder errorLog, String message, Set<String> guides) {
+        if (errorLog.length() > 0) {
+            errorLog.append("\n");
+        }
+        errorLog.append(message).append("\n\n");
+        for (String guide : guides) {
+            errorLog.append("- ").append(guide).append("\n");
+        }
     }
 
     @SuppressWarnings("unchecked")

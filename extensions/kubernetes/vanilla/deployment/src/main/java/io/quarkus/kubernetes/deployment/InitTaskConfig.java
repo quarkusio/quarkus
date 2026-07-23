@@ -21,6 +21,12 @@ public interface InitTaskConfig {
     Optional<String> image();
 
     /**
+     * Limits the lifetime of an init-task Job that has finished execution (either Complete or Failed).
+     * If set, after this many seconds the Job is eligible to be automatically deleted by Kubernetes.
+     */
+    Optional<Integer> ttlSecondsAfterFinished();
+
+    /**
      * The configuration of the `wait for` container.
      */
     InitTaskContainerConfig waitForContainer();

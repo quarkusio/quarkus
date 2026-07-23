@@ -49,6 +49,7 @@ import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.LogConfig;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TcpOption;
 import io.vertx.core.net.TrafficShapingOptions;
@@ -75,10 +76,13 @@ public class HttpServerOptionsUtils {
     public static final int RANDOM_PORT_MANAGEMENT = 30;
 
     /**
-     * Holds the result of building server configuration: an {@link HttpServerConfig} and an optional
-     * {@link ServerSSLOptions}.
+     * Holds the result of building server configuration: an {@link HttpServerConfig}, optional {@link ServerSSLOptions},
+     * and optional {@link SSLEngineOptions} for selecting the SSL engine.
      */
-    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
+    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions, SSLEngineOptions sslEngineOptions) {
+        public ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
+            this(config, sslOptions, null);
+        }
     }
 
     /**
@@ -113,8 +117,9 @@ public class HttpServerOptionsUtils {
         if (bucket != null) {
             ClientAuth clientAuth = getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode);
             ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
+            SSLEngineOptions engineOptions = bucket.getSslEngineOptions().orElse(null);
             applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
-            return new ServerConfig(config, sslOptions);
+            return new ServerConfig(config, sslOptions, engineOptions);
         }
 
         // Legacy configuration
@@ -151,9 +156,10 @@ public class HttpServerOptionsUtils {
         if (bucket != null) {
             ClientAuth clientAuth = managementBuildTimeConfig.tlsClientAuth();
             ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
+            SSLEngineOptions engineOptions = bucket.getSslEngineOptions().orElse(null);
             applyCommonOptionsForManagementInterface(config, managementBuildTimeConfig, managementConfig,
                     websocketSubProtocols);
-            return new ServerConfig(config, sslOptions);
+            return new ServerConfig(config, sslOptions, engineOptions);
         }
 
         // Legacy configuration
@@ -195,6 +201,10 @@ public class HttpServerOptionsUtils {
         if (!other.isUseAlpn()) {
             sslOptions.setUseAlpn(false);
         }
+        if (other.getKeyExchangeGroups() != null && !other.getKeyExchangeGroups().isEmpty()) {
+            sslOptions.setKeyExchangeGroups(other.getKeyExchangeGroups());
+        }
+        sslOptions.setPqcEnforcementPolicy(other.getPqcEnforcementPolicy());
         sslOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
 
         sslOptions.setClientAuth(clientAuth);

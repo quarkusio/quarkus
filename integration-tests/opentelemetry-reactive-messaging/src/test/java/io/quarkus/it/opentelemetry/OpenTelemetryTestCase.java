@@ -1,6 +1,8 @@
 package io.quarkus.it.opentelemetry;
 
 import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
+import static io.quarkus.it.opentelemetry.EventBusConsumers.ALWAYS_ADDRESS;
+import static io.quarkus.it.opentelemetry.EventBusConsumers.PROPAGATE_ADDRESS;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -110,6 +112,66 @@ public class OpenTelemetryTestCase {
 
         Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
         verifyProducer(producerSpan, consumerSpan, "traces-processed");
+    }
+
+    @Test
+    void eventBusPropagateWithoutActiveTraceIsNotTraced() {
+        resetExporter();
+
+        given()
+                .when().get("/eventbus/no-active-trace")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("without active trace"));
+
+        // Wait until the ALWAYS sentinel has been exported, then assert the PROPAGATE message added nothing.
+        Awaitility.await().atMost(Duration.ofMinutes(1)).untilAsserted(() -> {
+            List<Map<String, Object>> eventBusSpans = eventBusSpans(getSpans());
+            Assertions.assertTrue(
+                    eventBusSpans.stream().anyMatch(m -> SpanKind.CONSUMER.name().equals(m.get("kind"))
+                            && ALWAYS_ADDRESS.equals(m.get("attr_messaging.destination.name"))),
+                    "the ALWAYS sentinel consumer span should have been exported");
+            Assertions.assertEquals(2, eventBusSpans.size(),
+                    "only the ALWAYS message should be traced (PRODUCER + CONSUMER): " + eventBusSpans);
+            Assertions.assertTrue(
+                    eventBusSpans.stream()
+                            .noneMatch(m -> PROPAGATE_ADDRESS.equals(m.get("attr_messaging.destination.name"))),
+                    "a PROPAGATE message sent without an active trace must not be traced");
+        });
+    }
+
+    @Test
+    void eventBusPropagateWithinActiveTraceIsTraced() {
+        resetExporter();
+
+        given()
+                .when().get("/eventbus/active-trace")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("within active trace"));
+
+        // SERVER + event bus PRODUCER + event bus CONSUMER.
+        Awaitility.await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 3);
+        List<Map<String, Object>> spans = getSpans();
+
+        Map<String, Object> serverSpan = findSpan(spans, m -> SpanKind.SERVER.name().equals(m.get("kind")));
+        Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
+        Map<String, Object> consumerSpan = findSpan(spans, m -> SpanKind.CONSUMER.name().equals(m.get("kind")));
+
+        // The event bus spans continue the request trace instead of starting spurious roots.
+        Assertions.assertEquals("vert.x", producerSpan.get("attr_messaging.system"));
+        Assertions.assertEquals(PROPAGATE_ADDRESS, producerSpan.get("attr_messaging.destination.name"));
+        Assertions.assertEquals(serverSpan.get("traceId"), producerSpan.get("traceId"));
+        Assertions.assertEquals(serverSpan.get("spanId"), producerSpan.get("parent_spanId"));
+
+        Assertions.assertEquals("vert.x", consumerSpan.get("attr_messaging.system"));
+        Assertions.assertEquals(PROPAGATE_ADDRESS, consumerSpan.get("attr_messaging.destination.name"));
+        Assertions.assertEquals(serverSpan.get("traceId"), consumerSpan.get("traceId"));
+        Assertions.assertEquals(producerSpan.get("spanId"), consumerSpan.get("parent_spanId"));
+    }
+
+    private static List<Map<String, Object>> eventBusSpans(List<Map<String, Object>> spans) {
+        return spans.stream().filter(m -> "vert.x".equals(m.get("attr_messaging.system"))).toList();
     }
 
     private void verifyServer(Map<String, Object> spanData, Map<String, Object> parentSpanData, URL url) {

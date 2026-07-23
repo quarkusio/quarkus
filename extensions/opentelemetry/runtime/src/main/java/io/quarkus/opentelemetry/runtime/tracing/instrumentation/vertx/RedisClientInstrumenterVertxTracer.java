@@ -9,6 +9,7 @@ import java.util.function.BiConsumer;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientSpanNameExtractor;
@@ -27,8 +28,10 @@ import io.vertx.core.tracing.TracingPolicy;
 public class RedisClientInstrumenterVertxTracer implements
         InstrumenterVertxTracer<RedisClientInstrumenterVertxTracer.CommandTrace, Object> {
     private final Instrumenter<CommandTrace, Object> redisClientInstrumenter;
+    private final TextMapPropagator propagator;
 
     public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
+        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         InstrumenterBuilder<CommandTrace, Object> clientInstrumenterBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
@@ -95,6 +98,11 @@ public class RedisClientInstrumenterVertxTracer implements
     @Override
     public Instrumenter<CommandTrace, Object> getReceiveResponseInstrumenter() {
         return redisClientInstrumenter;
+    }
+
+    @Override
+    public TextMapPropagator getPropagator() {
+        return propagator;
     }
 
     static class CommandTrace {

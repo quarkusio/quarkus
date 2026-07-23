@@ -21,6 +21,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -58,12 +59,14 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
+    private final TextMapPropagator propagator;
 
     public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry,
             final OTelRuntimeConfig runtimeConfig,
             final OTelBuildConfig buildConfig) {
         serverInstrumenter = getServerInstrumenter(openTelemetry, runtimeConfig, buildConfig);
         clientInstrumenter = getClientInstrumenter(openTelemetry, runtimeConfig);
+        propagator = openTelemetry.getPropagators().getTextMapPropagator();
     }
 
     @Override
@@ -89,6 +92,11 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     @Override
     public Instrumenter<HttpRequest, HttpResponse> getReceiveResponseInstrumenter() {
         return clientInstrumenter;
+    }
+
+    @Override
+    public TextMapPropagator getPropagator() {
+        return propagator;
     }
 
     @Override

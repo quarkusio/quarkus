@@ -18,15 +18,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationException;
 import io.quarkus.test.InMemoryLogHandler;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 
 @QuarkusTest
-@QuarkusTestResource(H2DatabaseTestResource.class)
 public class HibernateValidatorFunctionalityTest {
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
     private static final java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("io.quarkus");

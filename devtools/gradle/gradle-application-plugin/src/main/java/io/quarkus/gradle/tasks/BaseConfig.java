@@ -51,6 +51,7 @@ final class BaseConfig {
                 .withMapping(PackageConfig.class)
                 .withMapping(NativeConfig.class)
                 .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
+                .withDefaultValue("quarkus.package.output-directory", "quarkus-app")
                 .build();
 
         manifest = new Manifest();

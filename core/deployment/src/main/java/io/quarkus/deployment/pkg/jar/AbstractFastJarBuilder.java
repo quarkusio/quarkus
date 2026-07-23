@@ -99,16 +99,9 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     public JarBuildItem build() throws IOException {
         boolean rebuild = outputTarget.isRebuild();
+        Path buildDir = outputTarget.getPackageOutputDirectory();
 
-        Path buildDir;
-
-        if (packageConfig.outputDirectory().isPresent()) {
-            buildDir = outputTarget.getOutputDirectory();
-        } else {
-            buildDir = outputTarget.getOutputDirectory().resolve(FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME);
-        }
-
-        final CoreSbomContributionConfig manifestConfig = new CoreSbomContributionConfig()
+        CoreSbomContributionConfig manifestConfig = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcome.getApplicationModel())
                 .setDistributionDirectory(buildDir);
         //unmodified 3rd party dependencies
@@ -170,7 +163,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
-                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp(),
                     executorService)) {
                 // we make sure the entries are added in a reproducible order
                 // we use Path#toString() to get a reproducible order on both Unix-based OSes and Windows
@@ -193,7 +186,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                packageConfig.jar().compress(), packageConfig.outputTimestamp(),
                 executorService)) {
             // make sure we write the elements in order
             for (GeneratedClassBuildItem i : generatedClasses.stream()
@@ -239,7 +232,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             manifestConfig.addComponent(appArtifact, runnerJar);
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp(),
                     executorService)) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
 
@@ -337,7 +330,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
         if (!rebuild) {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
-                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp(),
                     executorService)) {
                 Manifest manifest = createManifest(packageConfig, appArtifact, applicationInfo);
                 attachRunnerMetadata(manifest, getEntryPoint().getName(), getClassPath(fastJarJars), jvmRequirements);
@@ -565,7 +558,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                packageConfig.jar().compress(), packageConfig.outputTimestamp(),
                 executorService)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {

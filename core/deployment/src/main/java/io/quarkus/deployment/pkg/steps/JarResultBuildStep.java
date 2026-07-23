@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -68,10 +69,17 @@ import io.quarkus.maven.dependency.GACT;
 public class JarResultBuildStep {
 
     @BuildStep
-    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
-        String name = packageConfig.outputName().orElseGet(bst::getBaseName);
-        Path path = packageConfig.outputDirectory().map(s -> bst.getOutputDirectory().resolve(s))
-                .orElseGet(bst::getOutputDirectory);
+    void outputTarget(
+            PackageConfig packageConfig,
+            BuildSystemTargetBuildItem bst,
+            BuildProducer<OutputTargetBuildItem> outputTarget) {
+
+        // QuarkusBootstrap does not force to set a targetDirectory (QuarkusDeployableContainer),
+        // so in that case, it doesn't make sense to generate an OutputTargetBuildItem
+        if (bst.getOutputDirectory() == null) {
+            return;
+        }
+
         Optional<Set<ArtifactKey>> includedOptionalDependencies;
         if (packageConfig.jar().filterOptionalDependencies()) {
             includedOptionalDependencies = Optional.of(packageConfig.jar().includedOptionalDependencies()
@@ -80,8 +88,12 @@ public class JarResultBuildStep {
         } else {
             includedOptionalDependencies = Optional.empty();
         }
-        return new OutputTargetBuildItem(path, name, bst.getOriginalBaseName(), bst.isRebuild(), bst.getBuildSystemProps(),
-                includedOptionalDependencies);
+
+        outputTarget.produce(new OutputTargetBuildItem(
+                bst.getOutputDirectory(),
+                bst.getOutputDirectory().resolve(packageConfig.outputDirectory()),
+                packageConfig.outputName(), bst.getOriginalBaseName(), bst.isRebuild(),
+                bst.getBuildSystemProps(), includedOptionalDependencies));
     }
 
     @BuildStep(onlyIf = JarRequired.class)

@@ -112,12 +112,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

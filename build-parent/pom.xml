@@ -81,16 +81,47 @@
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
 
-        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/library/postgres:18</postgres.image>
-        <postgis.image>docker.io/postgis/postgis:18-3.6</postgis.image>
-        <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
-        <mariadb.image>docker.io/library/mariadb:12.3</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
+        <!-- Database default versions for `quarkus.datasource.db-version` and images for devservices -->
+        <db2.version>12.1</db2.version>
+        <db2.image>icr.io/db2_community/db2:${db2.version}.0.0</db2.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/ibm-db2 -->
+        <db2.default.version>12.1</db2.default.version>
+        <mariadb.version>12.3</mariadb.version>
+        <mariadb.image>docker.io/library/mariadb:${mariadb.version}</mariadb.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mariadb -->
+        <mariadb.default.version>11.4</mariadb.default.version>
+        <mssql.version>16</mssql.version> <!-- SQL Server 2022 = version 16 -->
         <mssql.image>mcr.microsoft.com/mssql/server:2025-latest</mssql.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mssqlserver -->
+        <mssql.default.version>16</mssql.default.version>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
-        <mysql.image>docker.io/library/mysql:9.7</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
+        <mysql.version>9.7</mysql.version>
+        <mysql.image>docker.io/library/mysql:${mysql.version}</mysql.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mysql -->
+        <mysql.default.version>8.4</mysql.default.version>
+        <oracle.version>23</oracle.version>
+        <oracle.image>docker.io/gvenzl/oracle-free:${oracle.version}-slim-faststart</oracle.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/oracle-database -->
+        <oracle.default.version>23</oracle.default.version>
+        <postgres.version>18</postgres.version>
+        <postgres.image>docker.io/library/postgres:${postgres.version}</postgres.image>
+        <postgis.image>docker.io/postgis/postgis:${postgres.version}-3.6</postgis.image>
+        <pgvector.image>docker.io/pgvector/pgvector:pg${postgres.version}</pgvector.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/postgresql -->
+        <postgres.default.version>16</postgres.default.version>
+
         <mongo.image>docker.io/library/mongo:8.3</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->

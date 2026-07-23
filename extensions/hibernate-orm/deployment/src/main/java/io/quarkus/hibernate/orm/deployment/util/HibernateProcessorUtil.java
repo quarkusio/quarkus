@@ -69,13 +69,13 @@ public final class HibernateProcessorUtil {
             String persistenceUnitName,
             Optional<String> dbKind,
             Optional<String> explicitDialect,
-            Optional<String> explicitDbMinVersion,
+            Optional<String> dbVersion,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
             BiConsumer<String, String> puPropertiesCollector) {
         Optional<String> dialect = explicitDialect;
         Optional<String> dbProductName = Optional.empty();
-        Optional<String> dbProductVersion = explicitDbMinVersion;
+        Optional<String> dbProductVersion = dbVersion;
 
         if (dbKind.isPresent() || explicitDialect.isPresent()) {
             for (DatabaseKindDialectBuildItem item : dbKindDialectBuildItems) {
@@ -88,7 +88,7 @@ public final class HibernateProcessorUtil {
                     if (dbProductName.isEmpty() && explicitDialect.isEmpty()) {
                         dialect = item.getDialectOptional();
                     }
-                    if (explicitDbMinVersion.isEmpty()) {
+                    if (dbVersion.isEmpty()) {
                         dbProductVersion = item.getDefaultDatabaseProductVersion();
                     }
                     break;

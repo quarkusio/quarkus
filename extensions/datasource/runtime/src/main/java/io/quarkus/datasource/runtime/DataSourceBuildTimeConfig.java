@@ -2,6 +2,7 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -41,11 +42,20 @@ public interface DataSourceBuildTimeConfig {
      * leading to a startup failure when the actual version is lower
      * or simply a warning in case the database cannot be reached.
      *
-     * The default for this property is specific to each extension;
-     * the Hibernate ORM extension will default to the oldest version it supports.
+     * If not set, the default depends on the `db-kind`:
+     * * DB2: `{db2-default-version}`
+     * * MariaDB: `{mariadb-default-version}`
+     * * Microsoft SQL Server: `{mssql-default-version}`
+     * * MySQL: `{mysql-default-version}`
+     * * Oracle: `{oracle-default-version}`
+     * * PostgreSQL: `{postgres-default-version}`
+     *
+     * If you are connecting to an older database version, you must explicitly set this property
+     * to match your actual database version to avoid runtime errors.
      *
      * @asciidoclet
      */
+    @ConfigDocDefault("Depends on `db-kind`, see description.")
     Optional<@WithConverter(TrimmedStringConverter.class) String> dbVersion();
 
     /**

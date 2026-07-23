@@ -49,6 +49,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
@@ -117,9 +122,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -127,9 +132,9 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -182,11 +187,24 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
+                        <configuration>
+                            <systemProperties>
+                                <!-- Activate external-db profile at build time so that
+                                     %external-db.quarkus.datasource.db-version gets applied
+                                     during native image generation -->
+                                <quarkus.profile>prod,external-db</quarkus.profile>
+                            </systemProperties>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>test,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -196,6 +214,7 @@
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>prod,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

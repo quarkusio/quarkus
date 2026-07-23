@@ -55,6 +55,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
@@ -86,6 +92,9 @@
                     <excludes>
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
+                    <systemPropertyVariables combine.children="append">
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

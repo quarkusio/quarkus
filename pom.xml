@@ -68,6 +68,7 @@
         <!-- Dependency versions -->
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
+        <h2.version>2.4.240</h2.version> <!-- When updating, the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <jacoco.version>0.8.15</jacoco.version>
         <kubernetes-client.version>7.7.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>6.0.0</rest-assured.version>

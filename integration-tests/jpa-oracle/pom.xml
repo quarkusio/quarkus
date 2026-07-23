@@ -170,12 +170,18 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -191,11 +197,24 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
+                        <configuration>
+                            <systemProperties>
+                                <!-- Activate external-db profile at build time so that
+                                     %external-db.quarkus.datasource.db-version gets applied
+                                     during native image generation -->
+                                <quarkus.profile>prod,external-db</quarkus.profile>
+                            </systemProperties>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>test,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -205,6 +224,7 @@
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>prod,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

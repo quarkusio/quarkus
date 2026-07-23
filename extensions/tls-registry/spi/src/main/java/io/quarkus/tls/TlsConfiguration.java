@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.net.ssl.SSLContext;
 
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -108,6 +109,16 @@ public interface TlsConfiguration {
      */
     default String getName() {
         return "unset";
+    }
+
+    /**
+     * Returns the SSL engine options to use, if explicitly configured.
+     * When present, the returned options override the default SSL engine selection.
+     *
+     * @return the SSL engine options, or an empty Optional to use the default
+     */
+    default Optional<SSLEngineOptions> getSslEngineOptions() {
+        return Optional.empty();
     }
 
 }

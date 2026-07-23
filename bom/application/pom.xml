@@ -57,6 +57,7 @@
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
+        <smallrye-openssl.version>0.1.4</smallrye-openssl.version>
         <smallrye-mutiny-vertx-binding.version>3.23.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.36.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.10</smallrye-stork.version>
@@ -112,7 +113,7 @@
         <wildfly-elytron.version>2.9.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>4.5.30</vertx.version>
+        <vertx.version>4.5.31</vertx.version>
         <httpclient5.version>5.6.1</httpclient5.version>
         <httpcore5.version>5.4.3</httpcore5.version>
         <httpclient.version>4.5.14</httpclient.version>
@@ -135,6 +136,7 @@
         <infinispan.version>16.0.13</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
+        <netty-tcnative.version>2.0.76.Final</netty-tcnative.version>
         <netty.version>4.1.136.Final</netty.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
@@ -297,6 +299,11 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-tcnative-classes</artifactId>
+                <version>${netty-tcnative.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.aayushatharva.brotli4j</groupId>
                 <artifactId>brotli4j</artifactId>
                 <version>${brotli4j.version}</version>
@@ -350,6 +357,19 @@
                 <groupId>com.aayushatharva.brotli4j</groupId>
                 <artifactId>native-osx-aarch64</artifactId>
                 <version>${brotli4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-openssl</artifactId>
+                <classifier>linux-x86_64</classifier>
+                <version>${smallrye-openssl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-openssl</artifactId>
+                <classifier>linux-aarch_64</classifier>
+                <version>${smallrye-openssl.version}</version>
             </dependency>
 
             <dependency>

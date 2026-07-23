@@ -1824,7 +1824,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
+        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1834,7 +1834,7 @@ jobs:
           # Begin OTP setup
           TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
-          TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
+          TESTPILOT_CONNECTION_STRING_SUFFIX: ${{ steps.create_database.outputs.connection_string_suffix }}
           RUNID: ${{ github.run_number }}
           API_HOST: ""
           TESTPILOT_CLIENT_ID: ""
@@ -1846,8 +1846,8 @@ jobs:
           TEST_MODULES: ${{matrix.test-modules}}
           CAPTURE_BUILD_SCAN: true
         run: |
-          export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
-            && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
+          export LANG=en_US && \
+            ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
             $JVM_TEST_MAVEN_ARGS \
             -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
             -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
@@ -1859,7 +1859,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
+        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete
@@ -1943,7 +1943,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
+        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1954,7 +1954,7 @@ jobs:
           # Begin OTP setup
           TESTPILOT_USERNAME: quarkus_test_native_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
-          TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ: ${{ steps.create_database.outputs.connection_string_suffix }}
+          TESTPILOT_CONNECTION_STRING_SUFFIX: ${{ steps.create_database.outputs.connection_string_suffix }}
           RUNID: ${{ github.run_number }}
           API_HOST: ""
           TESTPILOT_CLIENT_ID: ""
@@ -1969,8 +1969,8 @@ jobs:
           CONTAINER_BUILD: false # Docker is not available on Oracle Test Pilot
           CAPTURE_BUILD_SCAN: true
         run: |
-          export LANG=en_US && export TESTPILOT_CONNECTION_STRING_SUFFIX=`echo "${TESTPILOT_CONNECTION_STRING_SUFFIX_WDQ:1:-1}"` \
-            && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
+          export LANG=en_US && \
+            ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS \
             -Doracle.jdbc.url=jdbc:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
             -Doracle.reactive.url=vertx-reactive:oracle:thin:@${TESTPILOT_CONNECTION_STRING_SUFFIX} \
             -Doracle.username=${TESTPILOT_USERNAME} \
@@ -1981,7 +1981,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@37676e7f43dabdebb120915f2862f6ddd55d28d6 # v1.0.25
+        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete

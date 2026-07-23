@@ -2037,7 +2037,7 @@ public class BeanDeployment {
 
         BeanRegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
             super(buildContext, beanDeployment);
-            this.syntheticInjectionPoints = new ArrayList<>();
+            this.syntheticInjectionPoints = new CopyOnWriteArrayList<>();
         }
 
         @Override

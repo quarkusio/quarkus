@@ -19,13 +19,14 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.SmallRyeConfig;
 
-public class DefaultJarLauncher implements JarArtifactLauncher {
+public class DefaultJarLauncher implements JarArtifactLauncher, LogPathProvider {
     private static final Logger log = Logger.getLogger(DefaultJarLauncher.class);
 
     private static final String JAVA_HOME_SYS = "java.home";
@@ -58,6 +59,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private String aotResultDescription;
 
     private final Map<String, String> systemProps = new HashMap<>();
+    private final String instanceId = RandomStringUtils.insecure().next(5, true, false);
     private Process quarkusProcess;
 
     private Path logFile;
@@ -82,15 +84,13 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     @Override
     public ListeningAddresses start() throws IOException {
         start(new String[0], true);
+        // logFile is already resolved to a unique path by the inner start() call
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-        LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                .getConfigMapping(LogRuntimeConfig.class);
-        logFile = logRuntimeConfig.file().path().toPath();
         if (startedFunction != null) {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logFile);
             return ListeningAddresses.EMPTY;
         } else {
-            return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
+            return waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
         }
     }
 
@@ -115,7 +115,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     public void start(String[] programArgs, boolean handleIo) throws IOException {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
-        logFile = logRuntimeConfig.file().path().toPath();
+        logFile = resolveLogFile(logRuntimeConfig);
 
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
@@ -186,6 +186,16 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     @Override
     public void includeAsSysProps(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
+    }
+
+    private Path resolveLogFile(LogRuntimeConfig logRuntimeConfig) {
+        Path base = logRuntimeConfig.file().path().toPath();
+        return LauncherUtil.buildUniqueLogPath(base, instanceId);
+    }
+
+    @Override
+    public Path logFilePath() {
+        return logFile;
     }
 
     @Override

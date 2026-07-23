@@ -1477,6 +1477,31 @@ packaged as *jar*, you can use:
 
 as an argument to Maven/Gradle when launching the test. This will make the application wait until a remote JVM debugger is connected to port `5005`.
 
+[#concurrent-integration-test-forks]
+=== Running `@QuarkusIntegrationTest` with concurrent forks
+
+When `maven-failsafe-plugin` is configured with `forkCount > 1`, each fork launches its own instance of the application.
+Quarkus automatically assigns each launcher instance a unique log file so that concurrent forks do not overwrite each other's output.
+
+The resolved log file path is available in two ways:
+
+* Via the `quarkus.test.log.file.path` system property, set by `QuarkusIntegrationTestExtension` after the application starts.
+* Via the `io.quarkus.test.common.LogPathProvider` interface, which is implemented by all built-in launchers.
+  JUnit 5 extensions can cast the launcher to `LogPathProvider` and call `logFilePath()` for typed access.
+
+A typical `forkCount` configuration looks like this:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <configuration>
+        <forkCount>2</forkCount>
+        <reuseForks>false</reuseForks>
+    </configuration>
+</plugin>
+----
+
 [#generating-an-aot-cache-during-integration-tests]
 === Generating an AOT cache during integration tests
 

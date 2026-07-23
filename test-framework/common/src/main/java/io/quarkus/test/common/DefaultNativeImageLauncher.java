@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.SmallRyeConfig;
 
-public class DefaultNativeImageLauncher implements NativeImageLauncher {
+public class DefaultNativeImageLauncher implements NativeImageLauncher, LogPathProvider {
     private static final Logger log = Logger.getLogger(DefaultNativeImageLauncher.class);
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
@@ -47,6 +48,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     private Process quarkusProcess;
     private final Map<String, String> systemProps = new HashMap<>();
+    private final String instanceId = RandomStringUtils.insecure().next(5, true, false);
 
     private Path logFile;
 
@@ -88,15 +90,13 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     @Override
     public ListeningAddresses start() throws IOException {
         start(new String[0], true);
-        LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                .getConfigMapping(LogRuntimeConfig.class);
-        logFile = logRuntimeConfig.file().path().toPath();
+        // logFile is already resolved to a unique path by the inner start() call
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         if (startedFunction != null) {
-            waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logRuntimeConfig.file().path().toPath());
+            waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logFile);
             return ListeningAddresses.EMPTY;
         } else {
-            return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
+            return waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
         }
     }
 
@@ -117,7 +117,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
             args.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
         }
-        logFile = logRuntimeConfig.file().path().toPath();
+        logFile = resolveLogFile(logRuntimeConfig);
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         args.add("-Dquarkus.log.file.enabled=true");
         args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
@@ -275,6 +275,16 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     @Override
     public void includeAsSysProps(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
+    }
+
+    private Path resolveLogFile(LogRuntimeConfig logRuntimeConfig) {
+        Path base = logRuntimeConfig.file().path().toPath();
+        return LauncherUtil.buildUniqueLogPath(base, instanceId);
+    }
+
+    @Override
+    public Path logFilePath() {
+        return logFile;
     }
 
     @Override

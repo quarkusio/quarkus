@@ -44,6 +44,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
+import io.quarkus.runtime.LaunchMode;
 
 public class JacocoProcessor {
 
@@ -62,9 +63,9 @@ public class JacocoProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             JacocoConfig config) throws Exception {
-        // LaunchModeBuildItem.isTest() is used instead of IsTest BooleanSupplier
-        // so that dev mode tests (QuarkusDevModeTest) are also covered
-        if (!launchModeBuildItem.isTest()) {
+        // LaunchModeBuildItem.isTest() covers dev mode tests (QuarkusDevModeTest),
+        // which do not use LaunchMode.TEST.
+        if (!launchModeBuildItem.isTest() && launchModeBuildItem.getLaunchMode() != LaunchMode.TEST) {
             return;
         }
         if (launchModeBuildItem.isAuxiliaryApplication()) {

@@ -21,12 +21,16 @@ import org.jboss.logging.Logger;
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TrustStoreAndTrustOptions;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.ClientSSLOptions;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
@@ -113,10 +117,29 @@ public class VertxCertificateHolder implements TlsConfiguration {
         return sslContext;
     }
 
+    private static io.vertx.core.net.PqcEnforcementPolicy toVertxPqcPolicy(PqcEnforcementPolicy policy) {
+        return switch (policy) {
+            case STRICT -> io.vertx.core.net.PqcEnforcementPolicy.STRICT;
+            case CLIENT_NEGOTIATED -> io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED;
+            case RELAXED -> io.vertx.core.net.PqcEnforcementPolicy.RELAXED;
+        };
+    }
+
     private synchronized void populateCommonSSLOptions(SSLOptions options) {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+        if (config().keyExchangeGroups().isPresent()) {
+            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+        }
+        options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
+
+        if (config().keyExchangeGroups().isPresent()
+                && config().pqcEnforcementPolicy() == PqcEnforcementPolicy.RELAXED) {
+            LOGGER.warnf("TLS bucket '%s' configures post-quantum key exchange groups with a 'relaxed' enforcement policy. "
+                    + "The post-quantum groups will be ignored because 'relaxed' does not enforce post-quantum key exchange. "
+                    + "Use 'strict' or 'client-negotiated' to enable post-quantum cryptography.", name);
+        }
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());
@@ -130,6 +153,14 @@ public class VertxCertificateHolder implements TlsConfiguration {
         for (String cipher : config().cipherSuites().orElse(Collections.emptyList())) {
             options.addEnabledCipherSuite(cipher);
         }
+    }
+
+    @Override
+    public Optional<SSLEngineOptions> getSslEngineOptions() {
+        return config().sslEngine().map(e -> switch (e) {
+            case OPENSSL -> (SSLEngineOptions) new OpenSSLEngineOptions();
+            case JDKSSL -> new JdkSSLEngineOptions();
+        });
     }
 
     @Override

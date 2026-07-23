@@ -340,6 +340,10 @@ public class Mailers {
                 }
                 cfg.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
 
+                if (sslOptions.getKeyExchangeGroups() != null && !sslOptions.getKeyExchangeGroups().isEmpty()) {
+                    cfg.getSslOptions().setKeyExchangeGroups(sslOptions.getKeyExchangeGroups());
+                }
+                cfg.getSslOptions().setPqcEnforcementPolicy(sslOptions.getPqcEnforcementPolicy());
             }
 
         } else {

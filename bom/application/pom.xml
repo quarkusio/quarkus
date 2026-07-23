@@ -57,6 +57,7 @@
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
+        <smallrye-openssl.version>0.1.4</smallrye-openssl.version>
         <smallrye-mutiny-vertx-binding.version>4.0.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>5.0.0-beta4</smallrye-reactive-messaging.version>
         <smallrye-stork.version>3.0.0</smallrye-stork.version>
@@ -135,6 +136,7 @@
         <infinispan.version>16.0.14</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
+        <netty-tcnative.version>2.0.76.Final</netty-tcnative.version>
         <netty.version>4.2.16.Final</netty.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
@@ -295,6 +297,23 @@
                 <version>${netty.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-tcnative-classes</artifactId>
+                <version>${netty-tcnative.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-openssl</artifactId>
+                <classifier>linux-x86_64</classifier>
+                <version>${smallrye-openssl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-openssl</artifactId>
+                <classifier>linux-aarch_64</classifier>
+                <version>${smallrye-openssl.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.aayushatharva.brotli4j</groupId>

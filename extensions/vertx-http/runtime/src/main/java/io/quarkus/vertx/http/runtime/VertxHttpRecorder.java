@@ -137,6 +137,7 @@ import io.vertx.core.http.impl.http1.Http1ServerConnection;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -231,9 +232,11 @@ public class VertxHttpRecorder {
     private static HttpServerConfig httpMainServerConfig;
     private static HttpServerConfig httpMainSslServerConfig;
     private static ServerSSLOptions httpMainSslOptions;
+    private static SSLEngineOptions httpMainSslEngineOptions;
     private static HttpServerConfig httpMainDomainSocketConfig;
     private static HttpServerConfig httpManagementServerConfig;
     private static ServerSSLOptions httpManagementSslOptions;
+    private static SSLEngineOptions httpManagementSslEngineOptions;
 
     private static final List<Long> refresTaskIds = new CopyOnWriteArrayList<>();
 
@@ -783,6 +786,7 @@ public class VertxHttpRecorder {
             List<String> websocketSubProtocols, TlsConfigurationRegistry registry) throws IOException {
         httpManagementServerConfig = null;
         httpManagementSslOptions = null;
+        httpManagementSslEngineOptions = null;
         CompletableFuture<HttpServer> managementInterfaceFuture = new CompletableFuture<>();
         if (!managementBuildTimeConfig.enabled() || managementRouter == null || managementConfig == null) {
             managementInterfaceFuture.complete(null);
@@ -806,10 +810,12 @@ public class VertxHttpRecorder {
         if (sslServerConfig != null) {
             httpManagementServerConfig = sslServerConfig.config();
             httpManagementSslOptions = sslServerConfig.sslOptions();
+            httpManagementSslEngineOptions = sslServerConfig.sslEngineOptions();
         }
         if (httpManagementSslOptions != null && httpManagementSslOptions.getKeyCertOptions() == null) {
             httpManagementServerConfig = httpConfigForManagement;
             httpManagementSslOptions = null;
+            httpManagementSslEngineOptions = null;
         }
         if (httpManagementServerConfig == null) {
             httpManagementServerConfig = httpConfigForManagement;
@@ -826,7 +832,7 @@ public class VertxHttpRecorder {
         }
 
         if (httpManagementServerConfig != null) {
-            vertx.createHttpServer(httpManagementServerConfig, httpManagementSslOptions)
+            createHttpServer(vertx, httpManagementServerConfig, httpManagementSslOptions, httpManagementSslEngineOptions)
                     .requestHandler(managementRouter)
                     .listen(address).onComplete(ar -> {
                         if (ar.failed()) {
@@ -927,6 +933,7 @@ public class VertxHttpRecorder {
                 httpBuildTimeConfig, httpConfig, launchMode, websocketSubProtocols, registry);
         httpMainSslServerConfig = tmpSslConfig != null ? tmpSslConfig.config() : null;
         ServerSSLOptions tmpSslOptions = tmpSslConfig != null ? tmpSslConfig.sslOptions() : null;
+        httpMainSslEngineOptions = tmpSslConfig != null ? tmpSslConfig.sslEngineOptions() : null;
 
         // Customize
         ArcContainer container = Arc.container();
@@ -951,6 +958,7 @@ public class VertxHttpRecorder {
         if (tmpSslOptions != null && tmpSslOptions.getKeyCertOptions() == null) {
             tmpSslOptions = null;
             httpMainSslServerConfig = null;
+            httpMainSslEngineOptions = null;
         }
         httpMainSslOptions = tmpSslOptions;
 
@@ -983,7 +991,7 @@ public class VertxHttpRecorder {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(
-                        httpMainServerConfig, httpMainSslServerConfig, httpMainSslOptions,
+                        httpMainServerConfig, httpMainSslServerConfig, httpMainSslOptions, httpMainSslEngineOptions,
                         httpMainDomainSocketConfig,
                         launchMode, insecureRequestStrategy, connectionCount, registry, startEventsFired,
                         httpBuildTimeConfig, httpConfig, registerHttpServer, registerHttpsServer);
@@ -1217,6 +1225,18 @@ public class VertxHttpRecorder {
         return new GracefulShutdownFilter();
     }
 
+    private static HttpServer createHttpServer(Vertx vertx, HttpServerConfig config, ServerSSLOptions sslOptions,
+            SSLEngineOptions engineOptions) {
+        if (engineOptions != null) {
+            return vertx.httpServerBuilder()
+                    .with(config)
+                    .with(sslOptions)
+                    .with(engineOptions)
+                    .build();
+        }
+        return vertx.createHttpServer(config, sslOptions);
+    }
+
     private static class WebDeploymentVerticle extends AbstractVerticle implements Resource {
         private final TlsConfigurationRegistry registry;
         private HttpServer httpServer;
@@ -1225,6 +1245,7 @@ public class VertxHttpRecorder {
         private final HttpServerConfig httpConfig_server;
         private final HttpServerConfig httpsConfig_server;
         private final ServerSSLOptions sslOptions;
+        private final SSLEngineOptions sslEngineOptions;
         private final HttpServerConfig domainSocketConfig_server;
         private final LaunchMode launchMode;
         private final InsecureRequests insecureRequests;
@@ -1241,6 +1262,7 @@ public class VertxHttpRecorder {
                 HttpServerConfig httpConfig,
                 HttpServerConfig httpsConfig,
                 ServerSSLOptions sslOptions,
+                SSLEngineOptions sslEngineOptions,
                 HttpServerConfig domainSocketConfig,
                 LaunchMode launchMode,
                 InsecureRequests insecureRequests,
@@ -1255,6 +1277,7 @@ public class VertxHttpRecorder {
             this.httpConfig_server = httpConfig;
             this.httpsConfig_server = httpsConfig;
             this.sslOptions = sslOptions;
+            this.sslEngineOptions = sslEngineOptions;
             this.launchMode = launchMode;
             this.domainSocketConfig_server = domainSocketConfig;
             this.insecureRequests = insecureRequests;
@@ -1338,7 +1361,7 @@ public class VertxHttpRecorder {
             }
 
             if (httpsConfig_server != null) {
-                httpsServer = vertx.createHttpServer(httpsConfig_server, sslOptions);
+                httpsServer = createHttpServer(vertx, httpsConfig_server, sslOptions, sslEngineOptions);
                 httpsServer.requestHandler(ACTUAL_ROOT);
                 setupTcpHttpServer(httpsServer, httpsConfig_server, true, sslOptions, startFuture, remainingCount,
                         connectionCount, container, notifyStartObservers);

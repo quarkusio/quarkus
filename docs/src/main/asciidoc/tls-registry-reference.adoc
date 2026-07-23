@@ -763,6 +763,102 @@ Disabling ALPN is not recommended for non-experts, as it can lead to performance
 However, disabling ALPN can be useful for diagnosing native inconsistencies or testing performance in specific edge cases where protocol negotiation causes conflicts.
 ====
 
+==== Post-Quantum Cryptography (PQC)
+
+Post-Quantum Cryptography (PQC) protects TLS connections against attacks from quantum computers.
+Quarkus exposes two properties to control post-quantum key exchange, both of which apply to the HTTP server, HTTP client, REST client, and mailer.
+
+===== Key exchange groups
+
+The key exchange groups (also called _supported groups_) are the elliptic-curve or post-quantum algorithms the TLS engine advertises during the handshake.
+When not set, the engine uses its built-in defaults.
+
+To advertise the hybrid post-quantum group `X25519MLKEM768` (combining X25519 with ML-KEM-768):
+
+[source,properties]
+----
+quarkus.tls.key-exchange-groups=X25519MLKEM768
+----
+
+You can specify multiple groups as a comma-separated list.
+Groups are tried in the order listed; the first one the peer also supports is used.
+
+===== PQC enforcement policy
+
+The enforcement policy controls how strictly the server requires post-quantum key exchange from clients.
+
+[source,properties]
+----
+quarkus.tls.pqc-enforcement-policy=relaxed # Default
+----
+
+The available values are:
+
+`relaxed`:: No enforcement.
+Standard TLS negotiation applies, and no post-quantum groups are required.
+This is the default.
+
+`client-negotiated`:: The server advertises post-quantum groups and prefers them, but accepts connections from clients that do not support them, falling back to classical key exchange.
+Use this when you want post-quantum key exchange where available without breaking existing clients.
+
+`strict`:: The server only accepts connections that use a post-quantum key exchange group.
+Clients that do not negotiate a post-quantum group are rejected.
+Use this when all clients are known to support post-quantum cryptography.
+
+[IMPORTANT]
+====
+`pqc-enforcement-policy` does more than enforce post-quantum key exchange: it controls which SSL engine Vert.x selects.
+Setting `pqc-enforcement-policy` to `client-negotiated` or `strict` activates the native OpenSSL engine (requires OpenSSL 3.5+), which negotiates post-quantum key exchange groups.
+With the default `relaxed` policy, Vert.x uses the JDK SSL engine, which ignores any post-quantum key-exchange groups before JDK 27 — meaning that configuring post-quantum groups without also setting the enforcement policy results in no post-quantum key exchange at all.
+On JDK 27+, the JDK natively supports `X25519MLKEM768` and post-quantum key exchange works without changing the enforcement policy.
+
+Quarkus logs a warning at startup if you configure a post-quantum group with `relaxed` policy to help catch this misconfiguration.
+====
+
+[NOTE]
+====
+When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must include at least one post-quantum-capable group such as `X25519MLKEM768`.
+Vert.x validates this at startup and throws an exception if no compatible engine or group is configured.
+====
+
+[WARNING]
+====
+`strict` enforcement will reject any client that does not support the configured post-quantum group, including standard browsers and TLS clients that have not yet adopted post-quantum extensions.
+Ensure all clients are upgraded before enabling this mode.
+====
+
+[NOTE]
+====
+Policy enforcement (`strict` and `client-negotiated`) is not supported when using the JDK SSL engine.
+If you are running on JDK 27+, or on JDK 25+ once the post-quantum backport ships (expected October 2026), you can still enable post-quantum key exchange by setting `quarkus.tls.key-exchange-groups` — the negotiation will work correctly without policy enforcement.
+For full enforcement, OpenSSL 3.5+ via the native SSL engine is required.
+====
+
+[IMPORTANT]
+====
+Post-quantum enforcement (`client-negotiated` and `strict`) relies on a native OpenSSL 3.5+ library.
+Quarkus bundles this library only for **Linux x86_64** and **Linux aarch64**.
+Other operating systems and architectures (macOS, Windows, Alpine Linux, Linux on RISC-V, etc.) are *not supported*: attempting to use `client-negotiated` or `strict` on an unsupported platform will fail at runtime because the native OpenSSL engine is unavailable.
+On those platforms, use `relaxed` with JDK 27+ for post-quantum key exchange.
+====
+
+===== SSL engine override
+
+By default, Vert.x selects the SSL engine automatically based on the enforcement policy:
+
+- `client-negotiated` or `strict` activates the native OpenSSL engine (requires OpenSSL 3.5+).
+- `relaxed` uses the JDK SSL engine.
+
+You can override this selection with the `ssl-engine` property:
+
+[source,properties]
+----
+quarkus.tls.ssl-engine=openssl
+----
+
+The supported values are `openssl` (requires netty-tcnative on the classpath) and `jdkssl` (the standard JDK SSL engine).
+This property is useful for testing or when you need explicit control over the engine — for example, forcing `jdkssl` on JDK 27+ where the JDK natively supports post-quantum groups.
+
 ==== Certificate Revocation List (CRL)
 
 A Certificate Revocation List (CRL) is a list of certificates that the issuing Certificate Authority (CA) revoked before their scheduled expiration date.

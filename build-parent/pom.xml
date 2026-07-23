@@ -131,7 +131,7 @@
         <keycloak.server.version>26.7.0</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
-        <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.5</unboundid-ldap.version>
 
         <assertj.version>3.27.7</assertj.version>
         <!-- Keep in sync with VineflowerDecompiler.DEFAULT_VINEFLOWER_VERSION -->

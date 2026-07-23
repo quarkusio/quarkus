@@ -229,6 +229,7 @@ public class HttpServerOptionsUtils {
 
     public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
         serverOptions.setSsl(true);
+        bucket.getSslEngineOptions().ifPresent(serverOptions::setSslEngineOptions);
         setJdkHeapBufferPooling(serverOptions);
 
         KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
@@ -253,6 +254,10 @@ public class HttpServerOptionsUtils {
         if (!other.isUseAlpn()) {
             serverOptions.setUseAlpn(false);
         }
+        if (other.getKeyExchangeGroups() != null && !other.getKeyExchangeGroups().isEmpty()) {
+            serverOptions.getSslOptions().setKeyExchangeGroups(other.getKeyExchangeGroups());
+        }
+        serverOptions.getSslOptions().setPqcEnforcementPolicy(other.getPqcEnforcementPolicy());
         serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
     }
 

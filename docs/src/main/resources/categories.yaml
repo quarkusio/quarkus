@@ -1,0 +1,550 @@
+# Quarkus Guides - Category Structure with Guides
+# Hierarchical organization of all guide categories and their guides
+
+categories:
+  - id: getting-started
+    title: Getting Started
+    description: Introduction to Quarkus and your first application
+    guides:
+      - getting-started.adoc
+      - getting-started-dev-services.adoc
+      - tooling.adoc
+      - ide-tooling.adoc
+
+  - id: packaging
+    title: Packaging
+    description: Application packaging, containers, native images, and build optimization
+    # we probably need some intro explaining the various packaging options
+    subcategories:
+      - id: packaging-jars
+        title: JARs
+        guides:
+          # TODO: we need a guide for basic jar building and providing an overview
+          - aot.adoc
+          - jar-tree-shaking.adoc
+          - jlink.adoc
+          - reaugmentation.adoc
+      - id: packaging-native
+        title: Native
+        guides:
+          - building-native-image.adoc
+          - native-reference.adoc
+          - writing-native-applications-tips.adoc
+          - native-and-ssl.adoc
+          - upx.adoc
+      - id: packaging-containers
+        title: Containers
+        guides:
+          - container-image.adoc
+          - quarkus-runtime-base-image.adoc
+      - id: packaging-release
+        title: Release and Distribution
+        guides:
+          - cyclonedx.adoc
+          - jreleaser.adoc
+
+  - id: core
+    title: Core
+    description: Core Quarkus concepts and features
+    subcategories:
+      - id: core-cdi
+        title: Contexts and Dependency Injection (CDI)
+        guides:
+          - cdi.adoc
+          - cdi-reference.adoc
+          - lifecycle.adoc
+      - id: core-dev-services
+        title: Dev Services
+        guides:
+          - dev-services.adoc
+          - compose-dev-services.adoc
+          - podman.adoc
+      - id: core-config
+        title: Configuration
+        guides:
+          - config.adoc
+          - config-yaml.adoc
+          - config-mappings.adoc
+          - config-reference.adoc
+          - config-extending-support.adoc
+          - all-config.adoc
+      - id: core-vertx
+        title: Vert.x
+        guides:
+          - vertx.adoc
+          - vertx-reference.adoc
+      - id: core-testing
+        title: Testing
+        guides:
+          - getting-started-testing.adoc
+          - continuous-testing.adoc
+          - testing-components.adoc
+          - tests-with-coverage.adoc
+
+  - id: web
+    title: Web
+    description: Web application development
+    subcategories:
+      - id: web-http
+        title: HTTP
+        guides:
+          - web.adoc
+          - http-reference.adoc
+          - reactive-routes.adoc
+      - id: web-rest
+        title: REST
+        guides:
+          - rest.adoc
+          - rest-client.adoc
+          - rest-json.adoc
+          - openapi-swaggerui.adoc
+          - resteasy.adoc
+          - resteasy-client.adoc
+          - resteasy-client-multipart.adoc
+          - rest-data-panache.adoc
+          - rest-virtual-threads.adoc
+          - rest-migration.adoc
+      - id: web-graphql
+        title: GraphQL
+        guides:
+          - smallrye-graphql.adoc
+          - smallrye-graphql-client.adoc
+      - id: web-websockets
+        title: WebSockets
+        guides:
+          - websockets-next-tutorial.adoc
+          - websockets-next-reference.adoc
+          - websockets.adoc
+      - id: web-frontend
+        title: Frontend
+        guides:
+          - web-dependency-locator.adoc
+
+  - id: data
+    title: Data
+    description: Data persistence and management
+    subcategories:
+      - id: data-datasources
+        title: Datasources
+        guides:
+          - datasource.adoc
+          - reactive-sql-clients.adoc
+          - databases-dev-services.adoc
+      - id: data-orm
+        title: ORM and Hibernate
+        guides:
+          - hibernate-orm.adoc
+          - quarkus-data-hibernate.adoc
+          - hibernate-orm-panache.adoc
+          - hibernate-orm-panache-kotlin.adoc
+          - hibernate-reactive.adoc
+          - hibernate-reactive-panache.adoc
+          - hibernate-panache-next.adoc
+          - hibernate-search-orm-elasticsearch.adoc
+          - hibernate-search-standalone-elasticsearch.adoc
+          - blaze-persistence.adoc
+      - id: data-transactions
+        title: Transactions
+        guides:
+          - transaction.adoc
+          - software-transactional-memory.adoc
+          - lra.adoc
+          - lra-dev-services.adoc
+      - id: data-validation
+        title: Validation
+        guides:
+          - validation.adoc
+      - id: data-nosql
+        title: NoSQL
+        guides:
+          - mongodb.adoc
+          - mongodb-panache.adoc
+          - mongodb-panache-kotlin.adoc
+          - mongodb-dev-services.adoc
+          - redis.adoc
+          - redis-reference.adoc
+          - redis-dev-services.adoc
+          - elasticsearch.adoc
+          - elasticsearch-dev-services.adoc
+          - cassandra.adoc
+      - id: data-caching
+        title: Caching
+        guides:
+          - cache.adoc
+          - cache-redis-reference.adoc
+          - cache-infinispan-reference.adoc
+          - infinispan-client.adoc
+          - infinispan-client-reference.adoc
+          - infinispan-dev-services.adoc
+      - id: data-migration
+        title: Database Migration
+        guides:
+          - flyway.adoc
+          - liquibase.adoc
+          - liquibase-mongodb.adoc
+
+  - id: messaging
+    title: Messaging
+    description: Asynchronous messaging and event streaming
+    subcategories:
+      - id: messaging-core
+        title: Messaging Core
+        guides:
+          - messaging.adoc
+          - messaging-virtual-threads.adoc
+      - id: messaging-events
+        title: Events
+        guides:
+          - signals.adoc
+          - reactive-event-bus.adoc
+      - id: messaging-jms
+        title: JMS
+        guides:
+          - jms.adoc
+      - id: messaging-kafka
+        title: Kafka
+        guides:
+          - kafka-getting-started.adoc
+          - kafka.adoc
+          - kafka-dev-services.adoc
+          - kafka-streams.adoc
+          - kafka-schema-registry-avro.adoc
+          - kafka-schema-registry-json-schema.adoc
+          - kafka-dev-ui.adoc
+          - apicurio-registry-dev-services.adoc
+      - id: messaging-amqp
+        title: AMQP
+        guides:
+          - amqp.adoc
+          - amqp-reference.adoc
+          - amqp-dev-services.adoc
+      - id: messaging-pulsar
+        title: Pulsar
+        guides:
+          - pulsar-getting-started.adoc
+          - pulsar.adoc
+          - pulsar-dev-services.adoc
+      - id: messaging-rabbitmq
+        title: RabbitMQ
+        guides:
+          - rabbitmq.adoc
+          - rabbitmq-reference.adoc
+          - rabbitmq-dev-services.adoc
+
+  - id: security
+    title: Security
+    description: Security, authentication, and authorization
+    subcategories:
+      - id: security-core
+        title: Security Core
+        guides:
+          - security-overview.adoc
+          - security-architecture.adoc
+          - security-getting-started-tutorial.adoc
+          - security-customization.adoc
+          - security-authorize-web-endpoints-reference.adoc
+          - security-proactive-authentication.adoc
+          - security-cors.adoc
+          - security-csrf-prevention.adoc
+          - security-properties.adoc
+          - security-testing.adoc
+          - config-secrets.adoc
+          - credentials-provider.adoc
+          - native-and-ssl.adoc
+          - security-vulnerability-detection.adoc
+      - id: security-authentication
+        title: Authentication
+        guides:
+          - security-authentication-mechanisms.adoc
+          - security-basic-authentication.adoc
+          - security-basic-authentication-howto.adoc
+          - security-jwt.adoc
+          - security-jwt-build.adoc
+          - security-oauth2.adoc
+          - security-webauthn.adoc
+      - id: security-oidc
+        title: OpenID Connect (OIDC)
+        guides:
+          - security-oidc-code-flow-authentication.adoc
+          - security-oidc-code-flow-authentication-tutorial.adoc
+          - security-oidc-bearer-token-authentication.adoc
+          - security-oidc-bearer-token-authentication-tutorial.adoc
+          - security-oidc-auth0-tutorial.adoc
+          - security-oidc-configuration-properties-reference.adoc
+          - security-oidc-expanded-configuration.adoc
+          - security-openid-connect-providers.adoc
+          - security-openid-connect-client.adoc
+          - security-openid-connect-client-reference.adoc
+          - security-openid-connect-client-registration.adoc
+          - security-openid-connect-multitenancy.adoc
+          - security-openid-connect-dev-services.adoc
+          - security-vertx-oidc-to-quarkus-oidc-migration.adoc
+      - id: security-identity
+        title: Identity Providers
+        guides:
+          - security-identity-providers.adoc
+          - security-jpa.adoc
+          - security-jdbc.adoc
+          - security-ldap.adoc
+          - security-keycloak-authorization.adoc
+          - security-keycloak-admin-client.adoc
+
+
+  - id: execution-model
+    title: Execution Model
+    description: Virtual threads, reactive programming, and context propagation
+    subcategories:
+      - id: execution-model-virtual-threads
+        title: Virtual Threads
+        guides:
+          - virtual-threads.adoc
+          - rest-virtual-threads.adoc
+          - grpc-virtual-threads.adoc
+          - messaging-virtual-threads.adoc
+      - id: execution-model-reactive
+        title: Reactive
+        guides:
+          - getting-started-reactive.adoc
+          - mutiny-primer.adoc
+          - quarkus-reactive-architecture.adoc
+          - reactive-routes.adoc
+          - reactive-sql-clients.adoc
+          - hibernate-reactive.adoc
+          - hibernate-reactive-panache.adoc
+          - reactive-event-bus.adoc
+      - id: execution-model-context
+        title: Context Propagation
+        guides:
+          - context-propagation.adoc
+          - duplicated-context.adoc
+
+  - id: cloud
+    title: Cloud
+    description: Cloud platforms and deployment
+    subcategories:
+      - id: cloud-deployment
+        title: Deployment
+        guides:
+          - deploying-to-kubernetes.adoc
+          - deploying-to-openshift.adoc
+          - deploying-to-openshift-howto.adoc
+          - deploying-to-openshift-s2i-howto.adoc
+          - deploying-to-openshift-docker-howto.adoc
+          - deploying-to-openshift-native-howto.adoc
+          - deploying-to-azure-cloud.adoc
+          - deploying-to-google-cloud.adoc
+          - deploying-to-heroku.adoc
+          - ansible.adoc
+      - id: cloud-functions
+        title: Serverless Functions
+        guides:
+          - aws-lambda.adoc
+          - aws-lambda-http.adoc
+          - aws-lambda-snapstart.adoc
+          - gcp-functions.adoc
+          - gcp-functions-http.adoc
+          - azure-functions.adoc
+          - azure-functions-http.adoc
+          - funqy.adoc
+          - funqy-http.adoc
+          - funqy-aws-lambda.adoc
+          - funqy-aws-lambda-http.adoc
+          - funqy-gcp-functions.adoc
+          - funqy-gcp-functions-http.adoc
+          - funqy-azure-functions-http.adoc
+          - funqy-knative-events.adoc
+      - id: cloud-kubernetes
+        title: Kubernetes
+        guides:
+          - kubernetes-client.adoc
+          - kubernetes-config.adoc
+          - kubernetes-dev-services.adoc
+          - init-tasks.adoc
+      - id: cloud-service-discovery
+        title: Service Discovery
+        guides:
+          - stork.adoc
+          - stork-kubernetes.adoc
+          - stork-reference.adoc
+          - stork-registration.adoc
+          - stork-manual-service-registration.adoc
+
+  - id: operations
+    title: Operations
+    description: Production operations, observability, resilience, and monitoring
+    subcategories:
+      - id: operations-management
+        title: Management
+        guides:
+          - management-interface-reference.adoc
+          - tls-registry-reference.adoc
+          - proxy-registry.adoc
+      - id: operations-health
+        title: Health
+        guides:
+          - smallrye-health.adoc
+          - info.adoc
+      - id: operations-logging
+        title: Logging
+        guides:
+          - logging.adoc
+          - centralized-log-management.adoc
+          - opentelemetry-logging.adoc
+      - id: operations-metrics
+        title: Metrics and Telemetry
+        guides:
+          - telemetry-micrometer.adoc
+          - telemetry-micrometer-tutorial.adoc
+          - observability.adoc
+          - opentelemetry.adoc
+          - opentelemetry-tracing.adoc
+          - opentelemetry-metrics.adoc
+          - telemetry-micrometer-to-opentelemetry.adoc
+          - telemetry-opentracing-to-otel-tutorial.adoc
+          - jfr.adoc
+          - observability-devservices.adoc
+          - observability-devservices-lgtm.adoc
+      - id: operations-resilience
+        title: Resilience
+        guides:
+          - smallrye-fault-tolerance.adoc
+          - load-shedding-reference.adoc
+
+  - id: serialization
+    title: Serialization
+    description: Data serialization and RPC
+    subcategories:
+      - id: serialization-json
+        title: JSON
+        guides:
+          - rest-json.adoc
+      - id: serialization-grpc
+        title: gRPC
+        guides:
+          - grpc.adoc
+          - grpc-getting-started.adoc
+          - grpc-service-implementation.adoc
+          - grpc-service-consumption.adoc
+          - grpc-cli.adoc
+          - grpc-reference.adoc
+          - grpc-generation-reference.adoc
+          - grpc-kubernetes.adoc
+          - grpc-xds.adoc
+          - grpc-virtual-threads.adoc
+
+  - id: command-line
+    title: Command Line
+    description: Command-line applications and tools
+    guides:
+      - command-mode-reference.adoc
+      - picocli.adoc
+      - aesh.adoc
+      - scripting.adoc
+
+  - id: miscellaneous
+    title: Miscellaneous
+    description: Other topics, such as mail, scheduling, and templating
+    subcategories:
+      - id: miscellaneous-templating
+        title: Templating
+        guides:
+          - qute.adoc
+          - qute-reference.adoc
+      - id: miscellaneous-scheduling
+        title: Scheduling
+        guides:
+          - scheduler.adoc
+          - scheduler-reference.adoc
+          - quartz.adoc
+      - id: miscellaneous-mail
+        title: Mail
+        guides:
+          - mailer.adoc
+          - mailer-reference.adoc
+
+  - id: tooling
+    title: Tooling
+    description: Development tools, build tools, and IDE support
+    guides:
+      - cli-tooling.adoc
+      - maven-tooling.adoc
+      - quarkus-maven-plugin.adoc
+      - gradle-tooling.adoc
+      - build-analytics.adoc
+      - update-quarkus.adoc
+
+  - id: compatibility
+    title: Spring Compatibility
+    description: Spring framework compatibility layer
+    guides:
+      - spring-di.adoc
+      - spring-web.adoc
+      - spring-data-jpa.adoc
+      - spring-tx.adoc
+      - spring-boot-properties.adoc
+      - spring-security.adoc
+      - spring-cache.adoc
+      - spring-scheduled.adoc
+      - spring-data-rest.adoc
+      - spring-cloud-config-client.adoc
+
+  - id: integration
+    title: Integration
+    description: Integration with other frameworks and tools
+    guides:
+      - camel.adoc
+
+  - id: alt-languages
+    title: Alternative Languages
+    description: Support for alternative JVM languages such as Kotlin
+    guides:
+      - kotlin.adoc
+
+  - id: architecture
+    title: Architecture
+    description: Architectural concepts and patterns
+    guides:
+      - quarkus-reactive-architecture.adoc
+      - platform.adoc
+      - class-loading-reference.adoc
+      - modularity.adoc
+      - modularity-reference.adoc
+      - dev-mode-differences.adoc
+      - extension-registry-user.adoc
+      - performance-measure.adoc
+
+  - id: writing-extensions
+    title: Writing Extensions
+    description: Extension development for Quarkus
+    guides:
+      - writing-extensions.adoc
+      - building-my-first-extension.adoc
+      - extension-metadata.adoc
+      - capabilities.adoc
+      - cdi-integration.adoc
+      - conditional-extension-dependencies.adoc
+      - all-builditems.adoc
+      - dev-ui.adoc
+      - extension-codestart.adoc
+      - extension-writing-dev-service.adoc
+      - dev-mcp.adoc
+      - agent-mcp.adoc
+      - assistant.adoc
+      - extension-maturity-matrix.adoc
+      - extension-faq.adoc
+
+  - id: contributing
+    title: Contributing
+    description: Guidelines for contributing to Quarkus documentation
+    guides:
+      - doc-contribute-docs-howto.adoc
+      - doc-concept.adoc
+      - doc-reference.adoc
+      - doc-create-tutorial.adoc
+
+  - id: rule-engine
+    title: Rule Engine
+    description: Business rules with Drools
+    guides:
+      - drools.adoc
+

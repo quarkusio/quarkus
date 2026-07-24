@@ -327,7 +327,7 @@ public class CodeGenerator {
                 } catch (IOException e) {
                     throw new CodeGenException("Failed to read resources from classpath", e);
                 }
-                final List<String> allServices = allConfigServices.getOrDefault(service, List.of());
+                final List<String> allServices = allConfigServices.getOrDefault(service, new ArrayList<>());
                 allServices.removeAll(appModuleServices.getValue());
                 if (allServices.isEmpty()) {
                     bannedConfigServices.put(service, new byte[0]);

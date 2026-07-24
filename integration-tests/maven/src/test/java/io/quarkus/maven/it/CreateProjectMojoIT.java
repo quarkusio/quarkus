@@ -396,7 +396,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("jandex-test-data")
-                && d.getVersion().equalsIgnoreCase("3.4.0"))).isTrue();
+                && "${jandex-test-data.version}".equals(d.getVersion()))).isTrue();
+        assertThat(model.getProperties().getProperty("jandex-test-data.version")).isEqualTo("3.4.0");
     }
 
     @Test

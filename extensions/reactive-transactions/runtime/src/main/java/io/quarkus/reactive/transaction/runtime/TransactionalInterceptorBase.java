@@ -72,36 +72,40 @@ public abstract class TransactionalInterceptorBase {
     }
 
     protected <T> Uni<T> defineReactiveTransactionalChain(Transactional annotation, Method method, Supplier<Uni<T>> work) {
-        // We are running on the retrieved context, however, the method also switch the safety flag.
-        Context context = vertxContext();
-
         if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
-            // This is the parent method, responsible for commit, rollback or cancellation of the transaction
-
-            /*
-             * Mark the current context to be @Transactional
-             * This is the parent method and will handle commit / rollback
-             * Subsequent nested methods will avoid tx management
-             */
-            LOG.tracef("Setting this method as transactional: %s", method);
-            ContextLocals.put(TRANSACTIONAL_METHOD_KEY, true);
-
-            return work.get()
-                    .onFailure().call(exception -> rollbackOrCommitBasedOnException(context, annotation, exception))
-                    .onCancellation().call(this::rollbackOnCancel)
-                    .call(() -> { // Good path - commit or rollback if marked
-                        if (reactiveResource.isMarkedForRollback(context)) {
-                            LOG.tracef("Transaction marked for rollback, rolling back from method %s", method);
-                            return rollbackOnCancel();
-                        }
-                        LOG.tracef("Calling commit from method %s", method);
-                        return invokeBeforeCommitAndCommit(context);
-                    })
-                    .eventually(() -> reactiveResource.afterCommit(context)).eventually(this::closeConnection);
+            // This is the parent method, responsible for commit, rollback or cancellation of the transaction.
+            // Use a dedicated duplicated Vert.x context so that parallel Uni pipelines do not share
+            // transaction state. Nested @Transactional methods reuse the same isolated context.
+            return IsolatedVertxContextSupport
+                    .withIsolatedContext(context -> startParentTransactionalChain(context, annotation, method, work));
         } else {
             // Nested methods should just propagate the reactive chain without transaction handling
             return work.get();
         }
+    }
+
+    private <T> Uni<T> startParentTransactionalChain(Context context, Transactional annotation, Method method,
+            Supplier<Uni<T>> work) {
+        /*
+         * Mark the current context to be @Transactional
+         * This is the parent method and will handle commit / rollback
+         * Subsequent nested methods will avoid tx management
+         */
+        LOG.tracef("Setting this method as transactional: %s", method);
+        ContextLocals.put(TRANSACTIONAL_METHOD_KEY, true);
+
+        return work.get()
+                .onFailure().call(exception -> rollbackOrCommitBasedOnException(context, annotation, exception))
+                .onCancellation().call(this::rollbackOnCancel)
+                .call(() -> { // Good path - commit or rollback if marked
+                    if (reactiveResource.isMarkedForRollback(context)) {
+                        LOG.tracef("Transaction marked for rollback, rolling back from method %s", method);
+                        return rollbackOnCancel();
+                    }
+                    LOG.tracef("Calling commit from method %s", method);
+                    return invokeBeforeCommitAndCommit(context);
+                })
+                .eventually(() -> reactiveResource.afterCommit(context)).eventually(this::closeConnection);
     }
 
     private Uni<Void> invokeBeforeCommitAndCommit(Context context) {

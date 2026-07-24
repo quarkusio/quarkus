@@ -292,11 +292,16 @@ public final class JLinkSteps {
     }
 
     /**
-     * Patch a jlink-generated launcher shell script to inject JVM arguments.
+     * Patch a jlink-generated launcher shell script to inject JVM arguments
+     * and use {@code exec} so the JVM replaces the shell process.
      * <p>
      * jlink's {@code --add-options} plugin cannot handle values starting with {@code "--"}
      * (e.g. {@code --add-exports}, {@code --add-modules}), so we inject them directly
      * into the launcher script by replacing the empty {@code JLINK_VM_OPTIONS=} line.
+     * <p>
+     * The {@code exec} prefix ensures the JVM inherits the shell's PID, so
+     * signals (e.g. SIGTERM) reach the JVM directly instead of only hitting
+     * the wrapper shell.
      *
      * @param launcherPath the path to the launcher script
      * @param jvmArgs the JVM arguments to inject
@@ -307,6 +312,8 @@ public final class JLinkSteps {
         String opts = String.join(" ", jvmArgs);
         String patched = content.replace("JLINK_VM_OPTIONS=\n",
                 "JLINK_VM_OPTIONS=\"" + opts + "\"\n");
+        // exec so the JVM replaces the shell — Process.destroy() then targets the JVM directly
+        patched = patched.replace("$DIR/java $JLINK_VM_OPTIONS", "exec $DIR/java $JLINK_VM_OPTIONS");
         Files.writeString(launcherPath, patched);
     }
 

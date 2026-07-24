@@ -22,122 +22,80 @@ mvn verify -pl tcks/jakarta-rest -Drun-jakarta-rest-tck
   that were already excluded in the old forked TCK runner (resteasy-reactive-testsuite).
   The `DisableReason` enum mirrors the old `QuarkusRest.java` classification.
 
-## Current status (2026-07-03)
+## Current status (2026-07-24)
 
 | Metric   | Count |
 |----------|-------|
 | Total    | 2755  |
-| Pass     | 2338  |
-| Error    | 162   |
-| Failure  | 6     |
-| Skipped  | 249   |
-| Time     | ~6 min |
+| Pass     | 2470  |
+| Error    | 6     |
+| Failure  | 4     |
+| Skipped  | 275   |
 
-**249 skipped** = old TCK exclusions carried forward via `ExecutionCondition` +
+**275 skipped** = old TCK exclusions carried forward via `ExecutionCondition` +
 `@Tag("se_bootstrap")`/`@Tag("servlet")` excluded via `excludedGroups` + signature test.
 
-**168 new failures** not present in the old TCK are listed below. These need to be
-investigated and either fixed in Quarkus REST or disabled with justification.
+**10 remaining failures** across 5 test classes, with 5 distinct root causes:
 
-## New failures to investigate
-
-### Sub-resource locator (128 tests)
-
-All `*.sub.JAXRSSubClientIT` classes fail with sub-resource locator errors.
-The old TCK only disabled specific methods in `formparam.sub` and `pathparam.sub`;
-the remaining sub classes (`cookieparam.sub`, `headerparam.sub`, `matrixparam.sub`,
-`queryparam.sub`) were not in the old TCK exclusion list.
-
-These likely share the same root cause as the `*.locator.*` classes (which ARE
-disabled), but need verification before disabling.
-
-| Class | Errors |
-|-------|--------|
-| `ee.rs.cookieparam.sub.JAXRSSubClientIT` | 16 errors + 1 failure |
-| `ee.rs.formparam.sub.JAXRSSubClientIT` | 21 errors (1 method disabled from old TCK) |
-| `ee.rs.headerparam.sub.JAXRSSubClientIT` | 25 errors |
-| `ee.rs.matrixparam.sub.JAXRSSubClientIT` | 26 errors |
-| `ee.rs.pathparam.sub.JAXRSSubClientIT` | 13 errors (9 methods disabled from old TCK) |
-| `ee.rs.queryparam.sub.JAXRSSubClientIT` | 27 errors |
-
-### Cookie param entity conversion (12 tests)
-
-`ee.rs.cookieparam.JAXRSClientIT` — 12 methods fail on cookie parameter entity
-conversion (`cookieParamEntityWith*`, `cookieFieldParamEntityWith*`). The TCK sends
-a cookie value and expects it to be converted via `fromString`/constructor/`valueOf`,
-but Quarkus REST does not perform this conversion.
-
-### Jakarta REST 4.0 new APIs (11 tests)
-
-These test new API methods added in Jakarta REST 4.0 that are not yet implemented
-in Quarkus REST:
-
-- **`containsHeaderString(String, Predicate)`** (4 tests)
-  - `api.client.clientrequestcontext.JAXRSClientIT#containsHeaderStringTest`
-  - `api.client.clientresponsecontext.JAXRSClientIT#containsHeaderStringTest`
-  - `ee.rs.container.responsecontext.JAXRSClientIT#containsHeaderStringTest`
-  - `ee.rs.core.headers.JAXRSClientIT#containsHeaderStringTest`
-
-- **`getMatchedResourceTemplate()`** (4 tests)
-  - `jaxrs40.ee.rs.core.uriinfo.UriInfo40ClientIT#getMatchedResourceTemplateOneTest`
-  - `jaxrs40.ee.rs.core.uriinfo.UriInfo40ClientIT#getMatchedResourceTemplateSubTest`
-  - `jaxrs40.ee.rs.core.uriinfo.UriInfo40ClientIT#getMatchedResourceTemplateTwoGetTest`
-  - `jaxrs40.ee.rs.core.uriinfo.UriInfo40ClientIT#getMatchedResourceTemplateTwoPostTest`
-
-- **`getHeaderString()` semantics** (3 tests)
-  - `api.client.clientresponsecontext.JAXRSClientIT#getHeaderStringIsEmptyTest`
-  - `ee.rs.core.headers.JAXRSClientIT#getHeaderStringUsesToStringTest`
-  - `ee.rs.core.headers.JAXRSClientIT#contentLanguageTest`
-
-### Provider visibility (4 tests)
-
-`spec.provider.visibility.JAXRSClientIT` — all 4 tests fail. Tests provider
-visibility across applications (bodyWriter, bodyReader, contextResolver, exceptionMapper).
-
-### Produces/Consumes media type matching (3 tests)
-
-`ee.rs.produceconsume.JAXRSClientIT` — 3 methods fail on media type matching
-with wildcards and XML types:
-- `widgetsXmlAnyTest`
-- `anyWidgetsxmlTest`
-- `plainPlusProduceXmlTest`
-
-### SSE timing (2 tests)
+### SSE 503 + Retry-After reconnection — missing feature (2 tests)
 
 `jaxrs21.ee.sse.sseeventsource.JAXRSClientIT`:
 - `wait2Seconds`
 - `defaultWaiting1s`
 
-These may be flaky/timing-sensitive rather than real bugs.
+These are **not** flaky timing tests. `SseEventSourceImpl.connect()` does not
+implement HTTP 503 + `Retry-After` automatic reconnection at all. When the server
+returns 503, the client treats it as a generic non-successful response, fires the
+error handler, and calls `notifyCompletion()` — it never reads `Retry-After` or
+schedules a reconnect.
 
-### Feature/DynamicFeature registration (2 tests)
+The tests set up a `ServiceUnavailableResource` that returns 503 with
+`Retry-After: N` on the first request and sends an SSE event on the retry.
+Since Quarkus never retries, the message is never received.
+
+**Fix location**: `SseEventSourceImpl.connect()` in
+`independent-projects/resteasy-reactive/client/runtime/…/client/impl/SseEventSourceImpl.java`
+(lines ~100-110). Needs to check for status 503, parse the `Retry-After` header,
+and schedule a one-time reconnect with that delay.
+
+### Multipart return type restriction (1 error — build-time)
+
+`jaxrs31.ee.multipart.MultipartSupportIT`:
+
+Quarkus augmentation rejects the TCK's `Response`-returning multipart endpoint:
+*"Endpoints that produce a Multipart result cannot return
+`jakarta.ws.rs.core.Response` — consider returning `RestResponse` instead."*
+The TCK uses the standard JAX-RS `Response` type, which Quarkus does not allow.
+
+### Feature/DynamicFeature registration reporting (2 failures)
 
 `jaxrs31.spec.extensions.JAXRSClientIT`:
 - `featureIsRegisteredTest`
 - `dynamicFeatureIsRegisteredTest`
 
-Jakarta REST 3.1 feature registration — features may not be getting registered
-at the right lifecycle point.
+`Configuration.isRegistered()` returns `false` for Feature/DynamicFeature
+instances that are actually registered. The features work, but the registration
+query does not report them.
 
-### Build failures (2 tests)
+### Provider visibility — no no-arg constructor (4 errors)
 
-These classes fail during Quarkus augmentation (build time):
-- `jaxrs31.ee.multipart.MultipartSupportIT` — multipart support issue
-- `spec.contextprovider.JsonbContextProviderIT` — JSON-B context provider issue
+`spec.provider.visibility.JAXRSClientIT`:
+- `bodyWriterTest`
+- `bodyReaderTest`
+- `contextResolverTest`
+- `exceptionMapperTest`
 
-### Security context (1 test)
+TCK provider classes (`DummyWriter`, `StringReader`, `HolderResolver`,
+`VisibilityExceptionMapper`) have only `@Context`-parameter constructors.
+ArC's `BeanFactory` requires a no-arg constructor and fails with
+`NoSuchMethodException`.
 
-`ee.rs.core.securitycontext.basic.JAXRSBasicClientIT#noAuthorizationTest` — test
-sends a request without credentials and expects a specific security context state.
+### Resource constructor visibility (1 error)
 
-### Client exception (1 test)
+`spec.resourceconstructor.JAXRSClientIT#visibleTest`:
 
-`spec.client.exceptions.ClientExceptionsIT#shouldThrowMostSpecificWebApplicationException`
-
-### Resource constructor (1 test)
-
-`spec.resourceconstructor.JAXRSClientIT#visibleTest` — resource constructor
-selection/visibility issue.
+`GET /resource/mostAttributes` returns HTTP 406 instead of 200. Quarkus ignores
+non-public resource methods, so the expected constructor/method is not selected.
 
 ## Files
 

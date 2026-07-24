@@ -807,6 +807,35 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testJsonAliasSameAsFieldName() {
+        String uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+        // Test using the alias "documentId"
+        RestAssured
+                .with()
+                .body("{\"name\":\"test\",\"documentId\":\"" + uuid + "\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-same-as-field-name-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("id", Matchers.is(uuid));
+
+        // Test using the field name "id" which is also listed in @JsonAlias
+        RestAssured
+                .with()
+                .body("{\"name\":\"test2\",\"id\":\"" + uuid + "\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-same-as-field-name-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test2"))
+                .body("id", Matchers.is(uuid));
+    }
+
+    @Test
     public void testRecordWithEmptyConstructorEcho() {
         RestAssured
                 .with()

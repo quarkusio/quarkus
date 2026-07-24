@@ -1305,7 +1305,7 @@ public class MessageBundleProcessor {
                                 resolveMethodPrefix + "_resolve_" + (idx + 1),
                                 CompletableFuture.class, String.class,
                                 EvaluatedParams.class, CompletableFuture.class),
-                                bundleCreator.this_(), name, evaluatedParams, bundleCreator.this_()));
+                                bundleCreator.this_(), name, evaluatedParams, ret));
                     } else {
                         // Last group - return null
                         bc.returnNull();

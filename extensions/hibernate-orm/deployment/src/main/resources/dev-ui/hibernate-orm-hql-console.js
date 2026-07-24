@@ -12,6 +12,7 @@ import '@vaadin/tabsheet';
 import { assistantState } from 'assistant-state';
 import 'qui-assistant-warning';
 import { observeState } from 'lit-element-state';
+import { hibernateOrmState, restoreSelectedPU, saveSelectedPU } from './hibernate-orm-state.js';
 import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadElement) {
@@ -246,7 +247,6 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     static properties = {
         _persistenceUnits: { state: true, type: Array },
-        _selectedPersistenceUnit: { state: true },
         _entityTypes: { state: true, type: Array },
         _messages: { state: true, type: Array },
         _currentPageNumber: { state: true },
@@ -262,7 +262,6 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
         super();
         updateWhenLocaleChanges(this);
         this._persistenceUnits = [];
-        this._selectedPersistenceUnit = null;
         this._entityTypes = [];
         this._messages = [];
         this._currentPageNumber = 1;
@@ -289,11 +288,11 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             this._allowHql = configValues['quarkus.hibernate-orm.dev-ui.allow-hql'] === 'true';
             const infoResponse = responses[1].result;
             if (infoResponse) {
-                this._persistenceUnits = infoResponse.persistenceUnits.map(pu => {
-                    pu.label = pu.name + (pu.reactive ? ' (reactive)' : '');
-                    return pu;
-                });
-                this._selectPersistenceUnit(this._persistenceUnits[0]);
+                this._persistenceUnits = infoResponse.persistenceUnits.map(pu => ({
+                    ...pu,
+                    label: pu.name + (pu.reactive ? ' (reactive)' : '')
+                }));
+                this._selectPersistenceUnit(restoreSelectedPU(this._persistenceUnits));
             }
         }).catch(error => {
             console.error('Failed to fetch configuration or persistence units:', error);
@@ -377,7 +376,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                     <div class="selector-section">
                         <div class="selector-row">
                             <div class="pu-selector">
-                                ${this._renderPUsComboBox()}
+                                ${this._persistenceUnits.length > 1 ? this._renderPUsComboBox() : ''}
                             </div>
                             <div class="entity-selector">
                                 ${this._renderEntityTypes()}
@@ -447,7 +446,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                             <vaadin-button
                                 theme="primary"
                                 @click="${this._sendQuery}"
-                                ?disabled="${this._selectedPersistenceUnit?.reactive}">
+                                ?disabled="${hibernateOrmState.selectedPersistenceUnit?.reactive}">
                                 <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                                 <vaadin-tooltip
                                     slot="tooltip"
@@ -464,7 +463,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     _clearChat() {
         this._messages = [];
         this._expandCounter = 0;
-        this._welcomeMessage(this._selectedPersistenceUnit);
+        this._welcomeMessage(hibernateOrmState.selectedPersistenceUnit);
     }
 
     _toggleAssistant() {
@@ -801,9 +800,9 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                     id: 'quarkus-hibernate-orm-persistence-unit'
                 })}"
                 item-label-path="label"
-                item-value-path="label"
+                item-value-path="name"
                 .items="${this._persistenceUnits}"
-                .value="${this._persistenceUnits[0]?.label || ''}"
+                .value="${hibernateOrmState.selectedPersistenceUnit?.name ?? ''}"
                 @value-changed="${this._onPersistenceUnitChanged}"
                 .allowCustomValue="${false}">
             </vaadin-combo-box>
@@ -838,11 +837,15 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _onPersistenceUnitChanged(event) {
         const selectedValue = event.detail.value;
-        this._selectPersistenceUnit(this._persistenceUnits.find(unit => unit.label === selectedValue));
+        this._selectPersistenceUnit(this._persistenceUnits.find(unit => unit.name === selectedValue));
     }
 
     _selectPersistenceUnit(pu) {
-        this._selectedPersistenceUnit = pu;
+        if (pu) {
+            saveSelectedPU(pu);
+        } else {
+            hibernateOrmState.selectedPersistenceUnit = null;
+        }
 
         if (pu && !pu.reactive) {
             this._entityTypes = pu.managedEntities ? pu.managedEntities.map(entity => entity.name) : [];
@@ -936,7 +939,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     }
 
     _executeHQL(query, pageNumber, assistant = false, interactive = false) {
-        if (!query || !this._selectedPersistenceUnit) return;
+        if (!query || !hibernateOrmState.selectedPersistenceUnit) return;
 
         // Create a loading message instead of setting global loading state
         const loadingMessageIndex = this._messages.length;
@@ -946,7 +949,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
         }];
 
         this.jsonRpc.executeHQL({
-            persistenceUnit: this._selectedPersistenceUnit.name,
+            persistenceUnit: hibernateOrmState.selectedPersistenceUnit.name,
             query: query,
             pageNumber: pageNumber,
             pageSize: this._pageSize,

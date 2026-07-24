@@ -1,31 +1,24 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletionException;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import io.quarkus.hibernate.reactive.panache.common.NestedProjectedClass;
-import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
-import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
+import io.quarkus.panache.hibernate.common.runtime.ProjectionConstructorUtil;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -133,91 +126,10 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     }
 
     private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
-        StringBuilder selectClause = new StringBuilder();
-        Constructor<?> constructor = getConstructor(type);
-
-        selectClause.append("new ").append(type.getName()).append(" (");
-        String parametersListStr = Stream.of(constructor.getParameters())
-                .map(parameter -> getParameterName(type, parentParameter, parameter))
-                .collect(Collectors.joining(","));
-        selectClause.append(parametersListStr);
-        selectClause.append(") ");
-        return selectClause;
-    }
-
-    private Constructor<?> getConstructor(Class<?> type) {
-        Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
-
-        //We start to look for constructors with @ProjectedConstructor
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            if (typeConstructor.isAnnotationPresent(ProjectedConstructor.class)) {
-                return typeConstructor;
-            }
-        }
-
-        //If didn't find anything early,
-        //we try to find a constructor with parameters annotated with @ProjectedFieldName
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            for (Parameter parameter : typeConstructor.getParameters()) {
-                if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
-                    return typeConstructor;
-                }
-            }
-        }
-
-        //We fall back to the first constructor that has parameters
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            Parameter[] parameters = typeConstructor.getParameters();
-            if (parameters.length == 0) {
-                continue;
-            }
-
-            return typeConstructor;
-        }
-
-        //If everything fails, we return the first available constructor
-        return typeConstructors[0];
-    }
-
-    private String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
-        String parameterName;
-        // Check if constructor param is annotated with ProjectedFieldName
-        if (hasProjectedFieldName(parameter)) {
-            parameterName = getNameFromProjectedFieldName(parameter);
-        } else if (!parameter.isNamePresent()) {
-            throw new PanacheQueryException(
-                    "Your application must be built with parameter names, this should be the default if" +
-                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
-        } else {
-            // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
-            try {
-                Field field = parentType.getDeclaredField(parameter.getName());
-                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
-            } catch (NoSuchFieldException e) {
-                parameterName = parameter.getName();
-            }
-        }
-        // For nested classes, add parent parameter in parameterName
-        parameterName = (parentParameter == null) ? parameterName : parentParameter.concat(".").concat(parameterName);
-        // Test if the parameter is a nested Class that should be projected too.
-        if (parameter.getType().isAnnotationPresent(NestedProjectedClass.class)) {
-            Class<?> nestedType = parameter.getType();
-            return getParametersFromClass(nestedType, parameterName).toString();
-        } else {
-            return parameterName;
-        }
-    }
-
-    private boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
-        return annotatedElement.isAnnotationPresent(ProjectedFieldName.class);
-    }
-
-    private String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
-        final String name = annotatedElement.getAnnotation(ProjectedFieldName.class).value();
-        if (name.isEmpty()) {
-            throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
-        }
-        return name;
+        BiFunction<Class<?>, String, String> nestedProjectionBuilder = (nestedType, parameterName) -> getParametersFromClass(
+                nestedType, parameterName).toString();
+        return new StringBuilder(
+                ProjectionConstructorUtil.buildConstructorExpression(type, parentParameter, nestedProjectionBuilder));
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {

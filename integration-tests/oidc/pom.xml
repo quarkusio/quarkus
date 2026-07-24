@@ -57,6 +57,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.htmlunit</groupId>
+            <artifactId>htmlunit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
@@ -160,6 +165,14 @@
                             <cn>backend-service</cn> <!-- Common Name -->
                             <duration>2</duration> <!-- in days -->
                             <client>true</client> <!-- Generate a client certificate -->
+                        </certificate>
+                        <certificate>
+                            <name>cimd-jwt</name>
+                            <formats>
+                                <format>PEM</format>
+                            </formats>
+                            <cn>cimd-jwt-client</cn>
+                            <duration>2</duration>
                         </certificate>
                     </certificates>
                 </configuration>

@@ -401,6 +401,99 @@ is a clear indicator that your application might suffer from similar problems.
 These type of dependencies should be avoided,
 and instead code that interacts with optional dependencies should be moved into separate modules.
 
+[[ensuring-optional-classes-are-absent-from-native-build]]
+=== Ensuring optional classes are absent from the native build artifact
+
+Keeping optional features in separate modules is the preferred way to avoid pulling unnecessary or unsupported dependencies into native image analysis.
+
+In existing applications, however, optional features are sometimes implemented in the same application module.
+In this situation, disabling the feature at runtime might not be enough.
+If the classes are still present in the application artifact, they can still be indexed, processed by Quarkus build steps, or made reachable during native image analysis.
+
+This can happen with optional features that depend on libraries that rely heavily on reflection, dynamic class loading, generated metadata, static initialization, or service discovery.
+Examples include reporting, document generation, file format processing, image manipulation, or integrations that are not required in the native executable.
+
+CDI exclusion is not the same as artifact exclusion.
+For example, `quarkus.arc.exclude-types` affects CDI bean discovery.
+It does not remove the matching classes from the application artifact.
+
+Consider an optional service:
+
+[source,java]
+----
+package org.acme.optional;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
+@ApplicationScoped
+public class OptionalFeatureService {
+
+    @Transactional
+    public byte[] export() {
+        // Uses an optional dependency that is not required
+        // in the native executable.
+        return new byte[0];
+    }
+}
+----
+
+The following configuration excludes the type from CDI bean discovery:
+
+[source,properties]
+----
+quarkus.arc.exclude-types=org.acme.optional.**
+----
+
+However, the classes are still part of the application artifact.
+If the goal is to completely isolate this code path from native image analysis, make sure that the corresponding classes are not included in the native build artifact.
+
+For example, with Gradle:
+
+[source,groovy]
+----
+def isNativeBuild = System.getProperty("quarkus.native.enabled") == "true" ||
+        System.getProperty("quarkus.profile") == "native"
+
+if (isNativeBuild) {
+    sourceSets.main.java.exclude "**/optional/**"
+}
+----
+
+Or, with Maven, using a profile for the native build:
+
+[source,xml]
+----
+<profile>
+    <id>native</id>
+    <activation>
+        <property>
+            <name>native</name>
+        </property>
+    </activation>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/optional/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</profile>
+----
+
+This ensures that the excluded classes are not present in the runner JAR.
+As a result, they cannot be indexed, processed by Quarkus build steps, or analyzed by `native-image`.
+
+Use this approach when an optional feature is not required in the native executable and runtime configuration alone does not prevent the problematic classes from becoming reachable.
+
+When possible, prefer moving the optional feature to a separate module.
+Source or class exclusion is most useful as an intermediate step for existing applications that cannot be modularized immediately.
+
 [[enforcing-singletons]]
 === Enforcing Singletons
 

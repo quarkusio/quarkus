@@ -392,7 +392,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL));
                         task.dependsOn(resourcesTask, config);
                         task.setCompileClasspath(config);
-                        task.setSourcesDirectories(getSourcesParents(mainSourceSet));
+                        task.getSourceDirectories().from(getSourcesParents(mainSourceSet));
                     });
                     quarkusGenerateCodeDev.configure(task -> {
                         Configuration config = project.getConfigurations().getByName(
@@ -400,14 +400,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                                         .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT));
                         task.dependsOn(resourcesTask, config);
                         task.setCompileClasspath(config);
-                        task.setSourcesDirectories(getSourcesParents(mainSourceSet));
+                        task.getSourceDirectories().from(getSourcesParents(mainSourceSet));
                     });
                     quarkusGenerateCodeTests.configure(task -> {
                         Configuration config = project.getConfigurations().getByName(
                                 ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST));
                         task.dependsOn(resourcesTask, config);
                         task.setCompileClasspath(config);
-                        task.setSourcesDirectories(getSourcesParents(testSourceSet));
+                        task.getSourceDirectories().from(getSourcesParents(testSourceSet));
                     });
 
                     quarkusDev.configure(task -> {
@@ -714,11 +714,10 @@ public class QuarkusPlugin implements Plugin<Project> {
         ApplicationDeploymentClasspathBuilder.initConfigurations(project);
     }
 
-    private Set<Path> getSourcesParents(SourceSet mainSourceSet) {
+    private Set<File> getSourcesParents(SourceSet mainSourceSet) {
         Set<File> srcDirs = mainSourceSet.getJava().getSrcDirs();
         return srcDirs.stream()
-                .map(File::toPath)
-                .map(Path::getParent)
+                .map(File::getParentFile)
                 .collect(Collectors.toSet());
     }
 

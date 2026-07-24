@@ -543,7 +543,7 @@ public final class HibernateOrmProcessor {
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
                 persistenceUnitName,
                 dbKind,
-                Optional.empty(),
+                additionalPersistenceUnit.getExplicitDialect(),
                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                 null,
                 dbKindMetadataBuildItems,
@@ -564,7 +564,7 @@ public final class HibernateOrmProcessor {
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
-                                Optional.empty(),
+                                additionalPersistenceUnit.getExplicitDialect(),
                                 entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),

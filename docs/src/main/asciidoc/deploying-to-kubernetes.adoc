@@ -878,6 +878,55 @@ spec:
             pathType: Prefix
 ----
 
+==== Generating Ingress paths from Jakarta REST endpoints
+
+By default, the generated Ingress resource uses a single catch-all `Prefix` rule on `/`.
+You can opt in to per-endpoint rules based on the discovered Jakarta REST `@Path` annotations
+by setting `expose-jaxrs-paths` to `true`:
+
+[source,properties]
+----
+quarkus.kubernetes.ingress.expose=true
+quarkus.kubernetes.ingress.host=my-app.example.com
+quarkus.kubernetes.ingress.expose-jaxrs-paths=true
+----
+
+With this configuration, Quarkus scans the Jandex index for `@Path` annotations and generates one Ingress rule path per discovered endpoint:
+
+* Static paths (e.g. `/greeting`) use `pathType: Exact`.
+* Paths with template parameters (e.g. `/users/{id}`) use `pathType: Prefix` with the static prefix (`/users`).
+
+For example, if your application exposes `GET /greeting` and `GET /users/{id}`, the generated Ingress would look like:
+
+[source, yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app
+spec:
+  rules:
+    - host: my-app.example.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: my-app
+                port:
+                  name: http
+            path: /greeting
+            pathType: Exact
+          - backend:
+              service:
+                name: my-app
+                port:
+                  name: http
+            path: /users
+            pathType: Prefix
+----
+
+NOTE: When explicit `quarkus.kubernetes.ingress.rules.*` entries are configured, they always take precedence and `expose-jaxrs-paths` has no effect.
+
 ==== Securing the Ingress resource
 
 To secure the incoming connections, Kubernetes allows enabling https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[TLS] within the Ingress resource by specifying a Secret that contains a TLS private key and certificate. You can generate a secured Ingress resource by simply adding the "tls.secret-name" properties:

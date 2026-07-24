@@ -45,19 +45,30 @@ class GrpcStorkServiceDiscoveryTest {
         Stork.shutdown();
     }
 
-    @Test
-    void refreshNotifiesListenerWhenInstancesUnchanged() {
-        defineService(staticDiscovery());
-        CountingListener listener = new CountingListener();
-        NameResolver resolver = createResolver();
-
-        resolver.start(listener);
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
-
-        resolver.refresh();
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(2));
-        assertThat(listener.errors.get()).isZero();
-    }
+    /*
+     * We actually want to skip sometimes
+     * If the backend is unreachable, this leads us to:
+     * 1. Subchannel enters TRANSIENT_FAILURE → refreshNameResolution()
+     * 2. resolve() → Stork returns same non-empty list (pod still exists in k8s)
+     * 3. we don't skip when instances have not changed → listener.onResult() fires
+     * 4. handleResolvedAddresses → creates new subchannel to same dead IP → fails immediately (backoff=0)
+     * 5. → refreshNameResolution() → back to step 2
+     *
+     * This tight loop can crash the client. SKipping when instances don't change removes the problem
+     */
+    //    @Test
+    //    void refreshNotifiesListenerWhenInstancesUnchanged() {
+    //        defineService(staticDiscovery());
+    //        CountingListener listener = new CountingListener();
+    //        NameResolver resolver = createResolver();
+    //
+    //        resolver.start(listener);
+    //        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
+    //
+    //        resolver.refresh();
+    //        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(2));
+    //        assertThat(listener.errors.get()).isZero();
+    //    }
 
     @Test
     void refreshAfterDiscoveryFailureNotifiesListener() {

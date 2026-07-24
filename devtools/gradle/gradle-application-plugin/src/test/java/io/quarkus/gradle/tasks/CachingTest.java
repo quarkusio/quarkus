@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +28,6 @@ import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -37,8 +37,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.quarkus.gradle.testing.BaseGradleTest;
+
 @ExtendWith(SoftAssertionsExtension.class)
-public class CachingTest {
+public class CachingTest extends BaseGradleTest {
     private static final Map<String, TaskOutcome> ALL_SUCCESS = Map.of(
             ":quarkusGenerateCode", TaskOutcome.SUCCESS,
             ":quarkusGenerateCodeTests", TaskOutcome.SUCCESS,
@@ -65,9 +67,6 @@ public class CachingTest {
     @InjectSoftAssertions
     SoftAssertions soft;
 
-    @TempDir
-    Path testProjectDir;
-
     @Test
     void envChangeInvalidatesBuild() throws Exception {
         // Declare the environment variables FOO_ENV_VAR and FROM_DOT_ENV_FILE as relevant for the build.
@@ -75,28 +74,28 @@ public class CachingTest {
                 "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                 "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache",
                 "-Dquarkus.package.jar.type=fast-jar",
                 "-Dquarkus.randomized.value=" + UUID.randomUUID())
                 .toArray(new String[0]);
 
         Map<String, String> env = Map.of();
-        assertBuildResult("initial", gradleBuild(rerunTasks(arguments), env), ALL_SUCCESS);
-        assertBuildResult("initial rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+        assertBuildResult("initial", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+        assertBuildResult("initial rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
         // Change the relevant environment, must rebuild
         env = Map.of("FOO_ENV_VAR", "some-value");
-        assertBuildResult("set FOO_ENV_VAR", gradleBuild(arguments, env), ALL_SUCCESS);
-        assertBuildResult("set FOO_ENV_VAR rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+        assertBuildResult("set FOO_ENV_VAR", buildResult(env, arguments), ALL_SUCCESS);
+        assertBuildResult("set FOO_ENV_VAR rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
         // Change the environment file again, must rebuild
         env = Map.of("FOO_ENV_VAR", "some-other-value");
-        assertBuildResult("change FOO_ENV_VAR", gradleBuild(arguments, env), ALL_SUCCESS);
-        assertBuildResult("change FOO_ENV_VAR rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+        assertBuildResult("change FOO_ENV_VAR", buildResult(env, arguments), ALL_SUCCESS);
+        assertBuildResult("change FOO_ENV_VAR rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
         // Change an unrelated environment variable, all up-to-date
         env = Map.of("FOO_ENV_VAR", "some-other-value", "SOME_UNRELATED", "meep");
-        assertBuildResult("SOME_UNRELATED", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+        assertBuildResult("SOME_UNRELATED", buildResult(env, arguments), ALL_UP_TO_DATE);
     }
 
     @Test
@@ -114,41 +113,41 @@ public class CachingTest {
                     "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                     "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-            String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+            String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache",
                     "-Dquarkus.package.jar.type=fast-jar",
                     "-Dquarkus.randomized.value=" + UUID.randomUUID())
                     .toArray(new String[0]);
 
             Map<String, String> env = Map.of();
 
-            assertBuildResult("initial", gradleBuild(rerunTasks(arguments), env), ALL_SUCCESS);
-            assertBuildResult("initial rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+            assertBuildResult("initial", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+            assertBuildResult("initial rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
             // Change the .env file, must rebuild
 
             Files.write(dotEnvFile, List.of("FROM_DOT_ENV_FILE=env file value"));
-            assertBuildResult("set FROM_DOT_ENV_FILE", gradleBuild(arguments, env), ALL_SUCCESS);
-            assertBuildResult("set FROM_DOT_ENV_FILE rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+            assertBuildResult("set FROM_DOT_ENV_FILE", buildResult(env, arguments), ALL_SUCCESS);
+            assertBuildResult("set FROM_DOT_ENV_FILE rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
             // Change the .env file again, must rebuild
 
             Files.write(dotEnvFile, List.of("FROM_DOT_ENV_FILE=new value"));
-            assertBuildResult("change FROM_DOT_ENV_FILE", gradleBuild(arguments, env), ALL_SUCCESS);
-            assertBuildResult("change FROM_DOT_ENV_FILE rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+            assertBuildResult("change FROM_DOT_ENV_FILE", buildResult(env, arguments), ALL_SUCCESS);
+            assertBuildResult("change FROM_DOT_ENV_FILE rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
             // OTHER_ENV_VAR is not declared as relevant for the build, skipping its check
             Files.write(dotEnvFile, List.of("FROM_DOT_ENV_FILE=new value", "OTHER_ENV_VAR=hello"));
-            assertBuildResult("OTHER_ENV_VAR", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+            assertBuildResult("OTHER_ENV_VAR", buildResult(env, arguments), ALL_UP_TO_DATE);
 
             // remove relevant var from .env file
             Files.write(dotEnvFile, List.of("OTHER_ENV_VAR=hello"));
-            assertBuildResult("remove FROM_DOT_ENV_FILE", gradleBuild(arguments, env), FROM_CACHE);
+            assertBuildResult("remove FROM_DOT_ENV_FILE", buildResult(env, arguments), FROM_CACHE);
 
             // Delete the .env file, must rebuild
 
             Files.deleteIfExists(dotEnvFile);
 
-            BuildResult result = gradleBuild(arguments, env);
+            BuildResult result = buildResult(env, arguments);
             assertBuildResult("delete .env file", result, ALL_UP_TO_DATE);
         } finally {
             Files.deleteIfExists(dotEnvFile);
@@ -167,7 +166,7 @@ public class CachingTest {
     void gradleCaching(String packageType, boolean simulateCI, String outputDir, @TempDir Path saveDir) throws Exception {
         prepareGradleBuildProject("");
 
-        Map<String, String> env = simulateCI ? Map.of("CI", "yes") : Map.of();
+        Map<String, String> env = cachingTestEnvironment(simulateCI);
 
         List<String> args = new ArrayList<>();
         Collections.addAll(args, "build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache");
@@ -183,8 +182,8 @@ public class CachingTest {
         }
         String[] arguments = args.toArray(new String[0]);
 
-        assertBuildResult("initial", gradleBuild(rerunTasks(arguments), env), ALL_SUCCESS);
-        assertBuildResult("initial rebuild", gradleBuild(arguments, env), ALL_UP_TO_DATE);
+        assertBuildResult("initial", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+        assertBuildResult("initial rebuild", buildResult(env, arguments), ALL_UP_TO_DATE);
 
         // Purge the whole build/ directory
 
@@ -197,7 +196,7 @@ public class CachingTest {
 
         // A follow-up 'build', without a build/ directory should fetch everything from the cache / pull the dependencies
 
-        BuildResult result = gradleBuild(arguments, env);
+        BuildResult result = buildResult(env, arguments);
         Map<String, TaskOutcome> taskResults = taskResults(result);
 
         Path quarkusBuildGen = Paths.get("quarkus-build", "gen");
@@ -219,23 +218,24 @@ public class CachingTest {
 
         // A follow-up 'build' does nothing, everything's up-to-date
 
-        result = gradleBuild(arguments, env);
+        result = buildResult(env, arguments);
         assertBuildResult("follow-up", result, ALL_UP_TO_DATE);
+    }
+
+    private static Map<String, String> cachingTestEnvironment(boolean simulateCI) {
+        Map<String, String> env = new HashMap<>(System.getenv());
+        if (simulateCI) {
+            env.put("CI", "yes");
+        } else {
+            env.remove("CI");
+        }
+        return env;
     }
 
     private static String[] rerunTasks(String[] arguments) {
         String[] args = Arrays.copyOf(arguments, arguments.length + 1);
         args[arguments.length] = "--rerun-tasks";
         return args;
-    }
-
-    private BuildResult gradleBuild(String[] arguments, Map<String, String> env) {
-        return GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments(arguments)
-                .withEnvironment(env)
-                .build();
     }
 
     private void assertBuildResult(String step, BuildResult result,

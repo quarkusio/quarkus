@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.function.BiConsumer;
 
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 
 import org.jboss.logging.Logger;
@@ -110,7 +109,7 @@ public class ParameterHandler implements ServerRestHandler {
                         toThrow = x;
                     } catch (Throwable x) {
                         log.debug("Unable to handle parameter", x);
-                        toThrow = new NotFoundException(x);
+                        toThrow = new BadRequestException(x);
                     }
                     break;
                 default:

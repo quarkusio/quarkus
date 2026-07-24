@@ -85,6 +85,7 @@ import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
+import io.quarkus.oidc.runtime.ClientIdMetadataHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -225,6 +226,9 @@ public class OidcBuildStep {
         }
         if (isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResourceMetadataHandler.class));
+        }
+        if (isRouteAllowed(buildTimeConfig, OidcRoute.CLIENT_ID_METADATA)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ClientIdMetadataHandler.class));
         }
     }
 
@@ -535,6 +539,17 @@ public class OidcBuildStep {
         }
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerClientIdMetadataHandler(OidcBuildTimeConfig buildTimeConfig,
+            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        if (!isRouteAllowed(buildTimeConfig, OidcRoute.CLIENT_ID_METADATA)) {
+            return null;
+        }
+        Handler<RoutingContext> handler = recorder.getClientIdMetadataHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHENTICATION + 1);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

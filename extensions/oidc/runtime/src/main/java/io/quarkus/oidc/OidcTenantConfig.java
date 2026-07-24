@@ -46,6 +46,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         token.addConfigMappingValues(mapping.token());
         logout.addConfigMappingValues(mapping.logout());
         resourceMetadata.addConfigMappingValues(mapping.resourceMetadata());
+        clientIdMetadata.addConfigMappingValues(mapping.clientIdMetadata());
         certificateChain.addConfigMappingValues(mapping.certificateChain());
         authentication.addConfigMappingValues(mapping.authentication());
         codeGrant.addConfigMappingValues(mapping.codeGrant());
@@ -2832,6 +2833,24 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     ResourceMetadata resourceMetadata = new ResourceMetadata();
 
     @Deprecated(since = "3.25", forRemoval = true)
+    ClientIdMetadata clientIdMetadata = new ClientIdMetadata();
+
+    @Deprecated(since = "3.25", forRemoval = true)
+    public static class ClientIdMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata {
+
+        public boolean forceHttpsScheme = true;
+
+        @Override
+        public boolean forceHttpsScheme() {
+            return forceHttpsScheme;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata mapping) {
+            forceHttpsScheme = mapping.forceHttpsScheme();
+        }
+    }
+
+    @Deprecated(since = "3.25", forRemoval = true)
     public static class ResourceMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata {
 
         public boolean enabled;
@@ -3123,6 +3142,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata resourceMetadata() {
         return resourceMetadata;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata clientIdMetadata() {
+        return clientIdMetadata;
     }
 
     @Override

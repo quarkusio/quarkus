@@ -334,6 +334,16 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             }
 
             @Override
+            public Optional<String> publicKey() {
+                return publicKey;
+            }
+
+            @Override
+            public Optional<String> publicKeyFile() {
+                return publicKeyFile;
+            }
+
+            @Override
             public Optional<String> audience() {
                 return audience;
             }
@@ -442,6 +452,16 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
              * The private key password.
              */
             public Optional<String> keyPassword;
+
+            /**
+             * String representation of a public key in PEM format.
+             */
+            public Optional<String> publicKey = Optional.empty();
+
+            /**
+             * Path to a file containing the public key in PEM format.
+             */
+            public Optional<String> publicKeyFile = Optional.empty();
 
             /**
              * The JWT audience (`aud`) claim value.
@@ -594,6 +614,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 keyStorePassword = mapping.keyStorePassword();
                 keyId = mapping.keyId();
                 keyPassword = mapping.keyPassword();
+                publicKey = mapping.publicKey();
+                publicKeyFile = mapping.publicKeyFile();
                 audience = mapping.audience();
                 keepAudienceTrailingSlash = mapping.keepAudienceTrailingSlash();
                 tokenKeyId = mapping.tokenKeyId();

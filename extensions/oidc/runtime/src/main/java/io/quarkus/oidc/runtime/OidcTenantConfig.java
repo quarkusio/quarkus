@@ -148,6 +148,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     ResourceMetadata resourceMetadata();
 
     /**
+     * Client ID Metadata Document configuration.
+     */
+    @ConfigDocSection
+    ClientIdMetadata clientIdMetadata();
+
+    /**
      * Protected resource metadata.
      */
     interface ResourceMetadata {
@@ -176,6 +182,18 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         /**
          * Force a protected resource identifier HTTPS scheme.
          * This property is ignored if {@link #resource() is an absolute URL}
+         */
+        @WithDefault("true")
+        boolean forceHttpsScheme();
+    }
+
+    /**
+     * Client ID Metadata Document.
+     */
+    interface ClientIdMetadata {
+        /**
+         * Force the Client ID Metadata Document URL to use the HTTPS scheme.
+         * Setting this to {@code false} allows HTTP URLs as the client identifier.
          */
         @WithDefault("true")
         boolean forceHttpsScheme();

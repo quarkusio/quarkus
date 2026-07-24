@@ -179,8 +179,15 @@ public class LoggingSetupRecorder {
             });
         }
         LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements, shutdownNotifier);
-        for (Handler handler : LogManager.getLogManager().getLogger("").getHandlers()) {
-            handler.setFilter(cleanupFiler);
+        final java.util.logging.Logger julRootLogger = LogManager.getLogManager().getLogger("");
+        for (Handler handler : julRootLogger.getHandlers()) {
+            if (handler instanceof ExtHandler) {
+                handler.setFilter(cleanupFiler);
+            } else {
+                // Drop any non-JBoss-LogManager handler from the JUL root logger.
+                log.debugf("Removing foreign handler %s from the root logger", handler.getClass().getName());
+                julRootLogger.removeHandler(handler);
+            }
         }
 
         Map<String, Filter> namedFilters = createNamedFilters(discoveredLogComponents);
@@ -670,6 +677,8 @@ public class LoggingSetupRecorder {
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(
                 config.stderr() ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
+        // Use current System.out/err, not the static reference captured at class-load time
+        consoleHandler.setOutputStream(config.stderr() ? System.err : System.out);
         consoleHandler.setLevel(config.level());
         consoleHandler.setErrorManager(defaultErrorManager);
         applyFilter(includeFilters, defaultErrorManager, cleanupFilter, config.filter(), namedFilters, consoleHandler);

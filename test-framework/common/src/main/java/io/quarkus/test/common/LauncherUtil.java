@@ -41,6 +41,29 @@ public final class LauncherUtil {
     }
 
     /**
+     * Derives a unique log file path from the configured base path by inserting {@code suffix} before the file
+     * extension (or appending it when there is no extension).
+     *
+     * <pre>
+     *   target/quarkus.log + "xKpQm" → target/quarkus-xKpQm.log
+     *   target/quarkus     + "xKpQm" → target/quarkus-xKpQm
+     * </pre>
+     *
+     * @param baseLogPath the configured log file path (e.g. from {@code quarkus.log.file.path})
+     * @param suffix the per-instance suffix to insert (e.g. a random string or a container-name fragment)
+     * @return a sibling path of {@code baseLogPath} with {@code suffix} embedded in the filename
+     */
+    static Path buildUniqueLogPath(Path baseLogPath, String suffix) {
+        String baseName = baseLogPath.getFileName().toString();
+        int dotIndex = baseName.lastIndexOf('.');
+        String uniqueName = dotIndex >= 0
+                ? baseName.substring(0, dotIndex) + "-" + suffix + baseName.substring(dotIndex)
+                : baseName + "-" + suffix;
+        Path parent = baseLogPath.getParent();
+        return parent != null ? parent.resolve(uniqueName) : Path.of(uniqueName);
+    }
+
+    /**
      * Generates the value of <code>test.url</code> to pass as an argument to integration tests launchers.
      * <p>
      * Ideally, we shouldn't be using the configuration system to discover the url. We are keeping this for

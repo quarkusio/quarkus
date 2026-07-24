@@ -63,6 +63,7 @@ import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.ListeningAddresses;
+import io.quarkus.test.common.LogPathProvider;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -221,6 +222,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         return state;
     }
 
+    // Publishes the launcher's resolved log file path as a system property so test methods can access it
+    // without needing a reference to the launcher itself. Package-private for testability.
+    static void publishLogFilePath(ArtifactLauncher<?> launcher) {
+        if (launcher instanceof LogPathProvider lp && lp.logFilePath() != null) {
+            System.setProperty("quarkus.test.log.file.path", lp.logFilePath().toAbsolutePath().toString());
+        }
+    }
+
     // When the application fails to boot, the launcher only reports a generic "Unable to determine the
     // status of the running process" error; the real cause is in the application log file. Echo the tail of
     // that file to System.err so the cause is visible directly in the test output (e.g. in CI), not only on disk.
@@ -359,6 +368,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             // Start Quarkus, capture the listening port if available and register it in ValueRegistry
             ListeningAddresses listeningData = startLauncher(launcher, additionalProperties);
+            publishLogFilePath(launcher);
             Optional<ListeningAddress> listeningAddress = listeningData.address();
             if (listeningAddress.isPresent()) {
                 listeningAddress.get().register(valueRegistry, newConfig);

@@ -2,11 +2,19 @@ package io.quarkus.test.junit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.ListeningAddresses;
+import io.quarkus.test.common.LogPathProvider;
 
 public class QuarkusIntegrationTestExtensionTest {
 
@@ -53,5 +61,99 @@ public class QuarkusIntegrationTestExtensionTest {
 
         assertThat(failedBoot.getBoolean(null)).isFalse();
         assertThat(firstException.get(null)).isNull();
+    }
+
+    @AfterEach
+    void clearLogFilePathProperty() {
+        System.clearProperty("quarkus.test.log.file.path");
+    }
+
+    @Test
+    void publishLogFilePathSetsSystemPropertyWhenLauncherIsLogPathProvider() {
+        Path path = Path.of("target", "quarkus-abcde.log");
+        QuarkusIntegrationTestExtension.publishLogFilePath(new LogPathProviderLauncher(path));
+        assertThat(System.getProperty("quarkus.test.log.file.path"))
+                .isEqualTo(path.toAbsolutePath().toString());
+    }
+
+    @Test
+    void publishLogFilePathDoesNotSetPropertyWhenLauncherIsNotLogPathProvider() {
+        System.clearProperty("quarkus.test.log.file.path");
+        QuarkusIntegrationTestExtension.publishLogFilePath(new NonLogPathProviderLauncher());
+        assertThat(System.getProperty("quarkus.test.log.file.path")).isNull();
+    }
+
+    @Test
+    void publishLogFilePathDoesNotSetPropertyWhenLogFilePathIsNull() {
+        System.clearProperty("quarkus.test.log.file.path");
+        QuarkusIntegrationTestExtension.publishLogFilePath(new LogPathProviderLauncher(null));
+        assertThat(System.getProperty("quarkus.test.log.file.path")).isNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // Stubs
+    // -------------------------------------------------------------------------
+
+    /** Minimal ArtifactLauncher stub that also implements LogPathProvider. */
+    @SuppressWarnings("rawtypes")
+    private static class LogPathProviderLauncher implements ArtifactLauncher, LogPathProvider {
+        private final Path path;
+
+        LogPathProviderLauncher(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public Path logFilePath() {
+            return path;
+        }
+
+        @Override
+        public void init(InitContext initContext) {
+        }
+
+        @Override
+        public ListeningAddresses start() throws IOException {
+            return ListeningAddresses.EMPTY;
+        }
+
+        @Override
+        public ArtifactLauncher.LaunchResult runToCompletion(String[] args) {
+            return null;
+        }
+
+        @Override
+        public void includeAsSysProps(Map systemProps) {
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    /** Minimal ArtifactLauncher stub that does NOT implement LogPathProvider. */
+    @SuppressWarnings("rawtypes")
+    private static class NonLogPathProviderLauncher implements ArtifactLauncher {
+        @Override
+        public void init(InitContext initContext) {
+        }
+
+        @Override
+        public ListeningAddresses start() throws IOException {
+            return ListeningAddresses.EMPTY;
+        }
+
+        @Override
+        public ArtifactLauncher.LaunchResult runToCompletion(String[] args) {
+            return null;
+        }
+
+        @Override
+        public void includeAsSysProps(Map systemProps) {
+        }
+
+        @Override
+        public void close() {
+        }
     }
 }

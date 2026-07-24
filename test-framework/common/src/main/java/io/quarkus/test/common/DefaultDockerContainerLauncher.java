@@ -36,7 +36,7 @@ import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
-public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
+public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher, LogPathProvider {
     private static final Logger log = Logger.getLogger(DefaultDockerContainerLauncher.class);
 
     private static final String AOT_DIR = "aot";
@@ -68,6 +68,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Optional<String> containerWorkingDirectory;
     private String outputTargetDirectory;
     private Process containerProcess;
+    private Path logFile;
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -293,13 +294,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.addAll(programArgs);
 
         final Path logPath = logRuntimeConfig.file().path().toPath();
+        logFile = resolveLogFile(logPath);
         try {
-            Files.deleteIfExists(logPath);
-            if (logPath.getParent() != null) {
-                Files.createDirectories(logPath.getParent());
+            Files.deleteIfExists(logFile);
+            if (logFile.getParent() != null) {
+                Files.createDirectories(logFile.getParent());
             }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
         }
 
         log.infof("Executing \"%s\"", String.join(" ", args));
@@ -310,18 +312,28 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // to mount /work/ directory to get quarkus.log.
         containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
                 .start();
 
         if (startedFunction != null) {
-            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
+            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logFile);
             return ListeningAddresses.EMPTY;
         } else {
             log.info("Wait for server to start by capturing listening data...");
-            ListeningAddresses result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
+            ListeningAddresses result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
             result.address().ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
             return result;
         }
+    }
+
+    private Path resolveLogFile(Path configuredLogPath) {
+        String suffix = containerName.substring(containerName.lastIndexOf('-') + 1);
+        return LauncherUtil.buildUniqueLogPath(configuredLogPath, suffix);
+    }
+
+    @Override
+    public Path logFilePath() {
+        return logFile;
     }
 
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {

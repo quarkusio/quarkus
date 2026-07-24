@@ -1,7 +1,9 @@
 package io.quarkus.tests.oldmodelextension.deployment;
 
 import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_BASE_URL;
+import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_START_COUNT;
 import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_STATIC_THING;
+import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_START_COUNT_SYSTEM_PROPERTY;
 
 import java.util.Map;
 
@@ -47,12 +49,16 @@ public class OldModelDevServicesProcessor {
 
         String baseUrl = "http://" + container.getHost() + ":" + container.getMappedPort(HTTPD_PORT);
 
+        int startCount = Integer.parseInt(System.getProperty(OLD_MODEL_START_COUNT_SYSTEM_PROPERTY, "0")) + 1;
+        System.setProperty(OLD_MODEL_START_COUNT_SYSTEM_PROPERTY, String.valueOf(startCount));
+
         devService = new RunningDevService(
                 FEATURE,
                 container.getContainerId(),
                 container::stop,
                 Map.of(OLD_MODEL_EXTENSION_BASE_URL, baseUrl,
-                        OLD_MODEL_EXTENSION_STATIC_THING, "old model value"));
+                        OLD_MODEL_EXTENSION_STATIC_THING, "old model value",
+                        OLD_MODEL_EXTENSION_START_COUNT, String.valueOf(startCount)));
 
         if (first) {
             first = false;

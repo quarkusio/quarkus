@@ -1,10 +1,9 @@
 package io.quarkus.runtime;
 
 import java.io.Closeable;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -18,34 +17,23 @@ public class StartupContext implements Closeable {
     // Holds values for returned proxies
     // These values are usually returned from recorder methods but can be also set explicitly
     // For example, the raw command line args and ShutdownContext are set when the StartupContext is created
-    private final Map<String, Object> values = new HashMap<>();
+    // Concurrent: legacy recorder nodes may run in parallel on the service graph executor
+    private final Map<String, Object> values = new ConcurrentHashMap<>();
 
-    private final Deque<Runnable> shutdownTasks = new ConcurrentLinkedDeque<>();
-    private final Deque<Runnable> lastShutdownTasks = new ConcurrentLinkedDeque<>();
+    /*
+     * Service value storage exists for compatibility with the bytecode recorder execution model,
+     * which clears the main values map between static-init and runtime-init phases. Service values
+     * use a separate map so they can selectively survive this clearing. Once bytecode recorders
+     * are removed, service value storage will be replaced with a direct value-passing mechanism
+     * that does not require a map.
+     * Concurrent: service nodes may run in parallel on the service graph executor.
+     */
+    private final Map<String, Object> serviceValues = new ConcurrentHashMap<>();
+
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
     public StartupContext() {
-        ShutdownContext shutdownContext = new ShutdownContext() {
-            @Override
-            public void addShutdownTask(Runnable runnable) {
-                if (runnable != null) {
-                    shutdownTasks.addFirst(runnable);
-                } else {
-                    throw new IllegalArgumentException("Extension passed an invalid shutdown handler");
-                }
-            }
-
-            @Override
-            public void addLastShutdownTask(Runnable runnable) {
-                if (runnable != null) {
-                    lastShutdownTasks.addFirst(runnable);
-                } else {
-                    throw new IllegalArgumentException("Extension passed an invalid last shutdown handler");
-                }
-            }
-        };
-        values.put(ShutdownContext.class.getName(), shutdownContext);
         values.put(RAW_COMMAND_LINE_ARGS, new Supplier<String[]>() {
             @Override
             public String[] get() {
@@ -58,29 +46,70 @@ public class StartupContext implements Closeable {
     }
 
     public void putValue(String name, Object value) {
-        values.put(name, value);
+        if (value != null) {
+            values.put(name, value);
+        }
     }
 
     public Object getValue(String name) {
         return values.get(name);
     }
 
-    @Override
-    public void close() {
-        runAllAndClear(shutdownTasks);
-        runAllAndClear(lastShutdownTasks);
-        values.clear();
+    /**
+     * Store a service value produced by a service action.
+     *
+     * @param name the service key (must not be {@code null})
+     * @param value the service value (must not be {@code null})
+     */
+    public void putServiceValue(String name, Object value) {
+        if (value != null) {
+            serviceValues.put(name, value);
+        }
     }
 
-    private void runAllAndClear(Deque<Runnable> tasks) {
-        while (!tasks.isEmpty()) {
-            try {
-                var runnable = tasks.remove();
-                runnable.run();
-            } catch (Throwable ex) {
-                LOG.error("Running a shutdown task failed", ex);
-            }
-        }
+    /**
+     * Retrieve a service value.
+     *
+     * @param name the service key
+     * @return the service value, or {@code null} if not found
+     */
+    public Object getServiceValue(String name) {
+        return serviceValues.get(name);
+    }
+
+    /**
+     * Remove and return a service value.
+     * Used by CDI service-value beans to drain the map after lazy instantiation.
+     *
+     * @param name the service key
+     * @return the previous value, or {@code null} if not found
+     */
+    public Object removeServiceValue(String name) {
+        return serviceValues.remove(name);
+    }
+
+    /**
+     * Retain only the specified service value keys, removing all others.
+     * Called between static-init and runtime-init to discard static-init-only
+     * service values while keeping those needed by runtime-init services.
+     *
+     * @param keys the service keys to retain
+     */
+    public void retainServiceValues(Set<String> keys) {
+        serviceValues.keySet().retainAll(keys);
+    }
+
+    /**
+     * Clear all service values. Called after all deploy methods complete.
+     */
+    public void clearServiceValues() {
+        serviceValues.clear();
+    }
+
+    @Override
+    public void close() {
+        values.clear();
+        serviceValues.clear();
     }
 
     @SuppressWarnings("unused")

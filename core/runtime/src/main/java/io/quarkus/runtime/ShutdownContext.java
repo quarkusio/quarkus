@@ -14,7 +14,24 @@ public interface ShutdownContext {
 
     void addShutdownTask(Runnable runnable);
 
-    // these are executed after all the ones add via addShutdownTask in the reverse order from which they were added
+    /**
+     * Register a shutdown task that is deferred for some unspecified amount of time
+     * after the tasks registered via {@link #addShutdownTask(Runnable)}.
+     * <p>
+     * Despite the name, this method does <em>not</em> guarantee that the task
+     * will run "last". The complexity of the service dependency graph means that
+     * no such ordering guarantee is feasible: other services may stop after this
+     * task runs, and the task may run before all other shutdown activity has
+     * completed.
+     * <p>
+     * New code should use the {@code ActionBuilder} service model to express
+     * shutdown ordering via explicit dependency edges, rather than relying on
+     * this method's weak ordering semantics.
+     *
+     * @param runnable the shutdown task (must not be {@code null})
+     * @deprecated Use service dependency edges to control shutdown ordering instead.
+     */
+    @Deprecated(forRemoval = true)
     void addLastShutdownTask(Runnable runnable);
 
     class CloseRunnable implements Runnable {

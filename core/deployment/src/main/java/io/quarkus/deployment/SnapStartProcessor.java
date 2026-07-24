@@ -6,10 +6,9 @@ import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.PreloadClassBuildItem;
@@ -26,10 +25,9 @@ import io.quarkus.runtime.SnapStartRecorder;
 public class SnapStartProcessor {
 
     @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    public void processSnapStart(BuildProducer<PreloadClassesEnabledBuildItem> preload,
+    public void processSnapStart(ActionBuilder action,
+            BuildProducer<PreloadClassesEnabledBuildItem> preload,
             BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled,
-            SnapStartRecorder recorder,
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal) {
         Optional<Boolean> snapstartEnabled = config.enable().isPresent() ? config.enable() : config.enabled();
@@ -43,9 +41,16 @@ public class SnapStartProcessor {
             return;
         }
         snapStartEnabled.produce(SnapStartEnabledBuildItem.INSTANCE);
-        if (config.preloadClasses())
+        if (config.preloadClasses()) {
             preload.produce(new PreloadClassesEnabledBuildItem(config.initializeClasses()));
-        recorder.register(config.fullWarmup());
+        }
+        boolean fw = config.fullWarmup();
+        action.forService("io.quarkus.snapstart")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> {
+                    SnapStartRecorder.enabled = true;
+                    SnapStartRecorder.fullWarmup = fw;
+                });
     }
 
     @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)

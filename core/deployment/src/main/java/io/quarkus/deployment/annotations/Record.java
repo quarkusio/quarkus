@@ -6,6 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.core.deployment.action.impl.ActionBuilderImpl;
 
 /**
  * Indicates that this {@link BuildStep} method will also output recorded bytecode.
@@ -33,7 +34,12 @@ import io.quarkus.builder.item.BuildItem;
  * - Any arbitrary object via the
  * {@link io.quarkus.deployment.recording.RecorderContext#registerSubstitution(Class, Class, Class)} mechanism
  * - arrays, lists and maps of the above
+ *
+ * @deprecated Use {@link ActionBuilderImpl} instead. Inject an {@code ActionBuilder}
+ *             parameter into your {@code @BuildStep} method and use its fluent API to define runtime services
+ *             directly as lambdas.
  */
+//@Deprecated(since = "4.0")
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Record {

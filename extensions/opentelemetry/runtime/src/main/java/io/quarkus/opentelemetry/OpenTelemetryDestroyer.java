@@ -25,6 +25,15 @@ public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
             openTelemetrySdk.getSdkTracerProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
             openTelemetrySdk.getSdkMeterProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
             openTelemetrySdk.shutdown().join(waitTime.toMillis(), MILLISECONDS);
+            // interrupt batch processor worker threads that are still parked
+            // in their poll() loop — they've been told to shut down but haven't
+            // woken up from their timed wait yet
+            for (Thread t : Thread.getAllStackTraces().keySet()) {
+                if (t.isAlive() && (t.getName().startsWith("BatchSpanProcessor")
+                        || t.getName().startsWith("BatchLogRecordProcessor"))) {
+                    t.interrupt();
+                }
+            }
         }
     }
 

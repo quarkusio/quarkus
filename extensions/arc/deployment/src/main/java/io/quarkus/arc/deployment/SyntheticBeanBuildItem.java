@@ -1,5 +1,6 @@
 package io.quarkus.arc.deployment;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -113,7 +114,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comp
 
     boolean hasRecorderInstance() {
         return configurator.supplier != null || configurator.runtimeValue != null || configurator.fun != null
-                || configurator.runtimeProxy != null;
+                || configurator.runtimeProxy != null || configurator.serviceType != null;
     }
 
     boolean hasCheckActiveSupplier() {
@@ -129,6 +130,8 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comp
         private Supplier<?> supplier;
         private RuntimeValue<?> runtimeValue;
         private Function<SyntheticCreationalContext<?>, ?> fun;
+        private Class<?> serviceType;
+        private List<String> serviceNameParts;
         private boolean staticInit;
 
         private Supplier<ActiveResult> checkActive;
@@ -144,11 +147,15 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comp
          * @return a new build item
          */
         public SyntheticBeanBuildItem done() {
-            if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null && creatorConsumer == null) {
+            if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null
+                    && serviceType == null && creatorConsumer == null) {
                 throw new IllegalStateException(
-                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith() or ExtendedBeanConfigurator#runtimeValue()");
+                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), "
+                                + "ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith(), "
+                                + "ExtendedBeanConfigurator#runtimeValue(), or ExtendedBeanConfigurator#serviceValue()");
             }
-            if (checkActive != null && supplier == null && runtimeValue == null && fun == null && runtimeProxy == null) {
+            if (checkActive != null && supplier == null && runtimeValue == null && fun == null
+                    && runtimeProxy == null && serviceType == null) {
                 // "check active" procedure is set via recorder proxy,
                 // creation function must also be set via recorder proxy
                 throw new IllegalStateException(
@@ -223,6 +230,54 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comp
         }
 
         /**
+         * The contextual bean instance is sourced from the service graph.
+         * <p>
+         * At runtime, the service value registered under the given type (with no name)
+         * is retrieved from the startup context and used as the bean instance.
+         * <p>
+         * The service must be defined (via {@link io.quarkus.core.deployment.action.ActionBuilder#forService(Class)
+         * ActionBuilder.forService()}) before or during the same build step.
+         *
+         * @param serviceType the service type (must not be {@code null})
+         * @return self
+         */
+        public ExtendedBeanConfigurator serviceValue(Class<?> serviceType) {
+            return serviceValue(serviceType, List.of());
+        }
+
+        /**
+         * The contextual bean instance is sourced from a named service in the service graph.
+         * <p>
+         * At runtime, the service value registered under the given type and name
+         * is retrieved from the startup context and used as the bean instance.
+         *
+         * @param serviceType the service type (must not be {@code null})
+         * @param serviceName the service name (may be {@code null} for an unnamed service)
+         * @return self
+         */
+        public ExtendedBeanConfigurator serviceValue(Class<?> serviceType, String serviceName) {
+            return serviceValue(serviceType, serviceName == null ? List.of() : List.of(serviceName));
+        }
+
+        /**
+         * The contextual bean instance is sourced from a named service in the service graph,
+         * using a multi-part service name.
+         * <p>
+         * At runtime, the service value registered under the given type and name parts
+         * is retrieved from the startup context and used as the bean instance.
+         *
+         * @param serviceType the service type (must not be {@code null})
+         * @param serviceNameParts the service name parts (must not be {@code null})
+         * @return self
+         */
+        public ExtendedBeanConfigurator serviceValue(Class<?> serviceType, List<String> serviceNameParts) {
+            checkMultipleCreationMethods();
+            this.serviceType = Objects.requireNonNull(serviceType);
+            this.serviceNameParts = List.copyOf(serviceNameParts);
+            return this;
+        }
+
+        /**
          * A synthetic bean whose instance is produced through a recorder is initialized during
          * {@link ExecutionTime#STATIC_INIT} by default.
          * <p>
@@ -291,8 +346,27 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem implements Comp
             return checkActive;
         }
 
+        /**
+         * Return the service type for service-value beans, or {@code null} if not set.
+         *
+         * @return the service type, or {@code null}
+         */
+        Class<?> getServiceType() {
+            return serviceType;
+        }
+
+        /**
+         * Return the service name parts for service-value beans, or {@code null} if not set.
+         *
+         * @return the service name parts, or {@code null}
+         */
+        List<String> getServiceNameParts() {
+            return serviceNameParts;
+        }
+
         private void checkMultipleCreationMethods() {
-            if (runtimeProxy == null && runtimeValue == null && supplier == null && fun == null) {
+            if (runtimeProxy == null && runtimeValue == null && supplier == null && fun == null
+                    && serviceType == null) {
                 return;
             }
             throw new IllegalStateException("It is not possible to specify multiple creation methods");

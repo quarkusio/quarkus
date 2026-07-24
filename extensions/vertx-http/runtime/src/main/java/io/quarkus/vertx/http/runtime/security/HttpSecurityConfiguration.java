@@ -136,7 +136,8 @@ public final class HttpSecurityConfiguration {
         }
     }
 
-    BasicAuthenticationMechanism getBasicAuthenticationMechanism() {
+    // not a public API — this class is subject to change
+    public BasicAuthenticationMechanism getBasicAuthenticationMechanism() {
         for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
             if (additionalMechanism.getClass() == BasicAuthenticationMechanism.class) {
                 return (BasicAuthenticationMechanism) additionalMechanism;
@@ -146,7 +147,8 @@ public final class HttpSecurityConfiguration {
                 httpConfig.auth().basicPriority());
     }
 
-    FormAuthenticationMechanism getFormAuthenticationMechanism() {
+    // not a public API — this class is subject to change
+    public FormAuthenticationMechanism getFormAuthenticationMechanism() {
         for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
             if (additionalMechanism.getClass() == FormAuthenticationMechanism.class) {
                 return (FormAuthenticationMechanism) additionalMechanism;
@@ -214,7 +216,8 @@ public final class HttpSecurityConfiguration {
         return result;
     }
 
-    static HttpSecurityConfiguration get() {
+    // not a public API — this class is subject to change
+    public static HttpSecurityConfiguration get() {
         return get(null, null);
     }
 

@@ -8,14 +8,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
-import jakarta.enterprise.inject.CreationException;
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
@@ -23,11 +20,9 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
-import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
@@ -54,11 +49,6 @@ public class OidcRecorder {
         };
     }
 
-    @StaticInit
-    public void setUserInfoInjectionPointDetected(boolean userInfoInjectionPointDetected) {
-        TenantContextFactory.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
-    }
-
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
@@ -75,20 +65,26 @@ public class OidcRecorder {
         };
     }
 
-    public void initTenantConfigBean() {
-        try {
-            // makes sure that config of static tenants is validated during app startup and create static tenant contexts
-            Arc.container().instance(TenantConfigBean.class).get();
-        } catch (CreationException wrapper) {
-            if (wrapper.getCause() instanceof RuntimeException runtimeException) {
-                // so that users see ConfigurationException etc. without noise
-                throw runtimeException;
-            }
-            throw wrapper;
-        }
+    /**
+     * Set whether a {@code UserInfo} injection point was detected at build time.
+     *
+     * @param detected {@code true} if detected
+     */
+    public static void setUserInfoInjectionPointDetected(boolean detected) {
+        TenantContextFactory.userInfoInjectionPointDetected = detected;
     }
 
-    public Function<String, Consumer<RoutingContext>> tenantResolverInterceptorCreator() {
+    /**
+     * Create a {@link TenantIdentityProvider} for a specific tenant.
+     *
+     * @param tenantName the tenant name
+     * @return the identity provider
+     */
+    public static TenantIdentityProvider createTenantIdentityProvider(String tenantName) {
+        return new TenantSpecificOidcIdentityProvider(tenantName);
+    }
+
+    public static Function<String, Consumer<RoutingContext>> tenantResolverInterceptorCreator() {
         return new Function<String, Consumer<RoutingContext>>() {
             @Override
             public Consumer<RoutingContext> apply(String tenantId) {
@@ -129,16 +125,7 @@ public class OidcRecorder {
         };
     }
 
-    public Supplier<TenantIdentityProvider> createTenantIdentityProvider(String tenantName) {
-        return new Supplier<TenantIdentityProvider>() {
-            @Override
-            public TenantIdentityProvider get() {
-                return new TenantSpecificOidcIdentityProvider(tenantName);
-            }
-        };
-    }
-
-    public Function<String, Consumer<RoutingContext>> authenticationContextInterceptorCreator() {
+    public static Function<String, Consumer<RoutingContext>> authenticationContextInterceptorCreator() {
         StepUpAuthenticationPolicy.markAsEnabled();
         return new Function<String, Consumer<RoutingContext>>() {
             @Override
@@ -175,14 +162,6 @@ public class OidcRecorder {
                 };
             }
         };
-    }
-
-    public Handler<RoutingContext> getBackChannelLogoutHandler(BeanContainer beanContainer) {
-        return beanContainer.beanInstance(BackChannelLogoutHandler.class);
-    }
-
-    public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
-        return beanContainer.beanInstance(ResourceMetadataHandler.class);
     }
 
 }

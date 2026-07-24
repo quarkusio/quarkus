@@ -13,23 +13,28 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 /**
  * Maps from the Quarkus {@link TenantConnectionResolver} to the {@link HibernateMultiTenantConnectionProvider} model.
+ * <p>
+ * The tenant identifier type is intentionally erased to {@link Object} here: the actual type is defined by the
+ * user-provided {@link TenantResolver} / {@link TenantConnectionResolver} implementations and Hibernate ORM treats the
+ * identifier as an opaque value.
  *
  * @author Michael Schnell
  */
-// TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
-public final class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider<String> {
+public final class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider<Object> {
 
     private static final Logger LOG = Logger.getLogger(HibernateMultiTenantConnectionProvider.class);
 
     private final String persistenceUnitName;
-    private final Map<String, ConnectionProvider> providerMap = new ConcurrentHashMap<>();
+    private final Map<Object, ConnectionProvider> providerMap = new ConcurrentHashMap<>();
+
+    // Cached once (lazily, at first resolution) to avoid repeating the container lookup on every tenant resolution.
+    private volatile MultiTenancyResolverClasses resolverClasses;
 
     public HibernateMultiTenantConnectionProvider(String persistenceUnitName) {
         this.persistenceUnitName = persistenceUnitName;
@@ -37,8 +42,8 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
 
     @Override
     protected ConnectionProvider getAnyConnectionProvider() {
-        InstanceHandle<TenantResolver> tenantResolver = tenantResolver(persistenceUnitName);
-        String tenantId;
+        InstanceHandle<TenantResolver<Object>> tenantResolver = tenantResolver(persistenceUnitName);
+        Object tenantId;
         // Activate RequestScope if the TenantResolver is @RequestScoped or @SessionScoped
         ManagedContext requestContext = Arc.container().requestContext();
         Class<? extends Annotation> tenantScope = tenantResolver.getBean().getScope();
@@ -62,7 +67,7 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
     }
 
     @Override
-    protected ConnectionProvider selectConnectionProvider(final String tenantIdentifier) {
+    protected ConnectionProvider selectConnectionProvider(final Object tenantIdentifier) {
         LOG.debugv("selectConnectionProvider(persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName,
                 tenantIdentifier);
 
@@ -76,26 +81,19 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
 
     }
 
-    private static ConnectionProvider resolveConnectionProvider(String persistenceUnitName, String tenantIdentifier) {
+    private ConnectionProvider resolveConnectionProvider(String persistenceUnitName, Object tenantIdentifier) {
         LOG.debugv("resolveConnectionProvider(persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName,
                 tenantIdentifier);
-        // TODO when we switch to the non-legacy method, don't forget to update the definition of the default bean
-        //   of type DataSourceTenantConnectionResolver (add the @PersistenceUnitExtension qualifier to that bean)
-        InjectableInstance<TenantConnectionResolver> instance = PersistenceUnitUtil
-                .legacySingleExtensionInstanceForPersistenceUnit(
-                        TenantConnectionResolver.class, persistenceUnitName);
-        if (instance.isUnsatisfied()) {
-            throw new IllegalStateException(
-                    String.format(
-                            Locale.ROOT, "No instance of %1$s was found for persistence unit %2$s. "
-                                    + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
-                            TenantConnectionResolver.class.getSimpleName(), persistenceUnitName));
-        }
-        TenantConnectionResolver resolver = instance.get();
-        ConnectionProvider cp = resolver.resolve(tenantIdentifier);
+        InstanceHandle<TenantConnectionResolver<Object>> instance = PersistenceUnitUtil
+                .singleTenantConnectionResolver(resolverClasses().tenantConnectionResolverClasses(), persistenceUnitName)
+                .orElseThrow(() -> new IllegalStateException(String.format(Locale.ROOT,
+                        "No instance of %1$s was found for persistence unit %2$s. "
+                                + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
+                        TenantConnectionResolver.class.getSimpleName(), persistenceUnitName)));
+        ConnectionProvider cp = instance.get().resolve(tenantIdentifier);
         if (cp == null) {
             throw new IllegalStateException("Method 'TenantConnectionResolver."
-                    + "resolve(String)' returned a null value. This violates the contract of the interface!");
+                    + "resolve(Object)' returned a null value. This violates the contract of the interface!");
         }
         return cp;
     }
@@ -105,19 +103,21 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
      *
      * @return Current tenant resolver.
      */
-    private static InstanceHandle<TenantResolver> tenantResolver(String persistenceUnitName) {
-        InjectableInstance<TenantResolver> instance = PersistenceUnitUtil
-                .legacySingleExtensionInstanceForPersistenceUnit(
-                        TenantResolver.class, persistenceUnitName);
+    private InstanceHandle<TenantResolver<Object>> tenantResolver(String persistenceUnitName) {
+        return PersistenceUnitUtil.singleTenantResolver(resolverClasses().tenantResolverClasses(), persistenceUnitName)
+                .orElseThrow(() -> new IllegalStateException(String.format(Locale.ROOT,
+                        "No instance of %1$s was found for persistence unit %2$s. "
+                                + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
+                        TenantResolver.class.getSimpleName(), persistenceUnitName)));
+    }
 
-        if (instance.isUnsatisfied()) {
-            throw new IllegalStateException(String.format(Locale.ROOT,
-                    "No instance of %1$s was found for persistence unit %2$s. "
-                            + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
-                    TenantResolver.class.getSimpleName(), persistenceUnitName));
+    private MultiTenancyResolverClasses resolverClasses() {
+        MultiTenancyResolverClasses local = resolverClasses;
+        if (local == null) {
+            local = Arc.container().select(MultiTenancyResolverClasses.class).get();
+            resolverClasses = local;
         }
-
-        return instance.getHandle();
+        return local;
     }
 
 }

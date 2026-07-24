@@ -37,6 +37,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.hibernate.orm.runtime.tenant.MultiTenancyResolverClasses;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -101,6 +102,16 @@ public class HibernateOrmRecorder {
                 return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy);
             }
         };
+    }
+
+    /**
+     * Supplies the {@link MultiTenancyResolverClasses} holder carrying the classes implementing
+     * {@code TenantResolver} / {@code TenantConnectionResolver}, collected at build time, so that these generic beans
+     * can be looked up by their concrete implementation class at runtime.
+     */
+    public Supplier<MultiTenancyResolverClasses> multiTenancyResolverClasses(Set<Class<?>> tenantResolverClasses,
+            Set<Class<?>> tenantConnectionResolverClasses) {
+        return () -> new MultiTenancyResolverClasses(tenantResolverClasses, tenantConnectionResolverClasses);
     }
 
     public Supplier<JPAConfig> jpaConfigSupplier() {

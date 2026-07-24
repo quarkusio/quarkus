@@ -20,7 +20,7 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 
 @Vetoed
-class CustomTenantConnectionResolver implements Closeable, TenantConnectionResolver {
+class CustomTenantConnectionResolver implements Closeable, TenantConnectionResolver<String> {
 
     private static final Logger LOG = Logger.getLogger(CustomTenantConnectionResolver.class);
 

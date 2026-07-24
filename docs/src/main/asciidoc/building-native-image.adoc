@@ -205,6 +205,17 @@ image:native-executable-process.png[Creating a native executable]
 You can provide custom options for the `native-image` command using the `quarkus.native.additional-build-args` and `quarkus.native.additional-build-args-append` properties.
 Multiple options may be separated by a comma.
 
+For example, to forward the host `LD_PRELOAD` and `LD_LIBRARY_PATH` environment variables to the `native-image` invocation, pass them as a single comma-separated value using the `-E` option:
+
+[source,bash]
+----
+./mvnw package -Dnative \
+    -Dquarkus.native.additional-build-args="-ELD_PRELOAD=${LD_PRELOAD},-ELD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+----
+
+All arguments must be passed through a single `quarkus.native.additional-build-args` property, since repeating the property overrides the previous value instead of appending to it.
+Depending on your shell, you may need to escape the `$` characters.
+
 You can find more information about how to configure the native image building process in the <<configuration-reference>> section below.
 ====
 

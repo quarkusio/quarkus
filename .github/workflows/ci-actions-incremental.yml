@@ -223,7 +223,7 @@ jobs:
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Configure Runs-On
         id: configure
-        uses: quarkusio/runs-on-action@main
+        uses: quarkusio/runs-on-action@50f65c7bc42fe2983c36729989fe5c79634ac5e0 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           main-repository: quarkusio/quarkus
@@ -2076,7 +2076,7 @@ jobs:
           distribution: temurin
           java-version: 25
       - name: Produce report and add it as job summary
-        uses: quarkusio/action-build-reporter@main
+        uses: quarkusio/action-build-reporter@1e64a0f4bf7d7868af1867472c91ed039db7fa1d # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           build-reports-artifacts-path: build-reports-artifacts

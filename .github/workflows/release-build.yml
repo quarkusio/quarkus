@@ -60,7 +60,7 @@ jobs:
             clean install
       - name: Report status
         if: always()
-        uses: quarkusio/report-status-in-issue@main
+        uses: quarkusio/report-status-in-issue@ee5fc1fa67e60f86018bef7d352e31eadf2dc588 # main
         with:
           github-token: ${{ secrets.GITHUB_API_TOKEN }}
           status: ${{ job.status }}

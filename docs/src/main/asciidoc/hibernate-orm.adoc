@@ -526,6 +526,57 @@ These components can also be injected with a specific persistence unit qualifier
 CriteriaBuilder criteriaBuilder;
 ----
 
+[[stateless-session]]
+==== Using `StatelessSession`
+
+In addition to the regular `Session` (or `EntityManager`), Quarkus supports injecting Hibernate's link:{hibernate-orm-docs-url}#stateless-sessions[`StatelessSession`].
+
+A stateless session does not maintain a first-level cache and does not perform automatic dirty checking.
+Entity changes are not persisted implicitly at transaction commit: you must call `insert()`, `update()`, or `delete()` explicitly.
+This makes stateless sessions a good fit for bulk operations or workflows where you want full control over writes.
+
+You can inject a `StatelessSession` the same way as a regular `Session`:
+
+[source,java]
+----
+@Inject
+StatelessSession statelessSession;
+
+@Inject
+@PersistenceUnit("users")
+StatelessSession usersStatelessSession;
+----
+
+Wrap methods that modify the database in `@Transactional`, as you would with a regular `Session`:
+
+[source,java]
+----
+@ApplicationScoped
+public class GiftService {
+
+    @Inject
+    StatelessSession statelessSession;
+
+    @Transactional
+    public void createGift(String giftDescription) {
+        Gift gift = new Gift();
+        gift.setName(giftDescription);
+        statelessSession.insert(gift);
+    }
+
+    @Transactional
+    public List<Gift> findAll() {
+        return statelessSession
+                .createSelectionQuery("from Gift", Gift.class)
+                .getResultList();
+    }
+}
+----
+
+It is also possible to mix a regular `Session` and a `StatelessSession` within the same transaction when needed.
+
+For more details on stateless sessions with Panache, see xref:quarkus-data-hibernate.adoc#use-stateless-sessions[Quarkus Data Hibernate].
+
 [[plugging-in-converters-entity-listeners]]
 ==== Plugging in converters and entity listeners
 
@@ -692,6 +743,34 @@ Instead, inject `InjectableInstance<Session>`.
 It selects either PostgreSQL or Oracle, depending on which persistence unit is active.
 <3> Check if a bean is active before retrieving it.
 <4> Injects the only active persistence unit.
+
+[[testing]]
+=== Testing
+
+Using Hibernate ORM in a `@QuarkusTest` is straightforward: xref:databases-dev-services.adoc[Dev Services] provides a test database automatically when no datasource is configured.
+
+To run a test in a transaction and roll back any database changes when the test completes, annotate the test method with `io.quarkus.test.TestTransaction`.
+You can inject `org.hibernate.Session` or `jakarta.persistence.EntityManager` to interact with the database directly in your tests.
+
+[source,java]
+----
+@QuarkusTest
+public class SomeTest {
+
+    @Inject
+    Session session;
+
+    @Test
+    @TestTransaction
+    void testEntity() {
+        MyEntity entity = new MyEntity();
+        session.persist(entity);
+        assertEquals(1L, session.createQuery("from MyEntity", MyEntity.class).getResultCount());
+    }
+}
+----
+
+See also xref:getting-started-testing.adoc#tests-and-transactions[Tests and Transactions] in the getting started testing guide.
 
 [[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`

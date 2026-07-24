@@ -19,9 +19,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesConfigWithSecretsTest {
+public class KubernetesConfigWithSecretsScopedTest {
 
-    private static final String APP_NAME = "kubernetes-config-with-secrets";
+    private static final String APP_NAME = "kubernetes-config-with-secrets-scoped";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -47,7 +47,7 @@ public class KubernetesConfigWithSecretsTest {
         assertThat(kubernetesList).anySatisfy(res -> {
             assertThat(res).isInstanceOfSatisfying(Role.class, role -> {
                 assertThat(role.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("view-secrets");
+                    assertThat(m.getName()).isEqualTo(APP_NAME + "-view-secrets");
                 });
 
                 assertThat(role.getRules()).singleElement().satisfies(r -> {
@@ -55,7 +55,7 @@ public class KubernetesConfigWithSecretsTest {
                         assertThat(rule.getApiGroups()).containsExactly("");
                         assertThat(rule.getResources()).containsExactly("secrets");
                         assertThat(rule.getVerbs()).containsExactly("get");
-                        assertThat(rule.getResourceNames()).containsExactly("my-secret");
+                        assertThat(rule.getResourceNames()).containsExactlyInAnyOrder("my-secret", "other-secret");
                     });
                 });
             });
@@ -65,22 +65,22 @@ public class KubernetesConfigWithSecretsTest {
                 .anySatisfy(res -> {
                     assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
                         assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view-secrets");
+                            assertThat(m.getName()).isEqualTo(APP_NAME + "-view-secrets");
                         });
 
                         assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("Role");
-                        assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view-secrets");
+                        assertThat(roleBinding.getRoleRef().getName()).isEqualTo(APP_NAME + "-view-secrets");
 
                         assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
                             assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
+                            assertThat(subject.getName()).isEqualTo(APP_NAME);
                         });
                     });
                 })
                 .anySatisfy(res -> {
                     assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
                         assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view");
+                            assertThat(m.getName()).isEqualTo(APP_NAME + "-view");
                         });
 
                         assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
@@ -88,7 +88,7 @@ public class KubernetesConfigWithSecretsTest {
 
                         assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
                             assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
+                            assertThat(subject.getName()).isEqualTo(APP_NAME);
                         });
                     });
                 });

@@ -35,9 +35,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.quarkus.devtools.utils.SkillComposer;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Aggregates all extension skill files from the Quarkus source tree into a single JAR.

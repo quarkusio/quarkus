@@ -28,7 +28,8 @@ public class QuarkusResteasyReactiveDotNames {
             "jakarta.json.",
             "jakarta.json.",
             // Jackson
-            "com.fasterxml.jackson.databind.",
+            // TODO: do we also want to include Jackson 2?
+            "tools.jackson.databind.",
             // JAX-RS
             "jakarta.ws.rs.",
             // RESTEasy

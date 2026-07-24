@@ -33,7 +33,7 @@ public class InvalidJsonFromServerTest {
                 .isInstanceOf(ClientWebApplicationException.class)
                 .hasMessageContaining("HTTP 200")
                 .cause()
-                .hasMessageContaining("was expecting double-quote to start field name");
+                .hasMessageContaining("was expecting double-quote to start property name");
     }
 
     @Path("/invalid-json")

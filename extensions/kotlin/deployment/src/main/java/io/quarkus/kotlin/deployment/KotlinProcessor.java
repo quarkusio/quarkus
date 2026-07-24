@@ -17,7 +17,7 @@ import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
 public class KotlinProcessor {
 
-    private static final String KOTLIN_JACKSON_MODULE = "com.fasterxml.jackson.module.kotlin.KotlinModule";
+    private static final String KOTLIN_JACKSON_MODULE = "tools.jackson.module.kotlin.KotlinModule";
 
     @BuildStep
     FeatureBuildItem feature() {

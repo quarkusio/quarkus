@@ -5,11 +5,10 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Collection;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
 import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 public class CollectionInputReader<T> implements LambdaInputReader<Collection<T>> {
     final ObjectReader reader;

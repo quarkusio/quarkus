@@ -1,6 +1,5 @@
 package io.quarkus.amazon.lambda.runtime;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -9,12 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
@@ -25,6 +18,13 @@ import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 public class MockRestEventServer extends MockEventServer {
     public static final String CONTINUE = "100-continue";
@@ -33,9 +33,9 @@ public class MockRestEventServer extends MockEventServer {
     private final ObjectReader responseReader;
 
     public MockRestEventServer() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        JsonMapper.Builder builder = JsonMapper.builder();
+        ObjectMapper objectMapper = builder.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true).build();
         eventWriter = objectMapper.writerFor(AwsProxyRequest.class);
         responseReader = objectMapper.readerFor(AwsProxyResponse.class);
     }
@@ -169,7 +169,7 @@ public class MockRestEventServer extends MockEventServer {
                     response.end();
                 }
 
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 log.error("Publish failure", e);
                 pending.fail(500);
             }

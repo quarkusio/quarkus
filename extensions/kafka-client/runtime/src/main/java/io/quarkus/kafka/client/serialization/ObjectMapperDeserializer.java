@@ -7,10 +7,10 @@ import java.util.Map;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.TypeFactory;
 
 public class ObjectMapperDeserializer<T> implements Deserializer<T> {
 
@@ -22,7 +22,7 @@ public class ObjectMapperDeserializer<T> implements Deserializer<T> {
     }
 
     public ObjectMapperDeserializer(Class<T> type, ObjectMapper objectMapper) {
-        this.type = TypeFactory.defaultInstance().constructType(type);
+        this.type = TypeFactory.createDefaultInstance().constructType(type);
         this.objectMapper = objectMapper;
     }
 
@@ -31,7 +31,7 @@ public class ObjectMapperDeserializer<T> implements Deserializer<T> {
     }
 
     public ObjectMapperDeserializer(TypeReference<T> typeReference, ObjectMapper objectMapper) {
-        this.type = TypeFactory.defaultInstance().constructType(typeReference);
+        this.type = TypeFactory.createDefaultInstance().constructType(typeReference);
         this.objectMapper = objectMapper;
     }
 

@@ -25,9 +25,8 @@ import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.JavaDocCapable;
 import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 
 import io.fabric8.maven.Maven;
 
@@ -165,13 +164,14 @@ public class QuarkusBuildItemDoc {
 
     private Map<String, String> extractNames(Path root, Iterable<String> extensionDirs) throws IOException {
         Map<String, String> names = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
+        Load yaml = new Load(LoadSettings.builder().build());
         for (String extension : extensionDirs) {
             Path yamlPath = root
                     .resolve("extensions/" + extension + "/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
             if (Files.exists(yamlPath)) {
                 try (InputStream is = Files.newInputStream(yamlPath)) {
-                    Map<String, String> map = yaml.load(is);
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> map = (Map<String, String>) yaml.loadFromInputStream(is);
                     names.put(extension, map.get("name"));
                 }
             } else {

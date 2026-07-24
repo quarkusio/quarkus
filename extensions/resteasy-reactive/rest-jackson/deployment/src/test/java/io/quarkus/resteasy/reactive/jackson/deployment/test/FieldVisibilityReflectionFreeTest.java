@@ -21,11 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import tools.jackson.databind.json.JsonMapper;
 
 public class FieldVisibilityReflectionFreeTest {
 
@@ -68,16 +68,15 @@ public class FieldVisibilityReflectionFreeTest {
     }
 
     @Singleton
-    public static class FieldOnlyVisibilityCustomizer implements ObjectMapperCustomizer {
+    public static class FieldOnlyVisibilityCustomizer implements JsonMapperBuilderCustomizer {
         @Override
-        public void customize(ObjectMapper mapper) {
-            mapper.setVisibility(
-                    mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                            .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                            .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        public void customize(JsonMapper.Builder mapper) {
+            mapper.changeDefaultVisibility(vc -> vc
+                    .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                    .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         }
     }
 

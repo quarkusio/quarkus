@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
+import tools.jackson.databind.ObjectMapper;
 
 public class S3EventTest {
 

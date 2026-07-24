@@ -1,6 +1,5 @@
 package io.quarkus.it.panache.reactive.kotlin
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.hibernate.reactive.panache.Panache
 import io.quarkus.hibernate.reactive.panache.common.WithSession
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction
@@ -13,6 +12,7 @@ import io.restassured.RestAssured.given
 import io.restassured.RestAssured.`when`
 import io.restassured.http.ContentType
 import io.smallrye.mutiny.Uni
+import io.vertx.core.json.JsonObject
 import jakarta.json.bind.JsonbBuilder
 import jakarta.transaction.Transactional
 import java.util.function.Supplier
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import tools.jackson.databind.ObjectMapper
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -90,11 +91,12 @@ open class PanacheFunctionalityTest {
         val person = Person()
         person.name = "max"
         val objectMapper = ObjectMapper()
-        objectMapper.findAndRegisterModules()
         val personAsString = objectMapper.writeValueAsString(person)
         assertEquals(
-            "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-            personAsString,
+            JsonObject(
+                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}"
+            ),
+            JsonObject(personAsString),
         )
     }
 

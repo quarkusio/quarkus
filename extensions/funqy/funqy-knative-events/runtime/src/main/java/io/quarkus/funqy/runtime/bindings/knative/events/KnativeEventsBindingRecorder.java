@@ -16,13 +16,6 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.impl.Reflections;
@@ -43,6 +36,13 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funq
@@ -76,9 +76,7 @@ public class KnativeEventsBindingRecorder {
     public void init() {
         typeTriggers = new HashMap<>();
         invokersFilters = new HashMap<>();
-        objectMapper = getObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        objectMapper = getObjectMapper();
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             Method method = invoker.getMethod();
@@ -174,9 +172,15 @@ public class KnativeEventsBindingRecorder {
     private ObjectMapper getObjectMapper() {
         InstanceHandle<ObjectMapper> instance = Arc.container().instance(ObjectMapper.class);
         if (instance.isAvailable()) {
-            return instance.get().copy();
+            return instance.get().rebuild()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+                    .build();
         }
-        return new ObjectMapper();
+        return JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+                .build();
     }
 
     public Handler<RoutingContext> start(

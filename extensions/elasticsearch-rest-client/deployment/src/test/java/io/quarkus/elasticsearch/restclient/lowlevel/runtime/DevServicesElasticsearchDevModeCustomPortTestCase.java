@@ -1,7 +1,7 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
+import io.vertx.core.json.JsonArray;
 
 public class DevServicesElasticsearchDevModeCustomPortTestCase {
     @RegisterExtension
@@ -28,7 +29,7 @@ public class DevServicesElasticsearchDevModeCustomPortTestCase {
     }
 
     @Test
-    public void testDatasource() throws Exception {
+    public void testDatasource() {
         var fruit = new TestResource.Fruit();
         fruit.id = "1";
         fruit.name = "banana";
@@ -39,9 +40,10 @@ public class DevServicesElasticsearchDevModeCustomPortTestCase {
                 .when().post("/fruits")
                 .then().statusCode(204);
 
-        RestAssured.when().get("/fruits/search?term=color&match=yellow")
+        String responseStr = RestAssured.when().get("/fruits/search?term=color&match=yellow")
                 .then()
                 .statusCode(200)
-                .body(equalTo("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"));
+                .extract().body().asString();
+        assertEquals(new JsonArray("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"), new JsonArray(responseStr));
     }
 }

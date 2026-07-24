@@ -57,7 +57,7 @@ public class DynamicGraphQLClientInjectionTest {
     public void checkHeaders() throws ExecutionException, InterruptedException {
         Document query = document(
                 Operation.operation(field("returnHeader", arg("key", "My-Header"))));
-        String header = client.executeSync(query).getData().getString("returnHeader");
+        String header = client.executeSync(query).getData().get("returnHeader").asText();
         assertEquals("My-Value", header);
     }
 

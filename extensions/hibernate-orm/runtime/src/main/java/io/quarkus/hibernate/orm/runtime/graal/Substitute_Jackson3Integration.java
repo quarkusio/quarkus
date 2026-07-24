@@ -13,14 +13,14 @@ import com.oracle.svm.core.annotate.TargetClass;
 /**
  * Substitution for {@code JacksonIntegration} when Jackson is not on the classpath.
  */
-@TargetClass(className = "org.hibernate.type.format.jackson.JacksonIntegration", onlyWith = Substitute_JacksonIntegration.IsJacksonAbsent.class)
-final class Substitute_JacksonIntegration {
+@TargetClass(className = "org.hibernate.type.format.jackson.JacksonIntegration", onlyWith = Substitute_Jackson3Integration.IsJackson3Absent.class)
+final class Substitute_Jackson3Integration {
 
-    static final class IsJacksonAbsent implements BooleanSupplier {
+    static final class IsJackson3Absent implements BooleanSupplier {
         @Override
         public boolean getAsBoolean() {
             try {
-                Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
+                Class.forName("tools.jackson.databind.ObjectMapper");
                 return false;
             } catch (ClassNotFoundException e) {
                 return true;
@@ -29,17 +29,7 @@ final class Substitute_JacksonIntegration {
     }
 
     @Substitute
-    public static FormatMapper getXMLJacksonFormatMapperOrNull(FormatMapperCreationContext context) {
-        return null;
-    }
-
-    @Substitute
     public static FormatMapper getXMLJackson3FormatMapperOrNull(FormatMapperCreationContext context) {
-        return null;
-    }
-
-    @Substitute
-    public static FormatMapper getJsonJacksonFormatMapperOrNull(FormatMapperCreationContext context) {
         return null;
     }
 
@@ -49,39 +39,13 @@ final class Substitute_JacksonIntegration {
     }
 
     @Substitute
-    public static FormatMapper getOsonJacksonFormatMapperOrNull(FormatMapperCreationContext context) {
-        return null;
-    }
-
-    @Substitute
-    public static FormatMapper getJsonJacksonFormatMapperOrNull() {
-        return null;
-    }
-
-    @Substitute
     public static FormatMapper getJsonJackson3FormatMapperOrNull() {
         return null;
     }
 
     @Substitute
-    public static FormatMapper getOsonJacksonFormatMapperOrNull() {
-        return null;
-    }
-
-    @Substitute
-    public static boolean isJacksonOsonExtensionAvailable() {
-        return false;
-    }
-
-    @Substitute
     private static boolean canLoad(String className) {
         return false;
-    }
-
-    @Substitute
-    @SuppressWarnings("rawtypes")
-    static List loadModules(FormatMapperCreationContext context) {
-        return Collections.emptyList();
     }
 
     @Substitute

@@ -13,8 +13,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class GrafanaClient {
     private static final Logger LOG = Logger.getLogger(GrafanaClient.class.getName());
@@ -84,12 +83,8 @@ public class GrafanaClient {
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        User user = MAPPER.readValue(b, User.class);
-                        ref.set(user);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    User user = MAPPER.readValue(b, User.class);
+                    ref.set(user);
                 });
         User user = ref.get();
         LOG.info("User: " + user);
@@ -103,12 +98,8 @@ public class GrafanaClient {
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        QueryResult result = MAPPER.readValue(b, QueryResult.class);
-                        ref.set(result);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    QueryResult result = MAPPER.readValue(b, QueryResult.class);
+                    ref.set(result);
                 });
         QueryResult queryResult = ref.get();
         LOG.info("Query: " + queryResult);
@@ -124,12 +115,8 @@ public class GrafanaClient {
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        TempoResult result = MAPPER.readValue(b, TempoResult.class);
-                        ref.set(result);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    TempoResult result = MAPPER.readValue(b, TempoResult.class);
+                    ref.set(result);
                 });
         TempoResult tempoResult = ref.get();
         LOG.info("Traces: " + tempoResult);

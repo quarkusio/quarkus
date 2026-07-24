@@ -1,9 +1,9 @@
 package io.quarkus.it.jackson.model;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(using = ModelWithJsonDeserializeUsing.CustomDeserializer.class)
 public class ModelWithJsonDeserializeUsing {
@@ -21,7 +21,7 @@ public class ModelWithJsonDeserializeUsing {
         return someValue;
     }
 
-    public static class CustomDeserializer extends JsonDeserializer<ModelWithJsonDeserializeUsing> {
+    public static class CustomDeserializer extends ValueDeserializer<ModelWithJsonDeserializeUsing> {
 
         @Override
         public ModelWithJsonDeserializeUsing deserialize(JsonParser p, DeserializationContext ctxt) {

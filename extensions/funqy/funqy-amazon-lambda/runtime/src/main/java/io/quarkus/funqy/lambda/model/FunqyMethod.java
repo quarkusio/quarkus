@@ -2,9 +2,9 @@ package io.quarkus.funqy.lambda.model;
 
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 public class FunqyMethod {
 

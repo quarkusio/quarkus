@@ -13,20 +13,18 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.VertxMDC;
+import tools.jackson.databind.JsonNode;
 
 public class FileJsonFormatterGCPConfigTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(FileJsonFormatterDefaultConfigTest.class)
+                    .addClasses(FileJsonFormatterDefaultConfigTest.class, JacksonUtil.class)
                     .addAsResource(new StringAsset("""
                             quarkus.log.level=INFO
                             quarkus.log.file.enabled=true
@@ -84,7 +82,7 @@ public class FileJsonFormatterGCPConfigTest {
         JsonFormatter jsonFormatter = getJsonFormatter();
         String line = jsonFormatter.format(new LogRecord(Level.INFO, "Hello, World!"));
 
-        JsonNode node = new ObjectMapper().readTree(line);
+        JsonNode node = JacksonUtil.MAPPER.readTree(line);
         // "level" has been renamed to HEY
         Assertions.assertThat(node.has("level")).isFalse();
         Assertions.assertThat(node.has("HEY")).isTrue();
@@ -113,7 +111,7 @@ public class FileJsonFormatterGCPConfigTest {
         instance.remove("sampled");
 
         String line2 = jsonFormatter.format(new LogRecord(Level.INFO, "Make sure MDC data is not cached!"));
-        JsonNode node2 = new ObjectMapper().readTree(line2);
+        JsonNode node2 = JacksonUtil.MAPPER.readTree(line2);
         Assertions.assertThat(node2.get("message").asText()).isEqualTo("Make sure MDC data is not cached!");
         Assertions.assertThat(node2.has("trace")).isTrue();
         Assertions.assertThat(node2.get("trace").asText()).isEqualTo("");

@@ -3,8 +3,6 @@ package io.quarkus.devtools.codestarts.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,12 +13,12 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 class NestedMapsTest {
 
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper YAML_MAPPER = YAMLMapper.builder().build();
     private static final Map<String, Object> NESTED_MAP_1 = readTestYamlMap("/nested-map-1.yml");
     private static final Map<String, Object> NESTED_MAP_2 = readTestYamlMap("/nested-map-2.yml");
 
@@ -115,10 +113,6 @@ class NestedMapsTest {
     }
 
     private static Map<String, Object> readTestYamlMap(String name) {
-        try {
-            return YAML_MAPPER.readerFor(Map.class).readValue(NestedMapsTest.class.getResourceAsStream(name));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return YAML_MAPPER.readerFor(Map.class).readValue(NestedMapsTest.class.getResourceAsStream(name));
     }
 }

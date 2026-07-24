@@ -9,14 +9,15 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonArtifactCoordsMixin;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 public class RegistriesConfigMapperHelper {
 
@@ -24,24 +25,24 @@ public class RegistriesConfigMapperHelper {
     private static ObjectMapper jsonMapper;
 
     public static ObjectMapper yamlMapper() {
-        return yamlMapper == null ? yamlMapper = initMapper(new ObjectMapper(new YAMLFactory())) : yamlMapper;
+        return yamlMapper == null ? yamlMapper = initMapper(YAMLMapper.builder()) : yamlMapper;
     }
 
     public static ObjectMapper jsonMapper() {
-        return jsonMapper == null ? jsonMapper = initMapper(new ObjectMapper()) : jsonMapper;
+        return jsonMapper == null ? jsonMapper = initMapper(JsonMapper.builder()) : jsonMapper;
     }
 
     private static ObjectMapper mapper(Path p) {
         return p.getFileName().toString().endsWith(".json") ? jsonMapper() : yamlMapper();
     }
 
-    public static ObjectMapper initMapper(ObjectMapper mapper) {
-        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class)
+    public static ObjectMapper initMapper(MapperBuilder<?, ?> builder) {
+        builder.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class)
                 .enable(SerializationFeature.INDENT_OUTPUT)
                 .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        return mapper;
+        return builder.build();
     }
 
     public static void serialize(Object config, Path p) throws IOException {

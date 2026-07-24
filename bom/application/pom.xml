@@ -51,7 +51,7 @@
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.3.3</smallrye-open-api.version>
-        <smallrye-graphql.version>3.0.0.Beta4</smallrye-graphql.version>
+        <smallrye-graphql.version>3.0.0.Beta5</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
@@ -221,7 +221,7 @@
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.11</importmap.version>
+        <importmap.version>2.0.0</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
     </properties>
 
@@ -384,6 +384,7 @@
             </dependency>
 
             <!-- Jackson dependencies, imported as a BOM -->
+            <!-- TODO: remove -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
@@ -420,21 +421,18 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Vert.x 5.1+ ships Jackson 3 (tools.jackson.core) in a multi-release JAR;
-                 Quarkus uses Jackson 2 (com.fasterxml.jackson.core) for now.
-                 This entry must come before the vertx-dependencies BOM import so that
-                 the exclusions take effect. -->
+
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-core</artifactId>
                 <version>${vertx.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>tools.jackson.core</groupId>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>tools.jackson.core</groupId>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
                     </exclusion>
                 </exclusions>
@@ -4583,6 +4581,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql-jackson-jsonb-compat</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance-bom</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
                 <type>pom</type>
@@ -5280,10 +5283,16 @@
                 <artifactId>resteasy-jaxb-provider</artifactId>
                 <version>${resteasy.version}</version>
             </dependency>
+            <!-- TODO: to be removed -->
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jackson2-provider</artifactId>
                 <version>${resteasy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.resteasy.providers</groupId>
+                <artifactId>resteasy-jackson-provider</artifactId>
+                <version>1.0.0.Alpha1</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

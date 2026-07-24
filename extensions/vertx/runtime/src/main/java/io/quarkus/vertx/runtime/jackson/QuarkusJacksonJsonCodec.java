@@ -7,12 +7,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -23,6 +17,13 @@ import io.vertx.core.json.EncodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.json.JsonCodec;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * The functionality of this class is copied almost verbatim from {@code io.vertx.core.json.jackson.DatabindCodec}.
@@ -57,26 +58,28 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
 
     private static void populateMapper() {
         ArcContainer container = Arc.container();
+        JsonMapper.Builder builder;
         if (container == null) {
             // this can happen in QuarkusExtensionTest
-            mapper = new ObjectMapper();
+            builder = JsonMapper.builder();
         } else {
             ObjectMapper managedMapper = container.instance(ObjectMapper.class).get();
             if (managedMapper == null) {
-                // TODO: is this too heavy-handed? It should never happen but even if it does, it's a mostly recoverable state
-                throw new IllegalStateException("There was no ObjectMapper bean configured");
+                builder = JsonMapper.builder();
+            } else {
+                // We don't want to change settings the settings of the User configured ObjectMapper,
+                // but we do want to inherit all the user's custom settings, so we copy the ObjectMapper.
+                // Theoretically we could have checked to see if each of the settings
+                // we want to apply is already applied, but in practice it doesn't make sense
+                // as at the very least InstantSerializer and InstantDeserializer will be different from those provided by the
+                // (always included with quarkus-jackson) JavaTimeModule.
+                builder = ((JsonMapper) managedMapper).rebuild();
             }
-            // We don't want to change settings the settings of the User configured ObjectMapper,
-            // but we do want to inherit all the user's custom settings, so we copy the ObjectMapper.
-            // Theoretically we could have checked to see if each of the settings
-            // we want to apply is already applied, but in practice it doesn't make sense
-            // as at the very least InstantSerializer and InstantDeserializer will be different from those provided by the
-            // (always included with quarkus-jackson) JavaTimeModule.
-            mapper = managedMapper.copy();
+
         }
 
         // Non-standard JSON but we allow C style comments in our JSON
-        mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        builder.configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true);
 
         SimpleModule module = new SimpleModule("vertx-module");
         // custom types
@@ -90,13 +93,14 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
         module.addSerializer(Buffer.class, new BufferSerializer());
         module.addDeserializer(Buffer.class, new BufferDeserializer());
 
-        mapper.registerModule(module);
+        builder.addModule(module);
+
+        mapper = builder.build();
     }
 
     private ObjectMapper prettyMapper() {
         if (prettyMapper == null) {
-            prettyMapper = mapper().copy();
-            prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            prettyMapper = (((JsonMapper) mapper()).rebuild()).configure(SerializationFeature.INDENT_OUTPUT, true).build();
         }
         return prettyMapper;
     }
@@ -122,20 +126,12 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
     }
 
     public static JsonParser createParser(Buffer buf) {
-        try {
-            return QuarkusJacksonJsonCodec.mapper().getFactory()
-                    .createParser((InputStream) new ByteBufInputStream(((BufferInternal) buf).getByteBuf()));
-        } catch (IOException e) {
-            throw new DecodeException("Failed to decode:" + e.getMessage(), e);
-        }
+        return QuarkusJacksonJsonCodec.mapper()
+                .createParser((InputStream) new ByteBufInputStream(((BufferInternal) buf).getByteBuf()));
     }
 
     public static JsonParser createParser(String str) {
-        try {
-            return QuarkusJacksonJsonCodec.mapper().getFactory().createParser(str);
-        } catch (IOException e) {
-            throw new DecodeException("Failed to decode:" + e.getMessage(), e);
-        }
+        return QuarkusJacksonJsonCodec.mapper().createParser(str);
     }
 
     @SuppressWarnings("unchecked")

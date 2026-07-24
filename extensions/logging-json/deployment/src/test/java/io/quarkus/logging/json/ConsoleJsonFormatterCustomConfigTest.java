@@ -12,18 +12,16 @@ import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig;
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.JsonNode;
 
 public class ConsoleJsonFormatterCustomConfigTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClasses(ConsoleJsonFormatterDefaultConfigTest.class))
+            .withApplicationRoot((jar) -> jar.addClasses(ConsoleJsonFormatterDefaultConfigTest.class, JacksonUtil.class))
             .withConfigurationResource("application-console-json-formatter-custom.properties");
 
     @Test
@@ -52,7 +50,7 @@ public class ConsoleJsonFormatterCustomConfigTest {
         JsonFormatter jsonFormatter = getJsonFormatter();
         String line = jsonFormatter.format(new LogRecord(Level.INFO, "Hello, World!"));
 
-        JsonNode node = new ObjectMapper().readTree(line);
+        JsonNode node = JacksonUtil.MAPPER.readTree(line);
         // "level" has been renamed to HEY
         Assertions.assertThat(node.has("level")).isFalse();
         Assertions.assertThat(node.has("HEY")).isTrue();

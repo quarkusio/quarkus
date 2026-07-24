@@ -1,10 +1,12 @@
 package io.quarkus.it.jackson.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import tools.jackson.databind.type.TypeFactory;
 
 public class CustomTypeResolver extends TypeIdResolverBase {
 
@@ -19,12 +21,13 @@ public class CustomTypeResolver extends TypeIdResolverBase {
     }
 
     @Override
-    public String idFromValue(Object value) {
+    public String idFromValue(DatabindContext ctxt, Object value) throws JacksonException {
         return getId(value);
     }
 
     @Override
-    public String idFromValueAndType(Object value, Class<?> suggestedType) {
+    public String idFromValueAndType(DatabindContext ctxt, Object value, Class<?> suggestedType)
+            throws JacksonException {
         return getId(value);
     }
 

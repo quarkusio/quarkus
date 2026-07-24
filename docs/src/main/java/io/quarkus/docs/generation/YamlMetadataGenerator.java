@@ -33,11 +33,10 @@ import org.asciidoctor.ast.StructuralNode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.exc.StreamWriteException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 /**
  * Iterate over the documents in the source directory.
@@ -116,11 +115,13 @@ public class YamlMetadataGenerator {
         return this;
     }
 
-    public void writeYamlFiles() throws StreamWriteException, DatabindException, IOException {
-        ObjectMapper om = new ObjectMapper(
-                new YAMLFactory()
-                        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-                        .disable(YAMLGenerator.Feature.SPLIT_LINES));
+    public void writeYamlFiles() throws IOException {
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder()
+                        .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
+                        .disable(YAMLWriteFeature.SPLIT_LINES)
+                        .build())
+                .build();
         Map<String, DocMetadata> metadata = index.metadataByFile();
 
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);

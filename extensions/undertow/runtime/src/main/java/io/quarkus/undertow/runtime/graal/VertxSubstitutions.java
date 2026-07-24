@@ -55,7 +55,7 @@ final class JacksonMissingSelector implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         try {
-            Class.forName("com.fasterxml.jackson.core.JsonFactory");
+            Class.forName("tools.jackson.core.json.JsonFactory");
             return false;
         } catch (ClassNotFoundException e) {
             return true;

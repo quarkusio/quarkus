@@ -1,6 +1,5 @@
 package io.quarkus.funqy.lambda.model.cloudevents;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -9,11 +8,12 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;
 import io.cloudevents.SpecVersion;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 /**
  * This class represents a {@link CloudEvent} in version 1.0 and is Jackson friendly
@@ -80,7 +80,7 @@ public class CloudEventV1 implements CloudEvent {
         if (dataBase64 != null) {
             try {
                 return new CloudEventDataV1(dataBase64.binaryValue());
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 throw new RuntimeException(e);
             }
         } else if (data == null) {

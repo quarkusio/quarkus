@@ -28,8 +28,8 @@ public final class JavadocMerger {
             }
 
             try (InputStream javadocIs = Files.newInputStream(javadocPath)) {
-                JavadocElements javadocElements = JacksonMappers.yamlObjectReader().readValue(javadocIs,
-                        JavadocElements.class);
+                JavadocElements javadocElements = JacksonMappers.yamlObjectReader().forType(JavadocElements.class)
+                        .readValue(javadocIs);
 
                 if (javadocElements.elements() == null || javadocElements.elements().isEmpty()) {
                     continue;

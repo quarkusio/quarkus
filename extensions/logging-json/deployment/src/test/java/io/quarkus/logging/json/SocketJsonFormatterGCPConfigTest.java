@@ -13,20 +13,18 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.VertxMDC;
+import tools.jackson.databind.JsonNode;
 
 public class SocketJsonFormatterGCPConfigTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(SocketJsonFormatterDefaultConfigTest.class)
+                    .addClasses(SocketJsonFormatterDefaultConfigTest.class, JacksonUtil.class)
                     .addAsResource(new StringAsset("""
                             quarkus.log.level=INFO
                             quarkus.log.socket.enabled=true
@@ -84,7 +82,7 @@ public class SocketJsonFormatterGCPConfigTest {
         JsonFormatter jsonFormatter = getJsonFormatter();
         String line = jsonFormatter.format(new LogRecord(Level.INFO, "Hello, World!"));
 
-        JsonNode node = new ObjectMapper().readTree(line);
+        JsonNode node = JacksonUtil.MAPPER.readTree(line);
         // "level" has been renamed to HEY
         Assertions.assertThat(node.has("level")).isFalse();
         Assertions.assertThat(node.has("HEY")).isTrue();

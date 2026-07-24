@@ -28,6 +28,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.Remapper;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -64,6 +68,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -72,6 +77,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -304,6 +310,43 @@ public class OpenTelemetryProcessor {
                 ResourceProvider.class.getName()));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurablePropagatorProvider.class.getName()));
+    }
+
+    // OTel's Marshaler uses JsonSerializer which references Jackson 2 (com.fasterxml.jackson.core).
+    // Since we migrated to Jackson 3, rewrite Marshaler to use our Jackson3JsonSerializer instead.
+    @BuildStep
+    void rewriteMarshalerForJackson3(BuildProducer<BytecodeTransformerBuildItem> transformers) {
+        transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform("io.opentelemetry.exporter.internal.marshal.Marshaler")
+                .setCacheable(true)
+                .setVisitorFunction((className, classVisitor) -> {
+                    // Remove methods whose signatures reference Jackson 2 types (writeJsonToGenerator,
+                    // writeJsonWithNewline) — Quarkus does not call them and the Jackson 2 classes are
+                    // not on the classpath.
+                    ClassVisitor methodRemover = new ClassVisitor(AsmUtil.ASM_API_VERSION, classVisitor) {
+                        @Override
+                        public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                String signature, String[] exceptions) {
+                            if (descriptor.contains("com/fasterxml/jackson")) {
+                                return null;
+                            }
+                            return super.visitMethod(access, name, descriptor, signature, exceptions);
+                        }
+                    };
+                    // Remap JsonSerializer → Jackson3JsonSerializer so writeJsonTo(OutputStream)
+                    // instantiates our Jackson 3 implementation.
+                    Remapper remapper = new Remapper() {
+                        @Override
+                        public String map(String internalName) {
+                            if ("io/opentelemetry/exporter/internal/marshal/JsonSerializer".equals(internalName)) {
+                                return "io/opentelemetry/exporter/internal/marshal/Jackson3JsonSerializer";
+                            }
+                            return internalName;
+                        }
+                    };
+                    return new ClassRemapper(methodRemover, remapper);
+                })
+                .build());
     }
 
     @BuildStep

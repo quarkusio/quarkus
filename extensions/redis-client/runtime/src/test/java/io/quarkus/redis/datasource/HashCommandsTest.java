@@ -18,12 +18,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hash.HashScanCursor;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.Json;
+import tools.jackson.core.type.TypeReference;
 
 public class HashCommandsTest extends DatasourceTestBase {
 

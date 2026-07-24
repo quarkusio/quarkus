@@ -3,6 +3,7 @@ package io.quarkus.keycloak.admin.resteasy.client.runtime;
 import static io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfigUtil.validate;
 
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import javax.net.ssl.SSLContext;
 
@@ -19,15 +20,16 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.spi.ResteasyClientProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.keycloak.admin.client.common.runtime.Jackson2JsonNodeModule;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 @Recorder
 public class KeycloakAdminResteasyClientRecorder {
@@ -130,21 +132,28 @@ public class KeycloakAdminResteasyClientRecorder {
     @Consumes(MediaType.APPLICATION_JSON)
     static final class AppJsonQuarkusJacksonSerializer extends QuarkusJacksonSerializer {
 
-        private final ObjectMapper objectMapper;
+        private final JsonMapper jsonMapper;
 
         private AppJsonQuarkusJacksonSerializer() {
-            this.objectMapper = new ObjectMapper();
             // Same like JSONSerialization class. Makes it possible to use admin-client against older
             // versions of Keycloak server where the properties on representations might be different
-            this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             // The client must work with the newer versions of Keycloak server, which might contain the JSON fields
             // not yet known by the client. So unknown fields will be ignored.
-            this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            this.jsonMapper = JsonMapper.builder()
+                    .changeDefaultPropertyInclusion(new UnaryOperator<>() {
+                        @Override
+                        public JsonInclude.Value apply(JsonInclude.Value value) {
+                            return value.withValueInclusion(JsonInclude.Include.NON_NULL);
+                        }
+                    })
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .addModule(new Jackson2JsonNodeModule())
+                    .build();
         }
 
         @Override
-        public ObjectMapper locateMapper(Class<?> type, MediaType mediaType) {
-            return objectMapper;
+        public JsonMapper locateMapper(Class<?> type, MediaType mediaType) {
+            return jsonMapper;
         }
 
     }

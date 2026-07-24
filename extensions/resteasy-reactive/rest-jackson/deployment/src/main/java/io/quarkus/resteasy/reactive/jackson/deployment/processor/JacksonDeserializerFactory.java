@@ -31,26 +31,6 @@ import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -68,6 +48,22 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.Switch;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.cfg.MapperConfig;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.databind.introspect.AnnotatedField;
+import tools.jackson.databind.type.TypeFactory;
 
 /**
  * Generates an implementation of the Jackson's {@code StdDeserializer} for each class that needs to be deserialized from json.
@@ -117,7 +113,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *
  *         JsonNode jsonNode = jsonParser.getCodec().readTree(jsonParser);
  *         Person person = new Person();
- *         Iterator fields = jsonNode.fields();
+ *         Iterator fields = jsonNode.properties().iterator();
  *
  *         while (fields.hasNext()) {
  *             Entry entry = (Entry) fields.next();
@@ -190,7 +186,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *
  *     public Object deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JacksonException {
  *         DataItem dataItem = new DataItem();
- *         Iterator iterator = ((JsonNode) jsonParser.getCodec().readTree(jsonParser)).fields();
+ *         Iterator iterator = ((JsonNode) context.readTree(jsonParser)).properties().iterator();
  *
  *         while (iterator.hasNext()) {
  *             Map.Entry entry = (Map.iterator) var3.next();
@@ -240,7 +236,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return classInfo.typeParameters().isEmpty() ? new String[0] : new String[] { ContextualDeserializer.class.getName() };
+        return new String[0];
     }
 
     @Override
@@ -300,12 +296,10 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private static ResultHandle getJsonNode(MethodCreator deserialize) {
         ResultHandle jsonParser = deserialize.getMethodParam(0);
-        ResultHandle objectCodec = deserialize
-                .invokeVirtualMethod(ofMethod(JsonParser.class, "getCodec", ObjectCodec.class), jsonParser);
-        ResultHandle treeNode = deserialize.invokeVirtualMethod(
-                ofMethod(ObjectCodec.class, "readTree", TreeNode.class, JsonParser.class), objectCodec,
-                jsonParser);
-        return deserialize.checkCast(treeNode, JsonNode.class);
+        ResultHandle deserCtx = deserialize.getMethodParam(1);
+        return deserialize.invokeVirtualMethod(
+                ofMethod(DeserializationContext.class, "readTree", JsonNode.class, JsonParser.class),
+                deserCtx, jsonParser);
     }
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
@@ -401,8 +395,10 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private boolean deserializeObjectFields(DeserializationData deserData, ResultHandle objHandle) {
         preprocessUnwrappedFields(deserData);
 
+        ResultHandle propertiesSet = deserData.methodCreator
+                .invokeVirtualMethod(ofMethod(JsonNode.class, "properties", Set.class), deserData.jsonNode);
         ResultHandle fieldsIterator = deserData.methodCreator
-                .invokeVirtualMethod(ofMethod(JsonNode.class, "fields", Iterator.class), deserData.jsonNode);
+                .invokeInterfaceMethod(ofMethod(Set.class, "iterator", Iterator.class), propertiesSet);
         BytecodeCreator loopCreator = deserData.methodCreator.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
         ResultHandle nextField = loopCreator
                 .invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class), fieldsIterator);
@@ -578,7 +574,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         } else {
             strSwitch.defaultCase(bytecode -> {
                 ResultHandle failOnUnknown = bytecode.invokeVirtualMethod(
-                        ofMethod(DeserializationContext.class, "isEnabled", boolean.class, DeserializationFeature.class),
+                        ofMethod(tools.jackson.databind.DeserializationContext.class, "isEnabled", boolean.class,
+                                DeserializationFeature.class),
                         deserializationContext,
                         bytecode.readStaticField(FieldDescriptor.of(DeserializationFeature.class,
                                 "FAIL_ON_UNKNOWN_PROPERTIES", DeserializationFeature.class)));
@@ -698,7 +695,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         classCreator.getFieldCreator(valueTypesField);
 
         MethodCreator createContextual = classCreator
-                .getMethodCreator("createContextual", JsonDeserializer.class, DeserializationContext.class, BeanProperty.class)
+                .getMethodCreator("createContextual", ValueDeserializer.class, DeserializationContext.class, BeanProperty.class)
                 .setModifiers(ACC_PUBLIC);
 
         ResultHandle deserializationContext = createContextual.getMethodParam(0);
@@ -788,7 +785,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             CatchBlockCreator catchBlock = tryBlock.addCatch(MismatchedInputException.class);
             ResultHandle exception = catchBlock.getCaughtException();
             catchBlock.invokeVirtualMethod(
-                    ofMethod(JsonMappingException.class, "prependPath", void.class, Object.class, String.class),
+                    ofMethod(JacksonException.class, "prependPath", JacksonException.class, Object.class, String.class),
                     exception, objHandle, catchBlock.load(fieldSpecs.jsonName));
             catchBlock.throwException(exception);
         }
@@ -919,37 +916,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 } else {
                     bytecode.invokeVirtualMethod(setterMethod, objHandle, valueHandle);
                 }
-            } else if (fieldSpecs.methodInfo != null && fieldSpecs.methodInfo.parametersCount() == 0) {
-                writeValueViaGetterAsSetter(objHandle, fieldSpecs, bytecode, valueHandle);
             }
-        }
-    }
-
-    private void writeValueViaGetterAsSetter(ResultHandle objHandle, FieldSpecs fieldSpecs,
-            BytecodeCreator bytecode, ResultHandle valueHandle) {
-        String typeName = fieldSpecs.fieldType.name().toString();
-        boolean isCollection = isAssignableTo(typeName, COLLECTION_NAME);
-        boolean isMap = !isCollection && isAssignableTo(typeName, MAP_NAME);
-        if (!isCollection && !isMap) {
-            return;
-        }
-
-        BytecodeCreator valueNotNull = bytecode.ifNotNull(valueHandle).trueBranch();
-        ResultHandle existingValue;
-        if (fieldSpecs.methodInfo.declaringClass().isInterface()) {
-            existingValue = valueNotNull.invokeInterfaceMethod(fieldSpecs.methodInfo, objHandle);
-        } else {
-            existingValue = valueNotNull.invokeVirtualMethod(fieldSpecs.methodInfo, objHandle);
-        }
-        BytecodeCreator existingNotNull = valueNotNull.ifNotNull(existingValue).trueBranch();
-        if (isCollection) {
-            existingNotNull.invokeInterfaceMethod(
-                    ofMethod(Collection.class, "addAll", boolean.class, Collection.class),
-                    existingValue, valueHandle);
-        } else {
-            existingNotNull.invokeInterfaceMethod(
-                    ofMethod(Map.class, "putAll", void.class, Map.class),
-                    existingValue, valueHandle);
         }
     }
 

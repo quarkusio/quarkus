@@ -6,10 +6,9 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 /**
  * Used to pass info about a JAX-RS resource method that needs to perform custom serialization

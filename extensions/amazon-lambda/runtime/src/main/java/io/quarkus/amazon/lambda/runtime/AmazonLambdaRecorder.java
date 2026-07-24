@@ -13,7 +13,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
@@ -23,6 +22,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.value.registry.ValueRegistry;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Used for Amazon Lambda java runtime

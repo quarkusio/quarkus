@@ -36,13 +36,12 @@ import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
+import tools.jackson.databind.ObjectMapper;
 
 public class MultiSseTest {
     @RegisterExtension

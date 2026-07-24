@@ -1,12 +1,13 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
+import io.vertx.core.json.JsonArray;
 
 public class DevServicesElasticsearchDevModeTestCase {
     @RegisterExtension
@@ -26,9 +27,10 @@ public class DevServicesElasticsearchDevModeTestCase {
                 .when().post("/fruits")
                 .then().statusCode(204);
 
-        RestAssured.when().get("/fruits/search?term=color&match=yellow")
+        String responseStr = RestAssured.when().get("/fruits/search?term=color&match=yellow")
                 .then()
                 .statusCode(200)
-                .body(equalTo("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"));
+                .extract().body().asString();
+        assertEquals(new JsonArray("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"), new JsonArray(responseStr));
     }
 }

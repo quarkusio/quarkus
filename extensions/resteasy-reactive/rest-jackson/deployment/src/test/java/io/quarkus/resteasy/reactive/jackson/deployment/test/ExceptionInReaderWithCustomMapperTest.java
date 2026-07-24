@@ -11,10 +11,9 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class ExceptionInReaderWithCustomMapperTest {
 

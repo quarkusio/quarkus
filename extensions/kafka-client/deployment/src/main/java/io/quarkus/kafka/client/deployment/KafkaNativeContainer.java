@@ -5,6 +5,7 @@ import static io.quarkus.kafka.client.deployment.DevServicesKafkaProcessor.DEV_S
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -14,6 +15,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer> implements Startable {
@@ -37,6 +39,7 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         withCommand("sh", "-c", cmd);
         waitingFor(Wait.forLogMessage(".*Kafka broker started.*", 1));
         this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "kafka");
+        Labels.addPortConfigLabel(this, fixedExposedPort > 0 ? OptionalInt.of(fixedExposedPort) : OptionalInt.empty());
     }
 
     public KafkaNativeContainer withSharedServiceLabel(LaunchMode launchMode, String serviceName) {

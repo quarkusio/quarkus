@@ -3,9 +3,11 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -25,6 +27,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -66,8 +69,10 @@ public class PulsarDevServicesProcessor {
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 sharedNetwork);
+        OptionalInt fixedPort = config.port().map(OptionalInt::of).orElse(OptionalInt.empty());
 
-        return pulsarContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+        return pulsarContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                expectedPortConfig(fixedPort))
                 .map(containerAddress -> {
                     int httpPort = pulsarContainerLocator
                             .locatePublicPort(config.serviceName(), config.shared(),
@@ -85,7 +90,7 @@ public class PulsarDevServicesProcessor {
                 })
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.imageName().orElse(getDefaultImageNameFor("pulsar")), "pulsar"),
-                        PulsarContainer.BROKER_PORT, launchMode.getLaunchMode(), useSharedNetwork)
+                        PulsarContainer.BROKER_PORT, launchMode.getLaunchMode(), useSharedNetwork, fixedPort)
                         .map(containerAddress -> {
                             RunningContainer container = containerAddress.getRunningContainer();
                             if (container == null) {
@@ -112,6 +117,8 @@ public class PulsarDevServicesProcessor {
 
                     // Apply broker configuration
                     config.brokerConfig().forEach((key, value) -> container.addEnv("PULSAR_PREFIX_" + key, value));
+
+                    Labels.addPortConfigLabel(container, fixedPort);
 
                     // Add labels in dev mode
                     if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {

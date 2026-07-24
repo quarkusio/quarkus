@@ -96,7 +96,8 @@ public class MSSQLDevServicesProcessor {
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")),
                         "mssql");
                 return ComposeLocator
-                        .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode, useSharedNetwork)
+                        .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode, useSharedNetwork,
+                                containerConfig.getFixedExposedPort())
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
@@ -116,6 +117,7 @@ public class MSSQLDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         @Override

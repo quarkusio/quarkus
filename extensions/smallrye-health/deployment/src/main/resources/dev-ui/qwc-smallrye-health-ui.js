@@ -32,6 +32,10 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             padding: 10px;
             align-items: start;
         }
+        .cards qui-card {
+            min-width: 0;
+            overflow: hidden;
+        }
         .cardcontents {
             display: flex;
             flex-direction: column;
@@ -39,6 +43,8 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
         }
         .key {
             font-weight: bold;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .entry {
             display: flex;
@@ -46,9 +52,27 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             gap: 10px;
             border-radius: 4px;
             font-size: var(--lumo-font-size-s);
+            min-width: 0;
+        }
+        .entry .value {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.4;
+            min-width: 0;
+            cursor: pointer;
+        }
+        .entry .value.expanded {
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         .entry:hover {
             background-color: var(--lumo-contrast-5pct);
+        }
+        div[slot="header"] {
+            overflow: hidden;
+            width: 100%;
+            padding: 4px 0;
         }
         .headingIcon {
             display: flex;
@@ -56,6 +80,18 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             gap: 10px;
             align-items: center;
             width: 100%;
+            min-width: 0;
+        }
+        .headingIcon vaadin-icon {
+            flex-shrink: 0;
+        }
+        .headingIcon .checkname {
+            flex: 1 1 0%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.4;
+            min-width: 0;
         }
         .headingUp {
             color: var(--lumo-success-text-color);
@@ -164,7 +200,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
 
         return html`<qui-card>
                 <div slot="header">
-                    <div class="headingIcon ${headingClass}">${check.name.string}<vaadin-icon icon="${icon}"></vaadin-icon></div>
+                    <div class="headingIcon ${headingClass}"><span class="checkname" title="${check.name.string}">${check.name.string}</span><vaadin-icon icon="${icon}"></vaadin-icon></div>
                 </div>
                 ${this._renderCardContent(check)}
             </qui-card>`;
@@ -176,12 +212,16 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
                             <div class="cardcontents">
                                 ${Object.entries(check.data).map(([key, value]) => html`
                                     <div class="entry">
-                                        <span class="key">${key}: </span><span>${value.string}</span>
+                                        <span class="key">${key}: </span><span class="value" @click=${this._toggleValue}>${value.string}</span>
                                     </div>
                                 `)}
                             </div>
                         </div>`;
         }
+    }
+
+    _toggleValue(e){
+        e.target.classList.toggle('expanded');
     }
 
     _cancelObserver(){

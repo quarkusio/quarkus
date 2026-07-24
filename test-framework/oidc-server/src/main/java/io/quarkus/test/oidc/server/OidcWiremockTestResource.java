@@ -98,7 +98,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\","
                                         + "    \"end_session_endpoint\": \"" + server.baseUrl()
-                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\""
+                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\","
+                                        + "    \"authorization_response_iss_parameter_supported\": true"
                                         +
                                         "}")));
 
@@ -209,7 +210,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 get(urlPathMatching("/login"))
                         .willReturn(aResponse()
                                 .withHeader("Location",
-                                        "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc")
+                                        "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc&iss="
+                                                + TOKEN_ISSUER)
                                 .withStatus(302)
                                 .withTransformers("response-template")));
 

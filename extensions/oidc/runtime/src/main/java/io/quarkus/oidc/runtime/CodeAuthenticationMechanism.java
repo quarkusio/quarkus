@@ -224,6 +224,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 // This is an original redirect from IDP, check if the original request path and query need to be restored
                                 CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue,
                                         tenantContext);
+
+                                try {
+                                    validateAuthorizationResponseIssuer(requestParams, tenantContext);
+                                } catch (AuthenticationCompletionException ex) {
+                                    LOG.error(ex.getMessage());
+                                    throw ex;
+                                }
+
                                 if (stateBean != null && stateBean.getRestorePath() != null) {
                                     String restorePath = stateBean.getRestorePath();
                                     int userQueryIndex = restorePath.indexOf("?");
@@ -894,6 +902,27 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
+    private void validateAuthorizationResponseIssuer(MultiMap requestParams, TenantConfigContext configContext) {
+        String expectedIssuer = configContext.getOidcMetadata().getIssuer();
+
+        if (expectedIssuer == null || OidcProvider.ANY_ISSUER.equals(expectedIssuer)) {
+            return;
+        }
+
+        String issParam = requestParams.get(OidcConstants.CODE_FLOW_ISSUER);
+
+        if (issParam != null) {
+            if (!issParam.equals(expectedIssuer)) {
+                throw new AuthenticationCompletionException(String.format(
+                        "Authorization response 'iss' parameter '%s' does not match the expected issuer '%s'",
+                        issParam, expectedIssuer));
+            }
+        } else if (configContext.getOidcMetadata().isAuthorizationResponseIssParameterSupported()) {
+            throw new AuthenticationCompletionException(
+                    "Authorization response 'iss' parameter is required but is not present");
+        }
+    }
+
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, TenantConfigContext configContext, MultiMap requestParams,
             String[] parsedStateCookieValue) {
@@ -903,6 +932,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // This is an original redirect from IDP, check if the original request path and query need to be restored
         CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+
+        try {
+            validateAuthorizationResponseIssuer(requestParams, configContext);
+        } catch (AuthenticationCompletionException ex) {
+            LOG.error(ex.getMessage());
+            throw ex;
+        }
+
         if (stateBean != null && stateBean.getRestorePath() != null) {
             String restorePath = stateBean.getRestorePath();
             int userQueryIndex = restorePath.indexOf("?");

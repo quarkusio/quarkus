@@ -49,16 +49,19 @@ If your environment does not support Docker, you will need to start the server m
 === Proprietary Databases - License Acceptance
 
 If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement.
-To do this create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image name and tag of the database.
-By default, Quarkus uses the default image for the current version of Testcontainers, if you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the file.
+To do this, add the `quarkus.devservices.license-acceptance` property to your `application.properties` with the image name and tag of the database.
+If you attempt to start Quarkus without accepting the license, the error message will tell you the exact image name to use.
 
-An example file is shown below:
-
-.src/main/resources/container-license-acceptance.txt
-[source,subs=attributes+]
+[source,properties,subs=attributes+]
 ----
-{db2-image}
-{mssql-image}
+# For mssql
+quarkus.devservices.license-acceptance={mssql-image}
+
+# For db2
+quarkus.devservices.license-acceptance={db2-image}
+
+# For both
+quarkus.devservices.license-acceptance={mssql-image},{db2-image}
 ----
 
 Alternatively, add these entries to your `application.properties`:
@@ -71,6 +74,7 @@ quarkus.datasource.devservices.container-env.ACCEPT_EULA=Y
 # For db2
 quarkus.datasource.devservices.container-env.LICENSE=accept
 ----
+
 
 === Capturing Logs
 

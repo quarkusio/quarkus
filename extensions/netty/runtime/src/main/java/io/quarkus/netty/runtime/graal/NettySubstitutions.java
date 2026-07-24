@@ -3,6 +3,7 @@ package io.quarkus.netty.runtime.graal;
 import static io.netty.handler.codec.http.HttpHeaderValues.BR;
 import static io.netty.handler.codec.http.HttpHeaderValues.DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.GZIP;
+import static io.netty.handler.codec.http.HttpHeaderValues.SNAPPY;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_GZIP;
 
@@ -48,6 +49,7 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.compression.Brotli;
 import io.netty.handler.codec.compression.BrotliDecoder;
+import io.netty.handler.codec.compression.SnappyFrameDecoder;
 import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.codec.http2.Http2Exception;
@@ -385,6 +387,14 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
 
 }
 
+@TargetClass(className = "io.netty.bootstrap.FailedChannel")
+final class Target_io_netty_bootstrap_FailedChannel {
+
+    @Alias
+    Target_io_netty_bootstrap_FailedChannel() {
+    }
+}
+
 /*
  * This one only prints exceptions otherwise we get a useless bogus
  * exception message: https://github.com/eclipse-vertx/vert.x/issues/1657
@@ -396,7 +406,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
     private ChannelFactory channelFactory;
 
     @Alias
-    void init(Channel channel) throws Exception {
+    void init(Channel channel) throws Throwable {
     }
 
     @Alias
@@ -416,9 +426,12 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
             if (channel != null) {
                 // channel can be null if newChannel crashed (eg SocketException("too many open files"))
                 channel.unsafe().closeForcibly();
+                // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
+                return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
             }
-            // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
-            return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
+            return new DefaultChannelPromise(
+                    (Channel) (Object) new Target_io_netty_bootstrap_FailedChannel(),
+                    GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
         ChannelFuture regFuture = config().group().register(channel);
@@ -440,7 +453,6 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
         //         because register(), bind(), and connect() are all bound to the same thread.
 
         return regFuture;
-
     }
 }
 
@@ -538,6 +550,9 @@ final class Target_io_netty_handler_codec_http_HttpContentDecompressor {
     private boolean strict;
 
     @Alias
+    private int maxAllocation;
+
+    @Alias
     protected ChannelHandlerContext ctx;
 
     @Substitute
@@ -545,20 +560,23 @@ final class Target_io_netty_handler_codec_http_HttpContentDecompressor {
         if (GZIP.contentEqualsIgnoreCase(contentEncoding) ||
                 X_GZIP.contentEqualsIgnoreCase(contentEncoding)) {
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
+                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP, maxAllocation));
         }
         if (DEFLATE.contentEqualsIgnoreCase(contentEncoding) ||
                 X_DEFLATE.contentEqualsIgnoreCase(contentEncoding)) {
             final ZlibWrapper wrapper = strict ? ZlibWrapper.ZLIB : ZlibWrapper.ZLIB_OR_NONE;
             // To be strict, 'deflate' means ZLIB, but some servers were not implemented correctly.
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(wrapper));
+                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(wrapper, maxAllocation));
         }
         if (Brotli.isAvailable() && BR.contentEqualsIgnoreCase(contentEncoding)) {
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), new BrotliDecoder());
+                    ctx.channel().config(), BrotliDecoder.newDecoderWithMaxAllocation(maxAllocation));
         }
-
+        if (SNAPPY.contentEqualsIgnoreCase(contentEncoding)) {
+            return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
+                    ctx.channel().config(), new SnappyFrameDecoder());
+        }
         // 'identity' or unsupported
         return null;
     }
@@ -570,24 +588,29 @@ final class Target_io_netty_handler_codec_http2_DelegatingDecompressorFrameListe
     @Alias
     boolean strict;
 
+    @Alias
+    int maxAllocation;
+
     @Substitute
     protected EmbeddedChannel newContentDecompressor(ChannelHandlerContext ctx, CharSequence contentEncoding)
             throws Http2Exception {
         if (GZIP.contentEqualsIgnoreCase(contentEncoding) || X_GZIP.contentEqualsIgnoreCase(contentEncoding)) {
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
+                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP, maxAllocation));
         }
         if (DEFLATE.contentEqualsIgnoreCase(contentEncoding) || X_DEFLATE.contentEqualsIgnoreCase(contentEncoding)) {
             final ZlibWrapper wrapper = strict ? ZlibWrapper.ZLIB : ZlibWrapper.ZLIB_OR_NONE;
-            // To be strict, 'deflate' means ZLIB, but some servers were not implemented correctly.
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(wrapper));
+                    ctx.channel().config(), ZlibCodecFactory.newZlibDecoder(wrapper, maxAllocation));
         }
         if (Brotli.isAvailable() && BR.contentEqualsIgnoreCase(contentEncoding)) {
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
-                    ctx.channel().config(), new BrotliDecoder());
+                    ctx.channel().config(), new BrotliDecoder(maxAllocation));
         }
-
+        if (SNAPPY.contentEqualsIgnoreCase(contentEncoding)) {
+            return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
+                    ctx.channel().config(), new SnappyFrameDecoder());
+        }
         // 'identity' or unsupported
         return null;
     }

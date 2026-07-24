@@ -113,7 +113,9 @@ public class RESTEndpointsTest {
     "/xhtml    | br                      | deflate          | POST",
     "/xhtml    | br                      | br               | PUT",
     "/xhtml    | br                      | gzip             | PUT",
-    "/xhtml    | gzip,br,deflate         | deflate          | PUT"
+    "/xhtml    | gzip,br,deflate         | deflate          | PUT",
+    "/text     | identity                | snappy           | POST",
+    "/text     | identity                | snappy           | PUT"
     //@formatter:on
     }, delimiter = '|', ignoreLeadingAndTrailingWhitespace = true, nullValues = "null")
     public void testDecompressors(String endpoint, String acceptEncoding, String contentEncoding, String method) {

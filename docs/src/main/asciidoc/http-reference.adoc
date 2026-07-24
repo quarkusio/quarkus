@@ -650,6 +650,8 @@ include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.access-log.adoc[
 |SSL client certificate                                                       |          | `%{SSL_CLIENT_CERT}`
 |SSL session id                                                               |          | `%{SSL_SESSION_ID}`
 |All request headers                                                          |          | `%{ALL_REQUEST_HEADERS}`
+|Request body                                                                 |          | `%{REQUEST_BODY}`
+|Response body                                                                |          | `%{RESPONSE_BODY}`
 |Cookie value                                                                 |          | `%{c,cookie_name}`
 |Query parameter                                                              |          | `%{q,query_param_name}`
 |Request header                                                               |          | `%{i,request_header_name}`
@@ -672,6 +674,14 @@ The following attributes support this modifier:
 |Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%<q`    | `%{<QUERY_STRING}`
 |Query parameter                                                              |          | `%{<q,query_param_name}`
 |===
+
+[NOTE]
+====
+Request and response body logging must be explicitly enabled with `quarkus.http.access-log.log-request-body` and
+`quarkus.http.access-log.log-response-body` before using the `%{REQUEST_BODY}` and `%{RESPONSE_BODY}` attributes.
+Bodies may contain sensitive data. Use `quarkus.http.access-log.max-logged-body-size` to limit how many bytes are logged,
+and `quarkus.http.access-log.request-body-buffer-limit` to avoid buffering very large request bodies for logging.
+====
 
 [NOTE]
 ====

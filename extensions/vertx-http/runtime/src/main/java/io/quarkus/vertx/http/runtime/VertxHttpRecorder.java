@@ -97,8 +97,10 @@ import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogBodySupport;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogRequestBodyHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
@@ -477,19 +479,27 @@ public class VertxHttpRecorder {
         httpRouteRouter.route().last().failureHandler(
                 new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
                         httpConfig.unhandledErrorContentTypeDefault(), srcMainJava, knowClasses, actions));
+        AccessLogConfig accessLog = httpConfig.accessLog();
+        boolean requestBodyLogging = accessLog.enabled() && AccessLogBodySupport.isRequestBodyLoggingEnabled(accessLog);
+        boolean bodyHandlerInstalled = false;
         for (BooleanSupplier requireBodyHandlerCondition : requireBodyHandlerConditions) {
             if (requireBodyHandlerCondition.getAsBoolean()) {
-                //if this is set then everything needs the body handler installed
-                //TODO: config etc
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
-                    @Override
-                    public void handle(RoutingContext routingContext) {
-                        routingContext.request().resume();
-                        bodyHandler.handle(routingContext);
-                    }
-                });
+                bodyHandlerInstalled = true;
                 break;
             }
+        }
+        if (bodyHandlerInstalled || requestBodyLogging) {
+            //if this is set then everything needs the body handler installed
+            Handler<RoutingContext> requestBodyHandler = requestBodyLogging && !bodyHandlerInstalled
+                    ? new AccessLogRequestBodyHandler(bodyHandler, accessLog.requestBodyBufferLimit().asLongValue())
+                    : bodyHandler;
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext routingContext) {
+                    routingContext.request().resume();
+                    requestBodyHandler.handle(routingContext);
+                }
+            });
         }
 
         HttpServerCommonHandlers.enforceMaxBodySize(httpConfig.limits(), httpRouteRouter);
@@ -527,7 +537,8 @@ public class VertxHttpRecorder {
             quarkusWrapperNeeded = true;
         }
 
-        AccessLogConfig accessLog = httpConfig.accessLog();
+        boolean captureResponseBody = accessLog.enabled() && AccessLogBodySupport.isResponseBodyLoggingEnabled(accessLog);
+        int maxLoggedBodySize = accessLog.maxLoggedBodySize();
         if (accessLog.enabled()) {
             AccessLogReceiver receiver;
             if (accessLog.logToFile()) {
@@ -567,11 +578,14 @@ public class VertxHttpRecorder {
         BiConsumer<Cookie, HttpServerRequest> cookieConsumer = cookieFunction;
 
         if (quarkusWrapperNeeded) {
+            final boolean captureResponseBodyForWrapper = captureResponseBody;
+            final int maxLoggedBodySizeForWrapper = maxLoggedBodySize;
             Handler<HttpServerRequest> old = root;
             root = new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest event) {
-                    old.handle(new QuarkusRequestWrapper(event, cookieConsumer));
+                    old.handle(new QuarkusRequestWrapper(event, cookieConsumer, captureResponseBodyForWrapper,
+                            maxLoggedBodySizeForWrapper));
                 }
             };
         }

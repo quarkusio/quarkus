@@ -107,6 +107,7 @@
                     <systemPropertyVariables combine.children="append">
                         <db2.default.version>${db2.default.version}</db2.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                        <quarkus.devservices.license-acceptance>${db2.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -117,6 +118,7 @@
                     <systemPropertyVariables combine.children="append">
                         <db2.default.version>${db2.default.version}</db2.default.version>
                         <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                        <quarkus.devservices.license-acceptance>${db2.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

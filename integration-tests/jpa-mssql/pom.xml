@@ -114,6 +114,7 @@
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
                         <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                        <quarkus.devservices.license-acceptance>${mssql.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -123,6 +124,7 @@
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
                         <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                        <quarkus.devservices.license-acceptance>${mssql.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

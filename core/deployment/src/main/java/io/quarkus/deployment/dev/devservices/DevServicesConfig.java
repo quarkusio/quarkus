@@ -1,6 +1,7 @@
 package io.quarkus.deployment.dev.devservices;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
@@ -32,6 +33,18 @@ public interface DevServicesConfig {
      * The timeout for starting a container
      */
     Optional<Duration> timeout();
+
+    /**
+     * Container images for which license acceptance will be handled automatically.
+     * <p>
+     * Certain container images (e.g. MS SQL Server, IBM DB2) require explicit license acceptance
+     * before they can be started. Setting this property generates a
+     * {@code container-license-acceptance.txt} classpath resource containing the given image names,
+     * which Testcontainers uses to verify license acceptance.
+     * <p>
+     * Example: {@code quarkus.devservices.license-acceptance=mcr.microsoft.com/mssql/server:2022-latest}
+     */
+    Optional<List<String>> licenseAcceptance();
 
     class Enabled implements BooleanSupplier {
 

@@ -110,6 +110,7 @@
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
                         <db2.default.version>${db2.default.version}</db2.default.version>
+                        <quarkus.devservices.license-acceptance>${db2.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -119,6 +120,7 @@
                     <skip>true</skip>
                     <systemPropertyVariables combine.children="append">
                         <db2.default.version>${db2.default.version}</db2.default.version>
+                        <quarkus.devservices.license-acceptance>${db2.image}</quarkus.devservices.license-acceptance>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

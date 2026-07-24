@@ -185,4 +185,8 @@ public class OidcRecorder {
         return beanContainer.beanInstance(ResourceMetadataHandler.class);
     }
 
+    public Handler<RoutingContext> getClientIdMetadataHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(ClientIdMetadataHandler.class);
+    }
+
 }

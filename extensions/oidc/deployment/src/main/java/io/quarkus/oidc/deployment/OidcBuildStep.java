@@ -85,6 +85,7 @@ import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
+import io.quarkus.oidc.runtime.ClientIdMetadataHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -217,6 +218,7 @@ public class OidcBuildStep {
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(ResourceMetadataHandler.class)
+                .addBeanClass(ClientIdMetadataHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
@@ -518,6 +520,13 @@ public class OidcBuildStep {
     FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerClientIdMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getClientIdMetadataHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHENTICATION + 1);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

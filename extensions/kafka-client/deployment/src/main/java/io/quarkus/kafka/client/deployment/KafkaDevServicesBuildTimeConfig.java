@@ -46,7 +46,7 @@ public interface KafkaDevServicesBuildTimeConfig {
     Provider provider();
 
     enum Provider {
-        REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
+        REDPANDA("docker.io/redpandadata/redpanda:v26.1.12"),
         STRIMZI("quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0"),
         @Deprecated(forRemoval = true)
         KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest"),

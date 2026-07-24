@@ -1,5 +1,6 @@
 package io.quarkus.cache;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -45,18 +46,61 @@ public interface Cache {
     <K, V> Uni<V> get(K key, Function<K, V> valueLoader);
 
     /**
+     * Same as {@link #get(Object, Function)} but associates the computed value with a write-based time to live.
+     * <p>
+     * For Caffeine caches, {@code quarkus.cache.caffeine."cache-name".expire-after-variable} must be enabled.
+     *
+     * @param <K> cache key type
+     * @param <V> cache value type
+     * @param key cache key
+     * @param valueLoader function used to compute a cache value if {@code key} is not already associated with a value
+     * @param expiresAfter write-based time to live for the computed value
+     * @return a lazy asynchronous action that will emit a cache value
+     * @throws NullPointerException if the key or {@code expiresAfter} is {@code null}
+     * @throws IllegalStateException if the cache does not support per-entry expiry
+     * @throws CacheException if an exception is thrown during a cache value computation
+     */
+    @CheckReturnValue
+    default <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresAfter) {
+        throw new UnsupportedOperationException(
+                "Per-entry expiry is not supported by " + getClass().getName());
+    }
+
+    /**
      * Returns a lazy asynchronous action that will emit the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary.
      *
-     * @param <K>
-     * @param <V>
-     * @param key
-     * @param valueLoader
+     * @param <K> cache key type
+     * @param <V> cache value type
+     * @param key cache key
+     * @param valueLoader asynchronous function used to compute a cache value if {@code key} is not already associated with a
+     *        value
      * @return a lazy asynchronous action that will emit a cache value
      * @throws NullPointerException if the key is {@code null}
      */
     @CheckReturnValue
     <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader);
+
+    /**
+     * Same as {@link #getAsync(Object, Function)} but associates the computed value with a write-based time to live.
+     * <p>
+     * For Caffeine caches, {@code quarkus.cache.caffeine."cache-name".expire-after-variable} must be enabled.
+     *
+     * @param <K> cache key type
+     * @param <V> cache value type
+     * @param key cache key
+     * @param valueLoader asynchronous function used to compute a cache value if {@code key} is not already associated with a
+     *        value
+     * @param expiresAfter write-based time to live for the computed value
+     * @return a lazy asynchronous action that will emit a cache value
+     * @throws NullPointerException if the key or {@code expiresAfter} is {@code null}
+     * @throws IllegalStateException if the cache does not support per-entry expiry
+     */
+    @CheckReturnValue
+    default <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresAfter) {
+        throw new UnsupportedOperationException(
+                "Per-entry expiry is not supported by " + getClass().getName());
+    }
 
     /**
      * Removes the cache entry identified by {@code key} from the cache. If the key does not identify any cache entry, nothing

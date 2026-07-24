@@ -48,6 +48,12 @@ public class CaffeineCacheInfoBuilder {
                     cacheInfo.expireAfterAccess = defaultConfig.expireAfterAccess().get();
                 }
 
+                if (namedCacheConfig != null && namedCacheConfig.expireAfterVariable().isPresent()) {
+                    cacheInfo.expireAfterVariable = namedCacheConfig.expireAfterVariable().get();
+                } else if (defaultConfig.expireAfterVariable().isPresent()) {
+                    cacheInfo.expireAfterVariable = defaultConfig.expireAfterVariable().get();
+                }
+
                 if (namedCacheConfig != null && namedCacheConfig.metricsEnabled().isPresent()) {
                     cacheInfo.metricsEnabled = namedCacheConfig.metricsEnabled().get();
                 } else if (defaultConfig.metricsEnabled().isPresent()) {

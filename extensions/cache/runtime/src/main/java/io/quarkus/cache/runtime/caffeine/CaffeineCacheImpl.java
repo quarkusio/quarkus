@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Policy;
 import com.github.benmanes.caffeine.cache.Policy.FixedExpiration;
 import com.github.benmanes.caffeine.cache.stats.ConcurrentStatsCounter;
@@ -44,9 +45,11 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     private final CaffeineCacheInfo cacheInfo;
     private final StatsCounter statsCounter;
     private final boolean recordStats;
+    private final boolean expireAfterVariable;
 
     public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, boolean recordStats) {
         this.cacheInfo = cacheInfo;
+        this.expireAfterVariable = cacheInfo.expireAfterVariable;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
         if (cacheInfo.initialCapacity != null) {
             builder.initialCapacity(cacheInfo.initialCapacity);
@@ -54,11 +57,33 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         if (cacheInfo.maximumSize != null) {
             builder.maximumSize(cacheInfo.maximumSize);
         }
-        if (cacheInfo.expireAfterWrite != null) {
-            builder.expireAfterWrite(cacheInfo.expireAfterWrite);
-        }
-        if (cacheInfo.expireAfterAccess != null) {
-            builder.expireAfterAccess(cacheInfo.expireAfterAccess);
+        if (expireAfterVariable) {
+            builder.expireAfter(new Expiry<Object, Object>() {
+                @Override
+                public long expireAfterCreate(Object key, Object value, long currentTime) {
+                    return resolveExpireAfterWriteNanos(value);
+                }
+
+                @Override
+                public long expireAfterUpdate(Object key, Object value, long currentTime, long currentDuration) {
+                    return resolveExpireAfterWriteNanos(value);
+                }
+
+                @Override
+                public long expireAfterRead(Object key, Object value, long currentTime, long currentDuration) {
+                    if (cacheInfo.expireAfterAccess != null) {
+                        return cacheInfo.expireAfterAccess.toNanos();
+                    }
+                    return currentDuration;
+                }
+            });
+        } else {
+            if (cacheInfo.expireAfterWrite != null) {
+                builder.expireAfterWrite(cacheInfo.expireAfterWrite);
+            }
+            if (cacheInfo.expireAfterAccess != null) {
+                builder.expireAfterAccess(cacheInfo.expireAfterAccess);
+            }
         }
         this.recordStats = recordStats;
         if (recordStats) {
@@ -77,6 +102,28 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         cache = builder.buildAsync();
     }
 
+    private long resolveExpireAfterWriteNanos(Object value) {
+        Duration expiresAfter = ExpirableValue.expiresAfterOf(value);
+        if (expiresAfter != null) {
+            if (expiresAfter.isZero() || expiresAfter.isNegative()) {
+                return 0L;
+            }
+            return expiresAfter.toNanos();
+        }
+        if (cacheInfo.expireAfterWrite != null) {
+            return cacheInfo.expireAfterWrite.toNanos();
+        }
+        return Long.MAX_VALUE;
+    }
+
+    private void ensureVariableExpirySupported() {
+        if (!expireAfterVariable) {
+            throw new IllegalStateException(
+                    "Per-entry expiry requires quarkus.cache.caffeine.\"" + cacheInfo.name
+                            + "\".expire-after-variable=true (or the matching default caffeine config)");
+        }
+    }
+
     @Override
     public String getName() {
         return cacheInfo.name;
@@ -84,7 +131,15 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
+        return get(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresAfter) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        if (expiresAfter != null) {
+            ensureVariableExpirySupported();
+        }
         return Uni.createFrom().completionStage(
                 /*
                  * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
@@ -93,7 +148,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 new Supplier<CompletionStage<V>>() {
                     @Override
                     public CompletionStage<V> get() {
-                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
+                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader, expiresAfter);
                         return cast(caffeineValue);
                     }
                 });
@@ -101,7 +156,15 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        return getAsync(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresAfter) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        if (expiresAfter != null) {
+            ensureVariableExpirySupported();
+        }
         Context context = Vertx.currentContext();
         return Uni.createFrom().context(new Function<io.smallrye.mutiny.Context, Uni<? extends V>>() {
             @Override
@@ -117,6 +180,12 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                                 recorder.onValueAbsent();
                                 return valueLoader.apply((K) key)
                                         .map(TO_CACHE_VALUE)
+                                        .map(new Function<Object, Object>() {
+                                            @Override
+                                            public Object apply(Object value) {
+                                                return toStoredValue(value, expiresAfter);
+                                            }
+                                        })
                                         .subscribeAsCompletionStage(mutinyContext);
                             }
                         });
@@ -207,17 +276,17 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
      * @return a {@link CompletableFuture} holding the cache value
      * @throws CacheException if an exception is thrown during the cache value computation
      */
-    private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, V> valueLoader) {
+    private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, V> valueLoader, Duration expiresAfter) {
         CompletableFuture<Object> newCacheValue = new CompletableFuture<>();
         CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
         if (existingCacheValue == null) {
             statsCounter.recordMisses(1);
             try {
                 Object value = valueLoader.apply(key);
-                newCacheValue.complete(NullValueConverter.toCacheValue(value));
+                newCacheValue.complete(toStoredValue(NullValueConverter.toCacheValue(value), expiresAfter));
             } catch (Throwable t) {
                 cache.asMap().remove(key, newCacheValue);
-                newCacheValue.complete(new CaffeineComputationThrowable(t));
+                newCacheValue.complete(toStoredValue(new CaffeineComputationThrowable(t), null));
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
         } else {
@@ -227,20 +296,28 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         }
     }
 
+    private Object toStoredValue(Object cacheData, Duration expiresAfter) {
+        if (expireAfterVariable) {
+            return ExpirableValue.wrap(cacheData, expiresAfter);
+        }
+        return cacheData;
+    }
+
     private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<Object> cacheValue) {
         return cacheValue.thenApply(new Function<>() {
             @Override
             public Object apply(Object value) {
+                Object data = ExpirableValue.unwrapData(value);
                 // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
-                if (value instanceof CaffeineComputationThrowable) {
-                    Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                if (data instanceof CaffeineComputationThrowable) {
+                    Throwable cause = ((CaffeineComputationThrowable) data).getCause();
                     if (cause instanceof RuntimeException) {
                         throw (RuntimeException) cause;
                     } else {
                         throw new CacheException(cause);
                     }
                 } else {
-                    return NullValueConverter.fromCacheValue(value);
+                    return NullValueConverter.fromCacheValue(data);
                 }
             }
         });
@@ -288,11 +365,35 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @SuppressWarnings("unchecked")
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
-        cache.put(key, (CompletableFuture<Object>) valueFuture);
+        put(key, valueFuture, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresAfter) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        Objects.requireNonNull(valueFuture, "valueFuture");
+        if (expiresAfter != null) {
+            ensureVariableExpirySupported();
+        }
+        if (expireAfterVariable) {
+            cache.put(key, valueFuture.thenApply(new Function<V, Object>() {
+                @Override
+                public Object apply(V value) {
+                    return toStoredValue(NullValueConverter.toCacheValue(value), expiresAfter);
+                }
+            }));
+        } else {
+            cache.put(key, (CompletableFuture<Object>) valueFuture);
+        }
     }
 
     @Override
     public void setExpireAfterWrite(Duration duration) {
+        if (expireAfterVariable) {
+            cacheInfo.expireAfterWrite = duration;
+            return;
+        }
         Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterWrite();
         if (fixedExpiration.isPresent()) {
             fixedExpiration.get().setExpiresAfter(duration);
@@ -305,6 +406,10 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public void setExpireAfterAccess(Duration duration) {
+        if (expireAfterVariable) {
+            cacheInfo.expireAfterAccess = duration;
+            return;
+        }
         Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterAccess();
         if (fixedExpiration.isPresent()) {
             fixedExpiration.get().setExpiresAfter(duration);
@@ -400,7 +505,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
         @Override
         public Object apply(Object value) {
-            return NullValueConverter.fromCacheValue(value);
+            return NullValueConverter.fromCacheValue(ExpirableValue.unwrapData(value));
         }
     };
 

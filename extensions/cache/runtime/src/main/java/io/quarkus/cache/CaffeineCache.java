@@ -44,6 +44,19 @@ public interface CaffeineCache extends Cache {
     <V> void put(Object key, CompletableFuture<V> valueFuture);
 
     /**
+     * Same as {@link #put(Object, CompletableFuture)} but associates the value with a write-based time to live.
+     * <p>
+     * Requires {@code quarkus.cache.caffeine."cache-name".expire-after-variable=true}.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param valueFuture value to be associated with the specified key
+     * @param expiresAfter write-based time to live for the value
+     * @throws NullPointerException if the specified key, value or {@code expiresAfter} is null
+     * @throws IllegalStateException if per-entry expiry is not enabled for this cache
+     */
+    <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresAfter);
+
+    /**
      * Changes the duration, initially set from the configuration, after which each entry should be automatically removed from
      * the cache once that duration has elapsed after the entry's creation, or the most recent replacement of its value.
      * <p>

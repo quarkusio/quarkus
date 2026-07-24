@@ -649,6 +649,24 @@ public class CacheKeysService {
 }
 ----
 
+=== Per-entry expiration
+
+By default, Caffeine expiration is configured for an entire cache.
+To set a time to live per entry, enable variable expiration and pass a `Duration` to the programmatic API:
+
+[source,properties]
+----
+quarkus.cache.caffeine."my-cache".expire-after-variable=true
+----
+
+[source,java]
+----
+cache.get("key", k -> load(k), Duration.ofMinutes(5));
+cache.as(CaffeineCache.class).put("key", CompletableFuture.completedFuture(value), Duration.ofSeconds(30));
+----
+
+This flag is opt-in because variable expiration adds a small memory overhead in Caffeine.
+
 === Populating a `CaffeineCache`
 
 You can populate a `CaffeineCache` using the `CaffeineCache#put(Object, CompletableFuture)` method.

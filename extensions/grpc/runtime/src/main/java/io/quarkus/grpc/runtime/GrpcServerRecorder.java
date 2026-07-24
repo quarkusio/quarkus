@@ -40,7 +40,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
@@ -66,13 +65,9 @@ public class GrpcServerRecorder {
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
 
     private final RuntimeValue<GrpcConfiguration> runtimeConfig;
-    private final RuntimeValue<ValueRegistry> valueRegistry;
 
-    public GrpcServerRecorder(
-            final RuntimeValue<GrpcConfiguration> runtimeConfig,
-            final RuntimeValue<ValueRegistry> valueRegistry) {
+    public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
-        this.valueRegistry = valueRegistry;
     }
 
     public static List<GrpcServiceDefinition> getServices() {

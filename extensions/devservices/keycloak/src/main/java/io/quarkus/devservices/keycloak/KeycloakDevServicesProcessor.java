@@ -44,6 +44,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -558,6 +559,12 @@ public class KeycloakDevServicesProcessor {
                 }
             } else {
                 addExposedPort(KEYCLOAK_PORT);
+            }
+
+            if (config.hostAccessiblePorts().isPresent()) {
+                for (int port : config.hostAccessiblePorts().get()) {
+                    Testcontainers.exposeHostPorts(port);
+                }
             }
 
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {

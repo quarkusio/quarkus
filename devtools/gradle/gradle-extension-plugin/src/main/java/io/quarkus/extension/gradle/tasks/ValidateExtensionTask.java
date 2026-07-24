@@ -1,8 +1,11 @@
 package io.quarkus.extension.gradle.tasks;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -13,7 +16,10 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 
@@ -60,8 +66,49 @@ public class ValidateExtensionTask extends DefaultTask {
         return this.deploymentModuleClasspath;
     }
 
+    @Classpath
+    public Set<File> getRuntimeModuleClasspathFiles() {
+        return getRuntimeModuleClasspath().getFiles();
+    }
+
+    @Classpath
+    @Optional
+    public Set<File> getDeploymentModuleClasspathFiles() {
+        if (getDeploymentModuleClasspath() == null) {
+            return Collections.emptySet();
+        }
+        return getDeploymentModuleClasspath().getFiles();
+    }
+
+    @Input
+    public List<String> getRuntimeModuleArtifacts() {
+        return artifactIds(getRuntimeModuleClasspath().getResolvedConfiguration().getResolvedArtifacts());
+    }
+
+    @Input
+    public List<String> getDeploymentModuleArtifacts() {
+        if (getDeploymentModuleClasspath() == null) {
+            return List.of();
+        }
+        return artifactIds(getDeploymentModuleClasspath().getResolvedConfiguration().getResolvedArtifacts());
+    }
+
     public void setDeploymentModuleClasspath(Configuration deploymentModuleClasspath) {
         this.deploymentModuleClasspath = deploymentModuleClasspath;
+    }
+
+    private static List<String> artifactIds(Set<ResolvedArtifact> artifacts) {
+        return artifacts.stream()
+                .map(artifact -> {
+                    ResolvedModuleVersion moduleVersion = artifact.getModuleVersion();
+                    return moduleVersion.getId().getGroup() + ':'
+                            + moduleVersion.getId().getName() + ':'
+                            + moduleVersion.getId().getVersion() + ':'
+                            + artifact.getClassifier() + ':'
+                            + artifact.getExtension();
+                })
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     @TaskAction

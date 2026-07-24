@@ -67,6 +67,20 @@ class HttpServerOptionsUtilsTest {
         assertThat(config.getHttp2Config()).isNotNull();
         assertThat(config.getHttp2Config().getInitialSettings()).isNotNull();
         assertThat(config.getHttp2Config().getInitialSettings().isPushEnabled()).isTrue();
+        assertThat(config.getHttp2Config().getInitialSettings().getMaxConcurrentStreams()).isEqualTo(200L);
+    }
+
+    @Test
+    void applyCommonOptionsNewApiHttp2MaxConcurrentStreamsConfigured() {
+        HttpServerConfig config = new HttpServerConfig();
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig(true);
+        ServerLimitsConfig limits = httpConfig.limits();
+        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.of(500L));
+
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+
+        assertThat(config.getHttp2Config().getInitialSettings().getMaxConcurrentStreams()).isEqualTo(500L);
     }
 
     @Test
@@ -290,7 +304,7 @@ class HttpServerOptionsUtilsTest {
         when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
         when(limits.maxInitialLineLength()).thenReturn(4096);
         when(limits.headerTableSize()).thenReturn(OptionalLong.empty());
-        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.empty());
+        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.of(200L));
         when(limits.maxFrameSize()).thenReturn(OptionalInt.empty());
         when(limits.maxHeaderListSize()).thenReturn(OptionalLong.empty());
         when(limits.rstFloodMaxRstFramePerWindow()).thenReturn(OptionalInt.empty());

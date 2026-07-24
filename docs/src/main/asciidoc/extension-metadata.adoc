@@ -22,42 +22,37 @@ in a template `META-INF/quarkus-extension.yaml` found in the extension runtime m
 
 [source,yaml,subs=attributes+]
 ----
-name: "REST" <1>
-artifact: ${project.groupId}:${project.artifactId}:${project.version} <2>
+$schema: "https://quarkus.io/schemas/quarkus-extension-schema.json"
+name: "REST"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
-  short-name: "rest" <3>
-  keywords: <4>
+  short-name: "rest"
+  keywords:
   - "jaxrs"
   - "web"
   - "rest"
-  categories: <5>
+  categories:
   - "web"
   - "reactive"
-  status: "stable" <6>
-  guide: "https://quarkus.io/guides/rest" <7>
-  icon-url: "https://quarkus.io/assets/images/about/icon-reactive.svg" <8>
-  codestart: <9>
+  status: "stable"
+  guide: "https://quarkus.io/guides/rest"
+  icon-url: "https://quarkus.io/assets/images/about/icon-reactive.svg"
+  codestart:
     name: "rest"
     languages:
       - "java"
       - "kotlin"
+      - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
-  config: <10>
+  config:
   - "quarkus.rest."
 ----
 
-<1> Extension name displayed to users
-<2> Extension runtime artifact expression that will be replaced with the actual coordinates during the build, this field could be omitted
-<3> Short name that could be used to quickly locate an extension in the catalog of extensions provided by the dev tools to the users
-<4> Keywords that can be used to search for extensions in the extension catalog provided by the dev tools to the users
-<5> Categories the extension should appear under on https://code.quarkus.io[code.quarkus.io]. This field can be omitted, the extension will still be listed on https://code.quarkus.io[code.quarkus.io] but won't be categorized
-<6> Maturity status that could be `stable`, `preview`, `experimental`, `deprecated`. It is up to extension maintainers to evaluate the maturity status and communicate it to the users
-<7> Link to the extension guide or documentation page
-<8> Link to an externally hosted image. This is used in the Quarkus dev tools as the extension icon. It should be square, and any resolution greater than 220 pixels. Supported formats are png, jpeg, tiff, webp, and svg. Alternatively, if you https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview[set the social media preview] on the extension's source code repository, the tools will pick up that image.
-<9> https://quarkus.io/guides/extension-codestart[Codestart] information
-<10> Configuration prefix
+Field descriptions are defined in the canonical JSON Schema and reproduced below at documentation build time.
 
-To mark an extension as deprecated, set the status to `deprecated`:
+include::{generated-dir}/infra/quarkus-extension-schema-reference.adoc[opts=optional, leveloffset=+1]
+
+To mark an extension as deprecated, set `metadata.status` to a single string value `deprecated` (not an array):
 
 [source,yaml,subs=attributes+]
 
@@ -76,7 +71,7 @@ name: "Quarkus REST (formerly RESTEasy Reactive)"
 artifact: "io.quarkus:quarkus-rest:999-SNAPSHOT"
 description: "A Jakarta REST implementation utilizing build time processing and Vert.x.\
   \ This extension is not compatible with the quarkus-resteasy extension, or any of\
-  \ the extensions that depend on it." <1>
+  \ the extensions that depend on it."
 metadata:
   short-name: "rest"
   keywords:
@@ -93,17 +88,18 @@ metadata:
     languages:
     - "java"
     - "kotlin"
+    - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
   config:
   - "quarkus.rest."
-  built-with-quarkus-core: "3.8.5" <2>
-  requires-quarkus-core: "[3.8,)" <3>
-  minimum-java-version: "17" <4>
-  capabilities: <5>
+  built-with-quarkus-core: "3.8.5"
+  requires-quarkus-core: "[3.8,)"
+  minimum-java-version: "17"
+  capabilities:
     provides:
     - "io.quarkus.rest"
     - "io.quarkus.resteasy.reactive"
-  extension-dependencies: <6>
+  extension-dependencies:
   - "io.quarkus:quarkus-rest-common"
   - "io.quarkus:quarkus-mutiny"
   - "io.quarkus:quarkus-smallrye-context-propagation"
@@ -113,17 +109,9 @@ metadata:
   - "io.quarkus:quarkus-vertx-http"
   - "io.quarkus:quarkus-core"
   - "io.quarkus:quarkus-jsonp"
-scm-url: "https://github.com/quarkusio/quarkus" <7>
-sponsor: A Sponsoring Organisation <8>
+scm-url: "https://github.com/quarkusio/quarkus"
+sponsor: A Sponsoring Organisation
 ----
-<1> Description that can be displayed to users. In this case, the description was copied from the `pom.xml` of the extension module but it could also be provided in the template file.
-<2> Quarkus version the extension was built with
-<3> The Quarkus version range this extension requires. Optional, and will be set automatically by using the `built-with-quarkus-core` as the minimum range.
-<4> The minimum Java version required for this extension to run. Will be generated based on the `maven.compiler.release` used in the build.
-<5> https://quarkus.io/guides/capabilities[Capabilities] this extension provides
-<6> Direct dependencies on other extensions
-<7> The source code repository of this extension. Optional, and will often be set automatically by using the `<scm>` information in the pom. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
-<8> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
 === Extension offerings
 

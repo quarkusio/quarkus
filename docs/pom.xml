@@ -3552,6 +3552,25 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>generate-extension-metadata-schema-reference</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.ExtensionMetadataSchemaDocGenerator</mainClass>
+                            <arguments>
+                                <argument>${generated-dir}/infra/quarkus-extension-schema-reference.adoc</argument>
+                                <argument>${project.basedir}/../independent-projects/tools/devtools-common/src/main/resources/META-INF/quarkus-extension-schema.json</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>copy-tagged-java-source</id>
                         <phase>process-classes</phase>
                         <goals>

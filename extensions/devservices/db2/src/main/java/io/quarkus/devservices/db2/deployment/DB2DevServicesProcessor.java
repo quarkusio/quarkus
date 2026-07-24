@@ -31,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -188,20 +189,18 @@ public class DB2DevServicesProcessor {
             }
         }
 
-        // this is meant to be called by Quarkus code and is not strictly needed
-        // in the DB2 case as testcontainers does not try to establish
-        // a connection to determine if the container is ready, but we do it anyway to be consistent across
-        // DB containers
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? DB2_PORT : getMappedPort(DB2_PORT);
+            String authority = DevServicesHostUtil.formatHostAndPort(host, port);
+            String additionalUrlParams = constructUrlParameters(":", ";", ";");
+            return "jdbc:db2://" + authority + "/" + getDatabaseName() + additionalUrlParams;
+        }
+
+        // Delegates to getJdbcUrl() so Testcontainers startup and Quarkus config use the same URL.
         public String getEffectiveJdbcUrl() {
-            if (useSharedNetwork) {
-                // in this case we expose the URL using the network alias we created in 'configure'
-                // and the container port since the application communicating with this container
-                // won't be doing port mapping
-                String additionalUrlParams = constructUrlParameters(":", ";", ";");
-                return "jdbc:db2://" + hostName + ":" + DB2_PORT + "/" + getDatabaseName() + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
-            }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

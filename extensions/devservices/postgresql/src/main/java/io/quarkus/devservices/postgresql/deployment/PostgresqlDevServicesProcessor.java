@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -177,21 +178,18 @@ public class PostgresqlDevServicesProcessor {
             }
         }
 
-        // this is meant to be called by Quarkus code and is not strictly needed
-        // in the PostgreSQL case as testcontainers does not try to establish
-        // a connection to determine if the container is ready, but we do it anyway to be consistent across
-        // DB containers
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? POSTGRESQL_PORT : getMappedPort(POSTGRESQL_PORT);
+            String authority = DevServicesHostUtil.formatHostAndPort(host, port);
+            String additionalUrlParams = constructUrlParameters("?", "&");
+            return "jdbc:postgresql://" + authority + "/" + getDatabaseName() + additionalUrlParams;
+        }
+
+        // Delegates to getJdbcUrl() so Testcontainers startup and Quarkus config use the same URL.
         public String getEffectiveJdbcUrl() {
-            if (useSharedNetwork) {
-                // in this case we expose the URL using the network alias we created in 'configure'
-                // and the container port since the application communicating with this container
-                // won't be doing port mapping
-                String additionalUrlParams = constructUrlParameters("?", "&");
-                return "jdbc:postgresql://" + hostName + ":" + POSTGRESQL_PORT
-                        + "/" + getDatabaseName() + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
-            }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

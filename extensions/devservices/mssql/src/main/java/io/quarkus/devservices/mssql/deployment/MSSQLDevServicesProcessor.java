@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -133,28 +134,23 @@ public class MSSQLDevServicesProcessor {
             }
         }
 
-        // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
-        // from being able to determine the status of the container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? MS_SQL_SERVER_PORT : getMappedPort(MS_SQL_SERVER_PORT);
+            String additionalUrlParams = constructUrlParameters(";", ";");
+            return SqlServerDevServicesJdbcUrl.build(host, port, additionalUrlParams);
+        }
+
+        // Delegates to getJdbcUrl() so Testcontainers startup and Quarkus config use the same URL.
         public String getEffectiveJdbcUrl() {
-            if (useSharedNetwork) {
-                // in this case we expose the URL using the network alias we created in 'configure'
-                // and the container port since the application communicating with this container
-                // won't be doing port mapping
-                String additionalUrlParams = constructUrlParameters(";", ";");
-                return "jdbc:sqlserver://" + hostName + ":" + MS_SQL_SERVER_PORT + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
-            }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {
-            StringBuilder url = new StringBuilder("vertx-reactive:sqlserver://");
-            if (useSharedNetwork) {
-                url.append(hostName).append(":").append(MS_SQL_SERVER_PORT);
-            } else {
-                url.append(this.getHost()).append(":").append(this.getMappedPort(MS_SQL_SERVER_PORT));
-            }
-            return url.toString();
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? MS_SQL_SERVER_PORT : getMappedPort(MS_SQL_SERVER_PORT);
+            return "vertx-reactive:sqlserver://" + DevServicesHostUtil.formatHostAndPort(host, port);
         }
 
         @Override

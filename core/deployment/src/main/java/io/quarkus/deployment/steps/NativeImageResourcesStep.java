@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -24,19 +25,21 @@ public class NativeImageResourcesStep {
 
     @BuildStep
     List<NativeImageResourceBuildItem> registerPackageResources(
-            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories)
-            throws IOException, URISyntaxException {
-        List<NativeImageResourceBuildItem> resources = new ArrayList<>();
+            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories) throws IOException, URISyntaxException {
+
+        final List<NativeImageResourceBuildItem> resources = new ArrayList<>();
 
         for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
-            String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
+            final String path = Objects.requireNonNull(
+                    Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath()))
                     .getPath();
-            File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
+            final File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
+
             try (JarFile jarFile = new JarFile(resourceFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
+                final Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    String resourceName = entry.getName();
+                    final JarEntry entry = entries.nextElement();
+                    final String resourceName = entry.getName();
                     if (!entry.isDirectory() && resourceName.startsWith(nativeImageResourceDirectory.getPath())
                             && !resourceName.endsWith(".class")) {
                         resources.add(new NativeImageResourceBuildItem(resourceName));
@@ -49,16 +52,29 @@ public class NativeImageResourcesStep {
     }
 
     @BuildStep
+    @SuppressWarnings("deprecation")
     void forwardResourcePatternConfigToBuildItem(
             NativeConfig nativeConfig,
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeImageResourcePatterns) {
 
         final Optional<List<String>> includes = nativeConfig.resources().includes();
         final Optional<List<String>> excludes = nativeConfig.resources().excludes();
+
         if (includes.isPresent() || excludes.isPresent()) {
             final Builder builder = NativeImageResourcePatternsBuildItem.builder();
-            includes.ifPresent(builder::includeGlobs);
-            excludes.ifPresent(builder::excludeGlobs);
+
+            if (includes.isPresent()) {
+                for (String inc : includes.get()) {
+                    builder.includeGlob(inc);
+                }
+            }
+
+            if (excludes.isPresent()) {
+                for (String exc : excludes.get()) {
+                    builder.excludeGlob(exc);
+                }
+            }
+
             nativeImageResourcePatterns.produce(builder.build());
         }
     }

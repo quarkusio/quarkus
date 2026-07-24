@@ -942,6 +942,19 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--install-exit-handlers");
                 }
 
+                // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
+                // The feature is not yet available upstream, so do not enable for versions >= 25.1
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
+                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
+                        && graalVMVersion.getDistribution() == Distribution.MANDREL) {
+                    final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
+                    if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
+                        log.info(
+                                "Single callsite inlining has been enabled for this build. It aims to improve runtime performance at the expense of 1-2% binary size increase. To disable this feature use -Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline");
+                        addExperimentalVMOption(nativeImageArgs, "-H:+AOTSingleCallsiteInline");
+                    }
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need

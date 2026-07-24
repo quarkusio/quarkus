@@ -264,6 +264,14 @@ public class OidcCommonUtils {
         }
     }
 
+    public static boolean isJwtPrivateKeyConfigured(Credentials.Jwt jwt) {
+        return jwt.key().isPresent() || jwt.keyFile().isPresent() || jwt.keyStoreFile().isPresent();
+    }
+
+    public static boolean isJwtPublicKeyConfigured(Credentials.Jwt jwt) {
+        return jwt.publicKey().isPresent() || jwt.publicKeyFile().isPresent();
+    }
+
     public static String prependSlash(String path) {
         return !path.startsWith("/") ? "/" + path : path;
     }

@@ -148,6 +148,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         RESOURCE_METADATA_SCOPES,
         RESOURCE_METADATA_AUTHORIZATION_SERVER,
         RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
+        CLIENT_ID_METADATA,
+        CLIENT_ID_METADATA_FORCE_HTTPS_SCHEME,
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
@@ -637,6 +639,18 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public boolean forceHttpsScheme() {
                 invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_FORCE_HTTPS_SCHEME, true);
                 return false;
+            }
+        };
+    }
+
+    @Override
+    public ClientIdMetadata clientIdMetadata() {
+        invocationsRecorder.put(ConfigMappingMethods.CLIENT_ID_METADATA, true);
+        return new ClientIdMetadata() {
+            @Override
+            public boolean forceHttpsScheme() {
+                invocationsRecorder.put(ConfigMappingMethods.CLIENT_ID_METADATA_FORCE_HTTPS_SCHEME, true);
+                return true;
             }
         };
     }
@@ -1159,6 +1173,16 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                     @Override
                     public Optional<String> keyPassword() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_KEY_PASSWORD, true);
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> publicKey() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> publicKeyFile() {
                         return Optional.empty();
                     }
 

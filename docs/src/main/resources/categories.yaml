@@ -284,6 +284,7 @@ categories:
           - security-openid-connect-providers.adoc
           - security-openid-connect-client.adoc
           - security-openid-connect-client-reference.adoc
+          - security-oidc-client-id-metadata-document.adoc
           - security-openid-connect-client-registration.adoc
           - security-openid-connect-multitenancy.adoc
           - security-openid-connect-dev-services.adoc

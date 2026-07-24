@@ -185,6 +185,10 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(jwks.cleanUpTimerInterval().isEmpty());
         assertFalse(jwks.tryAll());
 
+        var clientIdMetadata = config.clientIdMetadata();
+        assertNotNull(clientIdMetadata);
+        assertTrue(clientIdMetadata.forceHttpsScheme());
+
         // OidcClientCommonConfig methods
         assertTrue(config.tokenPath().isEmpty());
         assertTrue(config.revokePath().isEmpty());
@@ -328,6 +332,7 @@ public class OidcTenantConfigBuilderTest {
                 .cacheSize(55)
                 .resolveEarly(false)
                 .end()
+                .clientIdMetadata().forceHttpsScheme(false).end()
                 // OidcClientCommonConfig methods
                 .tokenPath("token-path-yep")
                 .revokePath("revoke-path-yep")
@@ -587,6 +592,10 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(2, jwks.cacheTimeToLive().toMinutes());
         assertEquals(1, jwks.cleanUpTimerInterval().orElseThrow().toMinutes());
         assertTrue(jwks.tryAll());
+
+        var clientIdMetadata = config.clientIdMetadata();
+        assertNotNull(clientIdMetadata);
+        assertFalse(clientIdMetadata.forceHttpsScheme());
 
         // OidcClientCommonConfig methods
         assertEquals("token-path-yep", config.tokenPath().orElse(null));

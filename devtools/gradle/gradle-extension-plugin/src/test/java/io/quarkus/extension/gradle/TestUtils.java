@@ -77,16 +77,16 @@ public class TestUtils {
                 "}\n";
     }
 
-    public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
-        BuildResult extensionDescriptorResult = GradleRunner.create()
+    public static BuildResult runProcessResourcesTask(File testProjectDir) {
+        BuildResult result = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
+                .withArguments(QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME, "-S")
                 .build();
 
-        assertThat(extensionDescriptorResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+        assertThat(result.task(":" + QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
-        return extensionDescriptorResult;
+        return result;
     }
 
     public static void createExtensionProject(File testProjectDir, boolean disableValidation, List<String> runtimeDependencies,

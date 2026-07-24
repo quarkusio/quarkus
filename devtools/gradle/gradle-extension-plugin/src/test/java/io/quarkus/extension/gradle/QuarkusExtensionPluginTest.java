@@ -29,7 +29,9 @@ public class QuarkusExtensionPluginTest {
     @BeforeEach
     public void setupProject() throws IOException {
         buildFile = new File(testProjectDir, "build.gradle");
-
+        File quarkusExtensionsFile = new File(testProjectDir, "src/main/resources/META-INF/quarkus-extensions.yaml");
+        quarkusExtensionsFile.getParentFile().mkdirs();
+        TestUtils.writeFile(quarkusExtensionsFile, "");
         File settingFile = new File(testProjectDir, "settings.gradle");
         String settingsContent = "rootProject.name = 'test'";
         TestUtils.writeFile(settingFile, settingsContent);
@@ -39,13 +41,13 @@ public class QuarkusExtensionPluginTest {
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
 
-        BuildResult jarResult = GradleRunner.create()
+        BuildResult jarResult = GradleRunner.create().forwardOutput()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
                 .withArguments("jar", "-S")
                 .build();
         assertThat(jarResult.task(":jar").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-        assertThat(jarResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+        assertThat(jarResult.task(":" + QuarkusExtensionPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
 
         File jarFile = new File(testProjectDir, "build/libs/test-1.0.0.jar");

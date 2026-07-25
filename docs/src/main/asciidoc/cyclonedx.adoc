@@ -197,6 +197,17 @@ quarkus.cyclonedx.libraries-only=true
 
 When enabled, components that would be classified as `file` type in CycloneDX (generic PURL components with a file system path or distribution path) are excluded from the generated SBOM along with their dependency relationships.
 
+=== Runtime-only mode
+
+By default, the generated SBOM includes both runtime and development/build-time dependencies. To include only runtime dependencies, use:
+
+[source,properties]
+----
+quarkus.cyclonedx.runtime-only=true
+----
+
+When enabled, development/build-time dependencies (those with CycloneDX `scope` set to `excluded`) are excluded entirely from the generated SBOM along with their dependency relationships. This can be useful when the SBOM is intended for runtime vulnerability scanning and build-time components are not relevant.
+
 === CycloneDX schema version
 
 By default, the SBOM is generated using the latest CycloneDX schema version supported by the integrated library. A specific version can be requested:

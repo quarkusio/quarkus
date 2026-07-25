@@ -77,6 +77,7 @@ public class CycloneDxProcessor {
                     .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
                     .setPrettyPrint(cdxSbomConfig.prettyPrint())
                     .setLibrariesOnly(cdxSbomConfig.librariesOnly())
+                    .setRuntimeOnly(cdxSbomConfig.runtimeOnly())
                     .setIncludeQuarkusComponentScope(cdxSbomConfig.includeQuarkusComponentScope())
                     .setContributions(contributions)
                     .generate()) {
@@ -173,6 +174,7 @@ public class CycloneDxProcessor {
                 .setIncludeLicenseText(cdxConfig.includeLicenseText())
                 .setPrettyPrint(cdxConfig.prettyPrint())
                 .setLibrariesOnly(cdxConfig.librariesOnly())
+                .setRuntimeOnly(cdxConfig.runtimeOnly())
                 .setIncludeQuarkusComponentScope(cdxConfig.includeQuarkusComponentScope())
                 .setContributions(collectContributions(coreContribution, sbomContributions))
                 .generateText();

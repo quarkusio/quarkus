@@ -63,6 +63,15 @@ public interface CycloneDxConfig {
     boolean librariesOnly();
 
     /**
+     * Whether to include only runtime dependencies in generated SBOMs, excluding
+     * development/build-time dependencies entirely.
+     *
+     * @return whether to include only runtime dependencies
+     */
+    @WithDefault("false")
+    boolean runtimeOnly();
+
+    /**
      * Whether to include the {@code quarkus:component:scope} custom property on each component
      * in generated SBOMs. This property indicates whether a component is a {@code runtime} or
      * {@code development} dependency. Since development dependencies are now also marked with the

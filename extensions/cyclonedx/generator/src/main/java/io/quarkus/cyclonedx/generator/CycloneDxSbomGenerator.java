@@ -85,6 +85,7 @@ public class CycloneDxSbomGenerator {
     private boolean includeLicenseText;
     private boolean prettyPrint;
     private boolean librariesOnly;
+    private boolean runtimeOnly;
     private boolean includeQuarkusComponentScope;
     private Instant outputTimestamp;
     private List<SbomContribution> contributions = List.of();
@@ -143,6 +144,12 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setLibrariesOnly(boolean librariesOnly) {
         ensureNotGenerated();
         this.librariesOnly = librariesOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setRuntimeOnly(boolean runtimeOnly) {
+        ensureNotGenerated();
+        this.runtimeOnly = runtimeOnly;
         return this;
     }
 
@@ -242,15 +249,19 @@ public class CycloneDxSbomGenerator {
             allDependencies.addAll(contribution.dependencies());
         }
 
-        // Filter out non-library components when librariesOnly is enabled
+        // Filter out components based on librariesOnly and runtimeOnly settings
         final Set<String> excludedBomRefs;
-        if (librariesOnly) {
+        if (librariesOnly || runtimeOnly) {
             excludedBomRefs = new HashSet<>();
             allDescriptors.removeIf(d -> {
                 if (d.getBomRef().equals(mainComponentBomRef)) {
                     return false;
                 }
-                if (isFileComponent(d)) {
+                if (librariesOnly && isFileComponent(d)) {
+                    excludedBomRefs.add(d.getBomRef());
+                    return true;
+                }
+                if (runtimeOnly && ComponentDescriptor.SCOPE_DEVELOPMENT.equals(d.getScope())) {
                     excludedBomRefs.add(d.getBomRef());
                     return true;
                 }

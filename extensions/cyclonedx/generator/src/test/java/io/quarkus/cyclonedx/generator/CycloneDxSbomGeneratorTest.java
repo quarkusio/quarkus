@@ -10,6 +10,7 @@ import java.util.List;
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Dependency;
+import org.cyclonedx.model.Property;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -444,6 +445,69 @@ class CycloneDxSbomGeneratorTest {
         assertThat(componentNames).contains("react", "quarkus-run.jar");
     }
 
+    @Test
+    void developmentScopeRenderedAsExcluded() {
+        ComponentDescriptor runtimeComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor devComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "eslint", "9.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor noScopeComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "lodash", "4.17.21"))
+                .build();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(SbomContribution.ofComponents(
+                        List.of(runtimeComp, devComp, noScopeComp))))
+                .generateText().get(0));
+
+        Component runtime = bom.getComponents().stream()
+                .filter(c -> "react".equals(c.getName())).findFirst().orElseThrow();
+        Component dev = bom.getComponents().stream()
+                .filter(c -> "eslint".equals(c.getName())).findFirst().orElseThrow();
+        Component noScope = bom.getComponents().stream()
+                .filter(c -> "lodash".equals(c.getName())).findFirst().orElseThrow();
+
+        assertThat(dev.getScope()).isEqualTo(Component.Scope.EXCLUDED);
+        assertThat(runtime.getScope()).isNull();
+        assertThat(noScope.getScope()).isNull();
+
+        // quarkus:component:scope property should not be present by default
+        assertThat(hasProperty(dev, "quarkus:component:scope")).isFalse();
+        assertThat(hasProperty(runtime, "quarkus:component:scope")).isFalse();
+    }
+
+    @Test
+    void quarkusComponentScopePropertyIncludedWhenEnabled() {
+        ComponentDescriptor runtimeComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor devComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "eslint", "9.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setIncludeQuarkusComponentScope(true)
+                .setContributions(List.of(SbomContribution.ofComponents(
+                        List.of(runtimeComp, devComp))))
+                .generateText().get(0));
+
+        Component runtime = bom.getComponents().stream()
+                .filter(c -> "react".equals(c.getName())).findFirst().orElseThrow();
+        Component dev = bom.getComponents().stream()
+                .filter(c -> "eslint".equals(c.getName())).findFirst().orElseThrow();
+
+        assertThat(propertyValue(runtime, "quarkus:component:scope")).isEqualTo("runtime");
+        assertThat(propertyValue(dev, "quarkus:component:scope")).isEqualTo("development");
+    }
+
     private static Bom parseBom(String json) {
         try {
             return new org.cyclonedx.parsers.JsonParser().parse(json.getBytes());
@@ -463,5 +527,21 @@ class CycloneDxSbomGeneratorTest {
                 .setDependencies(dependencies)
                 .setRuntimeCp()
                 .build();
+    }
+
+    private static boolean hasProperty(Component component, String propertyName) {
+        return component.getProperties() != null && component.getProperties().stream()
+                .anyMatch(p -> propertyName.equals(p.getName()));
+    }
+
+    private static String propertyValue(Component component, String propertyName) {
+        if (component.getProperties() == null) {
+            return null;
+        }
+        return component.getProperties().stream()
+                .filter(p -> propertyName.equals(p.getName()))
+                .map(Property::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

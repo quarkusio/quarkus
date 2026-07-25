@@ -94,6 +94,13 @@ public class DependencySbomMojo extends AbstractMojo {
     @Parameter(property = "quarkus.dependency.sbom.runtime-only")
     boolean runtimeOnly;
 
+    /**
+     * Whether to include the {@code quarkus:component:scope} custom property on each component.
+     * The default is {@code false}.
+     */
+    @Parameter(property = "quarkus.dependency.sbom.include-quarkus-component-scope", defaultValue = "false")
+    boolean includeQuarkusComponentScope;
+
     protected MavenArtifactResolver resolver;
 
     @Override
@@ -114,6 +121,7 @@ public class DependencySbomMojo extends AbstractMojo {
                 .setSchemaVersion(schemaVersion)
                 .setIncludeLicenseText(includeLicenseText)
                 .setPrettyPrint(prettyPrint)
+                .setIncludeQuarkusComponentScope(includeQuarkusComponentScope)
                 .generate();
         getLog().info("The SBOM has been saved in " + outputFilePath);
     }

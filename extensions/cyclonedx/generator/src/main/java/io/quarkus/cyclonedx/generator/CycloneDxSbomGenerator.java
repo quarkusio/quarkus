@@ -85,6 +85,7 @@ public class CycloneDxSbomGenerator {
     private boolean includeLicenseText;
     private boolean prettyPrint;
     private boolean librariesOnly;
+    private boolean includeQuarkusComponentScope;
     private Instant outputTimestamp;
     private List<SbomContribution> contributions = List.of();
 
@@ -142,6 +143,12 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setLibrariesOnly(boolean librariesOnly) {
         ensureNotGenerated();
         this.librariesOnly = librariesOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setIncludeQuarkusComponentScope(boolean includeQuarkusComponentScope) {
+        ensureNotGenerated();
+        this.includeQuarkusComponentScope = includeQuarkusComponentScope;
         return this;
     }
 
@@ -448,11 +455,16 @@ public class CycloneDxSbomGenerator {
             c.setType(Component.Type.LIBRARY);
         }
 
-        // Scope property
+        // Scope
         List<Property> props = new ArrayList<>(2);
         String scope = descriptor.getScope() != null ? descriptor.getScope()
                 : ComponentDescriptor.SCOPE_RUNTIME;
-        addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        if (includeQuarkusComponentScope) {
+            addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        }
+        if (ComponentDescriptor.SCOPE_DEVELOPMENT.equals(scope)) {
+            c.setScope(Component.Scope.EXCLUDED);
+        }
 
         // POM metadata for Maven components
         if (Purl.TYPE_MAVEN.equals(purl.getType())) {

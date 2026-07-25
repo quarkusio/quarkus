@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.app.DependencyInfoProvider;
 import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
@@ -33,6 +35,8 @@ import io.quarkus.sbom.SbomContribution;
  * Generates CycloneDX SBOMs for Quarkus applications.
  */
 public class CycloneDxProcessor {
+
+    private static final Logger log = Logger.getLogger(CycloneDxProcessor.class);
 
     /**
      * Generates CycloneDX SBOM files for the packaged application.
@@ -73,6 +77,7 @@ public class CycloneDxProcessor {
                     .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
                     .setPrettyPrint(cdxSbomConfig.prettyPrint())
                     .setLibrariesOnly(cdxSbomConfig.librariesOnly())
+                    .setIncludeQuarkusComponentScope(cdxSbomConfig.includeQuarkusComponentScope())
                     .setContributions(contributions)
                     .generate()) {
                 sbomProducer.produce(new SbomBuildItem(sbom));
@@ -82,7 +87,11 @@ public class CycloneDxProcessor {
 
     private static DependencyInfoProvider getDependencyInfoProvider(AppModelProviderBuildItem appModelProviderBuildItem) {
         var supplier = appModelProviderBuildItem.getDependencyInfoProvider();
-        return supplier == null ? null : supplier.get();
+        var depInfoProvider = supplier == null ? null : supplier.get();
+        if (depInfoProvider == null) {
+            log.warn("Dependency info provider is not available; generated SBOMs may be missing license information");
+        }
+        return depInfoProvider;
     }
 
     private static List<SbomContribution> collectContributions(SbomContribution coreContribution,
@@ -164,6 +173,7 @@ public class CycloneDxProcessor {
                 .setIncludeLicenseText(cdxConfig.includeLicenseText())
                 .setPrettyPrint(cdxConfig.prettyPrint())
                 .setLibrariesOnly(cdxConfig.librariesOnly())
+                .setIncludeQuarkusComponentScope(cdxConfig.includeQuarkusComponentScope())
                 .setContributions(collectContributions(coreContribution, sbomContributions))
                 .generateText();
 

@@ -18,7 +18,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 
 public class PulsarContainer extends GenericContainer<PulsarContainer> implements Startable {
 
-    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.2.4");
+    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse(io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor("pulsar"));
 
     public static final String STARTER_SCRIPT = "/run_pulsar.sh";
 

@@ -26,7 +26,7 @@ public class LRACoordinatorManager {
         Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LOGGER);
         if (System.getProperty("lra.coordinator.url") == null) {
             LOGGER.debug("Starting LRA coordinator on port " + coordinatorPort);
-            coordinatorContainer = new GenericContainer<>(DockerImageName.parse("quay.io/jbosstm/lra-coordinator:latest"))
+            coordinatorContainer = new GenericContainer<>(DockerImageName.parse(io.quarkus.test.common.DockerImageNames.getImage("narayana-lra.image")))
                     // lra-coordinator is a Quarkus service
                     .withEnv("QUARKUS_HTTP_PORT", String.valueOf(coordinatorPort))
                     // need to run with host network because coordinator calls the TCK services from the container

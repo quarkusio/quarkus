@@ -388,7 +388,37 @@ This additional processing step is done even if `quarkus.smallrye-openapi.store-
 
 === The MicroProfile OpenAPI way
 
-The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property. This filter will be run during RunStage `RUNTIME_STARTUP`.
+The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property, which is useful when adopting a filter from a shared library. This filter will be run during RunStage `RUNTIME_STARTUP` for every configured document.
+
+These defaults can be changed by applying an `@OpenApiFilter` on the `mp.openapi.filter` class, or a directly extending class. The RunStage and documents this filter will be run for are then taken from the `@OpenApiFilter` annotation instead of the implicit default.
+
+For example:
+
+[source,properties]
+----
+mp.openapi.filter=com.acme.SharedFilter
+----
+
+[source,java,opts=novalidate]
+----
+package com.acme;
+
+import io.quarkus.smallrye.openapi.OpenApiFilter;
+import org.eclipse.microprofile.openapi.OASFilter;
+
+public class SharedFilter implements OASFilter { //<1>
+    // ...
+}
+
+@OpenApiFilter(documentNames = "user", stages = {OpenApiFilter.RunStage.RUNTIME_PER_REQUEST}) //<2>
+public class MyUserFilter extends SharedFilter implements OASFilter { //<3>
+    // ...
+}
+----
+
+<1> `SharedFilter` comes from a shared library and cannot be annotated. Being named by `mp.openapi.filter`, it would normally run during `RUNTIME_STARTUP`, for every document.
+<2> Annotating a directly extending class overrides those defaults. Here the filter runs on every request, and only for the document named `user`.
+<3> `MyUserFilter` must implement `OASFilter` explicitly, even though `SharedFilter` already does. Otherwise it is not detected, and the defaults of `SharedFilter` continue to apply. This is a known limitation.
 
 == Loading OpenAPI Schema From Static Files
 

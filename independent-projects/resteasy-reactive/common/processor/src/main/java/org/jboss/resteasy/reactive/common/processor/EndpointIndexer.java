@@ -165,6 +165,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
+    private static final String MULTIPART_MESSAGE_BODY_WRITER = "org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter";
     public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
@@ -729,12 +730,20 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (RESPONSE.equals(nonAsyncReturnType.name())
                             || REST_RESPONSE.equals(nonAsyncReturnType.name())) {
                         returnsMultipart = true;
+                        additionalWriters.add(
+                                MULTIPART_MESSAGE_BODY_WRITER,
+                                MediaType.MULTIPART_FORM_DATA,
+                                LIST.toString());
                     } else if (nonAsyncReturnType.kind() == Kind.PARAMETERIZED_TYPE
                             && nonAsyncReturnType.asParameterizedType().name().equals(LIST)
                             && !nonAsyncReturnType.asParameterizedType().arguments().isEmpty()
                             && nonAsyncReturnType.asParameterizedType().arguments().get(0).name()
                                     .equals(ENTITY_PART)) {
                         returnsMultipart = true;
+                        additionalWriters.add(
+                                MULTIPART_MESSAGE_BODY_WRITER,
+                                MediaType.MULTIPART_FORM_DATA,
+                                LIST.toString());
                     } else {
                         // Handle multipart form data responses
                         ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());

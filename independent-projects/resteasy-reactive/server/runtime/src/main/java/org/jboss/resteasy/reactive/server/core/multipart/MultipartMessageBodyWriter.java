@@ -34,16 +34,29 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 import org.jboss.resteasy.reactive.server.multipart.PartItem;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
+public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Object> {
 
     private static final String DOUBLE_DASH = "--";
     private static final String LINE_SEPARATOR = "\r\n";
     private static final String BOUNDARY_PARAM = "boundary";
+
+    @Override
+    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+        if (MultipartFormDataOutput.class.isAssignableFrom(type)
+                || isEntityPartList(type, genericType)) {
+            return true;
+        }
+        if (isMultipartFormData(mediaType)) {
+            return annotationsContainMultipartProduces(annotations);
+        }
+        return false;
+    }
 
     @Override
     public void writeTo(Object o, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
@@ -53,9 +66,61 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
     }
 
     @Override
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
+        if (MultipartFormDataOutput.class.isAssignableFrom(type)
+                || isEntityPartList(type, genericType)) {
+            return true;
+        }
+        if (isMultipartFormData(mediaType)) {
+            return methodProducesMultipart(target);
+        }
+        return false;
+    }
+
+    private static boolean isMultipartFormData(MediaType mediaType) {
+        return mediaType != null && "multipart".equals(mediaType.getType())
+                && "form-data".equals(mediaType.getSubtype());
+    }
+
+    private static boolean methodProducesMultipart(ResteasyReactiveResourceInfo target) {
+        if (target == null) {
+            return false;
+        }
+        return annotationsContainMultipartProduces(target.getAnnotations());
+    }
+
+    private static boolean annotationsContainMultipartProduces(Annotation[] annotations) {
+        if (annotations == null) {
+            return false;
+        }
+        for (Annotation annotation : annotations) {
+            if (annotation instanceof jakarta.ws.rs.Produces produces) {
+                for (String value : produces.value()) {
+                    if (MediaType.MULTIPART_FORM_DATA.equals(value)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void writeResponse(Object o, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         writeMultiformData(o, context.getResponseMediaType(), context.getOrCreateOutputStream());
+    }
+
+    private static boolean isEntityPartList(Class<?> type, Type genericType) {
+        if (!List.class.isAssignableFrom(type)) {
+            return false;
+        }
+        if (genericType instanceof java.lang.reflect.ParameterizedType pt) {
+            java.lang.reflect.Type[] args = pt.getActualTypeArguments();
+            return args.length == 1 && args[0] == EntityPart.class;
+        }
+        return false;
     }
 
     public static final String getGeneratedMapperClassNameFor(String className) {

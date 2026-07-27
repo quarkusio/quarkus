@@ -133,8 +133,6 @@ public class ServerSerialisers extends Serialisers {
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(MultipartFormDataOutput.class, MultipartMessageBodyWriter.class,
                     MediaType.MULTIPART_FORM_DATA),
-            new Serialisers.BuiltinWriter(List.class, MultipartMessageBodyWriter.class,
-                    MediaType.MULTIPART_FORM_DATA),
             new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,

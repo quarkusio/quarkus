@@ -14,7 +14,7 @@ public final class AddToOpenAPIDefinitionBuildItem extends MultiBuildItem {
      *
      * @param filter the filter to be applied when building the OpenAPI document
      */
-    @Deprecated
+    @Deprecated(since = "3.32")
     public AddToOpenAPIDefinitionBuildItem(OASFilter filter) {
         this(filter, OpenAPISPIConstants.DEFAULT_DOCUMENT_NAME);
     }

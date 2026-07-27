@@ -139,7 +139,6 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.OperationHandler;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.api.constants.SecurityConstants;
@@ -430,8 +429,7 @@ public class SmallRyeOpenApiProcessor {
                     apiFilteredIndexViewBuildItem.getIndex(), documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST)
                     .isEmpty();
 
-            boolean dynamic = documentConfig.alwaysRunFilter() || hasPerRequestFilters;
-            Handler<RoutingContext> handler = recorder.handler(documentName, dynamic);
+            Handler<RoutingContext> handler = recorder.handler(documentName, hasPerRequestFilters);
 
             String managementEnabledKey = MANAGEMENT_ENABLED;
 
@@ -617,9 +615,8 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private List<String> getUserDefinedRuntimeStartupFilters(Config config, IndexView index, String documentName) {
-        @SuppressWarnings("removal")
         List<String> userDefinedFilters = getUserDefinedFilters(index,
-                documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP, OpenApiFilter.RunStage.RUN);
+                documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP);
         // Also add the MP way
         config.getOptionalValue(OASConfig.FILTER, String.class).ifPresent(userDefinedFilters::add);
         return userDefinedFilters;
@@ -627,64 +624,35 @@ public class SmallRyeOpenApiProcessor {
 
     /**
      * Builds a map of all user-defined filters grouped by their resolved {@link OpenApiFilter.RunStage}.
-     * The map never contains {@link OpenApiFilter.RunStage#BOTH} as a key; filters annotated with
-     * {@code BOTH} are resolved to {@code BUILD} + {@code RUN}.
      */
-    @SuppressWarnings("removal")
     private Map<OpenApiFilter.RunStage, List<String>> getUserDefinedFiltersByStage(Config config, IndexView index,
             String documentName) {
         Map<OpenApiFilter.RunStage, List<String>> result = new EnumMap<>(OpenApiFilter.RunStage.class);
         for (OpenApiFilter.RunStage stage : OpenApiFilter.RunStage.values()) {
-            if (stage == OpenApiFilter.RunStage.BOTH) {
-                continue;
-            }
             result.put(stage, getUserDefinedFilters(index, documentName, stage));
         }
 
         // Also add the MP way
         config.getOptionalValue(OASConfig.FILTER, String.class)
-                .ifPresent(filter -> result.get(OpenApiFilter.RunStage.RUN).add(filter));
+                .ifPresent(filter -> result.get(OpenApiFilter.RunStage.RUNTIME_STARTUP).add(filter));
         return result;
     }
 
     /**
-     * resolves the effective stages from {@link OpenApiFilter#stages()} and {@link OpenApiFilter#value()}.
+     * parses the effective stages from {@link OpenApiFilter#stages()}.
      *
      * @param ai the OpenApiFilter annotation placed on an OASFilter implementation
      * @param index
-     * @return set of the Runstages this OasFilter should run in, never null.
-     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BOTH} will not be present, instead it will be resolved
-     *         to {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BUILD} +
-     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#RUN}
-     * @deprecated This will be removed once {@link OpenApiFilter#value()} is also removed.
+     * @return set of the {@link OpenApiFilter.RunStage}s this OasFilter should run in, never null.
      */
-    @Deprecated(since = "3.32", forRemoval = true)
-    @SuppressWarnings("removal")
-    private Set<OpenApiFilter.RunStage> resolveStages(AnnotationInstance ai, IndexView index) {
-
-        // remember: AnnotationInstance.value does NOT return default values, and instead return null if not explicitly set
+    private Set<OpenApiFilter.RunStage> parseStages(AnnotationInstance ai, IndexView index) {
 
         Set<OpenApiFilter.RunStage> runStages = EnumSet.noneOf(OpenApiFilter.RunStage.class);
-        AnnotationValue stages = ai.value("stages");
+        AnnotationValue stages = ai.valueWithDefault(index, "stages");
         if (stages != null) {
             for (AnnotationValue sv : stages.asArrayList()) {
                 runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
             }
-        } else {
-            AnnotationValue value = ai.value();
-            if (value != null) {
-                runStages.add(OpenApiFilter.RunStage.valueOf(value.asEnum()));
-            } else {
-                stages = ai.valueWithDefault(index, "stages");
-                for (AnnotationValue sv : stages.asArrayList()) {
-                    runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
-                }
-            }
-        }
-
-        if (runStages.remove(OpenApiFilter.RunStage.BOTH)) {
-            runStages.add(OpenApiFilter.RunStage.BUILD);
-            runStages.add(OpenApiFilter.RunStage.RUN);
         }
 
         return runStages;
@@ -700,7 +668,7 @@ public class SmallRyeOpenApiProcessor {
                 .getAnnotations(OpenApiFilter.class)
                 .stream()
                 .filter(ai -> {
-                    Set<OpenApiFilter.RunStage> resolved = resolveStages(ai, index);
+                    Set<OpenApiFilter.RunStage> resolved = parseStages(ai, index);
                     for (OpenApiFilter.RunStage stage : requestedStages) {
                         if (resolved.contains(stage)) {
                             return true;
@@ -1280,7 +1248,7 @@ public class SmallRyeOpenApiProcessor {
             });
 
             openApiDocumentProducer
-                    .produce(new OpenApiDocumentBuildItem(toOpenApiDocument(storedOpenAPI), storedOpenAPI, documentName));
+                    .produce(new OpenApiDocumentBuildItem(storedOpenAPI, documentName));
         });
     }
 
@@ -1362,17 +1330,6 @@ public class SmallRyeOpenApiProcessor {
             // Try again without the user-defined runtime filters
             return filterOnlyBuilder.get().build();
         }
-    }
-
-    /**
-     * We need to use the deprecated OpenApiDocument as long as
-     * OpenApiDocumentBuildItem needs to be produced.
-     */
-    @SuppressWarnings("deprecation")
-    OpenApiDocument toOpenApiDocument(SmallRyeOpenAPI finalOpenAPI) {
-        OpenApiDocument output = OpenApiDocument.newInstance();
-        output.set(finalOpenAPI.model());
-        return output;
     }
 
     @BuildStep

@@ -47,17 +47,10 @@ public class OpenApiDocumentService {
                 .orElseGet(Thread.currentThread()::getContextClassLoader);
 
         Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
-        boolean dynamic = wrappedConfig.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", boolean.class)
-                .orElse(false);
 
         Set<String> startupFilters = new LinkedHashSet<>(filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_STARTUP));
         Set<String> requestFilters = new LinkedHashSet<>(
                 filtersByStage.get(OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
-        if (!dynamic) {
-            startupFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
-        } else {
-            requestFilters.addAll(filtersByStage.get(OpenApiFilter.RunStage.RUN));
-        }
 
         boolean hasStartup = !startupFilters.isEmpty();
         boolean hasRequest = !requestFilters.isEmpty();

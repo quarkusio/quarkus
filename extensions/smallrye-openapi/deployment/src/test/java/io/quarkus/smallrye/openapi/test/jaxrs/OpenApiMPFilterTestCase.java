@@ -8,15 +8,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
-public class OpenApiRuntimeFilterTestCase {
+public class OpenApiMPFilterTestCase {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class, MyOASFilter.class)
-                    .addAsResource(new StringAsset("mp.openapi.filter=io.quarkus.smallrye.openapi.test.jaxrs.MyOASFilter\n"
-                            + "my.openapi.version=3.1.0"),
+                    .addAsResource(new StringAsset("""
+                            mp.openapi.filter=io.quarkus.smallrye.openapi.test.jaxrs.MyOASFilter
+                            my.openapi.version=3.1.0"""),
                             "application.properties"));
 
     @Test

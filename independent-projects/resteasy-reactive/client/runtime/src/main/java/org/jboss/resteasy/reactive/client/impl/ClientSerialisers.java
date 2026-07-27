@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.json.JsonArray;
@@ -74,7 +75,10 @@ public class ClientSerialisers extends Serialisers {
             new BuiltinReader(Object.class, ClientDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN, RuntimeType.CLIENT),
             new BuiltinReader(JsonArray.class, JsonArrayHandler.class, MediaType.APPLICATION_JSON, RuntimeType.CLIENT),
             new BuiltinReader(JsonObject.class, JsonObjectHandler.class, MediaType.APPLICATION_JSON, RuntimeType.CLIENT),
-            new BuiltinReader(JsonValue.class, JsonValueHandler.class, MediaType.APPLICATION_JSON, RuntimeType.CLIENT)
+            new BuiltinReader(JsonValue.class, JsonValueHandler.class, MediaType.APPLICATION_JSON, RuntimeType.CLIENT),
+            new BuiltinReader(List.class,
+                    org.jboss.resteasy.reactive.common.providers.serialisers.EntityPartReader.class,
+                    MediaType.MULTIPART_FORM_DATA, RuntimeType.CLIENT)
     };
     public static BuiltinWriter[] BUILTIN_WRITERS = new BuiltinWriter[] {
             new BuiltinWriter(String.class, StringMessageBodyHandler.class,

@@ -560,7 +560,21 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public boolean isMultipart() {
-        return entity != null && entity.getEntity() instanceof QuarkusMultipartForm;
+        if (entity == null) {
+            return false;
+        }
+        Object entityObj = entity.getEntity();
+        if (entityObj instanceof GenericEntity<?> ge) {
+            entityObj = ge.getEntity();
+        }
+        if (entityObj instanceof QuarkusMultipartForm) {
+            return true;
+        }
+        if (entityObj instanceof java.util.List<?> list && !list.isEmpty()
+                && list.get(0) instanceof jakarta.ws.rs.core.EntityPart) {
+            return true;
+        }
+        return false;
     }
 
     public boolean isFileDownload() {

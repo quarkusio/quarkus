@@ -4,6 +4,7 @@ import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -68,10 +70,35 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         MultipartFormDataOutput formData;
         if (o instanceof MultipartFormDataOutput) {
             formData = (MultipartFormDataOutput) o;
+        } else if (o instanceof List<?> list
+                && (list.isEmpty() || list.get(0) instanceof EntityPart)) {
+            formData = entityPartsToFormData((List<EntityPart>) list);
         } else {
             formData = toFormData(o);
         }
         write(formData, boundary, outputStream, requestContext);
+    }
+
+    private MultipartFormDataOutput entityPartsToFormData(List<EntityPart> parts) {
+        MultipartFormDataOutput output = new MultipartFormDataOutput();
+        for (EntityPart part : parts) {
+            InputStream content = part.getContent();
+            MediaType partMediaType = part.getMediaType();
+            if (partMediaType == null) {
+                partMediaType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+            }
+            String fileName = part.getFileName().orElse(null);
+            MultivaluedMap<String, Object> headers = new QuarkusMultivaluedHashMap<>();
+            if (part.getHeaders() != null) {
+                for (Map.Entry<String, List<String>> entry : part.getHeaders().entrySet()) {
+                    for (String value : entry.getValue()) {
+                        headers.add(entry.getKey(), value);
+                    }
+                }
+            }
+            output.addFormData(part.getName(), content, partMediaType, fileName, headers);
+        }
+        return output;
     }
 
     private MultipartFormDataOutput toFormData(Object o) {

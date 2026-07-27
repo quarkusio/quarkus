@@ -717,7 +717,8 @@ public class ServerEndpointIndexer
         } else if (elementType.equals(FileUpload.class.getName())
                 || elementType.equals(Path.class.getName())
                 || elementType.equals(File.class.getName())
-                || elementType.equals(InputStream.class.getName())) {
+                || elementType.equals(InputStream.class.getName())
+                || elementType.equals("jakarta.ws.rs.core.EntityPart")) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {

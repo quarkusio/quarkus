@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import static org.jboss.resteasy.reactive.server.handlers.HandlerMediaTypeUtil.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -116,6 +118,10 @@ public class ResourceLocatorHandler implements ServerRestHandler {
                 throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND.getStatusCode()).build());
         }
+
+        validateConsumes(res, requestContext);
+        validateProduces(res, requestContext);
+
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);
         requestContext.setEndpointInstance(locator);

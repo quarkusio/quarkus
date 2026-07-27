@@ -18,8 +18,6 @@ include::{includes}/extension-status.adoc[]
 Database access is something almost every application needs, whether it's persisting data or querying tables.
 In this guide we explain how Quarkus Data provides database access with entity mapping, compile-time validated repositories, and reactive database access.
 
-If you're looking for raw SQL queries without entity mapping, see the xref:quarkus-data-hibernate-sql.adoc[Native SQL Queries with Quarkus Data Hibernate] guide instead.
-
 == Prerequisites
 
 :prerequisites-docker:

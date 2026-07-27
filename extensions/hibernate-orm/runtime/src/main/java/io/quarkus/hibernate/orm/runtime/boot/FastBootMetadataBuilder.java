@@ -467,6 +467,7 @@ public class FastBootMetadataBuilder {
                 fullMeta.getSqlResultSetMappingMap(), //TODO might contain NativeSQLQueryReturn (as namedNativeQueryMap above)
                 fullMeta.getNamedEntityGraphs(), //TODO //reference to *annotation* instance ! FIXME or ignore feature?
                 fullMeta.getSqlFunctionMap(), //ok
+                fullMeta.getPersistenceUnitLifecycleCallbackDefinitions(),
                 fullMeta.getDatabase(), //Cleaned up: used to include references to MetadataBuildingOptions, etc..
                 fullMeta.getBootstrapContext() //FIXME WHOA!
         );

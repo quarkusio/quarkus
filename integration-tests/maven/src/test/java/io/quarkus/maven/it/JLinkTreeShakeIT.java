@@ -64,9 +64,14 @@ public class JLinkTreeShakeIT extends MojoTestBase {
             System.out.println("######################################");
             throw e;
         } finally {
+            // On Windows the .bat launcher runs java.exe as a child process;
+            // Process.destroy() only kills cmd.exe, so we must destroy descendants
+            // first to avoid leaking a JVM that holds port 8080.
+            process.descendants().forEach(ProcessHandle::destroy);
             process.destroy();
             process.waitFor(10, TimeUnit.SECONDS);
             if (process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
             }
         }

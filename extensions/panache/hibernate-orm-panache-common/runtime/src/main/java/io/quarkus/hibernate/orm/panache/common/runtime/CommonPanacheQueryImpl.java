@@ -17,7 +17,7 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.SelectionQuery;
-import org.hibernate.query.sqm.tree.SqmQuery;
+import org.hibernate.query.sqm.tree.spi.SqmQuery;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;

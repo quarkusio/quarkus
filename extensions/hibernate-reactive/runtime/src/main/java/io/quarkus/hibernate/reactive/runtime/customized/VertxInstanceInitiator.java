@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.reactive.vertx.VertxInstance;
-import org.hibernate.reactive.vertx.impl.ProvidedVertxInstance;
+import org.hibernate.reactive.vertx.internal.ProvidedVertxInstance;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import io.vertx.core.Vertx;

@@ -21,7 +21,7 @@ import java.util.logging.Level;
 
 import jakarta.persistence.PersistenceUnitTransactionType;
 
-import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
+import org.hibernate.reactive.provider.internal.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;

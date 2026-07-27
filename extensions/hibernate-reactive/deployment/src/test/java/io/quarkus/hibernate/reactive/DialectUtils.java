@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionFactoryImpl;
 import org.hibernate.service.ServiceRegistry;
 
 import io.quarkus.arc.ClientProxy;

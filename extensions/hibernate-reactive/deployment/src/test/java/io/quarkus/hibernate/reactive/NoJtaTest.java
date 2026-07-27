@@ -10,7 +10,7 @@ import jakarta.persistence.Id;
 
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionFactoryImpl;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
 import org.hibernate.service.ServiceRegistry;
 import org.junit.jupiter.api.Test;

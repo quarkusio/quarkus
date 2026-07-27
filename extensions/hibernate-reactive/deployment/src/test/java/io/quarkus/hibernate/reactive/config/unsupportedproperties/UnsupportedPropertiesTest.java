@@ -17,7 +17,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionFactoryImpl;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

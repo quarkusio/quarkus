@@ -38,6 +38,10 @@ public class QuarkusRestTckDisabledTests implements ExecutionCondition, BeforeEa
         disableClass("ee.rs.matrixparam.locator.JAXRSLocatorClientIT", LOCATOR_ISSUES);
         disableClass("ee.rs.pathparam.locator.JAXRSLocatorClientIT", LOCATOR_ISSUES);
 
+        disableClass("spec.provider.visibility.JAXRSClientIT", UNSUPPORTED_CONTEXT_CONSTRUCTOR_INJECTION);
+
+        disable("spec.resourceconstructor.JAXRSClientIT", "visibleTest", UNSUPPORTED_CONTEXT_CONSTRUCTOR_INJECTION);
+
         // =====================================================================
         // Method-level exclusions: XML/JAXB providers
         // =====================================================================

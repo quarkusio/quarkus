@@ -3,17 +3,17 @@ package io.quarkus.amazon.lambda.test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
 import io.quarkus.amazon.lambda.runtime.FunctionError;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 public class ObjectMapperNamingStrategyTest {
 
     @Test
     public void testFunctionErrorAlwaysUsesCamelCase() throws Exception {
-        ObjectMapper mapper = new ObjectMapper()
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        ObjectMapper mapper = JsonMapper.builder()
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE).build();
 
         FunctionError error = new FunctionError("RuntimeError", "something went wrong");
         String json = mapper.writeValueAsString(error);
@@ -27,8 +27,8 @@ public class ObjectMapperNamingStrategyTest {
 
     @Test
     public void testUserNamingStrategyIsPreserved() throws Exception {
-        ObjectMapper mapper = new ObjectMapper()
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        ObjectMapper mapper = JsonMapper.builder()
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE).build();
 
         String json = mapper.writeValueAsString(new UserDto("John", "Doe", 30));
 

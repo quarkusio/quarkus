@@ -5,8 +5,6 @@ import static io.quarkus.redis.runtime.datasource.Marshaller.STRING_TYPE_REFEREN
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
@@ -36,6 +34,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Non-Blocking and Reactive Redis Data Source.

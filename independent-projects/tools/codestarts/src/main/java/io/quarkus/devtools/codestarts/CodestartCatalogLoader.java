@@ -18,21 +18,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 public final class CodestartCatalogLoader {
 
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
+    private static final ObjectMapper YAML_MAPPER = YAMLMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            // Jackson 3 changed the default to true (was false in Jackson 2)
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-            .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
-            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+            .enable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .build();
 
     private CodestartCatalogLoader() {
     }
@@ -88,7 +91,7 @@ public final class CodestartCatalogLoader {
                                                     new PathCodestartResourceAllocator(pathLoader, resourceCodestartDirectory),
                                                     spec,
                                                     resolveImplementedLanguages(p.getParent()));
-                                        } catch (IOException e) {
+                                        } catch (IOException | tools.jackson.core.JacksonException e) {
                                             throw new CodestartStructureException(
                                                     "Failed to load codestart spec: " + resourceName,
                                                     e);
@@ -113,7 +116,7 @@ public final class CodestartCatalogLoader {
     }
 
     // Visible for testing
-    static CodestartSpec readCodestartSpec(String content) throws com.fasterxml.jackson.core.JsonProcessingException {
+    static CodestartSpec readCodestartSpec(String content) {
         return YAML_MAPPER.readerFor(CodestartSpec.class)
                 .readValue(content);
     }

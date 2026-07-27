@@ -114,7 +114,7 @@ public class DynamicGraphQLClientTlsReloadApplicationScopedTest {
         event.fire(new CertificateUpdatedEvent("my-tls-client", tlsClient));
 
         Response response = client.executeSync("{ result }");
-        assertThat(response.getData().getString("result")).isEqualTo(EXPECTED_RESPONSE);
+        assertThat(response.getData().get("result").asText()).isEqualTo(EXPECTED_RESPONSE);
     }
 
     @AfterAll

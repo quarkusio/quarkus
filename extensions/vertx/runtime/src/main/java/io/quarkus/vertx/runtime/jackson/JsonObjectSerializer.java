@@ -10,20 +10,23 @@
  */
 package io.quarkus.vertx.runtime.jackson;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-
 import io.vertx.core.json.JsonObject;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.JsonObjectSerializer} as that class is package private
  */
-public class JsonObjectSerializer extends JsonSerializer<JsonObject> {
-    @Override
-    public void serialize(JsonObject value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-        jgen.writeObject(value.getMap());
+public class JsonObjectSerializer extends StdSerializer<JsonObject> {
+
+    public JsonObjectSerializer() {
+        super(JsonObject.class);
     }
+
+    @Override
+    public void serialize(JsonObject value, JsonGenerator jgen, SerializationContext provider) {
+        jgen.writePOJO(value.getMap());
+    }
+
 }

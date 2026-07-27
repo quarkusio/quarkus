@@ -220,7 +220,8 @@ public class FilerUtil {
 
             try (InputStream is = fileObject.openInputStream()) {
                 String yamlMetadata = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().readValue(yamlMetadata, Map.class);
+                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().forType(Map.class)
+                        .readValue(yamlMetadata);
 
                 return Optional.of(extensionMetadata);
             }

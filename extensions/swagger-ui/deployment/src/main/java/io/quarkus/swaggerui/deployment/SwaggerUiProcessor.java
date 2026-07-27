@@ -14,8 +14,6 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -43,6 +41,7 @@ import io.smallrye.openapi.ui.Option;
 import io.smallrye.openapi.ui.ThemeHref;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.databind.ObjectMapper;
 
 public class SwaggerUiProcessor {
     private static final Logger LOG = Logger.getLogger(SwaggerUiProcessor.class);

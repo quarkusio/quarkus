@@ -1,15 +1,13 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.util.NameTransformer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.databind.util.NameTransformer;
 
 public abstract class GeneratedSerializer extends StdSerializer<Object> {
 
@@ -18,27 +16,27 @@ public abstract class GeneratedSerializer extends StdSerializer<Object> {
     }
 
     public abstract void serializeContent(Object value, JsonGenerator gen,
-            SerializerProvider prov) throws IOException;
+            SerializationContext ctxt);
 
     @Override
     public void serialize(Object value, JsonGenerator gen,
-            SerializerProvider prov) throws IOException {
+            SerializationContext ctxt) {
         gen.writeStartObject();
-        serializeContent(value, gen, prov);
+        serializeContent(value, gen, ctxt);
         gen.writeEndObject();
     }
 
     @Override
     public void serializeWithType(Object value, JsonGenerator gen,
-            SerializerProvider prov, TypeSerializer typeSer) throws IOException {
-        WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen,
+            SerializationContext ctxt, TypeSerializer typeSer) {
+        WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, ctxt,
                 typeSer.typeId(value, JsonToken.START_OBJECT));
-        serializeContent(value, gen, prov);
-        typeSer.writeTypeSuffix(gen, typeIdDef);
+        serializeContent(value, gen, ctxt);
+        typeSer.writeTypeSuffix(gen, ctxt, typeIdDef);
     }
 
     @Override
-    public JsonSerializer<Object> unwrappingSerializer(NameTransformer transformer) {
+    public ValueSerializer<Object> unwrappingSerializer(NameTransformer transformer) {
         return new UnwrappingSerializer(this);
     }
 }

@@ -6,23 +6,24 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.restassured.RestAssured;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public abstract class AbstractNonAbsentSerializationTest {
 
     @Singleton
-    public static class NonAbsentObjectMapperCustomizer implements ObjectMapperCustomizer {
+    public static class NonAbsentObjectMapperCustomizer implements JsonMapperBuilderCustomizer {
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
-            objectMapper
+        public void customize(JsonMapper.Builder builder) {
+            builder
                     .enable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES)
                     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
+                    .changeDefaultPropertyInclusion(
+                            incl -> incl.withValueInclusion(JsonInclude.Include.NON_ABSENT));
         }
     }
 

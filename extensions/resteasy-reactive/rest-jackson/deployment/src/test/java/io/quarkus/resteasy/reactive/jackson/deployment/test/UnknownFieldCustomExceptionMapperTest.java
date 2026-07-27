@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 /**
  * Reproducer for https://github.com/quarkusio/quarkus/issues/55255

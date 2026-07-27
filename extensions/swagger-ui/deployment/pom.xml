@@ -38,6 +38,10 @@
             <artifactId>smallrye-open-api-ui</artifactId>
         </dependency>
         <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-internal</artifactId>
             <scope>test</scope>

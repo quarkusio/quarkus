@@ -23,8 +23,31 @@ public interface JacksonBuildTimeConfig {
     boolean failOnUnknownProperties();
 
     /**
+     * If enabled, Jackson will fail when a JSON null is encountered for a primitive type.
+     * Note that Jackson 2 defaulted to {@code false}.
+     */
+    @WithDefault("true")
+    boolean failOnNullForPrimitives();
+
+    /**
+     * If enabled, properties without an explicit {@code @JsonView} annotation are included
+     * when a view is active during serialization/deserialization.
+     * Note that Jackson 2 defaulted to {@code true}.
+     */
+    @WithDefault("false")
+    boolean defaultViewInclusion();
+
+    /**
+     * If enabled, Jackson will fail when there are trailing tokens after the deserialized value.
+     * Note that Jackson 2 defaulted to {@code false}.
+     */
+    @WithDefault("true")
+    boolean failOnTrailingTokens();
+
+    /**
      * If enabled, Jackson will fail when no accessors are found for a type.
-     * This is enabled by default to match the default Jackson behavior.
+     * This is enabled by default to match the default Jackson 2 behavior.
+     * Note that Jackson 3 defaults to {@code false}.
      */
     @WithDefault("true")
     boolean failOnEmptyBeans();
@@ -39,10 +62,21 @@ public interface JacksonBuildTimeConfig {
     /**
      * If enabled, Jackson will serialize durations as numeric value(s).
      * When disabled, they are serialized in ISO 8601 format.
-     * This is enabled by default to match the default Jackson behavior.
+     * This is enabled by default to match the default Jackson 2 behavior.
+     * Note that Jackson 3 defaults to {@code false}.
      */
     @WithDefault("true")
     boolean writeDurationsAsTimestamps();
+
+    /**
+     * If enabled, Jackson will use getters of Collection and Map types as setters,
+     * so that values can be added to the collection/map by calling the getter and
+     * modifying the returned instance. This is disabled by default to match the
+     * default Jackson 3 behavior.
+     * Note that Jackson 2 defaulted to {@code true}.
+     */
+    @WithDefault("false")
+    boolean useGettersAsSetters();
 
     /**
      * If enabled, Jackson will ignore case during Enum deserialization.
@@ -65,10 +99,10 @@ public interface JacksonBuildTimeConfig {
     /**
      * Defines how names of JSON properties ("external names") are derived
      * from names of POJO methods and fields ("internal names").
-     * The value can be one of the one of the constants in {@link com.fasterxml.jackson.databind.PropertyNamingStrategies},
+     * The value can be one of the one of the constants in {@link tools.jackson.databind.PropertyNamingStrategies},
      * so for example, {@code LOWER_CAMEL_CASE} or {@code UPPER_CAMEL_CASE}.
      * <p>
-     * The value can also be a fully qualified class name of a {@link com.fasterxml.jackson.databind.PropertyNamingStrategy}
+     * The value can also be a fully qualified class name of a {@link tools.jackson.databind.PropertyNamingStrategy}
      * subclass.
      */
     Optional<String> propertyNamingStrategy();

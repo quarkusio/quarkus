@@ -148,8 +148,8 @@ public class DevUIProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void registerTestResultCodecCustomizer(BuildProducer<JsonRpcCodecCustomizerBuildItem> customizers) {
-        customizers.produce(new JsonRpcCodecCustomizerBuildItem(mapper -> {
-            mapper.addMixIn(io.quarkus.deployment.dev.testing.TestResult.class, TestResultMixIn.class);
+        customizers.produce(new JsonRpcCodecCustomizerBuildItem(builder -> {
+            builder.addMixIn(io.quarkus.deployment.dev.testing.TestResult.class, TestResultMixIn.class);
         }));
     }
 

@@ -34,15 +34,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.devtools.project.extensions.ScmInfoProvider;
@@ -54,6 +45,14 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.platform.tools.ExtensionMetadataValidator;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Task that generates extension descriptor files.
@@ -356,7 +355,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
         try (BufferedWriter bw = Files
                 .newBufferedWriter(outputMetaInfDirectory.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME))) {
-            bw.write(getMapper().writer(prettyPrinter).writeValueAsString(extObject));
+            bw.write(getMapper().writer().with(prettyPrinter).writeValueAsString(extObject));
         } catch (IOException e) {
             throw new GradleException(
                     "Failed to persist " + outputMetaInfDirectory.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
@@ -369,7 +368,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
                 extObject.put("name", projectInfo.get("name"));
             } else {
                 JsonNode node = extObject.get(ARTIFACT_ID);
-                String defaultName = node.asText();
+                String defaultName = node.asString();
                 int i = 0;
                 if (defaultName.startsWith("quarkus-")) {
                     i = "quarkus-".length();
@@ -391,8 +390,8 @@ public class ExtensionDescriptorTask extends DefaultTask {
                     }
                 }
                 defaultName = buf.toString();
-                getLogger().warn("Extension name has not been provided for " + extObject.get(GROUP_ID).asText("") + ":"
-                        + extObject.get(ARTIFACT_ID).asText("") + "! Using '" + defaultName
+                getLogger().warn("Extension name has not been provided for " + extObject.get(GROUP_ID).asString("") + ":"
+                        + extObject.get(ARTIFACT_ID).asString("") + "! Using '" + defaultName
                         + "' as the default one.");
                 extObject.put("name", defaultName);
             }
@@ -406,11 +405,11 @@ public class ExtensionDescriptorTask extends DefaultTask {
         final JsonNode artifactNode = extObject.get("artifact");
 
         if (artifactNode == null) {
-            groupId = extObject.has("groupId") ? extObject.get("groupId").asText() : null;
-            artifactId = extObject.has("artifactId") ? extObject.get("artifactId").asText() : null;
-            version = extObject.has("version") ? extObject.get("version").asText() : null;
+            groupId = extObject.has("groupId") ? extObject.get("groupId").asString() : null;
+            artifactId = extObject.has("artifactId") ? extObject.get("artifactId").asString() : null;
+            version = extObject.has("version") ? extObject.get("version").asString() : null;
         } else {
-            final String[] coordsArr = artifactNode.asText().split(":");
+            final String[] coordsArr = artifactNode.asString().split(":");
             if (coordsArr.length > 0) {
                 groupId = coordsArr[0];
                 if (coordsArr.length > 1) {
@@ -531,9 +530,9 @@ public class ExtensionDescriptorTask extends DefaultTask {
     }
 
     private ObjectMapper getMapper() {
-        YAMLFactory yf = new YAMLFactory();
-        return new ObjectMapper(yf)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+        return YAMLMapper.builder()
+                .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .build();
     }
 
     private ObjectNode getMetadataNode(ObjectNode extObject) {

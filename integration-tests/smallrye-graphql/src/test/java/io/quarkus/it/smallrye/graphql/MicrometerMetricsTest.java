@@ -10,9 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.it.smallrye.graphql.metricresources.TestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @QuarkusTest
 public class MicrometerMetricsTest {
@@ -228,21 +227,13 @@ public class MicrometerMetricsTest {
         assertMetric("asyncSuperMetricFoo", false, "QUERY", iterations);
     }
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private String getPayload(String query) {
-        JsonObject jsonObject = createRequestBody(query);
-        return jsonObject.toString();
-    }
-
-    private JsonObject createRequestBody(String graphQL) {
-        return createRequestBody(graphQL, null);
-    }
-
-    private JsonObject createRequestBody(String graphQL, JsonObject variables) {
-        // Create the request
-        if (variables == null || variables.isEmpty()) {
-            variables = Json.createObjectBuilder().build();
-        }
-        return Json.createObjectBuilder().add("query", graphQL).add("variables", variables).build();
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("query", query);
+        node.putObject("variables");
+        return node.toString();
     }
 
     private void assertMetric(String name, boolean source, String type, long count) {

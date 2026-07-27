@@ -3,9 +3,10 @@ package io.quarkus.resteasy.reactive.jackson.runtime.security;
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ser.std.SimpleFilterProvider;
 
 public class SecurityCustomSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
@@ -16,12 +17,12 @@ public class SecurityCustomSerialization implements BiFunction<ObjectMapper, Typ
         if (writer == null) {
             synchronized (this) {
                 if (writer == null) {
-                    writer = objectMapper
-                            .copy() // we need to make the copy in order to avoid adding the Introspector to the default mapper
-                            .setAnnotationIntrospector(new SecurityJacksonAnnotationIntrospector()) // needed in order to trigger the inclusion of the filter
-                            .writer(
-                                    new SimpleFilterProvider().addFilter(SecurityPropertyFilter.FILTER_ID,
-                                            new SecurityPropertyFilter())); // register the actual filter
+                    writer = ((JsonMapper) objectMapper).rebuild()
+                            .annotationIntrospector(new SecurityJacksonAnnotationIntrospector())
+                            .build()
+                            .writer()
+                            .with(new SimpleFilterProvider().addFilter(SecurityPropertyFilter.FILTER_ID,
+                                    new SecurityPropertyFilter()));
                 }
             }
         }

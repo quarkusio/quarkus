@@ -47,6 +47,8 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
+                                    "quarkus.jackson.fail-on-null-for-primitives=false\n" +
+                                    "quarkus.jackson.default-view-inclusion=true\n" +
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
                                     "application.properties");
                 }

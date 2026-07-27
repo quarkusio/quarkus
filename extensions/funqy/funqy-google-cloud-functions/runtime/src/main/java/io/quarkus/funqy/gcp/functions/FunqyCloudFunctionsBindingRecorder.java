@@ -1,11 +1,5 @@
 package io.quarkus.funqy.gcp.functions;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.cloud.functions.Context;
 
 import io.cloudevents.CloudEvent;
@@ -19,6 +13,11 @@ import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funqy
@@ -27,7 +26,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class FunqyCloudFunctionsBindingRecorder {
     private static FunctionInvoker invoker;
     private static BeanContainer beanContainer;
-    private static ObjectMapper objectMapper;
+    private static JsonMapper objectMapper;
     private static ObjectReader reader;
     private static ObjectWriter writer;
 
@@ -39,7 +38,7 @@ public class FunqyCloudFunctionsBindingRecorder {
 
     public void init(BeanContainer bc) {
         beanContainer = bc;
-        objectMapper = beanContainer.beanInstance(ObjectMapper.class);
+        objectMapper = beanContainer.beanInstance(JsonMapper.class);
 
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
@@ -100,7 +99,7 @@ public class FunqyCloudFunctionsBindingRecorder {
             if (value != null) {
                 throw new RuntimeException("A background function cannot return a value");
             }
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

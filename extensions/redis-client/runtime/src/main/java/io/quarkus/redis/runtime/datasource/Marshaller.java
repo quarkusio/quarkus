@@ -16,16 +16,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.datasource.codecs.Codecs;
 import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
+import tools.jackson.core.type.TypeReference;
 
 public class Marshaller {
 
-    public static final TypeReference<String> STRING_TYPE_REFERENCE = new TypeReference<String>() {
+    public static final TypeReference<String> STRING_TYPE_REFERENCE = new TypeReference<>() {
         // Empty on purpose
     };
 

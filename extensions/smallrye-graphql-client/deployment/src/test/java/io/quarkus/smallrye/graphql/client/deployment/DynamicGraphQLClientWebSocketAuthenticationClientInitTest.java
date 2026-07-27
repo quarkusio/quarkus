@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
@@ -72,13 +71,13 @@ public class DynamicGraphQLClientWebSocketAuthenticationClientInitTest {
             for (int i = 0; i < 3; i++) {
                 Response response = client.executeSync("{ foo { message} }");
                 assertTrue(response.hasData());
-                assertEquals("foo", response.getData().getJsonObject("foo").getString("message"));
+                assertEquals("foo", response.getData().get("foo").get("message").asText());
             }
 
             // Unauthorized query
             Response response = client.executeSync("{ bar { message} }");
             assertTrue(response.hasData());
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("bar").getValueType());
+            assertTrue(response.getData().get("bar").isNull());
         }
     }
 
@@ -93,7 +92,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationClientInitTest {
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
             assertTrue(response.hasData());
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
+            assertTrue(response.getData().get("foo").isNull());
         }
     }
 

@@ -1,7 +1,5 @@
 package io.quarkus.funqy.runtime.bindings.knative.events;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -10,13 +8,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
 import io.quarkus.funqy.knative.events.AbstractCloudEvent;
 import io.quarkus.funqy.knative.events.CloudEvent;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
@@ -170,12 +167,8 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
             return data;
         }
         if (dataContentType() != null && dataContentType().startsWith("application/json") && !byte[].class.equals(dataType)) {
-            try {
-                data = reader.readValue(buffer.getBytes());
-                return data;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            data = reader.readValue(buffer.getBytes());
+            return data;
         } else if (byte[].class.equals(dataType)) {
             data = (T) buffer.getBytes();
             return data;

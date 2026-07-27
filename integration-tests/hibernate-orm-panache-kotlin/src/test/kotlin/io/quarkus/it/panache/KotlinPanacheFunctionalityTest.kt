@@ -1,17 +1,18 @@
 package io.quarkus.it.panache
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.it.panache.kotlin.Dog
 import io.quarkus.it.panache.kotlin.Person
 import io.quarkus.test.junit.DisabledOnIntegrationTest
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
+import io.vertx.core.json.JsonObject
 import kotlin.test.assertNotNull
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import tools.jackson.core.JacksonException
+import tools.jackson.databind.ObjectMapper
 
 /** Test various Panache operations running in Quarkus */
 @QuarkusTest
@@ -46,7 +47,7 @@ open class KotlinPanacheFunctionalityTest {
      */
     @Test
     @DisabledOnIntegrationTest
-    @Throws(JsonProcessingException::class)
+    @Throws(JacksonException::class)
     fun jacksonDeserializationIgnoresPersistentAttribute() { // set Up
         val person = Person()
         person.name = "max"
@@ -56,8 +57,10 @@ open class KotlinPanacheFunctionalityTest {
         // check
         // hence no 'persistence'-attribute
         Assertions.assertEquals(
-            "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-            personAsString,
+            JsonObject(
+                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}"
+            ),
+            JsonObject(personAsString),
         )
     }
 

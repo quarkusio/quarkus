@@ -13,27 +13,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonTypeAdapter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.json.JsonMapper.Builder;
+import tools.jackson.databind.module.SimpleModule;
 
 public class DevJsonRpcDatabindCodec implements JsonMapper {
     private final ObjectMapper mapper;
-    private final ObjectMapper prettyMapper;
+    private volatile ObjectMapper prettyMapper;
     private final Function<Map<String, Object>, ?> runtimeObjectDeserializer;
     private final Function<List<?>, ?> runtimeArrayDeserializer;
 
@@ -41,10 +43,17 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
             Function<Map<String, Object>, ?> runtimeObjectDeserializer,
             Function<List<?>, ?> runtimeArrayDeserializer) {
         this.mapper = mapper;
-        prettyMapper = mapper.copy();
-        prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         this.runtimeObjectDeserializer = runtimeObjectDeserializer;
         this.runtimeArrayDeserializer = runtimeArrayDeserializer;
+    }
+
+    private ObjectMapper prettyMapper() {
+        if (prettyMapper == null) {
+            prettyMapper = ((tools.jackson.databind.json.JsonMapper) mapper).rebuild()
+                    .configure(SerializationFeature.INDENT_OUTPUT, true)
+                    .build();
+        }
+        return prettyMapper;
     }
 
     @SuppressWarnings("unchecked")
@@ -63,11 +72,7 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
     }
 
     private JsonParser createParser(String str) {
-        try {
-            return mapper.getFactory().createParser(str);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to decode:" + e.getMessage(), e);
-        }
+        return mapper.createParser(str);
     }
 
     @SuppressWarnings("unchecked")
@@ -94,7 +99,7 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
     @Override
     public String toString(Object object, boolean pretty) {
         try {
-            ObjectMapper theMapper = pretty ? prettyMapper : mapper;
+            ObjectMapper theMapper = pretty ? prettyMapper() : mapper;
             return theMapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new RuntimeException("Failed to encode as JSON: " + e.getMessage(), e);
@@ -125,57 +130,78 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
     }
 
     public static final class Factory implements JsonMapper.Factory {
-        private final List<Consumer<ObjectMapper>> customizers = new ArrayList<>();
 
-        public Factory addCustomizer(Consumer<ObjectMapper> customizer) {
+        private final List<Consumer<Builder>> customizers = new ArrayList<>();
+
+        public void addCustomizer(Consumer<Builder> customizer) {
             customizers.add(customizer);
-            return this;
         }
 
         @Override
         public JsonMapper create(JsonTypeAdapter<?, Map<String, Object>> jsonObjectAdapter,
                 JsonTypeAdapter<?, List<?>> jsonArrayAdapter, JsonTypeAdapter<?, String> bufferAdapter) {
             // We want our own mapper, separate from the user-configured one.
-            ObjectMapper mapper = new ObjectMapper();
+            Builder builder = tools.jackson.databind.json.JsonMapper.builder();
 
             // Non-standard JSON but we allow C style comments in our JSON
-            mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            builder.configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true);
+            builder.changeDefaultPropertyInclusion(new UnaryOperator<>() {
+                @Override
+                public JsonInclude.Value apply(JsonInclude.Value value) {
+                    return value.withValueInclusion(JsonInclude.Include.NON_NULL);
+                }
+            });
 
             SimpleModule module = new SimpleModule("devjsonrpc-module-common");
-            module.addSerializer(Instant.class, new JsonSerializer<Instant>() {
+            module.addSerializer(Instant.class, new ValueSerializer<Instant>() {
                 @Override
-                public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+                public void serialize(Instant value, JsonGenerator gen, SerializationContext provider)
+                        throws JacksonException {
                     gen.writeString(ISO_INSTANT.format(value));
                 }
             });
-            module.addDeserializer(Instant.class, new JsonDeserializer<Instant>() {
+            module.addDeserializer(Instant.class, new ValueDeserializer<Instant>() {
                 @Override
-                public Instant deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                public Instant deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
                     String text = p.getText();
                     try {
                         return Instant.from(ISO_INSTANT.parse(text));
                     } catch (DateTimeException e) {
-                        throw new InvalidFormatException(p, "Expected an ISO 8601 formatted date time", text, Instant.class);
+                        throw ctxt.weirdStringException(text, Instant.class,
+                                "Expected an ISO 8601 formatted date time");
                     }
                 }
             });
-            module.addSerializer(byte[].class, new JsonSerializer<byte[]>() {
+            module.addSerializer(byte[].class, new ValueSerializer<byte[]>() {
                 @Override
-                public void serialize(byte[] value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+                public void serialize(byte[] value, JsonGenerator gen, SerializationContext provider)
+                        throws JacksonException {
                     gen.writeString(Base64.getEncoder().encodeToString(value));
                 }
             });
-            module.addDeserializer(byte[].class, new JsonDeserializer<byte[]>() {
+            module.addDeserializer(byte[].class, new ValueDeserializer<byte[]>() {
                 @Override
-                public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
                     return Base64.getDecoder().decode(p.getText());
                 }
             });
-            module.addSerializer(ByteArrayInputStream.class, new ByteArrayInputStreamSerializer());
-            module.addDeserializer(ByteArrayInputStream.class, new ByteArrayInputStreamDeserializer());
-            mapper.registerModule(module);
-            mapper.registerModule(new Jdk8Module());
+            module.addSerializer(ByteArrayInputStream.class, new ValueSerializer<ByteArrayInputStream>() {
+                @Override
+                public void serialize(ByteArrayInputStream value, JsonGenerator gen, SerializationContext provider)
+                        throws JacksonException {
+                    byte[] bytes = value.readAllBytes();
+                    gen.writeBinary(bytes);
+                }
+            });
+            module.addDeserializer(ByteArrayInputStream.class, new ValueDeserializer<ByteArrayInputStream>() {
+                @Override
+                public ByteArrayInputStream deserialize(JsonParser p, DeserializationContext ctxt)
+                        throws JacksonException {
+                    byte[] bytes = p.getBinaryValue();
+                    return new ByteArrayInputStream(bytes);
+                }
+            });
+            builder.addModule(module);
 
             SimpleModule runtimeModule = new SimpleModule("devjsonrpc-module-runtime");
             if (jsonObjectAdapter != null) {
@@ -187,57 +213,40 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
             if (bufferAdapter != null) {
                 addAdapterToString(runtimeModule, bufferAdapter);
             }
-            mapper.registerModule(runtimeModule);
+            builder.addModule(runtimeModule);
 
-            for (Consumer<ObjectMapper> customizer : customizers) {
-                customizer.accept(mapper);
+            for (Consumer<Builder> customizer : customizers) {
+                customizer.accept(builder);
             }
 
+            ObjectMapper mapper = builder.build();
             return new DevJsonRpcDatabindCodec(mapper,
                     jsonObjectAdapter != null ? jsonObjectAdapter.deserializer : null,
                     jsonArrayAdapter != null ? jsonArrayAdapter.deserializer : null);
         }
 
         private static <T, S> void addAdapterToObject(SimpleModule module, JsonTypeAdapter<T, S> adapter) {
-            module.addSerializer(adapter.type, new JsonSerializer<>() {
+            module.addSerializer(adapter.type, new ValueSerializer<>() {
                 @Override
-                public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-                    jgen.writeObject(adapter.serializer.apply(value));
+                public void serialize(T value, JsonGenerator jgen, SerializationContext provider) throws JacksonException {
+                    jgen.writePOJO(adapter.serializer.apply(value));
                 }
             });
         }
 
         private static <T> void addAdapterToString(SimpleModule module, JsonTypeAdapter<T, String> adapter) {
-            module.addSerializer(adapter.type, new JsonSerializer<>() {
+            module.addSerializer(adapter.type, new ValueSerializer<>() {
                 @Override
-                public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+                public void serialize(T value, JsonGenerator jgen, SerializationContext provider) throws JacksonException {
                     jgen.writeString(adapter.serializer.apply(value));
                 }
             });
-            module.addDeserializer(adapter.type, new JsonDeserializer<T>() {
+            module.addDeserializer(adapter.type, new ValueDeserializer<T>() {
                 @Override
-                public T deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-                    return adapter.deserializer.apply(parser.getText());
+                public T deserialize(JsonParser parser, DeserializationContext ctxt) throws JacksonException {
+                    return adapter.deserializer.apply(parser.getString());
                 }
             });
-        }
-    }
-
-    // Inner serializers for ByteArrayInputStream (copied from DevUI, these don't depend on Vert.x)
-    private static class ByteArrayInputStreamSerializer extends JsonSerializer<ByteArrayInputStream> {
-        @Override
-        public void serialize(ByteArrayInputStream value, JsonGenerator gen, SerializerProvider serializers)
-                throws IOException {
-            byte[] bytes = value.readAllBytes();
-            gen.writeBinary(bytes);
-        }
-    }
-
-    private static class ByteArrayInputStreamDeserializer extends JsonDeserializer<ByteArrayInputStream> {
-        @Override
-        public ByteArrayInputStream deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            byte[] bytes = p.getBinaryValue();
-            return new ByteArrayInputStream(bytes);
         }
     }
 }

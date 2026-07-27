@@ -31,12 +31,6 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
@@ -45,6 +39,12 @@ import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.node.ObjectNode;
 
 @Path("/simple")
 @NonBlocking
@@ -647,7 +647,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+            return objectMapper.writer().without(JsonWriteFeature.QUOTE_PROPERTY_NAMES);
         }
     }
 
@@ -668,7 +668,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES);
         }
     }
 
@@ -757,14 +757,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Produces(MediaType.APPLICATION_JSON)
     public ObjectNode objectNode(ObjectNode body) {
         return body;
-    }
-
-    @POST
-    @Path("/final-collection")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public FinalCollectionHolder echoFinalCollection(FinalCollectionHolder holder) {
-        return holder;
     }
 
     @POST

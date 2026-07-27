@@ -1,9 +1,5 @@
 package io.quarkus.it.mongodb.panache
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.it.mongodb.panache.book.BookDetail
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.test.common.QuarkusTestResource
@@ -11,9 +7,6 @@ import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
 import io.restassured.RestAssured.get
-import io.restassured.common.mapper.TypeRef
-import io.restassured.config.ObjectMapperConfig
-import io.restassured.mapper.ObjectMapperType
 import io.restassured.parsing.Parser
 import io.restassured.response.Response
 import java.util.Calendar
@@ -23,10 +16,19 @@ import java.util.GregorianCalendar
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.json.JsonMapper
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
 open class MongodbPanacheResourceTest {
+
+    companion object {
+        private val objectMapper = JsonMapper.builder().findAndAddModules().build()
+        private val LIST_OF_BOOK_TYPE_REF = object : TypeReference<List<BookDTO>>() {}
+        private val LIST_OF_PERSON_TYPE_REF = object : TypeReference<List<Person>>() {}
+    }
+
     @Test
     fun testBookEntity() {
         callBookEndpoint("/books/entity")
@@ -49,16 +51,7 @@ open class MongodbPanacheResourceTest {
 
     private fun callBookEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
-        RestAssured.config =
-            RestAssured.config.objectMapperConfig(
-                ObjectMapperConfig(ObjectMapperType.JACKSON_2).jackson2ObjectMapperFactory { _, _ ->
-                    ObjectMapper()
-                        .registerModule(Jdk8Module())
-                        .registerModule(JavaTimeModule())
-                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                }
-            )
-        var list: List<BookDTO> = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
+        var list: List<BookDTO> = readList(get(endpoint).asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val book1: BookDTO =
             BookDTO()
@@ -70,7 +63,7 @@ open class MongodbPanacheResourceTest {
         var response: Response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(book1)
+                .body(objectMapper.writeValueAsString(book1))
                 .post(endpoint)
                 .andReturn()
         Assertions.assertEquals(201, response.statusCode())
@@ -87,11 +80,11 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(book2)
+                .body(objectMapper.writeValueAsString(book2))
                 .post(endpoint)
                 .andReturn()
         Assertions.assertEquals(201, response.statusCode())
-        list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get(endpoint).asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(2, list.size)
         val book3: BookDTO =
             BookDTO()
@@ -105,7 +98,7 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(book3)
+                .body(objectMapper.writeValueAsString(book3))
                 .post(endpoint)
                 .andReturn()
         Assertions.assertEquals(201, response.statusCode())
@@ -123,19 +116,19 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(book4)
+                .body(objectMapper.writeValueAsString(book4))
                 .patch(endpoint)
                 .andReturn()
         Assertions.assertEquals(202, response.statusCode())
-        list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get(endpoint).asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
         // with sort
-        list = get("$endpoint?sort=author").`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get("$endpoint?sort=author").asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
         // magic query find("author", author)
-        list = get("$endpoint/search/Victor Hugo").`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get("$endpoint/search/Victor Hugo").asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(2, list.size)
         // we have a projection so we should not have the details field but we should have the title
         // thanks to @BsonProperty
@@ -144,23 +137,33 @@ open class MongodbPanacheResourceTest {
 
         // magic query find("{'author':?1,'title':?1}", author, title)
         var book: BookDTO =
-            get("$endpoint/search?author=Victor Hugo&title=Notre-Dame de Paris")
-                .`as`(BookDTO::class.java)
+            objectMapper.readValue(
+                get("$endpoint/search?author=Victor Hugo&title=Notre-Dame de Paris").asString(),
+                BookDTO::class.java,
+            )
         Assertions.assertNotNull(book)
 
         // date
         book =
-            get("$endpoint/search?dateFrom=1885-01-01&dateTo=1887-01-01").`as`(BookDTO::class.java)
+            objectMapper.readValue(
+                get("$endpoint/search?dateFrom=1885-01-01&dateTo=1887-01-01").asString(),
+                BookDTO::class.java,
+            )
         Assertions.assertNotNull(book)
         book =
-            get("$endpoint/search2?dateFrom=1885-01-01&dateTo=1887-01-01").`as`(BookDTO::class.java)
+            objectMapper.readValue(
+                get("$endpoint/search2?dateFrom=1885-01-01&dateTo=1887-01-01").asString(),
+                BookDTO::class.java,
+            )
         Assertions.assertNotNull(book)
 
         // magic query find("{'author'::author,'title'::title}", Parameters.with("author",
         // author).and("title", title))
         book =
-            get("$endpoint/search2?author=Victor Hugo&title=Notre-Dame de Paris")
-                .`as`(BookDTO::class.java)
+            objectMapper.readValue(
+                get("$endpoint/search2?author=Victor Hugo&title=Notre-Dame de Paris").asString(),
+                BookDTO::class.java,
+            )
         Assertions.assertNotNull(book)
         Assertions.assertNotNull(book.id)
         Assertions.assertNotNull(book.details)
@@ -170,13 +173,17 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(book)
+                .body(objectMapper.writeValueAsString(book))
                 .put(endpoint)
                 .andReturn()
         Assertions.assertEquals(202, response.statusCode())
 
         // check that the title has been updated and the transient description ignored
-        book = get(endpoint + "/" + book.id.toString()).`as`(BookDTO::class.java)
+        book =
+            objectMapper.readValue(
+                get(endpoint + "/" + book.id.toString()).asString(),
+                BookDTO::class.java,
+            )
         Assertions.assertNotNull(book)
         Assertions.assertEquals("Notre-Dame de Paris 2", book.title)
         Assertions.assertNull(book.transientDescription)
@@ -184,11 +191,11 @@ open class MongodbPanacheResourceTest {
         // delete a book
         response = RestAssured.given().delete(endpoint + "/" + book.id.toString()).andReturn()
         Assertions.assertEquals(204, response.statusCode())
-        list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get(endpoint).asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(3, list.size)
 
         // test some special characters
-        list = get("$endpoint/search/Victor'\\ Hugo").`as`(LIST_OF_BOOK_TYPE_REF)
+        list = readList(get("$endpoint/search/Victor'\\ Hugo").asString(), LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(0, list.size)
 
         // delete all
@@ -198,16 +205,7 @@ open class MongodbPanacheResourceTest {
 
     private fun callPersonEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
-        RestAssured.config =
-            RestAssured.config.objectMapperConfig(
-                ObjectMapperConfig(ObjectMapperType.JACKSON_2).jackson2ObjectMapperFactory { _, _ ->
-                    ObjectMapper()
-                        .registerModule(Jdk8Module())
-                        .registerModule(JavaTimeModule())
-                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                }
-            )
-        var list: List<Person> = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
+        var list: List<Person> = readList(get(endpoint).asString(), LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val person1 = Person()
         person1.id = 1L
@@ -216,7 +214,7 @@ open class MongodbPanacheResourceTest {
         var response: Response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(person1)
+                .body(objectMapper.writeValueAsString(person1))
                 .post(endpoint)
                 .andReturn()
         Assertions.assertEquals(201, response.statusCode())
@@ -234,7 +232,7 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(persons)
+                .body(objectMapper.writeValueAsString(persons))
                 .post("$endpoint/multiple")
                 .andReturn()
         Assertions.assertEquals(204, response.statusCode())
@@ -245,19 +243,19 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(person4)
+                .body(objectMapper.writeValueAsString(person4))
                 .patch(endpoint)
                 .andReturn()
         Assertions.assertEquals(202, response.statusCode())
-        list = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
+        list = readList(get(endpoint).asString(), LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
         // with sort
-        list = get("$endpoint?sort=firstname").`as`(LIST_OF_PERSON_TYPE_REF)
+        list = readList(get("$endpoint?sort=firstname").asString(), LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
         // with project
-        list = get("$endpoint/search/Doe").`as`(LIST_OF_PERSON_TYPE_REF)
+        list = readList(get("$endpoint/search/Doe").asString(), LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(1, list.size)
         Assertions.assertNotNull(list[0].lastname)
         // expected the firstname field to be null as we project on lastname only
@@ -272,11 +270,11 @@ open class MongodbPanacheResourceTest {
             .post("$endpoint/rename")
             .then()
             .statusCode(200)
-        list = get("$endpoint/search/Dupont").`as`(LIST_OF_PERSON_TYPE_REF)
+        list = readList(get("$endpoint/search/Dupont").asString(), LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(1, list.size)
 
         // count
-        var count: Long = get("$endpoint/count").`as`(Long::class.java)
+        var count: Long = get("$endpoint/count").asString().toLong()
         Assertions.assertEquals(4, count)
 
         // update a person
@@ -284,26 +282,27 @@ open class MongodbPanacheResourceTest {
         response =
             RestAssured.given()
                 .header("Content-Type", "application/json")
-                .body(person3)
+                .body(objectMapper.writeValueAsString(person3))
                 .put(endpoint)
                 .andReturn()
         Assertions.assertEquals(202, response.statusCode())
 
         // check that the title has been updated
-        person3 = get("$endpoint/${person3.id}").`as`(Person::class.java)
+        person3 =
+            objectMapper.readValue(get("$endpoint/${person3.id}").asString(), Person::class.java)
         Assertions.assertEquals(3L, person3.id ?: -1)
         Assertions.assertEquals("Webster", person3.lastname)
 
         // delete a person
         response = RestAssured.given().delete("$endpoint/${person3.id}").andReturn()
         Assertions.assertEquals(204, response.statusCode())
-        count = get("$endpoint/count").`as`(Long::class.java)
+        count = get("$endpoint/count").asString().toLong()
         Assertions.assertEquals(3, count)
 
         // delete all
         response = RestAssured.given().delete(endpoint).andReturn()
         Assertions.assertEquals(204, response.statusCode())
-        count = get("$endpoint/count").`as`(Long::class.java)
+        count = get("$endpoint/count").asString().toLong()
         Assertions.assertEquals(0, count)
     }
 
@@ -311,6 +310,10 @@ open class MongodbPanacheResourceTest {
         val cal: Calendar = GregorianCalendar()
         cal.set(year, 1, 1)
         return cal.time
+    }
+
+    private fun <T> readList(json: String, typeRef: TypeReference<List<T>>): List<T> {
+        return objectMapper.readValue(json, typeRef)
     }
 
     @Test
@@ -347,12 +350,5 @@ open class MongodbPanacheResourceTest {
     @Test
     fun testMoreRepositoryFunctionalities() {
         get("/test/imperative/repository").then().statusCode(200)
-    }
-
-    companion object {
-        private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> =
-            object : TypeRef<List<BookDTO>>() {}
-        private val LIST_OF_PERSON_TYPE_REF: TypeRef<List<Person>> =
-            object : TypeRef<List<Person>>() {}
     }
 }

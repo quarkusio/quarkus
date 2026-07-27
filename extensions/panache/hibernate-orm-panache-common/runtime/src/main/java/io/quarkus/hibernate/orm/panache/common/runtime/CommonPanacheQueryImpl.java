@@ -21,7 +21,7 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.SelectionQuery;
-import org.hibernate.query.sqm.tree.SqmQuery;
+import org.hibernate.query.sqm.tree.spi.SqmQuery;
 
 import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;

@@ -1,28 +1,35 @@
 package io.quarkus.arc.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.util.List;
 
 import io.quarkus.arc.runtime.ArcRecorder;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.StartupEvent;
 
 public class LifecycleEventsBuildStep {
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    ApplicationStartBuildItem startupEvent(ArcRecorder recorder,
+    ApplicationStartBuildItem startupEvent(ActionBuilder action,
             List<ServiceStartBuildItem> startList,
             BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown,
             LaunchModeBuildItem launchMode, ArcConfig config) {
-        recorder.handleLifecycleEvents(shutdown, launchMode.getLaunchMode(),
-                config.test().disableApplicationLifecycleObservers());
+        LaunchMode mode = launchMode.getLaunchMode();
+        boolean disableObservers = config.test().disableApplicationLifecycleObservers();
+        action
+                .forService("io.quarkus.arc.lifecycle")
+                .after("io.quarkus.arc.executor")
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .afterBuildItem(ServiceStartBuildItem.class)
+                .action(ctx -> {
+                    List<Class<?>> mockBeanClasses = ArcRecorder.computeMockBeanClasses(mode, disableObservers);
+                    ArcRecorder.fireLifecycleEvent(new StartupEvent(), mockBeanClasses);
+                    ctx.onStop(() -> ArcRecorder.performShutdown(mockBeanClasses));
+                });
         return new ApplicationStartBuildItem();
     }
 

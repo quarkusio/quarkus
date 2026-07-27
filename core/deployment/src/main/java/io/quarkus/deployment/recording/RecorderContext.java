@@ -4,12 +4,17 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
 
+import io.quarkus.core.deployment.action.impl.ActionBuilderImpl;
 import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * An injectable utility class that contains methods that can be needed for dealing with recorders.
+ *
+ * @deprecated Use {@link ActionBuilderImpl} instead. The recorder
+ *             infrastructure is being replaced by a lambda-based service mechanism.
  */
+//@Deprecated(since = "4.0")
 public interface RecorderContext {
 
     /**

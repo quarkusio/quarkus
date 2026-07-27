@@ -16,11 +16,11 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
@@ -34,7 +34,12 @@ import io.quarkus.websockets.client.deployment.ServerWebSocketContainerBuildItem
 import io.quarkus.websockets.client.deployment.ServerWebSocketContainerFactoryBuildItem;
 import io.quarkus.websockets.client.deployment.WebSocketDeploymentInfoBuildItem;
 import io.quarkus.websockets.client.deployment.WebsocketClientProcessor;
+import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.runtime.WebsocketServerRecorder;
+import io.undertow.websockets.ServerWebSocketContainer;
+import io.undertow.websockets.WebSocketDeploymentInfo;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 public class ServerWebSocketProcessor {
 
@@ -92,15 +97,18 @@ public class ServerWebSocketProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public ServerWebSocketContainerFactoryBuildItem factory(WebsocketServerRecorder recorder) {
-        return new ServerWebSocketContainerFactoryBuildItem(recorder.createFactory());
+    public ServerWebSocketContainerFactoryBuildItem factory(ActionBuilder action) {
+        action
+                .forService(ServerWebSocketContainerFactory.class)
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> WebsocketServerRecorder.createFactory());
+        return new ServerWebSocketContainerFactoryBuildItem();
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     public FilterBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            WebsocketServerRecorder recorder,
+            ActionBuilder action,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Optional<WebSocketDeploymentInfoBuildItem> webSocketDeploymentInfoBuildItem,
             Optional<ServerWebSocketContainerBuildItem> serverWebSocketContainerBuildItem) throws Exception {
@@ -111,11 +119,16 @@ public class ServerWebSocketProcessor {
         final IndexView index = indexBuildItem.getIndex();
         WebsocketClientProcessor.registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
 
+        action
+                .forService(Handler.class, "io.quarkus.websocket.filter")
+                .require(WebSocketDeploymentInfo.class)
+                .require(ServerWebSocketContainer.class)
+                .action((ctx, info, container) -> WebsocketServerRecorder.createHandler(info, container));
+
         int priority = 1 + SecurityHandlerPriorities.AUTHORIZATION;
-        return new FilterBuildItem(
-                recorder.createHandler(webSocketDeploymentInfoBuildItem.get().getInfo(),
-                        serverWebSocketContainerBuildItem.get().getContainer()),
-                priority);
+        Handler<RoutingContext> handler = (Handler<RoutingContext>) action.serviceAsRecorderValue(
+                Handler.class, "io.quarkus.websocket.filter");
+        return new FilterBuildItem(handler, priority);
     }
 
     @BuildStep

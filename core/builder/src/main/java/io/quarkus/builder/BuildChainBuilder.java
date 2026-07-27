@@ -463,6 +463,7 @@ public final class BuildChainBuilder {
                 toBuild.getBuildStep(),
                 toBuild.getRealConsumes(),
                 realProduces,
+                toBuild.getAllProduces(),
                 includedDependencies, dependentStepInfos, ord);
         mapped.put(toBuild, stepInfo);
         if (includedDependencies == 0) {

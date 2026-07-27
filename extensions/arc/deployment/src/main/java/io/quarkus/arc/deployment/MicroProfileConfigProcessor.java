@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toMap;
 import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
@@ -47,6 +48,8 @@ import io.quarkus.arc.runtime.ConfigPropertiesCreator;
 import io.quarkus.arc.runtime.ConfigPropertyCreator;
 import io.quarkus.arc.runtime.MicroProfileConfigRecorder;
 import io.quarkus.arc.runtime.MicroProfileConfigRecorder.ConfigValidationMetadata;
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -350,9 +353,8 @@ public class MicroProfileConfigProcessor {
      * expected {@link jakarta.enterprise.inject.spi.DeploymentException}.
      */
     @BuildStep
-    @Record(RUNTIME_INIT)
     void registerConfigClasses(
-            MicroProfileConfigRecorder recorder,
+            ActionBuilder action,
             Optional<ConfigPropertiesRegistrarBuildItem> configPropertiesRegistrar,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
 
@@ -360,7 +362,13 @@ public class MicroProfileConfigProcessor {
             return;
         }
 
-        recorder.registerConfigProperties(configPropertiesRegistrar.get().getConfigProperties());
+        Map<String, Set<String>> configProperties = Map.copyOf(configPropertiesRegistrar.get().getConfigProperties()
+                .entrySet().stream().map(e -> Map.entry(e.getKey(), Set.copyOf(e.getValue())))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        action
+                .forService("io.quarkus.arc.config-properties")
+                .atPhase(Phase.CONFIG)
+                .action(ctx -> MicroProfileConfigRecorder.registerConfigProperties(configProperties));
 
         // Ensure that @ConfigProperties are registered before Startup events
         serviceStart.produce(new ServiceStartBuildItem("microprofile-config-properties"));

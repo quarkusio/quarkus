@@ -430,7 +430,10 @@ public class ConfigGenerationBuildStep {
         Set<String> secretKeyHandlerFactories = discoverService(SecretKeysHandlerFactory.class, reflectiveClass);
         Set<String> configCustomizers = discoverService(SmallRyeConfigBuilderCustomizer.class, reflectiveClass);
 
-        // TODO - introduce a way to ignore mappings that are only used for documentation or to prevent warnings
+        // TODO: these mappings exist only for documentation or warning suppression and are never
+        // registered with SmallRye Config. This ignore set is duplicated in
+        // ConfigServiceRegistrationStep.IGNORED_MAPPINGS — any change here must be mirrored there.
+        // The duplication should be eliminated by sharing the ignore set via a build item.
         Set<ConfigClass> ignoreMappings = new LinkedHashSet<>();
         ignoreMappings.add(ConfigClass.configClass(BuildAnalyticsConfig.class, "quarkus.analytics"));
         ignoreMappings.add(ConfigClass.configClass(BuilderConfig.class, "quarkus.builder"));

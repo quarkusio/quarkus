@@ -61,6 +61,11 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.core.deployment.action.impl.ActionBuilderImpl;
+import io.quarkus.core.deployment.action.impl.ServiceMetadataBuildItem;
+import io.quarkus.core.deployment.action.impl.ServiceValueRetentionBuildItem;
+import io.quarkus.core.deployment.action.impl.StaticServiceMetadataBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -454,6 +459,7 @@ public final class ExtensionLoader {
                 }
             }
             final List<BiFunction<BuildContext, BytecodeRecorderImpl, Object>> methodParamFns;
+            final List<Runnable> deferredActionProductions = new ArrayList<>();
             Consumer<BuildStepBuilder> methodStepConfig = Functions.discardingConsumer();
             BooleanSupplier addStep = () -> true;
             addStep = and(addStep, supplierFactory, classOnlyIf, false);
@@ -472,6 +478,16 @@ public final class ExtensionLoader {
                                             : MainBytecodeRecorderBuildItem.class,
                                     optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
                 });
+            }
+            // compute the step ID early so it can be captured by both ActionBuilder and recorder lambdas;
+            // when multiple methods share the same name, a hash suffix disambiguates
+            final String name = clazz.getName() + "#" + method.getName();
+            final String stepId;
+            List<Method> methodsWithName = nameToMethods.get(method.getName());
+            if (methodsWithName.size() > 1) {
+                stepId = name + "_" + HashUtil.sha1(Arrays.toString(method.getParameterTypes()));
+            } else {
+                stepId = name;
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
             if (methodParameters.length == 0) {
@@ -605,6 +621,26 @@ public final class ExtensionLoader {
                                     "Cannot pass recorder context to method which is not annotated with " + Record.class);
                         }
                         methodParamFns.add((bc, bri) -> bri);
+                    } else if (parameterClass == BuildContext.class) {
+                        methodParamFns.add((bc, bri) -> bc);
+                    } else if (parameterClass == ActionBuilder.class) {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> {
+                            bsb.produces(MainBytecodeRecorderBuildItem.class);
+                            bsb.produces(StaticBytecodeRecorderBuildItem.class);
+                            bsb.produces(ServiceMetadataBuildItem.class);
+                            bsb.produces(StaticServiceMetadataBuildItem.class);
+                            bsb.produces(ServiceValueRetentionBuildItem.class);
+                        });
+                        // Action items are deferred so they are produced after any recorder
+                        // bytecode, ensuring correct deploy method ordering when @Record
+                        // and ActionBuilder are combined in the same build step.
+                        methodParamFns.add((bc, bri) -> new ActionBuilderImpl(
+                                item -> deferredActionProductions.add(() -> bc.produce(item)),
+                                item -> deferredActionProductions.add(() -> bc.produce(item)),
+                                item -> deferredActionProductions.add(() -> bc.produce(item)),
+                                item -> deferredActionProductions.add(() -> bc.produce(item)),
+                                item -> deferredActionProductions.add(() -> bc.produce(item)),
+                                stepId));
                     } else {
                         throw reportError(parameter, "Unsupported method parameter " + parameterType);
                     }
@@ -683,17 +719,6 @@ public final class ExtensionLoader {
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)
                     .andThen(buildStepBuilder -> buildStepBuilder.buildIf(finalAddStep));
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
-            final String name = clazz.getName() + "#" + method.getName();
-            final String stepId;
-            List<Method> methodsWithName = nameToMethods.get(method.getName());
-            if (methodsWithName.size() > 1) {
-                // Append the sha1 of the parameter types to resolve the ambiguity
-                stepId = name + "_" + HashUtil.sha1(Arrays.toString(method.getParameterTypes()));
-                loadLog.debugf("Build steps with ambiguous name detected: %s, using discriminator suffix for step id: %s", name,
-                        stepId);
-            } else {
-                stepId = name;
-            }
 
             MethodHandle methodHandle = unreflect(method, lookup);
             chainConfig = chainConfig
@@ -744,12 +769,15 @@ public final class ExtensionLoader {
                                 if (isRecorder) {
                                     // commit recorded data
                                     if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri));
+                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri, stepId));
                                     } else {
-                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                                        bc.produce(new MainBytecodeRecorderBuildItem(bri, stepId));
                                     }
 
                                 }
+                                // Flush deferred ActionBuilder items after recorder bytecode
+                                deferredActionProductions.forEach(Runnable::run);
+                                deferredActionProductions.clear();
                             }
 
                             @Override

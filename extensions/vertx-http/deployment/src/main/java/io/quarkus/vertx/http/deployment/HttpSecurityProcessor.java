@@ -51,11 +51,15 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -99,8 +103,10 @@ import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
@@ -110,6 +116,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMecha
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.vertx.http.security.CSRF;
+import io.vertx.core.Handler;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -141,10 +148,9 @@ public class HttpSecurityProcessor {
         }
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerFormAuthMechanism(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            VertxHttpBuildTimeConfig buildTimeConfig, HttpSecurityRecorder recorder) {
+            VertxHttpBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.auth().form()) {
             syntheticBeanProducer.produce(SyntheticBeanBuildItem
                     .configure(FormAuthenticationMechanism.class)
@@ -152,8 +158,19 @@ public class HttpSecurityProcessor {
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .unremovable()
-                    .supplier(recorder.createFormAuthMechanism())
+                    .serviceValue(FormAuthenticationMechanism.class)
                     .done());
+        }
+    }
+
+    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void defineFormAuthService(ActionBuilder action, VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().form()) {
+            action
+                    .forService(FormAuthenticationMechanism.class)
+                    .action(ctx -> HttpSecurityConfiguration.get().getFormAuthenticationMechanism());
         }
     }
 
@@ -168,10 +185,13 @@ public class HttpSecurityProcessor {
 
     @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, Capabilities capabilities) {
+    void setMtlsCertificateRoleProperties(ActionBuilder action, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            recorder.setMtlsCertificateRoleProperties();
+            action
+                    .forService("io.quarkus.vertx.http.security.mtls-cert-roles")
+                    .require(io.quarkus.vertx.http.runtime.VertxHttpConfig.class)
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .action((ctx, httpConfig) -> HttpSecurityRecorder.setMtlsCertificateRoleProperties(httpConfig));
         }
     }
 
@@ -212,8 +232,7 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
+    SyntheticBeanBuildItem initBasicAuth(
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
 
@@ -225,7 +244,7 @@ public class HttpSecurityProcessor {
                 .configure(BasicAuthenticationMechanism.class)
                 .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
                 .scope(Singleton.class)
-                .supplier(recorder.basicAuthenticationMechanismBean())
+                .serviceValue(BasicAuthenticationMechanism.class)
                 .setRuntimeInit()
                 .unremovable();
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
@@ -233,6 +252,19 @@ public class HttpSecurityProcessor {
         }
 
         return configurator.done();
+    }
+
+    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void defineBasicAuthService(ActionBuilder action, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        if (applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig)) {
+            action
+                    .forService(BasicAuthenticationMechanism.class)
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .action(ctx -> HttpSecurityConfiguration.get().getBasicAuthenticationMechanism());
+        }
     }
 
     private static boolean makeBasicAuthMechDefaultBean(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
@@ -257,10 +289,10 @@ public class HttpSecurityProcessor {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void setupAuthenticationMechanisms(
-            HttpSecurityRecorder recorder,
+            ActionBuilder action,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
             Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem,
@@ -279,26 +311,43 @@ public class HttpSecurityProcessor {
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
+
+            // authentication filter: the AuthenticationHandler IS a Handler<RoutingContext>
+            action
+                    .forService(Handler.class, "io.quarkus.vertx.http.security.authentication-filter")
+                    .atPhase(Phase.STATIC_INIT)
+                    .require(AuthenticationHandler.class)
+                    .action((ctx, handler) -> handler);
+            Handler<RoutingContext> authHandler = (Handler<RoutingContext>) action.staticInitServiceAsRecorderValue(
+                    Handler.class, "io.quarkus.vertx.http.security.authentication-filter");
             filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(
-                            recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
-                            SecurityHandlerPriorities.AUTHENTICATION));
+                    .produce(new FilterBuildItem(authHandler, SecurityHandlerPriorities.AUTHENTICATION));
+
+            // authorization filter
+            action
+                    .forService(Handler.class, "io.quarkus.vertx.http.security.permission-check-filter")
+                    .atPhase(Phase.STATIC_INIT)
+                    .action(ctx -> HttpSecurityRecorder.permissionCheckHandler());
+            Handler<RoutingContext> permHandler = (Handler<RoutingContext>) action.staticInitServiceAsRecorderValue(
+                    Handler.class, "io.quarkus.vertx.http.security.permission-check-filter");
             filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), SecurityHandlerPriorities.AUTHORIZATION));
+                    .produce(new FilterBuildItem(permHandler, SecurityHandlerPriorities.AUTHORIZATION));
         }
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void createHttpAuthenticationHandler(HttpSecurityRecorder recorder, Capabilities capabilities,
+    void createHttpAuthenticationHandler(ActionBuilder action, Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            var authConfig = httpBuildTimeConfig.auth();
-            authenticationHandlerProducer.produce(
-                    new HttpAuthenticationHandlerBuildItem(
-                            recorder.authenticationMechanismHandler(authConfig.proactive(),
-                                    authConfig.propagateSecurityIdentity())));
+            boolean proactive = httpBuildTimeConfig.auth().proactive();
+            boolean propagateSecurityIdentity = httpBuildTimeConfig.auth().propagateSecurityIdentity();
+            action
+                    .forService(AuthenticationHandler.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .action(ctx -> new AuthenticationHandler(proactive, propagateSecurityIdentity));
+            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem(
+                    action.staticInitServiceAsRuntimeValue(AuthenticationHandler.class)));
         }
     }
 
@@ -333,6 +382,7 @@ public class HttpSecurityProcessor {
 
     @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
     @Produce(PreRouterFinalizationBuildItem.class)
+    @Produce(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
@@ -722,10 +772,9 @@ public class HttpSecurityProcessor {
         return new CurrentIdentityAssociationClassBuildItem(DuplicatedContextSecurityIdentityAssociation.class);
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
-    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext(HttpSecurityRecorder recorder) {
-        return new IgnoredContextLocalDataKeysBuildItem(recorder.getSecurityIdentityContextKeySupplier());
+    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext() {
+        return new IgnoredContextLocalDataKeysBuildItem(List.of(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE));
     }
 
     private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target,
@@ -992,5 +1041,19 @@ public class HttpSecurityProcessor {
         private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
             this.programmaticCorsConfig = programmaticCorsConfig;
         }
+    }
+
+    /**
+     * Ordering-only build item produced by {@link #initializeHttpSecurity} to signal that
+     * {@link HttpSecurityConfiguration} is initialized and service actions that depend on it
+     * may now safely run.
+     * <p>
+     * This is separate from {@link HttpSecurityConfigSetupCompleteBuildItem} to avoid creating
+     * a build-step cycle through ARC's synthetic bean pipeline.
+     * <p>
+     * This build item should be removed once bytecode recorders are removed and service
+     * dependency ordering is used instead.
+     */
+    static final class HttpSecurityInitCompleteBuildItem extends EmptyBuildItem {
     }
 }

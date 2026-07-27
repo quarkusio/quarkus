@@ -1,13 +1,10 @@
 package io.quarkus.vertx.http.runtime.management;
 
-import java.util.function.Supplier;
-
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.ManagementInterfaceHttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.ManagementPathMatchingHttpSecurityPolicy;
@@ -23,20 +20,20 @@ public class ManagementSecurityRecorder {
         this.managementConfig = managementConfig;
     }
 
-    public RuntimeValue<AuthenticationHandler> managementAuthenticationHandler(boolean proactiveAuthentication) {
-        return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication));
+    /**
+     * Initialize the management authentication handler with security policy and roles mapping.
+     *
+     * @param handler the authentication handler
+     * @param beanContainer the bean container
+     * @param managementConfig the management configuration
+     */
+    public static void initializeAuthenticationHandler(AuthenticationHandler handler, BeanContainer beanContainer,
+            ManagementConfig managementConfig) {
+        handler.init(beanContainer.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class),
+                RolesMapping.of(managementConfig.auth().rolesMapping()));
     }
 
-    public Handler<RoutingContext> getAuthenticationHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue) {
-        return handlerRuntimeValue.getValue();
-    }
-
-    public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler, BeanContainer beanContainer) {
-        handler.getValue().init(beanContainer.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class),
-                RolesMapping.of(managementConfig.getValue().auth().rolesMapping()));
-    }
-
-    public Handler<RoutingContext> permissionCheckHandler() {
+    public static Handler<RoutingContext> permissionCheckHandler() {
         return new Handler<RoutingContext>() {
             private volatile ManagementInterfaceHttpAuthorizer authorizer;
 
@@ -50,12 +47,4 @@ public class ManagementSecurityRecorder {
         };
     }
 
-    public Supplier<?> setupBasicAuth() {
-        return new Supplier<BasicAuthenticationMechanism>() {
-            @Override
-            public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(null, false);
-            }
-        };
-    }
 }

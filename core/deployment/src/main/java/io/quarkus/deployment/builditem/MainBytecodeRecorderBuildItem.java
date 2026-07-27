@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.core.deployment.action.impl.TransliteratedAction;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
 /**
@@ -9,29 +10,67 @@ import io.quarkus.deployment.recording.BytecodeRecorderImpl;
  * Instances of this item can hold either:
  * <ul>
  * <li>A direct {@link io.quarkus.deployment.recording.BytecodeRecorderImpl} instance via {@link #bytecodeRecorder}.</li>
- * <li>The name of a generated startup context class via {@link #generatedStartupContextClassName}.</li>
+ * <li>A {@link TransliteratedAction} for deferred consolidated class generation.</li>
  * </ul>
+ *
+ * @deprecated Extension authors should use {@link ActionBuilderImpl}
+ *             instead of producing this item directly. This item is still used internally by the
+ *             framework to schedule startup tasks.
  */
+//@Deprecated(since = "4.0")
 public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
 
     private final BytecodeRecorderImpl bytecodeRecorder;
-    private final String generatedStartupContextClassName;
+    private final TransliteratedAction transliteratedAction;
+    private final String stepId;
 
-    public MainBytecodeRecorderBuildItem(BytecodeRecorderImpl bytecodeRecorder) {
+    /**
+     * Construct a new instance from a bytecode recorder.
+     *
+     * @param bytecodeRecorder the bytecode recorder (must not be {@code null})
+     * @param stepId the producing build step's ID (must not be {@code null})
+     */
+    public MainBytecodeRecorderBuildItem(BytecodeRecorderImpl bytecodeRecorder, String stepId) {
         this.bytecodeRecorder = bytecodeRecorder;
-        this.generatedStartupContextClassName = null;
+        this.transliteratedAction = null;
+        this.stepId = stepId;
     }
 
-    public MainBytecodeRecorderBuildItem(String generatedStartupContextClassName) {
-        this.generatedStartupContextClassName = generatedStartupContextClassName;
+    /**
+     * Construct a new instance from a transliterated action for deferred class generation.
+     *
+     * @param transliteratedAction the transliterated action data (must not be {@code null})
+     */
+    public MainBytecodeRecorderBuildItem(TransliteratedAction transliteratedAction) {
+        this.transliteratedAction = transliteratedAction;
         this.bytecodeRecorder = null;
+        this.stepId = transliteratedAction.stepId();
     }
 
+    /**
+     * Get the bytecode recorder, if present.
+     *
+     * @return the bytecode recorder, or {@code null} if this item was constructed with a transliterated action
+     */
     public BytecodeRecorderImpl getBytecodeRecorder() {
         return bytecodeRecorder;
     }
 
-    public String getGeneratedStartupContextClassName() {
-        return generatedStartupContextClassName;
+    /**
+     * Get the transliterated action data, if present.
+     *
+     * @return the transliterated action, or {@code null} if this item was constructed with a bytecode recorder
+     */
+    public TransliteratedAction getTransliteratedAction() {
+        return transliteratedAction;
+    }
+
+    /**
+     * Get the ID of the build step that produced this item.
+     *
+     * @return the step ID (never {@code null})
+     */
+    public String getStepId() {
+        return stepId;
     }
 }

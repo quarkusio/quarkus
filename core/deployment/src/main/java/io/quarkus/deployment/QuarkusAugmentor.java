@@ -24,6 +24,8 @@ import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildMetrics;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.core.deployment.action.impl.ServiceMetadataBuildItem;
+import io.quarkus.core.deployment.action.impl.StaticServiceMetadataBuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
@@ -37,6 +39,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.logging.StaticInitLoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.steps.ServiceDependencyValidator;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.JVMUnsafeWarningsControl;
@@ -136,6 +139,8 @@ public class QuarkusAugmentor {
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
+            chainBuilder.addFinal(ServiceMetadataBuildItem.class);
+            chainBuilder.addFinal(StaticServiceMetadataBuildItem.class);
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
             }
@@ -180,6 +185,12 @@ public class QuarkusAugmentor {
             }
 
             BuildResult buildResult = execBuilder.execute();
+
+            // validate service dependency graphs after all build steps have completed
+            ServiceDependencyValidator.validate(
+                    buildResult.consumeMulti(StaticServiceMetadataBuildItem.class),
+                    buildResult.consumeMulti(ServiceMetadataBuildItem.class));
+
             String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
                     + "ms";
             if (launchMode.isProduction()) {

@@ -10,8 +10,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 import java.util.logging.Filter;
 import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
@@ -24,14 +25,18 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogManager;
+import org.jboss.threads.ContextHandler;
 
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -53,19 +58,25 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.IOThreadDetector;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.VertxOptionsCustomizer;
+import io.quarkus.vertx.VertxSupplier;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
+import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
 import io.quarkus.vertx.deployment.spi.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
+import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.impl.SysProps;
@@ -106,7 +117,19 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder) {
+    EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder, ActionBuilder action) {
+        // service registration for the dependency graph
+        action
+                .forService(IntSupplier.class, "io.quarkus.vertx.event-loop-count")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(VertxConfiguration.class)
+                .action((ctx, config) -> {
+                    int threads = config.eventLoopsPoolSize().isPresent()
+                            ? config.eventLoopsPoolSize().getAsInt()
+                            : VertxCoreRecorder.calculateDefaultIOThreads();
+                    return () -> threads;
+                });
+        // recorder bridge for the build item (until consumers are converted)
         return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads());
     }
 
@@ -127,15 +150,66 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    IOThreadDetectorBuildItem ioThreadDetector(VertxCoreRecorder recorder) {
-        return new IOThreadDetectorBuildItem(recorder.detector());
+    IOThreadDetectorBuildItem ioThreadDetector(ActionBuilder action) {
+        action
+                .forService(IOThreadDetector.class)
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> Context::isOnEventLoopThread);
+        return new IOThreadDetectorBuildItem(
+                action.staticInitServiceAsRecorderValue(IOThreadDetector.class));
+    }
+
+    /**
+     * Register a static-init service whose stop handler cleans up Netty's
+     * {@code InternalThreadLocalMap} from the main thread.
+     * <p>
+     * Netty attaches a thread-local map to non-Netty threads (like the main
+     * thread) whenever they interact with Netty. This map holds strong
+     * references to classes loaded by the QuarkusClassLoader, preventing
+     * classloader garbage collection in dev/test mode.
+     * <p>
+     * The cleanup must run after <em>all</em> runtime-init services have
+     * stopped — including ArC, whose bean destruction callbacks may touch
+     * Netty. By placing the cleanup in a static-init service, it runs
+     * during the static-init graph's stop cascade, which executes after
+     * the entire runtime-init graph has stopped.
+     * <p>
+     * <b>Future considerations:</b>
+     * <ul>
+     * <li><b>Implicit stop-ordering from synthetic bean registration:</b>
+     * When a service registers a synthetic CDI bean, the framework could
+     * automatically infer a stop-ordering edge: ArC must destroy that
+     * bean's dependency subgraph before the backing service stops. This
+     * would eliminate the need for this workaround.</li>
+     * <li><b>Service-scoped CDI contexts:</b> Instead of
+     * {@code @ApplicationScoped}, service-backed synthetic beans could
+     * live in a custom scope tied to the service graph. The scope would
+     * end when the backing service stops, triggering bean destruction
+     * at the right time.</li>
+     * </ul>
+     */
+    @BuildStep
+    void registerNettyThreadLocalCleanup(ActionBuilder action) {
+        action
+                .forService("io.quarkus.vertx.netty-thread-local-cleanup")
+                .atPhase(Phase.STATIC_INIT)
+                .before(IOThreadDetector.class)
+                .before(ArcContainer.class)
+                .action(ctx -> {
+                    ctx.onStop(() -> {
+                        Logger.getLogger("io.quarkus.vertx.netty-cleanup")
+                                .info("Cleaning up Netty InternalThreadLocalMap");
+                        io.netty.util.internal.InternalThreadLocalMap.remove();
+                    });
+                });
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureLogging(VertxCoreRecorder recorder) {
-        recorder.configureQuarkusLoggerFactory();
+    void configureLogging(ActionBuilder action) {
+        action
+                .forService("io.quarkus.vertx.configure-logging")
+                .atPhase(Phase.LOGGING)
+                .action(ctx -> VertxCoreRecorder.configureQuarkusLoggerFactory());
     }
 
     @BuildStep
@@ -143,6 +217,7 @@ class VertxCoreProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(
             VertxCoreRecorder recorder,
+            ActionBuilder action,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             List<VertxBootstrapConsumerBuildItem> vertxBootstrapConsumers,
@@ -168,9 +243,15 @@ class VertxCoreProcessor {
         List<String> vertxServiceProviderClassNames = loadServiceClassNames(VertxServiceProvider.class);
         List<String> verticleFactoryClassNames = loadServiceClassNames(VerticleFactory.class);
 
-        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, bootstrapCustomizer,
+        VertxSupplier vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, bootstrapCustomizer,
                 optionsCustomizer,
                 vertxServiceProviderClassNames, verticleFactoryClassNames, executorBuildItem.getExecutorProxy());
+        action.aliasRecorderValue(VertxSupplier.class, vertx, Phase.INFRASTRUCTURE);
+        action
+                .forService(Vertx.class)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(VertxSupplier.class)
+                .action((ctx, supplier) -> supplier.get());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -188,8 +269,7 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void detectNativeTransports(VertxBuildTimeConfig buildTimeConfig, VertxCoreRecorder recorder) {
+    void detectNativeTransports(VertxBuildTimeConfig buildTimeConfig, ActionBuilder action) {
         Set<String> detected = new HashSet<>();
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
@@ -224,7 +304,11 @@ class VertxCoreProcessor {
             log.debugf("Detected native transport(s) on classpath: %s", detected);
         }
 
-        recorder.setDetectedNativeTransports(detected);
+        Set<String> capturedDetected = Set.copyOf(detected);
+        action
+                .forService("io.quarkus.vertx.detect-native-transports")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .action(ctx -> VertxCoreRecorder.setDetectedNativeTransports(capturedDetected));
     }
 
     @BuildStep
@@ -248,34 +332,40 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    ThreadFactoryBuildItem createVertxThreadFactory(VertxCoreRecorder recorder, LaunchModeBuildItem launchMode) {
-        return new ThreadFactoryBuildItem(recorder.createThreadFactory(launchMode.getLaunchMode()));
+    ThreadFactoryBuildItem createVertxThreadFactory(ActionBuilder action, LaunchModeBuildItem launchMode) {
+        LaunchMode mode = launchMode.getLaunchMode();
+        action
+                .forService(ThreadFactory.class)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .action(ctx -> VertxCoreRecorder.createThreadFactory(mode));
+        return new ThreadFactoryBuildItem(
+                action.serviceAsRecorderValue(ThreadFactory.class));
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void dontPropagateCdiContext(BuildProducer<IgnoredContextLocalDataKeysBuildItem> ignoredContextKeysProducer,
-            VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
-        if (buildConfig.customizeArcContext()) {
-            ignoredContextKeysProducer
-                    .produce(new IgnoredContextLocalDataKeysBuildItem(recorder.getIgnoredArcContextKeysSupplier()));
-        }
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder,
+    ContextHandlerBuildItem createVertxContextHandlers(ActionBuilder action,
+            VertxBuildConfig buildConfig,
             List<IgnoredContextLocalDataKeysBuildItem> ignoredKeysSuppliersItems) {
-        var ignoredKeysSuppliers = ignoredKeysSuppliersItems.stream()
-                .map(IgnoredContextLocalDataKeysBuildItem::getIgnoredKeysSupplier).toList();
-        return new ContextHandlerBuildItem(recorder.executionContextHandler(ignoredKeysSuppliers));
+        List<String> extensionIgnoredKeys = List.of(ignoredKeysSuppliersItems.stream()
+                .flatMap(item -> item.ignoredKeys().stream())
+                .toArray(String[]::new));
+        boolean includeArcKeys = buildConfig.customizeArcContext();
+        action
+                .forService(ContextHandler.class, "io.quarkus.vertx.context-handler")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .action(ctx -> VertxCoreRecorder.executionContextHandler(extensionIgnoredKeys, includeArcKeys));
+        return new ContextHandlerBuildItem(
+                (ContextHandler<Object>) action.serviceAsRecorderValue(
+                        ContextHandler.class, "io.quarkus.vertx.context-handler"));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void resetMapper(VertxCoreRecorder recorder, ShutdownContextBuildItem shutdown) {
-        recorder.resetMapper(shutdown);
+    public void resetMapper(ActionBuilder action) {
+        action
+                .forService("io.quarkus.vertx.reset-mapper")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .action(ctx -> ctx.onStop(QuarkusJacksonFactory::reset));
     }
 
     private void handleBlockingWarningsInDevOrTestMode() {

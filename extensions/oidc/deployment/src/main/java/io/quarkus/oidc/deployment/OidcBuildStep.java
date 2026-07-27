@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.context.RequestScoped;
@@ -39,6 +41,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jose4j.jwa.AlgorithmFactoryFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -56,9 +59,12 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -88,7 +94,6 @@ import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
-import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
@@ -222,9 +227,11 @@ public class OidcBuildStep {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void initJose4J(Jose4jRecorder recorder) {
-        recorder.initialize();
+    public void initJose4J(ActionBuilder action) {
+        action
+                .forService("io.quarkus.oidc.jose4j-init")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> AlgorithmFactoryFactory.getInstance());
     }
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
@@ -291,10 +298,9 @@ public class OidcBuildStep {
      *  TenantIdentityProvider identityProvider;
      * </code>
      */
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void produceTenantIdentityProviders(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            OidcRecorder recorder, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
+            ActionBuilder action, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
         if (!combinedIndex.getIndex().getAnnotations(TENANT_NAME).isEmpty()) {
             // create TenantIdentityProviders for tenants selected with @Tenant like: @Tenant("my-tenant")
             beans
@@ -304,14 +310,20 @@ public class OidcBuildStep {
                     .filter(ip -> ip.getRequiredQualifier(NAMED) != null)
                     .map(ip -> ip.getRequiredQualifier(NAMED).value().asString())
                     .distinct()
-                    .forEach(tenantName -> syntheticBeanProducer.produce(
-                            SyntheticBeanBuildItem
-                                    .configure(TenantIdentityProvider.class)
-                                    .named(tenantName)
-                                    .scope(APPLICATION.getInfo())
-                                    .supplier(recorder.createTenantIdentityProvider(tenantName))
-                                    .unremovable()
-                                    .done()));
+                    .forEach(tenantName -> {
+                        action
+                                .forService(TenantIdentityProvider.class, tenantName)
+                                .atPhase(Phase.STATIC_INIT)
+                                .action(ctx -> OidcRecorder.createTenantIdentityProvider(tenantName));
+                        syntheticBeanProducer.produce(
+                                SyntheticBeanBuildItem
+                                        .configure(TenantIdentityProvider.class)
+                                        .named(tenantName)
+                                        .scope(APPLICATION.getInfo())
+                                        .serviceValue(TenantIdentityProvider.class, tenantName)
+                                        .unremovable()
+                                        .done());
+                    });
         }
         // create TenantIdentityProvider for default tenant when tenant is not explicitly selected via @Tenant
         boolean createTenantIdentityProviderForDefaultTenant = beans
@@ -320,6 +332,10 @@ public class OidcBuildStep {
                 .filter(ip -> ip.getRequiredQualifier(NAMED) == null)
                 .anyMatch(OidcBuildStep::isTenantIdentityProviderType);
         if (createTenantIdentityProviderForDefaultTenant) {
+            action
+                    .forService(TenantIdentityProvider.class, DEFAULT_TENANT_ID)
+                    .atPhase(Phase.STATIC_INIT)
+                    .action(ctx -> OidcRecorder.createTenantIdentityProvider(DEFAULT_TENANT_ID));
             syntheticBeanProducer.produce(
                     SyntheticBeanBuildItem
                             .configure(TenantIdentityProvider.class)
@@ -330,7 +346,7 @@ public class OidcBuildStep {
                             // which means we need to handle ambiguous resolution
                             .alternative(true)
                             .priority(1)
-                            .supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
+                            .serviceValue(TenantIdentityProvider.class, DEFAULT_TENANT_ID)
                             .unremovable()
                             .done());
         }
@@ -340,19 +356,35 @@ public class OidcBuildStep {
         return TENANT_IDENTITY_PROVIDER_NAME.equals(ip.getRequiredType().name());
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void detectIfUserInfoRequired(OidcRecorder recorder, BeanRegistrationPhaseBuildItem beanRegistration) {
-        recorder.setUserInfoInjectionPointDetected(detectUserInfoRequired(beanRegistration));
+    void detectIfUserInfoRequired(ActionBuilder action, BeanRegistrationPhaseBuildItem beanRegistration) {
+        boolean detected = detectUserInfoRequired(beanRegistration);
+        action
+                .forService("io.quarkus.oidc.user-info-detection")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> OidcRecorder.setUserInfoInjectionPointDetected(detected));
     }
 
     @Produce(PreRouterFinalizationBuildItem.class)
     @Consume(BeanContainerBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initTenantConfigBean(OidcRecorder recorder) {
-        recorder.initTenantConfigBean();
+    void initTenantConfigBean(ActionBuilder action) {
+        action
+                .forService("io.quarkus.oidc.tenant-config-init")
+                .require(BeanContainer.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .action((ctx, beanContainer) -> {
+                    try {
+                        // validates static tenant config during app startup
+                        beanContainer.beanInstance(TenantConfigBean.class);
+                    } catch (jakarta.enterprise.inject.CreationException wrapper) {
+                        if (wrapper.getCause() instanceof RuntimeException re) {
+                            throw re;
+                        }
+                        throw wrapper;
+                    }
+                });
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -370,9 +402,9 @@ public class OidcBuildStep {
                 .done();
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
+    public void registerTenantResolverInterceptor(Capabilities capabilities, ActionBuilder action,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
@@ -390,9 +422,16 @@ public class OidcBuildStep {
                     // if class is the target, we know it cannot be a TenantIdentityProvider as we produce it ourselves
                     .anyMatch(t -> isMethodWithTenantAnnButNotInjPoint(t) || t.kind() == CLASS);
             if (foundTenantResolver) {
+                action
+                        .forService(Function.class, "io.quarkus.oidc.tenant-resolver-interceptor")
+                        .atPhase(Phase.STATIC_INIT)
+                        .action(ctx -> OidcRecorder.tenantResolverInterceptorCreator());
                 // register method interceptor that will be run before security checks
+                var interceptorCreator = (Function<String, Consumer<RoutingContext>>) action
+                        .staticInitServiceAsRecorderValue(Function.class,
+                                "io.quarkus.oidc.tenant-resolver-interceptor");
                 bindingProducer.produce(
-                        new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
+                        new EagerSecurityInterceptorBindingBuildItem(interceptorCreator, TENANT_NAME));
                 systemPropertyProducer.produce(new SystemPropertyBuildItem(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED,
                         Boolean.TRUE.toString()));
             }
@@ -432,9 +471,9 @@ public class OidcBuildStep {
         return new RunTimeConfigBuilderBuildItem(OidcTenantDefaultIdConfigBuilder.class);
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerAuthenticationContextInterceptor(Capabilities capabilities, OidcRecorder recorder,
+    public void registerAuthenticationContextInterceptor(Capabilities capabilities, ActionBuilder action,
             VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
@@ -447,7 +486,14 @@ public class OidcBuildStep {
         }
         SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
                 combinedIndexBuildItem.getIndex(), securityTransformerBuildItem);
-        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(),
+        action
+                .forService(Function.class, "io.quarkus.oidc.auth-context-interceptor")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> OidcRecorder.authenticationContextInterceptorCreator());
+        var interceptorCreator = (Function<String, Consumer<RoutingContext>>) action
+                .staticInitServiceAsRecorderValue(Function.class,
+                        "io.quarkus.oidc.auth-context-interceptor");
+        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(interceptorCreator,
                 ai -> {
                     AnnotationValue maxAgeAnnotationValue = ai.value("maxAge");
                     String maxAge = maxAgeAnnotationValue == null ? "" : maxAgeAnnotationValue.asString();
@@ -498,10 +544,16 @@ public class OidcBuildStep {
         }
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
+    @SuppressWarnings("unchecked")
     @BuildStep
-    FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
-        Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
+    FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, ActionBuilder action) {
+        action
+                .forService(Handler.class, "io.quarkus.oidc.back-channel-logout")
+                .atPhase(Phase.STATIC_INIT)
+                .require(BeanContainer.class)
+                .action((ctx, bc) -> bc.beanInstance(BackChannelLogoutHandler.class));
+        Handler<RoutingContext> handler = (Handler<RoutingContext>) action
+                .staticInitServiceAsRecorderValue(Handler.class, "io.quarkus.oidc.back-channel-logout");
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 
@@ -513,10 +565,16 @@ public class OidcBuildStep {
         }
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
+    @SuppressWarnings("unchecked")
     @BuildStep
-    FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
-        Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
+    FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, ActionBuilder action) {
+        action
+                .forService(Handler.class, "io.quarkus.oidc.resource-metadata")
+                .atPhase(Phase.STATIC_INIT)
+                .require(BeanContainer.class)
+                .action((ctx, bc) -> bc.beanInstance(ResourceMetadataHandler.class));
+        Handler<RoutingContext> handler = (Handler<RoutingContext>) action
+                .staticInitServiceAsRecorderValue(Handler.class, "io.quarkus.oidc.resource-metadata");
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 

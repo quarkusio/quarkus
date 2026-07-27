@@ -76,7 +76,7 @@ public class SyntheticBeanBuildItemProxyTest {
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder));
+                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder, context.getStepId()));
                     }
                 }).produces(StaticBytecodeRecorderBuildItem.class).produces(SyntheticBeanBuildItem.class).build();
             }

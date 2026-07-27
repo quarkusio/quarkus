@@ -43,6 +43,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
@@ -53,6 +54,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.core.deployment.action.impl.ActionBuilderImpl;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -69,6 +71,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ServiceValueSupplier;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
@@ -101,7 +104,11 @@ import io.smallrye.common.constraint.Assert;
  * - arrays, lists and maps of the above
  * <p>
  * We instantiate one instance of this class per recording build step method.
+ *
+ * @deprecated Use {@link ActionBuilderImpl} instead. The bytecode
+ *             recorder infrastructure is being replaced by a lambda-based service mechanism.
  */
+//@Deprecated(since = "4.0")
 public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final Class<?> SINGLETON_LIST_CLASS = Collections.singletonList(1).getClass();
@@ -396,12 +403,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
         classesToUseRecordableConstructor.add(clazz);
     }
 
-    private ProxyInstance getProxyInstance(Class<?> returnType) throws InstantiationException, IllegalAccessException {
+    private <T> ProxyInstance getProxyInstance(Class<T> returnType) throws InstantiationException, IllegalAccessException {
         boolean returnInterface = returnType.isInterface();
-        ProxyFactory<?> proxyFactory = returnValueProxy.get(returnType);
+        @SuppressWarnings("unchecked")
+        ProxyFactory<T> proxyFactory = (ProxyFactory<T>) returnValueProxy.get(returnType);
         if (proxyFactory == null) {
-            ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
-                    .setSuperClass(returnInterface ? Object.class : (Class) returnType)
+            ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
+                    .setSuperClass(returnInterface ? Object.class : returnType)
                     .setClassLoader(classLoader)
                     .addAdditionalInterface(ReturnedProxy.class)
                     .setAnchorClass(getClass())
@@ -608,6 +616,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
      */
     private DeferredParameter loadObjectInstanceImpl(Object param, Map<Object, DeferredParameter> existing,
             Class<?> expectedType, boolean relaxedValidation) {
+        // StartupContext parameters are passed through from the deploy method
+        if (expectedType == StartupContext.class) {
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext creator, MethodCreator method, ResultHandle array) {
+                    return method.getMethodParam(0);
+                }
+            };
+        }
         //null is easy
         if (param == null) {
             return new DeferredParameter() {
@@ -736,13 +753,24 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
             }
             String proxyId = rp.__returned$proxy$key();
+            boolean serviceValue = rp.__service$$value();
+            boolean supplierWrapper = rp.__supplier$$wrapper();
             //because this is the result of a method invocation that may not have happened at param deserialization time
             //we just load it from the startup context
             return new DeferredParameter() {
                 @Override
                 ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
-                    return method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class),
+                    String methodName = serviceValue ? "getServiceValue" : "getValue";
+                    ResultHandle value = method.invokeVirtualMethod(
+                            ofMethod(StartupContext.class, methodName, Object.class, String.class),
                             method.getMethodParam(0), method.load(proxyId));
+                    if (supplierWrapper) {
+                        // wrap the loaded service value in a Supplier for backward-compatible build items
+                        return method.invokeStaticMethod(
+                                ofMethod(ServiceValueSupplier.class, "of", Supplier.class, Object.class),
+                                value);
+                    }
+                    return value;
                 }
             };
         } else if (param instanceof Duration) {
@@ -1707,6 +1735,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (method.getName().equals("__static$$init")) {
                 return staticInit;
             }
+            if (method.getName().equals("__service$$value")) {
+                return false;
+            }
+            if (method.getName().equals("__supplier$$wrapper")) {
+                return false;
+            }
             if (method.getName().equals("toString")
                     && method.getParameterCount() == 0
                     && method.getReturnType().equals(String.class)) {
@@ -1737,6 +1771,31 @@ public class BytecodeRecorderImpl implements RecorderContext {
         String __returned$proxy$key();
 
         boolean __static$$init();
+
+        /**
+         * Whether this proxy's value is stored in the service values map
+         * (via {@code putServiceValue}) rather than the recorder values map
+         * (via {@code putValue}).
+         *
+         * @return {@code true} for service value proxies, {@code false} for recorder proxies
+         */
+        default boolean __service$$value() {
+            return false;
+        }
+
+        /**
+         * Whether this proxy should be loaded as a {@link java.util.function.Supplier}
+         * wrapping the service value, rather than the raw value itself.
+         * <p>
+         * When {@code true}, the generated bytecode loads the service value and wraps it
+         * in a {@code Supplier} that returns it. This is a temporary bridge for build items
+         * that expose {@code Supplier<T>} to unconverted recorder-based consumers.
+         *
+         * @return {@code true} if the loaded value should be wrapped in a {@code Supplier}
+         */
+        default boolean __supplier$$wrapper() {
+            return false;
+        }
     }
 
     static final class StoredMethodCall implements BytecodeInstruction {

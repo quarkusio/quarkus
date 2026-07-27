@@ -1,9 +1,9 @@
 package io.quarkus.elytron.security.common.deployment;
 
+import io.quarkus.core.deployment.action.ActionBuilder;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.elytron.security.common.BcryptUtil;
@@ -17,20 +17,23 @@ public class QuarkusSecurityCommonProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerPasswordProvider(ElytronCommonRecorder recorder) {
-        recorder.registerPasswordProvider();
+    public void registerPasswordProvider(ActionBuilder action) {
+        action
+                .forService("io.quarkus.elytron-security-common.password-provider")
+                .atPhase(Phase.STATIC_INIT)
+                .action(ctx -> ElytronCommonRecorder.registerPasswordProvider());
     }
 
     /**
-     * Graal VM now seems to lose providers registered at static init
-     *
-     * We re-register at runtime (which is a no-op in JVM mode)
+     * Graal VM now seems to lose providers registered at static init.
+     * We re-register at runtime (which is a no-op in JVM mode).
      */
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void registerPasswordProviderForNative(ElytronCommonRecorder recorder) {
-        recorder.registerPasswordProvider();
+    public void registerPasswordProviderForNative(ActionBuilder action) {
+        action
+                .forService("io.quarkus.elytron-security-common.password-provider-native")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .action(ctx -> ElytronCommonRecorder.registerPasswordProvider());
     }
 
     /**

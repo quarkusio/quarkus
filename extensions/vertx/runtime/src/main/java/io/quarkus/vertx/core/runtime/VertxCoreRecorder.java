@@ -25,7 +25,6 @@ import org.jboss.logging.Logger;
 import org.jboss.threads.ContextHandler;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -36,6 +35,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
+import io.quarkus.vertx.VertxSupplier;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
@@ -77,7 +77,7 @@ public class VertxCoreRecorder {
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
     public static final String VERTX_CACHE = "vertx-cache";
 
-    static volatile VertxSupplier vertx;
+    static volatile VertxSupplierImpl vertx;
 
     static volatile int blockingThreadPoolSize;
 
@@ -92,7 +92,7 @@ public class VertxCoreRecorder {
      *
      * @param transports the set of transport, empty if none.
      */
-    public void setDetectedNativeTransports(Set<String> transports) {
+    public static void setDetectedNativeTransports(Set<String> transports) {
         detectedNativeTransports = transports;
     }
 
@@ -133,7 +133,7 @@ public class VertxCoreRecorder {
         this.shutdownConfig = shutdownConfig;
     }
 
-    public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
+    public VertxSupplier configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
             List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
             List<String> vertxServiceProviderClassNames,
             List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
@@ -141,7 +141,7 @@ public class VertxCoreRecorder {
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
 
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
+            vertx = new VertxSupplierImpl(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
                     new ArrayList<>(optionsCustomizers), threadPoolConfig.getValue(), shutdown,
                     vertxServiceProviderClassNames, verticleFactoryClassNames);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
@@ -156,7 +156,7 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
+                vertx = new VertxSupplierImpl(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
                         new ArrayList<>(optionsCustomizers),
                         threadPoolConfig.getValue(),
                         shutdown, vertxServiceProviderClassNames, verticleFactoryClassNames);
@@ -244,7 +244,7 @@ public class VertxCoreRecorder {
         }
     }
 
-    public static Supplier<Vertx> getVertx() {
+    public static VertxSupplier getVertx() {
         return vertx;
     }
 
@@ -629,7 +629,7 @@ public class VertxCoreRecorder {
         return cache;
     }
 
-    private static int calculateDefaultIOThreads() {
+    public static int calculateDefaultIOThreads() {
         //we only allow one event loop per 10mb of ram at the most
         //it's hard to say what this number should be, but it is also obvious
         //that for constrained environments we don't want a lot of event loops
@@ -647,8 +647,6 @@ public class VertxCoreRecorder {
 
     void destroy() {
         if (vertx != null && vertx.v != null) {
-            // Netty attaches a ThreadLocal to the main thread that can leak the QuarkusClassLoader which can be problematic in dev or test mode
-            FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
             vertx.v.close().onComplete(new Handler<AsyncResult<Void>>() {
@@ -734,6 +732,11 @@ public class VertxCoreRecorder {
         };
     }
 
+    /**
+     * @deprecated retained for {@code EventLoopCountBuildItem} compatibility;
+     *             use the {@code IntSupplier} service {@code "io.quarkus.vertx.event-loop-count"} instead
+     */
+    @Deprecated(forRemoval = true)
     public Supplier<Integer> calculateEventLoopThreads() {
         int threads;
         if (vertxConfig.getValue().eventLoopsPoolSize().isPresent()) {
@@ -749,7 +752,7 @@ public class VertxCoreRecorder {
         };
     }
 
-    public ThreadFactory createThreadFactory(LaunchMode launchMode) {
+    public static ThreadFactory createThreadFactory(LaunchMode launchMode) {
         Optional<ClassLoader> nonDevModeTccl = setupThreadFactoryTccl(launchMode);
         AtomicInteger threadCount = new AtomicInteger(0);
         return new ThreadFactory() {
@@ -782,20 +785,22 @@ public class VertxCoreRecorder {
         thread.setContextClassLoader(cl);
     }
 
-    public RuntimeValue<List<String>> getIgnoredArcContextKeysSupplier() {
-        final VertxCurrentContextFactory currentContextFactory = (VertxCurrentContextFactory) Arc.container()
-                .getCurrentContextFactory();
-        return new RuntimeValue<>(currentContextFactory.keys());
-    }
-
-    public ContextHandler<Object> executionContextHandler(List<RuntimeValue<List<String>>> ignoredKeysSuppliers) {
+    /**
+     * Create a {@link ContextHandler} that propagates Vert.x context and MDC across thread boundaries.
+     *
+     * @param extensionIgnoredKeys context-local data keys that should not be propagated
+     * @param includeArcKeys whether to include Arc context factory keys in the ignored set
+     * @return the context handler
+     */
+    public static ContextHandler<Object> executionContextHandler(List<String> extensionIgnoredKeys, boolean includeArcKeys) {
         final List<String> ignoredKeys;
-        if (ignoredKeysSuppliers.isEmpty()) {
+        if (extensionIgnoredKeys.isEmpty() && !includeArcKeys) {
             ignoredKeys = null;
         } else {
-            ignoredKeys = new ArrayList<>();
-            for (RuntimeValue<List<String>> ignoredKeysSupplier : ignoredKeysSuppliers) {
-                ignoredKeys.addAll(ignoredKeysSupplier.getValue());
+            ignoredKeys = new ArrayList<>(extensionIgnoredKeys);
+            if (includeArcKeys) {
+                ignoredKeys.addAll(
+                        ((VertxCurrentContextFactory) Arc.container().getCurrentContextFactory()).keys());
             }
         }
         return new ContextHandler<Object>() {
@@ -868,21 +873,22 @@ public class VertxCoreRecorder {
         };
     }
 
-    public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
-        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), Collections.emptyList(),
+    public static VertxSupplier recoverFailedStart(VertxConfiguration config,
+            ThreadPoolConfig threadPoolConfig) {
+        return vertx = new VertxSupplierImpl(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), Collections.emptyList(),
                 threadPoolConfig, null, List.of(),
                 List.of());
 
     }
 
-    public void configureQuarkusLoggerFactory() {
+    public static void configureQuarkusLoggerFactory() {
         String loggerClassName = System.getProperty(LOGGER_FACTORY_NAME_SYS_PROP);
         if (loggerClassName == null) {
             System.setProperty(LOGGER_FACTORY_NAME_SYS_PROP, VertxLogDelegateFactory.class.getName());
         }
     }
 
-    static class VertxSupplier implements Supplier<Vertx> {
+    static class VertxSupplierImpl implements VertxSupplier {
         final LaunchMode launchMode;
         final VertxConfiguration config;
         final VertxCustomizer customizer;
@@ -892,7 +898,7 @@ public class VertxCoreRecorder {
         final List<String> verticleFactoryClassNames;
         Vertx v;
 
-        VertxSupplier(LaunchMode launchMode, VertxConfiguration config,
+        VertxSupplierImpl(LaunchMode launchMode, VertxConfiguration config,
                 List<Consumer<VertxBootstrap>> bootstrapCustomizers,
                 List<Consumer<VertxOptions>> optionCustomizers,
                 ThreadPoolConfig threadPoolConfig,

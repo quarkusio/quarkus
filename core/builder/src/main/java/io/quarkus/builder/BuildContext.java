@@ -3,9 +3,14 @@ package io.quarkus.builder;
 import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -196,6 +201,112 @@ public final class BuildContext {
      */
     public ExecutorService getExecutor() {
         return execution.getExecutor();
+    }
+
+    /**
+     * Get the build step dependency graph as an adjacency map.
+     * Each key is a build step ID; the corresponding value is the set
+     * of step IDs that the key step depends on (its dependencies).
+     * <p>
+     * This traverses the full step graph by inverting the forward
+     * (dependent) edges stored in each {@link StepInfo}. The result
+     * is computed on each call and not cached.
+     *
+     * @return the dependency graph (step ID → set of dependency step IDs)
+     */
+    /**
+     * Get the ID of the currently executing build step.
+     *
+     * @return the step ID (never {@code null})
+     */
+    public String getStepId() {
+        return stepInfo.getBuildStep().getId();
+    }
+
+    /**
+     * Build item types whose production/consumption edges should be excluded
+     * from the step dependency graph. These items are consumed only by
+     * {@code MainClassBuildStep} for code generation and do not represent
+     * runtime ordering dependencies between services.
+     */
+    private static final Set<String> EXCLUDED_EDGE_ITEMS = Set.of(
+            "io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem",
+            "io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem");
+
+    public Map<String, Set<String>> getStepDependencyGraph() {
+        Map<String, Set<String>> result = new HashMap<>();
+        Set<StepInfo> visited = new HashSet<>();
+        Deque<StepInfo> work = new ArrayDeque<>(execution.getBuildChain().getStartSteps());
+        while (!work.isEmpty()) {
+            StepInfo step = work.poll();
+            if (!visited.add(step)) {
+                continue;
+            }
+            String stepId = step.getBuildStep().getId();
+            result.computeIfAbsent(stepId, k -> new HashSet<>());
+            for (StepInfo dependent : step.getDependents()) {
+                // skip edges where the only connecting items are recorder build items
+                if (isRecorderOnlyEdge(step, dependent)) {
+                    work.add(dependent);
+                    continue;
+                }
+                String dependentId = dependent.getBuildStep().getId();
+                // dependent depends on step → add step as a dependency of dependent
+                result.computeIfAbsent(dependentId, k -> new HashSet<>()).add(stepId);
+                work.add(dependent);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Check if the dependency edge between a producer and consumer step
+     * exists solely because of recorder build item types. If the only
+     * items that the consumer consumes AND the producer produces are
+     * excluded item types, the edge is spurious.
+     */
+    private static boolean isRecorderOnlyEdge(StepInfo producer, StepInfo consumer) {
+        Set<ItemId> produced = producer.getProduces();
+        Set<ItemId> consumed = consumer.getConsumes();
+        boolean hasRealOverlap = false;
+        boolean hasExcludedOverlap = false;
+        for (ItemId p : produced) {
+            if (consumed.contains(p)) {
+                if (EXCLUDED_EDGE_ITEMS.contains(p.getType().getName())) {
+                    hasExcludedOverlap = true;
+                } else {
+                    hasRealOverlap = true;
+                }
+            }
+        }
+        return hasExcludedOverlap && !hasRealOverlap;
+    }
+
+    /**
+     * Get a mapping from build item class name to the set of step IDs that
+     * produce that build item. Used by the service graph builder to resolve
+     * {@code afterBuildItem()} declarations to producing steps.
+     *
+     * @return a map of build item class name → producing step IDs
+     */
+    public Map<String, Set<String>> getBuildItemProducers() {
+        Map<String, Set<String>> result = new HashMap<>();
+        Set<StepInfo> visited = new HashSet<>();
+        Deque<StepInfo> work = new ArrayDeque<>(execution.getBuildChain().getStartSteps());
+        while (!work.isEmpty()) {
+            StepInfo step = work.poll();
+            if (!visited.add(step)) {
+                continue;
+            }
+            String stepId = step.getBuildStep().getId();
+            for (ItemId produced : step.getAllProduces()) {
+                result.computeIfAbsent(produced.getType().getName(), k -> new HashSet<>()).add(stepId);
+            }
+            for (StepInfo dependent : step.getDependents()) {
+                work.add(dependent);
+            }
+        }
+        return result;
     }
 
     // -- //

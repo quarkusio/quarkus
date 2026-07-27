@@ -28,6 +28,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
@@ -51,13 +52,7 @@ public class ArcRecorder {
                 .setStrictCompatibility(strictCompatibility)
                 .setTestMode(testMode);
         ArcContainer container = Arc.initialize(builder.build());
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                Arc.shutdown();
-                syntheticBeanProviders = null;
-            }
-        });
+        // Arc.shutdown() is handled by the Arc lifecycle runtime service (LifecycleEventsBuildStep)
         return container;
     }
 
@@ -92,34 +87,15 @@ public class ArcRecorder {
         return beanContainer;
     }
 
+    /**
+     * @deprecated handled by the Arc lifecycle runtime service; retained for compatibility
+     */
+    @Deprecated(forRemoval = true)
     public void handleLifecycleEvents(ShutdownContext context, LaunchMode launchMode,
             boolean disableApplicationLifecycleObservers) {
-        ArcContainerImpl container = ArcContainerImpl.instance();
-        List<Class<?>> mockBeanClasses;
-
-        // If needed then mock all app observers in the test mode
-        if (launchMode == LaunchMode.TEST && disableApplicationLifecycleObservers) {
-            Predicate<String> predicate = container
-                    .select(TestApplicationClassPredicate.class).get();
-            mockBeanClasses = new ArrayList<>();
-            for (InjectableBean<?> bean : container.getBeans()) {
-                // Mock observers for all application class beans
-                if (bean.getKind() == Kind.CLASS && predicate.test(bean.getBeanClass().getName())) {
-                    mockBeanClasses.add(bean.getBeanClass());
-                }
-            }
-        } else {
-            mockBeanClasses = Collections.emptyList();
-        }
-
-        fireLifecycleEvent(container, new StartupEvent(), mockBeanClasses);
-
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);
-            }
-        });
+        List<Class<?>> mockBeanClasses = computeMockBeanClasses(launchMode, disableApplicationLifecycleObservers);
+        fireLifecycleEvent(new StartupEvent(), mockBeanClasses);
+        context.addShutdownTask(() -> performShutdown(mockBeanClasses));
     }
 
     public Function<SyntheticCreationalContext<?>, Object> createFunction(RuntimeValue<?> value) {
@@ -149,6 +125,31 @@ public class ArcRecorder {
         };
     }
 
+    /**
+     * Create a creation function for a service-value-backed synthetic bean.
+     * The function reads and removes the service value from the startup context
+     * on first CDI access, ensuring the service action has already populated
+     * the value. Removing drains the map so it does not persist after startup.
+     *
+     * @param serviceKey the startup context key for the service value
+     * @param startupContext the startup context
+     * @return a function that reads and removes the service value on demand
+     */
+    public Function<SyntheticCreationalContext<?>, Object> createServiceValueFunction(
+            String serviceKey, StartupContext startupContext) {
+        return new Function<SyntheticCreationalContext<?>, Object>() {
+            @Override
+            public Object apply(SyntheticCreationalContext<?> t) {
+                Object value = startupContext.removeServiceValue(serviceKey);
+                if (value == null) {
+                    throw new IllegalStateException("Service '" + serviceKey
+                            + "' has not been initialized; the CDI bean was accessed before the service action ran");
+                }
+                return value;
+            }
+        };
+    }
+
     public void initTestApplicationClassPredicate(Set<String> applicationBeanClasses) {
         PreloadedTestApplicationClassPredicate predicate = Arc.requireContainer()
                 .instance(PreloadedTestApplicationClassPredicate.class)
@@ -156,7 +157,38 @@ public class ArcRecorder {
         predicate.setApplicationBeanClasses(applicationBeanClasses);
     }
 
-    private void fireLifecycleEvent(ArcContainerImpl container, Object event, List<Class<?>> mockBeanClasses) {
+    /**
+     * Compute the list of bean classes whose observers should be mocked in test mode.
+     * Returns an empty list if mocking is not applicable.
+     *
+     * @param launchMode the launch mode
+     * @param disableApplicationLifecycleObservers whether test observers are disabled
+     * @return the list of bean classes to mock (never {@code null})
+     */
+    public static List<Class<?>> computeMockBeanClasses(LaunchMode launchMode, boolean disableApplicationLifecycleObservers) {
+        if (launchMode == LaunchMode.TEST && disableApplicationLifecycleObservers) {
+            ArcContainerImpl container = ArcContainerImpl.instance();
+            Predicate<String> predicate = container
+                    .select(TestApplicationClassPredicate.class).get();
+            List<Class<?>> mockBeanClasses = new ArrayList<>();
+            for (InjectableBean<?> bean : container.getBeans()) {
+                if (bean.getKind() == Kind.CLASS && predicate.test(bean.getBeanClass().getName())) {
+                    mockBeanClasses.add(bean.getBeanClass());
+                }
+            }
+            return mockBeanClasses;
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Fire a CDI lifecycle event, temporarily mocking observers for the given bean classes.
+     *
+     * @param event the event to fire
+     * @param mockBeanClasses bean classes whose observers should be mocked (may be empty)
+     */
+    public static void fireLifecycleEvent(Object event, List<Class<?>> mockBeanClasses) {
+        ArcContainerImpl container = ArcContainerImpl.instance();
         if (!mockBeanClasses.isEmpty()) {
             for (Class<?> beanClass : mockBeanClasses) {
                 container.mockObserversFor(beanClass, true);
@@ -168,6 +200,18 @@ public class ArcRecorder {
                 container.mockObserversFor(beanClass, false);
             }
         }
+    }
+
+    /**
+     * Perform application-level shutdown: fire the {@link ShutdownEvent} and
+     * clean up synthetic bean providers. Arc container destruction is handled
+     * separately via the static-init service's {@code onStop} handler.
+     *
+     * @param mockBeanClasses bean classes whose observers should be mocked (from {@link #computeMockBeanClasses})
+     */
+    public static void performShutdown(List<Class<?>> mockBeanClasses) {
+        fireLifecycleEvent(new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);
+        syntheticBeanProviders = null;
     }
 
 }

@@ -8,10 +8,8 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
-import org.hibernate.query.sqm.tree.SqmDeleteOrUpdateStatement;
-import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
-import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDeleteOrUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement;
 
 public class H2CustomDialect extends H2Dialect {
 
@@ -25,22 +23,6 @@ public class H2CustomDialect extends H2Dialect {
                     DomainParameterXref domainParameterXref, DomainQueryExecutionContext domainQueryExecutionContext) {
                 return null;
             }
-
-            @Override
-            public int executeUpdate(
-                    SqmUpdateStatement<?> sqmUpdateStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
-            }
-
-            @Override
-            public int executeDelete(
-                    SqmDeleteStatement<?> sqmDeleteStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
-            }
         };
     }
 
@@ -53,14 +35,6 @@ public class H2CustomDialect extends H2Dialect {
             public MultiTableHandlerBuildResult buildHandler(SqmInsertStatement<?> sqmInsertStatement,
                     DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
                 return null;
-            }
-
-            @Override
-            public int executeInsert(
-                    SqmInsertStatement<?> sqmInsertStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
             }
         };
     }

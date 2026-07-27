@@ -389,7 +389,7 @@ public abstract class JacksonCodeGenerator {
         return methodName;
     }
 
-    private MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
+    protected MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)

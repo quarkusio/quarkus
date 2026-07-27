@@ -193,15 +193,23 @@ public interface ApplicationModel extends Mappable {
             map.put(BootstrapConstants.MAPPABLE_CAPABILITIES, Mappable.asMaps(getExtensionCapabilities(), factory));
         }
         if (!getReloadableWorkspaceDependencies().isEmpty()) {
+            // Sort so the serialized form is deterministic across JVMs: Set.copyOf iteration
+            // order is salted per JVM, which busts the Gradle build cache (see #55619).
             map.put(BootstrapConstants.MAPPABLE_LOCAL_PROJECTS,
-                    Mappable.toStringCollection(getReloadableWorkspaceDependencies(), factory));
+                    Mappable.toStringCollection(
+                            getReloadableWorkspaceDependencies().stream().sorted().toList(), factory));
         }
         if (!getRemovedResources().isEmpty()) {
             final Map<ArtifactKey, Set<String>> removedResources = getRemovedResources();
             final Map<String, Object> mappedExcludedResources = factory.newMap(removedResources.size());
-            for (Map.Entry<ArtifactKey, Set<String>> entry : removedResources.entrySet()) {
-                mappedExcludedResources.put(entry.getKey().toString(), Mappable.toStringCollection(entry.getValue(), factory));
-            }
+            // getRemovedResources() is a per-JVM-salted Map.copyOf, so sort by key: this fixes the
+            // insertion order into the (HashMap-backed) JSON object, keeping its output stable across
+            // JVMs even when keys collide in a bucket. Sort each value collection for the same reason
+            // as local-projects above (see #55619).
+            removedResources.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedExcludedResources.put(entry.getKey().toString(),
+                            Mappable.toStringCollection(entry.getValue().stream().sorted().toList(), factory)));
             map.put(BootstrapConstants.MAPPABLE_EXCLUDED_RESOURCES, mappedExcludedResources);
         }
         if (!getExtensionDevModeConfig().isEmpty()) {

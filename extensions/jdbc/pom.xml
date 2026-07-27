@@ -21,6 +21,7 @@
         <module>jdbc-mssql</module>
         <module>jdbc-mysql</module>
         <module>jdbc-oracle</module>
+        <module>jdbc-runtime</module>
     </modules>
 
 </project>

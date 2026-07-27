@@ -55,6 +55,7 @@ public enum Feature {
     JDBC_MSSQL,
     JDBC_MYSQL,
     JDBC_ORACLE,
+    JDBC_RUNTIME,
     JFR,
     KAFKA_CLIENT,
     KAFKA_STREAMS,

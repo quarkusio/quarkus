@@ -272,6 +272,40 @@ quarkus.datasource.password=tiger
 
 For details about JDBC configuration options and configuring other aspects, such as the connection pool size, refer to the <<jdbc-configuration,JDBC configuration reference>> section.
 
+[[runtime-resolved-driver]]
+===== Runtime-resolved drivers
+
+With `db-kind=other`, the driver class set with `quarkus.datasource.jdbc.driver` is fixed at build time.
+If the driver class must instead be chosen at runtime, for example when the same build artifact is deployed against different databases, use the `quarkus-jdbc-runtime` extension and the `runtime` database kind:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=runtime <1>
+quarkus.datasource.jdbc-runtime.driver=oracle.jdbc.driver.OracleDriver <2>
+quarkus.datasource.jdbc.url=jdbc:oracle:thin:@192.168.1.12:1521/ORCL_SVC
+quarkus.datasource.username=scott
+quarkus.datasource.password=tiger
+----
+<1> Build-time property selecting the runtime-resolved driver support.
+<2> Runtime property; the class is loaded with reflection from the application classpath when the datasource is created.
+
+The rest of the datasource configuration (JDBC URL, credentials, pool sizing, and so on) is unchanged and read at runtime as usual.
+Depending on the actual type of the configured class (`java.sql.Driver`, `javax.sql.DataSource`, or `javax.sql.XADataSource` when `quarkus.datasource.jdbc.transactions=xa`), the matching Agroal connection provider implementation is used.
+
+NOTE: The driver JAR must be part of the application classpath; only the choice of the driver class is deferred to runtime.
+
+====== Runtime-resolved drivers in native executables
+
+In a native executable, the closed-world assumption still applies: every candidate driver must be part of the application classpath when the native image is built, and the classes actually used with reflection must be registered at build time.
+With a runtime-resolved driver:
+
+* When `quarkus.datasource[."datasource-name"].jdbc-runtime.driver` is set in a configuration source visible at build time, such as `application.properties`, the configured class is automatically registered for reflection in the native image.
+* `java.sql.Driver` implementations declared through the standard `META-INF/services/java.sql.Driver` file of the driver JAR are registered automatically in all cases.
+* When the property is only provided at runtime, for example through an environment variable, and the class is not a service-declared `java.sql.Driver` (typically a `javax.sql.DataSource` or `javax.sql.XADataSource` implementation), register the candidate classes yourself with xref:writing-native-applications-tips.adoc#registerForReflection[`@RegisterForReflection(targets = ...)`] or a `reflection-config.json` file.
+
+WARNING: Reflection registration is often not enough for a JDBC driver in native mode: drivers may also require runtime initialization of some classes, bundled resources, or JNI configuration, which the dedicated `quarkus-jdbc-*` extensions normally provide.
+As for <<other-databases,custom databases and drivers>>, prefer an existing Quarkus JDBC extension when building native executables.
+
 ===== Consuming the datasource
 
 With Hibernate ORM, the Hibernate layer automatically picks up the datasource and uses it.
@@ -910,6 +944,10 @@ a|* JDBC: `oracle.jdbc.driver.OracleDriver`
 a|* JDBC: `org.postgresql.Driver`
 
 * XA: `org.postgresql.xa.PGXADataSource`
+
+|`runtime`
+|`quarkus-jdbc-runtime`
+a|* Resolved at runtime from `quarkus.datasource[.optional name].jdbc-runtime.driver`, see <<runtime-resolved-driver,Runtime-resolved drivers>>
 |===
 
 

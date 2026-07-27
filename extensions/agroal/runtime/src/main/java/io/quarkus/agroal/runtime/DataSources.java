@@ -161,7 +161,14 @@ public class DataSources {
         loadDriversInTCCL();
 
         AgroalDataSourceSupport.Entry matchingSupportEntry = agroalDataSourceSupport.entries.get(dataSourceName);
-        String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
+        String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
+        // a driver extension may override at runtime the driver class resolved at build time
+        AgroalDriverResolver driverResolver = Arc.container()
+                .instance(AgroalDriverResolver.class, new JdbcDriverLiteral(resolvedDbKind))
+                .orElse(null);
+        String resolvedDriverClass = driverResolver != null
+                ? driverResolver.resolveDriverClassName(dataSourceName, matchingSupportEntry.resolvedDriverClass)
+                : matchingSupportEntry.resolvedDriverClass;
         Class<?> driver;
         try {
             driver = Class.forName(resolvedDriverClass, true, Thread.currentThread().getContextClassLoader());
@@ -172,7 +179,6 @@ public class DataSources {
 
         String jdbcUrl = dataSourceJdbcRuntimeConfig.url().get();
 
-        String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
         AgroalConnectionConfigurer agroalConnectionConfigurer = Arc.container()
                 .instance(AgroalConnectionConfigurer.class, new JdbcDriverLiteral(resolvedDbKind))
                 .orElse(new UnknownDbAgroalConnectionConfigurer());

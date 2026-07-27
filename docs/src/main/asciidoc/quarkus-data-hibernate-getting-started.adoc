@@ -189,7 +189,7 @@ If you're not interested in this style and want the full power of managed entiti
 
 You can use Hibernate's `@Id` and `@GeneratedValue` directly if you prefer, or if you need a custom ID strategy.
 
-See the xref:quarkus-data-hibernate.adoc#_about_entity_identifiers[reference guide] for the full list of options.
+See the xref:quarkus-data-hibernate.adoc#about-entity-identifiers[reference guide] for the full list of options.
 
 [[managed-session]]
 == Managed session
@@ -583,7 +583,7 @@ public class ReactiveBookRepositoryTest {
 <3> `UniAsserter.execute()` is a convenient method to execute and wait for the reactive method to complete.
 <4> `UniAsserter.assertThat()` lets you test reactive code by providing an assertion as the second parameter.
 
-For the full details on reactive sessions, stateless reactive, and combining blocking and reactive code, see the xref:quarkus-data-hibernate.adoc#_let_s_get_reactive[reference guide].
+For the full details on reactive sessions, stateless reactive, and combining blocking and reactive code, see the xref:quarkus-data-hibernate.adoc#lets-get-reactive[reference guide].
 
 == What you have built
 

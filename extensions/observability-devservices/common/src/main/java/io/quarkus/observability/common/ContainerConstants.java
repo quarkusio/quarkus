@@ -4,7 +4,7 @@ public final class ContainerConstants {
 
     // Images
 
-    public static final String LGTM = io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor("observability.lgtm");
+    public static final String LGTM = "docker.io/grafana/otel-lgtm:0.24.0";
 
     // Ports
 

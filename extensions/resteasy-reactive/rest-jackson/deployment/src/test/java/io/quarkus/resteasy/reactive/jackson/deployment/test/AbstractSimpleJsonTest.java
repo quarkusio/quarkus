@@ -821,6 +821,48 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testPojoWithNoArgConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/no-arg-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
+    }
+
+    @Test
+    public void testPojoWithNoMatchingConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/no-matching-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
+    }
+
+    @Test
+    public void testPojoWithMultipleConstructorsEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/multi-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
+    }
+
+    @Test
     public void testKotlinDataEcho() {
         RestAssured
                 .with()

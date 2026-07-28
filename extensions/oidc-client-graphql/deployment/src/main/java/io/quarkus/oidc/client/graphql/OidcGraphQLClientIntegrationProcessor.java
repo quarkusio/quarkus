@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
@@ -100,6 +101,7 @@ class OidcGraphQLClientIntegrationProcessor {
      */
     @BuildStep
     void generateGraphQLTokenProducers(GraphQLTokenProducerInfo graphQLTokenProducerInfo,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer) {
         graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName.forEach((oidcClientName, generatedClassName) -> {
             ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeanProducer);
@@ -114,12 +116,17 @@ class OidcGraphQLClientIntegrationProcessor {
                     ctorCreator.public_();
                     ctorCreator
                             .body(bc -> {
+                                var oidcClientNameValue = DEFAULT_CLIENT_KEY.equals(oidcClientName) ? Const.ofNull(String.class)
+                                        : Const.of(oidcClientName);
                                 bc.invokeSpecial(ConstructorDesc.of(tokenProviderClassDesc, String.class), cc.this_(),
-                                        Const.of(oidcClientName));
+                                        oidcClientNameValue);
                                 bc.return_();
                             });
                 });
             });
+            reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(generatedClassName)
+                    .reason(getClass().getName())
+                    .publicConstructors().methods().fields().build());
         });
     }
 
@@ -143,7 +150,8 @@ class OidcGraphQLClientIntegrationProcessor {
         config.additionalOidcClients()
                 .forEach((graphQlClient, oidcClient) -> configKeysToOidcClients.put(graphQlClient, oidcClient.clientName()));
 
-        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients, config.clientName().orElse(null),
+        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients,
+                config.clientName().orElse(DEFAULT_CLIENT_KEY),
                 graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName);
     }
 

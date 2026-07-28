@@ -83,7 +83,6 @@ import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
@@ -361,7 +360,7 @@ public class BuildTimeContentProcessor {
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
-        var mapper = new ObjectMapper().writer();
+        var mapper = io.vertx.core.json.jackson.v3.DatabindCodec.mapper().writer();
         Map<String, String> descriptions = new HashMap<>();
         Map<String, String> mcpDefaultEnabled = new HashMap<>();
         Map<String, String> contentTypes = new HashMap<>();

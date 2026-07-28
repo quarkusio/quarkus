@@ -177,7 +177,8 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                     .setProjectRoot(appLocation)
                     .setIsolateDeployment(false)
                     .setFlatClassPath(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST);
+                    .setMode(QuarkusBootstrap.Mode.TEST)
+                    .setTest(true);
             for (Path i : libraries) {
                 bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(i, false, true));
             }

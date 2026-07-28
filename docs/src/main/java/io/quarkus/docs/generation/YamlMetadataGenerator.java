@@ -375,12 +375,16 @@ public class YamlMetadataGenerator {
         contributing("contributing", "Contributing"),
         core("core", "Core"),
         data("data", "Data"),
+        execution_model("execution-model", "Execution Model"),
         getting_started("getting-started", "Getting Started"),
         integration("integration", "Integration"),
         messaging("messaging", "Messaging"),
         miscellaneous("miscellaneous", "Miscellaneous"),
         native_docs("native", "Native"),
         observability("observability", "Observability"),
+        operations("operations", "Operations"),
+        packaging("packaging", "Packaging"),
+        rule_engine("rule-engine", "Rule Engine"),
         security("security", "Security"),
         serialization("serialization", "Serialization"),
         tooling("tooling", "Tooling"),
@@ -538,7 +542,7 @@ public class YamlMetadataGenerator {
                 case "missing-id":
                     return "Document does not define an id. See https://quarkus.io/guides/doc-reference#document-header";
                 case "missing-categories":
-                    return "Document does not specify associated categories. See https://quarkus.io/guides/doc-reference#categories";
+                    return "Document is not listed in categories.yaml. See https://quarkus.io/guides/doc-reference#categories";
                 case "not-diataxis-type":
                     return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":

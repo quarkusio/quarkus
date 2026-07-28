@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Proxy Registry
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: This guide explains how to use the Proxy Registry in your Quarkus application.
 :topics: security,proxy,http
 :extensions: io.quarkus:quarkus-proxy-registry

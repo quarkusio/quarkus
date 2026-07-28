@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Signals
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: Learn more about how application components can interact in a loosely coupled fashion
 :numbered:
 :sectnums:

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started with gRPC
 include::_attributes.adoc[]
-:categories: serialization
 :summary: This guide explains how to start using gRPC in your Quarkus application.
 :topics: grpc
 :extensions: io.quarkus:quarkus-grpc

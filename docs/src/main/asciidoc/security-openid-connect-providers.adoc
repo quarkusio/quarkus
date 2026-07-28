@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Configuring Well-Known OpenID Connect Providers
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security,web
 :keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch linkedin strava
 :toclevels: 3
 :topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch,linkedin,strava

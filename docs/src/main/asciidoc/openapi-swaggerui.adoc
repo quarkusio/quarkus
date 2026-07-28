@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenAPI and Swagger UI
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
 :topics: rest,openapi,swagger-ui,dev-ui
 :extensions: io.quarkus:quarkus-smallrye-openapi

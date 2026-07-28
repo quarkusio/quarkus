@@ -1,5 +1,9 @@
 # Quarkus Guides - Category Structure with Guides
 # Hierarchical organization of all guide categories and their guides
+#
+# This file is the source of truth for guide categories.
+# Do not maintain :categories: attributes in guide headers.
+# The docs build injects generated category metadata into copied target sources.
 
 categories:
   - id: getting-started

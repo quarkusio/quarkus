@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect (OIDC) Bearer token authentication
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security,web
 :topics: security,oidc,bearer-token,keycloak,authentication
 :extensions: io.quarkus:quarkus-oidc
 

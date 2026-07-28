@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Validation with Hibernate Validator
 include::_attributes.adoc[]
-:categories: web, data
 :summary: This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
 :topics: bean-validation,hibernate-validator,validation,validator,constraints
 :extensions: io.quarkus:quarkus-hibernate-validator

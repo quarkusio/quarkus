@@ -6,14 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * Inject the hierarchical category path from categories.yaml into each guide's :categories-path: attribute.
+ * Inject guide categories from categories.yaml into the copied AsciiDoc sources.
  * <p>
  * Runs on the copied .adoc files in target/asciidoc/sources/ so source files are not modified.
  */
@@ -25,27 +27,26 @@ public class InjectCategories {
 
         System.out.println("[INFO] Injecting categories from: " + categoriesFile);
 
-        Map<String, List<String>> guideToPaths = buildGuideToPaths(categoriesFile);
+        Map<String, GuideCategories> guideToCategories = buildGuideToCategories(categoriesFile);
 
         int count = 0;
         try (Stream<Path> files = Files.list(targetDir)) {
             for (Path file : (Iterable<Path>) files.filter(p -> p.toString().endsWith(".adoc"))::iterator) {
                 String filename = file.getFileName().toString();
-                List<String> paths = guideToPaths.get(filename);
-                if (paths == null || paths.isEmpty()) {
+                GuideCategories categories = guideToCategories.get(filename);
+                if (categories == null || categories.isEmpty()) {
                     continue;
                 }
-                String categoriesPathValue = String.join(",", paths);
-                injectAttribute(file, categoriesPathValue);
+                injectAttributes(file, categories.categoriesValue(), categories.pathsValue());
                 count++;
             }
         }
 
-        System.out.println("[INFO] Injected category paths into " + count + " guides");
+        System.out.println("[INFO] Injected categories into " + count + " guides");
     }
 
     @SuppressWarnings("unchecked")
-    static Map<String, List<String>> buildGuideToPaths(Path categoriesFile) throws IOException {
+    static Map<String, GuideCategories> buildGuideToCategories(Path categoriesFile) throws IOException {
         YAMLMapper om = new YAMLMapper();
 
         Map<String, Object> root;
@@ -53,24 +54,24 @@ public class InjectCategories {
             root = om.readValue(is, Map.class);
         }
 
-        Map<String, List<String>> guideToPaths = new HashMap<>();
+        Map<String, GuideCategories> guideToCategories = new HashMap<>();
         List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
         if (categories != null) {
             for (Map<String, Object> category : categories) {
                 String id = (String) category.get("id");
-                collectPaths(category, id, guideToPaths);
+                collectCategories(category, id, id, guideToCategories);
             }
         }
-        return guideToPaths;
+        return guideToCategories;
     }
 
     @SuppressWarnings("unchecked")
-    private static void collectPaths(Map<String, Object> node, String currentPath,
-            Map<String, List<String>> guideToPaths) {
+    private static void collectCategories(Map<String, Object> node, String category, String currentPath,
+            Map<String, GuideCategories> guideToCategories) {
         List<String> guides = (List<String>) node.get("guides");
         if (guides != null) {
             for (String guide : guides) {
-                guideToPaths.computeIfAbsent(guide, k -> new ArrayList<>()).add(currentPath);
+                guideToCategories.computeIfAbsent(guide, k -> new GuideCategories()).add(category, currentPath);
             }
         }
 
@@ -78,12 +79,12 @@ public class InjectCategories {
         if (subcategories != null) {
             for (Map<String, Object> sub : subcategories) {
                 String subId = (String) sub.get("id");
-                collectPaths(sub, currentPath + "." + subId, guideToPaths);
+                collectCategories(sub, category, currentPath + "." + subId, guideToCategories);
             }
         }
     }
 
-    static void injectAttribute(Path file, String categoriesPathValue) throws IOException {
+    static void injectAttributes(Path file, String categoriesValue, String categoriesPathValue) throws IOException {
         List<String> lines = Files.readAllLines(file);
         List<String> result = new ArrayList<>(lines);
         int headerEnd = findHeaderEnd(result);
@@ -93,12 +94,11 @@ public class InjectCategories {
             return;
         }
 
+        int categoriesIndex = replaceOrInsertHeaderAttribute(result, headerEnd,
+                ":categories:", categoriesValue, findAttributeInsertionIndex(result, headerEnd));
+        headerEnd = findHeaderEnd(result);
         if (!replaceHeaderAttribute(result, headerEnd, ":categories-path:", categoriesPathValue)) {
-            int categoriesIndex = findHeaderAttribute(result, headerEnd, ":categories:");
-            int insertionIndex = categoriesIndex != -1
-                    ? categoriesIndex + 1
-                    : findAttributeInsertionIndex(result, headerEnd);
-            result.add(insertionIndex, ":categories-path: " + categoriesPathValue);
+            result.add(categoriesIndex + 1, ":categories-path: " + categoriesPathValue);
         }
         Files.write(file, result);
     }
@@ -133,6 +133,18 @@ public class InjectCategories {
         return true;
     }
 
+    private static int replaceOrInsertHeaderAttribute(List<String> lines, int headerEnd, String attribute, String value,
+            int insertionIndex) {
+        int attributeIndex = findHeaderAttribute(lines, headerEnd, attribute);
+        if (attributeIndex != -1) {
+            lines.set(attributeIndex, attribute + " " + value);
+            return attributeIndex;
+        }
+
+        lines.add(insertionIndex, attribute + " " + value);
+        return insertionIndex;
+    }
+
     private static int findHeaderAttribute(List<String> lines, int headerEnd, String attribute) {
         for (int i = 0; i < headerEnd; i++) {
             if (lines.get(i).startsWith(attribute)) {
@@ -154,5 +166,27 @@ public class InjectCategories {
             }
         }
         return headerEnd;
+    }
+
+    static final class GuideCategories {
+        private final Set<String> categories = new LinkedHashSet<>();
+        private final Set<String> paths = new LinkedHashSet<>();
+
+        private void add(String category, String path) {
+            categories.add(category);
+            paths.add(path);
+        }
+
+        boolean isEmpty() {
+            return categories.isEmpty() && paths.isEmpty();
+        }
+
+        String categoriesValue() {
+            return String.join(",", categories);
+        }
+
+        String pathsValue() {
+            return String.join(",", paths);
+        }
     }
 }

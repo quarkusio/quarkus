@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Testing components
 include::_attributes.adoc[]
-:categories: core,tooling
 :keywords: testing
 :summary:  This reference guide covers the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies. 
 :numbered:

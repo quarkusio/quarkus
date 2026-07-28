@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="cli-tooling"]
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
 include::_attributes.adoc[]
-:categories: tooling
 :summary: Use the Quarkus CLI to create, build, run, and manage extensions for Quarkus projects.
 :topics: cli,tooling
 

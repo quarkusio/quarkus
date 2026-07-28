@@ -173,6 +173,35 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("ignoredField")));
     }
 
+    // --- @java.beans.Transient ---
+
+    @Test
+    public void testJavaBeansTransientSerialization() {
+        RestAssured.get("/generated/java-beans-transient")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Alice"))
+                .body("visible", Matchers.is("shown"))
+                .body(not(containsString("secret")))
+                .body(not(containsString("hidden-value")));
+    }
+
+    @Test
+    public void testJavaBeansTransientRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"Bob\",\"visible\":\"yes\"}")
+                .when()
+                .post("/generated/java-beans-transient")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bob"))
+                .body("visible", Matchers.is("yes"))
+                .body(not(containsString("secret")));
+    }
+
     // --- @JsonUnwrapped + @JsonProperty + @JsonIgnore ---
 
     @Test

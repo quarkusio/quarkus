@@ -668,7 +668,8 @@ public abstract class JacksonCodeGenerator {
         }
 
         boolean isIgnoredField() {
-            return annotations.get(JsonIgnore.class.getName()) != null;
+            return annotations.get(JsonIgnore.class.getName()) != null
+                    || annotations.get(java.beans.Transient.class.getName()) != null;
         }
 
         boolean isUnwrapped() {

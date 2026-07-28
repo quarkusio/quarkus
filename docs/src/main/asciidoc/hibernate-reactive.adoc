@@ -123,7 +123,7 @@ The dialect will be selected based on the Reactive SQL client - unless you set o
 NOTE: For more information on dialect selection and database versions,
 see xref:hibernate-orm.adoc#hibernate-dialect[the corresponding section of the Hibernate ORM guide].
 
-You can then happily inject your `Mutiny.SessionFactory`:
+You can then inject `Mutiny.Session` and use it in methods annotated with `@Transactional`:
 
 [source,java]
 .Example application bean using Hibernate Reactive
@@ -131,18 +131,19 @@ You can then happily inject your `Mutiny.SessionFactory`:
 @ApplicationScoped
 public class SantaClausService {
     @Inject
-    Mutiny.SessionFactory sf; <1>
+    Mutiny.Session session; <1>
 
+    @Transactional <2>
     public Uni<Void> createGift(String giftDescription) {
-	Gift gift = new Gift();
+        Gift gift = new Gift();
         gift.setName(giftDescription);
-	return sf.withTransaction(session -> session.persist(gift)) <2>
+        return session.persist(gift);
     }
 }
 ----
 
-<1> Inject your session factory and have fun
-<2> `.withTransaction()` will automatically flush at commit
+<1> Inject the reactive session directly
+<2> Use `@Transactional` for write operations such as `persist()`
 
 WARNING: Make sure to wrap methods modifying your database (e.g. `session.persist(entity)`) within a transaction.
 
@@ -313,17 +314,24 @@ Quarkus will set many Hibernate Reactive configuration settings automatically, a
 [[hr-cdi-integration]]
 ==== CDI integration
 
-If you are familiar with using Hibernate Reactive in Quarkus, you probably already have injected the `Mutiny.SessionFactory` using CDI:
+If you are familiar with using Hibernate Reactive in Quarkus, you probably already have injected `Mutiny.Session` using CDI:
+
+[source,java]
+----
+@Inject
+Mutiny.Session session;
+----
+
+This will inject the `Mutiny.Session` of the default persistence unit.
+Use it in methods annotated with `@Transactional`, as shown in <<hr-getting-started>>.
+
+You can also inject the `Mutiny.SessionFactory` of the default persistence unit:
 
 [source,java]
 ----
 @Inject
 Mutiny.SessionFactory sessionFactory;
 ----
-
-This will inject the `Mutiny.SessionFactory` of the default persistence unit.
-
-NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bean for `Mutiny.Session`. However, the lifecycle of a reactive session does not fit the lifecycle of the CDI request context. Therefore, this bean is removed in Quarkus 3.0.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units

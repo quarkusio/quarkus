@@ -105,6 +105,7 @@ import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
@@ -213,6 +214,7 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     void buildTimeRunTimeConfig(
+            ConfigBuildTimeConfig configBuildTimeConfig,
             ConfigurationBuildItem configItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -239,6 +241,15 @@ public class ConfigGenerationBuildStep {
                 if (entry.getValue().getValue() != null) {
                     clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
                             clinit.load(entry.getValue().getValue()));
+                }
+            }
+
+            if (configBuildTimeConfig.fixedAtBuildTime()) {
+                for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+                    if (entry.getValue().getValue() != null) {
+                        clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                                clinit.load(entry.getValue().getValue()));
+                    }
                 }
             }
 
@@ -443,7 +454,18 @@ public class ConfigGenerationBuildStep {
 
         @Override
         public boolean getAsBoolean() {
-            return configBuildTimeConfig.systemOnly();
+            return configBuildTimeConfig.systemOnly() && !configBuildTimeConfig.fixedAtBuildTime();
+        }
+    }
+
+    @BuildStep
+    void fixedAtBuildTimeSources(ConfigBuildTimeConfig config,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        if (config.fixedAtBuildTime()) {
+            staticInitConfigBuilder
+                    .produce(new StaticInitConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
         }
     }
 

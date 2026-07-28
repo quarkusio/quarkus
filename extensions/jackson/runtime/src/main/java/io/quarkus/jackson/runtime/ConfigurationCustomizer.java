@@ -54,6 +54,9 @@ public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
         if (jacksonBuildTimeConfig.useGettersAsSetters()) {
             builder.enable(MapperFeature.USE_GETTERS_AS_SETTERS);
         }
+        if (jacksonBuildTimeConfig.allowFinalFieldsAsMutators()) {
+            builder.enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
+        }
         if (jacksonBuildTimeConfig.acceptCaseInsensitiveEnums()) {
             builder.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         }

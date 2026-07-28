@@ -760,6 +760,30 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/no-arg-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoArgConstructorPojo echoNoArgConstructorPojo(NoArgConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/multi-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public MultiConstructorPojo echoMultiConstructorPojo(MultiConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/no-matching-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoMatchingCtorPojo echoNoMatchingCtorPojo(NoMatchingCtorPojo obj) {
+        return obj;
+    }
+
+    @POST
     @Path("/required-creator-property")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

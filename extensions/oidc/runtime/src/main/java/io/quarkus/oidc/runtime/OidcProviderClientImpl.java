@@ -769,7 +769,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 .transform(clientSecret -> new ClientCredentials(null, clientSecret, null,
                         OidcCommonUtils.initClientSecretBasicAuth(oidcConfig, clientSecret),
                         jwtAssertionProvided, assertionProvider, queryAuth))
-                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig, true)
+                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig)
                         .onItem().ifNotNull()
                         .transform(key -> new ClientCredentials(key, null, null, null,
                                 jwtAssertionProvided, assertionProvider, queryAuth))

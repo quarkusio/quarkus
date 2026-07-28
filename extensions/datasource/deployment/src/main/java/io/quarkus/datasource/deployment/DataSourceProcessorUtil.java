@@ -73,34 +73,12 @@ public class DataSourceProcessorUtil {
             }
         }
 
-        // TODO this condition is kept for backward compatibility but... seems odd?
-        //   It was introduced in https://github.com/quarkusio/quarkus/commit/91a2d8f14775a91b93a013081694f29a1961ffa2
-        //   and eventually looked like this:
-        //   https://github.com/quarkusio/quarkus/blob/d18aee960572116ef6356ceac561dff5e650db16/extensions/agroal/deployment/src/main/java/io/quarkus/agroal/deployment/AgroalProcessor.java#L327-L329
-        //   Note the part about enabling the default DS when there is no named datasource is already handled below;
-        //   here we're mostly concerned by what happens when "dev-services.enabled" is set on the default datasource.
-        //   Also note this does not depend on the value of "dev-services.enabled" (true or false),
-        //   just on whether it's set or not -- that might simply have been a mistake?
-        Optional<Boolean> defaultDataSourceDevServicesEnabled = config.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
-                .devservices()
-                .enabled();
-        if (defaultDataSourceDevServicesEnabled.isPresent()) {
-            if (lookupBuildItem.getLookup().availableParadigms(DataSourceUtil.DEFAULT_DATASOURCE_NAME).contains(paradigm)) {
-                dataSourceNamesWithReasons.computeIfAbsent(DataSourceUtil.DEFAULT_DATASOURCE_NAME, k -> new ArrayList<>())
-                        .add(new Reason(String.format(Locale.ROOT,
-                                "Configuration'%s' is set, and the default datasource can be configured",
-                                DataSourceUtil.dataSourcePropertyKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                                        "devservices.enabled"))));
-            }
-        }
         // If no datasource was requested for the current paradigm at all,
         // and there can be a default datasource (for our current paradigm),
         // then we'll define that default datasource.
         // We intentionally check per-paradigm, because historically a BLOCKING request from
         // e.g. Hibernate ORM has not prevented the default REACTIVE datasource from being created.
-        // TODO note the 'else': we disable this when "dev-services.enabled" is set (to true or false),
-        //   for backward compatibility. But should we?
-        else if (dataSourceNamesWithReasons.isEmpty()
+        if (dataSourceNamesWithReasons.isEmpty()
                 && lookupBuildItem.getLookup().availableParadigms(DataSourceUtil.DEFAULT_DATASOURCE_NAME).contains(paradigm)) {
             dataSourceNamesWithReasons.put(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
                     List.of(new Reason("No other " + paradigm + " datasource exists,"

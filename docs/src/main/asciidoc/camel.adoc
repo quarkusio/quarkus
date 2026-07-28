@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Camel on Quarkus
 include::_attributes.adoc[]
-:categories: integration
 :summary: This guide covers the systems integration with Apache Camel
 :topics: camel,integration
 

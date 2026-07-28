@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Creating Your First Application
 include::_attributes.adoc[]
-:categories: getting-started
 :summary: Build a REST API with live reload, dependency injection, and tests, in under 15 minutes.
 :numbered:
 :sectnums:

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Configuration Reference Guide
 include::_attributes.adoc[]
-:categories: core
 :summary: Learn more about how to configure your Quarkus applications.
 :numbered:
 :sectnums:

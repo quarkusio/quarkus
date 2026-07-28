@@ -9,7 +9,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:categories: web
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
 

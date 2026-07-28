@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing JSON REST Services
 include::_attributes.adoc[]
-:categories: web, serialization
 :summary: JSON is now the lingua franca between microservices. In this guide, we see how you can get your REST services to consume and produce JSON payloads.
 :topics: rest,json,resteasy-reactive
 :extensions: io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest

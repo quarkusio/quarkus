@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye Health
 include::_attributes.adoc[]
-:categories: observability
 :summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Health extension.
 :topics: health,observability
 :extensions: io.quarkus:quarkus-smallrye-health

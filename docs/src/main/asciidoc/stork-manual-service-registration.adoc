@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Implementing a Custom Stork Service Registrar
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :topics: service-discovery,service-registration,stork
 :extensions: io.quarkus:quarkus-smallrye-stork
 

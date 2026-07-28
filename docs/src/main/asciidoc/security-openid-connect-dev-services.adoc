@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services and Dev UI for OpenID Connect (OIDC)
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: security
 :keywords: sso oidc security keycloak
 :topics: security,oidc,keycloak,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-oidc

@@ -20,11 +20,7 @@ public class FormAuthJpaTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.datasource.db-kind=h2\n" +
-            "quarkus.datasource.username=sa\n" +
-            "quarkus.datasource.password=sa\n" +
-            "quarkus.datasource.jdbc.url=jdbc:h2:mem:minimal-config'\n" +
             "quarkus.hibernate-orm.sql-load-script=import.sql\n" +
-            "quarkus.hibernate-orm.schema-management.strategy=drop-and-create\n" +
             "#quarkus.hibernate-orm.log.sql=true\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +

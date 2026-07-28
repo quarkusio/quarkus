@@ -36,4 +36,26 @@ public class CheckCategoriesTest {
         assertTrue(exception.getMessage().contains("missing.adoc"));
         assertTrue(exception.getMessage().contains("referenced in categories.yaml but do not exist"));
     }
+
+    @Test
+    public void shouldReportTopLevelCategoriesUnknownToMetadataGenerator() throws Exception {
+        Path srcDir = tempDir.resolve("src");
+        Files.createDirectories(srcDir);
+        Files.writeString(srcDir.resolve("existing.adoc"), "= Existing\n");
+
+        Path categoriesFile = tempDir.resolve("categories.yaml");
+        Files.writeString(categoriesFile, String.join("\n",
+                "categories:",
+                "  - id: not-a-known-category",
+                "    title: Unknown",
+                "    guides:",
+                "      - existing.adoc",
+                ""));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> CheckCategories.main(new String[] { srcDir.toString(), categoriesFile.toString() }));
+
+        assertTrue(exception.getMessage().contains("not-a-known-category"));
+        assertTrue(exception.getMessage().contains("not recognized by YamlMetadataGenerator"));
+    }
 }

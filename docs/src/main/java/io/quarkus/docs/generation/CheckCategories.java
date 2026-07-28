@@ -5,17 +5,19 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * Check that all guides are referenced in at least one category in categories.yaml.
+ * Check that categories.yaml references existing guides and uses category IDs known to the YAML metadata generator.
  */
 public class CheckCategories {
 
@@ -34,8 +36,12 @@ public class CheckCategories {
 
         System.out.println("[INFO] Checking categories using: " + categoriesFile);
 
+        Set<String> categoryIds = extractCategoryIdsFromCategories(categoriesFile);
         Set<String> categorizedGuides = extractGuidesFromCategories(categoriesFile);
         Set<String> allGuides = listGuides(srcDir);
+
+        Set<String> unknownCategoryIds = new TreeSet<>(categoryIds);
+        unknownCategoryIds.removeAll(knownYamlMetadataCategoryIds());
 
         Set<String> missingGuides = new TreeSet<>(allGuides);
         missingGuides.removeAll(categorizedGuides);
@@ -44,14 +50,21 @@ public class CheckCategories {
         staleGuides.removeAll(allGuides);
 
         StringBuilder errorLog = new StringBuilder();
+        if (!unknownCategoryIds.isEmpty()) {
+            appendEntries(errorLog,
+                    "The following top-level categories in categories.yaml are not recognized by YamlMetadataGenerator:",
+                    unknownCategoryIds);
+            errorLog.append(
+                    "\nPlease add them to YamlMetadataGenerator.Category or use an existing top-level category.\n");
+        }
         if (!missingGuides.isEmpty()) {
-            appendGuides(errorLog,
+            appendEntries(errorLog,
                     "The following guides are not referenced in any category in categories.yaml:",
                     missingGuides);
             errorLog.append("\nPlease add them to the appropriate category in src/main/resources/categories.yaml\n");
         }
         if (!staleGuides.isEmpty()) {
-            appendGuides(errorLog,
+            appendEntries(errorLog,
                     "The following guides are referenced in categories.yaml but do not exist:",
                     staleGuides);
             errorLog.append("\nPlease remove or update these entries in src/main/resources/categories.yaml\n");
@@ -64,14 +77,39 @@ public class CheckCategories {
         System.out.println("[INFO] All guides are properly categorized");
     }
 
-    private static void appendGuides(StringBuilder errorLog, String message, Set<String> guides) {
+    private static void appendEntries(StringBuilder errorLog, String message, Set<String> entries) {
         if (errorLog.length() > 0) {
             errorLog.append("\n");
         }
         errorLog.append(message).append("\n\n");
-        for (String guide : guides) {
-            errorLog.append("- ").append(guide).append("\n");
+        for (String entry : entries) {
+            errorLog.append("- ").append(entry).append("\n");
         }
+    }
+
+    static Set<String> knownYamlMetadataCategoryIds() {
+        return Arrays.stream(YamlMetadataGenerator.Category.values())
+                .map(category -> category.id)
+                .collect(Collectors.toSet());
+    }
+
+    @SuppressWarnings("unchecked")
+    static Set<String> extractCategoryIdsFromCategories(Path categoriesFile) throws IOException {
+        YAMLMapper om = new YAMLMapper();
+
+        Map<String, Object> root;
+        try (InputStream is = Files.newInputStream(categoriesFile)) {
+            root = om.readValue(is, Map.class);
+        }
+
+        Set<String> categoryIds = new TreeSet<>();
+        List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
+        if (categories != null) {
+            for (Map<String, Object> category : categories) {
+                categoryIds.add((String) category.get("id"));
+            }
+        }
+        return categoryIds;
     }
 
     @SuppressWarnings("unchecked")

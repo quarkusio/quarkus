@@ -617,90 +617,6 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static void producePersistenceUnitDescriptorFromSpi(
-            HibernateOrmConfig hibernateOrmConfig,
-            String persistenceUnitName,
-            Optional<String> configuredDataSourceName,
-            PersistenceUnitDefinitionBuildItem.AdditionalConfig additionalPersistenceUnit,
-            JpaPersistenceUnitModel model,
-            List<JdbcDataSourceBuildItem> jdbcDataSources,
-            Capabilities capabilities,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
-        // Resolve the datasource: an explicit name is looked up by name, otherwise the default datasource is used.
-        Optional<JdbcDataSourceBuildItem> jdbcDataSource;
-        if (configuredDataSourceName.isPresent()) {
-            String dataSourceName = configuredDataSourceName.get();
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(i -> dataSourceName.equals(i.getName()))
-                    .findFirst();
-        } else {
-            jdbcDataSource = jdbcDataSources.stream()
-                    .filter(JdbcDataSourceBuildItem::isDefault)
-                    .findFirst();
-        }
-
-        if (jdbcDataSource.isEmpty()) {
-            String dataSourceName = configuredDataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
-            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
-        }
-
-        Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);
-
-        Properties properties = new Properties();
-        properties.putAll(additionalPersistenceUnit.properties());
-
-        QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
-                persistenceUnitName,
-                new HibernateOrmPersistenceUnitProviderHelper(),
-                PersistenceUnitTransactionType.JTA,
-                new ArrayList<>(model.allModelClassAndPackageNames()),
-                properties,
-                false);
-        Set<String> entityClassNames = model.entityClassNames();
-
-        MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy.NONE;
-        Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
-        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
-                persistenceUnitName,
-                dbKind,
-                additionalPersistenceUnit.explicitDialect(),
-                jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
-                null,
-                dbKindMetadataBuildItems,
-                descriptor.getProperties()::setProperty);
-
-        if (dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.get())) {
-            // Workaround for https://hibernate.atlassian.net/browse/HHH-19063
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(
-                    "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
-                    true, "org.postgresql.jdbc.PgConnection", "getSchema"));
-        }
-
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            descriptor.getProperties().setProperty(MappingSettings.JSON_FORMAT_MAPPER, JACKSON_3_JSON_FORMAT_MAPPER);
-        }
-
-        persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor,
-                        new RecordedConfig(
-                                dataSourceName,
-                                dbKind,
-                                supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
-                                jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
-                                jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
-                                additionalPersistenceUnit.explicitDialect(),
-                                entityClassNames,
-                                multiTenancyStrategy,
-                                hibernateOrmConfig.database().ormCompatibilityVersion(),
-                                Collections.emptyMap()),
-                        model.xmlMappings(),
-                        false,
-                        isHibernateValidatorPresent(capabilities)));
-    }
-
     @BuildStep
     @SuppressWarnings("deprecation")
     public JpaModelIndexBuildItem jpaEntitiesIndexer(
@@ -1317,21 +1233,16 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         String persistenceUnitName = puDefinition.getPersistenceUnitName();
-
-        if (puDefinition.getAdditionalConfig().isPresent()) {
-            producePersistenceUnitDescriptorFromSpi(hibernateOrmConfig, persistenceUnitName, puDefinition.getDataSourceName(),
-                    puDefinition.getAdditionalConfig().get(),
-                    model, jdbcDataSources, capabilities,
-                    reflectiveMethods, persistenceUnitDescriptors, dbKindMetadataBuildItems);
-            return;
-        }
-
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = puDefinition.getConfig();
+        Optional<PersistenceUnitDefinitionBuildItem.AdditionalConfig> additionalPuConfig = puDefinition.getAdditionalConfig();
         Optional<String> dataSourceName = puDefinition.getDataSourceName();
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = dataSourceName
                 .map(name -> HibernateProcessorUtil.findDataSourceWithName(name,
                         jdbcDataSources,
                         JdbcDataSourceBuildItem::getName));
+
+        Properties descriptorProperties = new Properties();
+        additionalPuConfig.ifPresent(c -> descriptorProperties.putAll(c.properties()));
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
@@ -1348,15 +1259,19 @@ public final class HibernateOrmProcessor {
                 // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
                 //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(model.allModelClassAndPackageNames()),
-                new Properties(),
+                descriptorProperties,
                 false);
         Set<String> entityClassNames = model.entityClassNames();
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
+        Optional<String> explicitDialect = additionalPuConfig
+                .flatMap(PersistenceUnitDefinitionBuildItem.AdditionalConfig::explicitDialect)
+                .or(() -> persistenceUnitConfig.dialect().dialect());
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
                 persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
+                explicitDialect,
                 reflectiveMethods, descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
@@ -1366,9 +1281,11 @@ public final class HibernateOrmProcessor {
                     JACKSON_3_JSON_FORMAT_MAPPER);
         }
 
-        configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
-                additionalSqlLoadScriptDefaults,
-                nativeImageResources, hotDeploymentWatchedFiles, descriptor);
+        if (additionalPuConfig.isEmpty()) {
+            configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+                    additionalSqlLoadScriptDefaults,
+                    nativeImageResources, hotDeploymentWatchedFiles, descriptor);
+        }
 
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
@@ -1378,7 +1295,7 @@ public final class HibernateOrmProcessor {
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
-                                persistenceUnitConfig.dialect().dialect(),
+                                explicitDialect,
                                 entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
@@ -1393,12 +1310,12 @@ public final class HibernateOrmProcessor {
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems,
             Optional<JdbcDataSourceBuildItem> jdbcDataSource,
             MultiTenancyStrategy multiTenancyStrategy,
+            Optional<String> dialect,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BiConsumer<String, String> puPropertiesCollector) {
         final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
                 .dialect();
 
-        Optional<String> dialect = dialectConfig.dialect();
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> dbVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {

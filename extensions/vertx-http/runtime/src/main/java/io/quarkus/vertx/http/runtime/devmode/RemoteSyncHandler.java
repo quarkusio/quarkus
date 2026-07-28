@@ -229,8 +229,14 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                 try {
                     String path = stripRootPath(event.path());
                     hotReplacementContext.updateFile(path, buffer.getBytes());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Rejected remote-dev file update", e);
+                    event.response().setStatusCode(400).end();
+                    return;
                 } catch (Exception e) {
                     log.error("Failed to update file", e);
+                    event.response().setStatusCode(500).end();
+                    return;
                 }
                 event.response().end();
             }
@@ -253,8 +259,16 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     private void handleDelete(HttpServerRequest event) {
         if (checkSession(event, event.path().getBytes(StandardCharsets.UTF_8)))
             return;
-        hotReplacementContext.deleteFile(stripRootPath(event.path()));
-        event.response().end();
+        try {
+            hotReplacementContext.deleteFile(stripRootPath(event.path()));
+            event.response().end();
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected remote-dev file deletion", e);
+            event.response().setStatusCode(400).end();
+        } catch (Exception e) {
+            log.error("Failed to delete file", e);
+            event.response().setStatusCode(500).end();
+        }
     }
 
     private boolean checkSession(HttpServerRequest event, byte[] data) {

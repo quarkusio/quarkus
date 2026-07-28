@@ -3,11 +3,13 @@ package io.quarkus.deployment.dev;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -58,6 +60,49 @@ class RuntimeUpdatesProcessorUpdateFileTest {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> processor.deleteFile(null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void rejectsWritesAndDeletesOutsideApplicationRoot() throws Exception {
+        var processor = newProcessor();
+        Path outside = applicationRoot.resolveSibling("outside.txt");
+        Files.writeString(outside, "keep");
+
+        assertThatThrownBy(() -> processor.updateFile("../outside.txt", "replace".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("../outside.txt")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.updateFile("..\\outside.txt", "replace".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("..\\outside.txt")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("C:outside.txt")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("a:b/file.txt")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("/")).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(outside).hasContent("keep");
+        assertThat(applicationRoot).isDirectory();
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void rejectsSymbolicLinksBelowApplicationRoot() throws Exception {
+        Path outside = applicationRoot.resolveSibling("outside-directory");
+        Files.createDirectories(outside);
+        Path link = applicationRoot.resolve("link");
+        try {
+            Files.createSymbolicLink(link, outside);
+        } catch (UnsupportedOperationException | IOException | SecurityException e) {
+            Assumptions.abort("Symbolic links are unavailable: " + e.getMessage());
+        }
+        Path outsideFile = outside.resolve("file.txt");
+        Files.writeString(outsideFile, "keep");
+        var processor = newProcessor();
+
+        assertThatThrownBy(() -> processor.updateFile("link/file.txt", "replace".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> processor.deleteFile("link/file.txt")).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(outsideFile).hasContent("keep");
     }
 
     private RuntimeUpdatesProcessor newProcessor() {

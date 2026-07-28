@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,6 +70,68 @@ class RemoteSyncHandlerTest {
         verify(context).deleteFile("/app/classes/com/acme/Foo.class");
     }
 
+    @Test
+    void rejectedPutReturnsBadRequest() throws Exception {
+        byte[] data = "content".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        doThrow(new IllegalArgumentException("outside root")).when(context)
+                .updateFile("/app/classes/com/acme/Foo.class", data);
+        var handler = new RemoteSyncHandler(PASSWORD, ignored -> {
+        }, context, "/root");
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", data);
+
+        invokeHandlePut(handler, request);
+
+        verify(request.response()).setStatusCode(400);
+        verify(request.response()).end();
+    }
+
+    @Test
+    void rejectedDeleteReturnsBadRequest() throws Exception {
+        var context = mock(HotReplacementContext.class);
+        doThrow(new IllegalArgumentException("outside root")).when(context)
+                .deleteFile("/app/classes/com/acme/Foo.class");
+        var handler = new RemoteSyncHandler(PASSWORD, ignored -> {
+        }, context, "/root");
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", null);
+
+        invokeHandleDelete(handler, request);
+
+        verify(request.response()).setStatusCode(400);
+        verify(request.response()).end();
+    }
+
+    @Test
+    void failedPutReturnsInternalServerError() throws Exception {
+        byte[] data = "content".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        doThrow(new IllegalStateException("write failed")).when(context)
+                .updateFile("/app/classes/com/acme/Foo.class", data);
+        var handler = new RemoteSyncHandler(PASSWORD, ignored -> {
+        }, context, "/root");
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", data);
+
+        invokeHandlePut(handler, request);
+
+        verify(request.response()).setStatusCode(500);
+        verify(request.response()).end();
+    }
+
+    @Test
+    void failedDeleteReturnsInternalServerError() throws Exception {
+        var context = mock(HotReplacementContext.class);
+        doThrow(new IllegalStateException("delete failed")).when(context)
+                .deleteFile("/app/classes/com/acme/Foo.class");
+        var handler = new RemoteSyncHandler(PASSWORD, ignored -> {
+        }, context, "/root");
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", null);
+
+        invokeHandleDelete(handler, request);
+
+        verify(request.response()).setStatusCode(500);
+        verify(request.response()).end();
+    }
+
     private HttpServerRequest request(String path, byte[] body) {
         RemoteSyncHandler.currentSession = SESSION;
         RemoteSyncHandler.currentSessionCounter = 0;
@@ -76,6 +139,8 @@ class RemoteSyncHandlerTest {
         var response = mock(HttpServerResponse.class);
         when(request.path()).thenReturn(path);
         when(request.response()).thenReturn(response);
+        when(response.setStatusCode(400)).thenReturn(response);
+        when(response.setStatusCode(500)).thenReturn(response);
         when(request.headers()).thenReturn(headers(path, body));
         when(request.bodyHandler(any())).thenAnswer(invocation -> {
             Handler<Buffer> bodyHandler = invocation.getArgument(0);

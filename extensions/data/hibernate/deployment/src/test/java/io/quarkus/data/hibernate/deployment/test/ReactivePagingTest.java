@@ -25,7 +25,7 @@ public class ReactivePagingTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyReactiveEntity.class, MyReactiveEntity_.class, _MyReactiveEntity.class,
-                            MyReactiveEntity_.ManagedReactiveQueries_.class));
+                            _MyReactiveEntity._ManagedReactiveQueries.class));
 
     @Inject
     MyReactiveEntity.ManagedReactiveQueries repo;

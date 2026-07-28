@@ -699,6 +699,28 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("duration", Matchers.is("PT21H22M55S"));
     }
 
+    // --- @JsonFormat(shape = STRING, pattern = "...") on java.util.Date ---
+
+    @Test
+    public void testFormatDateStringShapeWithPatternSerialization() {
+        RestAssured.get("/generated/date-string-shape-pattern")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-string-shape"))
+                .body("directDate", Matchers.is("2026-07-20T11:11:11Z"));
+    }
+
+    @Test
+    public void testFormatDateStringShapeWithPatternListSerialization() {
+        RestAssured.get("/generated/date-string-shape-pattern-list")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].name", Matchers.is("date-string-shape"))
+                .body("[0].directDate", Matchers.is("2026-07-20T11:11:11Z"));
+    }
+
     // --- @JsonFormat ---
 
     @Test

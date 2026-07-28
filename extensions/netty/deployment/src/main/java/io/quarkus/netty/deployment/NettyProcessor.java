@@ -119,6 +119,17 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SystemPropertyBuildItem ignoreExpensiveClean() {
+        // On JDK 25+ without --enable-native-access, Netty's CleanerJava25 (shared arenas) has
+        // hasExpensiveClean()=true. Without this flag, unpooled direct buffers fall back to the NOOP
+        // cleaner (GC-only deallocation), which causes unbounded native memory growth and OOM kills
+        // on containers. This flag forces unpooled buffers to use the shared arena path instead —
+        // expensive but deterministic.
+        // See https://github.com/quarkusio/quarkus/issues/54011
+        return new SystemPropertyBuildItem("io.netty.ignoreExpensiveClean", "true");
+    }
+
+    @BuildStep
     public PreInitRunnableBuildItem preInitPlatformDependent() {
         // initialize PlatformDependent as a pre-init task as it's quite slow
         return PreInitRunnableBuildItem.initializeClass(PlatformDependent.class.getName(),
@@ -802,7 +813,13 @@ class NettyProcessor {
     }
 
     @BuildStep
-    void nativeTransportsEnableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+    void enableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+        // Netty 4.2 on JDK 24+ uses CleanerJava24Linker (FFM malloc/free) for direct buffer
+        // allocation when native access is granted to io.netty.common. Without this, JDK 25+
+        // falls back to CleanerJava25 (shared arenas with expensive thread-local handshakes)
+        // or NOOP (GC-only deallocation for unpooled buffers, causing container OOM).
+        // See https://github.com/quarkusio/quarkus/issues/54011
+        nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.common"));
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.epoll"));
         }

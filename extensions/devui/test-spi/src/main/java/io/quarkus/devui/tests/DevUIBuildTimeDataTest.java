@@ -16,13 +16,19 @@ import org.junit.jupiter.api.BeforeEach;
 
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public abstract class DevUIBuildTimeDataTest {
     private static final Logger log = Logger.getLogger(DevUIBuildTimeDataTest.class);
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = JsonMapper.builder()
+            .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
+            .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+            .build();
     private final String namespace;
 
     private URI uri;
@@ -62,10 +68,6 @@ public abstract class DevUIBuildTimeDataTest {
         for (String kv : kvs) {
             if (kv.startsWith(key + SPACE + EQUALS + SPACE)) {
                 String json = kv.substring(kv.indexOf(EQUALS) + 1).trim();
-                // TODO: need to figure out why this is now needed
-                if (json.endsWith(";")) {
-                    json = json.substring(0, json.length() - 1);
-                }
                 log.debug("json = " + json);
                 return toJsonNode(json);
             }

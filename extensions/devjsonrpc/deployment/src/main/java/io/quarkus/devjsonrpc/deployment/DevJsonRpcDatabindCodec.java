@@ -35,7 +35,7 @@ import tools.jackson.databind.module.SimpleModule;
 
 public class DevJsonRpcDatabindCodec implements JsonMapper {
     private final ObjectMapper mapper;
-    private volatile ObjectMapper prettyMapper;
+    private final ObjectMapper prettyMapper;
     private final Function<Map<String, Object>, ?> runtimeObjectDeserializer;
     private final Function<List<?>, ?> runtimeArrayDeserializer;
 
@@ -43,17 +43,11 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
             Function<Map<String, Object>, ?> runtimeObjectDeserializer,
             Function<List<?>, ?> runtimeArrayDeserializer) {
         this.mapper = mapper;
+        this.prettyMapper = ((tools.jackson.databind.json.JsonMapper) mapper).rebuild()
+                .configure(SerializationFeature.INDENT_OUTPUT, true)
+                .build();
         this.runtimeObjectDeserializer = runtimeObjectDeserializer;
         this.runtimeArrayDeserializer = runtimeArrayDeserializer;
-    }
-
-    private ObjectMapper prettyMapper() {
-        if (prettyMapper == null) {
-            prettyMapper = ((tools.jackson.databind.json.JsonMapper) mapper).rebuild()
-                    .configure(SerializationFeature.INDENT_OUTPUT, true)
-                    .build();
-        }
-        return prettyMapper;
     }
 
     @SuppressWarnings("unchecked")
@@ -99,7 +93,7 @@ public class DevJsonRpcDatabindCodec implements JsonMapper {
     @Override
     public String toString(Object object, boolean pretty) {
         try {
-            ObjectMapper theMapper = pretty ? prettyMapper() : mapper;
+            ObjectMapper theMapper = pretty ? prettyMapper : mapper;
             return theMapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new RuntimeException("Failed to encode as JSON: " + e.getMessage(), e);

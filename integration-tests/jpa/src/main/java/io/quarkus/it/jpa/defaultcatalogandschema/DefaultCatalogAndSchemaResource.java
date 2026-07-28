@@ -13,7 +13,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.Session;
-import org.hibernate.type.StandardBasicTypes;
 import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/default-catalog-and-schema")
@@ -41,13 +40,12 @@ public class DefaultCatalogAndSchemaResource {
         return "OK";
     }
 
-    @SuppressWarnings("unchecked")
     private List<Long> findUsingNativeQuery(String schema, String value) {
         return session
                 .createNativeQuery(
                         "select id from \"" + schema + "\"." + EntityWithDefaultCatalogAndSchema.NAME
-                                + " where basic = :basic")
-                .addScalar("id", StandardBasicTypes.LONG)
+                                + " where basic = :basic",
+                        Long.class)
                 .setParameter("basic", value)
                 .getResultList();
     }

@@ -1,7 +1,5 @@
 package io.quarkus.it.jpa.elementcollection;
 
-import static org.hibernate.annotations.CascadeType.ALL;
-
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -12,19 +10,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.id.UUIDGenerator;
 
 @Entity
 public class OpeningTimes {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue
+    @GenericGenerator(type = UUIDGenerator.class)
     private UUID id;
 
     private String name;
@@ -33,7 +32,6 @@ public class OpeningTimes {
     private LocalTime timeTo;
 
     @ElementCollection
-    @Cascade(value = { ALL })
     private Collection<DayOfWeek> daysOfWeek;
 
     OpeningTimes() {

@@ -33,7 +33,9 @@
         </dependency>
         <!-- Include the PostgreSQL driver as well: not actually used, but
             we need to validate native-image compilation with multiple JDBC drivers, in particular to
-            test all weird native-image metadata being included in the Oracle JDBC driver -->
+            test all weird native-image metadata being included in the Oracle JDBC driver
+            TODO move this testing of "multiple JDBC drivers" to a separate IT module?
+         -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>

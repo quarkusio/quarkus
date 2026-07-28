@@ -552,7 +552,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeStringShapedValue(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);
             } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaTimeDateType(typeName)) {
                 writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
-            } else if ("STRING".equals(formatShape) && isJavaUtilDateType(typeName)) {
+            } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaUtilDateType(typeName)) {
                 writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isBooleanType(typeName)) {
                 writeNumberShapedBoolean(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);

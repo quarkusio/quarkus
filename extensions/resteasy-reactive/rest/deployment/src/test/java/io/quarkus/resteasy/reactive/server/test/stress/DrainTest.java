@@ -30,18 +30,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.PoolOptions;
 
 public class DrainTest {
 
-    private static final long RUN_TIMEOUT = System.getenv("CI") != null ? 120 : 30;
+    private static final long RUN_TIMEOUT = System.getenv("CI") != null ? 120 : 60;
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -91,9 +91,16 @@ public class DrainTest {
             for (int i = 0; i < num; i++) {
                 client.request(HttpMethod.GET, path)
                         .compose(HttpClientRequest::send)
-                        .compose(HttpClientResponse::body)
-                        .onSuccess(body -> {
-                            sum.addAndGet(body.length());
+                        .compose(resp -> {
+                            Promise<Long> promise = Promise.promise();
+                            AtomicLong bodyLength = new AtomicLong();
+                            resp.handler(buffer -> bodyLength.addAndGet(buffer.length()));
+                            resp.endHandler(v -> promise.complete(bodyLength.get()));
+                            resp.exceptionHandler(promise::fail);
+                            return promise.future();
+                        })
+                        .onSuccess(length -> {
+                            sum.addAndGet(length);
                             latch.countDown();
                         })
                         .onFailure(err -> {

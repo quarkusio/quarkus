@@ -27,7 +27,7 @@ import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import org.hibernate.engine.spi.SelfDirtinessTracker
-import org.hibernate.jpa.QueryHints
+import org.hibernate.jpa.HibernateHints
 import org.hibernate.query.SemanticException
 import org.junit.jupiter.api.Assertions
 
@@ -113,7 +113,7 @@ class TestEndpoint {
 
         // next calls to this query will be cached
         persons =
-            Person.find("name = ?1", "stef").withHint(QueryHints.HINT_CACHEABLE, "true").list()
+            Person.find("name = ?1", "stef").withHint(HibernateHints.HINT_CACHEABLE, "true").list()
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 

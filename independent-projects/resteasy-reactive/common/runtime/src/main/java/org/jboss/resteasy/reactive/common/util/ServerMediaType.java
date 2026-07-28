@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.common.util;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +122,11 @@ public class ServerMediaType {
         List<MediaType> parsedAccepted;
         if (acceptHeader != null) {
             //TODO: this can be optimised
-            parsedAccepted = MediaTypeHelper.parseHeader(acceptHeader);
+            try {
+                parsedAccepted = MediaTypeHelper.parseHeader(acceptHeader);
+            } catch (IllegalArgumentException e) {
+                parsedAccepted = Collections.emptyList();
+            }
             MediaTypeHelper.sortByWeight(parsedAccepted);
             String currentClientQ = null;
             int currentServerIndex = Integer.MAX_VALUE;

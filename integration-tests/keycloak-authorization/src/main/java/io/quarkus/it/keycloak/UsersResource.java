@@ -7,12 +7,12 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.security.identity.SecurityIdentity;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 @Path("/api/users")
 public class UsersResource {
@@ -44,7 +44,10 @@ public class UsersResource {
 
         @Override
         public ObjectWriter apply(ObjectMapper objectMapper, Type type) {
-            return objectMapper.copy().setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE).writer();
+            return ((JsonMapper) objectMapper).rebuild()
+                    .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+                    .build()
+                    .writer();
         }
     }
 }

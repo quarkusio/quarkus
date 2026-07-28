@@ -2,10 +2,9 @@ package io.quarkus.resteasy.reactive.jackson.runtime.security;
 
 import static io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil.includeSecureField;
 
-import com.fasterxml.jackson.databind.ser.PropertyWriter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-
 import io.quarkus.resteasy.reactive.jackson.SecureField;
+import tools.jackson.databind.ser.PropertyWriter;
+import tools.jackson.databind.ser.std.SimpleBeanPropertyFilter;
 
 public class SecurityPropertyFilter extends SimpleBeanPropertyFilter {
 

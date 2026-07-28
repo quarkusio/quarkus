@@ -12,10 +12,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
 
@@ -52,7 +51,7 @@ public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
         JsonNode observers = super.getBuildTimeData("observers");
         Assertions.assertNotNull(observers);
         Assertions.assertTrue(observers.isArray());
-        Iterator<JsonNode> en = observers.elements();
+        Iterator<JsonNode> en = observers.iterator();
         boolean fooExists = false;
         while (en.hasNext()) {
             JsonNode observer = en.next();
@@ -81,7 +80,7 @@ public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
     private boolean beanExist(JsonNode beans, String name, String simpleName) {
         Assertions.assertNotNull(beans);
         Assertions.assertTrue(beans.isArray());
-        Iterator<JsonNode> en = beans.elements();
+        Iterator<JsonNode> en = beans.iterator();
         while (en.hasNext()) {
             JsonNode bean = en.next();
             JsonNode providerType = bean.get("providerType");

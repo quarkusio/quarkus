@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 public class CopyExampleSource {
 
@@ -81,8 +81,10 @@ public class CopyExampleSource {
 
     public void run() throws Exception {
         Files.createDirectories(outputPath);
-        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES))
-                .setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder().enable(YAMLWriteFeature.MINIMIZE_QUOTES).build())
+                .changeDefaultVisibility(vc -> vc.withFieldVisibility(Visibility.ANY))
+                .build();
 
         for (Path path : srcPaths) {
             Files.walkFileTree(path, new SimpleFileVisitor<>() {

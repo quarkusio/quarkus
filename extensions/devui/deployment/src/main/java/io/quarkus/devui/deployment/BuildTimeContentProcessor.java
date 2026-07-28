@@ -43,8 +43,6 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
@@ -84,7 +82,8 @@ import io.quarkus.devui.spi.page.SettingPageBuildItem;
 import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.vertx.core.json.jackson.DatabindCodec;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
@@ -362,7 +361,7 @@ public class BuildTimeContentProcessor {
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
-        var mapper = DatabindCodec.mapper().writer();
+        var mapper = new ObjectMapper().writer();
         Map<String, String> descriptions = new HashMap<>();
         Map<String, String> mcpDefaultEnabled = new HashMap<>();
         Map<String, String> contentTypes = new HashMap<>();
@@ -388,7 +387,7 @@ public class BuildTimeContentProcessor {
                             contentTypes.put(fullName, contentType);
                         }
                         data.put(key, value);
-                    } catch (JsonProcessingException ex) {
+                    } catch (JacksonException ex) {
                         log.error("Could not create Json Data for Dev UI page", ex);
                     }
                 }

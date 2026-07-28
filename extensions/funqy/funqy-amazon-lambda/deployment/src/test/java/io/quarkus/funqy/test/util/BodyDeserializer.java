@@ -3,10 +3,9 @@ package io.quarkus.funqy.test.util;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.restassured.response.ValidatableResponse;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class BodyDeserializer {
@@ -25,7 +24,7 @@ public class BodyDeserializer {
     public <T> T getBodyAs(ValidatableResponse response, Class<T> clazz) {
         try {
             return objectMapper.readValue(response.extract().body().asString(), clazz);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

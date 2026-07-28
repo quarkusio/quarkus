@@ -1,12 +1,10 @@
 package io.quarkus.resteasy.reactive.data.hibernate.runtime;
 
-import java.io.IOException;
-
 import jakarta.data.page.Page;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * Jackson serializer for {@link Page} that includes pagination metadata
@@ -21,16 +19,16 @@ public class PageSerializer extends StdSerializer<Page> {
     }
 
     @Override
-    public void serialize(Page page, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(Page page, JsonGenerator gen, SerializationContext serializers) {
         gen.writeStartObject();
 
-        gen.writeObjectField("content", page.content());
-        gen.writeBooleanField("hasNext", page.hasNext());
-        gen.writeBooleanField("hasPrevious", page.hasPrevious());
+        gen.writePOJOProperty("content", page.content());
+        gen.writeBooleanProperty("hasNext", page.hasNext());
+        gen.writeBooleanProperty("hasPrevious", page.hasPrevious());
 
         if (page.hasTotals()) {
-            gen.writeNumberField("totalElements", page.totalElements());
-            gen.writeNumberField("totalPages", page.totalPages());
+            gen.writeNumberProperty("totalElements", page.totalElements());
+            gen.writeNumberProperty("totalPages", page.totalPages());
         }
 
         gen.writeEndObject();

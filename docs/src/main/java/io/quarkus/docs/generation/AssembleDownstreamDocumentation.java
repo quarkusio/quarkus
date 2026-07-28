@@ -26,12 +26,11 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import io.quarkus.docs.generation.ReferenceIndexGenerator.Index;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 public class AssembleDownstreamDocumentation {
 
@@ -116,7 +115,9 @@ public class AssembleDownstreamDocumentation {
             throw new IllegalStateException("Reference index does not exist? Have you built the documentation?");
         }
 
-        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder().enable(YAMLWriteFeature.MINIMIZE_QUOTES).build())
+                .build();
         Index referenceIndex = om.readValue(referenceIndexPath.toFile(), Index.class);
 
         Map<String, List<String>> linkRewritingErrors = new LinkedHashMap<>();
@@ -127,8 +128,9 @@ public class AssembleDownstreamDocumentation {
             deleteDirectory(TARGET_ROOT_DIRECTORY);
             Files.deleteIfExists(TARGET_LISTING);
 
-            ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
-            yamlObjectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            YAMLMapper yamlObjectMapper = YAMLMapper.builder()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
 
             String configFilePath = System.getenv("DOWNSTREAM_CONFIG_FILE");
             if (configFilePath == null) {

@@ -100,7 +100,6 @@ public class OidcClientRecorder {
                         "Either 'quarkus.oidc-client.auth-server-url' or absolute 'quarkus.oidc-client.token-path' URL must be set");
             }
             OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
         } catch (Throwable t) {
             LOG.debug(t.getMessage());
             String message = String.format("'%s' client configuration is not initialized", oidcClientId);
@@ -108,6 +107,7 @@ public class OidcClientRecorder {
         }
 
         try {
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
             OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
         } catch (ConfigurationException e) {
             return Uni.createFrom().failure(e);

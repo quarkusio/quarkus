@@ -966,6 +966,16 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testJsonValueInheritedFromInterfaceTwoLevel() {
+        RestAssured.given()
+                .queryParam("value", "ENABLED")
+                .get("/simple/json-value-inherited-from-interface-two-level")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"ENABLED\""));
+    }
+
+    @Test
     public void testPojoWithJsonCreator() {
         RestAssured
                 .with()

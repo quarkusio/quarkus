@@ -83,7 +83,7 @@
 
         <!-- Database default versions for `quarkus.datasource.db-version` and images for devservices -->
         <db2.version>12.1</db2.version>
-        <db2.image>icr.io/db2_community/db2:${db2.version}.0.0</db2.image>
+        <db2.image>icr.io/db2_community/db2:${db2.version}.5.0</db2.image>
         <!-- Default build-time version: latest version at least 2 years old -->
         <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
         <!-- See https://endoflife.date/ibm-db2 -->

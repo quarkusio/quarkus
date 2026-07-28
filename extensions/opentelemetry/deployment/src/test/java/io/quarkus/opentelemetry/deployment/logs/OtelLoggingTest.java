@@ -112,6 +112,18 @@ public class OtelLoggingTest {
     }
 
     @Test
+    public void testEventTimestampPrecedesObservedTimestamp() {
+        assertEquals("hello", jBossLoggingBean.hello("Logging message to test the timestamps"));
+
+        List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
+        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
+
+        assertThat(last.getTimestampEpochNanos())
+                .isPositive()
+                .isLessThanOrEqualTo(last.getObservedTimestampEpochNanos());
+    }
+
+    @Test
     public void testTrace() {
         final String message = "Logging with tracing";
         assertEquals("hello", jBossLoggingBean.helloTraced(message));

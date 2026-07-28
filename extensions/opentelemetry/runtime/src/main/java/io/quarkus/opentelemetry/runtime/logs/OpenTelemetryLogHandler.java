@@ -58,8 +58,8 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge()
                 .loggerBuilder(INSTRUMENTATION_NAME)
                 .build().logRecordBuilder()
-                .setTimestamp(Instant.now())
-                .setObservedTimestamp(record.getInstant());
+                .setTimestamp(record.getInstant())
+                .setObservedTimestamp(Instant.now());
 
         if (record.getLevel() != null) {
             logRecordBuilder.setSeverity(mapSeverity(record.getLevel()))

@@ -58,6 +58,13 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         return propagator;
     }
 
+    // The event bus is intra-application messaging, so a PROPAGATE message sent outside a trace should not
+    // start one, unlike an outgoing HTTP/client call. See https://github.com/quarkusio/quarkus/issues/25417.
+    @Override
+    public boolean honorsPropagatePolicy() {
+        return true;
+    }
+
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,
             final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(

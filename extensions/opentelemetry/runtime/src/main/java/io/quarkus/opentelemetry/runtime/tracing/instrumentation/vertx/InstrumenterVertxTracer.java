@@ -47,6 +47,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         // A PROPAGATE policy only traces when there is a trace to continue: either an active local
         // context or a parent propagated through the incoming headers.
         if (TracingPolicy.PROPAGATE == policy
+                && honorsPropagatePolicy()
                 && !hasParentSpan(getPropagator().extract(parentContext, headers, HeadersTextMapGetter.INSTANCE))) {
             return null;
         }
@@ -122,7 +123,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
         // A PROPAGATE policy only traces when there is an active trace to propagate. An outgoing
         // request has no incoming headers to extract a parent from, so the active context is enough.
-        if (TracingPolicy.PROPAGATE == policy && !hasParentSpan(parentContext)) {
+        if (TracingPolicy.PROPAGATE == policy && honorsPropagatePolicy() && !hasParentSpan(parentContext)) {
             return null;
         }
 
@@ -172,7 +173,23 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
     Instrumenter<REQ, RESP> getReceiveResponseInstrumenter();
 
-    TextMapPropagator getPropagator();
+    /**
+     * Whether this tracer enforces {@link TracingPolicy#PROPAGATE} semantics, i.e. only trace when there is a
+     * trace to continue. Only the event bus tracer opts in; the HTTP/gRPC/SQL/Redis client tracers keep
+     * creating a span so a client call made outside a trace can still start one. See
+     * <a href="https://github.com/quarkusio/quarkus/issues/25417">#25417</a>.
+     */
+    default boolean honorsPropagatePolicy() {
+        return false;
+    }
+
+    /**
+     * Propagator used to look for a parent in the incoming headers when {@link #honorsPropagatePolicy()} is
+     * enabled. Only tracers that opt in need to override it.
+     */
+    default TextMapPropagator getPropagator() {
+        return null;
+    }
 
     default SpanOperation spanOperation(Context context, REQ request, MultiMap headers,
             io.opentelemetry.context.Context spanContext, Scope scope) {

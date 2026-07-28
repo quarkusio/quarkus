@@ -140,5 +140,11 @@ class InstrumenterVertxTracerTest {
         public TextMapPropagator getPropagator() {
             return W3CTraceContextPropagator.getInstance();
         }
+
+        // Opt in to PROPAGATE enforcement so this test exercises the policy logic, like the event bus tracer.
+        @Override
+        public boolean honorsPropagatePolicy() {
+            return true;
+        }
     }
 }

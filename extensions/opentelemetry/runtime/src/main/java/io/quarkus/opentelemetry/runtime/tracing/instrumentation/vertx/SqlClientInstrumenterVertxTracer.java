@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlDialect;
@@ -29,11 +28,9 @@ import io.vertx.core.tracing.TracingPolicy;
 public class SqlClientInstrumenterVertxTracer implements
         InstrumenterVertxTracer<SqlClientInstrumenterVertxTracer.QueryTrace, SqlClientInstrumenterVertxTracer.QueryTrace> {
     private final Instrumenter<QueryTrace, QueryTrace> sqlClientInstrumenter;
-    private final TextMapPropagator propagator;
 
     public SqlClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         SqlClientAttributesGetter sqlClientAttributesGetter = new SqlClientAttributesGetter();
-        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
 
         InstrumenterBuilder<QueryTrace, QueryTrace> serverBuilder = Instrumenter.builder(
                 openTelemetry,
@@ -102,11 +99,6 @@ public class SqlClientInstrumenterVertxTracer implements
     @Override
     public Instrumenter<QueryTrace, QueryTrace> getReceiveResponseInstrumenter() {
         return sqlClientInstrumenter;
-    }
-
-    @Override
-    public TextMapPropagator getPropagator() {
-        return propagator;
     }
 
     static class QueryTrace {

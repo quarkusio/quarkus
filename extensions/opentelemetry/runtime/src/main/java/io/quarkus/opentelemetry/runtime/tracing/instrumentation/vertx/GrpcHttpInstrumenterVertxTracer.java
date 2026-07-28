@@ -6,7 +6,6 @@ import java.util.function.BiConsumer;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -150,11 +149,6 @@ public class GrpcHttpInstrumenterVertxTracer implements InstrumenterVertxTracer<
     @Override
     public Instrumenter<HttpRequest, HttpResponse> getReceiveResponseInstrumenter() {
         return null;
-    }
-
-    @Override
-    public TextMapPropagator getPropagator() {
-        return openTelemetry.getPropagators().getTextMapPropagator();
     }
 
     private void storeHttpAttributes(Context context, Object request) {

@@ -252,6 +252,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.PersistenceProperty"),
             createConstant("jakarta.persistence.PersistenceUnit"),
             createConstant("jakarta.persistence.PersistenceUnits"),
+            createConstant("jakarta.persistence.PostCreate"),
             createConstant("jakarta.persistence.PostDelete"),
             createConstant("jakarta.persistence.PostInsert"),
             createConstant("jakarta.persistence.PostLoad"),
@@ -259,6 +260,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.PostRemove"),
             createConstant("jakarta.persistence.PostUpdate"),
             createConstant("jakarta.persistence.PostUpsert"),
+            createConstant("jakarta.persistence.PreClose"),
             createConstant("jakarta.persistence.PreDelete"),
             createConstant("jakarta.persistence.PreInsert"),
             createConstant("jakarta.persistence.PreMerge"),
@@ -486,6 +488,7 @@ public final class ClassNames {
             createConstant("org.hibernate.engine.jdbc.connections.internal.DataSourceConnectionProvider"));
 
     public static final List<DotName> JPA_LISTENER_ANNOTATIONS = List.of(
+            createConstant("jakarta.persistence.PostCreate"),
             createConstant("jakarta.persistence.PostDelete"),
             createConstant("jakarta.persistence.PostInsert"),
             createConstant("jakarta.persistence.PostLoad"),
@@ -493,6 +496,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.PostRemove"),
             createConstant("jakarta.persistence.PostUpdate"),
             createConstant("jakarta.persistence.PostUpsert"),
+            createConstant("jakarta.persistence.PreClose"),
             createConstant("jakarta.persistence.PreDelete"),
             createConstant("jakarta.persistence.PreInsert"),
             createConstant("jakarta.persistence.PreMerge"),

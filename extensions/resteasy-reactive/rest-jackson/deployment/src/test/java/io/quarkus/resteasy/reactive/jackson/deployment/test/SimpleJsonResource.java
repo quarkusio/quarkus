@@ -715,6 +715,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/json-alias-same-as-field-name-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasSameAsFieldNameBean echoJsonAliasSameAsFieldName(JsonAliasSameAsFieldNameBean record) {
+        return record;
+    }
+
+    @POST
     @Path("/annotation-naming")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

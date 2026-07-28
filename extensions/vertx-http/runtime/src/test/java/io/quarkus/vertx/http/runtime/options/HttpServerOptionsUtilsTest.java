@@ -46,6 +46,20 @@ class HttpServerOptionsUtilsTest {
     }
 
     @Test
+    void applyCommonOptionsNewApiWithSnappyCompressor() {
+        HttpServerConfig config = new HttpServerConfig();
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("snappy")),
+                OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+
+        assertThat(config.getCompressionConfig()).isNotNull();
+        assertThat(config.getCompressionConfig().isCompressionEnabled()).isTrue();
+        assertThat(config.getCompressionConfig().getCompressors()).hasSize(1);
+    }
+
+    @Test
     void applyCommonOptionsNewApiCompressionDisabled() {
         HttpServerConfig config = new HttpServerConfig();
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());

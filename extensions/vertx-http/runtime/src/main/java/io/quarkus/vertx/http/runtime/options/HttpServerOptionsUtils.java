@@ -658,6 +658,8 @@ public class HttpServerOptionsUtils {
                     //                    } else {
                     compression.addBrotli();
                     //                    }
+                } else if ("snappy".equalsIgnoreCase(compressor)) {
+                    compression.addSnappy();
                 } else {
                     LOGGER.errorf("Unknown compressor: %s", compressor);
                 }

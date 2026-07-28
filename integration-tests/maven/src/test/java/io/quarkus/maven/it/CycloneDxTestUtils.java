@@ -12,7 +12,6 @@ import java.util.zip.GZIPInputStream;
 
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
-import org.cyclonedx.model.Property;
 import org.cyclonedx.model.component.evidence.Occurrence;
 import org.cyclonedx.parsers.JsonParser;
 
@@ -67,16 +66,9 @@ final class CycloneDxTestUtils {
     }
 
     static void assertComponentScope(Component component, String expectedScope) {
-        final List<Property> properties = component.getProperties();
-        assertThat(properties).isNotNull();
-        final String scope = properties.stream()
-                .filter(p -> "quarkus:component:scope".equals(p.getName()))
-                .map(Property::getValue)
-                .findFirst()
-                .orElse(null);
-        assertThat(scope)
-                .as("quarkus:component:scope of %s:%s", component.getGroup(), component.getName())
-                .isEqualTo(expectedScope);
+        assertThat(component.getScope())
+                .as("CycloneDX scope of %s:%s", component.getGroup(), component.getName())
+                .isEqualTo("development".equals(expectedScope) ? Component.Scope.EXCLUDED : null);
     }
 
     /**

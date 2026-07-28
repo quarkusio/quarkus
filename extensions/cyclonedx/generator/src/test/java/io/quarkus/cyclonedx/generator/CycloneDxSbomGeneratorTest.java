@@ -10,6 +10,8 @@ import java.util.List;
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Dependency;
+import org.cyclonedx.model.Property;
+import org.cyclonedx.parsers.JsonParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -444,9 +446,155 @@ class CycloneDxSbomGeneratorTest {
         assertThat(componentNames).contains("react", "quarkus-run.jar");
     }
 
+    @Test
+    void developmentScopeRenderedAsExcluded() {
+        ComponentDescriptor mavenRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor mavenDev = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest-deployment", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor npmRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor npmDev = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "eslint", "9.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor noScopeComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "lodash", "4.17.21"))
+                .build();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(SbomContribution.ofComponents(
+                        List.of(mavenRuntime, mavenDev, npmRuntime, npmDev, noScopeComp))))
+                .generateText().get(0));
+
+        Component mvnRt = findComponent(bom, "quarkus-rest");
+        Component mvnDev = findComponent(bom, "quarkus-rest-deployment");
+        Component npmRt = findComponent(bom, "react");
+        Component npmDv = findComponent(bom, "eslint");
+        Component noScope = findComponent(bom, "lodash");
+
+        assertThat(mvnDev.getScope()).isEqualTo(Component.Scope.EXCLUDED);
+        assertThat(npmDv.getScope()).isEqualTo(Component.Scope.EXCLUDED);
+        assertThat(mvnRt.getScope()).isNull();
+        assertThat(npmRt.getScope()).isNull();
+        assertThat(noScope.getScope()).isNull();
+
+        // quarkus:component:scope property should not be present by default
+        assertThat(hasProperty(mvnDev, "quarkus:component:scope")).isFalse();
+        assertThat(hasProperty(mvnRt, "quarkus:component:scope")).isFalse();
+        assertThat(hasProperty(npmDv, "quarkus:component:scope")).isFalse();
+        assertThat(hasProperty(npmRt, "quarkus:component:scope")).isFalse();
+    }
+
+    @Test
+    void quarkusComponentScopePropertyIncludedWhenEnabled() {
+        ComponentDescriptor mavenRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor mavenDev = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest-deployment", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor npmRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor npmDev = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "eslint", "9.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setIncludeQuarkusComponentScope(true)
+                .setContributions(List.of(SbomContribution.ofComponents(
+                        List.of(mavenRuntime, mavenDev, npmRuntime, npmDev))))
+                .generateText().get(0));
+
+        assertThat(propertyValue(findComponent(bom, "quarkus-rest"), "quarkus:component:scope")).isEqualTo("runtime");
+        assertThat(propertyValue(findComponent(bom, "quarkus-rest-deployment"), "quarkus:component:scope"))
+                .isEqualTo("development");
+        assertThat(propertyValue(findComponent(bom, "react"), "quarkus:component:scope")).isEqualTo("runtime");
+        assertThat(propertyValue(findComponent(bom, "eslint"), "quarkus:component:scope")).isEqualTo("development");
+    }
+
+    @Test
+    void runtimeOnlyExcludesDevelopmentComponents() {
+        ComponentDescriptor mavenRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor mavenDev = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest-deployment", "3.0.0", "jar", null))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor npmRuntime = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_RUNTIME)
+                .build();
+        ComponentDescriptor npmDev = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "eslint", "9.0.0"))
+                .setScope(ComponentDescriptor.SCOPE_DEVELOPMENT)
+                .build();
+        ComponentDescriptor noScopeComp = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "lodash", "4.17.21"))
+                .build();
+
+        SbomContribution contribution = SbomContribution.of(
+                List.of(mavenRuntime, mavenDev, npmRuntime, npmDev, noScopeComp),
+                List.of(
+                        ComponentDependencies.of(
+                                mavenRuntime.getBomRef(),
+                                List.of(mavenDev.getBomRef())),
+                        ComponentDependencies.of(
+                                npmRuntime.getBomRef(),
+                                List.of(npmDev.getBomRef(), noScopeComp.getBomRef()))));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setRuntimeOnly(true)
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        List<String> componentNames = bom.getComponents().stream()
+                .map(Component::getName)
+                .toList();
+        assertThat(componentNames).contains("quarkus-rest", "react", "lodash");
+        assertThat(componentNames).doesNotContain("quarkus-rest-deployment", "eslint");
+
+        List<String> allDepRefs = bom.getDependencies().stream()
+                .map(Dependency::getRef)
+                .toList();
+        assertThat(allDepRefs).doesNotContain(mavenDev.getBomRef(), npmDev.getBomRef());
+
+        Dependency mavenRtDep = bom.getDependencies().stream()
+                .filter(d -> d.getRef().equals(mavenRuntime.getBomRef()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(mavenRtDep.getDependencies()).isNullOrEmpty();
+
+        Dependency npmRtDep = bom.getDependencies().stream()
+                .filter(d -> d.getRef().equals(npmRuntime.getBomRef()))
+                .findFirst()
+                .orElseThrow();
+        List<String> npmRtDependsOn = npmRtDep.getDependencies().stream()
+                .map(Dependency::getRef)
+                .toList();
+        assertThat(npmRtDependsOn).contains(noScopeComp.getBomRef());
+        assertThat(npmRtDependsOn).doesNotContain(npmDev.getBomRef());
+    }
+
     private static Bom parseBom(String json) {
         try {
-            return new org.cyclonedx.parsers.JsonParser().parse(json.getBytes());
+            return new JsonParser().parse(json.getBytes());
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse BOM JSON", e);
         }
@@ -463,5 +611,28 @@ class CycloneDxSbomGeneratorTest {
                 .setDependencies(dependencies)
                 .setRuntimeCp()
                 .build();
+    }
+
+    private static Component findComponent(Bom bom, String name) {
+        return bom.getComponents().stream()
+                .filter(c -> name.equals(c.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Component " + name + " not found"));
+    }
+
+    private static boolean hasProperty(Component component, String propertyName) {
+        return component.getProperties() != null && component.getProperties().stream()
+                .anyMatch(p -> propertyName.equals(p.getName()));
+    }
+
+    private static String propertyValue(Component component, String propertyName) {
+        if (component.getProperties() == null) {
+            return null;
+        }
+        return component.getProperties().stream()
+                .filter(p -> propertyName.equals(p.getName()))
+                .map(Property::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

@@ -85,6 +85,8 @@ public class CycloneDxSbomGenerator {
     private boolean includeLicenseText;
     private boolean prettyPrint;
     private boolean librariesOnly;
+    private boolean runtimeOnly;
+    private boolean includeQuarkusComponentScope;
     private Instant outputTimestamp;
     private List<SbomContribution> contributions = List.of();
 
@@ -142,6 +144,18 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setLibrariesOnly(boolean librariesOnly) {
         ensureNotGenerated();
         this.librariesOnly = librariesOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setRuntimeOnly(boolean runtimeOnly) {
+        ensureNotGenerated();
+        this.runtimeOnly = runtimeOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setIncludeQuarkusComponentScope(boolean includeQuarkusComponentScope) {
+        ensureNotGenerated();
+        this.includeQuarkusComponentScope = includeQuarkusComponentScope;
         return this;
     }
 
@@ -235,15 +249,19 @@ public class CycloneDxSbomGenerator {
             allDependencies.addAll(contribution.dependencies());
         }
 
-        // Filter out non-library components when librariesOnly is enabled
+        // Filter out components based on librariesOnly and runtimeOnly settings
         final Set<String> excludedBomRefs;
-        if (librariesOnly) {
+        if (librariesOnly || runtimeOnly) {
             excludedBomRefs = new HashSet<>();
             allDescriptors.removeIf(d -> {
                 if (d.getBomRef().equals(mainComponentBomRef)) {
                     return false;
                 }
-                if (isFileComponent(d)) {
+                if (librariesOnly && isFileComponent(d)) {
+                    excludedBomRefs.add(d.getBomRef());
+                    return true;
+                }
+                if (runtimeOnly && ComponentDescriptor.SCOPE_DEVELOPMENT.equals(d.getScope())) {
                     excludedBomRefs.add(d.getBomRef());
                     return true;
                 }
@@ -448,11 +466,16 @@ public class CycloneDxSbomGenerator {
             c.setType(Component.Type.LIBRARY);
         }
 
-        // Scope property
+        // Scope
         List<Property> props = new ArrayList<>(2);
         String scope = descriptor.getScope() != null ? descriptor.getScope()
                 : ComponentDescriptor.SCOPE_RUNTIME;
-        addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        if (includeQuarkusComponentScope) {
+            addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        }
+        if (ComponentDescriptor.SCOPE_DEVELOPMENT.equals(scope)) {
+            c.setScope(Component.Scope.EXCLUDED);
+        }
 
         // POM metadata for Maven components
         if (Purl.TYPE_MAVEN.equals(purl.getType())) {

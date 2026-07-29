@@ -310,6 +310,10 @@ Now you need to connect your local agent to the remote host, using the `remote-d
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
 app.
 
+Remote development HTTP requests are limited by `quarkus.http.limits.max-body-size`.
+Set this value high enough for the largest file that must be synchronized.
+If the general HTTP body limit is disabled, remote development still applies a 10 MiB limit.
+
 All the config options are shown below:
 
 include::{generated-dir}/config/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]

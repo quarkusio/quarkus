@@ -1819,9 +1819,9 @@ public class ResteasyReactiveProcessor {
             return;
         }
 
-        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        Map<String, Supplier<?>> runtimeConfigMap = new HashMap<>();
         for (HandlerConfigurationProviderBuildItem item : items) {
-            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+            runtimeConfigMap.put(item.getConfigClass().getName(), item.getValueSupplier());
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);

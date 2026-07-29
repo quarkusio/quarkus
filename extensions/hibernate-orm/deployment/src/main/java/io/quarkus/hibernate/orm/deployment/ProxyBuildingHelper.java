@@ -42,9 +42,14 @@ final class ProxyBuildingHelper implements AutoCloseable {
     }
 
     public boolean isProxiable(ClassInfo classInfo) {
+        // ORM 8.0 strips the final modifier from entity classes during bytecode enhancement
+        // (PersistentAttributeTransformer.REMOVE_FINAL_TYPE_MODIFIER), so final classes
+        // are proxiable at runtime and need pre-generated proxies.
+        // See https://github.com/hibernate/hibernate-orm/pull/12589
+        // Fixes: io.quarkus.it.jpa.proxy.ProxyTest, io.quarkus.it.jpa.defaultcatalogandschema.DefaultSchemaTest,
+        //         io.quarkus.it.jpa.integrator.JPAIntegratorTest (CompanyCustomer is a final entity)
         return classInfo != null
                 && !classInfo.isInterface()
-                && !classInfo.isFinal()
                 && classInfo.hasNoArgsConstructor();
     }
 

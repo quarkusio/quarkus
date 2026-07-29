@@ -5,7 +5,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 
 @SuppressWarnings("unchecked")
-public final class MicrometerRegistryProviderBuildItem extends MultiBuildItem {
+public final class MicrometerRegistryProviderBuildItem extends MultiBuildItem
+        implements Comparable<MicrometerRegistryProviderBuildItem> {
 
     final Class<? extends MeterRegistry> clazz;
 
@@ -26,5 +27,10 @@ public final class MicrometerRegistryProviderBuildItem extends MultiBuildItem {
         return "MicrometerRegistryProviderBuildItem{"
                 + clazz
                 + '}';
+    }
+
+    @Override
+    public int compareTo(MicrometerRegistryProviderBuildItem o) {
+        return this.clazz.getName().compareTo(o.clazz.getName());
     }
 }

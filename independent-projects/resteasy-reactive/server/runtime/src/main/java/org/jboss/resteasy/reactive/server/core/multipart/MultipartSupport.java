@@ -22,11 +22,15 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
@@ -384,6 +388,79 @@ public final class MultipartSupport {
             }
         }
         return result;
+    }
+
+    public static List<EntityPart> toEntityPartList(ResteasyReactiveRequestContext context) {
+        FormData formData = context.getFormData();
+        if (formData == null) {
+            return Collections.emptyList();
+        }
+        List<EntityPart> result = new ArrayList<>();
+        for (String name : formData) {
+            Deque<FormValue> values = formData.get(name);
+            if (values != null) {
+                for (FormValue value : values) {
+                    result.add(formValueToEntityPart(name, value));
+                }
+            }
+        }
+        return result;
+    }
+
+    public static EntityPart getEntityPart(String name, ResteasyReactiveRequestContext context) {
+        FormValue value = getFirstValue(name, context);
+        if (value == null) {
+            return null;
+        }
+        return formValueToEntityPart(name, value);
+    }
+
+    public static List<EntityPart> getEntityParts(String name, ResteasyReactiveRequestContext context) {
+        Deque<FormValue> values = getValues(name, context);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<EntityPart> result = new ArrayList<>();
+        for (FormValue value : values) {
+            result.add(formValueToEntityPart(name, value));
+        }
+        return result;
+    }
+
+    private static EntityPart formValueToEntityPart(String name, FormValue value) {
+        InputStream content;
+        MediaType mediaType;
+        String fileName = value.getFileName();
+
+        if (value.isFileItem()) {
+            try {
+                content = value.getFileItem().getInputStream();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            String contentType = null;
+            if (value.getHeaders() != null) {
+                contentType = value.getHeaders().getFirst("Content-Type");
+            }
+            mediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.APPLICATION_OCTET_STREAM_TYPE;
+        } else {
+            content = new ByteArrayInputStream(value.getValue().getBytes(
+                    value.getCharset() != null ? Charset.forName(value.getCharset()) : StandardCharsets.UTF_8));
+            mediaType = MediaType.TEXT_PLAIN_TYPE;
+        }
+
+        MultivaluedMap<String, String> headers = new QuarkusMultivaluedHashMap<>();
+        if (value.getHeaders() != null) {
+            headers.putAll(value.getHeaders());
+        }
+        headers.putSingle("Content-Type", mediaType.toString());
+        StringBuilder cd = new StringBuilder("form-data; name=\"").append(name).append("\"");
+        if (fileName != null) {
+            cd.append("; filename=\"").append(fileName).append("\"");
+        }
+        headers.putSingle("Content-Disposition", cd.toString());
+
+        return new EntityPartImpl(name, fileName, headers, mediaType, content);
     }
 
     private static ByteArrayInputStream formAttributeValueToInputStream(String formAttributeValue) {

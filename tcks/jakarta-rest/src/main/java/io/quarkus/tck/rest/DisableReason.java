@@ -26,7 +26,21 @@ public enum DisableReason {
     CLIENT_EXCEPTION_WRAPPING(
             "Client exceptions wrapped in ClientWebApplicationException for security reasons"),
     UNSUPPORTED_CONTEXT_RESOLVER_JSONB(
-            "ContextResolver<Jsonb> is not supported (https://github.com/quarkusio/quarkus/issues/55514)");
+            "ContextResolver<Jsonb> is not supported (https://github.com/quarkusio/quarkus/issues/55514)"),
+
+    /**
+     * JAX-RS spec requires that provider classes be instantiated using the public constructor
+     * with the most {@code @Context} parameters. Quarkus uses CDI (ArC) for bean management,
+     * which does not support {@code @Context} constructor injection — it requires either
+     * {@code @Inject} or a no-arg constructor.
+     * <p>
+     * This will not be fixed because Jakarta REST 5 plans to remove {@code @Context} entirely
+     * in favor of CDI {@code @Inject}, making this JAX-RS 4 constructor selection behavior
+     * obsolete.
+     */
+    UNSUPPORTED_CONTEXT_CONSTRUCTOR_INJECTION(
+            "@Context constructor injection for providers is not supported; "
+                    + "@Context is being removed in Jakarta REST 5 in favor of CDI @Inject");
 
     private final String description;
 

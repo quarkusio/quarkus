@@ -1203,7 +1203,9 @@ public class ResteasyReactiveProcessor {
      */
     @BuildStep
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
-            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
+            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer,
+            BuildProducer<JaxrsFeatureBuildItem> featureProducer,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
         // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
         Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
@@ -1253,7 +1255,6 @@ public class ResteasyReactiveProcessor {
                         }
                         messageBodyWriterProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
                     }
-                    // TODO: handle other providers as well
                 } catch (ClassNotFoundException e) {
                     log.warn("Unable to load class '" + providerClassName
                             + "' when trying to determine what kind of JAX-RS Provider it is.", e);
@@ -1261,6 +1262,23 @@ public class ResteasyReactiveProcessor {
             }
         } catch (IOException e) {
             log.warn("Unable to properly detect and parse the contents of '" + fileName + "'", e);
+        }
+
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName(),
+                className -> featureProducer.produce(new JaxrsFeatureBuildItem(className, true)));
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName(),
+                className -> dynamicFeatureProducer.produce(new DynamicFeatureBuildItem(className, true)));
+    }
+
+    private void discoverServiceProviders(String serviceFile, Consumer<String> producer) {
+        try {
+            Set<String> classNames = new HashSet<>(ServiceUtil.classNamesNamedIn(
+                    Thread.currentThread().getContextClassLoader(), serviceFile));
+            for (String className : classNames) {
+                producer.accept(className);
+            }
+        } catch (IOException e) {
+            log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
         }
     }
 

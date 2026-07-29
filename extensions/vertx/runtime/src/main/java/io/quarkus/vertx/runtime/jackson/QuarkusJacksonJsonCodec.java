@@ -36,10 +36,6 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
     // we don't want to create this unless it's absolutely necessary (and it rarely is)
     private static volatile ObjectMapper prettyMapper;
 
-    static {
-        populateMapper();
-    }
-
     public static void reset() {
         mapper = null;
         prettyMapper = null;

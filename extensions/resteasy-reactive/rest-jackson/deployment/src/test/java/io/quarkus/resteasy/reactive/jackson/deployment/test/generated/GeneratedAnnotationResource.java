@@ -578,6 +578,26 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- DateStringShapeWithPatternBean: @JsonFormat(shape = STRING, pattern = "...") on java.util.Date ---
+
+    @GET
+    @Path("/date-string-shape-pattern")
+    public DateStringShapeWithPatternBean getDateStringShapePattern() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return bean;
+    }
+
+    @GET
+    @Path("/date-string-shape-pattern-list")
+    public List<DateStringShapeWithPatternBean> getDateStringShapePatternList() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return List.of(bean);
+    }
+
     // --- FormatArrayShapeBean: @JsonFormat(shape = ARRAY) on class ---
 
     @GET

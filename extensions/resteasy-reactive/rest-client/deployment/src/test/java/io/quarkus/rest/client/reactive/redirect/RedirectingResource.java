@@ -12,6 +12,8 @@ import jakarta.ws.rs.core.Response;
 @Path("/redirect")
 public class RedirectingResource {
 
+    static final String ETAG = "\"etag\"";
+
     @GET
     @Path("302")
     public Response redirectedResponse(@QueryParam("redirects") Integer number, HttpHeaders httpHeaders) {
@@ -26,6 +28,16 @@ public class RedirectingResource {
             return Response.status(Response.Status.FOUND).location(URI.create("/redirect/302?redirects=" + (number - 1)))
                     .build();
         }
+    }
+
+    @GET
+    @Path("304")
+    public Response notModifiedResponse(HttpHeaders httpHeaders) {
+        // a 304 has no Location header although its status is within the 300..399 range
+        if (ETAG.equals(httpHeaders.getHeaderString(HttpHeaders.IF_NONE_MATCH))) {
+            return Response.notModified(ETAG).build();
+        }
+        return Response.ok().header(HttpHeaders.ETAG, ETAG).build();
     }
 
     @POST

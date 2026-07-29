@@ -749,6 +749,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                     bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
                             fieldValue, fieldSpecs, deserializationContext)));
             for (String alias : fieldSpecs.aliases) {
+                if (alias.equals(fieldSpecs.jsonName)) {
+                    continue;
+                }
                 strSwitch.caseOf(alias,
                         bytecode -> valid.compareAndSet(true, deserializeField(deserData, bytecode, objHandle,
                                 fieldValue, fieldSpecs, deserializationContext)));

@@ -18,12 +18,17 @@ public class KeycloakContainer extends GenericContainer<KeycloakContainer> {
     private final boolean legacy;
 
     private static String getKeycloakImageName() {
-        if (KEYCLOAK_DOCKER_IMAGE != null) {
-            return KEYCLOAK_DOCKER_IMAGE;
-        } else if (KEYCLOAK_VERSION != null) {
-            return "quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION;
-        } else {
-            throw new ConfigurationException("Please set either 'keycloak.docker.image' or 'keycloak.version' system property");
+        try {
+            return io.quarkus.test.common.DockerImageNames.getImage("keycloak.docker.image");
+        } catch (IllegalArgumentException e) {
+            if (KEYCLOAK_DOCKER_IMAGE != null) {
+                return KEYCLOAK_DOCKER_IMAGE;
+            } else if (KEYCLOAK_VERSION != null) {
+                return "quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION;
+            } else {
+                throw new ConfigurationException(
+                        "Please set either 'keycloak.docker.image' or 'keycloak.version' system property", e);
+            }
         }
     }
 

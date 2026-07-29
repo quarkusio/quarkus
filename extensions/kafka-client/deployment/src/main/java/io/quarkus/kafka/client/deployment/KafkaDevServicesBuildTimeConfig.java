@@ -46,21 +46,21 @@ public interface KafkaDevServicesBuildTimeConfig {
     Provider provider();
 
     enum Provider {
-        REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
-        STRIMZI("quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0"),
+        REDPANDA("kafka.redpanda"),
+        STRIMZI("kafka.strimzi"),
         @Deprecated(forRemoval = true)
-        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest"),
-        UPSTREAM_KAFKA("docker.io/apache/kafka:4.2.0"),
-        UPSTREAM_KAFKA_NATIVE("docker.io/apache/kafka-native:4.2.0");
+        KAFKA_NATIVE("kafka.native"),
+        UPSTREAM_KAFKA("kafka.upstream"),
+        UPSTREAM_KAFKA_NATIVE("kafka.upstream.native");
 
-        private final String defaultImageName;
+        private final String imageNameKey;
 
-        Provider(String imageName) {
-            this.defaultImageName = imageName;
+        Provider(String imageNameKey) {
+            this.imageNameKey = imageNameKey;
         }
 
         public String getDefaultImageName() {
-            return defaultImageName;
+            return io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor(imageNameKey);
         }
     }
 

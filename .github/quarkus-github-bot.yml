@@ -17,13 +17,6 @@ workflows:
 workflowRunAnalysis:
   workflows: ["Quarkus CI", "Quarkus Documentation CI"]
   ignoredFlakyTests: ["org.acme.FlakyHelloResourceTest", "org.acme.FlakyHelloResourceWithSomeProfileTest", "org.acme.FlakyHelloResourceWithAnotherProfileTest"]
-projectsClassic:
-  rules:
-    - labels: [area/documentation]
-      project: 21
-      issues: true
-      pullRequests: true
-      status: To do
 projects:
   rules:
     - labels: [area/jakarta]

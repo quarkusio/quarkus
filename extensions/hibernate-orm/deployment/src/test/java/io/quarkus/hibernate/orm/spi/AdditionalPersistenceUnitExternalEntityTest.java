@@ -43,7 +43,6 @@ class AdditionalPersistenceUnitExternalEntityTest {
             .addBuildChainCustomizer(buildCustomizer())
             .withConfiguration("""
                     quarkus.datasource.vector.db-kind=h2
-                    quarkus.hibernate-orm."external".schema-management.strategy=drop-and-create
                     """);
 
     @Inject

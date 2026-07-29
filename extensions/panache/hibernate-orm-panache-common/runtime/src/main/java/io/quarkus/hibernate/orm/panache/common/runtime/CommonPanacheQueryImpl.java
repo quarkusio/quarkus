@@ -17,7 +17,6 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.SelectionQuery;
-import org.hibernate.query.sqm.tree.spi.SqmQuery;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -505,12 +504,6 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("rawtypes")
     public static String getQueryString(SelectionQuery hibernateQuery) {
-        if (hibernateQuery instanceof SqmQuery) {
-            return hibernateQuery.getQueryString();
-        } else {
-            throw new IllegalArgumentException("Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
-                    + SqmQuery.class.getName() + "' or '"
-                    + org.hibernate.query.Query.class + "' is expected.");
-        }
+        return hibernateQuery.getQueryString();
     }
 }

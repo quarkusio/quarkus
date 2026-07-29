@@ -44,6 +44,7 @@ import io.vertx.core.http.Http1ServerConfig;
 import io.vertx.core.http.Http2ServerConfig;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerConfig;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
@@ -369,7 +370,8 @@ public class HttpServerOptionsUtils {
         // HTTP/2 config
         if (httpConfig.http2()) {
             Http2ServerConfig http2 = new Http2ServerConfig();
-            var settings = new Http2Settings();
+            var settings = new Http2Settings()
+                    .setMaxConcurrentStreams(HttpServerOptions.DEFAULT_INITIAL_SETTINGS_MAX_CONCURRENT_STREAMS);
             if (httpConfig.limits().headerTableSize().isPresent()) {
                 settings.setHeaderTableSize(httpConfig.limits().headerTableSize().getAsLong());
             }

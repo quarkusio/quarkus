@@ -56,24 +56,7 @@ public class AeshLauncherImpl implements AeshLauncher {
                 stdinReader, stdoutCapture, signalQueue);
         replThread.start();
 
-        // Wait for the console to initialize and display the prompt.
-        // Polls the output buffer instead of using a fixed sleep,
-        // following the same pattern as LauncherUtil's CaptureListeningDataReader.
-        long deadline = System.currentTimeMillis() + 30_000;
-        while (System.currentTimeMillis() < deadline) {
-            if (stdoutCapture.size() > 0) {
-                String output = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
-                if (output.contains("$ ")) {
-                    break;
-                }
-            }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
+        waitForPrompt(System.currentTimeMillis() + DEFAULT_TIMEOUT.toMillis());
     }
 
     @Override
@@ -95,6 +78,8 @@ public class AeshLauncherImpl implements AeshLauncher {
             throw new RuntimeException("Failed to write command to REPL stdin", e);
         }
 
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+
         try {
             Object signal = signalQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
             if (signal == null) {
@@ -106,7 +91,15 @@ public class AeshLauncherImpl implements AeshLauncher {
             throw new RuntimeException("Interrupted while waiting for command: " + command, e);
         }
 
-        return stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+        String result = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+
+        // Wait for the prompt before returning so the REPL is ready
+        // to accept the next command. Without this, a subsequent
+        // executeCommand() can send input before readline is armed,
+        // causing a hang.
+        waitForPrompt(deadline);
+
+        return result;
     }
 
     @Override
@@ -133,6 +126,27 @@ public class AeshLauncherImpl implements AeshLauncher {
                 replThread.join(10_000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Poll the output buffer until the prompt marker ({@code "$ "}) appears,
+     * indicating the REPL is ready to accept the next command.
+     */
+    private void waitForPrompt(long deadlineMillis) {
+        while (System.currentTimeMillis() < deadlineMillis) {
+            if (stdoutCapture.size() > 0) {
+                String output = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+                if (output.contains("$ ")) {
+                    return;
+                }
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
             }
         }
     }

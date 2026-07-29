@@ -658,6 +658,25 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- JavaBeansTransientBean: @java.beans.Transient ---
+
+    @GET
+    @Path("/java-beans-transient")
+    public JavaBeansTransientBean getJavaBeansTransient() {
+        JavaBeansTransientBean bean = new JavaBeansTransientBean();
+        bean.setName("Alice");
+        bean.setVisible("shown");
+        bean.setSecret("hidden-value");
+        return bean;
+    }
+
+    @POST
+    @Path("/java-beans-transient")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JavaBeansTransientBean echoJavaBeansTransient(JavaBeansTransientBean bean) {
+        return bean;
+    }
+
     // --- UnwrappedWithPrefixBean: @JsonUnwrapped with prefix ---
 
     @GET

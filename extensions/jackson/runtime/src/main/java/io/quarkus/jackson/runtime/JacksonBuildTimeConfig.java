@@ -79,6 +79,15 @@ public interface JacksonBuildTimeConfig {
     boolean useGettersAsSetters();
 
     /**
+     * If enabled, Jackson will allow 'final' fields to be auto-detected as mutators
+     * (used to change the value of the logical property) during deserialization.
+     * This is disabled by default to match the default Jackson 3 behavior.
+     * Note that Jackson 2 defaulted to {@code true}.
+     */
+    @WithDefault("false")
+    boolean allowFinalFieldsAsMutators();
+
+    /**
      * If enabled, Jackson will ignore case during Enum deserialization.
      */
     @WithDefault("false")

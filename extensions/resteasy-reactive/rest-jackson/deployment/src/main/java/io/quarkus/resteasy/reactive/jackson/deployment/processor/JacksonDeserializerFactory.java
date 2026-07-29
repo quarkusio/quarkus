@@ -983,6 +983,50 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     @Override
+    protected Optional<MethodInfo> findConstructor(ClassInfo classInfo) {
+        Optional<MethodInfo> ctorOpt = super.findConstructor(classInfo);
+        if (ctorOpt.isPresent() && ctorOpt.get().parametersCount() == 0 && !classInfo.isRecord()) {
+            Set<String> unsettableFields = findUnsettableFields(classInfo);
+            if (!unsettableFields.isEmpty()) {
+                return classInfo.constructors().stream()
+                        .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctorCoversFields(ctor, unsettableFields))
+                        .findFirst();
+            }
+        }
+        return ctorOpt;
+    }
+
+    private static boolean ctorCoversFields(MethodInfo ctor, Set<String> fieldNames) {
+        Set<String> paramNames = new HashSet<>();
+        for (MethodParameterInfo param : ctor.parameters()) {
+            paramNames.add(param.name());
+        }
+        return paramNames.containsAll(fieldNames);
+    }
+
+    private Set<String> findUnsettableFields(ClassInfo classInfo) {
+        Set<String> unsettable = new HashSet<>();
+        for (FieldInfo field : classFields(classInfo)) {
+            if (Modifier.isStatic(field.flags()) || Modifier.isPublic(field.flags())) {
+                continue;
+            }
+            if (getterMethodInfo(classInfo, field) == null) {
+                continue;
+            }
+            if (findMethod(classInfo, "set" + ucFirst(field.name()), field.type()) != null
+                    || findMethod(classInfo, field.name(), field.type()) != null) {
+                continue;
+            }
+            String typeName = field.type().name().toString();
+            if (isAssignableTo(typeName, COLLECTION_NAME) || isAssignableTo(typeName, MAP_NAME)) {
+                continue;
+            }
+            unsettable.add(field.name());
+        }
+        return unsettable;
+    }
+
+    @Override
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
         return super.shouldGenerateCodeFor(classInfo) && classInfo.hasNoArgsConstructor();
     }

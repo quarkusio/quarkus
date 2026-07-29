@@ -82,7 +82,7 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
@@ -258,7 +258,7 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
@@ -330,7 +330,7 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
@@ -421,7 +421,7 @@ jobs:
         with:
           path: build-reports-artifacts
       - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}

@@ -63,11 +63,11 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.aesh</groupId>
                             <artifactId>aesh-processor</artifactId>
-                            <version>${aesh.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

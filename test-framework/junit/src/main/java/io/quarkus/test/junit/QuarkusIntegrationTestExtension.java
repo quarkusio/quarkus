@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -85,6 +86,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
 
     private static final int APP_LOG_TAIL_LINES = 50;
+
+    public static final ValueRegistry.RuntimeKey<Path> TEST_LOG_PATH = ValueRegistry.RuntimeKey
+            .key("quarkus.test.log.file.path");
 
     private static boolean failedBoot;
 
@@ -202,8 +206,16 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 setState(extensionContext, state);
             } catch (Throwable e) {
                 try {
-                    LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
-                    File appLogFile = logRuntimeConfig.file().path();
+                    ValueRegistry valueRegistry = ValueRegistryInjector.get(extensionContext);
+                    Path logPath = null;
+                    if (valueRegistry != null && valueRegistry.containsKey(TEST_LOG_PATH)) {
+                        logPath = valueRegistry.get(TEST_LOG_PATH);
+                    }
+                    if (logPath == null) {
+                        LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
+                        logPath = logRuntimeConfig.file().path().toPath();
+                    }
+                    File appLogFile = logPath.toFile();
                     if (appLogFile.exists() && (appLogFile.length() > 0)) {
                         System.err.println("Failed to launch the application. The application logs can be found at: "
                                 + appLogFile.getAbsolutePath());
@@ -358,7 +370,10 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             activateLogging();
 
             // Start Quarkus, capture the listening port if available and register it in ValueRegistry
-            ListeningAddresses listeningData = startLauncher(launcher, additionalProperties);
+            Pair<ListeningAddresses, Path> startLauncherPair = startLauncher(launcher, additionalProperties);
+            ListeningAddresses listeningData = startLauncherPair.getLeft();
+            Path logPath = startLauncherPair.getRight();
+
             Optional<ListeningAddress> listeningAddress = listeningData.address();
             if (listeningAddress.isPresent()) {
                 listeningAddress.get().register(valueRegistry, newConfig);
@@ -373,13 +388,15 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             } else {
                 valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, Optional.empty());
             }
+            valueRegistry.register(TEST_LOG_PATH, logPath);
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return new IntegrationTestExtensionState(
                     testResourceManager,
                     new IntegrationTestExtensionStateResource(launcher, devServicesLaunchResult.getCuratedApplication()),
-                    AbstractTestWithCallbacksExtension::clearCallbacks);
+                    AbstractTestWithCallbacksExtension::clearCallbacks,
+                    logPath);
         } catch (Throwable e) {
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();

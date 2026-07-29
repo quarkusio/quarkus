@@ -1,6 +1,7 @@
 package io.quarkus.awt.it;
 
 import static io.quarkus.runtime.graal.AwtImageIO.AWT_EXTENSION_HINT;
+import static io.quarkus.test.junit.QuarkusIntegrationTestExtension.TEST_LOG_PATH;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -10,17 +11,20 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpStatus;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.value.registry.ValueRegistry;
 import io.restassured.RestAssured;
+import io.smallrye.config.SmallRyeConfig;
 
 @QuarkusIntegrationTest
 public class GraphicsIT {
@@ -28,6 +32,9 @@ public class GraphicsIT {
     private static final Logger LOG = Logger.getLogger(GraphicsIT.class);
 
     public static Pattern AWT_EXTENSION_HINT_PATTERN = Pattern.compile(".*" + AWT_EXTENSION_HINT + ".*");
+
+    // Injected automatically by QuarkusIntegrationTestExtension
+    private ValueRegistry valueRegistry;
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -57,8 +64,8 @@ public class GraphicsIT {
      *
      * @param lineMatchRegexp pattern
      */
-    static void checkLog(final Pattern lineMatchRegexp) {
-        final Path logFilePath = Paths.get(".", "target", "quarkus.log").toAbsolutePath();
+    private void checkLog(final Pattern lineMatchRegexp) {
+        final Path logFilePath = getLogPath();
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
@@ -82,4 +89,12 @@ public class GraphicsIT {
                 });
     }
 
+    private Path getLogPath() {
+        if (valueRegistry != null && valueRegistry.containsKey(TEST_LOG_PATH)) {
+            return valueRegistry.get(TEST_LOG_PATH);
+        }
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
+    }
 }

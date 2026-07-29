@@ -13,14 +13,18 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Tests image decoders, both raster data and image metadata.
@@ -162,13 +166,13 @@ public class ImageDecodersTest {
             case "NOK":
                 assertNull(image, "The image " + fileName + " should have triggered a parsing error.");
                 if (pattern != null) {
-                    checkLog(pattern, fileName);
+                    checkLog(pattern, fileName, getLogPath());
                 }
                 break;
             case "NA":
                 if (pattern != null) {
                     if (image == null) {
-                        checkLog(pattern, fileName);
+                        checkLog(pattern, fileName, getLogPath());
                     } else {
                         assertTrue(pattern.matcher(image.toString()).matches(),
                                 "Image description should have matched " + pattern);
@@ -179,5 +183,11 @@ public class ImageDecodersTest {
                 fail("Bogus test data: unknown condition: " + okNoKNA);
                 break;
         }
+    }
+
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
     }
 }

@@ -58,12 +58,12 @@ public class ResteasyReactiveRuntimeRecorder {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
-    public void configureHandlers(RuntimeValue<Deployment> deployment, Map<Class<?>, Supplier<?>> runtimeConfigMap) {
+    public void configureHandlers(RuntimeValue<Deployment> deployment, Map<String, Supplier<?>> runtimeConfigMap) {
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();
         for (int i = 0; i < runtimeConfigurableServerRestHandlers.size(); i++) {
             GenericRuntimeConfigurableServerRestHandler handler = runtimeConfigurableServerRestHandlers.get(i);
-            Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass());
+            Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass().getName());
             if (supplier == null) {
                 throw new IllegalStateException(
                         "Handler '" + handler.getClass().getName() + "' has not been properly configured.");

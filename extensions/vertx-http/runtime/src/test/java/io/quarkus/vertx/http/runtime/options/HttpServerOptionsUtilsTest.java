@@ -52,7 +52,7 @@ class HttpServerOptionsUtilsTest {
                 OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getCompressionConfig()).isNotNull();
         assertThat(config.getCompressionConfig().isCompressionEnabled()).isTrue();

@@ -1,0 +1,3 @@
+# Guide
+
+![Architecture](architecture.svg)

@@ -68,7 +68,7 @@ public interface HibernateOrmConfig {
      * Configuration for persistence units.
      */
     @WithParentName
-    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @WithUnnamedKey(value = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, eager = false)
     @WithDefaults
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
@@ -123,8 +123,7 @@ public interface HibernateOrmConfig {
 
     default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
-        return defaultPersistenceUnit().isAnyPropertySet() ||
-                !namedPersistenceUnits().isEmpty() ||
+        return !persistenceUnits().isEmpty() ||
                 log().bindParameters() ||
                 statistics().isPresent() ||
                 logSessionMetrics().isPresent() ||

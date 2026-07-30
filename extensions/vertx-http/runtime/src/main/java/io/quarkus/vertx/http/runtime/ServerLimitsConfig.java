@@ -77,13 +77,15 @@ public interface ServerLimitsConfig {
     OptionalLong headerTableSize();
 
     /**
-     * Set SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
+     * Set the SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
      * <p>
      * Indicates the maximum number of concurrent streams that the sender will allow. This limit is directional: it
-     * applies to the number of streams that the sender permits the receiver to create. Initially, there is no limit to
-     * this value. It is recommended that this value be no smaller than 100, to not unnecessarily limit parallelism.
+     * applies to the number of streams that the sender permits the receiver to create.
+     * Per <a href="https://www.rfc-editor.org/rfc/rfc9113#section-6.5.2">RFC 9113, Section 6.5.2</a>,
+     * it is recommended that this value be no smaller than 100, so as to not unnecessarily limit parallelism.
      */
-    OptionalLong maxConcurrentStreams();
+    @WithDefault("128")
+    long maxConcurrentStreams();
 
     /**
      * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting.

@@ -714,7 +714,6 @@ public final class HibernateOrmProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
-            BuildProducer<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver,
             LaunchModeBuildItem launchMode) throws Exception {
         validateHibernatePropertiesNotUsed();
 
@@ -774,6 +773,17 @@ public final class HibernateOrmProcessor {
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
+    }
+
+    // Separate from HibernateOrmProcessor#build to avoid a cycle:
+    // BeanDiscoveryFinished -> DataSourceRequest -> JdbcDataSource -> PersistenceUnitDescriptor
+    // -> BeanValidationTraversableResolver -> HibernateValidator -> AnnotationsTransformer -> Arc
+    @BuildStep
+    @Record(STATIC_INIT)
+    void produceBeanValidationTraversableResolver(HibernateOrmRecorder recorder,
+            HibernateOrmConfig hibernateOrmConfig,
+            Capabilities capabilities,
+            BuildProducer<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver) {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR) && hibernateOrmConfig.enabled()) {
             beanValidationTraversableResolver
                     .produce(new BeanValidationTraversableResolverBuildItem(recorder.attributeLoadedPredicate()));

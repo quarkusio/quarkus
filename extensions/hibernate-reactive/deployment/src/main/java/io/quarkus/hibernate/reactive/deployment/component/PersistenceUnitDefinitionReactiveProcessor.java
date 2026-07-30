@@ -2,6 +2,12 @@ package io.quarkus.hibernate.reactive.deployment.component;
 
 import java.util.List;
 
+import org.jboss.jandex.AnnotationValue;
+
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,6 +19,8 @@ import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionBu
 import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionSupport;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.reactive.deployment.HibernateReactiveCdiProcessor;
 import io.quarkus.hibernate.reactive.deployment.HibernateReactiveEnabled;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
@@ -48,6 +56,25 @@ class PersistenceUnitDefinitionReactiveProcessor {
         // as we suggest in https://quarkus.io/guides/hibernate-orm#persistence-unit-active
         // TODO https://github.com/quarkusio/quarkus/issues/55217
         //  Find a way to collect injection points for a given PU that have no matching user-defined producer
+    }
+
+    @BuildStep
+    void collectInjectionReactivePersistenceUnitRequests(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                HibernateReactiveCdiProcessor.ALL_REACTIVE_INJECTABLE_TYPES,
+                List.of(io.quarkus.hibernate.orm.deployment.ClassNames.QUARKUS_PERSISTENCE_UNIT, DotNames.NAMED),
+                PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+                },
+                (name, reason) -> puRequests
+                        .produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
     }
 
     @BuildStep

@@ -19,8 +19,6 @@ import io.quarkus.test.QuarkusExtensionTest;
  * <p>
  * This should cause a persistence unit to be created (from the injection point)
  * and fail because no reactive SQL client is available.
- * <p>
- * Right now injection points are ignored, so we only get a message from Arc about an unsatisfied injection point.
  *
  * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
  * @see <a href="https://github.com/quarkusio/quarkus/issues/55217">#55217</a>.
@@ -37,7 +35,11 @@ public class ReactiveSqlClientMissingNoEntitiesInjectionTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unsatisfied dependency for type org.hibernate.reactive.mutiny.Mutiny$SessionFactory"));
+                            "persistence unit '<default>' cannot be created",
+                            "Reactive datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no reactive SQL client extension",
+                            "being created because of",
+                            "Injection of 'Mutiny$SessionFactory'"));
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

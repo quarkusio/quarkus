@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -87,6 +88,20 @@ public class HibernateOrmCdiProcessor {
             ClassNames.HIBERNATE_SCHEMA_MANAGER);
     private static final List<DotName> CACHE_EXPOSED_TYPES = List.of(ClassNames.CACHE, ClassNames.HIBERNATE_CACHE);
     private static final List<DotName> PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES = List.of(ClassNames.PERSISTENCE_UNIT_UTIL);
+
+    public static final Set<DotName> ALL_INJECTABLE_TYPES;
+    static {
+        Set<DotName> types = new HashSet<>();
+        types.addAll(SESSION_FACTORY_EXPOSED_TYPES);
+        types.addAll(SESSION_EXPOSED_TYPES);
+        types.addAll(STATELESS_SESSION_EXPOSED_TYPES);
+        types.addAll(CRITERIA_BUILDER_EXPOSED_TYPES);
+        types.addAll(METAMODEL_EXPOSED_TYPES);
+        types.addAll(SCHEMA_MANAGER_EXPOSED_TYPES);
+        types.addAll(CACHE_EXPOSED_TYPES);
+        types.addAll(PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES);
+        ALL_INJECTABLE_TYPES = Set.copyOf(types);
+    }
 
     private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(
             ClassNames.TENANT_RESOLVER,
@@ -236,10 +251,6 @@ public class HibernateOrmCdiProcessor {
             Capabilities capabilities,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
-        if (descriptors.isEmpty()) {
-            return;
-        }
-
         List<Class<?>> unremovableClasses = new ArrayList<>();
         unremovableClasses.add(QuarkusArcBeanContainer.class);
 

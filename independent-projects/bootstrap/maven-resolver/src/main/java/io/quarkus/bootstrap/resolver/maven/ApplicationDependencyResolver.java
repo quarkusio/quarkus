@@ -1005,6 +1005,13 @@ public class ApplicationDependencyResolver {
 
             replaceRuntimeExtensionNodes(deploymentNode);
             if (!presentInTargetGraph) {
+                // quarkus-devservices-deployment intentionally does not depend on the quarkus-devservices
+                // runtime module to avoid execution-time failures in modules that provide dev services.
+                // See https://github.com/quarkusio/quarkus/pull/49025 for details.
+                if ("io.quarkus".equals(info.runtimeArtifact.getGroupId())
+                        && "quarkus-devservices".equals(info.runtimeArtifact.getArtifactId())) {
+                    return;
+                }
                 throw new RuntimeException(
                         "Quarkus extension deployment artifact " + deploymentNode.getArtifact()
                                 + " does not appear to depend on the corresponding runtime artifact "

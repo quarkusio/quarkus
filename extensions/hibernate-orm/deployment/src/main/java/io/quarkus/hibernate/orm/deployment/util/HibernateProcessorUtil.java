@@ -106,13 +106,6 @@ public final class HibernateProcessorUtil {
                 continue;
             }
 
-            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
-            //   For now, since we can't trust keySet for the default datasource, we're using isAnyPropertySet() as a workaround.
-            if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)
-                    && !config.persistenceUnits().get(name).isAnyPropertySet()) {
-                continue;
-            }
-
             Set<ProgrammingParadigm> available = lookupBuildItem.getLookup().availableParadigms(name);
             if (!available.contains(paradigm) && !available.isEmpty()) {
                 // The extension handling the other paradigm (Hibernate ORM vs. Hibernate Reactive)

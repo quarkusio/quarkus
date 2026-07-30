@@ -9,8 +9,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.hibernate.annotations.TimeZoneColumn;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -253,31 +251,6 @@ public interface HibernateOrmConfigPersistenceUnit {
     @ConfigDocMapKey("full-property-key")
     Map<String, String> unsupportedProperties();
 
-    default boolean isAnyPropertySet() {
-        return datasource().isPresent() ||
-                packages().isPresent() ||
-                dialect().isAnyPropertySet() ||
-                sqlLoadScript().isPresent() ||
-                batchFetchSize().isPresent() ||
-                maxFetchDepth().isPresent() ||
-                physicalNamingStrategy().isPresent() ||
-                implicitNamingStrategy().isPresent() ||
-                metadataBuilderContributor().isPresent() ||
-                mapping().isAnyPropertySet() ||
-                query().isAnyPropertySet() ||
-                database().isAnyPropertySet() ||
-                jdbc().isAnyPropertySet() ||
-                reactive().isAnyPropertySet() ||
-                !cache().isEmpty() ||
-                !secondLevelCachingEnabled() ||
-                multitenant().isPresent() ||
-                multitenantSchemaDatasource().isPresent() ||
-                fetch().isAnyPropertySet() ||
-                discriminator().isAnyPropertySet() ||
-                quoteIdentifiers().isAnyPropertySet() ||
-                !unsupportedProperties().isEmpty();
-    }
-
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDialect {
 
@@ -343,14 +316,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
          */
         SqlServerDialectConfig mssql();
-
-        default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent()
-                    || mysql().isAnyPropertySet()
-                    || oracle().isAnyPropertySet()
-                    || mssql().isAnyPropertySet()
-                    || mariadb().isAnyPropertySet();
-        }
     }
 
     /**
@@ -478,15 +443,6 @@ public interface HibernateOrmConfigPersistenceUnit {
             @WithName("preferred-jdbc-type")
             @ConfigDocDefault("INTERVAL_SECOND")
             Optional<@WithConverter(TrimmedStringConverter.class) String> durationPreferredJdbcType();
-        }
-
-        default boolean isAnyPropertySet() {
-            return timezone().timeZoneDefaultStorage().isPresent() ||
-                    id().optimizer().idOptimizerDefault().isPresent() ||
-                    duration().durationPreferredJdbcType().isPresent() ||
-                    instantPreferredJdbcType().isPresent() ||
-                    booleanPreferredJdbcType().isPresent() ||
-                    UUIDPreferredJdbcType().isPresent();
         }
 
     }
@@ -646,11 +602,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("false")
         boolean failOnPaginationOverCollectionFetch();
 
-        default boolean isAnyPropertySet() {
-            return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
-                    || defaultNullOrdering() != NullOrdering.NONE
-                    || !inClauseParameterPadding();
-        }
     }
 
     @ConfigGroup
@@ -675,10 +626,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("false")
         boolean globallyQuotedIdentifiers();
 
-        default boolean isAnyPropertySet() {
-            return !DEFAULT_CHARSET.equals(charset().name())
-                    || globallyQuotedIdentifiers();
-        }
     }
 
     @ConfigGroup
@@ -715,10 +662,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt statementBatchSize();
 
-        default boolean isAnyPropertySet() {
-            return enabled().isPresent() || timezone().isPresent() || statementFetchSize().isPresent()
-                    || statementBatchSize().isPresent();
-        }
     }
 
     @ConfigGroup
@@ -736,9 +679,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         Optional<Boolean> enabled();
 
-        default boolean isAnyPropertySet() {
-            return enabled().isPresent();
-        }
     }
 
     @ConfigGroup
@@ -814,10 +754,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt maxDepth();
 
-        default boolean isAnyPropertySet() {
-            return batchSize().isPresent() || maxDepth().isPresent();
-        }
-
     }
 
     @ConfigGroup
@@ -836,9 +772,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("none")
         IdentifierQuotingStrategy strategy();
 
-        default boolean isAnyPropertySet() {
-            return strategy() != IdentifierQuotingStrategy.NONE;
-        }
     }
 
     /**
@@ -856,9 +789,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("false")
         boolean ignoreExplicitForJoined();
 
-        default boolean isAnyPropertySet() {
-            return ignoreExplicitForJoined();
-        }
     }
 
     enum IdentifierQuotingStrategy {

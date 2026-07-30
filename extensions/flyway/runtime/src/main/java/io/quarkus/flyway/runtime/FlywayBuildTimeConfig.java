@@ -33,7 +33,7 @@ public interface FlywayBuildTimeConfig {
     @ConfigDocMapKey("datasource-name")
     @ConfigDocSection
     @WithParentName
-    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
     @WithDefaults
     Map<String, FlywayDataSourceBuildTimeConfig> datasources();
 }

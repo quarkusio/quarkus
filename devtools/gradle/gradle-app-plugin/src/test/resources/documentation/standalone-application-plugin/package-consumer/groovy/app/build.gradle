@@ -1,0 +1,15 @@
+// Source: {{source}}
+
+// tag::package-producer[]
+plugins {
+    id 'io.quarkus.application'
+}
+
+version = '1.0.0'
+
+quarkusApplication {
+    builds {
+        fastJar('server')
+    }
+}
+// end::package-producer[]

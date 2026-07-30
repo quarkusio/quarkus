@@ -275,69 +275,64 @@ This will:
 3. Run integration tests to train the AOT cache
 4. Create a new container image with `-aot` suffix in the version of the image that includes the AOT cache, pre-configured to use it
 
-=== Standalone Gradle application plugin
+=== The `io.quarkus.application` Gradle plugin
 
-The standalone `io.quarkus.application` Gradle plugin models the package, the startup archive, and a startup-optimized image as separate named outputs.
+The `io.quarkus.application` Gradle plugin models the package, the startup archive, and a startup-optimized image as separate named outputs.
 Its `aotJar` DSL name follows the established Quarkus `aot-jar` package type.
 It does not mean that the concrete startup archive must be an OpenJDK AOT cache: the archive type can be `AOT`, `SCC`, or `APP_CDS`.
 
-For example, an externally produced OpenJDK AOT cache can be added to a startup-optimized image as follows:
+[IMPORTANT]
+====
+The `io.quarkus.application` Gradle plugin is preview.
+See its xref:gradle-application-plugin.adoc#gradle-application-plugin-startup-archives[complete startup-archive reference] for task names, supported sources, and environment restrictions.
+====
 
+The following example lets the selected Quarkus package build produce an AppCDS archive and configures a startup-optimized image that uses it.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy]
 ----
-import io.quarkus.gradle.application.model.QuarkusApplicationJvmStartupArchiveType
-
-plugins {
-    id 'io.quarkus.application'
-}
-
-quarkusApplication {
-    builds {
-        aotJar('production', QuarkusApplicationJvmStartupArchiveType.AOT) {
-            startupArchive {
-                file.set(layout.projectDirectory.file('training/app.aot'))
-            }
-            startupOptimizedImage {
-            }
-        }
-    }
-}
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=startup-archives]
 ----
+****
 
-Use `directory.set(...)` with `SCC`; `AOT` and `APP_CDS` use `file.set(...)`.
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=startup-archives]
+----
+****
+
+To use an externally produced archive instead, set `directory` for `SCC`, or set `file` for `AOT` and `APP_CDS`.
 A producer task can supply either property through its normal Gradle output provider, which also supplies task ordering.
-To let the selected Quarkus package operation produce the archive instead, use:
-
-[source,groovy]
-----
-startupArchive {
-    fromPackageBuild()
-}
-----
 
 These sources are mutually exclusive for a named output.
-The normal `quarkusProductionImageBuild` task always builds an archive-free base image.
-After an archive exists, `quarkusProductionStartupOptimizedImageBuild` extends that exact base image and adds the selected archive and runtime option.
+The normal `quarkusOptimizedImageBuild` task always builds an archive-free base image.
+After an archive exists, `quarkusOptimizedStartupOptimizedImageBuild` extends that exact base image and adds the selected archive and runtime option.
 
-An integration-test suite can be selected as an AOT or SCC training workload:
+The following separate named AOT build uses an integration-test suite as its training workload:
 
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy]
 ----
-import io.quarkus.gradle.application.model.QuarkusApplicationStartupArchiveTrainingExecutionTarget
-import org.gradle.api.plugins.jvm.JvmTestSuite
-
-testing {
-    suites {
-        training(JvmTestSuite) {
-            forQuarkusIntegrationTests 'production'
-            startupArchiveTraining {
-                executionTarget.set(
-                    QuarkusApplicationStartupArchiveTrainingExecutionTarget.HOST_JVM)
-            }
-        }
-    }
-}
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=startup-archive-training]
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=startup-archive-training]
+----
+****
 
 `HOST_JVM` uses the JVM selected for that Gradle `Test` task.
 Use `BASE_IMAGE` when building an optimized container image so training uses the same JVM, operating system, and architecture as the base image.

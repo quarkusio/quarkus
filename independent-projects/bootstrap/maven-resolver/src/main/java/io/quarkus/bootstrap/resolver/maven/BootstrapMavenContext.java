@@ -17,6 +17,11 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+
 import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
@@ -746,6 +751,7 @@ public class BootstrapMavenContext {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         readMavenReposFromEnv(rawRepos, System.getenv());
         addReposFromProfiles(rawRepos);
+        addTopLevelSettingsRepos(rawRepos, "repositories", "repository");
 
         final boolean centralConfiguredInSettings = includesDefaultRepo(rawRepos);
         if (!centralConfiguredInSettings) {
@@ -774,6 +780,7 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> resolveRemotePluginRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         addReposFromProfiles(rawRepos);
+        addTopLevelSettingsRepos(rawRepos, "pluginRepositories", "pluginRepository");
         // central must be there
         if (!includesDefaultRepo(rawRepos)) {
             rawRepos.add(newDefaultRepository());
@@ -941,6 +948,178 @@ public class BootstrapMavenContext {
 
     private static boolean isEmpty(final CharSequence cs) {
         return cs == null || cs.length() == 0;
+    }
+
+    /**
+     * Parses top-level {@code <repositories>} elements from settings.xml files
+     * (both user and global). Maven 4's SETTINGS/2.0.0 schema supports
+     * {@code <repositories>} and {@code <pluginRepositories>} as top-level
+     * elements outside of {@code <profiles>}. The Maven 3 settings parser
+     * silently ignores these elements, so this method parses the raw XML
+     * directly via StAX to extract them.
+     *
+     * @param repos the list to add discovered repositories to
+     * @param elementName the top-level element name to parse ({@code "repositories"}
+     *        or {@code "pluginRepositories"})
+     * @param childElementName the child element name ({@code "repository"}
+     *        or {@code "pluginRepository"})
+     */
+    private void addTopLevelSettingsRepos(List<RemoteRepository> repos, String elementName,
+            String childElementName) {
+        addTopLevelSettingsReposFromFile(repos, getGlobalSettings(), elementName, childElementName);
+        addTopLevelSettingsReposFromFile(repos, getUserSettings(), elementName, childElementName);
+    }
+
+    private void addTopLevelSettingsReposFromFile(List<RemoteRepository> repos, File settingsFile,
+            String elementName, String childElementName) {
+        if (settingsFile == null || !settingsFile.exists()) {
+            return;
+        }
+        try (InputStream is = Files.newInputStream(settingsFile.toPath())) {
+            final XMLInputFactory factory = XMLInputFactory.newFactory();
+            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            final XMLStreamReader reader = factory.createXMLStreamReader(is);
+            try {
+                int depth = 0;
+                while (reader.hasNext()) {
+                    final int event = reader.next();
+                    if (event == XMLStreamConstants.START_ELEMENT) {
+                        depth++;
+                        // depth 2 = direct child of <settings> (depth 1 is <settings> itself)
+                        if (depth == 2 && elementName.equals(reader.getLocalName())) {
+                            parseRepositoriesElement(reader, repos, childElementName);
+                        }
+                    } else if (event == XMLStreamConstants.END_ELEMENT) {
+                        depth--;
+                    }
+                }
+            } finally {
+                reader.close();
+            }
+        } catch (IOException | XMLStreamException e) {
+            log.debug("Failed to parse top-level repositories from " + settingsFile, e);
+        }
+    }
+
+    /**
+     * Parses the content of a {@code <repositories>} or {@code <pluginRepositories>}
+     * element, extracting individual repository entries.
+     */
+    private static void parseRepositoriesElement(XMLStreamReader reader, List<RemoteRepository> repos,
+            String childElementName) throws XMLStreamException {
+        while (reader.hasNext()) {
+            final int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                if (childElementName.equals(reader.getLocalName())) {
+                    parseRepositoryElement(reader, repos);
+                } else {
+                    skipElement(reader);
+                }
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                // closing </repositories> or </pluginRepositories>
+                return;
+            }
+        }
+    }
+
+    /**
+     * Parses a single {@code <repository>} or {@code <pluginRepository>} element.
+     */
+    private static void parseRepositoryElement(XMLStreamReader reader, List<RemoteRepository> repos)
+            throws XMLStreamException {
+        String id = null;
+        String url = null;
+        RepositoryPolicy releasePolicy = null;
+        RepositoryPolicy snapshotPolicy = null;
+        String layout = "default";
+
+        while (reader.hasNext()) {
+            final int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                final String name = reader.getLocalName();
+                switch (name) {
+                    case "id":
+                        id = reader.getElementText();
+                        break;
+                    case "url":
+                        url = reader.getElementText();
+                        break;
+                    case "layout":
+                        layout = reader.getElementText();
+                        break;
+                    case "releases":
+                        releasePolicy = parsePolicyElement(reader);
+                        break;
+                    case "snapshots":
+                        snapshotPolicy = parsePolicyElement(reader);
+                        break;
+                    default:
+                        skipElement(reader);
+                }
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                // closing </repository>
+                break;
+            }
+        }
+
+        if (id != null && url != null) {
+            final RemoteRepository.Builder builder = new RemoteRepository.Builder(id, layout, url);
+            if (releasePolicy != null) {
+                builder.setReleasePolicy(releasePolicy);
+            }
+            if (snapshotPolicy != null) {
+                builder.setSnapshotPolicy(snapshotPolicy);
+            }
+            repos.add(builder.build());
+        }
+    }
+
+    /**
+     * Parses a {@code <releases>} or {@code <snapshots>} policy element.
+     */
+    private static RepositoryPolicy parsePolicyElement(XMLStreamReader reader) throws XMLStreamException {
+        boolean enabled = true;
+        String updatePolicy = RepositoryPolicy.UPDATE_POLICY_DAILY;
+        String checksumPolicy = RepositoryPolicy.CHECKSUM_POLICY_WARN;
+
+        while (reader.hasNext()) {
+            final int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                final String name = reader.getLocalName();
+                switch (name) {
+                    case "enabled":
+                        enabled = Boolean.parseBoolean(reader.getElementText());
+                        break;
+                    case "updatePolicy":
+                        updatePolicy = reader.getElementText();
+                        break;
+                    case "checksumPolicy":
+                        checksumPolicy = reader.getElementText();
+                        break;
+                    default:
+                        skipElement(reader);
+                }
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                break;
+            }
+        }
+        return new RepositoryPolicy(enabled, updatePolicy, checksumPolicy);
+    }
+
+    /**
+     * Skips the current element and all its children.
+     */
+    private static void skipElement(XMLStreamReader reader) throws XMLStreamException {
+        int depth = 1;
+        while (reader.hasNext() && depth > 0) {
+            final int event = reader.next();
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                depth++;
+            } else if (event == XMLStreamConstants.END_ELEMENT) {
+                depth--;
+            }
+        }
     }
 
     private void initRepoSystemAndManager() {

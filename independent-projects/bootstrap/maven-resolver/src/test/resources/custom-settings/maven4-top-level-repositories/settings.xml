@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Maven 4-style settings.xml with top-level <repositories> and <pluginRepositories>
-  that are not recognized by the Maven 3 settings parser.
+  that are not recognized by the Maven 3 settings parser but should be parsed
+  by Quarkus's StAX-based supplementary parser.
 -->
 <settings xmlns="http://maven.apache.org/SETTINGS/2.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -25,9 +26,9 @@
   <!-- Top-level repositories: new in Maven 4 settings schema, unknown to Maven 3 parser -->
   <repositories>
     <repository>
-      <id>central</id>
-      <name>Maven Central Repository</name>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <id>maven4-top-level-repo</id>
+      <name>Maven 4 Top-Level Repository</name>
+      <url>https://maven4.example.com/releases/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
@@ -36,9 +37,9 @@
 
   <pluginRepositories>
     <pluginRepository>
-      <id>central</id>
-      <name>Maven Central Repository</name>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <id>maven4-top-level-plugin-repo</id>
+      <name>Maven 4 Top-Level Plugin Repository</name>
+      <url>https://maven4.example.com/plugins/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>

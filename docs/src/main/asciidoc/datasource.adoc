@@ -96,6 +96,30 @@ Be aware that setting the pool size too low might cause some requests to time ou
 
 For more information about pool size adjustment properties, see the <<jdbc-configuration>> section.
 
+==== Read-only JDBC pools
+
+You can mark a JDBC pool as read-only so that connections are created with
+link:https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/Connection.html#setReadOnly(boolean)[`Connection.setReadOnly(true)`].
+The JDBC driver is responsible for enforcing read-only mode.
+
+This is useful for secondary pools that target read replicas.
+
+[source,properties]
+----
+quarkus.datasource.jdbc.read-only=true
+----
+
+For a named datasource:
+
+[source,properties]
+----
+quarkus.datasource."readonly".db-kind=postgresql
+quarkus.datasource."readonly".jdbc.url=jdbc:postgresql://replica:5432/mydb
+quarkus.datasource."readonly".jdbc.read-only=true
+----
+
+When the property is unset, Quarkus does not configure read-only mode and Agroal's default applies (connections are not read-only).
+
 
 === Configure a reactive datasource
 

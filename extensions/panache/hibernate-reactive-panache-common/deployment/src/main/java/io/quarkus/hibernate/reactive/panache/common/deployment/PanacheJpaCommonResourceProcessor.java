@@ -211,6 +211,12 @@ public final class PanacheJpaCommonResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    void registerSessionOperations(PanacheHibernateRecorder panacheHibernateRecorder) {
+        panacheHibernateRecorder.registerSessionOperations();
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void buildNamedQueryMap(List<PanacheNamedQueryEntityClassBuildStep> namedQueryEntityClasses,
             PanacheHibernateRecorder panacheHibernateRecorder) {
         Map<String, Map<String, String>> namedQueryMap = new HashMap<>();

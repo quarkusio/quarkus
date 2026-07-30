@@ -27,11 +27,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 /**
- * Static util methods for {@link Mutiny.Session}.
+ * Hibernate Reactive implementation of {@link SessionOperationsProvider}.
  */
-public final class SessionOperations {
+public final class SessionOperationsProviderImpl implements SessionOperationsProvider {
 
-    private static final Logger LOG = Logger.getLogger(SessionOperations.class);
+    private static final Logger LOG = Logger.getLogger(SessionOperationsProviderImpl.class);
 
     private static final String ERROR_MSG = "Hibernate Reactive Panache requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
 
@@ -48,7 +48,8 @@ public final class SessionOperations {
      * @see #getSession(String)
      * @see #getStatelessSession(String)
      */
-    static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();
 
         if (ContextLocals.get(context, TRANSACTIONAL_METHOD_KEY, null) != null) {
@@ -92,7 +93,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
         return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> s.withTransaction(t -> work.get()));
     }
 
@@ -103,7 +105,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
         return withSession(persistenceUnitName, s -> s.withTransaction(t -> work.get()));
     }
 
@@ -114,7 +117,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work) {
         return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> s.withTransaction(work));
     }
 
@@ -125,7 +129,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withStatelessTransaction(Supplier<Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withStatelessTransaction(Supplier<Uni<T>> work) {
         return withStatelessSession(s -> s.withTransaction(t -> work.get()));
     }
 
@@ -136,7 +141,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withStatelessTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withStatelessTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
         return withStatelessSession(persistenceUnitName, s -> s.withTransaction(t -> work.get()));
     }
 
@@ -147,7 +153,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withStatelessTransaction(Function<Transaction, Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withStatelessTransaction(Function<Transaction, Uni<T>> work) {
         return withStatelessSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> s.withTransaction(work));
     }
 
@@ -160,7 +167,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withSession(String persistenceUnitName, Function<Mutiny.Session, Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withSession(String persistenceUnitName, Function<Mutiny.Session, Uni<T>> work) {
         Context context = vertxContext();
         // First make sure we don't already have an opened stateless session
         Uni<T> error = checkNoStatelessSession(context, persistenceUnitName);
@@ -179,7 +187,7 @@ public final class SessionOperations {
         }
     }
 
-    private static <T> Uni<T> checkNoStatelessSession(Context context, String persistenceUnitName) {
+    private <T> Uni<T> checkNoStatelessSession(Context context, String persistenceUnitName) {
         Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> opened = OPENED_SESSIONS_STATE_STATELESS
                 .getOpenedSession(context, persistenceUnitName);
         if (opened.isPresent()) {
@@ -197,7 +205,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
         return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, work);
     }
 
@@ -210,7 +219,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withStatelessSession(String persistenceUnitName,
+    @Override
+    public <T> Uni<T> withStatelessSession(String persistenceUnitName,
             Function<Mutiny.StatelessSession, Uni<T>> work) {
         Context context = vertxContext();
         // First make sure we don't already have an opened managed session
@@ -230,7 +240,7 @@ public final class SessionOperations {
         }
     }
 
-    private static <T> Uni<T> checkNoManagedSession(Context context, String persistenceUnitName) {
+    private <T> Uni<T> checkNoManagedSession(Context context, String persistenceUnitName) {
         Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> opened = OPENED_SESSIONS_STATE.getOpenedSession(context,
                 persistenceUnitName);
         if (opened.isPresent()) {
@@ -248,7 +258,8 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
+    @Override
+    public <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
         return withStatelessSession(DEFAULT_PERSISTENCE_UNIT_NAME, work);
     }
 
@@ -267,11 +278,13 @@ public final class SessionOperations {
      *         new session lazily
      * @return the {@link Mutiny.Session}
      */
-    public static Uni<Mutiny.Session> getSession() {
+    @Override
+    public Uni<Mutiny.Session> getSession() {
         return getSession(DEFAULT_PERSISTENCE_UNIT_NAME);
     }
 
-    public static Uni<Mutiny.Session> getSession(String persistenceUnitName) {
+    @Override
+    public Uni<Mutiny.Session> getSession(String persistenceUnitName) {
         Context context = vertxContext();
         // First make sure we don't already have an opened stateless session
         Uni<Mutiny.Session> error = checkNoStatelessSession(context, persistenceUnitName);
@@ -316,11 +329,13 @@ public final class SessionOperations {
      *         new session lazily
      * @return the {@link Mutiny.Session}
      */
-    public static Uni<Mutiny.StatelessSession> getStatelessSession() {
+    @Override
+    public Uni<Mutiny.StatelessSession> getStatelessSession() {
         return getStatelessSession(DEFAULT_PERSISTENCE_UNIT_NAME);
     }
 
-    public static Uni<Mutiny.StatelessSession> getStatelessSession(String persistenceUnitName) {
+    @Override
+    public Uni<Mutiny.StatelessSession> getStatelessSession(String persistenceUnitName) {
         Context context = vertxContext();
         // First make sure we don't already have an opened managed session
         Uni<Mutiny.StatelessSession> error = checkNoManagedSession(context, persistenceUnitName);
@@ -349,7 +364,8 @@ public final class SessionOperations {
     /**
      * @return the current reactive session stored in the context, or {@code null} if no session exists
      */
-    public static Mutiny.Session getCurrentSession(String persistenceUnitName) {
+    @Override
+    public Mutiny.Session getCurrentSession(String persistenceUnitName) {
         Context context = vertxContext();
         return OPENED_SESSIONS_STATE.getOpenedSession(context, persistenceUnitName)
                 .map(OpenedSessionsState.SessionWithKey::session)
@@ -359,14 +375,15 @@ public final class SessionOperations {
     /**
      * @return the current reactive stateless session stored in the context, or {@code null} if no stateless session exists
      */
-    public static Mutiny.StatelessSession getCurrentStatelessSession(String persistenceUnitName) {
+    @Override
+    public Mutiny.StatelessSession getCurrentStatelessSession(String persistenceUnitName) {
         Context context = vertxContext();
         return OPENED_SESSIONS_STATE_STATELESS.getOpenedSession(context, persistenceUnitName)
                 .map(OpenedSessionsState.SessionWithKey::session)
                 .orElse(null);
     }
 
-    private static void trackOnDemandSession(Context context, String persistenceUnitName) {
+    private void trackOnDemandSession(Context context, String persistenceUnitName) {
         Set<String> onDemandSessionsCreated = ContextLocals.get(context, SESSION_ON_DEMAND_OPENED_KEY, null);
         if (onDemandSessionsCreated == null) {
             onDemandSessionsCreated = new HashSet<>();
@@ -375,7 +392,8 @@ public final class SessionOperations {
         onDemandSessionsCreated.add(persistenceUnitName);
     }
 
-    public static Context vertxContext() {
+    @Override
+    public Context vertxContext() {
         Context context = Vertx.currentContext();
         if (context != null) {
             VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
@@ -388,7 +406,7 @@ public final class SessionOperations {
     /**
      * Close any session open for that persistence unit (stateless or managed, there can be only one opened at a time)
      */
-    static Uni<Void> closeSession(String persistenceUnitName) {
+    private Uni<Void> closeSession(String persistenceUnitName) {
         LOG.debugf("Closing session for Persistence Unit '%s'", persistenceUnitName);
         Context context = vertxContext();
         return OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName)

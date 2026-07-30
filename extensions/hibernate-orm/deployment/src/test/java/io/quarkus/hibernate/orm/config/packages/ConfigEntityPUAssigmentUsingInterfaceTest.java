@@ -6,11 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
-import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -43,7 +43,7 @@ public class ConfigEntityPUAssigmentUsingInterfaceTest {
     Session session;
 
     @Test
-    @ActivateRequestContext
+    @Transactional
     void smoke() {
         // We just want to check the lack of warnings... but let's at least check the entity works correctly.
         assertThatCode(() -> session.createSelectionQuery("select count(*) from EntityImplementingInterface", Long.class))

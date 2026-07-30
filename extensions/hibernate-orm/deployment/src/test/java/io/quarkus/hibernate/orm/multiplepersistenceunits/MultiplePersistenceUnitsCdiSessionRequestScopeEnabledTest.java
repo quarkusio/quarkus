@@ -20,7 +20,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class MultiplePersistenceUnitsCdiSessionTest {
+public class MultiplePersistenceUnitsCdiSessionRequestScopeEnabledTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -28,7 +28,10 @@ public class MultiplePersistenceUnitsCdiSessionTest {
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)
                     .addClass(Plane.class)
-                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
+                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"))
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "true")
+            .overrideConfigKey("quarkus.hibernate-orm.users.request-scoped.enabled", "true")
+            .overrideConfigKey("quarkus.hibernate-orm.inventory.request-scoped.enabled", "true");
 
     @Inject
     Session defaultSession;

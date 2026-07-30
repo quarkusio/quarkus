@@ -11,7 +11,11 @@ public abstract class AbstractHybridKeyExchangeTest {
     Vertx vertx;
 
     static boolean isOpenSsl35Available() {
-        return OpenSsl.isAvailable() && OpenSsl.version() >= 0x30500000L;
+        try {
+            return OpenSsl.isAvailable() && OpenSsl.version() >= 0x30500000L;
+        } catch (UnsatisfiedLinkError e) {
+            return false;
+        }
     }
 
     static boolean isJdk27OrLater() {

@@ -586,14 +586,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                         outerField.setAccessible(true);
                         innerField.setAccessible(true);
                         Object val = outerField.get(outerInstance);
-                        if (val == null) {
-                            innerField.set(actualTestInstance, null);
-                        } else if (val.getClass().isEnum() && innerField.getType().isEnum()) {
-                            @SuppressWarnings({ "unchecked", "rawtypes" })
-                            Object enumVal = Enum.valueOf((Class) innerField.getType(), ((Enum<?>) val).name());
-                            innerField.set(actualTestInstance, enumVal);
-                        } else {
-                            innerField.set(actualTestInstance, val);
+                        if (val != null) {
+                            if (val.getClass().isEnum() && innerField.getType().isEnum()) {
+                                @SuppressWarnings({ "unchecked", "rawtypes" })
+                                Object enumVal = Enum.valueOf((Class) innerField.getType(), ((Enum<?>) val).name());
+                                innerField.set(actualTestInstance, enumVal);
+                            } else {
+                                innerField.set(actualTestInstance, val);
+                            }
                         }
                     }
                 } catch (Exception ignored) {

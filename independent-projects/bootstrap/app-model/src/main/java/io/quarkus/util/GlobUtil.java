@@ -11,10 +11,10 @@ public class GlobUtil {
      * Transforms the given {@code glob} to a regular expression suitable for passing to
      * {@link Pattern#compile(String)}.
      *
-     * <h2>Glob syntax
-     * <h2>
+     * <h4>Glob syntax</h4>
      *
      * <table>
+     * <caption>Supported glob constructs</caption>
      * <tr>
      * <th>Construct</th>
      * <th>Description</th>
@@ -36,7 +36,7 @@ public class GlobUtil {
      * <td>Matches one character given in the bracket, but not slash</td>
      * </tr>
      * <tr>
-     * <td><code>[a-z]</code></td>
+     * <td><code>[!a-z]</code></td>
      * <td>Matches one character from the range given in the bracket, but not slash</td>
      * </tr>
      * <tr>

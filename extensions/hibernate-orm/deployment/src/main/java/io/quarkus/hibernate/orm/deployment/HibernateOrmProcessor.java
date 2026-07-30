@@ -1158,8 +1158,10 @@ public final class HibernateOrmProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         if (!hibernateOrmConfig.blocking()) {
-            LOG.infof(
-                    "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false");
+            LOG.warnf(
+                    "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false."
+                            + " This property is deprecated: use 'quarkus.hibernate-orm.jdbc.enabled=false' instead"
+                            + " (or the per-persistence-unit equivalent).");
             return;
         }
 

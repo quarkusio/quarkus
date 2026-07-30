@@ -19,5 +19,6 @@
         <module>deployment-internal</module>
         <module>runtime-internal</module>
         <module>spi</module>
+        <module>test-utils</module>
     </modules>
 </project>

@@ -18,8 +18,10 @@
     <properties>
         <gradle.executable>./../gradlew</gradle.executable>
         <gradle.configuration.cache.argument>--configuration-cache</gradle.configuration.cache.argument>
+        <gradle.implementation.publication.task>publishPluginMavenPublicationToMavenLocal</gradle.implementation.publication.task>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
+        <skip.gradle.implementation.publication>true</skip.gradle.implementation.publication>
     </properties>
 
     <modules>
@@ -113,6 +115,31 @@
                                     <goal>exec</goal>
                                 </goals>
                             </execution>
+                            <execution>
+                                <id>publish-gradle-implementation-to-maven-local</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <executable>${gradle.executable}</executable>
+                                    <arguments>
+                                        <argument>${gradle.implementation.publication.task}</argument>
+                                        <argument>-Pdescription=${project.description}</argument>
+                                        <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
+                                        <argument>-S</argument>
+                                        <argument>--stacktrace</argument>
+                                        <argument>${gradle.configuration.cache.argument}</argument>
+                                        <argument>--no-daemon</argument>
+                                    </arguments>
+                                    <environmentVariables>
+                                        <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
+                                        <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                                        <JAVA_HOME>${gradleJavaHome}</JAVA_HOME>
+                                    </environmentVariables>
+                                    <skip>${skip.gradle.implementation.publication}</skip>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
                         </executions>
                     </plugin>
                     <plugin>
@@ -165,6 +192,30 @@
                   accidentally observed CI secrets are not stored in configuration-cache state.
                 -->
                 <gradle.configuration.cache.argument>--no-configuration-cache</gradle.configuration.cache.argument>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-gradle-build</id>
+            <activation>
+                <property>
+                    <name>skip.gradle.build</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skip.gradle.implementation.publication>true</skip.gradle.implementation.publication>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-gradle-tests</id>
+            <activation>
+                <property>
+                    <name>skip.gradle.tests</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
             </properties>
         </profile>
         <profile>

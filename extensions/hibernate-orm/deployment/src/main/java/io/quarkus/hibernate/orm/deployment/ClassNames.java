@@ -52,6 +52,7 @@ public final class ClassNames {
     public static final DotName ENTITY_MANAGER = createConstant("jakarta.persistence.EntityManager");
     public static final DotName SESSION = createConstant("org.hibernate.Session");
     public static final DotName STATELESS_SESSION = createConstant("org.hibernate.StatelessSession");
+    public static final DotName ENTITY_AGENT = createConstant("jakarta.persistence.EntityAgent");
     public static final DotName CRITERIA_BUILDER = createConstant("jakarta.persistence.criteria.CriteriaBuilder");
     public static final DotName HIBERNATE_CRITERIA_BUILDER = createConstant(
             "org.hibernate.query.criteria.HibernateCriteriaBuilder");

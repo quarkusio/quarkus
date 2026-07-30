@@ -213,7 +213,7 @@ For example, to forward the host `LD_PRELOAD` and `LD_LIBRARY_PATH` environment 
     -Dquarkus.native.additional-build-args="-ELD_PRELOAD=${LD_PRELOAD},-ELD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 ----
 
-All arguments must be passed through a single `quarkus.native.additional-build-args` property, since repeating the property overrides the previous value instead of appending to it.
+All arguments must go into a single `quarkus.native.additional-build-args` value: as with any `-D` system property, repeating it on the command line keeps only the last value rather than appending.
 Depending on your shell, you may need to escape the `$` characters.
 
 You can find more information about how to configure the native image building process in the <<configuration-reference>> section below.

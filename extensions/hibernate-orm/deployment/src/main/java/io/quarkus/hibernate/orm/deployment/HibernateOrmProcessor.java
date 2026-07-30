@@ -705,6 +705,17 @@ public final class HibernateOrmProcessor {
                 return;
             }
         }
+        // When no build-time config property is set for the default PU,
+        // it won't appear in persistenceUnits().keySet().
+        // We still need to contribute it if META-INF/orm.xml exists,
+        // since that file is picked up by default.
+        if (!hibernateOrmConfig.persistenceUnits()
+                .containsKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+                && Thread.currentThread().getContextClassLoader().getResource("META-INF/orm.xml") != null) {
+            jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, Collections.emptySet(),
+                    Collections.emptySet()));
+        }
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.persistenceUnits()
                 .entrySet()) {
             String name = entry.getKey();

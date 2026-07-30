@@ -41,13 +41,6 @@ public class DataSourceProcessorUtil {
                 continue;
             }
 
-            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
-            //   For now, since we can't trust keySet for the default datasource, we skip it
-            //   unless db-kind is explicitly configured.
-            if (DataSourceUtil.isDefault(name) && dsConfig.dataSources().get(name).dbKind().isEmpty()) {
-                continue;
-            }
-
             // TODO possible improvement: we could ignore configuration when the JDBC datasource can't be requested for JDBC
             //   (see DataSourceLookupBuildItem) but can be requested for Reactive, and vice-versa?
             //   See similar code in io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.collectPersistenceUnitReferencesFromConfiguration

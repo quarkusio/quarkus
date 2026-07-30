@@ -1,5 +1,6 @@
 plugins {
     id("java-library")
+    id("java-test-fixtures")
     id("maven-publish")
 }
 
@@ -13,13 +14,14 @@ dependencies {
     implementation(libs.getLibrary("quarkus-bootstrap-gradle-resolver"))
     implementation(libs.getLibrary("quarkus-core-deployment"))
 
-    testImplementation(platform("io.quarkus:quarkus-bom:$version"))
-    testImplementation(platform(libs.getLibrary("junit-bom")))
-    testImplementation(gradleTestKit())
-    testImplementation(libs.getLibrary("junit-api"))
-    testImplementation(libs.getLibrary("assertj"))
+    testFixturesApi(gradleTestKit())
 
-    testImplementation(libs.getLibrary("quarkus-devtools-testing"))
+    testFixturesApi(platform(libs.getLibrary("junit-bom")))
+    testFixturesApi(libs.getLibrary("junit-api"))
+    testFixturesApi(libs.getLibrary("assertj"))
+
+    testFixturesApi(platform("io.quarkus:quarkus-bom:$version"))
+    testFixturesApi(libs.getLibrary("quarkus-devtools-testing"))
 }
 
 tasks.withType<JavaCompile>().configureEach {

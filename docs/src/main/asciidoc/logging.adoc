@@ -18,7 +18,7 @@ include::{includes}/observability-include.adoc[]
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
 
-This means you can use your favorite logging API with Quarkus, providing you add the <<logging-apis,appropriate adapter>> to your application:
+This means you can use your favorite logging API with Quarkus, provided you add the <<logging-apis,appropriate adapter>> to your application:
 
 [cols="2,1", options="header"]
 |===
@@ -150,7 +150,7 @@ Use the `Log` API only in application classes, not in external dependencies.
 
 .Using `io.quarkus.logging.Log` in extensions:
 
-While the `Log` API simplifies logging in application classes, it is not recommended for use in extension modules or external dependencies.
+While the `Log` API simplifies logging in application classes, do not use it in extension modules or external dependencies.
 
 The following considerations apply:
 
@@ -306,7 +306,7 @@ In turn, code such as `if (logger.isDebugEnabled()) callMethod();` is identified
 
 [WARNING]
 ====
-If you add these properties on the command line, ensure the `"` character is escaped properly:
+If you add these properties on the command line, ensure the `"` character is escaped with a backslash:
 [source,properties]
 ----
 -Dquarkus.log.category.\"org.hibernate\".level=TRACE
@@ -352,7 +352,7 @@ For more information, see <<loggingConfigurationReference>>.
 
 If you want to configure something extra for a specific category, create a named handler like `quarkus.log.handler.[console|file|syslog].<your-handler-name>.*` and set it up for that category by using `quarkus.log.category.<my-category>.handlers`.
 
-An example use case can be a desire to use a different timestamp format for log messages which are saved to a file than the format used for other handlers.
+An example use case can be a desire to use a different timestamp format for log messages that are saved to a file than the format used for other handlers.
 
 For further demonstration, see the outputs of the <<category-named-handlers-example,Attaching named handlers to a category>> example.
 
@@ -362,7 +362,7 @@ For further demonstration, see the outputs of the <<category-named-handlers-exam
 |quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions might define customized default log levels for certain categories to reduce log noise by default.
 Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.
 The quotes are necessary.
-|quarkus.log.category."<category-name>".min-level|DEBUG |The minimum logging level to use to configure the category named `<category-name>`.
+|quarkus.log.category."<category-name>".min-level|DEBUG|The minimum logging level to use to configure the category named `<category-name>`.
 The quotes are necessary.
 |quarkus.log.category."<category-name>".use-parent-handlers|true|Specify whether this logger should send its output to its parent logger.
 |quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default, the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
@@ -438,7 +438,7 @@ The logging format string supports the following symbols:
 [id="json-logging"]
 === JSON logging format
 
-The `quarkus-logging-json` extension might be employed to add support for the JSON logging format and its related configuration.
+Add the `quarkus-logging-json` extension to enable the JSON logging format and its related configuration.
 
 . Add this extension to your build file as the following snippet illustrates:
 +
@@ -708,7 +708,7 @@ For details about its configuration, see the xref:#quarkus-core_section_quarkus-
 === Socket log handler
 
 This handler sends logs to a socket.
-The socket log handler is disabled by default; enable it to use it.
+The socket log handler is disabled by default; enable it in your configuration.
 When enabled, it sends all log events to a socket, such as a Logstash server.
 
 * A global configuration example:
@@ -757,7 +757,7 @@ public final class TestFilter implements Filter {
 }
 ----
 +
-In this example, we exclude log records containing specific text from console logs.
+In this example, the filter excludes log records containing specific text from console logs.
 The specific text to filter on is not hard-coded; instead, it is read from the `my-filter.part` configuration property.
 +
 .An example of Configuring the filter in `application.properties`:
@@ -790,7 +790,7 @@ quarkus.log.category."io.quarkus".level=INFO
 
 [NOTE]
 ====
-If you add these properties in the command line, ensure `"` is escaped.
+If you add these properties on the command line, ensure the `"` character is escaped with a backslash.
 For example, `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
 ====
 
@@ -809,7 +809,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
 ----
 
-NOTE: As we do not change the root logger, the console log contains only `INFO` or higher level logs.
+NOTE: Because this example does not change the root logger, the console log contains only `INFO` or higher level logs.
 
 [[category-named-handlers-example]]
 .Named handlers attached to a category

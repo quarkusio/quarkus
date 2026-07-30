@@ -13,7 +13,7 @@ Quarkus comes with a toolchain enabling developers from live reload all the way 
 In this guide, we will explore:
 
 * how to use xref:maven-tooling.adoc[Maven] as a build tool
-* how to use xref:gradle-tooling.adoc[Gradle] as a build tool
+* how to use xref:gradle-tooling.adoc[Gradle with the `io.quarkus` plugin] or the preview xref:gradle-application-plugin.adoc[`io.quarkus.application` plugin] as a build tool
 * how to use the xref:cli-tooling.adoc[CLI] for your toolchain
 * how to create and scaffold a new project
 * how to deal with extensions
@@ -30,6 +30,7 @@ You can use Maven or Gradle as build tool.
 And we offer a CLI that is convenient to use.
 
 * xref:maven-tooling.adoc[Maven]
-* xref:gradle-tooling.adoc[Gradle]
+* xref:gradle-tooling.adoc[Gradle with the `io.quarkus` plugin]
+* xref:gradle-application-plugin.adoc[Gradle with the `io.quarkus.application` plugin (preview)]
 * xref:cli-tooling.adoc[CLI]
 * xref:ide-tooling.adoc[IDE]

@@ -36,9 +36,7 @@ abstract class AbstractSecurityAnnotationTest {
             .overrideConfigKey("quarkus.security.users.embedded.users.foo", "foo")
             .overrideConfigKey("quarkus.security.users.embedded.roles.foo", "user")
             .overrideConfigKey("quarkus.security.users.embedded.users.bar", "bar")
-            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin")
-            .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:mem:test")
-            .overrideRuntimeConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create");
+            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin");
 
     @Entity
     @Table(name = "item")

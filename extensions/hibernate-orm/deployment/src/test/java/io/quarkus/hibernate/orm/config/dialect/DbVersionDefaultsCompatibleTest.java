@@ -40,6 +40,7 @@ public class DbVersionDefaultsCompatibleTest {
             // Explicitly select "compatible" defaults
             .overrideConfigKey("quarkus.datasource.db-version-defaults", "compatible")
             // Starting offline for faster testing -- shouldn't affect test results
+            .overrideConfigKey("quarkus.datasource.jdbc.url", "jdbc:postgresql://localhost:5432/some-non-existing-database")
             .overrideConfigKey("quarkus.hibernate-orm.database.start-offline", "true")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none")
             .overrideConfigKey("quarkus.devservices.enabled", "false");

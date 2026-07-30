@@ -35,6 +35,7 @@ public class DbVersionDefaultsRecentTest {
             // Explicitly select "recent" defaults (which is... the default)
             .overrideConfigKey("quarkus.datasource.db-version-defaults", "recent")
             // Starting offline for faster testing -- shouldn't affect test results
+            .overrideConfigKey("quarkus.datasource.jdbc.url", "jdbc:postgresql://localhost:5432/some-non-existing-database")
             .overrideConfigKey("quarkus.hibernate-orm.database.start-offline", "true")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none")
             .overrideConfigKey("quarkus.devservices.enabled", "false");

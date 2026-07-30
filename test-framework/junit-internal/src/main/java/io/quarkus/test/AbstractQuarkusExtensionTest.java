@@ -39,8 +39,10 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterClassTemplateInvocationCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeClassTemplateInvocationCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
@@ -95,7 +97,8 @@ import io.smallrye.common.process.ProcessUtil;
  * Do NOT use or extend this class.
  */
 public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExtensionTest<S>>
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
+        implements BeforeAllCallback, AfterAllCallback, BeforeClassTemplateInvocationCallback,
+        AfterClassTemplateInvocationCallback, BeforeEachCallback, AfterEachCallback,
         InvocationInterceptor, ParameterResolver {
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
@@ -306,6 +309,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                     + " to avoid shadowing out the first call.");
         }
         this.assertLogRecords = assertLogRecords;
+        this.inMemoryLogHandler.setFilter(r -> true);
         return (S) this;
     }
 
@@ -530,6 +534,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             }
         }
 
+        copyTestInstanceFields(extensionContext);
         try {
             newMethod.setAccessible(true);
             if (testMethodInvokerToUse != null) {
@@ -563,8 +568,68 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         }
     }
 
+    private void copyTestInstanceFields(ExtensionContext extensionContext) {
+        if (actualTestInstance == null || !extensionContext.getTestInstance().isPresent()) {
+            return;
+        }
+        Object outerInstance = extensionContext.getTestInstance().get();
+        Class<?> outerClass = outerInstance.getClass();
+        Class<?> innerClass = actualTestInstance.getClass();
+        while (outerClass != null && outerClass != Object.class) {
+            for (Field outerField : outerClass.getDeclaredFields()) {
+                if (Modifier.isStatic(outerField.getModifiers()) || Modifier.isFinal(outerField.getModifiers())) {
+                    continue;
+                }
+                try {
+                    Field innerField = getDeclaredField(innerClass, outerField.getName());
+                    if (innerField != null) {
+                        outerField.setAccessible(true);
+                        innerField.setAccessible(true);
+                        Object val = outerField.get(outerInstance);
+                        if (val == null) {
+                            innerField.set(actualTestInstance, null);
+                        } else if (val.getClass().isEnum() && innerField.getType().isEnum()) {
+                            @SuppressWarnings({ "unchecked", "rawtypes" })
+                            Object enumVal = Enum.valueOf((Class) innerField.getType(), ((Enum<?>) val).name());
+                            innerField.set(actualTestInstance, enumVal);
+                        } else {
+                            innerField.set(actualTestInstance, val);
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            outerClass = outerClass.getSuperclass();
+        }
+    }
+
+    private static Field getDeclaredField(Class<?> clazz, String fieldName) {
+        Class<?> c = clazz;
+        while (c != null && c != Object.class) {
+            try {
+                return c.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                c = c.getSuperclass();
+            }
+        }
+        return null;
+    }
+
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        if (extensionContext.getRequiredTestClass().isAnnotationPresent(
+                org.junit.jupiter.params.ParameterizedClass.class)) {
+            return;
+        }
+        doBeforeAll(extensionContext);
+    }
+
+    @Override
+    public void beforeClassTemplateInvocation(ExtensionContext extensionContext) throws Exception {
+        // Defer startup to beforeEach to allow test configuration first
+    }
+
+    private void doBeforeAll(ExtensionContext extensionContext) throws Exception {
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
@@ -818,8 +883,22 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
+        if (extensionContext.getRequiredTestClass().isAnnotationPresent(
+                org.junit.jupiter.params.ParameterizedClass.class)) {
+            return;
+        }
+        doAfterAll(extensionContext);
+    }
+
+    @Override
+    public void afterClassTemplateInvocation(ExtensionContext extensionContext) throws Exception {
+        doAfterAll(extensionContext);
+    }
+
+    private void doAfterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
         actualTestInstance = null;
+        started = false;
         List<LogRecord> records = null;
         if (assertLogRecords != null) {
             records = new ArrayList<>(inMemoryLogHandler.records);
@@ -1106,6 +1185,9 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        if (!started) {
+            doBeforeAll(context);
+        }
         if (assertException != null) {
             // Build failed as expected - test methods are not invoked
             return;
@@ -1290,6 +1372,11 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             throws ParameterResolutionException {
         boolean isConstructor = parameterContext.getDeclaringExecutable() instanceof Constructor;
         if (isConstructor) {
+            // Let JUnit handle constructor params for @ParameterizedClass
+            if (extensionContext.getRequiredTestClass().isAnnotationPresent(
+                    org.junit.jupiter.params.ParameterizedClass.class)) {
+                return false;
+            }
             return true;
         }
         if (!(parameterContext.getDeclaringExecutable() instanceof Method)) {

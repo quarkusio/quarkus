@@ -9,7 +9,6 @@ import java.util.logging.LogRecord;
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.BeforeParameterizedClassInvocation;
 import org.junit.jupiter.params.Parameter;
@@ -33,7 +32,6 @@ import io.vertx.sqlclient.Pool;
  */
 @ParameterizedClass
 @MethodSource("scenarios")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
 
     private static final List<Dependency> JDBC_DEPS = List.of(
@@ -99,6 +97,7 @@ public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
                 NAMED_DS_CREDENTIALS + """
                         quarkus.hibernate-orm.schema-management.strategy=drop-and-create
                         quarkus.hibernate-orm.datasource=named-datasource
+                        quarkus.datasource."named-datasource".jdbc=true
                         quarkus.datasource."named-datasource".reactive=true
                         """,
                 true, true),
@@ -108,6 +107,7 @@ public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
                         quarkus.hibernate-orm."named-pu".schema-management.strategy=drop-and-create
                         quarkus.hibernate-orm."named-pu".datasource=named-datasource
                         quarkus.hibernate-orm."named-pu".packages=io.quarkus.hibernate.reactive.entities
+                        quarkus.datasource."named-datasource".jdbc=true
                         quarkus.datasource."named-datasource".reactive=true
                         quarkus.log.category."io.quarkus.hibernate".level=DEBUG
                         """,
@@ -208,7 +208,8 @@ public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
                 .withConfiguration(scenario.configuration);
 
         if (scenario == Scenario.DEFAULT_BOTH) {
-            config.setLogRecordPredicate(record -> "org.hibernate.SQL".equals(record.getLoggerName()))
+            config.setLogRecordPredicate(
+                    record -> record.getLoggerName() != null && record.getLoggerName().startsWith("org.hibernate.SQL"))
                     .assertLogRecords(records -> assertThat(records.stream().map(LogRecord::getMessage))
                             .containsOnlyOnce("create sequence hero_SEQ start with 1 increment by 50"));
         }
@@ -238,27 +239,31 @@ public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
 
     private Mutiny.SessionFactory lookupReactiveSf() {
         if (scenario.reactivePuName != null) {
-            return Arc.container()
-                    .select(Mutiny.SessionFactory.class,
-                            new PersistenceUnit.PersistenceUnitLiteral(scenario.reactivePuName))
-                    .get();
+            var handle = Arc.container().instance(Mutiny.SessionFactory.class,
+                    new PersistenceUnit.PersistenceUnitLiteral(scenario.reactivePuName));
+            return (handle != null && handle.isAvailable()) ? handle.get() : null;
         }
-        return Arc.container().instance(Mutiny.SessionFactory.class).get();
+        var handle = Arc.container().instance(Mutiny.SessionFactory.class);
+        return (handle != null && handle.isAvailable()) ? handle.get() : null;
     }
 
     private SessionFactory lookupBlockingSf() {
         if (scenario.blockingPuName != null) {
-            return Arc.container()
-                    .select(SessionFactory.class,
-                            new PersistenceUnit.PersistenceUnitLiteral(scenario.blockingPuName))
-                    .get();
+            var handle = Arc.container().instance(SessionFactory.class,
+                    new PersistenceUnit.PersistenceUnitLiteral(scenario.blockingPuName));
+            return (handle != null && handle.isAvailable()) ? handle.get() : null;
         }
-        return Arc.container().instance(SessionFactory.class).get();
+        var handle = Arc.container().instance(SessionFactory.class);
+        return (handle != null && handle.isAvailable()) ? handle.get() : null;
     }
 
     private Pool lookupNamedPool() {
-        return Arc.container()
-                .select(Pool.class, new ReactiveDataSource.ReactiveDataSourceLiteral(scenario.namedPoolDatasource))
-                .get();
+        if (scenario.namedPoolDatasource != null) {
+            var handle = Arc.container().instance(Pool.class,
+                    new ReactiveDataSource.ReactiveDataSourceLiteral(scenario.namedPoolDatasource));
+            return (handle != null && handle.isAvailable()) ? handle.get() : null;
+        }
+        var handle = Arc.container().instance(Pool.class);
+        return (handle != null && handle.isAvailable()) ? handle.get() : null;
     }
 }

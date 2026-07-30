@@ -1,0 +1,13 @@
+// Source: {{source}}
+
+pluginManagement {
+    val quarkusPluginVersion: String by settings
+    plugins {
+        id("io.quarkus.application") version quarkusPluginVersion
+    }
+}
+
+// tag::package-consumer-settings[]
+rootProject.name = "standalone-application-plugin-package-consumer"
+include("app", "distribution")
+// end::package-consumer-settings[]

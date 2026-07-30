@@ -72,12 +72,6 @@ class HibernateSearchElasticsearchProcessor {
     void collectImplicitPersistenceUnitRequests(HibernateSearchElasticsearchBuildTimeConfig config,
             BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
         for (String name : config.persistenceUnits().keySet()) {
-            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
-            //   For now, since we can't trust keySet for the default datasource, we'll ignore it.
-            if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)) {
-                continue;
-            }
-
             puRequests.produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.BLOCKING,
                     String.format("Configuration '%s'",
                             HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(name, "*"))));

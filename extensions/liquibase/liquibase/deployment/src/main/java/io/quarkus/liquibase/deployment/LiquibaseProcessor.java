@@ -105,11 +105,6 @@ class LiquibaseProcessor {
             LiquibaseBuildTimeConfig liquibaseBuildTimeConfig,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         for (String dsName : liquibaseBuildTimeConfig.datasources().keySet()) {
-            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
-            //   For now, since we can't trust keySet for the default datasource, we'll ignore it.
-            if (DataSourceUtil.isDefault(dsName)) {
-                continue;
-            }
             dataSourceRequests.produce(new DataSourceRequestBuildItem(dsName, ProgrammingParadigm.BLOCKING,
                     String.format("Configuration '%s'", LiquibaseFactoryUtil.liquibasePropertyKey(dsName, "*"))));
         }

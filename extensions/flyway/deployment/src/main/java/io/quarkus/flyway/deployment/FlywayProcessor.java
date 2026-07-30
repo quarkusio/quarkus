@@ -118,11 +118,6 @@ class FlywayProcessor {
             FlywayBuildTimeConfig flywayBuildTimeConfig,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         for (String dsName : flywayBuildTimeConfig.datasources().keySet()) {
-            // TODO remove when this gets fixed: https://github.com/smallrye/smallrye-config/pull/1534
-            //   For now, since we can't trust keySet for the default datasource, we're ignoring it.
-            if (DataSourceUtil.isDefault(dsName)) {
-                continue;
-            }
             dataSourceRequests.produce(new DataSourceRequestBuildItem(dsName,
                     ProgrammingParadigm.BLOCKING,
                     String.format("Configuration '%s'", FlywayContainerUtil.flywayPropertyKey(dsName, "*"))));

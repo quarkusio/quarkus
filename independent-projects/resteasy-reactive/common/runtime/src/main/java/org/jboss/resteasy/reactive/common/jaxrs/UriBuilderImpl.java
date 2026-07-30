@@ -764,7 +764,9 @@ public class UriBuilderImpl extends UriBuilder {
         for (Object val : values) {
             if (val == null)
                 throw new IllegalArgumentException("Value is null");
-            path += ";" + Encode.encodeMatrixParam(name) + "=" + Encode.encodeMatrixParam(val.toString());
+            String matrixName = encode ? Encode.encodeMatrixParam(name) : name;
+            String matrixValue = encode ? Encode.encodeMatrixParam(val.toString()) : val.toString();
+            path += ";" + matrixName + "=" + matrixValue;
         }
         return this;
     }

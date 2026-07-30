@@ -480,7 +480,7 @@ This property sets the JSON log format for the console.
 +
 The possible values are:
 
-* *default*: Generates structured logs based on the `key,values` present in the log record.
+* *default*: Generates structured logs based on the key-value pairs present in the log record.
 Mapped Diagnostic Context (MDC) and Nested Diagnostic Context (NDC) data are included under the `mdc` and `ndc` fields.
 +
 Set `quarkus.log.console.json.mdc.flat-fields=true` to write MDC entries as root-level JSON fields instead of nesting them under `mdc`.
@@ -498,7 +498,13 @@ This is useful when a log aggregator (such as OpenSearch or Elasticsearch) needs
 {"timestamp":"...","message":"Handling request","requestId":"abc123","userId":"42"}
 ----
 +
-The option is available for all handler types: `quarkus.log.console.json.mdc.flat-fields`, `quarkus.log.file.json.mdc.flat-fields`, `quarkus.log.syslog.json.mdc.flat-fields`, `quarkus.log.socket.json.mdc.flat-fields`, and named handlers such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`.
+The option is available for all handler types:
++
+** `quarkus.log.console.json.mdc.flat-fields`
+** `quarkus.log.file.json.mdc.flat-fields`
+** `quarkus.log.syslog.json.mdc.flat-fields`
+** `quarkus.log.socket.json.mdc.flat-fields`
+** Named handlers, such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`
 * *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
 This format modifies some default field names and adds other fields to align with ECS.
 +
@@ -564,9 +570,9 @@ public class MyJsonProvider implements JsonProvider {
 ===== ServiceLoader registration
 
 For providers that must work without CDI (for example, in libraries or during early startup), register them via the Java `ServiceLoader` mechanism.
-Create a file named `META-INF/services/io.quarkus.logging.json.runtime.JsonProvider` containing the fully-qualified class name of each implementation:
+Create a file named `META-INF/services/io.quarkus.logging.json.runtime.JsonProvider` containing the fully qualified class name of each implementation:
 
-[source]
+[source,text]
 ----
 com.example.MyJsonProvider
 ----
@@ -589,7 +595,7 @@ public class MyJsonProvider implements JsonProvider {
 ----
 
 NOTE: When both CDI beans and ServiceLoader providers are present, all of them are called for each log record.
-ServiceLoader providers are called first, in the order they appear in the service file.
+ServiceLoader providers are called first, in the order they appear in the `META-INF/services/` configuration file.
 CDI beans are called afterwards, but their relative order is not guaranteed.
 
 ==== Configuration
@@ -898,7 +904,7 @@ For more information, see the xref:getting-started-testing.adoc#test-from-ide[Ru
 If your dependencies use other logging APIs, such as Apache Commons Logging, Log4j, or SLF4J, exclude those libraries and use a JBoss Logging adapter.
 This step is especially important for native executables, because the native build can fail with errors such as the following:
 
-[source]
+[source,text]
 ----
 Caused by java.lang.ClassNotFoundException: org.apache.commons.logging.impl.LogFactoryImpl
 ----

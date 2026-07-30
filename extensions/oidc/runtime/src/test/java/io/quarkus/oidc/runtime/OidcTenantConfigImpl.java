@@ -220,7 +220,10 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         RAR_ARRAY,
         RAR_TYPE,
         REFRESH_TOKEN_CACHE_TIME_TO_LIVE,
-        PAR_PATH
+        PAR_PATH,
+        CREDENTIALS_ATTESTATION,
+        CREDENTIALS_ATTESTATION_ENABLED,
+        CREDENTIALS_ATTESTATION_SIGNATURE_ALGORITHM
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -1245,6 +1248,24 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public boolean forAllEndpoints() {
                 invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_FOR_ALL_ENDPOINTS, true);
                 return false;
+            }
+
+            @Override
+            public Attestation attestation() {
+                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION, true);
+                return new Attestation() {
+                    @Override
+                    public boolean enabled() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION_ENABLED, true);
+                        return false;
+                    }
+
+                    @Override
+                    public AttestationSignatureAlgorithm signatureAlgorithm() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_ATTESTATION_SIGNATURE_ALGORITHM, true);
+                        return AttestationSignatureAlgorithm.ES256;
+                    }
+                };
             }
         };
     }

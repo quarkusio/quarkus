@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven 4-style settings.xml with top-level <repositories> and <pluginRepositories>
+  that are not recognized by the Maven 3 settings parser.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/2.0.0 https://maven.apache.org/xsd/settings-2.0.0.xsd">
+
+  <profiles>
+    <profile>
+      <repositories>
+        <repository>
+          <id>custom-repo</id>
+          <url>https://custom.repo/releases/</url>
+        </repository>
+      </repositories>
+      <id>custom-profile</id>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>custom-profile</activeProfile>
+  </activeProfiles>
+
+  <!-- Top-level repositories: new in Maven 4 settings schema, unknown to Maven 3 parser -->
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Maven Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>central</id>
+      <name>Maven Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+</settings>

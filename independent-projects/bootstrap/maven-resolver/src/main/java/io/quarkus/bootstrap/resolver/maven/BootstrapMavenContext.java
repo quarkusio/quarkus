@@ -364,7 +364,11 @@ public class BootstrapMavenContext {
                             throw new BootstrapMavenException("Settings problem encountered at " + problem.getLocation(),
                                     problem.getException());
                         default:
-                            log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                            // WARNING-severity problems are typically emitted by DefaultSettingsBuilder
+                            // when strict XML parsing fails and the lenient fallback succeeds
+                            // (e.g. Maven 4 settings.xml containing elements unknown to the Maven 3 parser).
+                            // Since parsing recovered successfully, these are not actionable and are logged at DEBUG.
+                            log.debug("Settings problem encountered at " + problem.getLocation(), problem.getException());
                     }
                 }
             }

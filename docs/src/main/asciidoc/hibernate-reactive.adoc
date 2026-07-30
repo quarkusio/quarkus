@@ -304,7 +304,7 @@ NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence cont
 +
 [source,properties]
 ----
-quarkus.hibernate-orm.blocking=false
+quarkus.hibernate-orm.jdbc.enabled=false
 ----
 
 Quarkus will set many Hibernate Reactive configuration settings automatically, and will often use more modern defaults.

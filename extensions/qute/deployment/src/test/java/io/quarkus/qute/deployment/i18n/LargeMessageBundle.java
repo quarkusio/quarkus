@@ -6,7 +6,7 @@ import io.quarkus.qute.i18n.MessageBundle;
 @MessageBundle("large")
 public interface LargeMessageBundle {
 
-+    @Message("message-0")
+    @Message("message-0")
     String message0();
 
     @Message("message-1")

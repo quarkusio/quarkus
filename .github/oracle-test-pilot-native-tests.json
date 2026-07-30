@@ -17,7 +17,7 @@
         {
             "category": "26ai",
             "oci-service": "base-database-service-26ai",
-            "db-version": "26",
+            "db-version": "23.26",
             "timeout": 25,
             "test-modules": "jpa-oracle, reactive-oracle-client, hibernate-reactive-oracle"
         }

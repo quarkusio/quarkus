@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
@@ -42,15 +43,23 @@ final class ProxyBuildingHelper implements AutoCloseable {
     }
 
     public boolean isProxiable(ClassInfo classInfo) {
-        // ORM 8.0 strips the final modifier from entity classes during bytecode enhancement
-        // (PersistentAttributeTransformer.REMOVE_FINAL_TYPE_MODIFIER), so final classes
-        // are proxiable at runtime and need pre-generated proxies.
-        // See https://github.com/hibernate/hibernate-orm/pull/12589
-        // Fixes: io.quarkus.it.jpa.proxy.ProxyTest, io.quarkus.it.jpa.defaultcatalogandschema.DefaultSchemaTest,
-        //         io.quarkus.it.jpa.integrator.JPAIntegratorTest (CompanyCustomer is a final entity)
-        return classInfo != null
-                && !classInfo.isInterface()
-                && classInfo.hasNoArgsConstructor();
+        if (classInfo == null || classInfo.isInterface() || !classInfo.hasNoArgsConstructor()) {
+            return false;
+        }
+        // Non-final classes can always be proxied by ByteBuddy.
+        // Final classes cannot. We need to check on both the classInfo and ByteBuddy as ORM 8
+        // removes final from entity classes and mapped superclasses (see HHH-20512)
+        if (!classInfo.isFinal()) {
+            return true;
+        }
+        // Non-entity types (embeddables, id classes) remain final after enhancement
+        // and correctly get skipped here.
+        return isNonFinalAfterEnhancement(classInfo);
+    }
+
+    private boolean isNonFinalAfterEnhancement(ClassInfo classInfo) {
+        TypePool.Resolution resolution = typePool.describe(classInfo.name().toString());
+        return resolution.isResolved() && !Modifier.isFinal(resolution.resolve().getModifiers());
     }
 
     @Override

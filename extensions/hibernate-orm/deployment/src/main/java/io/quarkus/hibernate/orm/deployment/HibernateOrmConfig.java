@@ -49,7 +49,7 @@ public interface HibernateOrmConfig {
      * @asciidoclet
      */
     @WithDefault("true")
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.39")
     boolean blocking();
 
     /**

@@ -426,7 +426,7 @@ jobs:
           distribution: temurin
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Produce report and add it as job summary
-        uses: quarkusio/action-build-reporter@main
+        uses: quarkusio/action-build-reporter@1e64a0f4bf7d7868af1867472c91ed039db7fa1d # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           build-reports-artifacts-path: build-reports-artifacts

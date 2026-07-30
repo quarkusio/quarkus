@@ -107,14 +107,14 @@ jobs:
       # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
       #- name: Publish Test Report
       #  if: always()
-      #  uses: scacap/action-surefire-report@v1
+      #  uses: scacap/action-surefire-report@3dacff26879cd2a7f2160d101254032a3707fe6f # v1
       #  with:
       #    github_token: ${{ secrets.GITHUB_TOKEN }}
       #    # fail required to upload failure archive in subsequent actions
       #    fail_on_test_failures: true
       #- name: Publish Gradle Test Report
       #  if: always()
-      #  uses: scacap/action-surefire-report@v1
+      #  uses: scacap/action-surefire-report@3dacff26879cd2a7f2160d101254032a3707fe6f # v1
       #  with:
       #    github_token: ${{ secrets.GITHUB_TOKEN }}
       #    # fail required to upload failure archive in subsequent actions
@@ -137,7 +137,7 @@ jobs:
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Report status
         if: always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'
-        uses: quarkusio/report-status-in-issue@main
+        uses: quarkusio/report-status-in-issue@ee5fc1fa67e60f86018bef7d352e31eadf2dc588 # main
         with:
           github-token: ${{ secrets.GITHUB_API_TOKEN }}
           status: ${{ job.status }}

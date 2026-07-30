@@ -477,6 +477,7 @@ categories:
       - maven-tooling.adoc
       - quarkus-maven-plugin.adoc
       - gradle-tooling.adoc
+      - gradle-application-plugin.adoc
       - build-analytics.adoc
       - update-quarkus.adoc
 

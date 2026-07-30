@@ -165,7 +165,7 @@
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
         <flyway.version>12.0.0</flyway.version>
-        <yasson.version>3.0.4</yasson.version>
+        <yasson.version>3.0.5</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
         <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
@@ -4514,6 +4514,15 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-graphql-client-implementation-vertx</artifactId>
                 <version>${smallrye-graphql.version}</version>
+                <exclusions>
+                    <!-- This is needed until SmallRye GraphQL upgrades to Yasson 3.0.5 requiring the groupId change to
+                         org.eclipse.yasson.
+                    -->
+                    <exclusion>
+                        <groupId>org.eclipse</groupId>
+                        <artifactId>yasson</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
@@ -4945,7 +4954,7 @@
                 <version>${parsson.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse</groupId>
+                <groupId>org.eclipse.yasson</groupId>
                 <artifactId>yasson</artifactId>
                 <version>${yasson.version}</version>
             </dependency>
@@ -5213,6 +5222,15 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <!-- This is needed until RESTEasy upgrades to Yasson 3.0.5 requiring the groupId change to
+                         org.eclipse.yasson.
+                    -->
+                    <exclusion>
+                        <groupId>org.eclipse</groupId>
+                        <artifactId>yasson</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

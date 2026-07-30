@@ -2007,7 +2007,7 @@ jobs:
     name: "PQC Tests"
     runs-on: ubuntu-latest
     container: ubuntu:26.04
-    needs: [configure]
+    needs: [configure, initial-build]
     if: needs.configure.outputs.run-ci-build == 'true'
     timeout-minutes: 60
     env:
@@ -2024,15 +2024,29 @@ jobs:
           java-version: 21
       - name: Verify OpenSSL version
         run: openssl version
-      - name: Build Quarkus
-        run: |
-          ./mvnw $COMMON_MAVEN_ARGS install -Dquickly -T1C
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Download previously uploaded .m2 content
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: m2-content
+          path: .
+      - name: Extract previously uploaded .m2 content
+        # In container jobs, bash ~ expands to $HOME (/github/home) but Java's
+        # user.home reads /etc/passwd (/root). We must extract where Maven looks.
+        run: tar -xzf m2-content.tgz -C ~
       - name: Run PQC tests Vertx-http
         run: |
-          ./mvnw $COMMON_MAVEN_ARGS -Dtest-containers -Dstart-containers -Dtest=HybridKeyExchangeTest,HybridKeyExchangeMtlsTest,HybridKeyExchangeClientNegotiatedTest,HybridKeyExchangeClientNegotiatedNoGroupsTest,HybridKeyExchangeClientNegotiatedIllGroupsTest,HybridKeyExchangeStrictNoGroupsTest,HybridKeyExchangeStrictIllGroupsTest,HybridKeyExchangeRelaxedTest,HybridKeyExchangeRelaxedNoGroupsTest,HybridKeyExchangeJdkSslStrictInvalidTest,HybridKeyExchangeJdkSslClientNegotiatedInvalidTest,HybridKeyExchangeNamedBucketTest -f extensions/vertx-http/deployment test
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS -Dmaven.repo.local=$HOME/.m2/repository -Dtest=HybridKeyExchangeTest,HybridKeyExchangeMtlsTest,HybridKeyExchangeClientNegotiatedTest,HybridKeyExchangeClientNegotiatedNoGroupsTest,HybridKeyExchangeClientNegotiatedIllGroupsTest,HybridKeyExchangeStrictNoGroupsTest,HybridKeyExchangeStrictIllGroupsTest,HybridKeyExchangeRelaxedTest,HybridKeyExchangeRelaxedNoGroupsTest,HybridKeyExchangeJdkSslStrictInvalidTest,HybridKeyExchangeJdkSslClientNegotiatedInvalidTest,HybridKeyExchangeNamedBucketTest -f extensions/vertx-http/deployment test
       - name: Run PQC tests resteasy-reactive
         run: |
-          ./mvnw $COMMON_MAVEN_ARGS -Dtest-containers -Dstart-containers -Dtest=PqcKeyExchangeTest -f extensions/resteasy-reactive/rest-client/deployment test
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS -Dmaven.repo.local=$HOME/.m2/repository -Dtest=PqcKeyExchangeTest -f extensions/resteasy-reactive/rest-client/deployment test
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -

@@ -45,7 +45,8 @@ public class FrontendResource {
     @Path("userNameReactive")
     @Produces("text/plain")
     public Uni<String> userNameReactive() {
-        return protectedResourceServiceReactiveFilter.getUserName();
+        return protectedResourceServiceReactiveFilter.getUserName().onItem()
+                .transformToUni(name -> protectedResourceServiceReactiveFilter.echoUserName(name));
     }
 
     @GET

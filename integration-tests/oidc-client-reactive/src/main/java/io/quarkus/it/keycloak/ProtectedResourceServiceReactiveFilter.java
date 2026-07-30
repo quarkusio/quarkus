@@ -1,6 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
@@ -18,4 +20,10 @@ public interface ProtectedResourceServiceReactiveFilter {
     @Produces("text/plain")
     @Path("userNameReactive")
     Uni<String> getUserName();
+
+    @POST
+    @Produces("text/plain")
+    @Consumes({ "text/plain", "application/json" })
+    @Path("userNameReactive")
+    Uni<String> echoUserName(String name);
 }

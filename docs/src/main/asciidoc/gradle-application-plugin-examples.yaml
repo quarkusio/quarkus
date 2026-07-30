@@ -1,0 +1,25 @@
+examples:
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/basic/groovy/build.gradle
+  target: gradle-application-plugin-basic.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/basic/kotlin/build.gradle.kts
+  target: gradle-application-plugin-basic.gradle.kts
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/testing/groovy/build.gradle
+  target: gradle-application-plugin-testing.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/testing/kotlin/build.gradle.kts
+  target: gradle-application-plugin-testing.gradle.kts
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/groovy/distribution/build.gradle
+  target: gradle-application-plugin-package-consumer.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/kotlin/distribution/build.gradle.kts
+  target: gradle-application-plugin-package-consumer.gradle.kts
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/groovy/settings.gradle
+  target: gradle-application-plugin-package-consumer-settings.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/kotlin/settings.gradle.kts
+  target: gradle-application-plugin-package-consumer-settings.gradle.kts
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/groovy/app/build.gradle
+  target: gradle-application-plugin-package-producer.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/package-consumer/kotlin/app/build.gradle.kts
+  target: gradle-application-plugin-package-producer.gradle.kts
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/advanced/groovy/build.gradle
+  target: gradle-application-plugin-advanced.gradle
+- source: devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/advanced/kotlin/build.gradle.kts
+  target: gradle-application-plugin-advanced.gradle.kts

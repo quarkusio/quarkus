@@ -10,7 +10,9 @@ must survive refactoring. It is not an end-user guide or a migration guide.
 The standalone `io.quarkus.application` plugin is the primary subject. The
 legacy `io.quarkus` application plugin appears only where coexistence or
 tooling ownership requires a precise boundary. User-facing setup belongs in
-the [Quarkus Gradle guides](https://quarkus.io/guides/gradle-tooling).
+the [standalone Gradle application plugin guide](https://quarkus.io/guides/gradle-application-plugin).
+User-facing setup for the `io.quarkus` plugin remains in the
+[Quarkus Gradle guide](https://quarkus.io/guides/gradle-tooling).
 
 Unless a page explicitly says otherwise, a documented implementation shape is
 not a source- or binary-compatibility promise. Public DSL, registered task

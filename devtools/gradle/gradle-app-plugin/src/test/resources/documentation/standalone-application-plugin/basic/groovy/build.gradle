@@ -1,0 +1,57 @@
+// Source: {{source}}
+// tag::plugin-application[]
+plugins {
+    id 'io.quarkus.application'
+}
+// end::plugin-application[]
+
+group = 'org.acme'
+version = '1.0.0'
+
+// tag::minimal-named-build[]
+quarkusApplication {
+    builds {
+        fastJar('production')
+    }
+}
+// end::minimal-named-build[]
+
+// tag::assemble-integration[]
+quarkusApplication {
+    builds {
+        fastJar('assembled') {
+            participatesInAssemble.set(true)
+        }
+    }
+}
+// end::assemble-integration[]
+
+// tag::package-customization[]
+quarkusApplication {
+    builds {
+        fastJar('customized') {
+            archiveBaseName.set('acme-service')
+            archiveBaseNameSuffix.set('-prod')
+            outputDirectory.set(layout.buildDirectory.dir('application'))
+            manifest {
+                attributes.put('Implementation-Title', 'Acme service')
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Version', '1.0')
+                    }
+                }
+            }
+        }
+    }
+}
+// end::package-customization[]
+
+assert tasks.names.containsAll([
+    'quarkusProductionBuild',
+    'quarkusProductionRun',
+    'quarkusProductionShowEffectiveConfig'
+])
+assert configurations.names.containsAll([
+    'quarkusProductionPackageElements',
+    'quarkusProductionLauncherJarElements'
+])

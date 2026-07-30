@@ -60,6 +60,9 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.16</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
+        <!-- Supported Gradle versions, interpreted as a version range -->
+        <minimum-gradle-version>9.6</minimum-gradle-version>
+        <supported-gradle-versions>[9.6,)</supported-gradle-versions>
         <gradle-wrapper.version>9.6.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>

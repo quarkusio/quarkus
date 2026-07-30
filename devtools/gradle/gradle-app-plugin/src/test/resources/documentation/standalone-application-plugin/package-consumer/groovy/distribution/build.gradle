@@ -1,0 +1,93 @@
+// Source: {{source}}
+plugins {
+    id 'base'
+    id 'maven-publish'
+}
+
+// tag::package-variants[]
+configurations {
+    serverPackage {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    serverLauncher {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    serverPackage project(
+        path: ':app',
+        configuration: 'quarkusServerPackageElements'
+    )
+    serverLauncher project(
+        path: ':app',
+        configuration: 'quarkusServerLauncherJarElements'
+    )
+}
+// end::package-variants[]
+
+// tag::attribute-selected-package[]
+def selectedServerPackage = configurations.create('selectedServerPackage') {
+    canBeConsumed = false
+    canBeResolved = true
+    attributes {
+        attribute(org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE,
+            objects.named(org.gradle.api.attributes.Category, 'quarkus-application-package'))
+        attribute(org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+            objects.named(org.gradle.api.attributes.LibraryElements, 'quarkus-application-package-directory'))
+        attribute(org.gradle.api.artifacts.type.ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'directory')
+        attribute(org.gradle.api.attributes.Attribute.of(
+            'io.quarkus.application.build-name', String), 'server')
+        attribute(org.gradle.api.attributes.Attribute.of(
+            'io.quarkus.application.build-type', String), 'fast-jar')
+    }
+}
+
+dependencies {
+    add(selectedServerPackage.name, project(':app'))
+}
+
+tasks.register('copySelectedServerPackage', Sync) {
+    from(selectedServerPackage)
+    into(layout.buildDirectory.dir('selected-server-package'))
+}
+// end::attribute-selected-package[]
+
+// tag::archive-package[]
+def packageDistribution = tasks.register('packageDistribution', Zip) {
+    from(configurations.serverPackage)
+    archiveBaseName.set('acme-server')
+    zip64 = true
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.register('packageDistributionTar', Tar) {
+    from(configurations.serverPackage)
+    archiveBaseName.set('acme-server')
+    compression = Compression.GZIP
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+// end::archive-package[]
+
+// tag::publish-package[]
+publishing {
+    publications {
+        server(MavenPublication) {
+            artifact(packageDistribution) {
+                classifier = 'distribution'
+            }
+        }
+    }
+}
+// end::publish-package[]
+
+assert tasks.names.containsAll([
+    'copySelectedServerPackage',
+    'packageDistribution',
+    'packageDistributionTar',
+    'generatePomFileForServerPublication'
+])

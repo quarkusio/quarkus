@@ -6,8 +6,10 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -58,6 +60,7 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
             volatile boolean resolving, shutdown;
             ServiceDiscovery serviceDiscovery;
             String serviceName;
+            volatile Set<Long> serviceInstanceIds = new HashSet<>();
 
             @Override
             public String getServiceAuthority() {
@@ -108,6 +111,15 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                 resolve();
             }
 
+            private boolean areServicesRemoved(List<ServiceInstance> instances) {
+                for (ServiceInstance instance : instances) {
+                    if (!serviceInstanceIds.contains(instance.getId())) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             private void informListener(List<ServiceInstance> instances) {
                 try {
                     if (shutdown) {
@@ -128,40 +140,48 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                         return;
                     }
 
-                    // Always notify the listener for a non-empty resolution, even when the
-                    // instance set is unchanged. Skipping onResult/onError when nothing
-                    // changed can leave a refresh() with no callback and the channel stuck
-                    // waiting for re-resolution (same class of bug as the empty-list case).
-                    ArrayList<EquivalentAddressGroup> addresses = new ArrayList<>();
-                    for (ServiceInstance instance : instances) {
-                        List<SocketAddress> socketAddresses = new ArrayList<>();
-                        try {
-                            for (InetAddress inetAddress : InetAddress.getAllByName(instance.getHost())) {
-                                socketAddresses.add(new InetSocketAddress(inetAddress, instance.getPort()));
+                    if (serviceInstanceIds.size() != instances.size() || areServicesRemoved(instances)) {
+                        HashSet<Long> serviceInstanceIds = new HashSet<>();
+                        for (ServiceInstance instance : instances) {
+                            serviceInstanceIds.add(instance.getId());
+                        }
+                        this.serviceInstanceIds = serviceInstanceIds;
+
+                        // Always notify the listener for a non-empty resolution, even when the
+                        // instance set is unchanged. Skipping onResult/onError when nothing
+                        // changed can leave a refresh() with no callback and the channel stuck
+                        // waiting for re-resolution (same class of bug as the empty-list case).
+                        ArrayList<EquivalentAddressGroup> addresses = new ArrayList<>();
+                        for (ServiceInstance instance : instances) {
+                            List<SocketAddress> socketAddresses = new ArrayList<>();
+                            try {
+                                for (InetAddress inetAddress : InetAddress.getAllByName(instance.getHost())) {
+                                    socketAddresses.add(new InetSocketAddress(inetAddress, instance.getPort()));
+                                }
+                            } catch (UnknownHostException e) {
+                                log.warnf(e, "Ignoring wrong host: '%s' for service name '%s'", instance.getHost(),
+                                        serviceName);
                             }
-                        } catch (UnknownHostException e) {
-                            log.warnf(e, "Ignoring wrong host: '%s' for service name '%s'", instance.getHost(),
-                                    serviceName);
+
+                            if (!socketAddresses.isEmpty()) {
+                                Attributes attributes = Attributes.newBuilder()
+                                        .set(SERVICE_INSTANCE, instance)
+                                        .build();
+                                EquivalentAddressGroup addressGroup = new EquivalentAddressGroup(socketAddresses, attributes);
+                                addresses.add(addressGroup);
+                            }
                         }
 
-                        if (!socketAddresses.isEmpty()) {
-                            Attributes attributes = Attributes.newBuilder()
-                                    .set(SERVICE_INSTANCE, instance)
-                                    .build();
-                            EquivalentAddressGroup addressGroup = new EquivalentAddressGroup(socketAddresses, attributes);
-                            addresses.add(addressGroup);
+                        if (addresses.isEmpty()) {
+                            log.error("Failed to determine working socket addresses for service-name: " + serviceName);
+                            listener.onError(Status.FAILED_PRECONDITION);
+                        } else {
+                            ConfigOrError serviceConfig = configParser.parseServiceConfig(mapConfigForServiceName());
+                            listener.onResult(ResolutionResult.newBuilder()
+                                    .setAddresses(addresses)
+                                    .setServiceConfig(serviceConfig)
+                                    .build());
                         }
-                    }
-
-                    if (addresses.isEmpty()) {
-                        log.error("Failed to determine working socket addresses for service-name: " + serviceName);
-                        listener.onError(Status.FAILED_PRECONDITION);
-                    } else {
-                        ConfigOrError serviceConfig = configParser.parseServiceConfig(mapConfigForServiceName());
-                        listener.onResult(ResolutionResult.newBuilder()
-                                .setAddresses(addresses)
-                                .setServiceConfig(serviceConfig)
-                                .build());
                     }
                 } finally {
                     resolving = false;

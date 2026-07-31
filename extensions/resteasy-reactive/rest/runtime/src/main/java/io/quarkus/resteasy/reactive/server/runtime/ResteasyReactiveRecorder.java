@@ -27,6 +27,7 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -158,6 +159,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
         currentDeployment = deployment;
+        EntityPartBuilderImpl.setSerialisersSupplier(deployment::getSerialisers);
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             // For Not Found Screen

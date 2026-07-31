@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 
@@ -718,7 +719,7 @@ public class ServerEndpointIndexer
                 || elementType.equals(Path.class.getName())
                 || elementType.equals(File.class.getName())
                 || elementType.equals(InputStream.class.getName())
-                || elementType.equals("jakarta.ws.rs.core.EntityPart")) {
+                || elementType.equals(EntityPart.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {

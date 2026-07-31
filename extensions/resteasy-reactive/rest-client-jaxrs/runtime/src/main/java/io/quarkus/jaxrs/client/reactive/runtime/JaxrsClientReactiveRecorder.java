@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartBuilderImpl;
 
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.runtime.RuntimeValue;
@@ -64,6 +65,7 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
         ClientSerialisers s = new ClientSerialisers();
         s.registerBuiltins(RuntimeType.CLIENT);
         serialisers = s;
+        EntityPartBuilderImpl.setSerialisersSupplier(() -> serialisers);
         return s;
     }
 

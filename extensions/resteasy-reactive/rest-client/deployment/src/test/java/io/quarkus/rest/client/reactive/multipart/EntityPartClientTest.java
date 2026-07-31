@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive.multipart;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,9 @@ import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -36,7 +40,8 @@ public class EntityPartClientTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(EchoResource.class);
+                            .addClasses(EchoResource.class, EchoFormResource.class,
+                                    EntityPartContainerClient.class, ClientFormWithEntityPart.class);
                 }
             });
 
@@ -70,6 +75,46 @@ public class EntityPartClientTest {
         }
     }
 
+    @Test
+    void jsonEntityPartRoundTrip() throws IOException {
+        String json = "{\"message\":\"hello\"}";
+        List<EntityPart> parts = List.of(
+                EntityPart.withName("data")
+                        .content(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)))
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .build());
+
+        Client client = ClientBuilder.newClient();
+        try {
+            Response response = client.target(baseUri).path("/echo-parts")
+                    .request(MediaType.TEXT_PLAIN)
+                    .post(Entity.entity(parts, MediaType.MULTIPART_FORM_DATA_TYPE));
+
+            assertThat(response.getStatus()).isEqualTo(200);
+            String body = response.readEntity(String.class);
+            assertThat(body).contains("data={\"message\":\"hello\"}");
+        } finally {
+            client.close();
+        }
+    }
+
+    @Test
+    void entityPartInClientContainer() throws IOException {
+        EntityPartContainerClient restClient = RestClientBuilder.newBuilder()
+                .baseUri(baseUri).build(EntityPartContainerClient.class);
+
+        ClientFormWithEntityPart form = new ClientFormWithEntityPart();
+        form.dataPart = EntityPart.withName("dataPart")
+                .content("some data")
+                .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                .build();
+        form.name = "testName";
+
+        String result = restClient.send(form);
+        assertThat(result).contains("dataPart=some data");
+        assertThat(result).contains("name=testName");
+    }
+
     @Path("/echo-parts")
     public static class EchoResource {
 
@@ -84,5 +129,33 @@ public class EntityPartClientTest {
             }
             return String.join(",", results);
         }
+    }
+
+    @Path("/echo-form")
+    public static class EchoFormResource {
+
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        @Produces(MediaType.TEXT_PLAIN)
+        public String echo(@RestForm EntityPart dataPart, @RestForm String name) throws IOException {
+            String content = new String(dataPart.getContent().readAllBytes(), StandardCharsets.UTF_8);
+            return "dataPart=" + content + ",name=" + name;
+        }
+    }
+
+    @Path("/echo-form")
+    public interface EntityPartContainerClient {
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        @Produces(MediaType.TEXT_PLAIN)
+        String send(@MultipartForm ClientFormWithEntityPart form);
+    }
+
+    public static class ClientFormWithEntityPart {
+        @RestForm
+        public EntityPart dataPart;
+
+        @RestForm
+        public String name;
     }
 }

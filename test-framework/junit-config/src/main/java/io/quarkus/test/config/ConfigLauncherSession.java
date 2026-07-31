@@ -6,8 +6,9 @@ import org.junit.platform.launcher.LauncherSessionListener;
 
 import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * A JUnit {@link LauncherSessionListener}, used to register the initial test config. Test set up code can safely call
@@ -28,8 +29,14 @@ public class ConfigLauncherSession implements LauncherSessionListener {
         try {
             ConfigProviderResolver resolver = new ThreadLocalConfigSourceProvider();
             ConfigProviderResolver.setInstance(resolver);
-            SmallRyeConfig config = ConfigUtils.configBuilder(LaunchMode.TEST)
+            SmallRyeConfig config = new SmallRyeConfigBuilder()
                     .forClassLoader(Thread.currentThread().getContextClassLoader())
+                    .addDiscoveredCustomizers()
+                    .addDiscoveredSources()
+                    .addDiscoveredConverters()
+                    .addDefaultInterceptors()
+                    .addDefaultSources()
+                    .withCustomizers(new QuarkusConfigBuilderCustomizer(LaunchMode.TEST))
                     .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
                     .build();
             resolver.registerConfig(config, ClassLoader.getSystemClassLoader());

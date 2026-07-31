@@ -36,6 +36,7 @@ public class StorkMetricsLoadBalancerFailTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.address-list", "${test.url}")

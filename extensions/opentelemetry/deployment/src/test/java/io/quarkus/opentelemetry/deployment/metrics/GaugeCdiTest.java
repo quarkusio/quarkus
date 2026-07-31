@@ -44,9 +44,7 @@ public class GaugeCdiTest {
                             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                             .add(new StringAsset(
-                                    "quarkus.otel.metrics.enabled=true\n" +
-                                            "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.datasource.db-kind=h2\n" +
+                                    "quarkus.datasource.db-kind=h2\n" +
                                             "quarkus.datasource.jdbc.telemetry=true\n" +
                                             "quarkus.otel.traces.exporter=test-span-exporter\n" +
                                             "quarkus.otel.metrics.exporter=in-memory,logging\n" +

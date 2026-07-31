@@ -20,6 +20,7 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -53,10 +54,10 @@ public class OtelLoggingTest {
                             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.traces.enabled=true\n" +
+                                    "quarkus.otel.traces.enabled=true\n" +
                                             "quarkus.otel.traces.sampler.arg=1.0d\n" +
-                                            "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n"),
+                                            "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject
@@ -117,17 +118,20 @@ public class OtelLoggingTest {
         assertEquals("hello", jBossLoggingBean.helloTraced(message));
 
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
-        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
+        LogRecordData loggedMessage = finishedLogRecordItems.stream()
+                .filter(logRecordData -> logRecordData.getBodyValue().asString().equals(message))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Log message was not found"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         final SpanData span = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
 
         assertThat(span.getName()).isEqualTo("JBossLoggingBean.helloTraced");
-        assertThat(last.getSpanContext().getSpanId()).isEqualTo(span.getSpanId());
-        assertThat(last.getSpanContext().getTraceId()).isEqualTo(span.getTraceId());
-        assertThat(last.getSpanContext().getTraceFlags()).isEqualTo(span.getSpanContext().getTraceFlags());
+        assertThat(loggedMessage.getSpanContext().getSpanId()).isEqualTo(span.getSpanId());
+        assertThat(loggedMessage.getSpanContext().getTraceId()).isEqualTo(span.getTraceId());
+        assertThat(loggedMessage.getSpanContext().getTraceFlags()).isEqualTo(span.getSpanContext().getTraceFlags());
 
-        assertThat(last)
+        assertThat(loggedMessage)
                 .hasSeverity(Severity.INFO)
                 .hasSeverityText("INFO")
                 .hasBody(message)

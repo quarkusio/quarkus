@@ -25,12 +25,13 @@ public class BatchSpanProcessorConfigTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", SCHEDULE_DELAY.toMillis() + "ms")
             .overrideConfigKey("quarkus.otel.bsp.max.queue.size", String.valueOf(MAX_QUEUE_SIZE))
             .overrideConfigKey("quarkus.otel.bsp.max.export.batch.size", String.valueOf(MAX_EXPORT_BATCH_SIZE))
-            .overrideConfigKey("quarkus.otel.bsp.export.timeout", EXPORT_TIMEOUT.toMillis() + "ms");
+            .overrideConfigKey("quarkus.otel.bsp.export.timeout", EXPORT_TIMEOUT.toMillis() + "ms")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

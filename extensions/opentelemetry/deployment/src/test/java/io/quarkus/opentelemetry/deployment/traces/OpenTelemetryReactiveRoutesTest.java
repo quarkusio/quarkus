@@ -34,7 +34,7 @@ public class OpenTelemetryReactiveRoutesTest {
                     .addClass(TestUtil.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class)
-                    .addAsResource("resource-config/application-no-metrics.properties", "application.properties")
+                    .addAsResource("resource-config/application-just-tracing.properties", "application.properties")
                     .addAsResource(
                             "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"));

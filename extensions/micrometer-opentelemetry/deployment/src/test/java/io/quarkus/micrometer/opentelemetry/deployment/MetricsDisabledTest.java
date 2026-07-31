@@ -37,7 +37,6 @@ public class MetricsDisabledTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                             .add(new StringAsset("""
                                     quarkus.otel.sdk.disabled=true\n
-                                    quarkus.otel.metrics.enabled=true\n
                                     quarkus.otel.traces.exporter=none\n
                                     quarkus.otel.logs.exporter=none\n
                                     quarkus.otel.metrics.exporter=in-memory\n

@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -188,6 +189,16 @@ public class OpenTelemetryProcessor {
                 .map(KubernetesResourceMetadataBuildItem::getName)
                 .orElse(appInfo.getName());
         envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(DEPLOYMENT_NAME_ENV, deploymentName, null));
+    }
+
+    @BuildStep
+    RunTimeConfigurationDefaultBuildItem setTestModeShutdownWaitTime(LaunchModeBuildItem launchMode) {
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            // Tests take a long time to shutdown
+            return new RunTimeConfigurationDefaultBuildItem(
+                    "quarkus.otel.experimental.shutdown-wait-time", "100ms");
+        }
+        return null;
     }
 
     @BuildStep

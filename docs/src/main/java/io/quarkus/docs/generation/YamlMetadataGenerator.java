@@ -536,6 +536,7 @@ public class YamlMetadataGenerator {
             switch (errorKey) {
                 case "missing-id":
                 case "not-diataxis-type":
+                case "missing-categories": // categories are injected from categories.yaml by InjectCategories at build time
                     return true;
             }
             return false;

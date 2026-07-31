@@ -330,6 +330,36 @@ public interface ExtensionsService {
 }
 ----
 
+=== Matrix Parameters
+
+Matrix parameters can be specified with `@MatrixParam` or `@RestMatrix`. The `@RestMatrix` annotation is equivalent to
+`@MatrixParam`, but the name is optional — when omitted, the parameter name is used.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestMatrix;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.MatrixParam;
+import jakarta.ws.rs.Path;
+
+@Path("/greet")
+@RegisterRestClient
+public interface GreetingService {
+
+    @GET
+    String greet(@MatrixParam("name") String name);
+
+    @GET
+    String greetRest(@RestMatrix String name);
+}
+----
+
+Calling `greet("world")` sends a request to `/greet;name=world`.
+
 === Dynamic base URLs
 
 The REST client allows for a per invocation override of the base URL using the `io.quarkus.rest.client.reactive.Url` annotation.

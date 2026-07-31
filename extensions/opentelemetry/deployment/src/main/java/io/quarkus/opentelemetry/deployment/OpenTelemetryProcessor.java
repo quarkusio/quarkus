@@ -53,7 +53,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
-import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
@@ -69,6 +68,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -198,6 +198,7 @@ public class OpenTelemetryProcessor {
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
+            BuildProducer<io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem> deprecatedOpenTelemetrySdkBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
         syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
@@ -230,6 +231,9 @@ public class OpenTelemetryProcessor {
 
         openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
                 tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
+        deprecatedOpenTelemetrySdkBuildItemBuildProducer
+                .produce(new io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem(
+                        tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();

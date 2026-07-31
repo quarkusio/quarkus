@@ -6,7 +6,6 @@ import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporter
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -15,6 +14,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
+import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogRecorder;
 import io.quarkus.opentelemetry.runtime.logs.spi.LogsExporterCDIProvider;

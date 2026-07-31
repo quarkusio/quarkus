@@ -45,8 +45,7 @@ public class OtelLoggingHandlerLevelTest {
                             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.logs.level=ERROR\n" +
+                                    "quarkus.otel.logs.level=ERROR\n" +
                                             "quarkus.otel.traces.enabled=true\n"),
                                     "application.properties"));
 

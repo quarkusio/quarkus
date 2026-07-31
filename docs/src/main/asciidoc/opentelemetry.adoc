@@ -51,25 +51,11 @@ The tracing functionality is supported and *on* by default.
 
 === xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide]
 
-==== Enable Metrics
-The metrics functionality is tech preview and *off* by default. You will need to activate it by setting:
-
-[source,properties]
-----
-quarkus.otel.metrics.enabled=true
-----
-At build time on your `application.properties` file.
+The metrics functionality is supported and *on* by default.
 
 === xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
 
-==== Enable Logs
-The logging functionality is tech preview and *off* by default. You will need to activate it by setting:
-
-[source,properties]
-----
-quarkus.otel.logs.enabled=true
-----
-At build time on your `application.properties` file.
+The logging functionality is supported and *on* by default.
 
 == Using the extension
 
@@ -104,7 +90,7 @@ include::{includes}/opentelemetry-config.adoc[]
 
 === Disable all or parts of the OpenTelemetry extension
 
-Once you add the dependency, the extension will generate tracing data by default. To enable metrics or disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
+Once you add the dependency, the extension will generate tracing, metrics and logging data by default. To disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
 
 |===
 |Affected Signal | Property name |Default value |Description
@@ -138,8 +124,8 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 
 | Metrics
 |`quarkus.otel.metrics.enabled`
-|false
-|Metrics are disabled by default at *build* time because they are tech preview.
+|true
+|If false, disable the OpenTelemetry metrics usage at *build* time.
 
 | Metrics output
 |`quarkus.otel.metrics.exporter`
@@ -148,8 +134,8 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 
 | Logs
 |`quarkus.otel.logs.enabled`
-|false
-|Logs are disabled by default at *build* time because they are tech preview.
+|true
+|If false, disable the OpenTelemetry logs usage at *build* time.
 
 | Logs output
 |`quarkus.otel.logs.exporter`

@@ -213,6 +213,20 @@ public interface JsonLogConfig extends LogRuntimeConfig {
         @WithName("mdc.flat-fields")
         boolean mdcFlatFields();
 
+        /**
+         * When true, access log events emitted by {@code io.quarkus.http.access-log} are enriched with
+         * a nested {@code "accessLog"} JSON object containing first-class fields for the HTTP method,
+         * request URI, status code, response time, bytes sent, remote IP address, and protocol.
+         * <p>
+         * This option requires that the Vert.x HTTP access log is enabled
+         * ({@code quarkus.http.access-log.enabled=true}). When disabled (the default), access log
+         * entries are emitted with only the pre-formatted message string, preserving the existing
+         * behaviour.
+         */
+        @WithDefault("false")
+        @WithName("access-log.structured")
+        boolean structuredAccessLog();
+
         enum LogFormat {
             DEFAULT,
             ECS,

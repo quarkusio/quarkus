@@ -140,7 +140,7 @@ A link to the equivalent OpenTelemetry Semantic Convention is also provided for 
 
 .Micrometer metrics output comparison. Prometheus registry vs. OpenTelemetry bridge
 |===
-|Micrometer Meter Java definition |Quarkus Micrometer Prometheus output (as seen at `/q/metrics/`) | This bridge OpenTelemetry output name (as seen in the OTLP output) | Related OpenTelemetry Semantic Convention (not applied)
+|Micrometer Meter Java definition |Quarkus Micrometer Prometheus client v0.x output (as seen at `/q/metrics/`) | This bridge OpenTelemetry output name (as seen in the OTLP output) | Related OpenTelemetry Semantic Convention (not applied)
 
 |Using the xref:telemetry-micrometer#create-a-timer[@Timed] interceptor.
 |

@@ -64,6 +64,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.Feature;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -295,7 +296,7 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName MULTI_PART_DATA_INPUT = DotName
             .createSimple("org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput");
-    public static final DotName ENTITY_PART = DotName.createSimple("jakarta.ws.rs.core.EntityPart");
+    public static final DotName ENTITY_PART = DotName.createSimple(EntityPart.class);
     public static final DotName OBJECT_NAME = DotName.createSimple(Object.class.getName());
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(

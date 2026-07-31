@@ -180,6 +180,18 @@ public interface ApplicationModel extends Mappable {
      */
     Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
 
+    /**
+     * Quarkus version ranges required by the extensions present in the application model, as declared via the
+     * {@code requires-quarkus-version} property in their {@code META-INF/quarkus-extension.properties}
+     * descriptors, keyed by the extension runtime artifact key. Extensions that do not declare the property
+     * are not present in the map.
+     *
+     * @return required Quarkus version ranges per extension, never null
+     */
+    default Map<ArtifactKey, String> getRequiredQuarkusVersions() {
+        return Map.of();
+    }
+
     @Override
     default Map<String, Object> asMap(MappableCollectionFactory factory) {
         final Map<String, Object> map = factory.newMap();
@@ -214,6 +226,15 @@ public interface ApplicationModel extends Mappable {
         }
         if (!getExtensionDevModeConfig().isEmpty()) {
             map.put(BootstrapConstants.MAPPABLE_EXTENSION_DEV_CONFIG, Mappable.asMaps(getExtensionDevModeConfig(), factory));
+        }
+        if (!getRequiredQuarkusVersions().isEmpty()) {
+            final Map<ArtifactKey, String> requiredQuarkusVersions = getRequiredQuarkusVersions();
+            final Map<String, Object> mappedRequiredQuarkusVersions = factory.newMap(requiredQuarkusVersions.size());
+            // Sort by key to keep the serialized form deterministic across JVMs (see #55619).
+            requiredQuarkusVersions.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedRequiredQuarkusVersions.put(entry.getKey().toString(), entry.getValue()));
+            map.put(BootstrapConstants.MAPPABLE_REQUIRED_QUARKUS_VERSIONS, mappedRequiredQuarkusVersions);
         }
         return map;
     }

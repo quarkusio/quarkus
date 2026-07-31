@@ -1090,6 +1090,28 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    // We need to add repository interfaces to the managed classes list so that
+    // their named queries are registered.
+    // See io/quarkus/it/hibernate/processor/data/HibernateOrmDataTest.java
+    @BuildStep
+    void addJakartaDataRepositoriesToJpaModel(CombinedIndexBuildItem index,
+            BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
+        DotName repositoryAnnotation = DotName.createSimple(JAKARTA_DATA_REPOSITORY_ANNOTATION);
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(repositoryAnnotation)) {
+            if (annotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+            String className = annotation.target().asClass().name().toString();
+            var dataStoreValue = annotation.value("dataStore");
+            String dataStore = dataStoreValue != null ? dataStoreValue.asString() : null;
+            if (dataStore != null && !dataStore.isEmpty()) {
+                additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className, Set.of(dataStore)));
+            } else {
+                additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className, Set.of(DEFAULT_PERSISTENCE_UNIT_NAME)));
+            }
+        }
+    }
+
     /**
      * Hibernate ORM checks package-info and if we have a negative lookup, it's not cached by AOT class loading.
      * <p>

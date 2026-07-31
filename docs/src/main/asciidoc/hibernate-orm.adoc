@@ -1357,7 +1357,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnitExtension // <1>
 @RequestScoped // <2>
-public class CustomTenantResolver implements TenantResolver {
+public class CustomTenantResolver implements TenantResolver<String> { // <3>
 
     @Inject
     RoutingContext context;
@@ -1387,6 +1387,9 @@ to tell Quarkus it should be used in the default persistence unit.
 +
 For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`.
 <2> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
+<3> `TenantResolver` is generic over the tenant identifier type.
+Use `TenantResolver<String>` unless you rely on a custom tenant identifier type supported by Hibernate ORM,
+such as `TenantResolver<Long>`.
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
 
@@ -1403,7 +1406,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnitExtension
 @RequestScoped
-public class CustomTenantResolver implements TenantResolver {
+public class CustomTenantResolver implements TenantResolver<String> {
 
     @Inject
     RoutingContext context; <1>
@@ -1628,7 +1631,7 @@ Here is an implementation example of a `TenantConnectionResolver` implementation
 ----
 @ApplicationScoped
 @PersistenceUnitExtension
-public class ExampleTenantConnectionResolver implements TenantConnectionResolver {
+public class ExampleTenantConnectionResolver implements TenantConnectionResolver<String> {
 
     private final jakarta.transaction.TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;

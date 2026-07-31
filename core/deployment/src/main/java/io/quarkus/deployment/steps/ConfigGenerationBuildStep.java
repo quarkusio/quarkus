@@ -136,6 +136,56 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class ConfigGenerationBuildStep {
     private static final String SERVICES_PREFIX = "META-INF/services/";
 
+    // Types for which SmallRye Config itself always has a built-in, non-reflective converter
+    // (see Converters.ALL_CONVERTERS) and which Quarkus core does *not* also register a converter for
+    // via the Converter SPI. These need no reflection at all: SmallRye never needs to resolve an
+    // implicit converter for them reflectively, and there is no Quarkus-registered converter for them
+    // whose target type needs to be resolved via Class.forName either.
+    // Note some types with a SmallRye built-in converter (e.g. java.net.InetAddress) are deliberately
+    // NOT in this set, because Quarkus core also registers its own converter for them - see
+    // QUARKUS_CONVERTER_SPI_TYPES below.
+    // (Copied as a constant to avoid the processing overhead of computing the list, as it rarely changes -
+    // we ensure it stays in sync via ConfigGenerationBuildStepTest)
+    private static final Set<String> SMALLRYE_BUILT_IN_CONVERTER_TYPES = Set.of(
+            "java.lang.String",
+            "java.lang.Boolean",
+            "java.lang.Double",
+            "java.lang.Float",
+            "java.lang.Long",
+            "java.lang.Integer",
+            "java.lang.Short",
+            "java.lang.Byte",
+            "java.lang.Character",
+            "java.lang.Class",
+            "java.util.UUID",
+            "java.util.Currency",
+            "java.util.BitSet",
+            "java.io.File",
+            "java.net.URI",
+            "java.time.format.DateTimeFormatter",
+            "java.lang.CharSequence",
+            "java.util.OptionalInt",
+            "java.util.OptionalLong",
+            "java.util.OptionalDouble");
+
+    // Types for which Quarkus core registers a converter via the Converter SPI.
+    // In this case (see AbstractConfigBuilder#withConverter) a Class.forName(String)
+    // operation needs to be available at runtime, but no other reflective operations are necessary.
+    // (Copied as a constant to avoid the processing overhead of computing the list, as it rarely changes -
+    // we ensure it stays in sync via ConfigGenerationBuildStepTest)
+    private static final Set<String> QUARKUS_CONVERTER_SPI_TYPES = Set.of(
+            "java.net.InetSocketAddress",
+            "java.nio.charset.Charset",
+            "io.smallrye.common.net.CidrAddress",
+            "java.net.InetAddress",
+            "java.util.regex.Pattern",
+            "java.nio.file.Path",
+            "java.time.Duration",
+            "java.util.Locale",
+            "java.time.ZoneId",
+            "java.util.logging.Level",
+            "io.quarkus.runtime.logging.InheritableLevel");
+
     @BuildStep
     void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
         runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(InetRunTime.class.getName()));
@@ -348,10 +398,7 @@ public class ConfigGenerationBuildStep {
                             .reason("Required by Config Converter " + mapProperty.getKeyConvertWith().getName())
                             .build());
                 } else {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyRawType())
-                            .reason("Required by Config Converter " + mapProperty.getKeyRawType().getName())
-                            .methods()
-                            .build());
+                    registerConverterReflection(mapProperty.getKeyRawType(), reflectiveClasses);
                 }
 
                 registerImplicitConverter(mapProperty.getValueProperty(), reflectiveClasses);
@@ -370,16 +417,52 @@ public class ConfigGenerationBuildStep {
                         .reason("Required by Config Converter " + leafProperty.getConvertWith().getName())
                         .build());
             } else {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(leafProperty.getValueRawType())
-                        .reason("Required by Config Converter " + leafProperty.getValueRawType().getName())
-                        .methods()
-                        .build());
+                registerConverterReflection(leafProperty.getValueRawType(), reflectiveClasses);
             }
         } else if (property.isOptional()) {
             registerImplicitConverter(property.asOptional().getNestedProperty(), reflectiveClasses);
         } else if (property.isCollection()) {
             registerImplicitConverter(property.asCollection().getElement(), reflectiveClasses);
         }
+    }
+
+    /**
+     * Registers a config property's raw type for reflection.
+     * <p>
+     * Types with a SmallRye Config built-in converter need no reflection at all - SmallRye never needs to
+     * resolve an implicit converter for them reflectively, and Quarkus never wires a converter for them
+     * either.
+     * <p>
+     * Types with a Quarkus-registered Converter SPI converter need the class itself registered for
+     * reflection - with no members - purely so that the generated config builder bytecode can resolve
+     * the converter's target type via {@code Class.forName(String)} at runtime (see
+     * {@code AbstractConfigBuilder#withConverter}); no implicit converter is ever resolved for these
+     * types either, so no method or constructor reflection is needed.
+     * <p>
+     * Every other type may need an implicit converter resolved reflectively (SmallRye probes
+     * {@code valueOf}, {@code parse}, {@code of}, ...), so it needs full method reflection.
+     */
+    private static void registerConverterReflection(
+            Class<?> rawType,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        String rawTypeName = rawType.getName();
+        if (SMALLRYE_BUILT_IN_CONVERTER_TYPES.contains(rawTypeName)) {
+            return;
+        }
+
+        if (QUARKUS_CONVERTER_SPI_TYPES.contains(rawTypeName)) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(rawType)
+                    .reason("Required by Config Converter " + rawTypeName + " (Class.forName resolution only)")
+                    .constructors(false)
+                    .build());
+            return;
+        }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(rawType)
+                .reason("Required by Config Converter " + rawTypeName + " (All methods potentially needed)")
+                .methods()
+                .build());
     }
 
     @BuildStep(onlyIf = SystemOnlySources.class)

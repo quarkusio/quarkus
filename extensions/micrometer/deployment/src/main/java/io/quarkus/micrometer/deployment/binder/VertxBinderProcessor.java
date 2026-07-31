@@ -56,7 +56,8 @@ public class VertxBinderProcessor {
     void buildStatic(VertxMeterBinderRecorder recorder,
             BuildProducer<VertxBootstrapConsumerBuildItem> boostrap,
             BuildProducer<VertxOptionsConsumerBuildItem> options) {
-        boostrap.produce(new VertxBootstrapConsumerBuildItem(recorder.configureMetricFactory(), LIBRARY_AFTER - 1));
+        boostrap.produce(new VertxBootstrapConsumerBuildItem(recorder.configureMetricFactory(), LIBRARY_AFTER - 1,
+                "micrometer.vertx.metric-factory"));
         options.produce(
                 new VertxOptionsConsumerBuildItem(recorder.configureMetricsOptions(), Interceptor.Priority.LIBRARY_AFTER,
                         "micrometer.vertx.metrics"));

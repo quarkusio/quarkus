@@ -1185,7 +1185,8 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (!started) {
+        if (!started && context.getRequiredTestClass().isAnnotationPresent(
+                org.junit.jupiter.params.ParameterizedClass.class)) {
             doBeforeAll(context);
         }
         if (assertException != null) {

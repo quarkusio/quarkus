@@ -319,6 +319,13 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void registerTypeToBeGenerated(Type type) {
+        // a type argument can be parameterized itself, like the List<Foo> in a Map<String, List<Foo>>,
+        // so recurse to reach the Foo nested in it
+        if (type instanceof ParameterizedType pType) {
+            for (Type argument : pType.arguments()) {
+                registerTypeToBeGenerated(argument);
+            }
+        }
         registerTypeToBeGenerated(type.name().toString());
     }
 

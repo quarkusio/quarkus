@@ -21,7 +21,9 @@ public class GrpcMetricsClientInterceptor extends MetricCollectingClientIntercep
     public GrpcMetricsClientInterceptor(MeterRegistry registry, MicrometerConfig config) {
         super(registry, UnaryOperator.identity(),
                 GrpcMetricTimerCustomizer.create(config.binder().grpcClient().histogram(),
-                        config.binder().grpcClient().slos()),
+                        config.binder().grpcClient().slos(),
+                        config.binder().grpcClient().minimumExpectedValue(),
+                        config.binder().grpcClient().maximumExpectedValue()),
                 Status.Code.OK);
     }
 

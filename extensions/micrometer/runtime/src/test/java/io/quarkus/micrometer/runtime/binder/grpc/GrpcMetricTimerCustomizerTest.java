@@ -1,59 +1,80 @@
 package io.quarkus.micrometer.runtime.binder.grpc;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 
 class GrpcMetricTimerCustomizerTest {
 
+    Timer.Builder builder;
+
+    @BeforeEach
+    void setUp() {
+        builder = mock(Timer.Builder.class);
+        when(builder.publishPercentileHistogram()).thenReturn(builder);
+        when(builder.minimumExpectedValue(any())).thenReturn(builder);
+        when(builder.maximumExpectedValue(any())).thenReturn(builder);
+        when(builder.serviceLevelObjectives(any(Duration[].class))).thenReturn(builder);
+    }
+
     @Test
-    void histogramDisabledDoesNotPublishBuckets() {
-        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    void histogramDisabledDoesNotCustomizeTimer() {
         UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(false,
-                Optional.of(List.of(Duration.ofMillis(10), Duration.ofMillis(100))));
+                Optional.of(List.of(Duration.ofMillis(10))),
+                Optional.of(Duration.ofMillis(1)),
+                Optional.of(Duration.ofSeconds(1)));
 
-        Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
-        timer.record(Duration.ofMillis(15));
-
-        assertFalse(registry.scrape().contains("grpc_server_processing_duration_seconds_bucket"));
+        assertSame(builder, customizer.apply(builder));
+        verifyNoInteractions(builder);
     }
 
     @Test
     void histogramEnabledUsesMicrometerPercentileHistogramDefaults() {
-        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.empty());
+        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.empty(),
+                Optional.empty(), Optional.empty());
 
-        Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
-        timer.record(Duration.ofMillis(15));
-
-        String scrape = registry.scrape();
-        assertTrue(scrape.contains("# TYPE grpc_server_processing_duration_seconds histogram"), scrape);
-        assertTrue(scrape.contains("grpc_server_processing_duration_seconds_bucket{"), scrape);
-        assertTrue(scrape.contains("le=\"+Inf\""), scrape);
+        assertSame(builder, customizer.apply(builder));
+        verify(builder).publishPercentileHistogram();
+        verify(builder, never()).minimumExpectedValue(any());
+        verify(builder, never()).maximumExpectedValue(any());
+        verify(builder, never()).serviceLevelObjectives(any(Duration[].class));
     }
 
     @Test
     void histogramEnabledAddsOptionalSloBuckets() {
-        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         List<Duration> slos = List.of(Duration.ofMillis(10), Duration.ofMillis(100), Duration.ofSeconds(1));
-        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.of(slos));
+        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.of(slos),
+                Optional.empty(), Optional.empty());
 
-        Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
-        timer.record(Duration.ofMillis(15));
+        assertSame(builder, customizer.apply(builder));
+        verify(builder).publishPercentileHistogram();
+        verify(builder).serviceLevelObjectives(slos.toArray(Duration[]::new));
+    }
 
-        String scrape = registry.scrape();
-        assertTrue(scrape.contains("le=\"0.01\""), scrape);
-        assertTrue(scrape.contains("le=\"0.1\""), scrape);
-        assertTrue(scrape.contains("le=\"1.0\""), scrape);
+    @Test
+    void histogramEnabledAppliesExpectedValueOverrides() {
+        Duration min = Duration.ofMillis(5);
+        Duration max = Duration.ofMillis(100);
+        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.empty(),
+                Optional.of(min), Optional.of(max));
+
+        assertSame(builder, customizer.apply(builder));
+        verify(builder).publishPercentileHistogram();
+        verify(builder).minimumExpectedValue(min);
+        verify(builder).maximumExpectedValue(max);
     }
 }

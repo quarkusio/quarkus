@@ -1,0 +1,20 @@
+// Source: {{source}}
+// tag::runtime-project[]
+plugins {
+    id 'java-library'
+    id 'io.quarkus.extension'
+}
+
+quarkusExtension {
+    // Optional here because "deployment" is the convention.
+    deploymentModule = 'deployment'
+}
+// end::runtime-project[]
+
+group = 'org.acme'
+version = '1.0.0'
+
+dependencies {
+    implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-arc'
+}

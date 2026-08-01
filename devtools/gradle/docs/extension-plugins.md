@@ -6,7 +6,9 @@ This page is for contributors changing Gradle support for Quarkus extension
 runtime and deployment modules. It documents the responsibilities of
 `io.quarkus.extension` and `io.quarkus.extension.deployment`, their published
 variants, and their relationship to application-model resolution. It does not
-provide a migration recipe.
+duplicate the user-facing migration recipe; see
+[Migrate a Gradle-built extension to Quarkus 4](../../../docs/src/main/asciidoc/gradle-extension-plugin-migration.adoc)
+for the required build-script changes.
 
 Plugin IDs, the runtime-module DSL, and consumed outgoing variants are
 user/build contracts. Marker files, generated model paths, and configuration

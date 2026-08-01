@@ -299,10 +299,13 @@ public abstract class CurrentManagedContext implements ManagedContext {
                     return false;
                 }
                 final byte newState = (byte) (state | bitMask);
-                state = (byte) STATE_UPDATER.compareAndExchange(this, state, newState);
-                if (state == newState) {
+                // compareAndExchange returns the witness (the value before the call); the swap
+                // succeeded only when that equals the expected value, not newState.
+                final byte witness = (byte) STATE_UPDATER.compareAndExchange(this, state, newState);
+                if (witness == state) {
                     return true;
                 }
+                state = witness;
             }
         }
 

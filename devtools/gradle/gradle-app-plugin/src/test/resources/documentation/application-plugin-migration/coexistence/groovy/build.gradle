@@ -1,0 +1,83 @@
+// Source: {{source}}
+import org.gradle.api.plugins.jvm.JvmTestSuite
+import io.quarkus.gradle.application.tasks.QuarkusApplicationDevTask
+
+// tag::legacy-first-coexistence[]
+plugins {
+    id 'io.quarkus'
+    id 'io.quarkus.application'
+}
+
+group = 'org.acme'
+version = '1.0.0'
+
+def quarkusPlatformVersion = providers.gradleProperty('quarkusPlatformVersion').get()
+def quarkusPlatformGroupId = providers.gradleProperty('quarkusPlatformGroupId')
+    .orElse('io.quarkus.platform').get()
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:quarkus-bom:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+
+    testImplementation 'io.quarkus:quarkus-junit'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+quarkusApplication {
+    builds {
+        fastJar('migration') {
+            outputName.set('acme-migration')
+            participatesInAssemble.set(false)
+        }
+        nativeExecutable('native')
+    }
+    dev {
+        continuousTesting.set(false)
+    }
+}
+// end::legacy-first-coexistence[]
+
+if (providers.gradleProperty('standaloneParticipatesInAssemble').isPresent()) {
+    quarkusApplication.builds.all {
+        if (name == 'migration') {
+            participatesInAssemble.set(true)
+        }
+    }
+}
+
+if (providers.gradleProperty('verifyNativeIntegrationRestriction').isPresent()) {
+    testing.suites.register('nativeIntegrationTest', JvmTestSuite) {
+        forQuarkusIntegrationTests 'native'
+    }
+}
+
+def quarkusDevConfiguration = configurations.named('quarkusDev')
+def standaloneDev = tasks.named('quarkusApplicationDev', QuarkusApplicationDevTask)
+def standaloneContinuousTest = tasks.named('quarkusApplicationContinuousTest', QuarkusApplicationDevTask)
+
+tasks.register('verifyMigrationOwnership') {
+    doLast {
+        assert project.extensions.findByName('quarkus') != null
+        assert project.extensions.findByName('quarkusApplication') != null
+        assert quarkusDevConfiguration.get().canBeResolved
+        assert standaloneDev.get().legacyTestsOwned.get()
+        assert !standaloneDev.get().continuousTesting.get()
+        assert standaloneContinuousTest.get().legacyTestsOwned.get()
+        assert standaloneContinuousTest.get().continuousTesting.get()
+        assert tasks.findByName('quarkusBuild') != null
+        assert tasks.findByName('quarkusTest') != null
+        assert tasks.findByName('quarkusMigrationBuild') != null
+        assert tasks.findByName('quarkusNativeNativeTest') == null
+        assert tasks.findByName('quarkusGenerateCode') != null
+        assert tasks.findByName('quarkusApplicationGenerateCode') != null
+        def compileJava = tasks.named('compileJava').get()
+        def compileDependencies = compileJava.taskDependencies.getDependencies(compileJava)*.name as Set
+        assert compileDependencies.contains('quarkusGenerateCode')
+        assert compileDependencies.contains('quarkusApplicationGenerateCode')
+        def assemble = tasks.named('assemble').get()
+        def assembleDependencies = assemble.taskDependencies.getDependencies(assemble)*.name as Set
+        assert assembleDependencies.contains('quarkusBuild')
+        assert assembleDependencies.contains('quarkusMigrationBuild')
+    }
+}

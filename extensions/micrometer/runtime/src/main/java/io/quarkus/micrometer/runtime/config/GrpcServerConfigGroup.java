@@ -27,19 +27,19 @@ public interface GrpcServerConfigGroup extends MicrometerConfig.CapabilityEnable
      * Whether to publish histogram buckets for gRPC server processing duration timers.
      * <p>
      * Disabled by default because histograms increase memory usage and metric cardinality.
-     * When enabled, aggregatable latency buckets are published (suitable for
-     * {@code histogram_quantile} in Prometheus).
+     * When enabled, Micrometer's default percentile histogram buckets are published (suitable
+     * for {@code histogram_quantile} in Prometheus). Optional SLO boundaries can be added via
+     * {@link #slos()}.
      */
     @WithDefault("false")
     boolean histogram();
 
     /**
-     * Service level objective (bucket) boundaries for the processing duration histogram.
+     * Optional service level objective (bucket) boundaries for the processing duration histogram.
      * <p>
-     * Only applied when {@link #histogram()} is {@code true}. Using a fixed set of buckets
-     * keeps metric cardinality bounded compared to Micrometer's full percentile histogram
-     * generator.
+     * Only applied when {@link #histogram()} is {@code true}. When unset, Micrometer's default
+     * percentile histogram buckets are used. When set, these SLO boundaries are added to that
+     * histogram.
      */
-    @WithDefault("5ms,10ms,25ms,50ms,100ms,250ms,500ms,1s,5s")
-    List<Duration> slos();
+    Optional<List<Duration>> slos();
 }

@@ -479,7 +479,7 @@ To publish aggregatable histogram buckets (for example for `histogram_quantile`)
 quarkus.micrometer.binder.grpc-server.histogram=true
 ----
 
-Optional custom bucket boundaries (defaults are `5ms,10ms,25ms,50ms,100ms,250ms,500ms,1s,5s`):
+This uses Micrometer's default percentile histogram buckets. Optionally add extra SLO boundaries:
 
 [source, properties]
 ----

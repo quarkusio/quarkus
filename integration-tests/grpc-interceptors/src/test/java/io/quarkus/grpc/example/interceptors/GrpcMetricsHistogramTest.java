@@ -21,9 +21,7 @@ class GrpcMetricsHistogramTest {
         assertThat(metrics)
                 .contains("# TYPE grpc_server_processing_duration_seconds histogram")
                 .contains("grpc_server_processing_duration_seconds_bucket{")
-                .contains("le=\"0.005\"")
-                .contains("le=\"0.1\"")
-                .contains("le=\"1.0\"")
+                .contains("le=\"+Inf\"")
                 .contains("# TYPE grpc_client_processing_duration_seconds histogram")
                 .contains("grpc_client_processing_duration_seconds_bucket{");
     }

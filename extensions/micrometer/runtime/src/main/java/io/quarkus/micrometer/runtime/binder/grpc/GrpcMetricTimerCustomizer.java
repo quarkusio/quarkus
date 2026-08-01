@@ -2,6 +2,7 @@ package io.quarkus.micrometer.runtime.binder.grpc;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import io.micrometer.core.instrument.Timer;
@@ -15,16 +16,26 @@ public final class GrpcMetricTimerCustomizer {
     }
 
     /**
-     * Creates a timer customizer that optionally publishes fixed SLO histogram buckets.
+     * Creates a timer customizer that optionally publishes Micrometer percentile histogram buckets.
+     * <p>
+     * When {@code histogram} is {@code true}, Micrometer's default percentile histogram is enabled
+     * via {@link Timer.Builder#publishPercentileHistogram()}. Optional SLO boundaries can be
+     * supplied to add extra buckets; {@link Timer.Builder#publishPercentiles(double...)} is never
+     * used.
      *
      * @param histogram whether histogram buckets should be published
-     * @param slos bucket boundaries used when {@code histogram} is {@code true}
+     * @param slos optional extra SLO bucket boundaries; empty means Micrometer defaults only
      */
-    public static UnaryOperator<Timer.Builder> create(boolean histogram, List<Duration> slos) {
+    public static UnaryOperator<Timer.Builder> create(boolean histogram, Optional<List<Duration>> slos) {
         if (!histogram) {
             return UnaryOperator.identity();
         }
-        Duration[] buckets = slos.toArray(Duration[]::new);
-        return timer -> timer.serviceLevelObjectives(buckets);
+        return timer -> {
+            Timer.Builder builder = timer.publishPercentileHistogram();
+            if (slos.isPresent() && !slos.get().isEmpty()) {
+                builder.serviceLevelObjectives(slos.get().toArray(Duration[]::new));
+            }
+            return builder;
+        };
     }
 }

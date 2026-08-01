@@ -1,48 +1,59 @@
 package io.quarkus.micrometer.runtime.binder.grpc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import org.junit.jupiter.api.Test;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.distribution.CountAtBucket;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 
 class GrpcMetricTimerCustomizerTest {
 
     @Test
     void histogramDisabledDoesNotPublishBuckets() {
-        MeterRegistry registry = new SimpleMeterRegistry();
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(false,
-                List.of(Duration.ofMillis(10), Duration.ofMillis(100)));
+                Optional.of(List.of(Duration.ofMillis(10), Duration.ofMillis(100))));
 
         Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
         timer.record(Duration.ofMillis(15));
 
-        assertEquals(0, timer.takeSnapshot().histogramCounts().length);
+        assertFalse(registry.scrape().contains("grpc_server_processing_duration_seconds_bucket"));
     }
 
     @Test
-    void histogramEnabledPublishesConfiguredSloBuckets() {
-        MeterRegistry registry = new SimpleMeterRegistry();
-        List<Duration> slos = List.of(Duration.ofMillis(10), Duration.ofMillis(100), Duration.ofSeconds(1));
-        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, slos);
+    void histogramEnabledUsesMicrometerPercentileHistogramDefaults() {
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.empty());
 
         Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
         timer.record(Duration.ofMillis(15));
 
-        CountAtBucket[] buckets = timer.takeSnapshot().histogramCounts();
-        assertTrue(buckets.length > 0);
-        assertTrue(Arrays.stream(buckets).anyMatch(bucket -> bucket.bucket(TimeUnit.MILLISECONDS) == 10));
-        assertTrue(Arrays.stream(buckets).anyMatch(bucket -> bucket.bucket(TimeUnit.MILLISECONDS) == 100));
-        assertTrue(Arrays.stream(buckets).anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 1));
+        String scrape = registry.scrape();
+        assertTrue(scrape.contains("# TYPE grpc_server_processing_duration_seconds histogram"), scrape);
+        assertTrue(scrape.contains("grpc_server_processing_duration_seconds_bucket{"), scrape);
+        assertTrue(scrape.contains("le=\"+Inf\""), scrape);
+    }
+
+    @Test
+    void histogramEnabledAddsOptionalSloBuckets() {
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        List<Duration> slos = List.of(Duration.ofMillis(10), Duration.ofMillis(100), Duration.ofSeconds(1));
+        UnaryOperator<Timer.Builder> customizer = GrpcMetricTimerCustomizer.create(true, Optional.of(slos));
+
+        Timer timer = customizer.apply(Timer.builder("grpc.server.processing.duration")).register(registry);
+        timer.record(Duration.ofMillis(15));
+
+        String scrape = registry.scrape();
+        assertTrue(scrape.contains("le=\"0.01\""), scrape);
+        assertTrue(scrape.contains("le=\"0.1\""), scrape);
+        assertTrue(scrape.contains("le=\"1.0\""), scrape);
     }
 }

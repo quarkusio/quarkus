@@ -17,6 +17,7 @@ The `io.quarkus` plugin is not fully compatible with Gradle's configuration cach
 
 The preview xref:gradle-application-plugin.adoc[`io.quarkus.application` plugin] addresses those limitations and lets a build declare multiple application packages or native executables independently.
 Each declared output receives its own tasks and configuration, so a project can build, test, publish, or deploy different application forms without changing one project-wide package type.
+See xref:gradle-application-plugin-migration.adoc[Migrate to the `io.quarkus.application` Gradle plugin] for direct and legacy-first staged migration procedures.
 
 [[project-creation]]
 == Creating a new project

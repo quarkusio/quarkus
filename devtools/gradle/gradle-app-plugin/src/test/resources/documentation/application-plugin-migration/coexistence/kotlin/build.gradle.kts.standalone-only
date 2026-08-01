@@ -1,0 +1,61 @@
+// Source: {{source}}
+import io.quarkus.gradle.application.tasks.QuarkusApplicationDevTask
+import org.gradle.api.tasks.testing.Test
+
+// tag::standalone-only-final[]
+plugins {
+    id("io.quarkus.application")
+}
+
+group = "org.acme"
+version = "1.0.0"
+
+val quarkusPlatformVersion = providers.gradleProperty("quarkusPlatformVersion").get()
+val quarkusPlatformGroupId = providers.gradleProperty("quarkusPlatformGroupId")
+    .orElse("io.quarkus.platform").get()
+
+dependencies {
+    implementation(enforcedPlatform("$quarkusPlatformGroupId:quarkus-bom:$quarkusPlatformVersion"))
+    implementation("io.quarkus:quarkus-rest")
+    quarkusDev("io.quarkus:quarkus-jdbc-h2")
+
+    testImplementation("io.quarkus:quarkus-junit")
+    testImplementation("io.rest-assured:rest-assured")
+}
+
+quarkusApplication {
+    builds {
+        fastJar("service") {
+            outputName = "acme-service"
+            participatesInAssemble = true
+        }
+        nativeExecutable("native")
+    }
+    tests {
+        allGradleTestTasks()
+    }
+}
+// end::standalone-only-final[]
+
+val quarkusDevConfiguration = configurations.named("quarkusDev")
+val standaloneDev = tasks.named<QuarkusApplicationDevTask>("quarkusApplicationDev")
+val functionalTest = tasks.register<Test>("functionalTest")
+
+tasks.register("verifyStandaloneOwnership") {
+    doLast {
+        check(!quarkusDevConfiguration.get().isCanBeResolved)
+        check(!quarkusDevConfiguration.get().isCanBeConsumed)
+        check(!standaloneDev.get().legacyTestsOwned.get())
+        check(tasks.findByName("quarkusBuild") == null)
+        check(tasks.findByName("quarkusServiceBuild") != null)
+        check(tasks.findByName("quarkusNativeNativeTest") != null)
+        check(tasks.findByName("quarkusGenerateCode") == null)
+        check(tasks.findByName("quarkusApplicationGenerateCode") != null)
+        check("quarkusApplicationTestModel" in functionalTest.get().taskDependencies
+            .getDependencies(functionalTest.get()).map { it.name })
+        val assemble = tasks.named("assemble").get()
+        val assembleDependencies = assemble.taskDependencies.getDependencies(assemble).map { it.name }.toSet()
+        check("quarkusServiceBuild" in assembleDependencies)
+        check("quarkusBuild" !in assembleDependencies)
+    }
+}

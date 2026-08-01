@@ -22,7 +22,7 @@ include::{includes}/extension-status.adoc[]
 This plugin is different from the `io.quarkus` plugin used by currently generated projects.
 Use this page for `io.quarkus.application`.
 See xref:gradle-tooling.adoc[Quarkus and Gradle] for `io.quarkus`.
-For an incremental migration, you can apply `io.quarkus.application` after `io.quarkus` and move responsibilities gradually; see <<gradle-application-plugin-coexistence,Migrate with both application plugins>>.
+For direct migration and temporary legacy-first coexistence procedures, see xref:gradle-application-plugin-migration.adoc[Migrate to the `io.quarkus.application` Gradle plugin].
 
 The plugin does not choose an application package for you.
 Declaring a build registers its task family lazily, but does not run the build or add it to `assemble`.
@@ -1071,7 +1071,7 @@ Applying both plugins is a migration-only shape with these boundaries:
 * the existing plugin retains Gradle test and tooling ownership; and
 * applying `io.quarkus.application` first and `io.quarkus` later is rejected.
 
-Detailed task-by-task migration belongs in a separate migration guide.
+For the task-by-task mapping, ownership restrictions, and final legacy-removal step, see xref:gradle-application-plugin-migration.adoc#gradle-application-plugin-migration-staged[Perform a legacy-first staged migration].
 The `io.quarkus.application` plugin deliberately does not provide extension discovery/mutation or project/platform inspection/update tasks.
 Use the xref:cli-tooling.adoc[Quarkus CLI] for listing, adding, and removing extensions and for project update workflows.
 

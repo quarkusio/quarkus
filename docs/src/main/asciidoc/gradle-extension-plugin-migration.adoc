@@ -1,0 +1,362 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="gradle-extension-plugin-migration"]
+= Migrate a Gradle-built extension to Quarkus 4
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: writing-extensions
+:summary: Migrate a Quarkus extension from the Quarkus 3 single Gradle plugin to the Quarkus 4 runtime and deployment plugins.
+:topics: extensions,gradle,tooling,migration
+
+Quarkus 3 configures both the runtime and deployment projects of a Gradle-built extension from the `io.quarkus.extension` plugin applied to the runtime project.
+Quarkus 4 separates that cross-project configuration into two project-owned plugins:
+
+* apply `io.quarkus.extension` to the runtime project; and
+* apply `io.quarkus.extension.deployment` to the deployment project.
+
+This guide migrates an existing split runtime/deployment extension.
+It does not change which project contains runtime or deployment code, and it does not migrate an application project from the legacy `io.quarkus` application plugin.
+
+[NOTE]
+====
+Coordinates, project names, and versions in this guide are examples.
+Keep the coordinates and project layout that belong to your extension.
+====
+
+[[gradle-extension-plugin-migration-prerequisites]]
+== Update the build prerequisites
+
+Quarkus 4 requires Java 21.
+The Quarkus Gradle plugins require Gradle 9.6 or later.
+Update the JDK that runs Gradle and the Gradle wrapper before diagnosing migration failures.
+
+The following command updates the wrapper to the version used to verify this documentation:
+
+[source,shell,subs=attributes+]
+----
+./gradlew wrapper --gradle-version {gradle-version}
+----
+
+Commit the generated wrapper files with the migration.
+
+[[gradle-extension-plugin-migration-summary]]
+== Understand what changes
+
+[cols="2,2,2"]
+|===
+|Concern |Quarkus 3 |Quarkus 4
+
+|Runtime project
+|Applies `io.quarkus.extension`
+|Still applies `io.quarkus.extension`
+
+|Deployment project
+|The runtime plugin finds and configures it
+|Applies `io.quarkus.extension.deployment` and configures itself
+
+|Runtime extension DSL
+|Configured in `quarkusExtension`
+|Retained in `quarkusExtension`
+
+|Deployment-to-runtime dependency
+|Declared by the deployment project
+|Still declared by the deployment project
+
+|Deployment tests
+|The runtime plugin configures the deployment project's `Test` tasks
+|The deployment plugin generates and supplies the test application model
+
+|Local deployment validation
+|The runtime plugin reads and configures the deployment project
+|The runtime plugin selects the deployment plugin's marker variant
+
+|Published extension artifacts
+|Runtime and deployment Maven artifacts
+|Unchanged; the new marker is a Gradle build-graph contract
+|===
+
+The split removes configuration-order and cross-project mutation from the plugins.
+Each plugin now configures only the project to which it is applied, which is required for Gradle's Configuration Cache and Isolated Projects model.
+
+[[gradle-extension-plugin-migration-declare-plugins]]
+== Declare both plugin IDs
+
+If you centralize plugin versions in `settings.gradle` or `settings.gradle.kts`, add the deployment plugin with the same Quarkus version as the runtime plugin.
+
+In Quarkus 3:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-settings-3.gradle[tag=three-x-plugin-management]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-settings-3.gradle.kts[tag=three-x-plugin-management]
+----
+****
+
+For Quarkus 4:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-settings-4.gradle[tag=four-x-plugin-management]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-settings-4.gradle.kts[tag=four-x-plugin-management]
+----
+****
+
+If each project declares its plugin version directly, make the equivalent change in the deployment project's `plugins` block instead.
+
+[[gradle-extension-plugin-migration-runtime]]
+== Keep the runtime plugin and extension configuration
+
+The runtime project continues to apply `io.quarkus.extension` and own the `quarkusExtension` block.
+Existing descriptor metadata, capability declarations, class-loading declarations, conditional dependencies, and removed-resource declarations stay in that block.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-runtime.gradle[tag=runtime-project]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-runtime.gradle.kts[tag=runtime-project]
+----
+****
+
+`deploymentModule` defaults to `deployment`.
+For a runtime project such as `:extensions:acme:runtime`, that relative name selects the sibling `:extensions:acme:deployment` project.
+Keep an existing custom value when your layout differs.
+Use an absolute Gradle project path beginning with `:` when the deployment project is not a sibling.
+
+The migration does not remove the compatibility setter forms of the runtime DSL.
+You can modernize those declarations separately; adding the deployment plugin does not require rewriting the rest of `quarkusExtension`.
+
+[[gradle-extension-plugin-migration-deployment]]
+== Apply the deployment plugin
+
+In Quarkus 3, a typical deployment project only applies a Java plugin:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-3.gradle[tag=three-x-deployment-project]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-3.gradle.kts[tag=three-x-deployment-project]
+----
+****
+
+Add `io.quarkus.extension.deployment` in Quarkus 4:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-4.gradle[tag=four-x-deployment-project]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-4.gradle.kts[tag=four-x-deployment-project]
+----
+****
+
+The deployment plugin applies Gradle's Java plugin itself.
+Keeping `java-library` is harmless and is necessary when the deployment build uses Java Library features such as the `api` configuration.
+Do not remove it automatically as part of this migration.
+
+The deployment project must continue to depend on the runtime project and on the deployment artifacts corresponding to its runtime dependencies:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-4.gradle[tag=deployment-runtime-dependency]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-extension-plugin-migration-deployment-4.gradle.kts[tag=deployment-runtime-dependency]
+----
+****
+
+The deployment plugin does not infer or add the project dependency.
+
+[[gradle-extension-plugin-migration-tests]]
+== Review deployment test configuration
+
+`io.quarkus.extension.deployment` configures the Quarkus annotation processor and JUnit Platform for the deployment project.
+It registers `quarkusGenerateTestAppModel` and makes each Gradle `Test` task consume the generated test application model lazily.
+
+Keep your deployment test sources, `testImplementation` dependencies, and unrelated JVM settings.
+Remove custom build logic only when it manually creates or injects the same serialized application model through the internal `quarkus-internal-test.serialized-app-model.path` property; the deployment plugin now owns that value.
+
+The generated model is an execution input containing local build paths.
+It is not an artifact to publish or copy between builds.
+
+[[gradle-extension-plugin-migration-validate]]
+== Verify the migrated build
+
+Build the runtime JAR and run the deployment tests:
+
+[source,shell]
+----
+./gradlew :runtime:jar :deployment:test --configuration-cache
+----
+
+For the conventional layout, the task graph includes:
+
+* `:runtime:validateExtension` and `:runtime:extensionDescriptor`;
+* `:deployment:quarkusExtensionDeploymentMarker` when the marker is needed;
+* `:deployment:quarkusGenerateTestAppModel`; and
+* `:deployment:test`.
+
+Run the same command again without changing inputs.
+Gradle should reuse the configuration cache, and tasks whose outputs are unchanged should be up to date or restored from the build cache.
+
+When you explicitly test Gradle's incubating Isolated Projects mode, add the Gradle 9.6 system property used by that feature:
+
+[source,shell]
+----
+./gradlew :runtime:jar :deployment:test --configuration-cache -Dorg.gradle.unsafe.isolated-projects=true
+----
+
+[[gradle-extension-plugin-migration-descriptor-output]]
+== Account for direct descriptor-task consumers
+
+Normal `processResources`, `jar`, and `build` invocations still include:
+
+* `META-INF/quarkus-extension.properties`; and
+* `META-INF/quarkus-extension.yaml`.
+
+The direct `extensionDescriptor` task now owns the generated-resource directory `build/generated/resources/quarkus-extension/main`.
+`processResources` copies those files into the conventional `build/resources/main` output.
+
+Most builds require no change.
+If custom build logic reads the output of `extensionDescriptor` directly, consume the task's declared output directory instead of hard-coding `build/resources/main`.
+If the custom logic specifically needs processed resources, depend on `processResources`, `classes`, or `jar`.
+
+[[gradle-extension-plugin-migration-external-deployment]]
+== Handle non-conventional and external deployment artifacts
+
+`quarkusExtension.deploymentModule` identifies a local Gradle project.
+The runtime plugin validates that this project publishes the marker supplied by `io.quarkus.extension.deployment`.
+
+An explicit `deploymentArtifact` instead identifies published Maven coordinates, for example:
+
+[source,groovy]
+----
+quarkusExtension {
+    deploymentArtifact = 'org.acme:acme-extension-deployment:1.0.0'
+}
+----
+
+Setting `deploymentArtifact` disables checks that require a local deployment project.
+It does not configure a local deployment project's tests.
+If your build also contains that deployment project, apply `io.quarkus.extension.deployment` there for its test-model and marker responsibilities.
+
+[[gradle-extension-plugin-migration-publication]]
+== Keep the existing extension publication
+
+Continue publishing the runtime and deployment Maven artifacts required by a Quarkus extension.
+The runtime descriptor still names the deployment artifact consumed by applications.
+
+You do not need to publish the deployment marker as an additional application artifact or add it to a runtime classpath.
+It is a Gradle variant used to identify a correctly configured local deployment project.
+Likewise, the runtime plugin's local deployment and conditional-dependency variants are build-graph metadata rather than additional extension deliverables.
+
+[[gradle-extension-plugin-migration-composite-builds]]
+== Migrate extensions in composite builds
+
+Apply the same migration inside each included extension build:
+
+* declare both plugin IDs in that included build's plugin management;
+* keep `io.quarkus.extension` on its runtime project; and
+* add `io.quarkus.extension.deployment` to its deployment project.
+
+The consuming build does not apply the deployment plugin on behalf of an included extension.
+Gradle carries the runtime/deployment relationship, marker, and local component outputs through project and included-build dependency resolution.
+Keep any existing dependency-substitution coordinates aligned with the runtime and deployment project coordinates; the plugin split does not rename your published artifacts.
+
+[[gradle-extension-plugin-migration-troubleshooting]]
+== Troubleshoot migration failures
+
+=== No matching deployment marker variant
+
+A failure similar to the following means that the runtime project found the configured deployment project, but that project did not apply the deployment plugin:
+
+[source,text]
+----
+No matching variant of project ':deployment' was found.
+The consumer needed a component of category 'quarkus-extension-deployment-marker'
+and attribute 'io.quarkus.extension.deployment' with value 'true'.
+----
+
+Apply `io.quarkus.extension.deployment` to that project and declare its plugin version.
+Do not use `disableValidation` as a migration workaround: it suppresses dependency validation and still does not configure deployment tests.
+The category and attribute in the diagnostic are implementation details, not values to reproduce in build logic.
+
+=== The wrong deployment project is selected
+
+Check `quarkusExtension.deploymentModule` in the runtime project.
+Use the sibling project name for a conventional layout or an absolute path such as `:extensions:acme:deployment` for another location.
+
+=== Deployment tests do not receive an application model
+
+Confirm that the deployment project applies `io.quarkus.extension.deployment` and that the test runs as a Gradle `Test` task.
+The task should depend on `quarkusGenerateTestAppModel`.
+Remove stale custom logic that overwrites the plugin's internal serialized-model property.
+
+=== Custom logic cannot find generated descriptors
+
+Use the declared output of `extensionDescriptor` for generated resources, or use `processResources` for `build/resources/main`.
+Do not make both tasks write the same output directory.
+
+For the complete extension authoring model, see xref:writing-extensions.adoc[Writing your own extension] and xref:extension-metadata.adoc[Quarkus extension metadata].

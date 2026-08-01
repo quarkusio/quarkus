@@ -874,10 +874,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
+                ResultHandle contentJavaType = constructJavaType(bytecode, typeFactory, contentType);
                 MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
-                        "constructParametricType", JavaType.class, Class.class, Class[].class);
-                ResultHandle paramTypes = bytecode.newArray(Class.class, 1);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(contentType.name().toString()));
+                        "constructParametricType", JavaType.class, Class.class, JavaType[].class);
+                ResultHandle paramTypes = bytecode.newArray(JavaType.class, 1);
+                bytecode.writeArrayValue(paramTypes, 0, contentJavaType);
                 yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
                         bytecode.loadClass(fieldTypeName), paramTypes);
             }
@@ -887,11 +888,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
+                ResultHandle keyJavaType = constructJavaType(bytecode, typeFactory, keyType);
+                ResultHandle valueJavaType = constructJavaType(bytecode, typeFactory, valueType);
                 MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
-                        "constructParametricType", JavaType.class, Class.class, Class[].class);
-                ResultHandle paramTypes = bytecode.newArray(Class.class, 2);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(keyType.name().toString()));
-                bytecode.writeArrayValue(paramTypes, 1, bytecode.loadClass(valueType.name().toString()));
+                        "constructParametricType", JavaType.class, Class.class, JavaType[].class);
+                ResultHandle paramTypes = bytecode.newArray(JavaType.class, 2);
+                bytecode.writeArrayValue(paramTypes, 0, keyJavaType);
+                bytecode.writeArrayValue(paramTypes, 1, valueJavaType);
                 yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
                         bytecode.loadClass(fieldTypeName), paramTypes);
             }
@@ -905,6 +908,23 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodDescriptor readTreeAsValue = ofMethod(DeserializationContext.class, "readTreeAsValue",
                 Object.class, JsonNode.class, fieldKind.isGeneric() ? JavaType.class : Class.class);
         return bytecode.invokeVirtualMethod(readTreeAsValue, deserializationContext, valueNode, typeHandle);
+    }
+
+    private static ResultHandle constructJavaType(BytecodeCreator bytecode, ResultHandle typeFactory, Type type) {
+        if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            ParameterizedType pType = type.asParameterizedType();
+            java.util.List<Type> args = pType.arguments();
+            ResultHandle javaTypeArgs = bytecode.newArray(JavaType.class, args.size());
+            for (int i = 0; i < args.size(); i++) {
+                bytecode.writeArrayValue(javaTypeArgs, i, constructJavaType(bytecode, typeFactory, args.get(i)));
+            }
+            return bytecode.invokeVirtualMethod(
+                    ofMethod(TypeFactory.class, "constructParametricType", JavaType.class, Class.class, JavaType[].class),
+                    typeFactory, bytecode.loadClass(pType.name().toString()), javaTypeArgs);
+        }
+        return bytecode.invokeVirtualMethod(
+                ofMethod(TypeFactory.class, "constructType", JavaType.class, java.lang.reflect.Type.class),
+                typeFactory, bytecode.loadClass(type.name().toString()));
     }
 
     private void writeValueToObject(ClassInfo classInfo, ResultHandle objHandle, FieldSpecs fieldSpecs,

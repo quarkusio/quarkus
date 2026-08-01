@@ -13,7 +13,8 @@ metadata:
   codestart:
     name: "google-cloud-functions"
     kind: "example"
-    languages: "java"
+    languages:
+      - "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.google-cloud-functions."

@@ -67,6 +67,8 @@ With Maven, add the following configuration:
 </plugin>
 ----
 
+NOTE: The custom directory applies to production `\*.proto` files only. Test protos must still be placed in `src/test/proto`.
+
 With Gradle, use the following configuration:
 
 [source,gradle,subs=attributes+]
@@ -75,6 +77,8 @@ quarkus {
     quarkusBuildProperties.put("quarkus.grpc.codegen.proto-directory", "${project.projectDir}/ext/proto")
 }
 ----
+
+NOTE: The custom directory applies to production `\*.proto` files only. Test protos must still be placed in `src/test/proto`.
 
 == Generating Descriptor Set
 Protocol Buffers do not contain descriptions of their own types. Thus, given only a raw message without the corresponding .proto file defining its type, it is difficult to extract any useful data. However, the contents of a .proto file can itself be https://protobuf.dev/programming-guides/techniques/#self-description[represented using protocol buffers].

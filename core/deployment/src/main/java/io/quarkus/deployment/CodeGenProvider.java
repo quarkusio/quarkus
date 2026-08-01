@@ -53,10 +53,13 @@ public interface CodeGenProvider {
     String inputDirectory();
 
     /**
-     * Provides the possibility for the provider to override the default input directory.
+     * Provides the possibility for the provider to override the default input directory for production sources.
      * This method is called after {@link #init(ApplicationModel, Map)}.
      * Returning {@code null} will result in the {@code inputDirectory} method being called to retrieve the default input
      * directory.
+     * <p>
+     * Custom input directories do not apply to test sources. Test code generation always uses the default location under
+     * the test sources root (for example {@code src/test/proto}).
      * <p>
      * The returned path must be an absolute path. However, pointing to a directory outside of the project structure should
      * be avoided for security purposes.

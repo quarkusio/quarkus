@@ -390,7 +390,7 @@
 
             <!-- Artemis test dependencies -->
             <dependency>
-                <groupId>org.apache.activemq</groupId>
+                <groupId>org.apache.artemis</groupId>
                 <artifactId>artemis-server</artifactId>
                 <version>${artemis.version}</version>
                 <scope>test</scope>
@@ -418,13 +418,13 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.activemq</groupId>
+                <groupId>org.apache.artemis</groupId>
                 <artifactId>artemis-amqp-protocol</artifactId>
                 <version>${artemis.version}</version>
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.activemq</groupId>
+                        <groupId>org.apache.artemis</groupId>
                         <artifactId>artemis-server</artifactId>
                     </exclusion>
                 </exclusions>

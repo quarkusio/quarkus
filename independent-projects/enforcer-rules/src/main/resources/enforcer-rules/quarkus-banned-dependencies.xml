@@ -119,6 +119,11 @@
                 <exclude>org.lz4:lz4-java</exclude>
                 <!-- org.fusesource.jansi:jansi is abandoned and has a CVE -->
                 <exclude>org.fusesource.jansi:jansi</exclude>
+                <!-- Artemis artifacts relocated from org.apache.activemq to org.apache.artemis -->
+                <!-- see https://artemis.apache.org/artemis-tlp-groupid-migration -->
+                <!-- Can't exclude them yet as the migration needs to be done in downstream
+                     quarkiverse extensions first: should not be a problem as there are relocations in place -->
+                <!-- exclude>org.apache.activemq:artemis-*</exclude -->
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

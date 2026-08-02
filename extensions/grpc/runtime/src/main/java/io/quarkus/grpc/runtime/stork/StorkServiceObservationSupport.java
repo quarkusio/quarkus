@@ -44,15 +44,15 @@ final class StorkServiceObservationSupport {
             return;
         }
         String serviceName = service.getServiceName();
-        ObservationMetadata metadata = METADATA_CACHE.computeIfAbsent(serviceName, name -> {
-            StorkConfiguration config = getConfiguration();
-            if (config == null) {
-                return new ObservationMetadata("unknown", "unknown");
-            }
-            return new ObservationMetadata(
-                    StorkConfigUtil.serviceDiscoveryType(config, name),
-                    StorkConfigUtil.serviceSelectionType(config, name));
-        });
+        StorkConfiguration config = getConfiguration();
+        // Don't cache temporary unknowns if CDI/config is not ready yet (same idea as
+        // QuarkusStorkObservableInfrastructure not caching the early no-op collector).
+        // On this discovery path config is normally ready, so we cache real metadata only.
+        ObservationMetadata metadata = config == null
+                ? new ObservationMetadata("unknown", "unknown")
+                : METADATA_CACHE.computeIfAbsent(serviceName, name -> new ObservationMetadata(
+                        StorkConfigUtil.serviceDiscoveryType(config, name),
+                        StorkConfigUtil.serviceSelectionType(config, name)));
         ObservationCollector collector = service.getObservations();
         StorkObservation observation = collector.create(
                 serviceName,

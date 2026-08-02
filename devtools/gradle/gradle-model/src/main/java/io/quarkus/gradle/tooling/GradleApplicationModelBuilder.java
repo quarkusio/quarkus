@@ -405,8 +405,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         type = f.getName().substring(dot + 1);
                     }
                 }
-                // hash could be a better way to represent the version
-                final String version = String.valueOf(f.lastModified());
+                // content-based version: stable across rebuilds, unlike a timestamp
+                final String version = ToolingUtils.contentHash(f);
                 final ResolvedDependencyBuilder artifactBuilder = ResolvedDependencyBuilder.newInstance()
                         .setGroupId(group)
                         .setArtifactId(name)

@@ -182,8 +182,11 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
                         return Uni.createFrom().item(new ArrayList<>(services.values()));
                     }
                 })
-                .map(ArrayList::new)
-                .invoke(list -> list.sort(Comparator.comparing(ServiceInstance::getId)))
+                .map(ArrayList::new) // make it mutable
+                .invoke(list -> {
+                    // list should not be empty + sort by id
+                    list.sort(Comparator.comparing(ServiceInstance::getId));
+                })
                 .map(list -> service.selectInstanceAndRecordStart(list, measureTime));
     }
 

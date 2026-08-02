@@ -80,3 +80,48 @@ In case you have multiple registries configured in your Docker or Podman configu
 
 While we recommend you to avoid short names and always use fully specified names including the registry, Testcontainers unfortunately relies on short names internally for the time being.
 If you are using Testcontainers, either directly or through Dev Services, you need to disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.
+
+== Troubleshooting
+
+=== Testcontainers Ryuk container fails to start
+
+On a clean machine or when first using Testcontainers, you may encounter errors related to the Ryuk container failing to start, such as:
+
+[source]
+----
+Could not start resource reaper
+----
+
+Ryuk is a Testcontainers reaper process, responsible for cleaning up abandoned containers.
+While some Quarkus Dev Services enable container reuse by default (which bypasses Ryuk), this only takes effect if global reuse is also enabled in `~/.testcontainers.properties`. Without that file, even Dev Services that support reuse will fall back to using Ryuk.
+On many systems (particularly Linux distributions like Fedora, or when using rootless Podman), the Ryuk container requires privileged mode to access the container runtime socket.
+Ryuk startup failures happen when the `~/.testcontainers.properties` configuration file does not exist yet, disabling reuse, and the container runtime starts containers unprivileged.
+
+**Recommended setup for Podman users:**
+
+To avoid Ryuk-related failures, you should either enable reuse, or run privileged.
+
+**Alternative: Enabling container reuse**
+
+To enable reuse, create `~/.testcontainers.properties` with the following content before your first run:
+
+[source,properties]
+----
+testcontainers.reuse.enable=true
+----
+
+This enables container reuse globally, allowing Quarkus Dev Services to bypass Ryuk entirely and reuse containers across runs.
+
+NOTE: When container reuse is enabled, Dev Services containers will persist between runs. Quarkus will not reset the database or service state between runs unless you explicitly configure it to.
+
+**Alternative: Enable privileged mode for Ryuk**
+
+If you cannot use container reuse or prefer Ryuk's automatic cleanup behavior, you can configure Ryuk to run in privileged mode instead. Create or edit `~/.testcontainers.properties` and add:
+
+
+[source,properties]
+----
+ryuk.container.privileged=true
+----
+
+Alternatively, you can disable Ryuk entirely by setting the environment variable `TESTCONTAINERS_RYUK_DISABLED=true`, but this is not recommended as it https://github.com/containers/podman/discussions/14238[disables automatic container cleanup], which can leave stale containers running after tests.

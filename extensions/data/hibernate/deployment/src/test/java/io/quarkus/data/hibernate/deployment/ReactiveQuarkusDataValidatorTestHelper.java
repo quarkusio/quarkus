@@ -1,7 +1,3 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- * Copyright Red Hat Inc. and Hibernate Authors
- */
 package io.quarkus.data.hibernate.deployment;
 
 import java.io.IOException;
@@ -18,9 +14,9 @@ import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase;
 import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordEntity;
 import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
 
-final class ReactivePanacheValidatorTestHelper {
+final class ReactiveQuarkusDataValidatorTestHelper {
 
-    private ReactivePanacheValidatorTestHelper() {
+    private ReactiveQuarkusDataValidatorTestHelper() {
     }
 
     static IndexView indexOf(Class<?>... classes) {

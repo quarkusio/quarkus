@@ -267,17 +267,17 @@ public final class QuarkusDataHibernateProcessor {
     }
 
     @BuildStep
-    ValidationPhaseBuildItem.ValidationErrorBuildItem validateReactivePanacheRequiresHibernateReactive(
+    ValidationPhaseBuildItem.ValidationErrorBuildItem validateReactiveQuarkusDataRequiresHibernateReactive(
             CombinedIndexBuildItem index,
             Capabilities capabilities) {
-        Set<String> offendingTypes = ReactivePanacheValidator.findOffendingReactivePanacheTypes(index.getIndex(),
+        Set<String> offendingTypes = ReactiveQuarkusDataValidator.findOffendingReactiveQuarkusDataTypes(index.getIndex(),
                 capabilities);
         if (offendingTypes.isEmpty()) {
             return null;
         }
 
         BuildException be = new BuildException(
-                ReactivePanacheValidator.REACTIVE_PANACHE_REQUIRES_HIBERNATE_REACTIVE
+                ReactiveQuarkusDataValidator.REACTIVE_QUARKUS_DATA_REQUIRES_HIBERNATE_REACTIVE
                         + " Found reactive Quarkus Data type(s): " + String.join(", ", offendingTypes),
                 Collections.emptyList());
         return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);

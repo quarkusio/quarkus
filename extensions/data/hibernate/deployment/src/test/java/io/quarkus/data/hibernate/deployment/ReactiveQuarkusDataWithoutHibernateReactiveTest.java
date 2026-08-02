@@ -1,7 +1,3 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- * Copyright Red Hat Inc. and Hibernate Authors
- */
 package io.quarkus.data.hibernate.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,13 +11,13 @@ import io.quarkus.data.hibernate.deployment.test.MyEntity;
 import io.quarkus.data.hibernate.deployment.test.MyReactiveEntity;
 import io.quarkus.deployment.Capabilities;
 
-public class ReactivePanacheWithoutHibernateReactiveTest {
+public class ReactiveQuarkusDataWithoutHibernateReactiveTest {
 
     @Test
     public void reactiveEntityWithoutHibernateReactiveIsRejected() {
         Capabilities capabilities = new Capabilities(Collections.emptySet());
-        Set<String> offendingTypes = ReactivePanacheValidator.findOffendingReactivePanacheTypes(
-                ReactivePanacheValidatorTestHelper.indexOf(MyReactiveEntity.class), capabilities);
+        Set<String> offendingTypes = ReactiveQuarkusDataValidator.findOffendingReactiveQuarkusDataTypes(
+                ReactiveQuarkusDataValidatorTestHelper.indexOf(MyReactiveEntity.class), capabilities);
 
         assertThat(offendingTypes).contains(MyReactiveEntity.class.getName());
     }
@@ -29,8 +25,8 @@ public class ReactivePanacheWithoutHibernateReactiveTest {
     @Test
     public void blockingEntityWithoutHibernateReactiveIsAllowed() {
         Capabilities capabilities = new Capabilities(Collections.emptySet());
-        Set<String> offendingTypes = ReactivePanacheValidator.findOffendingReactivePanacheTypes(
-                ReactivePanacheValidatorTestHelper.indexOf(MyEntity.class), capabilities);
+        Set<String> offendingTypes = ReactiveQuarkusDataValidator.findOffendingReactiveQuarkusDataTypes(
+                ReactiveQuarkusDataValidatorTestHelper.indexOf(MyEntity.class), capabilities);
 
         assertThat(offendingTypes).isEmpty();
     }

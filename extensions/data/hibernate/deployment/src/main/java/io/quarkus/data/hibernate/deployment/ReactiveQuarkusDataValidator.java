@@ -17,7 +17,7 @@ import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 
-final class ReactivePanacheValidator {
+final class ReactiveQuarkusDataValidator {
 
     private static final DotName DOTNAME_ENTITY = DotName.createSimple(Entity.class.getName());
 
@@ -32,14 +32,14 @@ final class ReactivePanacheValidator {
 
     private static final String DATA_HIBERNATE_FRAMEWORK_PACKAGE = "io.quarkus.data.hibernate";
 
-    static final String REACTIVE_PANACHE_REQUIRES_HIBERNATE_REACTIVE = "Reactive Quarkus Data types require the Hibernate Reactive extension. "
+    static final String REACTIVE_QUARKUS_DATA_REQUIRES_HIBERNATE_REACTIVE = "Reactive Quarkus Data types require the Hibernate Reactive extension. "
             + "Add the 'quarkus-hibernate-reactive' extension and a reactive driver extension "
             + "(for example 'quarkus-reactive-pg-client') to your project dependencies.";
 
-    private ReactivePanacheValidator() {
+    private ReactiveQuarkusDataValidator() {
     }
 
-    static Set<String> findOffendingReactivePanacheTypes(IndexView index, Capabilities capabilities) {
+    static Set<String> findOffendingReactiveQuarkusDataTypes(IndexView index, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             return Collections.emptySet();
         }

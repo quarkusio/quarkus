@@ -16,8 +16,11 @@ class StorkMeasuringCallListener<RespT>
 
     @Override
     public void onMessage(RespT message) {
-        collector.recordReply();
-        super.onMessage(message);
+        try {
+            collector.recordReply();
+        } finally {
+            super.onMessage(message);
+        }
     }
 
     @Override

@@ -47,7 +47,7 @@ final class StorkServiceObservationSupport {
         ObservationMetadata metadata = METADATA_CACHE.computeIfAbsent(serviceName, name -> {
             StorkConfiguration config = getConfiguration();
             if (config == null) {
-                return new ObservationMetadata("unknown", "round-robin");
+                return new ObservationMetadata("unknown", "unknown");
             }
             return new ObservationMetadata(
                     StorkConfigUtil.serviceDiscoveryType(config, name),

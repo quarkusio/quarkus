@@ -329,7 +329,7 @@ public class StorkConfigUtilTest {
         assertThat(StorkConfigUtil.serviceDiscoveryType(storkConfiguration, "hello-service")).isEqualTo("static");
         assertThat(StorkConfigUtil.serviceSelectionType(storkConfiguration, "hello-service")).isEqualTo("round-robin");
         assertThat(StorkConfigUtil.serviceDiscoveryType(storkConfiguration, "missing")).isEqualTo("unknown");
-        assertThat(StorkConfigUtil.serviceSelectionType(storkConfiguration, "missing")).isEqualTo("round-robin");
+        assertThat(StorkConfigUtil.serviceSelectionType(storkConfiguration, "missing")).isEqualTo("unknown");
     }
 
     // --- Helper methods to build test configurations ---

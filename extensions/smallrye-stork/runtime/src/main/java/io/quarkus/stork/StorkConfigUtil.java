@@ -71,7 +71,7 @@ public class StorkConfigUtil {
         if (serviceConfiguration != null) {
             return serviceConfiguration.loadBalancer().type();
         }
-        return "round-robin";
+        return "unknown";
     }
 
     /**

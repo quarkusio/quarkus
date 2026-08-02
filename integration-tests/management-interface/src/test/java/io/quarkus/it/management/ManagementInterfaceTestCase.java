@@ -1,5 +1,7 @@
 package io.quarkus.it.management;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,9 +28,10 @@ public class ManagementInterfaceTestCase {
 
     @Test
     void verifyThatMetricsAreExposedOnManagementInterface() {
-        RestAssured.get(getPrefix() + "/q/metrics")
+        assertMetrics(RestAssured.get(getPrefix() + "/q/metrics")
                 .then().statusCode(200)
-                .body(Matchers.containsString("http_server_bytes_read"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("http_server_bytes_read");
 
         RestAssured.get("/q/metrics")
                 .then().statusCode(404);

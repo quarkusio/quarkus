@@ -1,6 +1,6 @@
 package io.quarkus.it.kafka;
 
-import static org.hamcrest.Matchers.containsString;
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 
 import java.util.Properties;
 
@@ -50,8 +50,9 @@ public class KafkaSnappyConsumerTest {
     @Test
     public void metrics() {
         // Look for kafka consumer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/q/metrics").then()
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
-                .body(containsString("kafka_consumer_"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("kafka_consumer_");
     }
 }

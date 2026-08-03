@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -77,14 +78,16 @@ public class TestUtils {
                 "}\n";
     }
 
-    public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
+    public static BuildResult runExtensionDescriptorTask(File testProjectDir) { // Note: processResources is executed
         BuildResult extensionDescriptorResult = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
+                .withArguments(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, "-S")
                 .build();
 
         assertThat(extensionDescriptorResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(extensionDescriptorResult.task(":" + JavaPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
         return extensionDescriptorResult;
     }

@@ -23,7 +23,9 @@ import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -63,7 +65,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
     private final QuarkusExtensionConfiguration quarkusExtensionConfiguration;
     private final Configuration classpath;
     private final FileCollection inputResourcesDirs;
-    private final File outputResourcesDir;
+    private final Provider<Directory> outputResourcesDir;
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
@@ -73,13 +75,13 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     @Inject
     public ExtensionDescriptorTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration, SourceSet mainSourceSet,
-            Configuration runtimeClasspath) {
+            Configuration runtimeClasspath, Provider<Directory> outputResourcesDir) {
 
         setDescription("Generate extension descriptor file");
         setGroup("quarkus");
 
         this.quarkusExtensionConfiguration = quarkusExtensionConfiguration;
-        this.outputResourcesDir = mainSourceSet.getOutput().getResourcesDir();
+        this.outputResourcesDir = outputResourcesDir;
         this.inputResourcesDirs = mainSourceSet.getResources().getSourceDirectories();
         this.classpath = runtimeClasspath;
 
@@ -109,7 +111,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     @OutputFile
     public File getExtensionPropertiesFile() {
-        return outputResourcesDir.toPath()
+        return outputResourcesDir.get().getAsFile().toPath()
                 .resolve(BootstrapConstants.META_INF)
                 .resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME)
                 .toFile();
@@ -117,7 +119,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     @OutputFile
     public File getExtensionDescriptorFile() {
-        return outputResourcesDir.toPath()
+        return outputResourcesDir.get().getAsFile().toPath()
                 .resolve(BootstrapConstants.META_INF)
                 .resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME)
                 .toFile();
@@ -191,7 +193,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     @TaskAction
     public void generateExtensionDescriptor() throws IOException {
-        Path outputMetaInfDir = outputResourcesDir.toPath().resolve(BootstrapConstants.META_INF);
+        Path outputMetaInfDir = outputResourcesDir.get().getAsFile().toPath().resolve(BootstrapConstants.META_INF);
 
         generateQuarkusExtensionProperties(outputMetaInfDir);
         generateQuarkusExtensionDescriptor(outputMetaInfDir);

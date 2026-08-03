@@ -12,7 +12,7 @@ public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
 
     public DefaultRuntimeConfiguration(Duration readTimeout, boolean deleteUploadedFilesOnEnd, String uploadsDirectory,
             List<String> fileContentTypes, Charset defaultCharset, Optional<Long> maxBodySize, long maxFormAttributeSize,
-            int maxParameters) {
+            int maxParameters, int maxMultipartPartHeaderSize, int maxMultipartHeaderCount) {
         this.readTimeout = readTimeout;
         body = new Body() {
             Body.MultiPart multiPart = new Body.MultiPart() {
@@ -56,6 +56,16 @@ public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
             @Override
             public int maxParameters() {
                 return maxParameters;
+            }
+
+            @Override
+            public int maxMultipartPartHeaderSize() {
+                return maxMultipartPartHeaderSize;
+            }
+
+            @Override
+            public int maxMultipartHeaderCount() {
+                return maxMultipartHeaderCount;
             }
         };
     }

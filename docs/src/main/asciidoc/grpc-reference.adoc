@@ -60,6 +60,34 @@ We recommend the usage of the Vert.x based gRPC server, as it is more flexible a
 
 IMPORTANT: You cannot use both servers at the same time.
 
+== Disabling the gRPC server
+
+If your application only uses gRPC clients (for example, a command-line application calling a remote gRPC service), you can disable the gRPC server entirely by setting the following property in your `application.properties` file:
+
+[source,properties,subs=attributes+]
+----
+quarkus.grpc.server.enabled=false
+----
+
+When disabled, no gRPC server is started and no gRPC server-related beans or health checks are registered, even if the application contains `@GrpcService` beans.
+
+In dev mode, the gRPC server is started even if the application does not implement any gRPC service, to ease incremental development of new services.
+You can turn this behavior off with:
+
+[source,properties,subs=attributes+]
+----
+quarkus.grpc.dev-mode.force-server-start=false
+----
+
+The `quarkus-grpc` extension depends on the Quarkus HTTP server (the gRPC server reuses it when `quarkus.grpc.server.use-separate-server` is set to `false`).
+As a consequence, an HTTP server is started even for client-only applications.
+If you don't need the HTTP server either, prevent it from listening with:
+
+[source,properties,subs=attributes+]
+----
+quarkus.http.host-enabled=false
+----
+
 == Performance tuning for large messages
 
 When working with large gRPC messages, you may need to tune the HTTP/2 flow control window size to achieve optimal throughput.

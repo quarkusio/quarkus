@@ -135,6 +135,43 @@ This is not directly related to testing, but allows you to turn live reload on a
 This will force a scan for changed files, and will perform a live reload with and changes. Note that even if there are no
 changes the application will still restart. This will still work even if live reload is disabled.
 
+== Custom Console Aliases
+
+In addition to the built-in hotkeys above, you can define your own aliases for the Quarkus dev mode terminal.
+Aliases are read from `~/.quarkus/console-aliases.txt`, which is created automatically the first time you run an
+application in dev mode.
+
+Each line in the file follows the format:
+
+[source]
+----
+alias <name>=<command>
+----
+
+For example, to bind `t` to re-running tests with output enabled:
+
+[source]
+----
+alias t=o
+----
+
+If the aliased command contains spaces, it must be quoted:
+
+[source]
+----
+alias ll=config set quarkus.log.console.format="%d{HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
+----
+
+There are two ways an alias can be used, depending on its name:
+
+* *Single-character aliases* (e.g. `alias x=...`) become additional hotkeys, exactly like the built-in `[r]`, `[s]`,
+`[h]` commands above. They are also listed under a "User Defined Aliases" heading when you press `h`.
+* *Multi-character aliases* are available from the full interactive Quarkus Terminal. Press `:` while dev mode is
+running to enter this mode, where normal Aesh alias resolution applies.
+
+NOTE: Alias names that collide with a built-in hotkey (e.g. `r`, `s`, `h`) are ignored in favor of the built-in
+command.
+
 == Continuous Testing Without Dev Mode
 
 It is possible to run continuous testing without starting dev mode. This can be useful if dev mode will interfere with

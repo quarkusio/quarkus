@@ -43,6 +43,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartParser;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectiveContextInjectedBeanFactory;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.processor.ScannedApplication;
@@ -139,6 +140,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     private int maxFormAttributeSize = 2048;
 
     private int maxParameters = 1000;
+    private int maxMultipartPartHeaderSize = MultipartParser.ParseState.DEFAULT_MAX_PART_HEADER_SIZE;
+    private int maxMultipartHeaderCount = MultipartParser.ParseState.DEFAULT_MAX_HEADER_COUNT;
 
     public static Vertx getVertx() {
         return vertx;
@@ -406,7 +409,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters);
+                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters,
+                maxMultipartPartHeaderSize, maxMultipartHeaderCount);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());

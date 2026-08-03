@@ -48,6 +48,8 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setMaxParameters(configuration.limits().maxParameters())
+                        .setMaxPartHeaderSize(configuration.limits().maxMultipartPartHeaderSize())
+                        .setMaxHeaderCount(configuration.limits().maxMultipartHeaderCount())
                         .setDeleteUploadsOnEnd(configuration.body().deleteUploadedFilesOnEnd())
                         .setFileContentTypes(configuration.body().multiPart().fileContentTypes())
                         .setDefaultCharset(configuration.body().defaultCharset().name())

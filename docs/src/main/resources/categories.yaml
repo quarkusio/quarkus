@@ -8,7 +8,7 @@
 categories:
   - id: getting-started
     title: Getting Started
-    description: Introduction to Quarkus and getting started guides
+    description: Introduction to Quarkus and your first applications
     guides:
       - getting-started.adoc
       - getting-started-dev-services.adoc
@@ -42,7 +42,7 @@ categories:
           - container-image.adoc
           - quarkus-runtime-base-image.adoc
       - id: packaging-release
-        title: Release & Distribution
+        title: Release and Distribution
         guides:
           - cyclonedx.adoc
           - jreleaser.adoc
@@ -52,7 +52,7 @@ categories:
     description: Core Quarkus concepts and features
     subcategories:
       - id: core-cdi
-        title: CDI & Dependency Injection
+        title: Contexts and Dependency Injection (CDI)
         guides:
           - cdi.adoc
           - cdi-reference.adoc
@@ -137,7 +137,7 @@ categories:
           - reactive-sql-clients.adoc
           - databases-dev-services.adoc
       - id: data-orm
-        title: ORM & Hibernate
+        title: ORM and Hibernate
         guides:
           - hibernate-orm.adoc
           - quarkus-data-hibernate.adoc
@@ -269,7 +269,7 @@ categories:
           - security-webauthn.adoc
           - security-spiffe-client.adoc
       - id: security-oidc
-        title: OIDC & OpenID Connect
+        title: OpenID Connect (OIDC)
         guides:
           - security-oidc-code-flow-authentication.adoc
           - security-oidc-code-flow-authentication-tutorial.adoc
@@ -294,7 +294,6 @@ categories:
           - security-ldap.adoc
           - security-keycloak-authorization.adoc
           - security-keycloak-admin-client.adoc
-
 
   - id: execution-model
     title: Execution Model
@@ -448,7 +447,7 @@ categories:
 
   - id: miscellaneous
     title: Miscellaneous
-    description: Other topics (mailer, scheduler, templating, etc.)
+    description: Other topics, such as mail, scheduling, and templating
     subcategories:
       - id: miscellaneous-templating
         title: Templating
@@ -502,7 +501,7 @@ categories:
 
   - id: alt-languages
     title: Alternative Languages
-    description: Using Quarkus with alternative JVM languages (Kotlin)
+    description: Support for alternative JVM languages such as Kotlin
     guides:
       - kotlin.adoc
 
@@ -521,7 +520,7 @@ categories:
 
   - id: writing-extensions
     title: Writing Extensions
-    description: Creating Quarkus extensions
+    description: Extension development for Quarkus
     guides:
       - writing-extensions.adoc
       - building-my-first-extension.adoc
@@ -541,7 +540,7 @@ categories:
 
   - id: contributing
     title: Contributing
-    description: Contributing to Quarkus documentation
+    description: Guidelines for contributing to Quarkus documentation
     guides:
       - doc-contribute-docs-howto.adoc
       - doc-concept.adoc

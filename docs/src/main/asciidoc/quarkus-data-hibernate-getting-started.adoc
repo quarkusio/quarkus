@@ -15,7 +15,7 @@ include::{includes}/extension-status.adoc[]
 
 == Overview
 
-Database access is something almost every application needs, whether it's persisting data or querying tables.
+Database access is something many applications need, whether it's persisting data or querying tables.
 In this guide we explain how Quarkus Data provides database access with entity mapping, compile-time validated repositories, and reactive database access.
 
 == Prerequisites

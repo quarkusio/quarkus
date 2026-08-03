@@ -134,7 +134,7 @@ public class LibraryService {
 }
 ----
 <1> Wraps the method in a database transaction. This is required to define the scope of your operations, so that related operations are committed or rolled back together.
-<2> `insert()` immediately executes an `INSERT` statement against the database. It comes from `RecordEntity` that we extended on the entity earlier.
+<2> `insert()` immediately executes an `INSERT` statement against the database. It comes from `RecordEntity` that we extended on the entity earlier, together with other lifecycle methods such as `update()` or `delete()`.
 
 Let's write a test to verify that inserting a new book actually works. Create `src/test/java/org/acme/LibraryServiceTest.java`:
 

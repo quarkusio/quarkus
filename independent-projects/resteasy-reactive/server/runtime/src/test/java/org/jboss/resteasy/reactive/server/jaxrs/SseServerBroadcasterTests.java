@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.SseBroadcaster;
@@ -70,6 +71,22 @@ public class SseServerBroadcasterTests {
             // run closeHandler to simulate closing context
             closeHandler.getValue().run();
             Assertions.assertTrue(executed.get());
+        }
+    }
+
+    @Test
+    public void shouldExecuteOnCloseExactlyOnceWhenBroadcasterClosed() {
+        SseBroadcaster broadcaster = SseImpl.INSTANCE.newBroadcaster();
+        AtomicInteger onCloseCount = new AtomicInteger(0);
+        broadcaster.onClose(sink -> onCloseCount.incrementAndGet());
+        SseEventSinkImpl sseEventSink = Mockito.spy(new SseEventSinkImpl(getMockContext()));
+        broadcaster.register(sseEventSink);
+        try (MockedStatic<SseUtil> utilities = Mockito.mockStatic(SseUtil.class)) {
+            utilities.when(() -> SseUtil.send(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(null));
+            broadcaster.close();
+            // Closing the broadcaster must notify each registered sink's close listeners exactly
+            // once, not twice.
+            Assertions.assertEquals(1, onCloseCount.get());
         }
     }
 

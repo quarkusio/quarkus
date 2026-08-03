@@ -1,8 +1,10 @@
 package io.quarkus.docs.generation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -90,10 +92,9 @@ public class InjectCategoriesTest {
 
     @Test
     public void generatedCategoriesShouldBeKnownToYamlMetadataGenerator() throws Exception {
-        Path categoriesFile = Path.of("src/main/resources/categories.yaml");
-        if (!Files.exists(categoriesFile)) {
-            categoriesFile = Path.of("docs/src/main/resources/categories.yaml");
-        }
+        URL categoriesResource = InjectCategoriesTest.class.getClassLoader().getResource("categories.yaml");
+        assertNotNull(categoriesResource, "categories.yaml must be available on the test classpath");
+        Path categoriesFile = Path.of(categoriesResource.toURI());
 
         Set<String> metadataCategories = Arrays.stream(YamlMetadataGenerator.Category.values())
                 .map(category -> category.id)

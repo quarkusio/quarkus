@@ -34,7 +34,7 @@ We'll start this tutorial by creating a new empty Quarkus application:
 :create-app-artifact-id: quarkus-data-tutorial
 include::{includes}/devtools/create-app.adoc[]
 
-Let's start by importing the extensions:
+Then let's import the extensions:
 
 :add-extension-extensions: quarkus-data-hibernate,quarkus-jdbc-postgresql
 include::{includes}/devtools/extension-add.adoc[]

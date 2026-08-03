@@ -49,7 +49,7 @@ public class InvalidHeaderTest {
                 .header("Accept", "foobar")
                 .when().get("/test/1")
                 .then()
-                .statusCode(406);
+                .statusCode(400);
     }
 
     @Path("/test")

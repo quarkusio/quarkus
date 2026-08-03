@@ -66,11 +66,30 @@ public class MalformedAcceptHeaderTest {
 
     @Test
     public void invalidAcceptOnMatchedRouteWithProduces() {
-        // routing already treats an unparseable Accept value as non-matching against @Produces
+        // a fully unparseable Accept header is a client syntax error
         given().accept("/")
                 .get("/hello/produces")
                 .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void validButUnmatchedAcceptOnMatchedRouteWithProduces() {
+        // a parseable Accept that does not overlap @Produces remains a negotiation failure
+        given().accept("application/xml")
+                .get("/hello/produces")
+                .then()
                 .statusCode(406);
+    }
+
+    @Test
+    public void partiallyInvalidAcceptOnMatchedRouteWithProduces() {
+        // valid tokens are still used for negotiation; unparseable ones are skipped
+        given().accept("text/plain, /")
+                .get("/hello/produces")
+                .then()
+                .statusCode(200)
+                .body(is("hello"));
     }
 
     @Provider

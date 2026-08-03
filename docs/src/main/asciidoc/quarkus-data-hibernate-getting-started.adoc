@@ -483,7 +483,7 @@ It's up to you to decide whether to use a Managed Entity or a Stateless one. The
 == Reactive
 
 If you're already using reactive APIs in your application (Quarkus Messaging, reactive REST clients, Vert.x), you want your database access to compose naturally with them without blocking the event loop.
-Quarkus Data Hibernate lets you experiment with both blocking and reactive to see what works best for your case. The same entity model works unchanged with a reactive driver.
+Quarkus Data Hibernate lets you pick blocking or reactive to match your use case. The same entity model works unchanged with a reactive driver.
 
 First, add the reactive dependencies:
 

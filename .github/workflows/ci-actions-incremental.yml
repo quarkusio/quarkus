@@ -196,7 +196,7 @@ jobs:
       base-jdk-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
     steps:
       - name: Checkout for base JDK version
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: independent-projects/parent/pom.xml
           path: .base-jdk-checkout
@@ -260,7 +260,7 @@ jobs:
       # Note: gh needs the repository around to be able to resolve it
       - name: Checkout repository
         if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download previous scheduled build SHA
         if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
         id: download-previous-sha
@@ -343,7 +343,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -531,7 +531,7 @@ jobs:
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
       - uses: runs-on/action@d141ef83eb66d096ce8afc767e09115a65c63b60 # v2.1.2
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
@@ -621,7 +621,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -804,7 +804,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -918,7 +918,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1023,7 +1023,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1124,7 +1124,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1213,7 +1213,7 @@ jobs:
 #        run: |
 #          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
 #          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
-#      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+#      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 #      - name: Restore Maven Repository
 #        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
 #        with:
@@ -1329,7 +1329,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Platform Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1422,7 +1422,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1498,7 +1498,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # this is important for Scalpel to work
           fetch-depth: 0
@@ -1600,7 +1600,7 @@ jobs:
       - name: Support longpaths on Windows
         if: startsWith(matrix.os-name, 'windows')
         run: git config --global core.longpaths true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         if: ${{ !startsWith(matrix.os-name, 'windows') }}
@@ -1796,7 +1796,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-jdk-${{matrix.java-version}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -1906,7 +1906,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=oracle-test-pilot-${{matrix.category}}-native" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Oracle Test Pilot ${{matrix.category}} - Native" >> "$GITHUB_ENV"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -2020,7 +2020,7 @@ jobs:
       - name: Install container dependencies
         run: |
           apt-get update && apt-get install -y git curl unzip openssl libssl-dev libapr1t64 p7zip-full
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up JDK 21
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:

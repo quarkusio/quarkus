@@ -8,7 +8,7 @@ import org.aesh.command.option.Option;
 
 @CommandDefinition(name = "app", description = "Test application", groupCommands = { HelloCommand.class, RunCommand.class,
         VersionCommand.class, FailCommand.class, ExplodingCommand.class, CdiGreetCommand.class, ListOptionsCommand.class,
-        MultiArgsCommand.class })
+        MultiArgsCommand.class, MetadataCheckCommand.class })
 public class TopAeshCommand implements Command<CommandInvocation> {
 
     @Option(shortName = 'v', name = "verbose", description = "Enable verbose output", hasValue = false)

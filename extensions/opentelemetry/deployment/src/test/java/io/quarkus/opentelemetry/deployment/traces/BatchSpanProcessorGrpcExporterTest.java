@@ -21,9 +21,10 @@ public class BatchSpanProcessorGrpcExporterTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "grpc")
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none")
-            .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50ms");
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50ms")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

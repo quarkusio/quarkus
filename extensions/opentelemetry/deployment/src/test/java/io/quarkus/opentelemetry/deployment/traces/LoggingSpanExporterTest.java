@@ -24,8 +24,9 @@ public class LoggingSpanExporterTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.traces.exporter", "logging")
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none");
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

@@ -27,7 +27,10 @@ public class OpenTelemetryDevModeTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
                             "quarkus.otel.traces.exporter=test-span-exporter",
-                            "quarkus.otel.metrics.exporter=none")), "application.properties"));
+                            "quarkus.otel.metrics.exporter=none",
+                            "quarkus.otel.logs.exporter=none",
+                            "quarkus.observability.lgtm.enabled=false",
+                            "quarkus.datasource.devservices.enabled=false")), "application.properties"));
 
     @Test
     void testDevMode() {

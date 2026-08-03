@@ -55,7 +55,7 @@ public final class VertxGrpcSender implements GrpcSender {
     private static final Logger internalLogger = Logger.getLogger(VertxGrpcSender.class.getName());
     private static final int MAX_ATTEMPTS = 3;
 
-    private final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss Logging we can use?
+    private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss Logging we can use?
 
     // We only log unimplemented once since it's a configuration issue that won't be recovered.
     private final AtomicBoolean loggedUnimplemented = new AtomicBoolean();
@@ -127,20 +127,26 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                logger.log(Level.INFO, "gRPC client close returned null, possibly already closed.");
+                shutdownResult.fail();
+            } else {
+                closeFuture
+                        .onSuccess(
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(Void event) {
+                                        shutdownResult.succeed();
+                                    }
+                                })
+                        .onFailure(new Handler<>() {
+                            @Override
+                            public void handle(Throwable event) {
+                                shutdownResult.fail();
+                            }
+                        });
+            }
         } catch (RejectedExecutionException e) {
             internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
@@ -154,6 +160,10 @@ public final class VertxGrpcSender implements GrpcSender {
             int numberOfAttempts,
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
+        if (client == null) {
+            logger.log(Level.INFO, "gRPC client is null, possibly during shutdown. Skipping send.");
+            return;
+        }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {
             @Override
             public CompletionStage<GrpcClientRequest<Buffer, Buffer>> get() {

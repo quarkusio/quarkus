@@ -91,7 +91,9 @@ public class GrpcOpenTelemetryTest {
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.greeter.port", "8081")
             .overrideConfigKey("quarkus.grpc.clients.streaming.host", "localhost")
-            .overrideConfigKey("quarkus.grpc.clients.streaming.port", "8081");
+            .overrideConfigKey("quarkus.grpc.clients.streaming.port", "8081")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
 
     @Inject
     TestSpanExporter spanExporter;

@@ -34,10 +34,13 @@ public class OpenTelemetrySuppressNonAppUriManagementInterfaceTest {
                             """
                                     quarkus.otel.traces.exporter=test-span-exporter
                                     quarkus.otel.metrics.exporter=none
+                                    quarkus.otel.logs.exporter=none
                                     quarkus.otel.bsp.export.timeout=1s
                                     quarkus.otel.bsp.schedule.delay=50
                                     quarkus.management.enabled=true
                                     quarkus.management.port=9001
+                                    quarkus.observability.lgtm.enabled=false
+                                    quarkus.datasource.devservices.enabled=false
                                     """),
                             "application.properties"));
 

@@ -32,7 +32,10 @@ public class OpenTelemetryDestroyerTest {
                             """
                                     quarkus.otel.traces.exporter=test-span-exporter
                                     quarkus.otel.metrics.exporter=none
+                                    quarkus.otel.logs.exporter=none
                                     quarkus.otel.experimental.shutdown-wait-time=PT60S
+                                    quarkus.observability.lgtm.enabled=false
+                                    quarkus.datasource.devservices.enabled=false
                                     """),
                             "application.properties"));
 

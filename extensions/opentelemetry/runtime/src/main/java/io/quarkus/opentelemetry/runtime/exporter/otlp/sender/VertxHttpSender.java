@@ -27,6 +27,7 @@ import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -140,6 +141,10 @@ public final class VertxHttpSender implements HttpSender {
             int numberOfAttempts,
             Handler<HttpClientRequest> clientRequestSuccessHandler,
             Consumer<Throwable> onFailureCallback) {
+        if (client == null) {
+            throttlingLogger.log(Level.INFO, "HTTP client is null, possibly during shutdown. Skipping send.");
+            return;
+        }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
             @Override
             public CompletionStage<HttpClientRequest> get() {
@@ -187,20 +192,26 @@ public final class VertxHttpSender implements HttpSender {
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                throttlingLogger.log(Level.INFO, "HTTP client close returned null, possibly already closed.");
+                shutdownResult.fail();
+            } else {
+                closeFuture
+                        .onSuccess(
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(Void event) {
+                                        shutdownResult.succeed();
+                                    }
+                                })
+                        .onFailure(new Handler<>() {
+                            @Override
+                            public void handle(Throwable event) {
+                                shutdownResult.fail();
+                            }
+                        });
+            }
         } catch (RejectedExecutionException e) {
             log.debug("Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException

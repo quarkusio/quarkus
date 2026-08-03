@@ -43,7 +43,8 @@ public class OtelLoggingFileTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.log.file.enabled=true\n" + // enable log file
-                                            "quarkus.otel.traces.enabled=false\n"),
+                                            "quarkus.otel.traces.enabled=false\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject

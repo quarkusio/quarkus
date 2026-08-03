@@ -28,7 +28,8 @@ public class ClassCastExceptionTest {
                                             "quarkus.otel.metric.export.interval=300ms\n" +
                                             "quarkus.http.limits.max-connections=50\n" +
                                             "quarkus.otel.traces.exporter=none\n" +
-                                            "quarkus.otel.logs.exporter=none\n"),
+                                            "quarkus.otel.logs.exporter=none\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     /**

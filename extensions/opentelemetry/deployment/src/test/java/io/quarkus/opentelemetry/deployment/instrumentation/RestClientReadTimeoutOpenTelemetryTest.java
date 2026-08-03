@@ -58,7 +58,9 @@ public class RestClientReadTimeoutOpenTelemetryTest {
                     "%d{HH:mm:ss} %-5p traceId=%X{traceId}, spanId=%X{spanId} [%c{2.}] (%t) %s%e%n")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "DEBUG")
             .overrideConfigKey("quarkus.rest-client.slow-client.url", "${test.url}")
-            .overrideConfigKey("quarkus.rest-client.slow-client.read-timeout", "3000");
+            .overrideConfigKey("quarkus.rest-client.slow-client.read-timeout", "3000")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(RestClientReadTimeoutOpenTelemetryTest.class);
 
     @Inject

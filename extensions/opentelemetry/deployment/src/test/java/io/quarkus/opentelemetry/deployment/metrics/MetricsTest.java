@@ -45,7 +45,8 @@ public class MetricsTest {
                                     "quarkus.otel.traces.exporter=none\n" +
                                             "quarkus.otel.logs.exporter=none\n" +
                                             "quarkus.otel.metrics.exporter=in-memory\n" +
-                                            "quarkus.otel.metric.export.interval=300ms\n"),
+                                            "quarkus.otel.metric.export.interval=300ms\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject

@@ -21,7 +21,8 @@ public class OtelLogsDisabledTest {
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=false\n" +
-                                            "quarkus.otel.traces.enabled=false\n"),
+                                            "quarkus.otel.traces.enabled=false\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject

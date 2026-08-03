@@ -29,7 +29,8 @@ public class MpJvmMetricsTest extends BaseJvmMetricsTest {
                                     "quarkus.otel.traces.exporter=none\n" +
                                             "quarkus.otel.logs.exporter=none\n" +
                                             "quarkus.otel.metrics.exporter=in-memory\n" +
-                                            "quarkus.otel.metric.export.interval=300ms\n"),
+                                            "quarkus.otel.metric.export.interval=300ms\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     // No need to reset between tests. Data is test independent. Will also run faster.

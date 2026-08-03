@@ -26,7 +26,10 @@ public class OpenTelemetryMpContextPropagationTest {
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class));
+                    .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class))
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Test
     void testOpenTelemetryContextPropagationWithCustomExecutorAndThreadContextProvider() {

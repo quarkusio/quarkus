@@ -66,6 +66,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.RxInvoker;
 import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -92,6 +93,7 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
+import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
@@ -206,6 +208,7 @@ public class JaxrsClientReactiveProcessor {
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
     private static final String BYTE_ARRAY_SIGNATURE = "[B";
     private static final String FILE_UPLOAD_SIGNATURE = "L" + FileUpload.class.getName().replace('.', '/') + ";";
+    private static final String ENTITY_PART_SIGNATURE = "L" + EntityPart.class.getName().replace('.', '/') + ";";
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
@@ -1392,6 +1395,7 @@ public class JaxrsClientReactiveProcessor {
                 || signature.equals(BYTE_ARRAY_SIGNATURE)
                 || signature.equals(MULTI_BYTE_SIGNATURE)
                 || signature.equals(FILE_UPLOAD_SIGNATURE)
+                || signature.equals(ENTITY_PART_SIGNATURE)
                 || partType != null);
     }
 
@@ -2329,6 +2333,11 @@ public class JaxrsClientReactiveProcessor {
         } else if (MULTI_BYTE_SIGNATURE.equals(parameterSignature)) {
             addMultiAsFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue,
                     errorLocation);
+        } else if (typeStr.equals(EntityPart.class.getName())) {
+            bytecodeCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(ClientSendRequestHandler.class, "addEntityPartToForm",
+                            void.class, QuarkusMultipartForm.class, EntityPart.class),
+                    multipartForm, fieldValue);
         } else if (mimeType != null) {
             if (partFilename != null) {
                 log.warnf("Using the @PartFilename annotation is unsupported on the type '%s'. Problematic field is: '%s'",

@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core.multipart;
+package org.jboss.resteasy.reactive.common.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -6,8 +6,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Collections;
-
-import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
  * @author Stuart Douglas

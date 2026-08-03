@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
@@ -49,7 +50,7 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         if (MultipartFormDataOutput.class.isAssignableFrom(type)
-                || isEntityPartList(type, genericType)) {
+                || EntityPartImpl.isEntityPartList(genericType)) {
             return true;
         }
         if (isMultipartFormData(mediaType)) {
@@ -69,7 +70,7 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
     public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
             MediaType mediaType) {
         if (MultipartFormDataOutput.class.isAssignableFrom(type)
-                || isEntityPartList(type, genericType)) {
+                || EntityPartImpl.isEntityPartList(genericType)) {
             return true;
         }
         if (isMultipartFormData(mediaType)) {
@@ -79,8 +80,7 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
     }
 
     private static boolean isMultipartFormData(MediaType mediaType) {
-        return mediaType != null && "multipart".equals(mediaType.getType())
-                && "form-data".equals(mediaType.getSubtype());
+        return mediaType != null && MediaType.MULTIPART_FORM_DATA_TYPE.isCompatible(mediaType);
     }
 
     private static boolean methodProducesMultipart(ResteasyReactiveResourceInfo target) {

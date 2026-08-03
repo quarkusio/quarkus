@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
@@ -395,12 +396,13 @@ public final class MultipartSupport {
         if (formData == null) {
             return Collections.emptyList();
         }
+        Serialisers serialisers = context.getDeployment().getSerialisers();
         List<EntityPart> result = new ArrayList<>();
         for (String name : formData) {
             Deque<FormValue> values = formData.get(name);
             if (values != null) {
                 for (FormValue value : values) {
-                    result.add(formValueToEntityPart(name, value));
+                    result.add(formValueToEntityPart(name, value, serialisers));
                 }
             }
         }
@@ -412,7 +414,7 @@ public final class MultipartSupport {
         if (value == null) {
             return null;
         }
-        return formValueToEntityPart(name, value);
+        return formValueToEntityPart(name, value, context.getDeployment().getSerialisers());
     }
 
     public static List<EntityPart> getEntityParts(String name, ResteasyReactiveRequestContext context) {
@@ -420,14 +422,15 @@ public final class MultipartSupport {
         if (values == null || values.isEmpty()) {
             return Collections.emptyList();
         }
+        Serialisers serialisers = context.getDeployment().getSerialisers();
         List<EntityPart> result = new ArrayList<>();
         for (FormValue value : values) {
-            result.add(formValueToEntityPart(name, value));
+            result.add(formValueToEntityPart(name, value, serialisers));
         }
         return result;
     }
 
-    private static EntityPart formValueToEntityPart(String name, FormValue value) {
+    private static EntityPart formValueToEntityPart(String name, FormValue value, Serialisers serialisers) {
         InputStream content;
         MediaType mediaType;
         String fileName = value.getFileName();
@@ -454,13 +457,9 @@ public final class MultipartSupport {
             headers.putAll(value.getHeaders());
         }
         headers.putSingle("Content-Type", mediaType.toString());
-        StringBuilder cd = new StringBuilder("form-data; name=\"").append(name).append("\"");
-        if (fileName != null) {
-            cd.append("; filename=\"").append(fileName).append("\"");
-        }
-        headers.putSingle("Content-Disposition", cd.toString());
+        headers.putSingle("Content-Disposition", EntityPartImpl.buildContentDisposition(name, fileName));
 
-        return new EntityPartImpl(name, fileName, headers, mediaType, content);
+        return new EntityPartImpl(name, fileName, headers, mediaType, content, serialisers);
     }
 
     private static ByteArrayInputStream formAttributeValueToInputStream(String formAttributeValue) {

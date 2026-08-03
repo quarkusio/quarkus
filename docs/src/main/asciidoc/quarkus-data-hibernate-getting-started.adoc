@@ -175,7 +175,7 @@ public class LibraryServiceTest {
 [NOTE]
 ====
 If you're an experienced Hibernate user, you'll find this part very different from what you're used to.
-When you call `insert()`, `update()`, or `delete()`, an operation is instantly triggered against the database, without calling `.flush()` explicitly.
+When you call `insert()`, `update()`, or `delete()`, an operation is instantly triggered against the database, instead of being delayed until the next flush or commit.
 This is intentional: it's a simpler model that uses `StatelessSession` under the covers.
 In this mode every change to an object requires an explicit save operation.
 If you're not interested in this style and want the full power of managed entities, skip ahead to <<managed-session>>.

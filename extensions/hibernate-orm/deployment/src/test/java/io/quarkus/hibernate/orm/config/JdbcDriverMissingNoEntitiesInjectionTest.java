@@ -16,23 +16,29 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * No entities and no JDBC driver, but the application injects a StatelessSession.
- * This should cause a persistence unit to be created (from the injection point)
+ * <p>
+ * Ideally this should cause a persistence unit to be created (from the injection point)
  * and fail because no JDBC driver is available.
  *
  * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/55217">#55217</a>.
  */
-public class JdbcDriverMissingInjectionTest {
+public class JdbcDriverMissingNoEntitiesInjectionTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(JdbcDriverMissingInjectionTest.class))
+                    .addClass(JdbcDriverMissingNoEntitiesInjectionTest.class))
             .setExcludedDependencies(Set.of(
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2"),
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unsatisfied dependency for type org.hibernate.StatelessSession"));
+                            "Hibernate ORM persistence unit '<default>' cannot be created",
+                            "JDBC datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no JDBC driver extension",
+                            "being created because of",
+                            "Injection of 'StatelessSession'"));
 
     @Inject
     StatelessSession statelessSession;

@@ -16,24 +16,30 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * No entities and no reactive SQL client, but the application injects a Mutiny.SessionFactory.
+ * <p>
  * This should cause a persistence unit to be created (from the injection point)
  * and fail because no reactive SQL client is available.
  *
  * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/55217">#55217</a>.
  */
-public class ReactiveSqlClientMissingInjectionTest {
+public class ReactiveSqlClientMissingNoEntitiesInjectionTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(ReactiveSqlClientMissingInjectionTest.class))
+                    .addClass(ReactiveSqlClientMissingNoEntitiesInjectionTest.class))
             .setExcludedDependencies(Set.of(
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client"),
                     ArtifactKey.of("io.quarkus", "quarkus-reactive-pg-client-deployment")))
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unsatisfied dependency for type org.hibernate.reactive.mutiny.Mutiny$SessionFactory"));
+                            "persistence unit '<default>' cannot be created",
+                            "Reactive datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no reactive SQL client extension",
+                            "being created because of",
+                            "Injection of 'Mutiny$SessionFactory'"));
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

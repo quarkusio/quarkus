@@ -13,7 +13,7 @@ import io.quarkus.test.junit.TestProfile;
 class GrpcMetricsHistogramTest {
 
     @Test
-    void processingDurationPublishesHistogramBuckets() {
+    void serverProcessingDurationPublishesHistogramBuckets() {
         get("/hello/blocking/neo").then().statusCode(200);
 
         String metrics = get("/q/metrics").then().statusCode(200).extract().asString();
@@ -21,8 +21,18 @@ class GrpcMetricsHistogramTest {
         assertThat(metrics)
                 .contains("# TYPE grpc_server_processing_duration_seconds histogram")
                 .contains("grpc_server_processing_duration_seconds_bucket{")
-                .contains("le=\"+Inf\"")
+                .contains("le=\"+Inf\"");
+    }
+
+    @Test
+    void clientProcessingDurationPublishesHistogramBuckets() {
+        get("/hello/blocking/neo").then().statusCode(200);
+
+        String metrics = get("/q/metrics").then().statusCode(200).extract().asString();
+
+        assertThat(metrics)
                 .contains("# TYPE grpc_client_processing_duration_seconds histogram")
-                .contains("grpc_client_processing_duration_seconds_bucket{");
+                .contains("grpc_client_processing_duration_seconds_bucket{")
+                .contains("le=\"+Inf\"");
     }
 }

@@ -49,7 +49,7 @@ public final class LauncherUtil {
      *
      * @return a random 5-character string consisting of uppercase and lowercase letters
      */
-    static String generateInstanceId() {
+    public static String generateInstanceId() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         int length = 5;
         StringBuilder sb = new StringBuilder(length);
@@ -66,7 +66,7 @@ public final class LauncherUtil {
      * @param instanceId the random per-instance identifier
      * @return a path of the configured log file path with the resolved suffix embedded in the filename
      */
-    static Path buildUniqueLogPath(String instanceId) {
+    public static Path buildUniqueLogPath(String instanceId) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
         return LauncherUtil.buildUniqueLogPath(logRuntimeConfig, instanceId);

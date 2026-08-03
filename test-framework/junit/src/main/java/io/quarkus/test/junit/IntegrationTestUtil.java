@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -58,11 +59,14 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.config.ConfigInjector;
 import io.quarkus.test.config.ThreadLocalConfigSourceProvider;
 import io.quarkus.test.config.ValueRegistryInjector;
+import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.config.Config;
 
 public final class IntegrationTestUtil {
+
+    private static final String KUBERNETES_LAUNCHER_PROVIDER = "io.quarkus.test.junit.kubernetes.KubernetesContainerLauncherProvider";
 
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
@@ -301,6 +305,26 @@ public final class IntegrationTestUtil {
                         .formatted(devServicesLaunchResult.networkId()), e);
             }
         }
+    }
+
+    /**
+     * Loads the available {@link ArtifactLauncherProvider}s, ordered by priority. Fails if a Kubernetes/OpenShift
+     * cluster launch was requested but the artifact providing it isn't on the test classpath - otherwise one of the
+     * built-in providers would silently run the application locally instead.
+     */
+    static List<ArtifactLauncherProvider> loadArtifactLauncherProviders(TestConfig testConfig) {
+        List<ArtifactLauncherProvider> providers = ArtifactLauncherProvider.loadAll();
+        if (testConfig.kubernetes().registry().isPresent() || testConfig.openshift().registry().isPresent()) {
+            boolean clusterProviderPresent = providers.stream()
+                    .anyMatch(p -> p.getClass().getName().equals(KUBERNETES_LAUNCHER_PROVIDER));
+            if (!clusterProviderPresent) {
+                throw new IllegalStateException(
+                        "'quarkus.test.kubernetes.registry' or 'quarkus.test.openshift.registry' is set, but the "
+                                + "'io.quarkus:quarkus-junit-kubernetes' test dependency that deploys the application to "
+                                + "the cluster is missing. Add it to the project's test dependencies.");
+            }
+        }
+        return providers;
     }
 
     static void activateLogging() {

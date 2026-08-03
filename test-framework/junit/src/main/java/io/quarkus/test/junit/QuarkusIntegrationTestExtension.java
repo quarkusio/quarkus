@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -341,8 +340,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
                         target, testConfig.waitTime());
                 if (launcher == null) {
-                    ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
-                    for (ArtifactLauncherProvider launcherProvider : loader) {
+                    for (ArtifactLauncherProvider launcherProvider : IntegrationTestUtil
+                            .loadArtifactLauncherProviders(testConfig)) {
                         if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
                             launcher = launcherProvider.create(
                                     new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,

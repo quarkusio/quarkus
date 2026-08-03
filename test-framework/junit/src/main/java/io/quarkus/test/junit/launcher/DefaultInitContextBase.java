@@ -6,7 +6,7 @@ import java.util.Map;
 
 import io.quarkus.test.common.ArtifactLauncher;
 
-class DefaultInitContextBase {
+public class DefaultInitContextBase {
     private final int httpPort;
     private final int httpsPort;
     private final Duration waitTime;
@@ -17,7 +17,7 @@ class DefaultInitContextBase {
     private final Map<String, String> env;
     private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
-    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
+    public DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
             String testProfile,
             List<String> argLine,
             Map<String, String> env,

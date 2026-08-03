@@ -59,7 +59,7 @@ TIP: Database connections are called "Data Sources" in Quarkus. Even if you don'
 
 == Entities and repositories
 
-We start by mapping our database table to a Java class and defining a repository for it. A Java class that maps to a database table is called an Entity.
+We start by mapping our database table to a Java class and defining a repository for it. An _entity_ is a Java class that maps to database tables.
 
 Create a file called `Book.java` in the package `org.acme`:
 

@@ -249,7 +249,7 @@ public class Book extends RecordEntity {
     }
 }
 ----
-<1> Each book belongs to one publisher. This is the `publisher` string we used in `mappedBy` before.
+<1> Each book belongs to one publisher. This is the `publisher` field name we used in `mappedBy` before.
 
 Now let's implement our discount service:
 

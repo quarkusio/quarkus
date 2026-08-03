@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Observability Dev Services with Grafana OTel LGTM
 include::_attributes.adoc[]
-:categories: observability,devservices,telemetry,metrics,tracing,logging, opentelemetry, micrometer, prometheus, tempo, loki, grafana
 :summary: Instructions on how to use Grafana Otel LGTM
 :topics: observability,grafana,lgtm,otlp,opentelemetry,devservices,micrometer
 :extensions: io.quarkus:quarkus-observability-devservices

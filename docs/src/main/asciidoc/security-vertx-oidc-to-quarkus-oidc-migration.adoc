@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Migrate from Vert.x OIDC to Quarkus OIDC
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: security,web
 :topics: security,oidc,vertx
 :extensions: io.quarkus:quarkus-oidc
 

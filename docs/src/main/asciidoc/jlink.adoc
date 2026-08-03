@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = JLink packaging
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: packaging
 :extension-status: experimental
 :summary: The jlink extension produces a custom Java runtime image containing only the modules needed to run the application.
 :topics: jlink,packaging,modules,modularity

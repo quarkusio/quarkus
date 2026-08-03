@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Initialization tasks
-:categories: initialization
 :summary: This reference guide explains how to configure initialization tasks
 :topics: init,kubernetes,openshift,liquibase,flyway
 :extensions: io.quarkus:quarkus-kubernetes,io.quarkus:quarkus-openshift,io.quarkus:quarkus-flyway,io.quarkus:quarkus-liquibase

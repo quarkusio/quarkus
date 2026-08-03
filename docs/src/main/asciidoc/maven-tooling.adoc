@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="maven-tooling"]
 = Quarkus and Maven
 include::_attributes.adoc[]
-:categories: tooling, native
 :summary: Develop and build your Quarkus application with Maven
 :devtools-no-gradle:
 :topics: maven,tooling

@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect (OIDC) and OAuth2 dynamic client registration
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: security
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client-registration
 :extension-status: experimental

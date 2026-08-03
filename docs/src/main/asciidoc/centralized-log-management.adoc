@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Centralized log management (Graylog, Logstash, Fluentd)
 include::_attributes.adoc[]
-:categories: observability
 :summary: This guide explains how to centralize your logs with Graylog, Logstash or Fluentd.
 :topics: observability,logging
 :extensions: io.quarkus:quarkus-logging-gelf,io.quarkus:quarkus-opentelemetry

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Apache Kafka with Schema Registry and Avro
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
 :topics: messaging,kafka,apicurio,registry
 :extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka

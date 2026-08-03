@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing REST Services with Quarkus REST (formerly RESTEasy Reactive)
 include::_attributes.adoc[]
-:categories: web
 :topics: rest,resteasy-reactive,virtual-threads
 :extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.

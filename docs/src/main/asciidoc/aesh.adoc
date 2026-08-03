@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Command Mode with Aesh
 include::_attributes.adoc[]
-:categories: command-line
 :summary: Develop command line applications with the Aesh extension.
 :topics: command-line,cli,aesh,ssh,websocket,terminal
 :extensions: io.quarkus:quarkus-aesh,io.quarkus:quarkus-aesh-websocket,io.quarkus:quarkus-aesh-ssh

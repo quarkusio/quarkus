@@ -8,7 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :extension-status: preview
 :diataxis-type: reference
-:categories: observability
 :summary: Guide to send Micrometer data to OpenTelemetry.
 :topics: observability,opentelemetry,metrics,micrometer,tracing,logs
 :extensions: io.quarkus:quarkus-micrometer-opentelemetry

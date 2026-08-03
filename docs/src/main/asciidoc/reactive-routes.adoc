@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Reactive Routes
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide demonstrates how to use reactive routes.
 :topics: http,web,routing
 :extensions: io.quarkus:quarkus-reactive-routes

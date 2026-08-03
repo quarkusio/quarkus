@@ -22,7 +22,7 @@ import io.quarkus.util.GlobUtil;
  * Related build items:
  * <ul>
  * <li>Use {@link NativeImageResourceDirectoryBuildItem} if you need to add a directory of resources
- * <li>Use {@link NativeImageResourcePatternsBuildItem} to select resource paths by regular expressions or globs
+ * <li>Use {@link NativeImageResourcePatternsBuildItem} to select resource paths by globs
  * </ul>
  */
 public final class NativeImageResourceBuildItem extends MultiBuildItem {

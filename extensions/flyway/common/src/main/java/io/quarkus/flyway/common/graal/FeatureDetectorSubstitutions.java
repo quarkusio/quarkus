@@ -1,4 +1,4 @@
-package io.quarkus.flyway.mongodb.runtime.graal;
+package io.quarkus.flyway.common.graal;
 
 import org.flywaydb.core.internal.util.FeatureDetector;
 

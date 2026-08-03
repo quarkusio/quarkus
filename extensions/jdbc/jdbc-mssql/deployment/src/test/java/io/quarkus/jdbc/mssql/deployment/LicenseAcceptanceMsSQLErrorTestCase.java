@@ -3,10 +3,13 @@ package io.quarkus.jdbc.mssql.deployment;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Docker not supported on Windows")
 public class LicenseAcceptanceMsSQLErrorTestCase {
 
     @RegisterExtension

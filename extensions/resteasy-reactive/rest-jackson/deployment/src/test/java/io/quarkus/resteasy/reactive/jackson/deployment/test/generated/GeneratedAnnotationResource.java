@@ -601,6 +601,26 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- DateStringShapeWithPatternBean: @JsonFormat(shape = STRING, pattern = "...") on java.util.Date ---
+
+    @GET
+    @Path("/date-string-shape-pattern")
+    public DateStringShapeWithPatternBean getDateStringShapePattern() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return bean;
+    }
+
+    @GET
+    @Path("/date-string-shape-pattern-list")
+    public List<DateStringShapeWithPatternBean> getDateStringShapePatternList() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return List.of(bean);
+    }
+
     // --- FormatArrayShapeBean: @JsonFormat(shape = ARRAY) on class ---
 
     @GET
@@ -635,6 +655,25 @@ public class GeneratedAnnotationResource {
     @Path("/format-array-shape-no-order")
     @Consumes(MediaType.APPLICATION_JSON)
     public FormatArrayShapeNoOrderBean echoFormatArrayShapeNoOrder(FormatArrayShapeNoOrderBean bean) {
+        return bean;
+    }
+
+    // --- JavaBeansTransientBean: @java.beans.Transient ---
+
+    @GET
+    @Path("/java-beans-transient")
+    public JavaBeansTransientBean getJavaBeansTransient() {
+        JavaBeansTransientBean bean = new JavaBeansTransientBean();
+        bean.setName("Alice");
+        bean.setVisible("shown");
+        bean.setSecret("hidden-value");
+        return bean;
+    }
+
+    @POST
+    @Path("/java-beans-transient")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JavaBeansTransientBean echoJavaBeansTransient(JavaBeansTransientBean bean) {
         return bean;
     }
 

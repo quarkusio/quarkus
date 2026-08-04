@@ -3,6 +3,7 @@ package io.quarkus.test.common;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.SoftAssertions;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
 @EnabledOnOs({ OS.LINUX, OS.MAC })
 @ExtendWith(SoftAssertionsExtension.class)
@@ -114,5 +116,84 @@ public class TestLauncherUtil {
         soft.assertThatCode(proc::exitValue).doesNotThrowAnyException();
         soft.assertThat(outCapture.toString()).isEmpty();
         soft.assertThat(errCapture.toString()).isEmpty();
+    }
+
+    @Test
+    public void captureListeningDataHttpOnly(@TempDir Path tempDir) throws Exception {
+        Path logFile = tempDir.resolve("quarkus.log");
+        Process proc = new ProcessBuilder("/bin/bash", "-c",
+                "echo 'INFO  [io.quarkus] (main) Listening on: http://0.0.0.0:8080' >> " + logFile + "; " +
+                        "echo 'INFO  [io.quarkus] (main) Quarkus 999.0.0-SNAPSHOT started in 1.234s.' >> " + logFile + "; " +
+                        "sleep 10")
+                .start();
+        try {
+            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+
+            soft.assertThat(result.address()).isPresent();
+            soft.assertThat(result.address().get().port()).isEqualTo(8080);
+            soft.assertThat(result.address().get().protocol()).isEqualTo("http");
+            soft.assertThat(result.managementAddress()).isEmpty();
+        } finally {
+            proc.destroyForcibly();
+        }
+    }
+
+    @Test
+    public void captureListeningDataWithManagement(@TempDir Path tempDir) throws Exception {
+        Path logFile = tempDir.resolve("quarkus.log");
+        Process proc = new ProcessBuilder("/bin/bash", "-c",
+                "echo 'INFO  [io.quarkus] (main) Listening on: http://0.0.0.0:8080." +
+                        " Management interface listening on http://0.0.0.0:9000.' >> " + logFile + "; " +
+                        "echo 'INFO  [io.quarkus] (main) Quarkus 999.0.0-SNAPSHOT started in 1.234s.' >> " + logFile + "; " +
+                        "sleep 10")
+                .start();
+        try {
+            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+
+            soft.assertThat(result.address()).contains(new ListeningAddress(8080, "http"));
+            soft.assertThat(result.managementAddress()).contains(new ListeningAddress(9000, "http"));
+        } finally {
+            proc.destroyForcibly();
+        }
+    }
+
+    @Test
+    public void captureListeningDataWithManagementSsl(@TempDir Path tempDir) throws Exception {
+        Path logFile = tempDir.resolve("quarkus.log");
+        Process proc = new ProcessBuilder("/bin/bash", "-c",
+                "echo 'INFO  [io.quarkus] (main) Listening on: https://0.0.0.0:8443." +
+                        " Management interface listening on https://0.0.0.0:9443.' >> " + logFile + "; " +
+                        "echo 'INFO  [io.quarkus] (main) Quarkus 999.0.0-SNAPSHOT started in 1.234s.' >> " + logFile + "; " +
+                        "sleep 10")
+                .start();
+        try {
+            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+
+            soft.assertThat(result.address()).isPresent();
+            soft.assertThat(result.address().get().port()).isEqualTo(8443);
+            soft.assertThat(result.address().get().protocol()).isEqualTo("https");
+            soft.assertThat(result.managementAddress()).isPresent();
+            soft.assertThat(result.managementAddress().get().port()).isEqualTo(9443);
+            soft.assertThat(result.managementAddress().get().protocol()).isEqualTo("https");
+        } finally {
+            proc.destroyForcibly();
+        }
+    }
+
+    @Test
+    public void captureListeningDataNoHttp(@TempDir Path tempDir) throws Exception {
+        Path logFile = tempDir.resolve("quarkus.log");
+        Process proc = new ProcessBuilder("/bin/bash", "-c",
+                "echo 'INFO  [io.quarkus] (main) Quarkus 999.0.0-SNAPSHOT started in 1.234s.' >> " + logFile + "; " +
+                        "sleep 10")
+                .start();
+        try {
+            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+
+            soft.assertThat(result.address()).isEmpty();
+            soft.assertThat(result.managementAddress()).isEmpty();
+        } finally {
+            proc.destroyForcibly();
+        }
     }
 }

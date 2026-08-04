@@ -355,6 +355,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private MethodInfo findInheritedJsonValueMethod(ClassInfo classInfo) {
+        return findInheritedJsonValueMethod(classInfo, classInfo);
+    }
+
+    private MethodInfo findInheritedJsonValueMethod(ClassInfo classInfo, ClassInfo leafClass) {
         for (DotName ifaceName : classInfo.interfaceNames()) {
             ClassInfo iface = jandexIndex.getClassByName(ifaceName);
             if (iface == null) {
@@ -362,27 +366,38 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             }
             for (MethodInfo mi : iface.methods()) {
                 if (mi.annotation(JsonValue.class) != null && isJsonValueMethod(mi)) {
-                    MethodInfo override = classInfo.method(mi.name(),
-                            mi.parameterTypes().toArray(EMPTY_TYPE_ARRAY));
-                    if (override != null && isJsonValueMethod(override)) {
+                    MethodInfo override = findJsonValueOverride(leafClass, mi);
+                    if (override != null) {
                         return override;
                     }
                 }
             }
-            MethodInfo found = findInheritedJsonValueMethod(iface);
+            MethodInfo found = findInheritedJsonValueMethod(iface, leafClass);
             if (found != null) {
-                MethodInfo override = classInfo.method(found.name(),
-                        found.parameterTypes().toArray(EMPTY_TYPE_ARRAY));
-                if (override != null && isJsonValueMethod(override)) {
-                    return override;
-                }
+                return found;
             }
         }
         if (classInfo.superName() != null && !classInfo.superName().toString().equals("java.lang.Object")) {
             ClassInfo superClass = jandexIndex.getClassByName(classInfo.superName());
             if (superClass != null) {
-                return findInheritedJsonValueMethod(superClass);
+                return findInheritedJsonValueMethod(superClass, leafClass);
             }
+        }
+        return null;
+    }
+
+    private MethodInfo findJsonValueOverride(ClassInfo classInfo, MethodInfo annotated) {
+        ClassInfo current = classInfo;
+        while (current != null) {
+            MethodInfo override = current.method(annotated.name(),
+                    annotated.parameterTypes().toArray(EMPTY_TYPE_ARRAY));
+            if (override != null && isJsonValueMethod(override)) {
+                return override;
+            }
+            if (current.superName() == null || current.superName().toString().equals("java.lang.Object")) {
+                return null;
+            }
+            current = jandexIndex.getClassByName(current.superName());
         }
         return null;
     }
@@ -607,7 +622,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 writeStringShapedValue(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);
             } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaTimeDateType(typeName)) {
                 writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
-            } else if ("STRING".equals(formatShape) && isJavaUtilDateType(typeName)) {
+            } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaUtilDateType(typeName)) {
                 writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isBooleanType(typeName)) {
                 writeNumberShapedBoolean(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);

@@ -778,6 +778,11 @@ public class ResteasyReactiveProcessor {
             for (DotName methodAnnotation : result.getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -797,6 +802,11 @@ public class ResteasyReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -1796,9 +1806,9 @@ public class ResteasyReactiveProcessor {
             return;
         }
 
-        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        Map<String, Supplier<?>> runtimeConfigMap = new HashMap<>();
         for (HandlerConfigurationProviderBuildItem item : items) {
-            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+            runtimeConfigMap.put(item.getConfigClass().getName(), item.getValueSupplier());
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);

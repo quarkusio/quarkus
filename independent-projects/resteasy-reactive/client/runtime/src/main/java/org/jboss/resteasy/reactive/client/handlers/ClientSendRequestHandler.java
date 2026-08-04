@@ -180,6 +180,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                                             MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                                             updateRequestHeadersFromConfig(requestContext, headerMap);
+                                            setEntityRelatedHeaders(headerMap, requestContext.getEntity());
 
                                             // set the Vertx headers after we've run the interceptors because they can modify them
                                             setVertxHeaders(httpClientRequest, headerMap);
@@ -191,6 +192,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setEntityRelatedHeaders(headerMap, requestContext.getEntity());
                     setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(
                             new InputStreamReadStream(
@@ -273,15 +275,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }
         httpClientRequest.redirectHandler(response -> {
             /*
-             * The docs for `redirectHandler()` make no statement about whether the returned result is nullable.
-             * We'll guard against null here and assume there's no redirect taking place.
+             * A redirect handler signals "no redirect" by returning null: `HttpClientRequestImpl#handleResponse`
+             * only checks the returned Future for nullness, so a Future completing with null would end up being
+             * dereferenced and the response would never be delivered.
              */
             Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = requestContext.getHttpClient()
                     // For Vert.x 5 we'll have to cast the `HttpClient` to `HttpClientInternal` in order to access
                     // this method
                     .redirectHandler();
             if (redirectHandler == null) {
-                return Future.succeededFuture(null);
+                return null;
             }
 
             /*
@@ -290,20 +293,24 @@ public class ClientSendRequestHandler implements ClientRestHandler {
              *
              * But it doesn't return `HttpClientRequest`, it returns a `Future<RequestOptions>`.
              * Vert.x 3 exposed redirect handling in terms of HttpClientRequest, while Vert.x 4
-             * changed the client-level redirect handler to Future<RequestOptions>. The current
-             * docs still describe the old null semantics, so they are likely stale.
+             * changed the client-level redirect handler to Future<RequestOptions>.
              *
-             * In practice, we defensively accept both interpretations of "no redirect":
-             * - the handler returns a null Future<RequestOptions>
-             * - the handler returns a Future completing with null RequestOptions
+             * The null result is what a 3xx response without a Location header produces, and
+             * `HttpClientRequestImpl#handleResponse` routes all of 300..399 through here, so 304 Not Modified
+             * ends up here as well.
              */
             Future<RequestOptions> redirectOptions = redirectHandler.apply(response);
             if (redirectOptions == null) {
-                return Future.succeededFuture(null);
+                return null;
             }
             return redirectOptions.compose(options -> {
                 if (options == null) {
-                    return Future.succeededFuture(null);
+                    /*
+                     * "No redirect" cannot be expressed once we have handed back a Future, so fail instead of
+                     * leaving the caller waiting for a response that is never delivered.
+                     */
+                    return Future.failedFuture(new IllegalStateException(
+                            "The client redirect handler completed with null RequestOptions. Return null instead to indicate that no redirect should be followed."));
                 }
                 /*
                  * If there is a redirect taking place install the original request's customizers to the redirect

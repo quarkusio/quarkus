@@ -579,6 +579,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ItemJsonValueInheritedFromInterface.Wrapper(value);
     }
 
+    @GET
+    @Path("/json-value-inherited-from-interface-two-level")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.TwoLevelWrapper echoJsonValueInheritedFromInterfaceTwoLevel(
+            @RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.TwoLevelWrapper(value);
+    }
+
     @POST
     @Path("/product-price")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -711,6 +719,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/json-alias-record-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public JsonAliasRecord echoJsonAliasRecord(JsonAliasRecord record) {
+        return record;
+    }
+
+    @POST
+    @Path("/json-alias-same-as-field-name-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasSameAsFieldNameBean echoJsonAliasSameAsFieldName(JsonAliasSameAsFieldNameBean record) {
         return record;
     }
 

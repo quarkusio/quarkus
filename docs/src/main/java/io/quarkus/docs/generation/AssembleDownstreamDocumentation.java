@@ -3,8 +3,8 @@ package io.quarkus.docs.generation;
 //These are here to allow running the script directly from command line/IDE
 //The real deps and call are in the pom.xml
 //DEPS org.jboss.logging:jboss-logging:3.4.1.Final
-//DEPS com.fasterxml.jackson.core:jackson-databind:2.12.3
-//DEPS com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.0.rc1
+//DEPS tools.jackson.core:jackson-databind:3.1.5
+//DEPS tools.jackson.dataformat:jackson-dataformat-yaml:3.1.5
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;

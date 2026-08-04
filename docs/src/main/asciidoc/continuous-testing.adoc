@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Continuous Testing
 include::_attributes.adoc[]
-:categories: core
 :summary: Get early test feedback with Continuous Testing.
 :numbered:
 :sectnums:

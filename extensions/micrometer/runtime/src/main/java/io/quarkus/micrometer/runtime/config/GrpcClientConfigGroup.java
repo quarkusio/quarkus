@@ -1,8 +1,11 @@
 package io.quarkus.micrometer.runtime.config;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build / static runtime config for gRPC Client.
@@ -19,4 +22,43 @@ public interface GrpcClientConfigGroup extends MicrometerConfig.CapabilityEnable
      */
     @Override
     Optional<Boolean> enabled();
+
+    /**
+     * Whether to publish histogram buckets for gRPC client processing duration timers.
+     * <p>
+     * Disabled by default because histograms increase memory usage and metric cardinality.
+     * When enabled, Micrometer's default percentile histogram buckets are published (suitable
+     * for {@code histogram_quantile} in Prometheus). Optional SLO boundaries can be added via
+     * {@link #slos()}, and the published bucket range can be clamped via
+     * {@link #minimumExpectedValue()} / {@link #maximumExpectedValue()}.
+     */
+    @WithDefault("false")
+    boolean histogram();
+
+    /**
+     * Optional service level objective (bucket) boundaries for the processing duration histogram.
+     * <p>
+     * Only applied when {@link #histogram()} is {@code true}. When unset, Micrometer's default
+     * percentile histogram buckets are used. When set, these SLO boundaries are added to that
+     * histogram.
+     */
+    Optional<List<Duration>> slos();
+
+    /**
+     * Minimum expected duration observed by the processing duration timer.
+     * <p>
+     * Only applied when {@link #histogram()} is {@code true}. Sets a lower bound on which
+     * Micrometer percentile-histogram buckets are published. When unset, Micrometer's timer
+     * default ({@code 1ms}) is used.
+     */
+    Optional<Duration> minimumExpectedValue();
+
+    /**
+     * Maximum expected duration observed by the processing duration timer.
+     * <p>
+     * Only applied when {@link #histogram()} is {@code true}. Sets an upper bound on which
+     * Micrometer percentile-histogram buckets are published. Narrowing this value reduces
+     * metric cardinality. When unset, Micrometer's timer default ({@code 30s}) is used.
+     */
+    Optional<Duration> maximumExpectedValue();
 }

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Tools in your favorite IDE
 include::_attributes.adoc[]
-:categories: getting-started
 :summary: Learn more about Quarkus integrations in IDEs.
 :topics: ide,tooling
 

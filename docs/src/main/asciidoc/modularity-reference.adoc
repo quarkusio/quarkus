@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Modularity SPI reference
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: architecture
 :extension-status: experimental
 :summary: Reference for the build items that Quarkus extensions use to participate in Quarkus modularity.
 :topics: modularity,jpms,modules,extensions,spi

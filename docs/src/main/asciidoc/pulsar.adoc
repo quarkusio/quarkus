@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Pulsar Reference Guide
 include::_attributes.adoc[]
-:categories: messaging
 :summary: This reference guide provides an in-depth look on Apache Pulsar and the Quarkus Messaging extensions.
 :numbered:
 :sectnums:

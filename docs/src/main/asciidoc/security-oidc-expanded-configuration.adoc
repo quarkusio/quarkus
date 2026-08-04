@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus OpenId Connect (OIDC) Expanded Configuration Reference
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security
 :topics: security
 
 Quarkus OIDC `quarkus-oidc` extension provides a comprehensive, highly adaptable and configurable OIDC and OAuth2 adapter implementation.

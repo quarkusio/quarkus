@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Data Caching
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide explains how to cache expensive method calls of your CDI beans using simple annotations.
 :topics: cache,data
 :extensions: io.quarkus:quarkus-cache

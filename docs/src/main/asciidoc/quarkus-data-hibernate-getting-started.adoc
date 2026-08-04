@@ -39,14 +39,14 @@ Then let's import the extensions:
 include::{includes}/devtools/extension-add.adoc[]
 
 The first dependency, `quarkus-data-hibernate`, is the Quarkus extension that provides everything you need for database access.
-The second dependency, `quarkus-jdbc-postgresql`, is the JDBC driver that tells Quarkus how to talk to a PostgreSQL database. If you're using a different database (MySQL, MariaDB, H2, etc.), pick the corresponding `quarkus-jdbc-*` driver instead (see xref:datasource.adoc#configure-a-jdbc-datasource[Configure a JDBC datasource]). Quarkus Data Hibernate cannot work without a JDBC driver.
+The second dependency, `quarkus-jdbc-postgresql`, is the JDBC driver that tells Quarkus how to talk to a PostgreSQL database. If you're using a different database (MySQL, MariaDB, H2, etc.), pick the corresponding `quarkus-jdbc-*` driver instead (see xref:datasource.adoc#configure-a-jdbc-datasource[Configure a JDBC datasource]). Quarkus Data Hibernate cannot work without a JDBC driver <<reactive,or a reactive SQL client>>.
 
 Quarkus Data Hibernate uses the Hibernate annotation processor, a key component that reads your repository interfaces at compile time, validates queries, and generates implementation classes.
 These generated classes are compiled together with your code and wired up automatically by Quarkus. They are also simple to read, in case you want to understand how it works internally.
 
 To enable it, add the annotation processor configuration to your build file:
 
-include::{includes}/hibernate-processor-config.adoc[]
+include::{includes}/quarkus-data-processor-config.adoc[]
 
 Now run Quarkus continuous testing in a separate tab of your terminal:
 
@@ -90,7 +90,7 @@ public class Book extends RecordEntity { // <2>
 }
 ----
 <1> Tells Hibernate that this class maps to a database table. Hibernate will use the class name as the table name and the field names as column names.
-<2> `RecordEntity` gives the entity a generated `Long` id field and convenient methods that will be used later.
+<2> `RecordEntity` gives the entity a generated `Long` id field and convenient methods that will be used later. You can use Hibernate's `@Id` and `@GeneratedValue` directly if you prefer, or if you need a custom ID strategy (see the xref:quarkus-data-hibernate.adoc#about-entity-identifiers[reference guide]).
 <3> These public fields map to columns in the `Book` table. Hibernate reads and writes these fields directly.
 <4> Defines a repository: a place to put all your query methods for `Book`. By nesting it inside the entity, the queries and the data they operate on live together. You can name this interface whatever you want: `Queries`, `Repo`, `BookQueries`, etc.
 <5> `@Find` tells Quarkus Data Hibernate to generate a query based on the method's parameter names. `findByTitle(String title)` becomes a query that matches the `title` field on `Book`. Parameters are inferred from the method signature.
@@ -179,14 +179,6 @@ This is intentional: it's a simpler model that uses `StatelessSession` under the
 In this mode every change to an object requires an explicit save operation.
 If you're not interested in this style and want the full power of managed entities, skip ahead to <<managed-session>>.
 ====
-
-=== About entity identifiers
-
-`RecordEntity` includes a generated `Long` id field automatically.
-
-You can use Hibernate's `@Id` and `@GeneratedValue` directly if you prefer, or if you need a custom ID strategy.
-
-See the xref:quarkus-data-hibernate.adoc#about-entity-identifiers[reference guide] for the full list of options.
 
 [[managed-session]]
 == Managed session
@@ -507,6 +499,7 @@ The test is exactly the same: the behavior hasn't changed, the implementation on
 It's up to you to decide whether to use a Managed Entity or a Record one. The Managed Repository is more expressive, but reasoning about it is more complex and might require knowing some details about how Hibernate handles objects. If you're an experienced Hibernate developer, you expect that changing an object's field doesn't immediately hit the database. Some users prefer a more explicit way to control the database. Either way is fine, and Quarkus Data Hibernate makes it easy to use either.
 
 
+[[reactive]]
 == Reactive
 
 If you're already using reactive APIs in your application (Quarkus Messaging, reactive REST clients, Vert.x), you want your database access to compose naturally with them without blocking the event loop.
@@ -517,7 +510,7 @@ First, add the reactive dependencies:
 :add-extension-extensions: quarkus-hibernate-reactive,quarkus-hibernate-reactive-panache,quarkus-reactive-pg-client
 include::{includes}/devtools/extension-add.adoc[]
 
-NOTE: `quarkus-hibernate-reactive-panache` is needed because `quarkus-hibernate-reactive` does not yet transitively include the classes required by the annotation processor to generate reactive repository implementations (see https://github.com/quarkusio/quarkus/issues/54892[#54892]).
+NOTE: `quarkus-hibernate-reactive-panache` is needed because `quarkus-hibernate-reactive` does not yet transitively include the classes required by the annotation processor to generate reactive repository implementations (see https://github.com/quarkusio/quarkus/issues/53871[#53871]).
 
 `quarkus-hibernate-reactive` adds the reactive Hibernate engine, which uses non-blocking I/O under the covers instead of JDBC.
 `quarkus-reactive-pg-client` is the reactive equivalent of `quarkus-jdbc-postgresql`. It provides a non-blocking PostgreSQL driver built on Vert.x. As its blocking counterpart, it's mandatory for Quarkus Data Hibernate to work.

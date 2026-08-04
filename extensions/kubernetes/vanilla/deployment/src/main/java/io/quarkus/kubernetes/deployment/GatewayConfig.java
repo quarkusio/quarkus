@@ -17,7 +17,7 @@ public interface GatewayConfig {
 
     /**
      * If true, also generate a Gateway resource. Usually the platform already provides a shared Gateway;
-     * in that case leave this false and configure {@code parent-refs} instead.
+     * in that case leave this false and configure {@code http.parent-refs} instead.
      */
     @WithDefault("false")
     boolean generateGateway();
@@ -28,116 +28,125 @@ public interface GatewayConfig {
     Optional<String> gatewayClassName();
 
     /**
-     * The host under which the application is going to be exposed (HTTPRoute hostname).
-     */
-    Optional<String> host();
-
-    /**
-     * Additional hostnames for the HTTPRoute. Combined with {@code host} when both are set.
-     */
-    Optional<List<String>> hosts();
-
-    /**
-     * The default path match value. Default is {@code /}.
-     * Can also be overridden via {@code quarkus.kubernetes.ports.<target-port>.path}.
-     */
-    @WithDefault("/")
-    String path();
-
-    /**
-     * The path match type. One of {@code Exact}, {@code PathPrefix}, or {@code RegularExpression}.
-     */
-    @WithDefault("PathPrefix")
-    String pathType();
-
-    /**
-     * The default target named port. If not provided matching ports exist, it falls back to {@code http}.
-     */
-    @WithDefault("http")
-    String targetPort();
-
-    /**
-     * Custom annotations to add to the generated HTTPRoute (and Gateway when generated).
-     */
-    @ConfigDocMapKey("annotation-name")
-    Map<String, String> annotations();
-
-    /**
-     * Parent Gateway references the HTTPRoute attaches to.
-     * Required when {@code expose=true} and {@code generate-gateway=false}.
-     */
-    Map<String, ParentRefConfig> parentRefs();
-
-    /**
-     * Additional HTTPRoute rules (in addition to the default rule from path/target-port).
-     */
-    Map<String, GatewayRuleConfig> rules();
-
-    /**
      * Listeners when {@code generate-gateway=true}. If empty, a default HTTP listener on port 80 named
      * {@code http} is used.
      */
     Map<String, ListenerConfig> listeners();
 
-    interface ParentRefConfig {
+    /**
+     * HTTPRoute configuration.
+     * Nested under {@code http} so additional route types (for example {@code grpc}) can be added later.
+     */
+    Http http();
+
+    interface Http {
 
         /**
-         * Name of the parent Gateway.
+         * The host under which the application is going to be exposed (HTTPRoute hostname).
          */
-        String name();
+        Optional<String> host();
 
         /**
-         * Namespace of the parent Gateway. Defaults to the HTTPRoute namespace when omitted.
+         * Additional hostnames for the HTTPRoute. Combined with {@code host} when both are set.
          */
-        Optional<String> namespace();
+        Optional<List<String>> hosts();
 
         /**
-         * Section name (listener name) on the parent Gateway.
-         */
-        Optional<String> sectionName();
-
-        /**
-         * Group of the parent resource. Defaults to {@code gateway.networking.k8s.io}.
-         */
-        Optional<String> group();
-
-        /**
-         * Kind of the parent resource. Defaults to {@code Gateway}.
-         */
-        Optional<String> kind();
-    }
-
-    interface GatewayRuleConfig {
-
-        /**
-         * The path under which the rule is going to be used. Default is {@code /}.
+         * The default path match value. Default is {@code /}.
+         * Can also be overridden via {@code quarkus.kubernetes.ports.<target-port>.path}.
          */
         @WithDefault("/")
         String path();
 
         /**
-         * The path match type. Default is {@code PathPrefix}.
+         * The path match type. One of {@code Exact}, {@code PathPrefix}, or {@code RegularExpression}.
          */
         @WithDefault("PathPrefix")
         String pathType();
 
         /**
-         * The service name to be used by this rule. Default is the generated service name of the application.
+         * The default target named port. If not provided matching ports exist, it falls back to {@code http}.
          */
-        Optional<String> serviceName();
+        @WithDefault("http")
+        String targetPort();
 
         /**
-         * The named service port to resolve to a number for this rule.
-         * Used when {@code service-port-number} is not set.
+         * Custom annotations to add to the generated HTTPRoute (and Gateway when generated).
          */
-        Optional<String> servicePortName();
+        @ConfigDocMapKey("annotation-name")
+        Map<String, String> annotations();
 
         /**
-         * The service port number to be used by this rule.
-         * Required by Gateway API {@code backendRefs} when {@code service-name} points to a different Service.
-         * Preferred when set; otherwise the named port is resolved from the current application only.
+         * Parent Gateway references the HTTPRoute attaches to.
+         * Required when {@code expose=true} and {@code generate-gateway=false}.
          */
-        Optional<Integer> servicePortNumber();
+        Map<String, ParentRefConfig> parentRefs();
+
+        /**
+         * Additional HTTPRoute rules (in addition to the default rule from path/target-port).
+         */
+        Map<String, RuleConfig> rules();
+
+        interface ParentRefConfig {
+
+            /**
+             * Name of the parent Gateway.
+             */
+            String name();
+
+            /**
+             * Namespace of the parent Gateway. Defaults to the HTTPRoute namespace when omitted.
+             */
+            Optional<String> namespace();
+
+            /**
+             * Section name (listener name) on the parent Gateway.
+             */
+            Optional<String> sectionName();
+
+            /**
+             * Group of the parent resource. Defaults to {@code gateway.networking.k8s.io}.
+             */
+            Optional<String> group();
+
+            /**
+             * Kind of the parent resource. Defaults to {@code Gateway}.
+             */
+            Optional<String> kind();
+        }
+
+        interface RuleConfig {
+
+            /**
+             * The path under which the rule is going to be used. Default is {@code /}.
+             */
+            @WithDefault("/")
+            String path();
+
+            /**
+             * The path match type. Default is {@code PathPrefix}.
+             */
+            @WithDefault("PathPrefix")
+            String pathType();
+
+            /**
+             * The service name to be used by this rule. Default is the generated service name of the application.
+             */
+            Optional<String> serviceName();
+
+            /**
+             * The named service port to resolve to a number for this rule.
+             * Used when {@code service-port-number} is not set.
+             */
+            Optional<String> servicePortName();
+
+            /**
+             * The service port number to be used by this rule.
+             * Required by Gateway API {@code backendRefs} when {@code service-name} points to a different Service.
+             * Preferred when set; otherwise the named port is resolved from the current application only.
+             */
+            Optional<Integer> servicePortNumber();
+        }
     }
 
     interface ListenerConfig {

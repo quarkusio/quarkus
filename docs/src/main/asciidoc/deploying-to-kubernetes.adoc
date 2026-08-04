@@ -917,20 +917,23 @@ More information about how to create the secret in https://kubernetes.io/docs/co
 The https://gateway-api.sigs.k8s.io/[Kubernetes Gateway API] is the successor to Ingress.
 Some implementations (for example kgateway) only support Gateway API resources.
 
+HTTPRoute settings live under `quarkus.kubernetes.gateway.http.*` so additional route types
+(for example `quarkus.kubernetes.gateway.grpc.*`) can be added later.
+
 To generate an `HTTPRoute` that attaches to an existing `Gateway`:
 
 [source,properties]
 ----
 quarkus.kubernetes.gateway.expose=true
-quarkus.kubernetes.gateway.parent-refs.main.name=my-gateway
-quarkus.kubernetes.gateway.parent-refs.main.namespace=infra
-quarkus.kubernetes.gateway.host=myapp.example.com
+quarkus.kubernetes.gateway.http.parent-refs.main.name=my-gateway
+quarkus.kubernetes.gateway.http.parent-refs.main.namespace=infra
+quarkus.kubernetes.gateway.http.host=myapp.example.com
 # Optional: additional hostnames
-# quarkus.kubernetes.gateway.hosts=api.example.com,admin.example.com
+# quarkus.kubernetes.gateway.http.hosts=api.example.com,admin.example.com
 # Optional: named Service port used as HTTPRoute backend (default is http)
-# quarkus.kubernetes.gateway.target-port=http
+# quarkus.kubernetes.gateway.http.target-port=http
 # Optional: annotations (quote keys that contain dots)
-# quarkus.kubernetes.gateway.annotations."example.com/gate"=enabled
+# quarkus.kubernetes.gateway.http.annotations."example.com/gate"=enabled
 ----
 
 This generates an `HTTPRoute` similar to:
@@ -961,15 +964,15 @@ spec:
 ----
 
 Optionally also generate a namespaced `Gateway` (the cluster must still provide a matching `GatewayClass`).
-By default a single HTTP listener on port `80` named `http` is created and uses `quarkus.kubernetes.gateway.host`
-(or the first `hosts` entry) as the listener hostname:
+By default a single HTTP listener on port `80` named `http` is created and uses `quarkus.kubernetes.gateway.http.host`
+(or the first `http.hosts` entry) as the listener hostname:
 
 [source,properties]
 ----
 quarkus.kubernetes.gateway.expose=true
 quarkus.kubernetes.gateway.generate-gateway=true
 quarkus.kubernetes.gateway.gateway-class-name=istio
-quarkus.kubernetes.gateway.host=myapp.example.com
+quarkus.kubernetes.gateway.http.host=myapp.example.com
 ----
 
 Custom listeners can be defined with `quarkus.kubernetes.gateway.listeners.<id>.*`.
@@ -996,11 +999,11 @@ When `service-name` points to a different Service, `service-port-number` is requ
 
 [source,properties]
 ----
-quarkus.kubernetes.gateway.rules.api.path=/api
-quarkus.kubernetes.gateway.rules.api.path-type=PathPrefix
-quarkus.kubernetes.gateway.rules.alt.path=/ea
-quarkus.kubernetes.gateway.rules.alt.service-name=updated-service
-quarkus.kubernetes.gateway.rules.alt.service-port-number=8080
+quarkus.kubernetes.gateway.http.rules.api.path=/api
+quarkus.kubernetes.gateway.http.rules.api.path-type=PathPrefix
+quarkus.kubernetes.gateway.http.rules.alt.path=/ea
+quarkus.kubernetes.gateway.http.rules.alt.service-name=updated-service
+quarkus.kubernetes.gateway.http.rules.alt.service-port-number=8080
 ----
 
 [NOTE]

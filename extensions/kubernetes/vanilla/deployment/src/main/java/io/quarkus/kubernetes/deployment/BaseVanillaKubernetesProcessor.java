@@ -136,7 +136,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
     private static boolean isGatewayExposingManagement(KubernetesConfig config) {
         return config.gateway() != null
                 && config.gateway().expose()
-                && MANAGEMENT_PORT_NAME.equals(config.gateway().targetPort());
+                && MANAGEMENT_PORT_NAME.equals(config.gateway().http().targetPort());
     }
 
     protected void ingress(DecoratorsContext context, List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
@@ -167,17 +167,18 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         }
 
         GatewayConfig gateway = config.gateway();
+        GatewayConfig.Http http = gateway.http();
 
         if (config.ingress() != null && config.ingress().expose()) {
             log.warn("Both quarkus.kubernetes.ingress.expose and quarkus.kubernetes.gateway.expose are true; "
                     + "generating both Ingress and Gateway API resources.");
         }
 
-        boolean hasParentRefs = gateway.parentRefs() != null && !gateway.parentRefs().isEmpty();
+        boolean hasParentRefs = http.parentRefs() != null && !http.parentRefs().isEmpty();
         if (!gateway.generateGateway() && !hasParentRefs) {
             throw new IllegalArgumentException(
                     "quarkus.kubernetes.gateway.expose=true requires either "
-                            + "quarkus.kubernetes.gateway.parent-refs.<id>.name or "
+                            + "quarkus.kubernetes.gateway.http.parent-refs.<id>.name or "
                             + "quarkus.kubernetes.gateway.generate-gateway=true");
         }
 
@@ -189,20 +190,20 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
 
         if (gateway.generateGateway() && hasParentRefs) {
             log.warn("Both quarkus.kubernetes.gateway.generate-gateway and "
-                    + "quarkus.kubernetes.gateway.parent-refs are set; "
+                    + "quarkus.kubernetes.gateway.http.parent-refs are set; "
                     + "HTTPRoute will use parent-refs and the generated Gateway may be unused.");
         }
 
-        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, gateway.targetPort());
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, http.targetPort());
         int backendPort = port.map(AddServiceResourceDecorator::calculateHostPort).orElse(DEFAULT_HTTP_PORT);
 
-        String path = gateway.path();
-        PortConfig portConfig = config.ports().get(gateway.targetPort());
+        String path = http.path();
+        PortConfig portConfig = config.ports().get(http.targetPort());
         if (portConfig != null && portConfig.path().isPresent()) {
             path = portConfig.path().get();
         }
 
-        List<String> hostnames = AddHttpRouteResourceDecorator.combineHostnames(gateway.host(), gateway.hosts());
+        List<String> hostnames = AddHttpRouteResourceDecorator.combineHostnames(http.host(), http.hosts());
         String resourceName = context.name();
 
         if (gateway.generateGateway()) {
@@ -211,13 +212,13 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                     resourceName,
                     gateway.gatewayClassName().get(),
                     gateway.listeners(),
-                    gateway.annotations(),
+                    http.annotations(),
                     hostnames.stream().findFirst()));
         }
 
         List<AddHttpRouteResourceDecorator.Rule> extraRules = new ArrayList<>();
-        if (gateway.rules() != null) {
-            for (GatewayConfig.GatewayRuleConfig rule : gateway.rules().values()) {
+        if (http.rules() != null) {
+            for (GatewayConfig.Http.RuleConfig rule : http.rules().values()) {
                 int rulePort = resolveGatewayBackendPort(ports, config, resourceName, rule, backendPort);
                 extraRules.add(new AddHttpRouteResourceDecorator.Rule(
                         rule.path(),
@@ -231,12 +232,12 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                 resourceName,
                 hostnames,
                 path,
-                gateway.pathType(),
+                http.pathType(),
                 resourceName,
                 backendPort,
-                gateway.parentRefs(),
+                http.parentRefs(),
                 extraRules,
-                gateway.annotations(),
+                http.annotations(),
                 gateway.generateGateway(),
                 resourceName));
     }
@@ -258,7 +259,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
     }
 
     private static int resolveGatewayBackendPort(List<KubernetesPortBuildItem> ports, KubernetesConfig config,
-            String applicationServiceName, GatewayConfig.GatewayRuleConfig rule, int defaultPort) {
+            String applicationServiceName, GatewayConfig.Http.RuleConfig rule, int defaultPort) {
         if (rule.servicePortNumber().isPresent()) {
             return rule.servicePortNumber().get();
         }
@@ -267,12 +268,12 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                 .filter(name -> !name.equals(applicationServiceName));
         if (customService.isPresent()) {
             throw new IllegalArgumentException(
-                    "quarkus.kubernetes.gateway.rules.<id>.service-port-number is required when "
+                    "quarkus.kubernetes.gateway.http.rules.<id>.service-port-number is required when "
                             + "service-name points to a different service ('" + customService.get() + "'). "
                             + "Named ports from the current application cannot be resolved for another service.");
         }
 
-        String portName = rule.servicePortName().orElse(config.gateway().targetPort());
+        String portName = rule.servicePortName().orElse(config.gateway().http().targetPort());
         return KubernetesCommonHelper.getPort(ports, config, portName)
                 .map(AddServiceResourceDecorator::calculateHostPort)
                 .orElse(defaultPort);

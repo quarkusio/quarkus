@@ -27,7 +27,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
     private final String pathType;
     private final String backendServiceName;
     private final int backendPort;
-    private final Map<String, GatewayConfig.ParentRefConfig> parentRefs;
+    private final Map<String, GatewayConfig.Http.ParentRefConfig> parentRefs;
     private final List<Rule> extraRules;
     private final Map<String, String> annotations;
     private final boolean generateGateway;
@@ -39,7 +39,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
             String pathType,
             String backendServiceName,
             int backendPort,
-            Map<String, GatewayConfig.ParentRefConfig> parentRefs,
+            Map<String, GatewayConfig.Http.ParentRefConfig> parentRefs,
             List<Rule> extraRules,
             Map<String, String> annotations,
             boolean generateGateway,
@@ -63,7 +63,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
 
         List<ParentReference> resolvedParentRefs = new ArrayList<>();
         if (parentRefs != null && !parentRefs.isEmpty()) {
-            for (GatewayConfig.ParentRefConfig ref : parentRefs.values()) {
+            for (GatewayConfig.Http.ParentRefConfig ref : parentRefs.values()) {
                 ParentReferenceBuilder parentRefBuilder = new ParentReferenceBuilder()
                         .withName(ref.name())
                         .withKind(ref.kind().orElse(GATEWAY_KIND))

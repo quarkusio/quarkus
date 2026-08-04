@@ -443,7 +443,7 @@ public class Book extends ManagedEntity { // <1>
 <1> `ManagedEntity` replaces `RecordEntity`. This tells Hibernate to track this entity in its persistence context.
 <2> The repository uses `ManagedRepository` instead of `RecordRepository`.
 
-Since the entities are now managed, `insert()` is no longer available. You'll get some compilation errors. Use `persist()` instead:
+Since the entities are now managed, `insert()` is no longer available. Use `persist()` instead: unlike `insert()`, it doesn't execute SQL immediately. Hibernate will flush the changes automatically, so you don't need to worry about when SQL is sent to the database. Any changes you make to the entity after calling `persist()` will also be sent to the database at flush time.
 
 [source,java]
 ----
@@ -461,7 +461,7 @@ public class LibraryService {
     }
 }
 ----
-<1> `persist()` replaces `insert()`. Unlike `insert()`, it doesn't execute SQL immediately, Hibernate will flush the changes automatically. You don't need to worry about when SQL is sent to the database.
+<1> `insert()` was replaced with `persist()`
 
 Now the service becomes pure business logic:
 

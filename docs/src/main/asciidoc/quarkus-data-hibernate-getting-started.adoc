@@ -214,6 +214,7 @@ public class Publisher extends RecordEntity {
     public String name;
     public String country;
     public boolean allowsDiscounts;
+    public boolean allowsTranslation;
     @OneToMany(mappedBy = "publisher") // <1>
     public List<Book> books;
 
@@ -269,21 +270,27 @@ public class SalesService {
     public void applyCountrySale(String country, BigDecimal discountPercent) {
         List<Publisher> publishers = publisherRepo.findByCountry(country);
         BigDecimal factor = BigDecimal.ONE.subtract(discountPercent.divide(BigDecimal.valueOf(100)));
-        List<Book> modified = new ArrayList<>(); // <1>
+        Set<Book> modified = new HashSet<>(); // <1>
         for (Publisher publisher : publishers) {
-            if (publisher.allowsDiscounts) {
-                List<Book> books = bookRepo.findByPublisher(publisher); // <2>
-                for (Book book : books) {
+            List<Book> books = bookRepo.findByPublisher(publisher); // <2>
+            for (Book book : books) {
+                if (publisher.allowsDiscounts) {
                     book.currentPrice = book.listPrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
                     modified.add(book); // <3>
                 }
+                if (publisher.allowsTranslation && translateTitle(book)) {
+                    modified.add(book);
+                }
             }
         }
-        // Other business logic that modifies books i.e. applying loyalty points, rounding prices ...
-        // Since we want to update them only once, we collect them to avoid multiple updates within the loops
         for (Book book : modified) {
             book.update(); // <4>
         }
+    }
+
+    private boolean translateTitle(Book book) {
+        // Translate the book title to the local language (translation fields omitted for brevity)
+        return false;
     }
 }
 ----
@@ -407,6 +414,7 @@ public class Publisher extends ManagedEntity { // <1>
     public String name;
     public String country;
     public boolean allowsDiscounts;
+    public boolean allowsTranslation;
     @OneToMany(mappedBy = "publisher")
     public List<Book> books;
 
@@ -475,13 +483,20 @@ public class SalesService {
         BigDecimal factor = BigDecimal.ONE.subtract(discountPercent.divide(BigDecimal.valueOf(100)));
         List<Publisher> publishers = publisherRepo.findByCountry(country);
         for (Publisher publisher : publishers) {
-            if (publisher.allowsDiscounts) {
-                for (Book book : publisher.books) { // <1>
+            for (Book book : publisher.books) { // <1>
+                if (publisher.allowsDiscounts) {
                     book.currentPrice = book.listPrice.multiply(factor).setScale(2, RoundingMode.HALF_UP); // <2>
+                }
+                if (publisher.allowsTranslation) {
+                    translateTitle(book);
                 }
             }
         }
     } // <3>
+
+    private void translateTitle(Book book) {
+        // Translate the book title to the local language (translation fields omitted for brevity)
+    }
 }
 ----
 <1> Accessing `publisher.books` triggers a lazy fetch: Hibernate loads the books from the database automatically.

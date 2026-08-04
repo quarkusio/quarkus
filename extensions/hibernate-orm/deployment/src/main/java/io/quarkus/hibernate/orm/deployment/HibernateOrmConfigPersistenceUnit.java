@@ -779,18 +779,13 @@ public interface HibernateOrmConfigPersistenceUnit {
          * When set, eviction is based on the total weight of cached entries rather than their count.
          * This is useful for entities with highly variable sizes (e.g., JSON blobs).
          * <p>
-         * Mutually exclusive with {@code object-count}. Requires a {@code weigher-class} to assign
-         * weights to entries; without one, each entry has a default weight of 1.
+         * Mutually exclusive with {@code object-count}.
+         * <p>
+         * Weights are assigned by a {@code com.github.benmanes.caffeine.cache.Weigher} CDI bean
+         * annotated with {@code @PersistenceUnitExtension}, if present; otherwise Quarkus uses a
+         * built-in weigher that estimates weight from Hibernate's dehydrated cache entry state.
          */
         OptionalLong maximumWeight();
-
-        /**
-         * The fully qualified class name of a {@code com.github.benmanes.caffeine.cache.Weigher}
-         * implementation used to assign weights to cache entries.
-         * <p>
-         * Only used when {@code maximum-weight} is set. The class must have a public no-arg constructor.
-         */
-        Optional<String> weigherClass();
     }
 
     @ConfigGroup

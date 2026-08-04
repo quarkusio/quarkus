@@ -16,29 +16,24 @@ import jakarta.transaction.UserTransaction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.github.benmanes.caffeine.cache.Weigher;
-
-import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Tests that weight-based cache configuration is correctly applied
- * to Hibernate 2LC using Caffeine, including a custom {@link Weigher}
- * discovered via {@link PersistenceUnitExtension}.
+ * Tests that setting {@code maximum-weight} without a custom weigher uses the
+ * built-in dehydrated-entity weigher and still caches entities correctly.
  */
-public class WeightBasedCacheTest {
+public class DefaultWeigherCacheTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(DataEntity.class)
-                    .addClass(DataEntityWeigher.class)
                     .addClass(TransactionTestUtils.class)
                     .addAsResource("application.properties"))
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.second-level-caching-enabled", "true")
             .overrideRuntimeConfigKey(
-                    "quarkus.hibernate-orm.cache.\"io.quarkus.hibernate.orm.cache.WeightBasedCacheTest$DataEntity\".memory.maximum-weight",
+                    "quarkus.hibernate-orm.cache.\"io.quarkus.hibernate.orm.cache.DefaultWeigherCacheTest$DataEntity\".memory.maximum-weight",
                     "1000");
 
     @Inject
@@ -51,7 +46,7 @@ public class WeightBasedCacheTest {
     org.hibernate.Cache hibernateCache;
 
     @Test
-    public void testWeightBasedCacheWorks() {
+    public void testDefaultWeigherWorks() {
         DataEntity entity = new DataEntity("small data");
         TransactionTestUtils.inTransaction(tx, () -> {
             em.persist(entity);
@@ -61,8 +56,6 @@ public class WeightBasedCacheTest {
         TransactionTestUtils.inTransaction(tx, () -> {
             DataEntity loaded = em.find(DataEntity.class, entity.getId());
             assertNotNull(loaded, "Entity should be loaded");
-
-            // Verify entity is in cache
             assertTrue(hibernateCache.contains(DataEntity.class, entity.getId()),
                     "Entity should be in cache after load");
         });
@@ -73,7 +66,7 @@ public class WeightBasedCacheTest {
     public static class DataEntity {
 
         @Id
-        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dataSeq")
+        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "defaultWeigherDataSeq")
         private long id;
 
         @Column
@@ -92,20 +85,6 @@ public class WeightBasedCacheTest {
 
         public String getData() {
             return data;
-        }
-    }
-
-    /**
-     * Weigher that assigns weight based on the data field length.
-     */
-    @PersistenceUnitExtension
-    public static class DataEntityWeigher implements Weigher<Object, Object> {
-
-        @Override
-        public int weigh(Object key, Object value) {
-            // Hibernate wraps entities in internal cache entries.
-            // Default weight for unknown types.
-            return 100;
         }
     }
 }

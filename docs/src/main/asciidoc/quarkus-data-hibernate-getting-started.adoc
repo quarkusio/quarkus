@@ -517,7 +517,7 @@ include::{includes}/devtools/extension-add.adoc[]
 NOTE: `quarkus-hibernate-reactive-panache-common` is needed because `quarkus-hibernate-reactive` does not yet transitively include the classes required by the annotation processor to generate reactive repository implementations (see https://github.com/quarkusio/quarkus/issues/53871[#53871]).
 
 `quarkus-hibernate-reactive` adds the reactive Hibernate engine, which uses non-blocking I/O under the covers instead of JDBC.
-`quarkus-reactive-pg-client` is the reactive equivalent of `quarkus-jdbc-postgresql`. It provides a non-blocking PostgreSQL driver built on Vert.x. As its blocking counterpart, it's mandatory for Quarkus Data Hibernate to work.
+`quarkus-reactive-pg-client` is the reactive equivalent to `quarkus-jdbc-postgresql`. It provides a non-blocking PostgreSQL driver built on Vert.x. As its blocking counterpart, it's mandatory for Quarkus Data Hibernate to work.
 
 Now let's change only the minimal part of the code you need to try reactive. Let's add a second nested repository for reactive operations:
 

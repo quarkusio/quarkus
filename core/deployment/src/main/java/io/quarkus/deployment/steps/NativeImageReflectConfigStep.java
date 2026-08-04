@@ -203,6 +203,9 @@ public class NativeImageReflectConfigStep {
                 if (classBuildItem.isConstructors()) {
                     existing.constructors = true;
                 }
+                if (classBuildItem.isPublicConstructors()) {
+                    existing.publicConstructors = true;
+                }
                 if (classBuildItem.isQueryConstructors()) {
                     existing.queryConstructors = true;
                 }

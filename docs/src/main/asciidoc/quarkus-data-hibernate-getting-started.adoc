@@ -79,13 +79,13 @@ import java.util.List;
 public class Book extends RecordEntity { // <2>
     public String title; // <3>
     public String isbn;
-    public BigDecimal price;
+    public BigDecimal currentPrice;
 
     public interface Repo extends RecordRepository<Book> { // <4>
         @Find
         List<Book> findByTitle(String title); // <5>
 
-        @Query("where price < :maxPrice order by title")
+        @Query("where currentPrice < :maxPrice order by title")
         List<Book> cheaperThan(BigDecimal maxPrice); // <6>
     }
 }
@@ -128,7 +128,7 @@ public class LibraryService {
         Book book = new Book();
         book.title = title;
         book.isbn = isbn;
-        book.price = price;
+        book.currentPrice = price;
         book.insert(); // <2>
     }
 }
@@ -225,7 +225,7 @@ public class Publisher extends RecordEntity {
 ----
 <1> A publisher has many books. `mappedBy` needs to point to the equivalent `@ManyToOne` association.
 
-And add a `publisher` field to `Book`:
+And add a `publisher` field to `Book`. We'll also add a `listPrice` field to preserve the original price when discounts are applied:
 
 [source,java]
 ----
@@ -233,7 +233,8 @@ And add a `publisher` field to `Book`:
 public class Book extends RecordEntity {
     public String title;
     public String isbn;
-    public BigDecimal price;
+    public BigDecimal listPrice;
+    public BigDecimal currentPrice;
     @ManyToOne // <1>
     public Publisher publisher;
 
@@ -244,7 +245,7 @@ public class Book extends RecordEntity {
         @Find
         List<Book> findByPublisher(Publisher publisher);
 
-        @Query("where price < :maxPrice order by title")
+        @Query("where currentPrice < :maxPrice order by title")
         List<Book> cheaperThan(BigDecimal maxPrice);
     }
 }
@@ -273,7 +274,7 @@ public class SalesService {
             if (publisher.allowsDiscounts) {
                 List<Book> books = bookRepo.findByPublisher(publisher); // <2>
                 for (Book book : books) {
-                    book.price = book.price.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+                    book.currentPrice = book.listPrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
                     modified.add(book); // <3>
                 }
             }
@@ -337,28 +338,32 @@ public class SalesServiceTest {
         Book effectiveJava = new Book();
         effectiveJava.title = "Effective Java";
         effectiveJava.isbn = "978-0134685991";
-        effectiveJava.price = new BigDecimal("45.00");
+        effectiveJava.listPrice = new BigDecimal("45.00");
+        effectiveJava.currentPrice = new BigDecimal("45.00");
         effectiveJava.publisher = addisonWesley;
         effectiveJava.insert();
 
         Book cleanCode = new Book();
         cleanCode.title = "Clean Code";
         cleanCode.isbn = "978-0132350884";
-        cleanCode.price = new BigDecimal("40.00");
+        cleanCode.listPrice = new BigDecimal("40.00");
+        cleanCode.currentPrice = new BigDecimal("40.00");
         cleanCode.publisher = addisonWesley;
         cleanCode.insert();
 
         Book ddd = new Book();
         ddd.title = "Domain-Driven Design";
         ddd.isbn = "978-0321125217";
-        ddd.price = new BigDecimal("55.00");
+        ddd.listPrice = new BigDecimal("55.00");
+        ddd.currentPrice = new BigDecimal("55.00");
         ddd.publisher = prenticeHall;
         ddd.insert();
 
         Book refactoring = new Book();
         refactoring.title = "Refactoring";
         refactoring.isbn = "978-0134757599";
-        refactoring.price = new BigDecimal("50.00");
+        refactoring.listPrice = new BigDecimal("50.00");
+        refactoring.currentPrice = new BigDecimal("50.00");
         refactoring.publisher = prenticeHall;
         refactoring.insert();
     }
@@ -374,13 +379,18 @@ public class SalesServiceTest {
     void shouldApplySaleOnlyToPublishersThatAllowDiscounts() {
         salesService.applyCountrySale("US", BigDecimal.valueOf(10));
 
-        // Addison-Wesley (US, allows discounts): prices reduced by 10%
-        assertEquals(new BigDecimal("40.50"), bookRepo.findByTitle("Effective Java").getFirst().price); // was: 45.00
-        assertEquals(new BigDecimal("36.00"), bookRepo.findByTitle("Clean Code").getFirst().price); // was: 40.00
+        // Addison-Wesley (US, allows discounts): currentPrice reduced by 10%, listPrice unchanged
+        Book ej = bookRepo.findByTitle("Effective Java").getFirst();
+        assertEquals(new BigDecimal("45.00"), ej.listPrice);
+        assertEquals(new BigDecimal("40.50"), ej.currentPrice);
+
+        Book cc = bookRepo.findByTitle("Clean Code").getFirst();
+        assertEquals(new BigDecimal("40.00"), cc.listPrice);
+        assertEquals(new BigDecimal("36.00"), cc.currentPrice);
 
         // Prentice Hall (US, no discounts): prices unchanged
-        assertEquals(new BigDecimal("55.00"), bookRepo.findByTitle("Domain-Driven Design").getFirst().price);
-        assertEquals(new BigDecimal("50.00"), bookRepo.findByTitle("Refactoring").getFirst().price);
+        assertEquals(new BigDecimal("55.00"), bookRepo.findByTitle("Domain-Driven Design").getFirst().currentPrice);
+        assertEquals(new BigDecimal("50.00"), bookRepo.findByTitle("Refactoring").getFirst().currentPrice);
     }
 }
 ----
@@ -413,7 +423,8 @@ public class Publisher extends ManagedEntity { // <1>
 public class Book extends ManagedEntity { // <1>
     public String title;
     public String isbn;
-    public BigDecimal price;
+    public BigDecimal listPrice;
+    public BigDecimal currentPrice;
     @ManyToOne
     public Publisher publisher;
 
@@ -421,7 +432,7 @@ public class Book extends ManagedEntity { // <1>
         @Find
         List<Book> findByTitle(String title);
 
-        @Query("where price < :maxPrice order by title")
+        @Query("where currentPrice < :maxPrice order by title")
         List<Book> cheaperThan(BigDecimal maxPrice);
     }
 }
@@ -441,7 +452,8 @@ public class LibraryService {
         Book book = new Book();
         book.title = title;
         book.isbn = isbn;
-        book.price = price;
+        book.listPrice = price;
+        book.currentPrice = price;
         book.persist(); // <1>
     }
 }
@@ -465,7 +477,7 @@ public class SalesService {
         for (Publisher publisher : publishers) {
             if (publisher.allowsDiscounts) {
                 for (Book book : publisher.books) { // <1>
-                    book.price = book.price.multiply(factor).setScale(2, RoundingMode.HALF_UP); // <2>
+                    book.currentPrice = book.listPrice.multiply(factor).setScale(2, RoundingMode.HALF_UP); // <2>
                 }
             }
         }
@@ -504,7 +516,8 @@ Now let's change only the minimal part of the code you need to try reactive. Let
 public class Book extends ManagedEntity {
     public String title;
     public String isbn;
-    public BigDecimal price;
+    public BigDecimal listPrice;
+    public BigDecimal currentPrice;
     @ManyToOne
     public Publisher publisher;
 
@@ -512,7 +525,7 @@ public class Book extends ManagedEntity {
         @Find
         List<Book> findByTitle(String title);
 
-        @Query("where price < :maxPrice order by title")
+        @Query("where currentPrice < :maxPrice order by title")
         List<Book> cheaperThan(BigDecimal maxPrice);
     }
 
@@ -564,7 +577,8 @@ public class ReactiveBookRepositoryTest {
         Book book = new Book();
         book.title = "Effective Java";
         book.isbn = "978-0134685991";
-        book.price = BigDecimal.valueOf(45.00);
+        book.listPrice = BigDecimal.valueOf(45.00);
+        book.currentPrice = BigDecimal.valueOf(45.00);
 
         asserter.execute(() -> reactiveBookRepo.persist(book)); // <3>
         asserter.assertThat( // <4>

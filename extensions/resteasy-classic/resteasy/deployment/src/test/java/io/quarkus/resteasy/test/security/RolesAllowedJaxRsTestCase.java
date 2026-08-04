@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.test.security;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,27 @@ public class RolesAllowedJaxRsTestCase {
         RestAssured.given().auth().basic("user", "user").get("/roles").then().statusCode(200);
         RestAssured.given().auth().basic("admin", "admin").get("/roles/admin").then().statusCode(200);
         RestAssured.given().auth().basic("user", "user").get("/roles/admin").then().statusCode(403);
+    }
+
+    @Test
+    public void testRolesAllowedPathNormalization() {
+        // GHSA-qcxp-gm7m-4j5v: verify no encoded path vector bypasses @RolesAllowed.
+        // REST routing doesn't decode %3B/%2F/%5C, so the route won't match and
+        // requests get 404. The security invariant: an admin-only endpoint must never
+        // return 200 to an unauthenticated or unauthorized user via any encoding trick.
+        for (String path : new String[] {
+                "/roles/admin%3B",
+                "/roles/admin%3Bbypass",
+                "/roles%3B/admin",
+                "/roles%2Fadmin",
+                "/roles%5Cadmin",
+                "/roles%252Fadmin" }) {
+            int anonStatus = RestAssured.get(path).then().extract().statusCode();
+            assertNotEquals(200, anonStatus, "anonymous access must not return 200 for " + path);
+            int userStatus = RestAssured.given().auth().basic("user", "user")
+                    .get(path).then().extract().statusCode();
+            assertNotEquals(200, userStatus, "user (non-admin) must not return 200 for " + path);
+        }
     }
 
     @Test

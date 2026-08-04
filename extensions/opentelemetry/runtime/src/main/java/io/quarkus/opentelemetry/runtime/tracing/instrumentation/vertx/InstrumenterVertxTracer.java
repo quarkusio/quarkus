@@ -46,9 +46,8 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
         // A PROPAGATE policy only traces when there is a trace to continue: either an active local
         // context or a parent propagated through the incoming headers.
-        if (TracingPolicy.PROPAGATE == policy
-                && honorsPropagatePolicy()
-                && !hasParentSpan(getPropagator().extract(parentContext, headers, HeadersTextMapGetter.INSTANCE))) {
+        if (TracingPolicy.PROPAGATE == effectivePolicy(policy)
+                && !hasParentSpan(extractParent(parentContext, headers))) {
             return null;
         }
 
@@ -123,7 +122,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
         // A PROPAGATE policy only traces when there is an active trace to propagate. An outgoing
         // request has no incoming headers to extract a parent from, so the active context is enough.
-        if (TracingPolicy.PROPAGATE == policy && honorsPropagatePolicy() && !hasParentSpan(parentContext)) {
+        if (TracingPolicy.PROPAGATE == effectivePolicy(policy) && !hasParentSpan(parentContext)) {
             return null;
         }
 
@@ -174,18 +173,26 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     Instrumenter<REQ, RESP> getReceiveResponseInstrumenter();
 
     /**
-     * Whether this tracer enforces {@link TracingPolicy#PROPAGATE} semantics, i.e. only trace when there is a
-     * trace to continue. Only the event bus tracer opts in; the HTTP/gRPC/SQL/Redis client tracers keep
-     * creating a span so a client call made outside a trace can still start one. See
-     * <a href="https://github.com/quarkusio/quarkus/issues/25417">#25417</a>.
+     * Policy this tracer falls back to when Vert.x reports {@link TracingPolicy#PROPAGATE}.
+     *
+     * <p>
+     * Vert.x hands {@code PROPAGATE} over both when the caller picked it and when nothing was configured, so the
+     * two cannot be told apart here. The default is therefore {@link TracingPolicy#ALWAYS}: a client or server
+     * boundary keeps starting a span even outside an existing trace, which is what the OpenTelemetry
+     * specification expects. Instrumentations that should stay silent outside a trace override this with
+     * {@code PROPAGATE}. See <a href="https://github.com/quarkusio/quarkus/issues/25417">#25417</a>.
+     *
+     * <p>
+     * {@link TracingPolicy#IGNORE} and an explicit {@link TracingPolicy#ALWAYS} are honored as-is and never reach
+     * this method.
      */
-    default boolean honorsPropagatePolicy() {
-        return false;
+    default TracingPolicy getDefaultTracingPolicy() {
+        return TracingPolicy.ALWAYS;
     }
 
     /**
-     * Propagator used to look for a parent in the incoming headers when {@link #honorsPropagatePolicy()} is
-     * enabled. Only tracers that opt in need to override it.
+     * Propagator used to look for a parent in the incoming headers. Only tracers that default to
+     * {@link TracingPolicy#PROPAGATE} need to override it.
      */
     default TextMapPropagator getPropagator() {
         return null;
@@ -194,6 +201,21 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     default SpanOperation spanOperation(Context context, REQ request, MultiMap headers,
             io.opentelemetry.context.Context spanContext, Scope scope) {
         return SpanOperation.span(context, request, headers, spanContext, scope);
+    }
+
+    private TracingPolicy effectivePolicy(TracingPolicy policy) {
+        return TracingPolicy.PROPAGATE == policy ? getDefaultTracingPolicy() : policy;
+    }
+
+    private io.opentelemetry.context.Context extractParent(
+            io.opentelemetry.context.Context parentContext,
+            Iterable<Map.Entry<String, String>> headers) {
+
+        TextMapPropagator propagator = getPropagator();
+        if (propagator == null) {
+            return parentContext;
+        }
+        return propagator.extract(parentContext, headers, HeadersTextMapGetter.INSTANCE);
     }
 
     private static boolean hasParentSpan(io.opentelemetry.context.Context context) {

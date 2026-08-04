@@ -15,6 +15,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
 
 @SuppressWarnings("rawtypes")
 public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<Message, Message> {
@@ -58,11 +59,11 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         return propagator;
     }
 
-    // The event bus is intra-application messaging, so a PROPAGATE message sent outside a trace should not
-    // start one, unlike an outgoing HTTP/client call. See https://github.com/quarkusio/quarkus/issues/25417.
+    // The event bus is intra-application messaging, so a message sent outside a trace should not start one,
+    // unlike an outgoing HTTP/client call. See https://github.com/quarkusio/quarkus/issues/25417.
     @Override
-    public boolean honorsPropagatePolicy() {
-        return true;
+    public TracingPolicy getDefaultTracingPolicy() {
+        return TracingPolicy.PROPAGATE;
     }
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,

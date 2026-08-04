@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building my first extension
 include::_attributes.adoc[]
-:categories: writing-extensions
 :summary: Learn step by step how to build a simple extension.
 :topics: extensions
 

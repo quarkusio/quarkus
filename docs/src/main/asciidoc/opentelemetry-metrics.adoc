@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OpenTelemetry Metrics
 include::_attributes.adoc[]
 :extension-status: preview
-:categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide metrics for interactive web applications.
 :topics: observability,opentelemetry,metrics
 :extensions: io.quarkus:quarkus-opentelemetry

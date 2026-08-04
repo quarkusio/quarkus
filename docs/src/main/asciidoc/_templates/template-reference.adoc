@@ -7,13 +7,12 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 TODO:
 - Title: https://quarkus.io/guides/doc-reference#titles-headings
 - Use the file name as the ID
-- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+- Add this file to the appropriate category in docs/src/main/resources/categories.yaml
 ////
 [id="..."]
 = Title using sentence capitalization
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: ...
 ////
 :extension-status: preview
 TODO: uncomment the above for experimental or tech-preview content.

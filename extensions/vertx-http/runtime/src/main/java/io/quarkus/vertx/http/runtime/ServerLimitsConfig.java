@@ -61,6 +61,24 @@ public interface ServerLimitsConfig {
     int maxParameters();
 
     /**
+     * The maximum size of the headers section within a single MIME part of a {@code multipart/form-data} request.
+     * This limits the combined size of all header names and values for each individual part (e.g., the
+     * Content-Disposition and Content-Type headers), not the HTTP request headers.
+     * <p>
+     * If a part's headers exceed this limit, the request is rejected with HTTP 413.
+     */
+    @WithDefault("32K")
+    MemorySize maxMultipartPartHeaderSize();
+
+    /**
+     * The maximum number of headers allowed within a single MIME part of a {@code multipart/form-data} request.
+     * <p>
+     * If a part contains more headers than this limit, the request is rejected with HTTP 413.
+     */
+    @WithDefault("40")
+    int maxMultipartHeaderCount();
+
+    /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */

@@ -107,6 +107,11 @@
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.testng</groupId>
+            <artifactId>arquillian-testng-container</artifactId>
+            <scope>test</scope> <!-- Only to cover the TestNG callbacks, consumers such as the TCKs bring their own. -->
+        </dependency>
     </dependencies>
 
 </project>

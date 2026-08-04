@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Observability Dev Services with Grafana OTel LGTM
 include::_attributes.adoc[]
-:categories: observability,devservices,telemetry,metrics,tracing,logging, opentelemetry, micrometer, prometheus, tempo, loki, grafana
 :summary: Instructions on how to use Grafana Otel LGTM
 :topics: observability,grafana,lgtm,otlp,opentelemetry,devservices,micrometer
 :extensions: io.quarkus:quarkus-observability-devservices
@@ -231,6 +230,47 @@ quarkus.observability.enabled=false
 ----
 
 This also disables the Dev UI card, the shared container discovery, compose support and the OpenTelemetry override properties.
+
+=== Automatic detection of explicit OTLP endpoint configuration
+
+LGTM Dev Services will not start if an OTLP exporter endpoint is already explicitly configured.
+This prevents the Dev Service from overriding a custom collector (e.g. a Jaeger or Zipkin instance) that has been intentionally set by the user.
+
+The following properties are checked, depending on which extensions are present:
+
+[cols="1,1"]
+|===
+|Extension |Property checked
+
+|`quarkus-opentelemetry`
+|`quarkus.otel.exporter.otlp.endpoint`
+
+|`quarkus-opentelemetry`
+|`quarkus.otel.exporter.otlp.traces.endpoint`
+
+|`quarkus-opentelemetry`
+|`quarkus.otel.exporter.otlp.metrics.endpoint`
+
+|`quarkus-opentelemetry`
+|`quarkus.otel.exporter.otlp.logs.endpoint`
+
+|`quarkus-micrometer-registry-otlp`
+|`quarkus.micrometer.export.otlp.url`
+|===
+
+If any of those properties is explicitly set, the following log entry will appear and LGTM will not start:
+
+[source, log]
+----
+Not starting LGTM Dev Services: 'quarkus.otel.exporter.otlp.traces.endpoint' is explicitly configured.
+----
+
+If you need a custom endpoint in production but still want LGTM to start in dev mode, scope the property to the production profile so that it is invisible to the dev mode config:
+
+[source,properties]
+----
+%prod.quarkus.otel.exporter.otlp.traces.endpoint=http://my-collector:4318
+----
 
 === Enabling observability Dev Services in tests
 

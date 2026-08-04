@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Command Mode with Aesh
 include::_attributes.adoc[]
-:categories: command-line
 :summary: Develop command line applications with the Aesh extension.
 :topics: command-line,cli,aesh,ssh,websocket,terminal
 :extensions: io.quarkus:quarkus-aesh,io.quarkus:quarkus-aesh-websocket,io.quarkus:quarkus-aesh-ssh
@@ -677,15 +676,16 @@ package com.acme.aesh;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.function.Consumer;
+
 import org.aesh.command.CommandNotFoundHandler;
-import org.aesh.command.shell.Shell;
 
 @ApplicationScoped
 public class MyNotFoundHandler implements CommandNotFoundHandler {
 
     @Override
-    public void handleCommandNotFound(String line, Shell shell) {
-        shell.writeln("Unknown command: " + line + ". Type 'help' for available commands.");
+    public void handleCommandNotFound(String line, Consumer<String> output) {
+        output.accept("Unknown command: " + line + ". Type 'help' for available commands.");
     }
 }
 ----

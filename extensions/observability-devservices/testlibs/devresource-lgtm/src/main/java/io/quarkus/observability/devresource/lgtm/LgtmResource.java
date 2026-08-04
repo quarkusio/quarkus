@@ -1,10 +1,13 @@
 package io.quarkus.observability.devresource.lgtm;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.observability.common.ContainerConstants;
@@ -22,6 +25,12 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     protected static final Set<String> SCRAPING_REGISTRIES = Set.of(
             "io.micrometer.prometheusmetrics.PrometheusMeterRegistry");
+
+    private static final String OTEL_OTLP_ENDPOINT = "quarkus.otel.exporter.otlp.endpoint";
+    private static final String OTEL_OTLP_TRACES_ENDPOINT = "quarkus.otel.exporter.otlp.traces.endpoint";
+    private static final String OTEL_OTLP_METRICS_ENDPOINT = "quarkus.otel.exporter.otlp.metrics.endpoint";
+    private static final String OTEL_OTLP_LOGS_ENDPOINT = "quarkus.otel.exporter.otlp.logs.endpoint";
+    private static final String MICROMETER_OTLP_URL = "quarkus.micrometer.export.otlp.url";
 
     protected static final Function<String, Boolean> TCCL_FN = s -> {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -53,6 +62,61 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     @Override
     public Container<LgtmConfig> container(LgtmConfig config, ModulesConfiguration root) {
         return set(new LgtmContainer(config, isScrapingRequired(catalog.classChecker())));
+    }
+
+    @Override
+    public boolean enable() {
+        String explicitEndpoint = findExplicitlyConfiguredOtlpEndpoint();
+        if (explicitEndpoint == null) {
+            return true;
+        }
+
+        List<String> configuredPorts = configuredPorts();
+        if (!configuredPorts.isEmpty()) {
+            log.warnf(
+                    "Not starting LGTM Dev Services because '%s' is explicitly configured, but %s (is/are) also set and will have no effect.",
+                    explicitEndpoint, configuredPorts);
+        } else {
+            log.infof("Not starting LGTM Dev Services: '%s' is explicitly configured.", explicitEndpoint);
+        }
+        return false;
+    }
+
+    private String findExplicitlyConfiguredOtlpEndpoint() {
+        var cfg = ConfigProvider.getConfig();
+        if (catalog != null && catalog.hasOpenTelemetry()) {
+            for (String key : List.of(
+                    OTEL_OTLP_ENDPOINT,
+                    OTEL_OTLP_TRACES_ENDPOINT,
+                    OTEL_OTLP_METRICS_ENDPOINT,
+                    OTEL_OTLP_LOGS_ENDPOINT)) {
+                if (cfg.getOptionalValue(key, String.class).isPresent()) {
+                    return key;
+                }
+            }
+        }
+        if (catalog != null && catalog.hasMicrometerOtlp()) {
+            if (cfg.getOptionalValue(MICROMETER_OTLP_URL, String.class).isPresent()) {
+                return MICROMETER_OTLP_URL;
+            }
+        }
+        return null;
+    }
+
+    private List<String> configuredPorts() {
+        List<String> configured = new ArrayList<>();
+        if (config != null) {
+            if (config.grafanaPort().isPresent()) {
+                configured.add("quarkus.observability.lgtm.grafana-port");
+            }
+            if (config.otelGrpcPort().isPresent()) {
+                configured.add("quarkus.observability.lgtm.otel-grpc-port");
+            }
+            if (config.otelHttpPort().isPresent()) {
+                configured.add("quarkus.observability.lgtm.otel-http-port");
+            }
+        }
+        return configured;
     }
 
     private boolean isScrapingRequired(Function<String, Boolean> checker) {

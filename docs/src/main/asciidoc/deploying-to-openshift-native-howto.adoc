@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Deploying {project-name} applications compiled to native executables
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: cloud, native
 :summary: This guide describes how to deploy a Quarkus application to {openshift} compiled to native executables.
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift

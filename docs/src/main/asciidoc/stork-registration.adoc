@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Automatic service registration with SmallRye Stork for Quarkus
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :topics: service-discovery, consul
 :extensions: io.quarkus:quarkus-smallrye-stork
 

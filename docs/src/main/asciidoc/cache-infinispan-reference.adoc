@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Infinispan Cache
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: data
 :summary: Use Infinispan as the Quarkus cache backend
 :topics: infinispan,cache,data
 :extensions: io.quarkus:quarkus-infinispan-cache,io.quarkus:quarkus-infinispan-client

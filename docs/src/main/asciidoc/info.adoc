@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Info Endpoint
 include::_attributes.adoc[]
-:categories: observability
 :summary: Expose build, git, Java, and OS information via the /q/info endpoint.
 :topics: info,observability
 :extensions: io.quarkus:quarkus-info

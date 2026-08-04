@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus for the Web
 include::_attributes.adoc[]
-:categories: web
 :summary: Learn more about creating all kinds of Web applications with Quarkus.
 :numbered:
 :sectnums:

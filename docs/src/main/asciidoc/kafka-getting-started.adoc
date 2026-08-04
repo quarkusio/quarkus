@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started with Quarkus Messaging and Apache Kafka
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Build two applications that communicate via Apache Kafka using Quarkus Messaging.
 :topics: messaging,kafka,reactive-messaging
 :extensions: io.quarkus:quarkus-messaging-kafka

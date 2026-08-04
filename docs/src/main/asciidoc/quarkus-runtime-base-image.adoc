@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Base Runtime Image
 include::_attributes.adoc[]
-:categories: tooling
 :topics: docker,podman,images
 
 To ease the containerization of native executables, Quarkus provides a base image providing the requirements to run these executables.

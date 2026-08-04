@@ -34,9 +34,9 @@ jobs:
           - id: jvm
             name: "Deployment JVM Reproducibility Check"
             artifact-name: jvm-reproducibility
-          - id: resteasy-reactive-tck
-            name: "RESTEasy Reactive TCK Reproducibility Check"
-            artifact-name: resteasy-reactive-tck-reproducibility
+          - id: jakarta-rest-tck
+            name: "Jakarta REST TCK Reproducibility Check"
+            artifact-name: jakarta-rest-tck-reproducibility
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Extract base JDK version from POM
@@ -76,11 +76,11 @@ jobs:
         run: |
           deployment_module_list=$(.github/list-deployment-modules.sh)
           ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean test
-      - name: Run RESTEasy Reactive TCK reproducibility check
-        if: matrix.id == 'resteasy-reactive-tck'
+      - name: Run Jakarta REST TCK reproducibility check
+        if: matrix.id == 'jakarta-rest-tck'
         env:
           CAPTURE_BUILD_SCAN: true
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dresteasy-reactive-testsuite.mvn.args="$REPRODUCIBILITY_MAVEN_ARGS" -Dtcks -pl tcks/resteasy-reactive -amd clean test
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dtcks -pl tcks/jakarta-rest -amd clean verify
       - name: Print disk usage after build
         if: always()
         run: .github/ci-disk-usage.sh

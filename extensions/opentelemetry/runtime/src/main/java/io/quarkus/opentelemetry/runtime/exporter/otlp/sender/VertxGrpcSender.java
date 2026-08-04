@@ -55,7 +55,7 @@ public final class VertxGrpcSender implements GrpcSender {
     private static final Logger internalLogger = Logger.getLogger(VertxGrpcSender.class.getName());
     private static final int MAX_ATTEMPTS = 3;
 
-    private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss Logging we can use?
+    private final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss Logging we can use?
 
     // We only log unimplemented once since it's a configuration issue that won't be recovered.
     private final AtomicBoolean loggedUnimplemented = new AtomicBoolean();
@@ -123,6 +123,8 @@ public final class VertxGrpcSender implements GrpcSender {
 
         if (client == null) {
             logger.log(Level.FINE, "Client is null. Cannot close.");
+            // nothing to shutdown
+            shutdownResult.succeed();
             return shutdownResult;
         }
 
@@ -161,7 +163,7 @@ public final class VertxGrpcSender implements GrpcSender {
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
         if (client == null) {
-            logger.log(Level.INFO, "gRPC client is null, possibly during shutdown. Skipping send.");
+            internalLogger.log(Level.INFO, "gRPC client is null, possibly during shutdown. Skipping send.");
             return;
         }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {

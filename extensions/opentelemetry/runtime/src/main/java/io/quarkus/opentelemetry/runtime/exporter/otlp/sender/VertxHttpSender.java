@@ -46,7 +46,7 @@ public final class VertxHttpSender implements HttpSender {
 
     private static final Logger log = Logger.getLogger(VertxHttpSender.class.getName());
 
-    private static final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
+    private final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
             java.util.logging.Logger.getLogger(VertxHttpSender.class.getName()));
 
     private static final int MAX_ATTEMPTS = 3;
@@ -142,7 +142,7 @@ public final class VertxHttpSender implements HttpSender {
             Handler<HttpClientRequest> clientRequestSuccessHandler,
             Consumer<Throwable> onFailureCallback) {
         if (client == null) {
-            throttlingLogger.log(Level.INFO, "HTTP client is null, possibly during shutdown. Skipping send.");
+            log.info("HTTP client is null, possibly during shutdown. Skipping send.");
             return;
         }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
@@ -188,6 +188,8 @@ public final class VertxHttpSender implements HttpSender {
 
         if (client == null) {
             throttlingLogger.log(Level.FINE, "Client is null. Cannot close.");
+            // nothing to shutdown
+            shutdownResult.succeed();
             return shutdownResult;
         }
 

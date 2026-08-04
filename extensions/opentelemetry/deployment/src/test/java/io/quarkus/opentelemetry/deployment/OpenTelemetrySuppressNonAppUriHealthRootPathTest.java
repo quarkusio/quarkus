@@ -38,7 +38,6 @@ public class OpenTelemetrySuppressNonAppUriHealthRootPathTest {
                                     quarkus.otel.bsp.export.timeout=1s
                                     quarkus.otel.bsp.schedule.delay=50
                                     quarkus.smallrye-health.root-path=/observe/health
-                                    quarkus.observability.lgtm.enabled=false
                                     quarkus.datasource.devservices.enabled=false
                                     """),
                             "application.properties"));

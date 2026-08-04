@@ -39,7 +39,6 @@ public class OpenTelemetrySuppressNonAppUriManagementInterfaceTest {
                                     quarkus.otel.bsp.schedule.delay=50
                                     quarkus.management.enabled=true
                                     quarkus.management.port=9001
-                                    quarkus.observability.lgtm.enabled=false
                                     quarkus.datasource.devservices.enabled=false
                                     """),
                             "application.properties"));

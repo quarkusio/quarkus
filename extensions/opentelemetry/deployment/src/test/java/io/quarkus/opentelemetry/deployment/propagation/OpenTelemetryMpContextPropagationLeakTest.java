@@ -91,8 +91,7 @@ public class OpenTelemetryMpContextPropagationLeakTest {
             OpenTelemetryMpContextPropagationProvider provider = new OpenTelemetryMpContextPropagationProvider();
             ThreadContextSnapshot snapshot = provider.currentContext(Map.of());
 
-            ExecutorService exec = Executors.newSingleThreadExecutor();
-            try {
+            try (ExecutorService exec = Executors.newSingleThreadExecutor();) {
                 Future<String> result = exec.submit(() -> {
                     boolean validAfterSubmit = Span.current().getSpanContext().isValid();
 
@@ -109,8 +108,6 @@ public class OpenTelemetryMpContextPropagationLeakTest {
                 return traceIdBefore + "|" + result.get();
             } catch (Exception e) {
                 throw new RuntimeException(e);
-            } finally {
-                exec.shutdown();
             }
         }
     }

@@ -163,7 +163,6 @@ public final class VertxGrpcSender implements GrpcSender {
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
         if (client == null) {
-            internalLogger.log(Level.INFO, "gRPC client is null, possibly during shutdown. Skipping send.");
             return;
         }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {

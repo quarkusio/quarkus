@@ -44,7 +44,7 @@ public final class VertxHttpSender implements HttpSender {
     public static final String METRICS_PATH = "/v1/metrics";
     public static final String LOGS_PATH = "/v1/logs";
 
-    private static final Logger log = Logger.getLogger(VertxHttpSender.class.getName());
+    private static final Logger internalLogger = Logger.getLogger(VertxHttpSender.class.getName());
 
     private final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
             java.util.logging.Logger.getLogger(VertxHttpSender.class.getName()));
@@ -142,7 +142,6 @@ public final class VertxHttpSender implements HttpSender {
             Handler<HttpClientRequest> clientRequestSuccessHandler,
             Consumer<Throwable> onFailureCallback) {
         if (client == null) {
-            log.info("HTTP client is null, possibly during shutdown. Skipping send.");
             return;
         }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
@@ -215,7 +214,7 @@ public final class VertxHttpSender implements HttpSender {
                         });
             }
         } catch (RejectedExecutionException e) {
-            log.debug("Unable to complete shutdown", e);
+            internalLogger.debug("Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
             // which we need to handle
             shutdownResult.fail();

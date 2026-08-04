@@ -480,7 +480,6 @@ The test is exactly the same: the behavior hasn't changed, the implementation on
 
 It's up to you to decide whether to use a Managed Entity or a Record one. The Managed Repository is more expressive, but reasoning about it is more complex and might require knowing some details about how Hibernate handles objects. If you're an experienced Hibernate developer, you expect that changing an object's field doesn't immediately hit the database. Some users prefer a more explicit way to control the database. Either way is fine, and Quarkus Data Hibernate makes it easy to use either.
 
-TIP: You can switch from one way to the other for ad hoc use cases, e.g. have one business method that manipulates a `ManagedEntity` as if it was a `RecordEntity`. See <<SOME LINK TO DOCS HERE>> for more details.
 
 == Reactive
 

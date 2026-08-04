@@ -20,9 +20,8 @@ In this guide we explain how Quarkus Data provides database access with entity m
 
 == Prerequisites
 
-:prerequisites-docker:
+:prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
-:!prerequisites-docker:
 
 == Introduction
 

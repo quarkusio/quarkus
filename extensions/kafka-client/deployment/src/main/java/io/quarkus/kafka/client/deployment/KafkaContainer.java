@@ -18,6 +18,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class KafkaContainer extends GenericContainer<KafkaContainer> implements Startable {
@@ -167,7 +168,7 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
     }
 
     public String getEffectiveHostName() {
-        return useSharedNetwork ? hostName : getHost();
+        return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
     }
 
     public int getEffectivePort() {
@@ -175,7 +176,7 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
     }
 
     public String getBootstrapServers() {
-        return String.format("%s:%s", getEffectiveHostName(), getEffectivePort());
+        return DevServicesHostUtil.formatHostAndPort(getEffectiveHostName(), getEffectivePort());
     }
 
     @Override

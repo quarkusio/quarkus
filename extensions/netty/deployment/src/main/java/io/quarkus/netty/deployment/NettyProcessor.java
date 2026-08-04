@@ -338,37 +338,12 @@ class NettyProcessor {
             log.debug("Not registering Netty native io_uring classes as they were not found");
         }
 
-        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.quic.Quiche")) {
-            builder.addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSL")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLAsyncPrivateKeyMethod")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLContextOption")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLKeylessPrivateKey")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLLoggingKeylog")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLNativeStaticallyReferencedJniMethods")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLPrivateKeyMethod")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.BoringSSLSessionCallback")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.ConnectionIdChannelMap")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.InsecureQuicTokenHandler")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quic")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.Quiche")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicCongestionControlAlgorithm")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicConnectionAddress")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheError")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheNativeStaticallyReferencedJniMethods")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicChannel")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicCodec")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicConnection")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicServerCodec")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicSslContext")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheQuicStreamChannel")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.QuicheSendInfo")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.SecureRandomQuicConnectionIdGenerator")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.quic.SockaddrIn");
-        } else {
-            log.debug("Not registering Netty QUIC classes as they were not found");
-        }
+        // * [IMPORTANT] Netty QUIC/Quiche classes: runtime-init is NOT registered here.
+        // *
+        // * => When http3 is absent, Vert.x substitutions cut all reachability to these classes.
+        // * => When http3 is present, Http3Processor registers them for runtime initialization.
 
-        // tcnative is handled via RuntimeInitializedPackageBuildItem in a separate build step
+        // tcnative is handled via RuntimeInitializedPackageBuildItem in #runtimeInitQuicAndTcnative
 
         // Runtime initialize due to platform dependent initialization and to respect the run-time provided value of the
         // properties:

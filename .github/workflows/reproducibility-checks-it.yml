@@ -1,7 +1,8 @@
-name: Quarkus Integration Test Reproducibility Check
+name: Reproducibility checks - Integration tests
 
 permissions:
   contents: read
+  issues: write
   packages: read
 
 on:
@@ -21,13 +22,17 @@ env:
   NUM_RUNS: "5"
 
 jobs:
-  it-reproducibility-check:
-    name: Integration Test Reproducibility Check
+  reproducibility-checks-it:
+    name: Reproducibility checks - Integration tests
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Set up JDK 21
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
@@ -69,3 +74,13 @@ jobs:
             reproducibility-checks/*/diffs
           retention-days: 7
           if-no-files-found: warn
+      - name: Report status
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 55831
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

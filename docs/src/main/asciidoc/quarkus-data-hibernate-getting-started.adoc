@@ -95,7 +95,7 @@ public class Book extends RecordEntity { // <2>
 <3> These public fields map to columns in the `Book` table. Hibernate reads and writes these fields directly.
 <4> Defines a repository: a place to put all your query methods for `Book`. By nesting it inside the entity, the queries and the data they operate on live together. You can name this interface whatever you want: `Queries`, `Repo`, `BookQueries`, etc.
 <5> `@Find` tells Quarkus Data Hibernate to generate a query based on the method's parameter names. `findByTitle(String title)` becomes a query that matches the `title` field on `Book`. Parameters are inferred from the method signature.
-<6> `@Query` lets you write an HQL fragment when you need more control. It avoids the need to write what you select. The entity type is inferred from the return type `List<Book>`.
+<6> `@Query` lets you write an https://docs.hibernate.org/orm/8.0/querylanguage/html_single/#and-sqk[HQL] fragment when you need more control. The `select` and `from` parts are optional: they can be inferred from the return type `List<Book>`.
 
 If you make a typo in a parameter name, the build fails. Try changing the parameter name to:
 

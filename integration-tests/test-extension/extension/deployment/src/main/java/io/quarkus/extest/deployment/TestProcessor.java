@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
+import io.quarkus.extest.runtime.PublicMethodsReflectionObject;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
 import io.quarkus.extest.runtime.TestRecorder;
 import io.quarkus.extest.runtime.beans.CommandServlet;
@@ -350,6 +351,19 @@ public final class TestProcessor {
                 .fields()
                 .build();
         classes.produce(finalField);
+    }
+
+    @BuildStep
+    void registerPublicMethodsReflectionObject(BuildProducer<ReflectiveClassBuildItem> classes) {
+        // Deliberately publicMethods() rather than methods(), to verify a class' public methods are
+        // reflectively invocable in a real native image when registered this way.
+        ReflectiveClassBuildItem publicMethods = ReflectiveClassBuildItem
+                .builder(PublicMethodsReflectionObject.class.getName())
+                .constructors(false)
+                .publicConstructors()
+                .publicMethods()
+                .build();
+        classes.produce(publicMethods);
     }
 
     @BuildStep

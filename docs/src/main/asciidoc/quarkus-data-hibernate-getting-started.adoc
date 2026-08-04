@@ -182,8 +182,7 @@ In this mode every change to an object requires an explicit save operation.
 If you're not interested in this style and want the full power of managed entities, skip ahead to <<managed-session>>.
 ====
 
-[[managed-session]]
-== Managed session
+== Creating a Discount Service
 
 In our bookstore we want to run a promotional sale: apply a discount to all books from a given publisher, but only if the publisher allows it.
 Some publishers offer discounts while others don't.
@@ -251,7 +250,7 @@ Now let's implement our discount service:
 [source,java]
 ----
 @ApplicationScoped
-public class SalesService {
+public class DiscountService {
 
     @Inject
     Publisher.Repo publisherRepo;
@@ -312,10 +311,10 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class SalesServiceTest {
+public class DiscountServiceTest {
 
     @Inject
-    SalesService salesService;
+    DiscountService discountService;
 
     @Inject
     Book.Repo bookRepo;
@@ -377,7 +376,7 @@ public class SalesServiceTest {
     @Test
     @Transactional
     void shouldApplySaleOnlyToPublishersThatAllowDiscounts() {
-        salesService.applyCountrySale("US", BigDecimal.valueOf(10));
+        discountService.applyCountrySale("US", BigDecimal.valueOf(10));
 
         // Addison-Wesley (US, allows discounts): currentPrice reduced by 10%, listPrice unchanged
         Book ej = bookRepo.findByTitle("Effective Java").getFirst();
@@ -395,7 +394,10 @@ public class SalesServiceTest {
 }
 ----
 
-This works, but it can be simpler.
+[[managed-session]]
+== Managed session
+
+The previous example of a Discount Service works, but it can be simpler.
 Quarkus Data Hibernate supports a "managed persistence context" that tracks objects for you: Hibernate monitors every entity it loads, detects which fields changed, and generates the minimal SQL needed to keep entities synchronized with the database at commit time. You don't need to track dirty objects, and lazy associations are fetched automatically when you access them.
 
 Switch `Book` and `Publisher` to use `ManagedEntity` and managed repositories:
@@ -466,7 +468,7 @@ Now the service becomes pure business logic:
 [source,java]
 ----
 @ApplicationScoped
-public class SalesService {
+public class DiscountService {
 
     @Inject
     Publisher.Repo publisherRepo;

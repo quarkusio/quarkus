@@ -563,7 +563,7 @@ See <<custom-functions-and-types>>.
 `org.hibernate.boot.model.TypeContributor`::
 See <<custom-functions-and-types>>.
 `com.github.benmanes.caffeine.cache.Weigher`::
-See <<caching-of-entities-and-associations>>.
+See <<weight-based-eviction>>.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
@@ -1069,6 +1069,7 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ----
 ====
 
+[[weight-based-eviction]]
 ==== Weight-based eviction
 
 For entities with highly variable sizes (e.g., storing JSON data that ranges from a few bytes to

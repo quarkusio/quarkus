@@ -287,7 +287,7 @@ public class DiscountService {
 }
 ----
 <1> We collect the books we modify so we can update them all at the end.
-<2> In a stateless session, to-many associations are not fetched automatically. We load the books explicitly via a repository query. In Hibernate, these are called "lazy associations".
+<2> In a stateless session, to-many associations are not fetched automatically. Accessing `publisher.books` directly would throw an exception. We load the books explicitly via a repository query. In Hibernate, these are called "lazy associations".
 <3> We add the book to our list of modified objects.
 <4> We update once at the end, after all modifications are done.
 
@@ -511,10 +511,10 @@ Quarkus Data Hibernate lets you pick blocking or reactive to match your use case
 
 First, add the reactive dependencies:
 
-:add-extension-extensions: quarkus-hibernate-reactive,quarkus-hibernate-reactive-panache,quarkus-reactive-pg-client
+:add-extension-extensions: quarkus-hibernate-reactive,quarkus-hibernate-reactive-panache-common,quarkus-reactive-pg-client
 include::{includes}/devtools/extension-add.adoc[]
 
-NOTE: `quarkus-hibernate-reactive-panache` is needed because `quarkus-hibernate-reactive` does not yet transitively include the classes required by the annotation processor to generate reactive repository implementations (see https://github.com/quarkusio/quarkus/issues/53871[#53871]).
+NOTE: `quarkus-hibernate-reactive-panache-common` is needed because `quarkus-hibernate-reactive` does not yet transitively include the classes required by the annotation processor to generate reactive repository implementations (see https://github.com/quarkusio/quarkus/issues/53871[#53871]).
 
 `quarkus-hibernate-reactive` adds the reactive Hibernate engine, which uses non-blocking I/O under the covers instead of JDBC.
 `quarkus-reactive-pg-client` is the reactive equivalent of `quarkus-jdbc-postgresql`. It provides a non-blocking PostgreSQL driver built on Vert.x. As its blocking counterpart, it's mandatory for Quarkus Data Hibernate to work.

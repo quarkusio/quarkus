@@ -43,7 +43,9 @@ public class ResteasyReactiveRuntimeRecorder {
                 httpRuntimeConfig.body().multipart().fileContentTypes().orElse(null),
                 runtimeConfig.multipart().inputPart().defaultCharset(), maxBodySize,
                 httpRuntimeConfig.limits().maxFormAttributeSize().asLongValue(),
-                httpRuntimeConfig.limits().maxParameters());
+                httpRuntimeConfig.limits().maxParameters(),
+                (int) httpRuntimeConfig.limits().maxMultipartPartHeaderSize().asLongValue(),
+                httpRuntimeConfig.limits().maxMultipartHeaderCount());
 
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
 

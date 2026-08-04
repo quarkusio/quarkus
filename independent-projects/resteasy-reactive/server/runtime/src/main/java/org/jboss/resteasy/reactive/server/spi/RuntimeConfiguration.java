@@ -34,5 +34,9 @@ public interface RuntimeConfiguration {
         long maxFormAttributeSize();
 
         int maxParameters();
+
+        int maxMultipartPartHeaderSize();
+
+        int maxMultipartHeaderCount();
     }
 }

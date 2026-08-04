@@ -111,6 +111,8 @@ You should see a compilation error like:
 error: no matching field named 'tilte' in entity class 'org.acme.Book'
 ----
 
+NOTE: The same compile-time checks apply to the query string passed to `@Query`. If you reference a field that doesn't exist or make a syntax error, the build fails. The query language is HQL (Hibernate Query Language); see the https://docs.hibernate.org/orm/8.0/querylanguage/html_single/#and-sqk[HQL and SQL guide] for the full syntax.
+
 Get the parameter back to the correct name so that we can proceed further.
 
 == Creating new entities

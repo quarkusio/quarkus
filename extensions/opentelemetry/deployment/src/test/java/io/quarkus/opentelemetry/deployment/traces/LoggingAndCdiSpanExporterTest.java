@@ -18,12 +18,12 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingAndCdiSpanExporterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.traces.exporter", "logging,cdi")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")

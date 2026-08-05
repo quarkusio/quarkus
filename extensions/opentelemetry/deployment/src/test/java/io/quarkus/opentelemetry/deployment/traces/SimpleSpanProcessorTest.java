@@ -32,13 +32,13 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleSpanProcessorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestUtil.class, TestSpanExporter.class, TestSpanExporterProvider.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),

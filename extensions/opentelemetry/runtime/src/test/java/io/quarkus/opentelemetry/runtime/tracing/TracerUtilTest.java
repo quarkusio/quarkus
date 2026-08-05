@@ -1,9 +1,9 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
 import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAMESPACE;
 import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
-import static io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT;
-import static io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes.SERVICE_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,13 +22,13 @@ public class TracerUtilTest {
                 "service.name=myservice",
                 "service.namespace=mynamespace",
                 "service.version=1.0",
-                "deployment.environment=production");
+                "deployment.environment.name=production");
         Resource resource = TracerUtil.mapResourceAttributes(resourceAttributes, null, null);
         Attributes attributes = resource.getAttributes();
         Assertions.assertThat(attributes.size()).isEqualTo(4);
         Assertions.assertThat(attributes.get(SERVICE_NAME)).isEqualTo("myservice");
         Assertions.assertThat(attributes.get(SERVICE_NAMESPACE)).isEqualTo("mynamespace");
         Assertions.assertThat(attributes.get(SERVICE_VERSION)).isEqualTo("1.0");
-        Assertions.assertThat(attributes.get(DEPLOYMENT_ENVIRONMENT)).isEqualTo("production");
+        Assertions.assertThat(attributes.get(DEPLOYMENT_ENVIRONMENT_NAME)).isEqualTo("production");
     }
 }

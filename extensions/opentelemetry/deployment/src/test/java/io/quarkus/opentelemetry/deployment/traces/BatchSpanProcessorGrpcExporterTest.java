@@ -13,12 +13,12 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BatchSpanProcessorGrpcExporterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "grpc")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")

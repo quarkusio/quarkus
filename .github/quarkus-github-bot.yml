@@ -343,7 +343,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, metacosm]
+      notify: [geoand, metacosm, xstefank]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/

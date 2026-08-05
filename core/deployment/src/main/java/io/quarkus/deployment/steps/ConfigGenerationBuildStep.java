@@ -136,6 +136,39 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class ConfigGenerationBuildStep {
     private static final String SERVICES_PREFIX = "META-INF/services/";
 
+    // Types with a SmallRye Config built-in converter (Converters.ALL_CONVERTERS) that Quarkus core does
+    // NOT also register a converter for via the Converter SPI - these need no reflection at all.
+    //
+    // Types Quarkus DOES register an SPI converter for (e.g. Duration, Locale, InetAddress, Pattern) are
+    // deliberately excluded here, even where SmallRye also has a built-in: the generated config builder
+    // resolves the SPI converter's target type via Class.forName(String) at runtime (see
+    // AbstractConfigBuilder#withConverter), and on Mandrel that resolution is only reliable when the
+    // class has at least its public methods registered - constructors-only is not enough (see
+    // registerConverterReflection below, which registers public methods for every type not in this set).
+    // (Copied as a constant to avoid the processing overhead of computing the list, as it rarely changes -
+    // kept in sync via ConfigGenerationBuildStepTest)
+    private static final Set<String> SMALLRYE_BUILT_IN_CONVERTER_TYPES = Set.of(
+            "java.lang.String",
+            "java.lang.Boolean",
+            "java.lang.Double",
+            "java.lang.Float",
+            "java.lang.Long",
+            "java.lang.Integer",
+            "java.lang.Short",
+            "java.lang.Byte",
+            "java.lang.Character",
+            "java.lang.Class",
+            "java.util.UUID",
+            "java.util.Currency",
+            "java.util.BitSet",
+            "java.io.File",
+            "java.net.URI",
+            "java.time.format.DateTimeFormatter",
+            "java.lang.CharSequence",
+            "java.util.OptionalInt",
+            "java.util.OptionalLong",
+            "java.util.OptionalDouble");
+
     @BuildStep
     void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
         runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(InetRunTime.class.getName()));
@@ -348,10 +381,7 @@ public class ConfigGenerationBuildStep {
                             .reason("Required by Config Converter " + mapProperty.getKeyConvertWith().getName())
                             .build());
                 } else {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyRawType())
-                            .reason("Required by Config Converter " + mapProperty.getKeyRawType().getName())
-                            .methods()
-                            .build());
+                    registerConverterReflection(mapProperty.getKeyRawType(), reflectiveClasses);
                 }
 
                 registerImplicitConverter(mapProperty.getValueProperty(), reflectiveClasses);
@@ -370,16 +400,34 @@ public class ConfigGenerationBuildStep {
                         .reason("Required by Config Converter " + leafProperty.getConvertWith().getName())
                         .build());
             } else {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(leafProperty.getValueRawType())
-                        .reason("Required by Config Converter " + leafProperty.getValueRawType().getName())
-                        .methods()
-                        .build());
+                registerConverterReflection(leafProperty.getValueRawType(), reflectiveClasses);
             }
         } else if (property.isOptional()) {
             registerImplicitConverter(property.asOptional().getNestedProperty(), reflectiveClasses);
         } else if (property.isCollection()) {
             registerImplicitConverter(property.asCollection().getElement(), reflectiveClasses);
         }
+    }
+
+    /**
+     * Registers a config property's raw type for reflection, unless it's in
+     * {@link #SMALLRYE_BUILT_IN_CONVERTER_TYPES}. Public methods are enough: types with no explicit
+     * converter rely on this for SmallRye to probe implicit converter methods ({@code valueOf},
+     * {@code parse}, {@code of}, ...), which per the MicroProfile Config spec are always public.
+     */
+    private static void registerConverterReflection(
+            Class<?> rawType,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        String rawTypeName = rawType.getName();
+        if (SMALLRYE_BUILT_IN_CONVERTER_TYPES.contains(rawTypeName)) {
+            return;
+        }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(rawType)
+                .reason("Required by Config Converter " + rawTypeName)
+                .publicMethods()
+                .build());
     }
 
     @BuildStep(onlyIf = SystemOnlySources.class)

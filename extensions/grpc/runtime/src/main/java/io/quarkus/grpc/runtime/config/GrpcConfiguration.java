@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 
 /**
@@ -29,5 +30,13 @@ public interface GrpcConfiguration {
      */
     @ConfigDocSection(generated = true)
     GrpcServerConfiguration server();
+
+    /**
+     * Whether gRPC clients should restore exception cause chains from server response trailers.
+     * <p>
+     * Disable when calling untrusted gRPC services.
+     */
+    @WithDefault("true")
+    boolean propagateExceptionCauses();
 
 }

@@ -14,5 +14,6 @@ metadata:
   codestart:
     name: "google-cloud-functions-http"
     kind: "example"
-    languages: "java"
+    languages:
+      - "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

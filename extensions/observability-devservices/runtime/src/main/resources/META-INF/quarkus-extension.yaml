@@ -1,5 +1,5 @@
 name: "Observability"
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
+artifact: ${project.groupId}:quarkus-observability-devservices-lgtm:${project.version}
 metadata:
   keywords:
     - "lgtm"

@@ -172,7 +172,7 @@
         <snakeyaml.version>2.6</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.6.5</mongo-client.version>
-        <proton-j.version>0.34.1</proton-j.version>
+        <proton-j.version>0.35.0</proton-j.version>
         <javaparser.version>3.28.2</javaparser.version>
         <flapdoodle.mongo.version>4.33.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>7.0.SP1</quarkus-spring-api.version>

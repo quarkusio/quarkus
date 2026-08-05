@@ -51,7 +51,9 @@ public interface InitTaskConfig {
 
     interface InitTaskRbacConfig {
         /**
-         * The name of the Role.
+         * The name of the Role. The application name is always prepended, producing a unique
+         * name per application (e.g. {@code my-app-view-jobs}). This prevents name conflicts when
+         * multiple applications sharing the same namespace each manage their own Role.
          */
         @WithDefault("view-jobs")
         String name();
@@ -62,13 +64,5 @@ public interface InitTaskConfig {
          */
         @WithDefault("true")
         boolean generate();
-
-        /**
-         * If set to true, the Role name is prefixed with the application name, producing a unique
-         * name per application (e.g. {@code my-app-view-jobs}). This prevents name conflicts when
-         * multiple applications sharing the same namespace each manage their own Role.
-         */
-        @WithDefault("true")
-        boolean prefixName();
     }
 }

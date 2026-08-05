@@ -80,9 +80,7 @@ public class InitTaskProcessor {
 
         if (generateRoleForJobs) {
             InitTaskConfig.InitTaskRbacConfig rbac = initTaskDefaults.rbac();
-            String roleName = rbac.prefixName()
-                    ? name + "-" + rbac.name()
-                    : rbac.name();
+            String roleName = name + "-" + rbac.name();
 
             if (rbac.generate()) {
                 roles.produce(new KubernetesRoleBuildItem(roleName, Collections.singletonList(
@@ -93,11 +91,10 @@ public class InitTaskProcessor {
                         target));
             }
 
-            // When the role name is prefixed, set the binding name explicitly so the Kubernetes
-            // extension does not double-prefix it as {app}-{app}-{role}.
-            String bindingName = rbac.prefixName() ? roleName : null;
+            // Set the binding name explicitly so the Kubernetes extension does not double-prefix
+            // it as {app}-{app}-{role}.
             roleBindings.produce(new KubernetesRoleBindingBuildItem(
-                    bindingName, null, target, Collections.emptyMap(),
+                    roleName, null, target, Collections.emptyMap(),
                     new RoleRef(roleName, false),
                     new Subject("", "ServiceAccount", null, null)));
             serviceAccount.produce(new KubernetesServiceAccountBuildItem(true));

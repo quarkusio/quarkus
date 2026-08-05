@@ -2,6 +2,8 @@ package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
+import java.lang.annotation.RetentionPolicy;
+import java.lang.constant.ClassDesc;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -43,7 +45,7 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -65,7 +67,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
@@ -218,14 +220,15 @@ class NarayanaJtaProcessor {
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
-        try (ClassCreator c = ClassCreator.builder()
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
-                        TestTransactionInterceptor.class.getName() + "Generated")
-                .superClass(TestTransactionInterceptor.class).build()) {
-            c.addAnnotation(TEST_TRANSACTION);
-            c.addAnnotation(Interceptor.class.getName());
-            c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 200);
-        }
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanBuildItemBuildProducer));
+        gizmo.class_(TestTransactionInterceptor.class.getName() + "Generated", cc -> {
+            cc.extends_(TestTransactionInterceptor.class);
+            cc.addAnnotation(ClassDesc.of(TEST_TRANSACTION), RetentionPolicy.RUNTIME, ac -> {
+            });
+            cc.addAnnotation(Interceptor.class);
+            cc.addAnnotation(Priority.class, ac -> ac.add("value", Interceptor.Priority.PLATFORM_BEFORE + 200));
+            cc.defaultConstructor();
+        });
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestTransactionInterceptor.class)
                 .addBeanClass(TEST_TRANSACTION).build());
     }

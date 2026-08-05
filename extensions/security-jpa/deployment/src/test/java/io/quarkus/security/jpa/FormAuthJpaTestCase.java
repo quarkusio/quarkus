@@ -19,7 +19,6 @@ import io.restassured.filter.cookie.CookieFilter;
 public class FormAuthJpaTestCase {
 
     private static final String APP_PROPS = "" +
-            "quarkus.datasource.db-kind=h2\n" +
             "quarkus.hibernate-orm.sql-load-script=import.sql\n" +
             "#quarkus.hibernate-orm.log.sql=true\n" +
             "quarkus.http.auth.form.enabled=true\n" +

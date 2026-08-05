@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.http3.deployment.spi.Http3EnabledBuildItem;
 import io.quarkus.http3.runtime.CertOrigin;
@@ -65,6 +66,59 @@ class Http3Processor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
+    }
+
+    /*
+     * When the http3 extension is present, the Vert.x QUIC substitutions do not activate
+     * (IsQuarkusHttp3Absent returns false), so Quiche classes remain reachable.
+     *
+     * Their static initializers load native libraries or reference JNI-populated fields,
+     * so they must be deferred to runtime.
+     */
+    @BuildStep
+    void registerNettyQuicheRuntimeInitializedClasses(
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.BoringSSL"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.BoringSSLAsyncPrivateKeyMethod"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(
+                "io.netty.handler.codec.quic.BoringSSLNativeStaticallyReferencedJniMethods"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.BoringSSLPrivateKeyMethod"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.ConnectionIdChannelMap"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.InsecureQuicTokenHandler"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.Quic"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.Quiche"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicConnectionAddress"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheError"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem(
+                        "io.netty.handler.codec.quic.QuicheNativeStaticallyReferencedJniMethods"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicChannel"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicCodec"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicConnection"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicServerCodec"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicSslContext"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheQuicStreamChannel"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.QuicheSendInfo"));
+        runtimeInitializedClasses.produce(
+                new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.SecureRandomQuicConnectionIdGenerator"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.quic.SockaddrIn"));
     }
 
     @BuildStep

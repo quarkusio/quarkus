@@ -26,12 +26,15 @@ import java.util.TimeZone;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.filter.FilteringGeneratorDelegate;
 import com.fasterxml.jackson.core.filter.TokenFilter;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -291,6 +294,46 @@ public class JacksonMapperUtil {
             serializer.serialize(value, generator, serializerProvider);
         } else {
             generator.writePOJO(value);
+        }
+    }
+
+    /**
+     * Serializes a property through the serializer declared by {@code @JsonSerialize(using = ...)}. The nullSerializer is
+     * the one declared by {@code nullsUsing}, if any, and a plain json null is written when there is none.
+     */
+    public static void serializeWithCustomSerializer(Object value, JsonSerializer<Object> serializer,
+            JsonSerializer<Object> nullSerializer, JsonGenerator generator, SerializerProvider serializerProvider)
+            throws IOException {
+        if (value == null) {
+            if (nullSerializer == null) {
+                generator.writeNull();
+            } else {
+                nullSerializer.serialize(null, generator, serializerProvider);
+            }
+            return;
+        }
+        serializer.serialize(value, generator, serializerProvider);
+    }
+
+    /**
+     * Reads a property through the deserializer declared by {@code @JsonDeserialize(using = ...)}. The generated
+     * deserializer works on the parsed json tree, so the deserializer is given a parser over the subtree of this single
+     * property, positioned on its first token.
+     */
+    public static Object deserializeWithCustomDeserializer(JsonNode valueNode, JsonDeserializer<?> deserializer,
+            DeserializationContext context) throws IOException {
+        if (valueNode == null) {
+            return null;
+        }
+        if (valueNode.isNull()) {
+            // Jackson doesn't pass an explicit json null to a deserializer, it asks for its null value instead
+            return deserializer.getNullValue(context);
+        }
+        JsonParser owningParser = context.getParser();
+        ObjectCodec codec = owningParser == null ? null : owningParser.getCodec();
+        try (JsonParser valueParser = codec == null ? valueNode.traverse() : valueNode.traverse(codec)) {
+            valueParser.nextToken();
+            return deserializer.deserialize(valueParser, context);
         }
     }
 

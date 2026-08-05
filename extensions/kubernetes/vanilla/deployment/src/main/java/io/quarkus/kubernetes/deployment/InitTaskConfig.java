@@ -25,6 +25,16 @@ public interface InitTaskConfig {
      */
     InitTaskContainerConfig waitForContainer();
 
+    /**
+     * Configuration of the Role and RoleBinding generated so the wait-for init container can
+     * {@code get} Job resources.
+     * <p>
+     * Only honored when set on {@code quarkus.kubernetes.init-task-defaults.rbac}
+     * (or the OpenShift equivalent). Per-task {@code init-tasks.*.rbac} values are ignored
+     * because a single Role is shared by all init tasks.
+     */
+    InitTaskRbacConfig rbac();
+
     interface InitTaskContainerConfig {
         /**
          * The init task image to use by the init container.
@@ -37,5 +47,28 @@ public interface InitTaskConfig {
          */
         @WithDefault("always")
         ImagePullPolicy imagePullPolicy();
+    }
+
+    interface InitTaskRbacConfig {
+        /**
+         * The name of the Role.
+         */
+        @WithDefault("view-jobs")
+        String name();
+
+        /**
+         * If the Role is meant to be generated. When {@code false}, only the RoleBinding is
+         * generated (pointing at an existing Role with the resolved name).
+         */
+        @WithDefault("true")
+        boolean generate();
+
+        /**
+         * If set to true, the Role name is prefixed with the application name, producing a unique
+         * name per application (e.g. {@code my-app-view-jobs}). This prevents name conflicts when
+         * multiple applications sharing the same namespace each manage their own Role.
+         */
+        @WithDefault("true")
+        boolean prefixName();
     }
 }

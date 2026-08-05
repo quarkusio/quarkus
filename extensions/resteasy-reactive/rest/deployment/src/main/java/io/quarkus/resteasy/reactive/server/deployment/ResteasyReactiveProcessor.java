@@ -331,7 +331,7 @@ public class ResteasyReactiveProcessor {
     AggregatedParameterContainersBuildItem aggregateParameterContainers(
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             List<ParameterContainersBuildItem> parameterContainersBuildItems) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return new AggregatedParameterContainersBuildItem(Set.of(), Set.of());
         }
         Set<DotName> scannedParameterContainers = new HashSet<>();
@@ -355,7 +355,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
 
@@ -392,7 +392,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         List<MethodInfo> methodExceptionMapper = resourceScanningResultBuildItem.get().getResult()
@@ -431,7 +431,7 @@ public class ResteasyReactiveProcessor {
     public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
@@ -488,7 +488,7 @@ public class ResteasyReactiveProcessor {
             List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems,
             Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
 
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             // no detected @Path, bail out
             return;
         }
@@ -671,7 +671,7 @@ public class ResteasyReactiveProcessor {
                     .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(applicationClassPredicate)
                     .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
-                            .collect(Collectors.toUnmodifiableList()))
+                            .toList())
                     .setTargetJavaVersion(
                             determineTargetJavaVersion(compiledJavaVersionBuildItem, maybeTargetJavaVersionBuildItem))
                     .setIsDisabledCreator(new Function<>() {
@@ -1127,7 +1127,7 @@ public class ResteasyReactiveProcessor {
         allBeanTypes.add(clazz.name());
 
         ClassInfo currentClazz = clazz;
-        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name()) && currentClazz != null) {
+        while (currentClazz != null && !ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name())) {
             if (currentClazz.isAbstract()) {
                 allBeanTypes.add(currentClazz.name());
             }

@@ -18,7 +18,7 @@
         <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.84</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>2.1.23</bouncycastle.tls.fips.version>
+        <bouncycastle.tls.fips.version>2.1.24</bouncycastle.tls.fips.version>
         <cyclonedx.version>12.2.0</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
@@ -165,7 +165,7 @@
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
         <flyway.version>12.0.0</flyway.version>
-        <yasson.version>3.0.4</yasson.version>
+        <yasson.version>3.0.5</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
         <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
@@ -185,7 +185,7 @@
         <quarkus-security.version>2.3.2</quarkus-security.version>
         <keycloak-client.version>26.0.11</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>4.2.0</checker-qual.version>
+        <checker-qual.version>4.2.1</checker-qual.version>
         <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
         <jib-core.version>0.28.2</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>
@@ -4972,7 +4972,7 @@
                 <version>${parsson.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse</groupId>
+                <groupId>org.eclipse.yasson</groupId>
                 <artifactId>yasson</artifactId>
                 <version>${yasson.version}</version>
             </dependency>
@@ -5240,6 +5240,15 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <!-- This is needed until RESTEasy upgrades to Yasson 3.0.5 requiring the groupId change to
+                         org.eclipse.yasson.
+                    -->
+                    <exclusion>
+                        <groupId>org.eclipse</groupId>
+                        <artifactId>yasson</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

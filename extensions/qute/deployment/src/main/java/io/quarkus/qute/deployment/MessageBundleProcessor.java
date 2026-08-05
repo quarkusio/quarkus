@@ -1266,17 +1266,14 @@ public class MessageBundleProcessor {
 
         // We do group messages to workaround limits of a JVM method body
         int groupLimit = 300;
-        int groupIndex = 0;
         List<List<Entry<String, MessageMethod>>> resolveGroups = new ArrayList<>();
-        List<Entry<String, MessageMethod>> resolveGroup = new ArrayList<>();
+        List<Entry<String, MessageMethod>> resolveGroup = new ArrayList<>(groupLimit);
         for (Entry<String, MessageMethod> entry : keyMap.entrySet()) {
-            if (groupIndex++ >= groupLimit) {
-                groupIndex = 0;
+            if (resolveGroup.size() >= groupLimit) {
                 resolveGroups.add(resolveGroup);
-                resolveGroup = new ArrayList<>();
-            } else {
-                resolveGroup.add(entry);
+                resolveGroup = new ArrayList<>(groupLimit);
             }
+            resolveGroup.add(entry);
         }
         if (!resolveGroup.isEmpty()) {
             // Add the last group
@@ -1305,7 +1302,7 @@ public class MessageBundleProcessor {
                                 resolveMethodPrefix + "_resolve_" + (idx + 1),
                                 CompletableFuture.class, String.class,
                                 EvaluatedParams.class, CompletableFuture.class),
-                                bundleCreator.this_(), name, evaluatedParams, bundleCreator.this_()));
+                                bundleCreator.this_(), name, evaluatedParams, ret));
                     } else {
                         // Last group - return null
                         bc.returnNull();

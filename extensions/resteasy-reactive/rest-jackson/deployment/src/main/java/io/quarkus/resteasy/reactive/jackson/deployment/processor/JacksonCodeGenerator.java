@@ -55,8 +55,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -75,6 +79,10 @@ public abstract class JacksonCodeGenerator {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
+
+    // the placeholders Jackson uses to mean that no serializer or deserializer has been specified
+    protected static final String NO_SERIALIZER = JsonSerializer.None.class.getName();
+    protected static final String NO_DESERIALIZER = JsonDeserializer.None.class.getName();
 
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
@@ -95,8 +103,10 @@ public abstract class JacksonCodeGenerator {
             JsonNaming.class.getName(),
             JsonProperty.class.getName(),
             JsonPropertyDescription.class.getName(),
+            JsonDeserialize.class.getName(),
             JsonPropertyOrder.class.getName(),
             JsonRawValue.class.getName(),
+            JsonSerialize.class.getName(),
             JsonSetter.class.getName(),
             JsonSubTypes.class.getName(),
             JsonTypeInfo.class.getName(),
@@ -149,6 +159,12 @@ public abstract class JacksonCodeGenerator {
         if (unknownAnnotation.isPresent()) {
             log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
                     " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
+            return Optional.empty();
+        }
+        Optional<String> unsupportedFeature = findUnsupportedFeature(classInfo);
+        if (unsupportedFeature.isPresent()) {
+            log.infof("Skipping generation of reflection-free Jackson serializer for class %s because %s",
+                    beanClassName, unsupportedFeature.get());
             return Optional.empty();
         }
 
@@ -238,6 +254,104 @@ public abstract class JacksonCodeGenerator {
                 .map(a -> a.name().toString())
                 .filter(FieldSpecs::isUnknownAnnotation)
                 .findFirst();
+    }
+
+    /**
+     * Vetoes the code generation for a class using a supported Jackson annotation in a way that cannot be reproduced
+     * here. The returned text is logged as the reason for falling back to the reflection based Jackson implementation.
+     */
+    protected abstract Optional<String> findUnsupportedFeature(ClassInfo classInfo);
+
+    protected String findUnsupportedAnnotationUsage(ClassInfo classInfo, DotName annotationName,
+            Function<AnnotationInstance, String> validator) {
+        for (AnnotationInstance annotation : classInfo.annotations()) {
+            if (annotation.name().equals(annotationName)) {
+                String reason = validator.apply(annotation);
+                if (reason != null) {
+                    return reason;
+                }
+            }
+        }
+        // the inherited properties are handled by this same generated class, so check them too.
+        // note that onSuperClass returns null, not an empty reason, when there is no superclass to inspect
+        return onSuperClass(classInfo,
+                superClassInfo -> findUnsupportedAnnotationUsage(superClassInfo, annotationName, validator));
+    }
+
+    protected static boolean isSet(AnnotationInstance annotation, String attribute, Set<String> unsetValues) {
+        AnnotationValue value = annotation.value(attribute);
+        return value != null && !unsetValues.contains(value.asClass().name().toString());
+    }
+
+    /**
+     * Checks that the serializer or deserializer declared by the given attribute can be instantiated with a plain
+     * {@code new} and used as is, and returns the reason why it cannot when that is not the case.
+     */
+    protected static String validateHandler(AnnotationInstance annotation, String attribute, String unsetValue,
+            Class<?> handlerType, Class<?>... typesNeedingContextualization) {
+        AnnotationValue value = annotation.value(attribute);
+        if (value == null) {
+            return null;
+        }
+        String handlerClassName = value.asClass().name().toString();
+        if (unsetValue.equals(handlerClassName)) {
+            return null;
+        }
+
+        Class<?> handlerClass;
+        try {
+            handlerClass = Class.forName(handlerClassName, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException | LinkageError e) {
+            return unusableHandler(annotation, handlerClassName, attribute, "it cannot be loaded at build time");
+        }
+        if (!handlerType.isAssignableFrom(handlerClass)) {
+            return unusableHandler(annotation, handlerClassName, attribute, "it is not a " + handlerType.getSimpleName());
+        }
+        if (!Modifier.isPublic(handlerClass.getModifiers()) || Modifier.isAbstract(handlerClass.getModifiers())) {
+            return unusableHandler(annotation, handlerClassName, attribute, "it is not a public concrete class");
+        }
+        for (Class<?> needingContextualization : typesNeedingContextualization) {
+            if (needingContextualization.isAssignableFrom(handlerClass)) {
+                return unusableHandler(annotation, handlerClassName, attribute, "it has to be contextualized by Jackson");
+            }
+        }
+        try {
+            handlerClass.getConstructor();
+        } catch (NoSuchMethodException e) {
+            return unusableHandler(annotation, handlerClassName, attribute, "it has no public no-args constructor");
+        }
+        return null;
+    }
+
+    private static String unusableHandler(AnnotationInstance annotation, String handlerClassName, String attribute,
+            String reason) {
+        return "the " + handlerClassName + " declared by @" + annotation.name().withoutPackagePrefix() + "#" + attribute
+                + " cannot be used in generated code since " + reason;
+    }
+
+    protected static Type targetType(AnnotationTarget target) {
+        if (target == null) {
+            return null;
+        }
+        return switch (target.kind()) {
+            case FIELD -> target.asField().type();
+            // a setter carries the property type as its only parameter, a getter as its return type
+            case METHOD -> target.asMethod().parametersCount() == 1
+                    ? target.asMethod().parameterType(0)
+                    : target.asMethod().returnType();
+            case METHOD_PARAMETER -> target.asMethodParameter().type();
+            case RECORD_COMPONENT -> target.asRecordComponent().type();
+            default -> null;
+        };
+    }
+
+    protected static boolean isCharacterTarget(AnnotationTarget target) {
+        Type targetType = targetType(target);
+        if (targetType == null) {
+            return false;
+        }
+        String typeName = targetType.name().toString();
+        return "char".equals(typeName) || "java.lang.Character".equals(typeName);
     }
 
     protected enum FieldKind {
@@ -737,6 +851,31 @@ public abstract class JacksonCodeGenerator {
                 case "NON_ABSENT" -> "NON_ABSENT";
                 default -> null;
             };
+        }
+
+        String customSerializerClass() {
+            return declaredHandler(JsonSerialize.class.getName(), "using", NO_SERIALIZER);
+        }
+
+        String nullSerializerClass() {
+            return declaredHandler(JsonSerialize.class.getName(), "nullsUsing", NO_SERIALIZER);
+        }
+
+        String customDeserializerClass() {
+            return declaredHandler(JsonDeserialize.class.getName(), "using", NO_DESERIALIZER);
+        }
+
+        private String declaredHandler(String annotationName, String attribute, String unsetValue) {
+            AnnotationInstance annotation = annotations.get(annotationName);
+            if (annotation == null) {
+                return null;
+            }
+            AnnotationValue value = annotation.value(attribute);
+            if (value == null) {
+                return null;
+            }
+            String handlerClassName = value.asClass().name().toString();
+            return unsetValue.equals(handlerClassName) ? null : handlerClassName;
         }
 
         static boolean isUnknownAnnotation(String ann) {

@@ -19,7 +19,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -31,6 +34,7 @@ import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -43,14 +47,18 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
+import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.Converter;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -224,6 +232,16 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  */
 public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
+    private static final DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
+    private static final DotName JSON_UNWRAPPED = DotName.createSimple(JsonUnwrapped.class.getName());
+
+    private static final Set<String> UNSET_CLASS_VALUES = Set.of(NO_DESERIALIZER, KeyDeserializer.None.class.getName(),
+            Void.class.getName(), Converter.None.class.getName());
+
+    // the @JsonDeserialize attributes that cannot be reproduced in the generated deserializer
+    private static final List<String> UNSUPPORTED_JSON_DESERIALIZE_ATTRIBUTES = List.of(
+            "contentUsing", "keyUsing", "as", "keyAs", "contentAs", "builder", "converter", "contentConverter");
+
     public JacksonDeserializerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
         super(generatedClassBuildItemBuildProducer, jandexIndex);
@@ -241,6 +259,40 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     protected String[] getInterfacesNames(ClassInfo classInfo) {
         return classInfo.typeParameters().isEmpty() ? new String[0] : new String[] { ContextualDeserializer.class.getName() };
+    }
+
+    @Override
+    protected Optional<String> findUnsupportedFeature(ClassInfo classInfo) {
+        return Optional.ofNullable(
+                findUnsupportedAnnotationUsage(classInfo, JSON_DESERIALIZE, this::findUnsupportedJsonDeserializeUsage));
+    }
+
+    private String findUnsupportedJsonDeserializeUsage(AnnotationInstance annotation) {
+        AnnotationTarget target = annotation.target();
+        if (target != null && target.kind() == AnnotationTarget.Kind.CLASS) {
+            // a class level @JsonDeserialize replaces the deserialization of the whole type, which is what the
+            // generated deserializer does, so let Jackson use the declared deserializer instead
+            return "it declares a class level @JsonDeserialize";
+        }
+        for (String attribute : UNSUPPORTED_JSON_DESERIALIZE_ATTRIBUTES) {
+            if (isSet(annotation, attribute, UNSET_CLASS_VALUES)) {
+                return "it uses the unsupported @JsonDeserialize#" + attribute + " attribute";
+            }
+        }
+        if (target != null && target.annotations().stream().anyMatch(a -> a.name().equals(JSON_UNWRAPPED))) {
+            return "it combines @JsonDeserialize with @JsonUnwrapped";
+        }
+        if (isSet(annotation, "using", UNSET_CLASS_VALUES) && isUnwritableTarget(target)) {
+            // a char is read as a String, and a primitive cannot take the null returned for a json null
+            return "it declares a @JsonDeserialize#using deserializer on a primitive or char property";
+        }
+        return validateHandler(annotation, "using", NO_DESERIALIZER, JsonDeserializer.class,
+                ContextualDeserializer.class, ResolvableDeserializer.class);
+    }
+
+    private static boolean isUnwritableTarget(AnnotationTarget target) {
+        Type targetType = targetType(target);
+        return targetType != null && (targetType.kind() == Type.Kind.PRIMITIVE || isCharacterTarget(target));
     }
 
     @Override
@@ -277,6 +329,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 : createDeserializedObject(deserData);
 
         if (deserializedHandle == null) {
+            closeStaticInitializer(classCreator);
             return false;
         }
 
@@ -287,6 +340,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             valid = deserializeObjectFields(deserData, deserializedHandle);
         }
         deserialize.returnValue(deserializedHandle);
+        closeStaticInitializer(classCreator);
         return valid;
     }
 
@@ -638,7 +692,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 .getFieldCreator(TRANSLATABLE_FIELD_NAMES, String[].class.getName())
                 .setModifiers(ACC_STATIC | ACC_FINAL);
         clinit.writeStaticField(fieldCreator.getFieldDescriptor(), namesArray);
-        clinit.returnVoid();
+        // the static initializer is closed by closeStaticInitializer, since reading the fields may still add to it
+    }
+
+    private static void closeStaticInitializer(ClassCreator classCreator) {
+        classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
     }
 
     private BranchResult iteratorHasNext(BytecodeCreator creator, ResultHandle iterator) {
@@ -808,6 +866,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private ResultHandle readValueFromJson(ClassCreator classCreator, BytecodeCreator bytecode,
             ResultHandle deserializationContext, FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex,
             ResultHandle valueNode) {
+        String customDeserializerClassName = fieldSpecs.customDeserializerClass();
+        if (customDeserializerClassName != null) {
+            // @JsonDeserialize(using = ...) takes precedence over the type based reading of the value
+            return readValueWithCustomDeserializer(classCreator, bytecode, deserializationContext, fieldSpecs,
+                    customDeserializerClassName, valueNode);
+        }
+
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
@@ -866,6 +931,29 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodDescriptor readTreeAsValue = ofMethod(DeserializationContext.class, "readTreeAsValue",
                 Object.class, JsonNode.class, fieldKind.isGeneric() ? JavaType.class : Class.class);
         return bytecode.invokeVirtualMethod(readTreeAsValue, deserializationContext, valueNode, typeHandle);
+    }
+
+    /**
+     * Reads the property through the deserializer declared by {@code @JsonDeserialize(using = ...)}, kept in a static
+     * field of the generated deserializer.
+     */
+    private static ResultHandle readValueWithCustomDeserializer(ClassCreator classCreator, BytecodeCreator bytecode,
+            ResultHandle deserializationContext, FieldSpecs fieldSpecs, String deserializerClassName,
+            ResultHandle valueNode) {
+        String fieldName = fieldSpecs.fieldName + "_DESERIALIZER";
+
+        MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
+        FieldCreator fieldCreator = classCreator.getFieldCreator(fieldName, JsonDeserializer.class.getName())
+                .setModifiers(ACC_STATIC | ACC_FINAL);
+        clinit.writeStaticField(fieldCreator.getFieldDescriptor(),
+                clinit.newInstance(MethodDescriptor.ofConstructor(deserializerClassName)));
+
+        ResultHandle deserializer = bytecode.readStaticField(
+                FieldDescriptor.of(classCreator.getClassName(), fieldName, JsonDeserializer.class.getName()));
+        return bytecode.invokeStaticMethod(
+                ofMethod(JacksonMapperUtil.class, "deserializeWithCustomDeserializer", Object.class,
+                        JsonNode.class, JsonDeserializer.class, DeserializationContext.class),
+                valueNode, deserializer, deserializationContext);
     }
 
     private void writeValueToObject(ClassInfo classInfo, ResultHandle objHandle, FieldSpecs fieldSpecs,

@@ -1757,6 +1757,10 @@ When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` imp
 
 Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
 
+The generated serializers and deserializers honour `@JsonSerialize(using = ...)`, its `nullsUsing` companion, and `@JsonDeserialize(using = ...)` when declared on a property. The declared serializer or deserializer has to be a public concrete class with a public no-args constructor, and must not be one that Jackson contextualizes or resolves before use, so it cannot implement `ContextualSerializer`, `ResolvableSerializer`, `ContextualDeserializer` or `ResolvableDeserializer`.
+
+Other uses of these annotations are left to Jackson: a declaration at class level, the `contentUsing`, `keyUsing`, `as`, `keyAs`, `contentAs`, `converter` and `contentConverter` attributes, `@JsonSerialize#typing` and `@JsonDeserialize#builder`. The same applies to a `@JsonDeserialize#using` deserializer on a primitive or `char` property, whose value could not be written back. In all these cases the class is serialized and deserialized reflectively, and the build log reports why the generation was skipped.
+
 [NOTE]
 ====
 Reflection-free serializers are not compatible with Kotlin classes, since they break Kotlin-specific features such as default parameter values and non-null type enforcement. As a result, reflection-free serializers are not generated for Kotlin classes.

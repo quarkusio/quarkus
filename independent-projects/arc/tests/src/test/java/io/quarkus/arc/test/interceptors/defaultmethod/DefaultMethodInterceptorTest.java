@@ -22,7 +22,7 @@ public class DefaultMethodInterceptorTest {
         InstanceHandle<DefaultMethodBean> handle = arc.instance(DefaultMethodBean.class);
         DefaultMethodBean simpleBean = handle.get();
         Assertions.assertEquals("intercepted:next:hello", simpleBean.hello());
-        Assertions.assertEquals("intercepted:default method", simpleBean.defaultMethod());
+        Assertions.assertEquals("intercepted:next:default method", simpleBean.defaultMethod());
         Assertions.assertEquals("intercepted:pong", simpleBean.ping());
     }
 

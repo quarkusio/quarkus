@@ -14,8 +14,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.lra.annotation.LRAStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
@@ -26,8 +27,13 @@ import io.restassured.response.Response;
 @TestHTTPEndpoint(TransactionalResource.class)
 public class LRAParticipantTest {
 
-    @ConfigProperty(name = "quarkus.lra.coordinator-url")
     private String coordinatorEndpoint;
+
+    @BeforeEach
+    public void setup() {
+        this.coordinatorEndpoint = ConfigProvider.getConfig()
+                .getValue("quarkus.lra.coordinator-url", String.class);
+    }
 
     // test that the JAX-RS ServerLRAFilter can start and end an LRA in a single business method
     @Test

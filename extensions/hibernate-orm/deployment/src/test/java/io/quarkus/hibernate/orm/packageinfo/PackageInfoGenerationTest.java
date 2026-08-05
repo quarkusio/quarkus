@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.packageinfo.withoutpackageinfo.EntityWithoutPackageInfo;
 import io.quarkus.hibernate.orm.packageinfo.withpackageinfo.EntityWithPackageInfo;
 import io.quarkus.hibernate.orm.packageinfo.withpackageinfo.TestAnnotation;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that package-info files are generated for packages with entities when AOT class loading is enabled.
@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PackageInfoGenerationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(EntityWithPackageInfo.class.getPackage())
                     .addPackage(EntityWithoutPackageInfo.class.getPackage()))

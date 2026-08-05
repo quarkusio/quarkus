@@ -8,12 +8,12 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.faulttolerance.api.RateLimitException;
 
 public class RateLimitConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(RateLimitConfigBean.class))
             .overrideConfigKey(
                     "quarkus.fault-tolerance.\"io.quarkus.smallrye.faulttolerance.test.config.RateLimitConfigBean/value\".rate-limit.value",

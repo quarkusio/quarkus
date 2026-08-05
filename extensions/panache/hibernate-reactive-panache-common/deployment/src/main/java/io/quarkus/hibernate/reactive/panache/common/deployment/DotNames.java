@@ -19,6 +19,7 @@ final class DotNames {
     static final DotName WITH_SESSION_ON_DEMAND = DotName.createSimple(WithSessionOnDemand.class.getName());
     static final DotName WITH_SESSION = DotName.createSimple(WithSession.class.getName());
     static final DotName WITH_TRANSACTION = DotName.createSimple(WithTransaction.class.getName());
+    static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
 
     static final DotName PANACHE_ENTITY_BASE = DotName

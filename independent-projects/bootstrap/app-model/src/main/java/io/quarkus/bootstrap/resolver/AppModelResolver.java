@@ -83,7 +83,19 @@ public interface AppModelResolver {
      */
     ApplicationModel resolveModel(ArtifactCoords root, Collection<Dependency> deps) throws AppModelResolverException;
 
+    /**
+     * Resolve application model with dependency management.
+     *
+     * @param appArtifact application artifact
+     * @param directDeps direct dependencies to force
+     * @param excludedArtifacts artifacts to exclude
+     * @param managingProject managing project coordinates
+     * @param localProjects local workspace projects
+     * @return resolved application model
+     * @throws AppModelResolverException in case of a failure
+     */
     ApplicationModel resolveManagedModel(ArtifactCoords appArtifact, Collection<Dependency> directDeps,
+            Set<ArtifactKey> excludedArtifacts,
             ArtifactCoords managingProject,
             Set<ArtifactKey> localProjects)
             throws AppModelResolverException;

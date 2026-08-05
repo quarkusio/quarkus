@@ -70,6 +70,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -99,6 +100,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DelegatingServerRestHandler;
@@ -121,7 +123,6 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHa
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -151,6 +152,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -300,14 +302,18 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    void configureLogLevels(BuildProducer<LogCategoryBuildItem> producer, LaunchModeBuildItem launchMode) {
+        if (!launchMode.getLaunchMode().isDevOrTest()) {
+            return;
+        }
+        producer.produce(new LogCategoryBuildItem(ParameterHandler.class.getName(), Level.DEBUG));
+    }
+
+    @BuildStep
     void vertxIntegration(BuildProducer<MessageBodyWriterBuildItem> writerBuildItemBuildProducer) {
         writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerVertxBufferMessageBodyWriter.class.getName(),
                 io.vertx.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER,
                 true,
-                Priorities.USER));
-        writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerMutinyBufferMessageBodyWriter.class.getName(),
-                io.vertx.mutiny.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD),
-                RuntimeType.SERVER, true,
                 Priorities.USER));
         writerBuildItemBuildProducer
                 .produce(new MessageBodyWriterBuildItem(ServerVertxAsyncFileMessageBodyWriter.class.getName(),
@@ -767,6 +773,11 @@ public class ResteasyReactiveProcessor {
             for (DotName methodAnnotation : result.getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -786,6 +797,11 @@ public class ResteasyReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -1187,7 +1203,9 @@ public class ResteasyReactiveProcessor {
      */
     @BuildStep
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
-            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
+            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer,
+            BuildProducer<JaxrsFeatureBuildItem> featureProducer,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
         // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
         Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
@@ -1237,7 +1255,6 @@ public class ResteasyReactiveProcessor {
                         }
                         messageBodyWriterProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
                     }
-                    // TODO: handle other providers as well
                 } catch (ClassNotFoundException e) {
                     log.warn("Unable to load class '" + providerClassName
                             + "' when trying to determine what kind of JAX-RS Provider it is.", e);
@@ -1245,6 +1262,23 @@ public class ResteasyReactiveProcessor {
             }
         } catch (IOException e) {
             log.warn("Unable to properly detect and parse the contents of '" + fileName + "'", e);
+        }
+
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName(),
+                className -> featureProducer.produce(new JaxrsFeatureBuildItem(className, true)));
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName(),
+                className -> dynamicFeatureProducer.produce(new DynamicFeatureBuildItem(className, true)));
+    }
+
+    private void discoverServiceProviders(String serviceFile, Consumer<String> producer) {
+        try {
+            Set<String> classNames = new HashSet<>(ServiceUtil.classNamesNamedIn(
+                    Thread.currentThread().getContextClassLoader(), serviceFile));
+            for (String className : classNames) {
+                producer.accept(className);
+            }
+        } catch (IOException e) {
+            log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
         }
     }
 
@@ -1645,7 +1679,7 @@ public class ResteasyReactiveProcessor {
                 .map(this::getDuplicateEndpointMessage)
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining());
-        if (message.length() > 0) {
+        if (!message.isEmpty()) {
             if (config.failOnDuplicate()) {
                 throw new DeploymentException(message);
             }
@@ -1660,8 +1694,54 @@ public class ResteasyReactiveProcessor {
     }
 
     private String getEndpointClassifier(ResourceMethod resourceMethod, String path) {
-        return resourceMethod.getHttpMethod() + " " + (path.equals("/") ? "" : path)
-                + resourceMethod.getPath();
+        String fullPath = (path.equals("/") ? "" : path) + resourceMethod.getPath();
+        return resourceMethod.getHttpMethod() + " " + normalizePathParamNames(fullPath);
+    }
+
+    /**
+     * Replaces path parameter names with a fixed placeholder so that structurally equivalent
+     * paths like {@code v1/{parentId}} and {@code v1/{product}} produce the same {@code v1/{*}} path.
+     * Custom regex is preserved: {@code {id:\d+}} becomes {@code {*:\d+}}.
+     *
+     * Visible for testing
+     */
+    static String normalizePathParamNames(String path) {
+        int len = path.length();
+        StringBuilder sb = new StringBuilder(len);
+        int i = 0;
+        while (i < len) {
+            char c = path.charAt(i);
+            if (c != '{') {
+                sb.append(c);
+                i++;
+                continue;
+            }
+            sb.append("{*");
+            do {
+                i++;
+            } while (i < len && path.charAt(i) != '}' && path.charAt(i) != ':');
+            if (i < len && path.charAt(i) == ':') {
+                int braceDepth = 0;
+                do {
+                    c = path.charAt(i);
+                    sb.append(c);
+                    if (c == '{') {
+                        braceDepth++;
+                    } else if (c == '}') {
+                        if (braceDepth == 0) {
+                            i++;
+                            break;
+                        }
+                        braceDepth--;
+                    }
+                    i++;
+                } while (i < len);
+            } else if (i < len) {
+                sb.append('}');
+                i++;
+            }
+        }
+        return sb.toString();
     }
 
     private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
@@ -1739,9 +1819,9 @@ public class ResteasyReactiveProcessor {
             return;
         }
 
-        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        Map<String, Supplier<?>> runtimeConfigMap = new HashMap<>();
         for (HandlerConfigurationProviderBuildItem item : items) {
-            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+            runtimeConfigMap.put(item.getConfigClass().getName(), item.getValueSupplier());
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);

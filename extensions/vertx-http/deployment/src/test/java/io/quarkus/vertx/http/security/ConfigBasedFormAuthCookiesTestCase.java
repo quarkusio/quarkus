@@ -2,7 +2,7 @@ package io.quarkus.vertx.http.security;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigBasedFormAuthCookiesTestCase extends AbstractFormAuthCookiesTestCase {
 
@@ -23,6 +23,6 @@ public class ConfigBasedFormAuthCookiesTestCase extends AbstractFormAuthCookiesT
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = createQuarkusApp(APP_PROPS);
+    static QuarkusExtensionTest test = createQuarkusApp(APP_PROPS);
 
 }

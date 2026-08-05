@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.UniAsserter;
 
 /**
@@ -14,7 +15,7 @@ import io.quarkus.test.vertx.UniAsserter;
  * <p>
  * Ideally we should rather use an abstract base class and subclass it with an inner class annotated with
  * {@link org.junit.jupiter.api.Nested @Nested} in relevant tests.
- * But unfortunately {@code @Nested} doesn't work with {@link io.quarkus.test.QuarkusUnitTest} at the moment.
+ * But unfortunately {@code @Nested} doesn't work with {@link QuarkusExtensionTest} at the moment.
  */
 public final class SmokeTestUtils {
 

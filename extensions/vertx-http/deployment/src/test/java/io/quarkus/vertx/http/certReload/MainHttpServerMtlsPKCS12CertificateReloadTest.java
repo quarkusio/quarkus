@@ -1,7 +1,8 @@
 package io.quarkus.vertx.http.certReload;
 
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.assertTlsFails;
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.httpsGet;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,8 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
@@ -24,18 +23,14 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.web.Router;
 
@@ -52,8 +47,8 @@ public class MainHttpServerMtlsPKCS12CertificateReloadTest {
     public static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, CertReloadTestHelper.class))
             //            .overrideConfigKey("quarkus.http.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", temp.getAbsolutePath() + "/server-keystore.p12")
@@ -105,12 +100,7 @@ public class MainHttpServerMtlsPKCS12CertificateReloadTest {
                         new PfxOptions().setPath("target/certificates/mtls-reload-A-client-truststore.p12")
                                 .setPassword("password"));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response1 = httpsGet(vertx, options, "/hello");
 
         // Update certs
         Files.copy(new File("target/certificates/mtls-reload-B-keystore.p12").toPath(),
@@ -122,12 +112,7 @@ public class MainHttpServerMtlsPKCS12CertificateReloadTest {
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client keystore and truststore are not updated, thus it should fail.
-        assertThatThrownBy(() -> vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+        assertTlsFails(vertx, options, "/hello");
 
         var options2 = new HttpClientOptions(options)
                 .setKeyCertOptions(
@@ -137,24 +122,14 @@ public class MainHttpServerMtlsPKCS12CertificateReloadTest {
                         new PfxOptions().setPath("target/certificates/mtls-reload-B-client-truststore.p12")
                                 .setPassword("password"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response2 = httpsGet(vertx, options2, "/hello");
 
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
 
         // Trigger another reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-        var response3 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response3 = httpsGet(vertx, options2, "/hello");
 
         assertThat(response2).isEqualTo(response3);
     }

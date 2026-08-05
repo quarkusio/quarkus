@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Configuring Your Application
 include::_attributes.adoc[]
-:categories: core
 :summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
 :topics: configuration
 
@@ -88,7 +87,7 @@ public class GreetingResource {
 
 == Inject the configuration
 
-Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
+Quarkus uses https://microprofile.io/specifications/config/[MicroProfile Config] annotations to inject the
 configuration properties in the application.
 
 [source,java]

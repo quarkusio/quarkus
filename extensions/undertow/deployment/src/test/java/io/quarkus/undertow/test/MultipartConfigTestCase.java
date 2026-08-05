@@ -22,13 +22,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 
 public class MultipartConfigTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MultipartServlet.class))
             .addBuildChainCustomizer(b -> {

@@ -4,7 +4,7 @@ public final class ContainerConstants {
 
     // Images
 
-    public static final String LGTM = "docker.io/grafana/otel-lgtm:0.12.0";
+    public static final String LGTM = "docker.io/grafana/otel-lgtm:0.24.0";
 
     // Ports
 
@@ -12,6 +12,8 @@ public final class ContainerConstants {
 
     public static final int OTEL_GRPC_EXPORTER_PORT = 4317;
     public static final int OTEL_HTTP_EXPORTER_PORT = 4318;
+
+    public static final int TEMPO_MCP_PORT = 3200;
 
     public static final String OTEL_GRPC_PROTOCOL = "grpc";
     public static final String OTEL_HTTP_PROTOCOL = "http/protobuf";

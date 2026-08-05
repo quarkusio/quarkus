@@ -20,7 +20,7 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.runtime.noop.NoOpCache;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NoOpCacheTest {
 
@@ -29,7 +29,7 @@ public class NoOpCacheTest {
     private static final String FORCED_EXCEPTION_MESSAGE = "Forced exception";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties")
             .addClass(CachedService.class));
 

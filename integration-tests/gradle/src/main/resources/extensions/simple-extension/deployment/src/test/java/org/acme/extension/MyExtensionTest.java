@@ -1,6 +1,6 @@
 package org.acme.extension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -12,9 +12,9 @@ import static org.hamcrest.Matchers.containsString;
 public class MyExtensionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-            .addClasses(MyExtensionProcessor.class));
+                    .addClasses(MyExtensionProcessor.class));
 
     @Test
     public void testGreeting() {

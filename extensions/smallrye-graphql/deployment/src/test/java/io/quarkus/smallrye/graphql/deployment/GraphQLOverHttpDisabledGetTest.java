@@ -9,11 +9,11 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class GraphQLOverHttpDisabledGetTest extends AbstractGraphQLTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(GraphQLOverHttpApi.class, User.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.http.get.enabled=false"), "application.properties")

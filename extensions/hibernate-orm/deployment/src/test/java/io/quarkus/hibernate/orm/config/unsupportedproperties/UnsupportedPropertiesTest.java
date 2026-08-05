@@ -30,14 +30,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnsupportedPropertiesTest {
 
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(ParentEntity.class)
                     .addClass(ChildEntity.class)

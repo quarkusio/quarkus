@@ -9,14 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RestClientReactiveBlockingTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(TestClient.class.getPackage())
-                    .addAsResource(new StringAsset(setUrlForClass(TestClient.class)),
+                    .addAsResource(new StringAsset(setUrlForClass(TestClient.class)
+                            + "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF\n"),
                             "application.properties"));
 
     @Timeout(5) // it should end immediately, not after rest client timeout

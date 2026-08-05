@@ -17,12 +17,12 @@ import io.quarkus.qute.RawString;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.UserTagSectionHelper;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UserTagArgumentsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "{_args.size}::{_args.empty}::{_args.get('name')}::{_args.asHtmlAttributes}::{_args.skip('foo','baz').size}::{#each _args.filter('name')}{it.value}{/each}"),

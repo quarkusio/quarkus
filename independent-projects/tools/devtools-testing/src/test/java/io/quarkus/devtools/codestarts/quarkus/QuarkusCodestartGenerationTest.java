@@ -170,39 +170,6 @@ class QuarkusCodestartGenerationTest {
     }
 
     @Test
-    void generateRESTEasyScalaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = newInputBuilder()
-                .addData(getGenerationTestInputData())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
-                .putData(RESTEASY_CODESTART_RESOURCE_CLASS_NAME.key(), "BonjourResource")
-                .putData(RESTEASY_CODESTART_RESOURCE_PATH.key(), "/bonjour")
-                .build();
-        final Path projectDir = testDirPath.resolve("resteasy-scala-custom");
-        getCatalog().createProject(input).generate(projectDir);
-
-        checkMaven(projectDir);
-        checkReadme(projectDir);
-        checkDockerfiles(projectDir, BuildTool.MAVEN);
-        checkConfigProperties(projectDir);
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/scala/com/andy/BonjourResource.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResource"))
-                .satisfies(checkContains("@Path(\"/bonjour\")"));
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceTest.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResourceTest"))
-                .satisfies(checkContains("\"/bonjour\""));
-
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceIT.scala")
-                .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class BonjourResourceIT extends BonjourResourceTest"));
-    }
-
-    @Test
     void generateMavenDefaultJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
@@ -271,6 +238,33 @@ class QuarkusCodestartGenerationTest {
         checkReadme(projectDir);
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigYaml(projectDir);
+    }
+
+    @Test
+    void generateMavenConfigDirProperties(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = newInputBuilder()
+                .addData(getGenerationTestInputData())
+                .useConfigDir()
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-configdir-properties");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkConfigDirProperties(projectDir);
+    }
+
+    @Test
+    void generateMavenConfigDirYaml(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = newInputBuilder()
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
+                .addData(getGenerationTestInputData())
+                .useConfigDir()
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-configdir-yaml");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkConfigDirYaml(projectDir);
     }
 
     @Test
@@ -393,11 +387,29 @@ class QuarkusCodestartGenerationTest {
     private void checkConfigProperties(Path projectDir) {
         assertThat(projectDir.resolve("src/main/resources/application.yml")).doesNotExist();
         assertThat(projectDir.resolve("src/main/resources/application.properties")).exists();
+        assertThat(projectDir.resolve("config/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("config/application.yml")).doesNotExist();
     }
 
     private void checkConfigYaml(Path projectDir) {
         assertThat(projectDir.resolve("src/main/resources/application.yml")).exists();
         assertThat(projectDir.resolve("src/main/resources/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("config/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("config/application.yml")).doesNotExist();
+    }
+
+    private void checkConfigDirProperties(Path projectDir) {
+        assertThat(projectDir.resolve("config/application.properties")).exists();
+        assertThat(projectDir.resolve("config/application.yml")).doesNotExist();
+        assertThat(projectDir.resolve("src/main/resources/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("src/main/resources/application.yml")).doesNotExist();
+    }
+
+    private void checkConfigDirYaml(Path projectDir) {
+        assertThat(projectDir.resolve("config/application.yml")).exists();
+        assertThat(projectDir.resolve("config/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("src/main/resources/application.properties")).doesNotExist();
+        assertThat(projectDir.resolve("src/main/resources/application.yml")).doesNotExist();
     }
 
     private void checkReadme(Path projectDir) {

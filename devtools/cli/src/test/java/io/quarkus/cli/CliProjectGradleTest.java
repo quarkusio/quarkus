@@ -407,22 +407,6 @@ public class CliProjectGradleTest {
     }
 
     @Test
-    public void testCreateArgJava17() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
-                "-e", "-B", "--verbose",
-                "--java", "17");
-
-        // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
-
-        Path buildGradle = project.resolve("build.gradle");
-        String buildGradleContent = CliDriver.readFileAsString(buildGradle);
-
-        Assertions.assertTrue(buildGradleContent.contains("sourceCompatibility = JavaVersion.VERSION_17"),
-                "Java 17 should be used when specified. Found:\n" + buildGradleContent);
-    }
-
-    @Test
     public void testCreateArgJava21() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle",
                 "-e", "-B", "--verbose",

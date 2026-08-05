@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.restassured.RestAssured;
@@ -26,14 +26,14 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.KeyStoreOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
 public class FluentApiMTLSAuthenticationRequiredTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(AuthMechanismConfig.class, PathHandler.class, MyTlsConfiguration.class)
             .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
@@ -127,8 +127,8 @@ public class FluentApiMTLSAuthenticationRequiredTest {
         }
 
         @Override
-        public SSLOptions getSSLOptions() {
-            SSLOptions options = new SSLOptions();
+        public ServerSSLOptions getServerSSLOptions() {
+            ServerSSLOptions options = new ServerSSLOptions();
             options.setKeyCertOptions(getKeyStoreOptions());
             options.setTrustOptions(getTrustStoreOptions());
             options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);

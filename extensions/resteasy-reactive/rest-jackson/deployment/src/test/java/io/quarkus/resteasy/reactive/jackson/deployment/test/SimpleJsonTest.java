@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SimpleJsonTest extends AbstractSimpleJsonTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -29,10 +29,27 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
                                     PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
-                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class)
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class,
+                                    ItemJsonValueInheritedFromInterface.class,
+                                    ItemJsonValueInheritedFromInterface.HasValue.class,
+                                    ItemJsonValueInheritedFromInterface.AbstractHasValue.class,
+                                    ItemJsonValueInheritedFromInterface.Wrapper.class,
+                                    ItemJsonValueInheritedFromInterface.TwoLevelWrapper.class, StringWrapper.class,
+                                    JsonAliasRecord.class, JsonAliasSameAsFieldNameBean.class,
+                                    AnnotationNamingRequest.class, Pair.class, Score.class,
+                                    ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class,
+                                    UnwrappedResult.class, UnwrappedResultsResponse.class, Detail.class, ErrorInfo.class,
+                                    PolymorphicItemResponse.class, PolymorphicItem.class,
+                                    SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
+                                    FinalCollectionHolder.class, RequiredCreatorProperty.class,
+                                    PolymorphicCreatorProperty.class, NoArgConstructorPojo.class,
+                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +
+                                    "quarkus.jackson.fail-on-unknown-properties=true\n" +
+                                    "quarkus.jackson.fail-on-null-for-primitives=false\n" +
+                                    "quarkus.jackson.default-view-inclusion=true\n" +
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
                                     "application.properties");
                 }

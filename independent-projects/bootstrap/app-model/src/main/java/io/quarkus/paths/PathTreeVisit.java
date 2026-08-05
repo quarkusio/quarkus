@@ -2,6 +2,8 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -9,9 +11,45 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 class PathTreeVisit implements PathVisit {
+
+    private static final boolean USE_WINDOWS_ABSOLUTE_PATH_PATTERN = !FileSystems.getDefault().getSeparator().equals("/");
+
+    private static volatile Pattern windowsAbsolutePathPattern;
+
+    private static Pattern windowsAbsolutePathPattern() {
+        return windowsAbsolutePathPattern == null ? windowsAbsolutePathPattern = Pattern.compile("[a-zA-Z]:\\\\.*")
+                : windowsAbsolutePathPattern;
+    }
+
+    static boolean isAbsolutePath(String path) {
+        return path != null && !path.isEmpty()
+                && (path.charAt(0) == '/' // we want to check for '/' on every OS
+                        || USE_WINDOWS_ABSOLUTE_PATH_PATTERN
+                                && (windowsAbsolutePathPattern().matcher(path).matches())
+                        || path.startsWith(FileSystems.getDefault().getSeparator()));
+    }
+
+    static void ensureResourcePath(FileSystem fs, String path) {
+        if (isAbsolutePath(path)) {
+            throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
+        }
+        // this is to disallow reading outside the path tree root
+        if (path != null && path.contains("..")) {
+            for (Path pathElement : fs.getPath(path)) {
+                if (pathElement.toString().equals("..")) {
+                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
+                }
+            }
+        }
+    }
+
+    static String resourceNameToFsPath(String resourceName, FileSystem fs) {
+        return fs.getSeparator().equals("/") ? resourceName : resourceName.replace("/", fs.getSeparator());
+    }
 
     static void walk(Path root, Path rootDir, Path walkDir, PathFilter pathFilter, Map<String, String> multiReleaseMapping,
             PathVisitor visitor) {
@@ -56,7 +94,7 @@ class PathTreeVisit implements PathVisit {
     private final Map<String, String> multiReleaseMapping;
 
     private Path current;
-    private String relativePath;
+    private String resourceName;
     private boolean stopWalking;
 
     private PathTreeVisit(Path root, Path rootDir, PathFilter pathFilter, Map<String, String> multiReleaseMapping) {
@@ -88,29 +126,29 @@ class PathTreeVisit implements PathVisit {
 
     @Override
     public String getRelativePath(String separator) {
-        if (relativePath == null) {
+        if (resourceName == null) {
             return PathTreeUtils.asString(relativize(baseDir, current), separator);
         }
-        if (!current.getFileSystem().getSeparator().equals(separator)) {
-            return relativePath.replace(current.getFileSystem().getSeparator(), separator);
+        if (!"/".equals(separator)) {
+            return resourceName.replace("/", separator);
         }
-        return relativePath;
+        return resourceName;
     }
 
     private boolean setCurrent(Path path) {
         current = path;
-        relativePath = null;
+        resourceName = null;
         if (pathFilter != null) {
-            relativePath = baseDir.relativize(path).toString();
-            if (!PathFilter.isVisible(pathFilter, relativePath)) {
+            resourceName = PathTreeUtils.asString(relativize(baseDir, current), "/");
+            if (!PathFilter.isVisible(pathFilter, resourceName)) {
                 return false;
             }
         }
         if (!multiReleaseMapping.isEmpty()) {
-            if (relativePath == null) {
-                relativePath = baseDir.relativize(path).toString();
+            if (resourceName == null) {
+                resourceName = PathTreeUtils.asString(relativize(baseDir, current), "/");
             }
-            final String mrPath = multiReleaseMapping.remove(relativePath);
+            final String mrPath = multiReleaseMapping.remove(resourceName);
             if (mrPath != null) {
                 current = baseDir.resolve(mrPath);
             }
@@ -120,8 +158,8 @@ class PathTreeVisit implements PathVisit {
 
     private void visitMultiReleasePaths(PathVisitor visitor) {
         for (Map.Entry<String, String> mrEntry : multiReleaseMapping.entrySet()) {
-            relativePath = mrEntry.getKey();
-            if (pathFilter != null && !PathFilter.isVisible(pathFilter, relativePath)) {
+            resourceName = mrEntry.getKey();
+            if (pathFilter != null && !PathFilter.isVisible(pathFilter, resourceName)) {
                 continue;
             }
             current = baseDir.resolve(mrEntry.getValue());

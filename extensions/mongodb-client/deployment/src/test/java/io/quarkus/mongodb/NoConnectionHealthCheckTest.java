@@ -16,13 +16,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.mongodb.MongoClientException;
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NoConnectionHealthCheckTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .overrideConfigKey("quarkus.mongodb.connection-string", "mongodb://localhost:9999")
             // timeouts set to the test doesn't take too long to run

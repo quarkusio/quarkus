@@ -1,6 +1,7 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,7 +50,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
@@ -77,12 +76,13 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.ConfigInjector;
 import io.quarkus.test.config.ValueRegistryInjector;
-import io.quarkus.test.config.ValueRegistryParameterResolver;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.common.ClearCache;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
@@ -242,6 +242,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             TracingHandler.quarkusStarted();
 
+            ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
+            ValueRegistryInjector.set(context, valueRegistry);
+            ConfigInjector.set(context, Config.get());
+
             // now we have full config reset the hang timer
             if (hangTaskKey != null) {
                 hangTaskKey.cancel(false);
@@ -250,9 +254,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-
-            ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
-            context.getStore(Namespace.GLOBAL).put(ValueRegistry.class.getName(), valueRegistry);
 
             Closeable shutdownTask = new Closeable() {
                 @Override
@@ -395,19 +396,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
-            if (runningQuarkusApplication != null) {
-                boolean secure = false;
-                Optional<String> insecureAllowed = runningQuarkusApplication
-                        .getConfigValue("quarkus.http.insecure-requests", String.class);
-                if (insecureAllowed.isPresent()) {
-                    secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
-                }
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
-                        .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
-                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                        .getDeclaredMethod("setup", boolean.class).invoke(null, false);
+            ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
+            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI), endpointPath);
             }
-
+            TestScopeManager.setup(false);
         } else {
             throwBootFailureException();
         }
@@ -432,6 +425,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (clazz == Object.class) {
                     break;
                 }
+            }
+        }
+        if (testHTTPEndpoint == null) {
+            Class<?> enclosing = context.getRequiredTestClass().getEnclosingClass();
+            while (enclosing != null) {
+                testHTTPEndpoint = enclosing.getAnnotation(TestHTTPEndpoint.class);
+                if (testHTTPEndpoint != null) {
+                    break;
+                }
+                enclosing = enclosing.getEnclosingClass();
             }
         }
         if (testHTTPEndpoint != null) {
@@ -791,14 +794,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
                 } else {
-                    Object outerInstance = createActualTestInstance(outerClass, state);
+                    Object outerInstance = createActualTestInstance(outerClass, extensionContext, state);
                     invokeAfterConstructCallbacks(Object.class, outerInstance);
                     actualTestInstance = declaredConstructor.newInstance(outerInstance);
                     outerInstances.add(outerInstance);
                 }
             } else {
                 outerInstances.clear();
-                actualTestInstance = createActualTestInstance(actualTestClass, state);
+                actualTestInstance = createActualTestInstance(actualTestClass, extensionContext, state);
             }
 
             invokeAfterConstructCallbacks(Object.class, actualTestInstance);
@@ -808,13 +811,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state)
-            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
+    private Object createActualTestInstance(Class<?> testClass, ExtensionContext context, QuarkusTestExtensionState state) {
         Object testInstance = runningQuarkusApplication.instance(testClass);
+
+        ValueRegistry valueRegistry = runningQuarkusApplication.valueRegistry();
+        Config config = ConfigInjector.get(context);
         ValueRegistryInjector.inject(testInstance, valueRegistry);
-        TestHTTPResourceManager.inject(testInstance, valueRegistry, testHttpEndpointProviders);
-        state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager, testInstance);
+        ConfigInjector.inject(testInstance, config);
+        TestHTTPResourceManager.inject(testInstance, valueRegistry, config, testHttpEndpointProviders);
+        ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
         return testInstance;
     }
 
@@ -1091,8 +1096,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        if (ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext)
-                && !isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+        boolean nativeOrIntegrationTest = isNativeOrIntegrationTest(extensionContext.getRequiredTestClass());
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)
+                && !nativeOrIntegrationTest) {
+            return true;
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)
+                && !nativeOrIntegrationTest) {
             return true;
         }
 
@@ -1125,9 +1135,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        if (ValueRegistryParameterResolver.INSTANCE.supportsParameter(parameterContext, extensionContext)
-                && !isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
-            return ValueRegistryParameterResolver.INSTANCE.resolveParameter(parameterContext, extensionContext);
+        boolean nativeOrIntegrationTest = isNativeOrIntegrationTest(extensionContext.getRequiredTestClass());
+        if (ValueRegistryInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)
+                && !nativeOrIntegrationTest) {
+            return ValueRegistryInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
+        }
+        if (ConfigInjector.PARAMETER_RESOLVER.supportsParameter(parameterContext, extensionContext)
+                && !nativeOrIntegrationTest) {
+            return ConfigInjector.PARAMETER_RESOLVER.resolveParameter(parameterContext, extensionContext);
         }
 
         if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {

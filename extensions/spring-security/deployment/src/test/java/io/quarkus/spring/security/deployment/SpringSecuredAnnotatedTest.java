@@ -18,7 +18,7 @@ import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.spring.security.deployment.app.BeanWithSpringSecurityAnnotations;
 import io.quarkus.spring.security.deployment.app.BeanWithSpringSecurityMethodAnnotations;
 import io.quarkus.spring.security.deployment.app.SpringSecuredSubClass;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SpringSecuredAnnotatedTest {
 
@@ -33,7 +33,7 @@ public class SpringSecuredAnnotatedTest {
     SpringSecuredSubClass springSecuredSubClass;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithSpringSecurityMethodAnnotations.class,
                             BeanWithSpringSecurityAnnotations.class,

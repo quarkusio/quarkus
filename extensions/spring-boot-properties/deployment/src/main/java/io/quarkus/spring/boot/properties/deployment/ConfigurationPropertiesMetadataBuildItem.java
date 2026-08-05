@@ -10,8 +10,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
 import io.smallrye.config.ConfigMapping;
 
 final class ConfigurationPropertiesMetadataBuildItem extends MultiBuildItem {
@@ -74,10 +74,10 @@ final class ConfigurationPropertiesMetadataBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Class that takes a {@link MethodCreator} and the config object class name
+     * Class that takes a {@link BlockCreator} and the config object class name
      * and produces an instance of that class
      */
-    public interface InstanceFactory extends BiFunction<MethodCreator, String, ResultHandle> {
+    public interface InstanceFactory extends BiFunction<BlockCreator, String, Expr> {
 
     }
 }

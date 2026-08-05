@@ -51,9 +51,10 @@ import io.quarkus.oidc.client.runtime.OidcClientDefaultIdConfigBuilder;
 import io.quarkus.oidc.client.runtime.OidcClientHealthCheck;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsImpl;
-import io.quarkus.oidc.client.runtime.TokenProviderProducer;
+import io.quarkus.oidc.client.runtime.TokenProviderImpl;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
+import io.quarkus.oidc.client.spi.TokenProvider;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 @BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
@@ -68,7 +69,6 @@ public class OidcClientBuildStep {
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         builder.addBeanClass(TokensProducer.class);
-        builder.addBeanClass(TokenProviderProducer.class);
         additionalBeans.produce(builder.build());
     }
 
@@ -86,7 +86,7 @@ public class OidcClientBuildStep {
     }
 
     private Set<String> oidcClientNamesOf(ApplicationArchivesBuildItem beanArchiveIndex) {
-        return beanArchiveIndex.getAllApplicationArchives().stream()
+        return beanArchiveIndex.getAllArchives().stream()
                 .map(ApplicationArchive::getIndex)
                 .flatMap(archive -> archive.getAnnotations(DotName.createSimple(NamedOidcClient.class.getName())).stream())
                 .map(annotation -> annotation.value().asString())
@@ -111,6 +111,7 @@ public class OidcClientBuildStep {
     void produceNamedOidcClientBeans(OidcClientRecorder recorder, OidcClientNamesBuildItem oidcClientNames,
             BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
         oidcClientNames.oidcClientNames().stream()
+                .sorted()
                 .map(clientName -> syntheticNamedOidcClientBeanFor(clientName, recorder))
                 .forEach(syntheticBean::produce);
     }
@@ -168,6 +169,13 @@ public class OidcClientBuildStep {
      *         return awaitTokens();
      *     }
      *
+     *     &#64;Produces
+     *     &#64;NamedOidcClient("oidcClientName")
+     *     &#64;RequestScoped
+     *     public TokenProvider produceTokenProvider() {
+     *         return new TokenProviderImpl(this);
+     *     }
+     *
      *     &#64;Override
      *     protected Optional<String> clientId() {
      *         return Optional.of("oidcClientName");
@@ -195,6 +203,20 @@ public class OidcClientBuildStep {
                         produceMethod.getThis());
 
                 produceMethod.returnValue(tokensResult);
+            }
+
+            try (MethodCreator produceMethod = tokensProducer.getMethodCreator("produceTokenProvider", TokenProvider.class)) {
+                produceMethod.setModifiers(Modifier.PUBLIC);
+
+                produceMethod.addAnnotation(DotNames.PRODUCES.toString());
+                produceMethod.addAnnotation(NamedOidcClient.class.getName()).addValue("value", oidcClientName);
+                produceMethod.addAnnotation(RequestScoped.class.getName());
+
+                ResultHandle newTokenProvider = produceMethod.newInstance(
+                        MethodDescriptor.ofConstructor(TokenProviderImpl.class, AbstractTokensProducer.class),
+                        produceMethod.getThis());
+
+                produceMethod.returnValue(newTokenProvider);
             }
 
             try (MethodCreator clientIdMethod = tokensProducer.getMethodCreator("clientId", Optional.class)) {

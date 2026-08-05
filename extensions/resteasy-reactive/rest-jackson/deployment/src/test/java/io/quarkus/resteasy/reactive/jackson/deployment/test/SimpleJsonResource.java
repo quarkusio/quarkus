@@ -4,14 +4,19 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
@@ -24,12 +29,8 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
@@ -38,6 +39,12 @@ import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.node.ObjectNode;
 
 @Path("/simple")
 @NonBlocking
@@ -107,6 +114,20 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/dog-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public Dog echoDog(Dog dog) {
+        return dog;
+    }
+
+    @PUT
+    @Path("/dog-echo-put")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPut(Dog dog) {
+        return dog;
+    }
+
+    @PATCH
+    @Path("/dog-echo-patch")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDogPatch(Dog dog) {
         return dog;
     }
 
@@ -489,6 +510,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item.getContent().getName();
     }
 
+    @POST
+    @Path("/multiGenericInput")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String multiGenericInputTest(Pair<Item, Score> pair) {
+        return pair.getFirst().getName() + "/" + pair.getSecond().getCategory() + "/" + pair.getSecond().getValue();
+    }
+
     @GET
     @Path("/interface")
     public ContainerDTO interfaceTest() {
@@ -543,6 +572,37 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ItemJsonValuePrivateField(value);
     }
 
+    @GET
+    @Path("/json-value-inherited-from-interface")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.Wrapper echoJsonValueInheritedFromInterface(@RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.Wrapper(value);
+    }
+
+    @GET
+    @Path("/json-value-inherited-from-interface-two-level")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.TwoLevelWrapper echoJsonValueInheritedFromInterfaceTwoLevel(
+            @RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.TwoLevelWrapper(value);
+    }
+
+    @POST
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPrice(ProductPrice productPrice) {
+        return productPrice;
+    }
+
+    @PUT
+    @Path("/product-price")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ProductPrice echoProductPricePut(ProductPrice productPrice) {
+        return productPrice;
+    }
+
     @POST
     @Path("/primitive-types-bean")
     public PrimitiveTypesBean echoPrimitiveTypesBean(PrimitiveTypesBean bean) {
@@ -553,6 +613,29 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/primitive-types-record")
     public PrimitiveTypesRecord echoPrimitiveTypesRecord(PrimitiveTypesRecord record) {
         return record;
+    }
+
+    @POST
+    @Path("/default-value-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public DefaultValueHolder echoDefaultValueHolder(DefaultValueHolder holder) {
+        return holder;
+    }
+
+    @POST
+    @Path("/optional-holder")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String echoOptionalHolder(OptionalHolder holder) {
+        // Access the Score object to verify it was deserialized to the correct type,
+        // not to a LinkedHashMap (which would cause a ClassCastException)
+        String scoreCategory = holder.getScore()
+                .map(Score::getCategory)
+                .orElse("none");
+        return "{\"name\":" + holder.getName().map(n -> "\"" + n + "\"").orElse("null")
+                + ",\"count\":" + holder.getCount().map(Object::toString).orElse("null")
+                + ",\"scoreCategory\":\"" + scoreCategory + "\"}";
     }
 
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
@@ -572,7 +655,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+            return objectMapper.writer().without(JsonWriteFeature.QUOTE_PROPERTY_NAMES);
         }
     }
 
@@ -593,8 +676,150 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES);
         }
     }
 
+    public record GreetingRequest(@JsonProperty("name") String name) {
+    }
+
+    public record LinkedListBatchRequest(@JsonProperty("items") LinkedList<GreetingRequest> items) {
+    }
+
+    public record DequeBatchRequest(@JsonProperty("items") Deque<GreetingRequest> items) {
+    }
+
+    @POST
+    @Path("/linkedlist-batch")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String linkedListBatch(LinkedListBatchRequest request) {
+        String values = request.items().stream()
+                .map(GreetingRequest::name)
+                .collect(Collectors.joining(","));
+        return "{\"values\":\"" + values + "\"}";
+    }
+
+    @POST
+    @Path("/deque-batch")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String dequeBatch(DequeBatchRequest request) {
+        String values = request.items().stream()
+                .map(GreetingRequest::name)
+                .collect(Collectors.joining(","));
+        return "{\"values\":\"" + values + "\"}";
+    }
+
+    @POST
+    @Path("/greeting")
+    public String greeting(GreetingRequest request) {
+        return "{\"message\":\"Hello " + request.name() + "\"}";
+    }
+
+    @POST
+    @Path("/json-alias-record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasRecord echoJsonAliasRecord(JsonAliasRecord record) {
+        return record;
+    }
+
+    @POST
+    @Path("/json-alias-same-as-field-name-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasSameAsFieldNameBean echoJsonAliasSameAsFieldName(JsonAliasSameAsFieldNameBean record) {
+        return record;
+    }
+
+    @POST
+    @Path("/annotation-naming")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String annotationNaming(AnnotationNamingRequest request) {
+        return "{\"values\":\"" + request.firstName() + "\"}";
+    }
+
+    @GET
+    @Path("/annotation-naming-ser")
+    @Produces(MediaType.APPLICATION_JSON)
+    public AnnotationNamingRequest annotationNamingSer() {
+        return new AnnotationNamingRequest("Bob");
+    }
+
+    @POST
+    @Path("/any-setter")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String anySetter(AnySetterRequest request) {
+        return "{\"known\":\"" + request.getKnown() + "\",\"extras_size\":" + request.getExtras().size() + "}";
+    }
+
+    @GET
+    @Path("/unwrapped-result")
+    public UnwrappedResultsResponse unwrappedResult() {
+        return new UnwrappedResultsResponse(List.of(
+                new UnwrappedResult.Success(new Detail("abc", "hello")),
+                new UnwrappedResult.Failed(new ErrorInfo("E001", "something went wrong"))));
+    }
+
+    @GET
+    @Path("/polymorphic-item-ser")
+    public PolymorphicItemResponse polymorphicItemSer() {
+        return new PolymorphicItemResponse(new PolymorphicItem.TypeA("hello"));
+    }
+
+    @POST
+    @Path("/object-node")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ObjectNode objectNode(ObjectNode body) {
+        return body;
+    }
+
+    @POST
+    @Path("/no-arg-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoArgConstructorPojo echoNoArgConstructorPojo(NoArgConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/multi-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public MultiConstructorPojo echoMultiConstructorPojo(MultiConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/no-matching-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoMatchingCtorPojo echoNoMatchingCtorPojo(NoMatchingCtorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/required-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public RequiredCreatorProperty echoRequiredCreatorProperty(RequiredCreatorProperty obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/polymorphic-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PolymorphicCreatorProperty echoPolymorphicCreatorProperty(PolymorphicCreatorProperty obj) {
+        return obj;
+    }
+
+    @GET
+    @Path("/sensor-metadata")
+    public SensorMetadata sensorMetadata() {
+        return new SensorMetadata(
+                List.of(
+                        new SensorMetadata.ComponentMetadata("CPU", 0, "CPU Power", true, SensorUnit.mW)),
+                "macOS powermetrics derived information");
+    }
 }

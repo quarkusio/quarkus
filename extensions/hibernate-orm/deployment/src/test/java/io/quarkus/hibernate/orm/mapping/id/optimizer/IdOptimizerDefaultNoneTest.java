@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.SchemaUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class IdOptimizerDefaultNoneTest extends AbstractIdOptimizerDefaultTest {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EntityWithDefaultGenerator.class, EntityWithGenericGenerator.class,
                             EntityWithSequenceGenerator.class, EntityWithTableGenerator.class,

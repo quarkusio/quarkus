@@ -24,7 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * The integration test allowing to ensure that we can rely on {@link Application#getClasses()} to specify explicitly
@@ -33,7 +33,7 @@ import io.quarkus.test.QuarkusUnitTest;
 class ApplicationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             ResourceTest1.class, ResourceTest2.class, ResponseFilter1.class, ResponseFilter2.class,

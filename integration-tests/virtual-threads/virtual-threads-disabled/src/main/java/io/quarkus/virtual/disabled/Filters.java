@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
-import io.vertx.core.Vertx;
+import io.smallrye.common.vertx.ContextLocals;
 
 public class Filters {
     @ServerRequestFilter(nonBlocking = true)
@@ -18,7 +18,7 @@ public class Filters {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
             MDC.put("mdc", "test");
             CDI.current().select(Counter.class).get().increment();
-            Vertx.currentContext().putLocal("filter", "test");
+            ContextLocals.put("filter", "test");
         }
     }
 
@@ -26,9 +26,8 @@ public class Filters {
     public void getFilter(ContainerResponseContext responseContext) {
         if (responseContext.getHeaders().get("X-filter") != null) {
             VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
-            // the request filter, the method, and here.
             assert CDI.current().select(Counter.class).get().increment() == 3;
-            assert Vertx.currentContext().getLocal("test").equals("test test");
+            assert "test test".equals(ContextLocals.get("test", null));
             assert MDC.get("mdc").equals("test test");
         }
     }

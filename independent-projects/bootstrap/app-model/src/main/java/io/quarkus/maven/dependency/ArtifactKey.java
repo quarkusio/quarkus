@@ -1,6 +1,6 @@
 package io.quarkus.maven.dependency;
 
-public interface ArtifactKey {
+public interface ArtifactKey extends Comparable<ArtifactKey> {
 
     static ArtifactKey fromString(String s) {
         return GACT.fromString(s);
@@ -8,6 +8,18 @@ public interface ArtifactKey {
 
     static ArtifactKey of(String groupId, String artifactId, String classifier, String type) {
         return new GACT(groupId, artifactId, classifier, type);
+    }
+
+    /**
+     * Creates an artifact key for a JAR artifact with the given groupId and artifactId.
+     * The classifier will be empty and the type will be "jar".
+     *
+     * @param groupId artifact groupId
+     * @param artifactId artifact id
+     * @return artifact key for a JAR artifact
+     */
+    static ArtifactKey of(String groupId, String artifactId) {
+        return new GACT(groupId, artifactId, "", ArtifactCoords.TYPE_JAR);
     }
 
     /**
@@ -70,4 +82,35 @@ public interface ArtifactKey {
         return buf.toString();
     }
 
+    default int compareTo(ArtifactKey that) {
+        // `groupId`, `artifactId` and `classifier` are never `null`
+        // `type` is nullable
+
+        int result = getGroupId().compareTo(that.getGroupId());
+        if (result != 0) {
+            return result;
+        }
+
+        result = getArtifactId().compareTo(that.getArtifactId());
+        if (result != 0) {
+            return result;
+        }
+
+        result = getClassifier().compareTo(that.getClassifier());
+        if (result != 0) {
+            return result;
+        }
+
+        String thisType = getType();
+        String thatType = that.getType();
+        if (thisType != null && thatType != null) {
+            return thisType.compareTo(thatType);
+        } else if (thisType != null) {
+            return -1;
+        } else if (thatType != null) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 }

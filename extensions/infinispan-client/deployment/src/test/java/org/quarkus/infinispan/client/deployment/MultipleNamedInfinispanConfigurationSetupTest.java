@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.infinispan.client.InfinispanClientName;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultipleNamedInfinispanConfigurationSetupTest {
     @Inject
@@ -21,7 +21,7 @@ public class MultipleNamedInfinispanConfigurationSetupTest {
     RemoteCacheManager anotherRemoteCacheManager;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .withConfigurationResource("multiple-cache-config-application.properties")
             .withApplicationRoot((jar) -> jar

@@ -3,7 +3,8 @@ package org.jboss.resteasy.reactive.server.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,9 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.ExceptionUnwrapStrategy;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+/**
+ * This instance is recorded, we need all elements to be ordered so that the builds can be reproducible.
+ */
 @SuppressWarnings({ "unchecked", "unused" })
 public class ExceptionMapping {
 
@@ -29,14 +33,14 @@ public class ExceptionMapping {
      * all the possible mappings and at runtime determine the one with the lowest priority
      * value that is active.
      */
-    final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+    final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new LinkedHashMap<>();
     // this is going to be used when there are mappers that are removable at runtime
-    final Map<String, List<ResourceExceptionMapper<? extends Throwable>>> runtimeCheckMappers = new HashMap<>();
+    final Map<String, List<ResourceExceptionMapper<? extends Throwable>>> runtimeCheckMappers = new LinkedHashMap<>();
 
     /**
      * Exception mapper class names that should be disabled.
      */
-    final Set<String> disabledMappers = new HashSet<>();
+    final Set<String> disabledMappers = new LinkedHashSet<>();
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
@@ -45,7 +49,7 @@ public class ExceptionMapping {
      */
     final List<Predicate<Throwable>> blockingProblemPredicates = new ArrayList<>();
     final List<Predicate<Throwable>> nonBlockingProblemPredicate = new ArrayList<>();
-    final Map<String, ExceptionUnwrapStrategy> unwrappedExceptions = new HashMap<>();
+    final Map<String, ExceptionUnwrapStrategy> unwrappedExceptions = new LinkedHashMap<>();
 
     public void addBlockingProblem(Class<? extends Throwable> throwable) {
         blockingProblemPredicates.add(new ExceptionTypePredicate(throwable));

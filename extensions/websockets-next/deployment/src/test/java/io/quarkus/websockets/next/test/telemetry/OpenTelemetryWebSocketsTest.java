@@ -26,7 +26,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
@@ -38,10 +38,11 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class OpenTelemetryWebSocketsTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(BounceEndpoint.class, WSClient.class, InMemorySpanExporterProducer.class, BounceClient.class)
                     .addAsResource(new StringAsset("""
+                            quarkus.otel.traces.sampler=always_on
                             quarkus.otel.bsp.export.timeout=1s
                             quarkus.otel.bsp.schedule.delay=50
                             """), "application.properties"))

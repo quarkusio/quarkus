@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * Marks a bean archive with given coordinates (groupId, artifactId and optionally classifier)
@@ -21,6 +22,7 @@ public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
     final String groupId;
     final String artifactId;
     final String classifier;
+    final String type;
 
     /**
      * Deprecated, use {@link KnownCompatibleBeanArchiveBuildItem#builder(String, String)} method instead.
@@ -37,13 +39,15 @@ public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
      */
     @Deprecated
     public KnownCompatibleBeanArchiveBuildItem(String groupId, String artifactId, String classifier) {
-        this(groupId, artifactId, classifier, Set.of(Reason.BEANS_XML_ALL));
+        this(groupId, artifactId, classifier, ArtifactCoords.TYPE_JAR, Set.of(Reason.BEANS_XML_ALL));
     }
 
-    private KnownCompatibleBeanArchiveBuildItem(String groupId, String artifactId, String classifier, Set<Reason> reasons) {
+    private KnownCompatibleBeanArchiveBuildItem(String groupId, String artifactId, String classifier, String type,
+            Set<Reason> reasons) {
         Objects.requireNonNull(groupId, "groupId must be set");
         Objects.requireNonNull(artifactId, "artifactId must be set");
         Objects.requireNonNull(classifier, "classifier must be set");
+        Objects.requireNonNull(type, "type must be set");
         if (reasons.isEmpty()) {
             throw new IllegalStateException(
                     "KnownCompatibleBeanArchiveBuildItem.Builder needs to declare at least one compatibility reason. Artifact with following coordinates had no reason associated: "
@@ -52,6 +56,7 @@ public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.classifier = classifier;
+        this.type = type;
         this.reasons = reasons;
     }
 
@@ -75,16 +80,23 @@ public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
         private final String artifactId;
         private final Set<Reason> reasons;
         private String classifier;
+        private String type;
 
         private Builder(String groupId, String artifactId) {
             this.groupId = groupId;
             this.artifactId = artifactId;
-            this.classifier = "";
+            this.classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
+            this.type = ArtifactCoords.TYPE_JAR;
             this.reasons = new HashSet<>();
         }
 
         public Builder setClassifier(String classifier) {
             this.classifier = classifier;
+            return this;
+        }
+
+        public Builder setType(String type) {
+            this.type = type;
             return this;
         }
 
@@ -94,7 +106,7 @@ public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
         }
 
         public KnownCompatibleBeanArchiveBuildItem build() {
-            return new KnownCompatibleBeanArchiveBuildItem(groupId, artifactId, classifier, reasons);
+            return new KnownCompatibleBeanArchiveBuildItem(groupId, artifactId, classifier, type, reasons);
         }
     }
 }

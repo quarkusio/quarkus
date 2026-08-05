@@ -14,6 +14,7 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 
@@ -26,35 +27,73 @@ public class KubernetesServiceClientAssertionProviderTest {
         Path jwtBearerTokenPath = Path.of("target").resolve("jwt-bearer-token.json");
         String jwtBearerToken = createJwtBearerToken();
         storeNewJwtBearerToken(jwtBearerTokenPath, jwtBearerToken);
-        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtBearerTokenPath)) {
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtBearerTokenPath,
+                Source.BEARER)) {
             // assert first token is loaded
-            assertEquals(jwtBearerToken, clientAssertionProvider.getClientAssertion());
+            assertEquals(jwtBearerToken, clientAssertionProvider.getAvailableClientAssertion());
+            assertEquals(OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
 
             // create a new token
             String secondJwtBearerToken = createJwtBearerToken();
             storeNewJwtBearerToken(jwtBearerTokenPath, secondJwtBearerToken);
 
             Awaitility.await().atMost(Duration.ofSeconds(10))
-                    .untilAsserted(() -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getClientAssertion()));
+                    .untilAsserted(
+                            () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getAvailableClientAssertion()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }
     }
 
     @Test
-    public void EmptyBearerTokenFileShouldReturnNullClientAssertion() {
+    public void emptyBearerTokenFileShouldReturnNullClientAssertion() {
         Vertx vertx = Vertx.vertx();
         Path emptyTokenPath = Path.of("target").resolve("empty-jwt-bearer-token.json");
 
         storeNewJwtBearerToken(emptyTokenPath, "");
-        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, emptyTokenPath)) {
-            assertNull(clientAssertionProvider.getClientAssertion());
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, emptyTokenPath, Source.BEARER)) {
+            assertNull(clientAssertionProvider.getAvailableClientAssertion());
 
             String validToken = createJwtBearerToken();
             storeNewJwtBearerToken(emptyTokenPath, validToken);
 
             Awaitility.await().atMost(Duration.ofSeconds(10))
-                    .untilAsserted(() -> assertEquals(validToken, clientAssertionProvider.getClientAssertion()));
+                    .untilAsserted(() -> assertEquals(validToken, clientAssertionProvider.getAvailableClientAssertion()));
+        } finally {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
+    }
+
+    @Test
+    public void testSpiffeSvidTokenRefresh() {
+        Vertx vertx = Vertx.vertx();
+        Path svidTokenPath = Path.of("target").resolve("spiffe-svid-token.json");
+        String svidToken = createSpiffeSvidToken();
+        storeNewJwtBearerToken(svidTokenPath, svidToken);
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath,
+                Source.SPIFFE_JWT)) {
+            assertEquals(svidToken, clientAssertionProvider.getAvailableClientAssertion());
+            assertEquals(OidcConstants.SPIFFE_SVID_CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
+
+            String secondSvidToken = createSpiffeSvidToken();
+            storeNewJwtBearerToken(svidTokenPath, secondSvidToken);
+
+            Awaitility.await().atMost(Duration.ofSeconds(10))
+                    .untilAsserted(() -> assertEquals(secondSvidToken, clientAssertionProvider.getAvailableClientAssertion()));
+        } finally {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
+    }
+
+    @Test
+    public void testSpiffeSvidTokenWithInvalidSubClaim() {
+        Vertx vertx = Vertx.vertx();
+        Path svidTokenPath = Path.of("target").resolve("invalid-spiffe-svid-token.json");
+        String token = createJwtBearerToken();
+        storeNewJwtBearerToken(svidTokenPath, token);
+        try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath,
+                Source.SPIFFE_JWT)) {
+            assertNull(clientAssertionProvider.getAvailableClientAssertion());
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }
@@ -66,6 +105,14 @@ public class KubernetesServiceClientAssertionProviderTest {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write JWT bearer token", e);
         }
+    }
+
+    private static String createSpiffeSvidToken() {
+        return Jwt.subject("spiffe://example.org/workload")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .expiresIn(Duration.ofSeconds(4))
+                .signWithSecret("43".repeat(20));
     }
 
     private static String createJwtBearerToken() {

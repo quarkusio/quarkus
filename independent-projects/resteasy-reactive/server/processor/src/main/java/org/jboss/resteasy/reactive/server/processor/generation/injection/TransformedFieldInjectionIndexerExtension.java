@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.processor.generation.injection;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -27,7 +28,7 @@ public class TransformedFieldInjectionIndexerExtension implements ServerEndpoint
     }
 
     @Override
-    public void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
+    public void handleFieldInjection(String currentTypeName, LinkedHashMap<FieldInfo, ServerIndexedParameter> fieldExtractors,
             boolean superTypeIsInjectable, IndexView indexView) {
         for (Map.Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
             if (entry.getValue().getConverter() != null) {

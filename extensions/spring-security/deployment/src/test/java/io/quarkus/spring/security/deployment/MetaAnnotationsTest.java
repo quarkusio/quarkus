@@ -19,12 +19,12 @@ import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.spring.security.deployment.springapp.BeanWithMetaAnnotations;
 import io.quarkus.spring.security.deployment.springapp.IsUser;
 import io.quarkus.spring.security.deployment.springapp.IsUserOrAdmin;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MetaAnnotationsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             IsUser.class,

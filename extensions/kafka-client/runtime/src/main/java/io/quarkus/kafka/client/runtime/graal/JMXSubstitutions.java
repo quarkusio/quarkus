@@ -25,6 +25,7 @@ final class RemoveJMXAccess {
         @Override
         public boolean getAsBoolean() {
             int[] version = Arrays.stream(AppInfoParser.getVersion().split("\\."))
+                    .filter(s -> s.matches("\\d+"))
                     .mapToInt(Integer::parseInt)
                     .toArray();
             return version[0] > 4 || (version[0] == 4 && version[1] >= 2);
@@ -55,6 +56,7 @@ final class RemoveJMXAccessPre42 {
         @Override
         public boolean getAsBoolean() {
             int[] version = Arrays.stream(AppInfoParser.getVersion().split("\\."))
+                    .filter(s -> s.matches("\\d+"))
                     .mapToInt(Integer::parseInt)
                     .toArray();
             return version[0] < 4 || (version[0] == 4 && version[1] < 2);

@@ -7,7 +7,7 @@ import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodSpecFluent;
 
-public class ApplyServiceAccountNameDecorator extends NamedResourceDecorator<PodSpecFluent> {
+public class ApplyServiceAccountNameDecorator extends NamedResourceDecorator<PodSpecFluent<?>> {
 
     private static final String NONE = null;
     private final String serviceAccountName;
@@ -26,17 +26,17 @@ public class ApplyServiceAccountNameDecorator extends NamedResourceDecorator<Pod
         this.serviceAccountName = serviceAccountName;
     }
 
-    @Override
-    public void andThenVisit(PodSpecFluent podSpec, ObjectMeta resourceMeta) {
-        if (Strings.isNotNullOrEmpty(serviceAccountName)) {
-            podSpec.withServiceAccountName(serviceAccountName);
-        } else {
-            podSpec.withServiceAccountName(resourceMeta.getName());
-        }
+    public String getServiceAccountNameOrDefault(String defaultName) {
+        return Strings.isNotNullOrEmpty(serviceAccountName) ? serviceAccountName : defaultName;
     }
 
     @Override
-    public Class<? extends Decorator>[] after() {
+    public void andThenVisit(PodSpecFluent podSpec, ObjectMeta resourceMeta) {
+        podSpec.withServiceAccountName(getServiceAccountNameOrDefault(resourceMeta.getName()));
+    }
+
+    @Override
+    public Class<? extends Decorator<?>>[] after() {
         return new Class[] { ResourceProvidingDecorator.class };
     }
 

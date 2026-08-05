@@ -12,8 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.timeseries.AddArgs;
 import io.quarkus.redis.datasource.timeseries.Aggregation;
 import io.quarkus.redis.datasource.timeseries.AlterArgs;
@@ -30,6 +28,7 @@ import io.quarkus.redis.datasource.timeseries.SeriesSample;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesCommands;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesRange;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 @RequiresCommand("ts.create")
 public class TimeSeriesCommandsTest extends DatasourceTestBase {

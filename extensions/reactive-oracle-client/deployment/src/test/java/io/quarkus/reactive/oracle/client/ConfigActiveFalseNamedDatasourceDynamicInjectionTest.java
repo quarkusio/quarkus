@@ -14,14 +14,13 @@ import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.oracleclient.OraclePool;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.sqlclient.Pool;
 
 public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
@@ -35,14 +34,6 @@ public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
     @ReactiveDataSource("ds-1")
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
 
-    @Inject
-    @ReactiveDataSource("ds-1")
-    InjectableInstance<OraclePool> vendorPool;
-
-    @Inject
-    @ReactiveDataSource("ds-1")
-    InjectableInstance<io.vertx.mutiny.oracleclient.OraclePool> mutinyVendorPool;
-
     @Test
     public void pool() {
         doTest(pool, Pool::getConnection);
@@ -51,16 +42,6 @@ public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, Pool::getConnection);
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

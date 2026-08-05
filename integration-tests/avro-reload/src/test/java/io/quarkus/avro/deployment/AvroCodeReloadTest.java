@@ -44,6 +44,11 @@ public class AvroCodeReloadTest {
     }
 
     @Test
+    void shouldCompileNamedSchemaIdl() {
+        assertThat(when().get("/named-schema").body().print()).isEqualTo("test,test description");
+    }
+
+    @Test
     void shouldAlterAvdl() throws InterruptedException {
         assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOW", "MEDIUM", "HIGH");
 

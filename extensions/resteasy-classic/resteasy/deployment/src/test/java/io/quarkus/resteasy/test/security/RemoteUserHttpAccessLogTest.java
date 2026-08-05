@@ -24,13 +24,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class RemoteUserHttpAccessLogTest {
 
     @RegisterExtension
-    public static QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    public static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(RolesAllowedResource.class, SecurityOverrideFilter.class)
                     .addClasses(TestIdentityController.class, TestIdentityProvider.class)

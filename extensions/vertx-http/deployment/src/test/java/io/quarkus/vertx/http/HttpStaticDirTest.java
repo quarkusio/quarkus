@@ -6,14 +6,14 @@ import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HttpStaticDirTest {
 
     private static final String PUBLIC_RESOURCES_DIR = "src/test/resources/public-resources";
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.http.static-dir.enabled", "true")
             .overrideConfigKey("quarkus.http.static-dir.endpoint", "/public-resources")
             .overrideConfigKey("quarkus.http.static-dir.path", PUBLIC_RESOURCES_DIR);

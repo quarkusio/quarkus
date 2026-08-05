@@ -4,7 +4,9 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -17,7 +19,6 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLAgroalConnectionConfigurer;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLServiceBindingConverter;
 import io.quarkus.jdbc.postgresql.runtime.graal.SQLXMLFeature;
@@ -29,12 +30,12 @@ public class JDBCPostgreSQLProcessor {
         return new FeatureBuildItem(Feature.JDBC_POSTGRESQL);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(SQLXMLFeature.class);
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     RuntimeInitializedClassBuildItem runtimeReinitialize() {
         return new RuntimeInitializedClassBuildItem("org.postgresql.util.PasswordUtil$SecureRandomHolder");
     }
@@ -74,12 +75,15 @@ public class JDBCPostgreSQLProcessor {
     @BuildStep
     void registerServiceBinding(Capabilities capabilities,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             PostgreSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.POSTGRESQL,
+                DatabaseVersionLoader.loadDefaultVersion("postgresql")));
     }
 }

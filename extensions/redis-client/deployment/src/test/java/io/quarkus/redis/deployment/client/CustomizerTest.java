@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.redis.client.RedisOptions;
@@ -25,7 +25,7 @@ import io.vertx.redis.client.RedisOptions;
 public class CustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyCustomizer.class))
             .overrideConfigKey("quarkus.redis.hosts", "redis://wont-work")
             .overrideConfigKey("quarkus.redis.my-redis.hosts", "redis://wont-work");

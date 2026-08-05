@@ -19,7 +19,7 @@ import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that access to public fields by the application is correctly replaced with getter/setter calls
@@ -28,7 +28,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PublicFieldAccessInheritanceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyMappedSuperclass.class)
                     .addClass(MyAbstractEntity.class)

@@ -21,7 +21,6 @@ import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplyHeadlessDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
 import io.dekorate.project.ApplyProjectInfo;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Images;
@@ -80,12 +79,6 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
         if (config.isHeadless()) {
             resourceRegistry.decorate(MINIKUBE, new ApplyHeadlessDecorator(config.getName()));
-        }
-
-        if (config.getReplicas() != 1) {
-            resourceRegistry.decorate(MINIKUBE, new ApplyReplicasToDeploymentDecorator(config.getName(), config.getReplicas()));
-            resourceRegistry.decorate(MINIKUBE,
-                    new ApplyReplicasToStatefulSetDecorator(config.getName(), config.getReplicas()));
         }
 
         String image = Strings.isNotNullOrEmpty(imageConfig.getImage())

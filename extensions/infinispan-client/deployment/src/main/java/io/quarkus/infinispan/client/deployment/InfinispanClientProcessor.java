@@ -81,6 +81,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -179,6 +180,7 @@ class InfinispanClientProcessor {
             BuildProducer<InfinispanClientNameBuildItem> infinispanClientNames,
             MarshallingBuildItem marshallingBuildItem,
             BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider,
             CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
@@ -219,7 +221,7 @@ class InfinispanClientProcessor {
             Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
             if (marshaller instanceof ProtoStreamMarshaller) {
-                for (ApplicationArchive applicationArchive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+                for (ApplicationArchive applicationArchive : applicationArchivesBuildItem.getAllArchives()) {
                     // If we have properties file we may have to care about
                     Path metaPath = applicationArchive.getChildPath(META_INF);
 
@@ -301,11 +303,12 @@ class InfinispanClientProcessor {
                         "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash")
                         .build());
 
-        // Elytron Classes
+        // Elytron SASL service providers
+        serviceProvider.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath(javax.security.sasl.SaslClientFactory.class.getName()));
+
+        // Elytron credential classes
         String[] elytronClasses = new String[] {
-                "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
-                "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
-                "org.wildfly.security.sasl.digest.DigestClientFactory",
                 "org.wildfly.security.credential.BearerTokenCredential",
                 "org.wildfly.security.credential.GSSKerberosCredential",
                 "org.wildfly.security.credential.KeyPairCredential",
@@ -571,11 +574,15 @@ class InfinispanClientProcessor {
 
     @Record(RUNTIME_INIT)
     @BuildStep
-    void eagerInitInfinispanCaches(InfinispanRecorder recorder,
-            @SuppressWarnings("unused") BeanContainerBuildItem beanContainer) {
+    ServiceStartBuildItem eagerInitInfinispanCaches(InfinispanRecorder recorder,
+            @SuppressWarnings("unused") BeanContainerBuildItem beanContainer,
+            @SuppressWarnings("unused") List<InfinispanClientBuildItem> infinispanClients) {
         // There could be some blocking code when getting a cache for the first time.
-        // Needs to be eager to avoid blocking the vert.x loop
+        // Needs to be eager to avoid blocking the vert.x loop.
+        // Consuming InfinispanClientBuildItem ensures RemoteCacheManager is initialized first.
+        // Producing ServiceStartBuildItem ensures this completes before serving requests.
         recorder.eagerInitAllCaches();
+        return new ServiceStartBuildItem("infinispan");
     }
 
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,

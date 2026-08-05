@@ -10,7 +10,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.RoutingContext;
 
@@ -21,7 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public class InjectRoutingContextTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(InjectRoutingContext.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

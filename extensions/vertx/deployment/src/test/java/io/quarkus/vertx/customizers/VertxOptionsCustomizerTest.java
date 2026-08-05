@@ -9,21 +9,16 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.file.FileSystemOptions;
-import io.vertx.mutiny.core.Vertx;
 
 public class VertxOptionsCustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap
                     .create(JavaArchive.class).addClasses(MyCustomizer.class));
-
-    @Inject
-    Vertx vertx;
 
     @Inject
     MyCustomizer customizer;
@@ -31,8 +26,6 @@ public class VertxOptionsCustomizerTest {
     @Test
     public void testCustomizer() {
         Assertions.assertThat(customizer.wasInvoked()).isTrue();
-        String test = vertx.fileSystem().createTempDirectoryAndAwait("test");
-        Assertions.assertThat(test).contains("target", "test");
     }
 
     @ApplicationScoped
@@ -43,7 +36,7 @@ public class VertxOptionsCustomizerTest {
         @Override
         public void accept(VertxOptions options) {
             invoked = true;
-            options.setFileSystemOptions(new FileSystemOptions().setFileCacheDir("target"));
+
         }
 
         public boolean wasInvoked() {

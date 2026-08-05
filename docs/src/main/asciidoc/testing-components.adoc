@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Testing components
 include::_attributes.adoc[]
-:categories: core,tooling
 :keywords: testing
 :summary:  This reference guide covers the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies. 
 :numbered:
@@ -234,7 +233,7 @@ You can use the mock configurator API via the `QuarkusComponentTestExtensionBuil
 
 == Nested Tests
 
-JUnit https://docs.junit.org/current/user-guide/#writing-tests-nested[@Nested tests] may help to structure more complex test scenarios.
+JUnit https://docs.junit.org/current/writing-tests/nested-tests.html[@Nested tests] may help to structure more complex test scenarios.
 However, only basic use cases are tested with `@QuarkusComponentTest`.
 
 .Nested test
@@ -302,6 +301,9 @@ CDI beans are also automatically registered for all injected https://smallrye.io
 By default, only the config properties from `application.properties` and properties set by the `@TestConfigProperty` annotation or with the `QuarkusComponentTestExtensionBuilder#configProperty(String, String)` method are included in the test config.
 System properties and ENV variables are _not_ included in the test config by default.
 However, you can use `@QuarkusComponentTest#useSystemConfigSources()` or `QuarkusComponentTestExtensionBuilder#useSystemConfigSources()` to configure this behavior.
+
+Similarly, discovered config sources such as `application.yaml` are _not_ included by default.
+You can use `@QuarkusComponentTest#useDiscoveredConfigSources()` or `QuarkusComponentTestExtensionBuilder#useDiscoveredConfigSources()` to include them.
 
 == Panache entities using the active record pattern
 

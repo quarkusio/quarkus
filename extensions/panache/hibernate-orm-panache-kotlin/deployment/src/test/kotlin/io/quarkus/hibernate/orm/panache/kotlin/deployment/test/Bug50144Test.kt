@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment.test
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.persistence.Entity
@@ -20,7 +20,7 @@ class Bug50144Test {
     companion object {
         @RegisterExtension
         @JvmField
-        var runner = QuarkusUnitTest()
+        var runner = QuarkusExtensionTest()
             .setArchiveProducer {
                 ShrinkWrap.create(JavaArchive::class.java)
                     .addClasses(WorkingAssignmentRepository::class.java, BrokenAssignmentRepository::class.java,

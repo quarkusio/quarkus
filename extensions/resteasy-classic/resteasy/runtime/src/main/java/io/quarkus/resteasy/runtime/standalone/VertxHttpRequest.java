@@ -271,7 +271,7 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                         throw new RuntimeException(e);
                     }
                     return null;
-                }).onComplete(res -> {
+                }, false).onComplete(res -> {
                     if (res.succeeded())
                         ret.complete(null);
                     else

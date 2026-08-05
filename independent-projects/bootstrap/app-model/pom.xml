@@ -41,6 +41,10 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.classfile</groupId>
+            <artifactId>jdk-classfile-backport</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>commons-logging-jboss-logging</artifactId>
             <scope>runtime</scope>

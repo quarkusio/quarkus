@@ -21,7 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test to reproduce issue #52143: Cache invalidation happens before method logic completes.
@@ -33,7 +33,7 @@ public class CacheInvalidationConcurrencyTest {
     private static final String ENTITY_KEY = "entity-1";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(EntityService.class, AsyncEntityService.class));
 
     @Inject

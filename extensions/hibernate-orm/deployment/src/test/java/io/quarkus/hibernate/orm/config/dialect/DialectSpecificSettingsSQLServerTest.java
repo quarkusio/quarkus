@@ -13,14 +13,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test SQL Server Dialect specific settings with MSSQL DBKind
  */
 public class DialectSpecificSettingsSQLServerTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-mssql-dialect.properties", "application.properties"))

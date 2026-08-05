@@ -174,6 +174,8 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
                 case DEFAULT_CLIENT -> myDefaultClient().revokeAccessTokenAndRespond(named);
                 case DEFAULT_CLIENT_WITHOUT_REFRESH -> myDefaultClientWithoutRefresh().revokeAccessTokenAndRespond(named);
                 case NAMED_CLIENT_WITHOUT_REFRESH -> myNamedClientWithoutRefresh().revokeAccessTokenAndRespond(named);
+                case DEFAULT_CLIENT_MULTIPLE_PROVIDERS -> myDefaultClientMultipleProviders().revokeAccessTokenAndRespond(named);
+                case NAMED_CLIENT_MULTIPLE_PROVIDERS -> myNamedClientMultipleProviders().revokeAccessTokenAndRespond(named);
                 // calls the same endpoint as ones above, however with filter applied on individual RESTEasy client methods
                 case NAMED_CLIENT_ANNOTATION_ON_METHOD -> myNamedClient_AnnotationOnMethod(named);
                 case DEFAULT_CLIENT_ANNOTATION_ON_METHOD -> myDefaultClient_AnnotationOnMethod(named);
@@ -190,6 +192,14 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
         protected abstract MyClient myDefaultClientWithoutRefresh();
 
         protected abstract MyClient myNamedClientWithoutRefresh();
+
+        protected MyClient myDefaultClientMultipleProviders() {
+            return null;
+        }
+
+        protected MyClient myNamedClientMultipleProviders() {
+            return null;
+        }
 
         protected String myDefaultClient_AnnotationOnMethod(String named) {
             return null;
@@ -234,6 +244,8 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
         NAMED_CLIENT_ANNOTATION_ON_METHOD(true),
         NAMED_CLIENT_MULTIPLE_METHODS(true),
         DEFAULT_CLIENT_MULTIPLE_METHODS(false),
+        DEFAULT_CLIENT_MULTIPLE_PROVIDERS(true),
+        NAMED_CLIENT_MULTIPLE_PROVIDERS(true),
         NO_ACCESS_TOKEN(false);
 
         public final boolean named;

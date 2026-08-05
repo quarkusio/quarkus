@@ -40,7 +40,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
-            <artifactId>smallrye-common-vertx-context</artifactId>
+            <artifactId>smallrye-common-vertx5-context</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
@@ -174,7 +174,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
+            <artifactId>opentelemetry-runtime-telemetry</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -245,6 +245,9 @@
                             <name>io.quarkus.opentelemetry.logs</name>
                         </providesIf>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:quarkus-observability-devservices-lgtm:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

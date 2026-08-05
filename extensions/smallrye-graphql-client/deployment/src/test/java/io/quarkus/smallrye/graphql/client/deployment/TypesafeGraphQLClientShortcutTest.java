@@ -15,7 +15,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApiWithNoConfigKey;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Verify that it's possible to configure a typesafe client using the short class name, the
@@ -27,7 +27,7 @@ public class TypesafeGraphQLClientShortcutTest {
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApiWithNoConfigKey.class, Person.class,
                             PersonDto.class)

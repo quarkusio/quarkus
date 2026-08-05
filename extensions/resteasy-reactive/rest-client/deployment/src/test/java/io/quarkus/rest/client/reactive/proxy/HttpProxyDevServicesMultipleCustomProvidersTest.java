@@ -24,12 +24,12 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.deployment.devservices.VertxHttpProxyDevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HttpProxyDevServicesMultipleCustomProvidersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(
                     jar -> jar.addClasses(Resource.class, Client.class, Custom1DevServicesRestClientProxyProvider.class,
                             Custom2DevServicesRestClientProxyProvider.class))

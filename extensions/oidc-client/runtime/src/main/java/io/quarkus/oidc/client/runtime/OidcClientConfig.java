@@ -114,7 +114,12 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
              * 'device_code'
              * parameter which must be passed to OidcClient at the token request time.
              */
-            DEVICE("urn:ietf:params:oauth:grant-type:device_code");
+            DEVICE("urn:ietf:params:oauth:grant-type:device_code"),
+            /**
+             * 'urn:ietf:params:oauth:grant-type:pre-authorized_code' grant requiring an OIDC client authentication as well as
+             * at least a 'pre-authorized_code' parameter which must be passed to OidcClient at the token request time.
+             */
+            PREAUTHORIZED_CODE("urn:ietf:params:oauth:grant-type:pre-authorized_code");
 
             private final String grantType;
 

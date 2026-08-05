@@ -57,7 +57,7 @@ public class RolesAllowedServiceResource {
                     // make sure authentication is attempted on a worker thread to prevent blocking event loop
                     rolesAllowedService.receiveRolesAllowedMessage(msg.body());
                     return null;
-                }));
+                }, false));
     }
 
     void observerShutdown(@Observes ShutdownEvent shutdownEvent) {

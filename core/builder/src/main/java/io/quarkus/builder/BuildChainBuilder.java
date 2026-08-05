@@ -40,7 +40,7 @@ public final class BuildChainBuilder {
     private final Map<BuildStepBuilder, StackTraceElement[]> steps = new LinkedHashMap<BuildStepBuilder, StackTraceElement[]>();
     private final Set<ItemId> initialIds = new HashSet<>();
     private final Set<ItemId> finalIds = new LinkedHashSet<>();
-    private final Set<ItemId> prioritizedItemIds = new HashSet<>();
+    private final Set<ItemId> prioritizedItemIds = new LinkedHashSet<>();
     private ClassLoader classLoader = BuildChainBuilder.class.getClassLoader();
 
     BuildChainBuilder() {

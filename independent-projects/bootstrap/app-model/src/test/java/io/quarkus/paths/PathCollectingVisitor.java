@@ -11,7 +11,7 @@ class PathCollectingVisitor implements PathVisitor {
 
     @Override
     public void visitPath(PathVisit visit) {
-        visitedPaths.put(visit.getRelativePath(), toResourceName((getRelativeToRoot(visit))));
+        visitedPaths.put(visit.getResourceName(), toResourceName((getRelativeToRoot(visit))));
     }
 
     private static String toResourceName(Path path) {

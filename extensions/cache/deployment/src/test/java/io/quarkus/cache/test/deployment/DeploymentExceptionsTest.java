@@ -25,7 +25,7 @@ import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * This class tests many kinds of {@link DeploymentException} causes related to caching annotations.
@@ -39,7 +39,7 @@ public class DeploymentExceptionsTest {
     private static final String UNKNOWN_CACHE_3 = "unknown-cache-3";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class))
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());

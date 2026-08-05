@@ -49,12 +49,12 @@ import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class VertxOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TracerRouter.class)
                     .addClass(TestUtil.class)
@@ -62,6 +62,7 @@ public class VertxOpenTelemetryTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
+            .overrideConfigKey("quarkus.otel.traces.sampler.arg", "1.0d")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "200");

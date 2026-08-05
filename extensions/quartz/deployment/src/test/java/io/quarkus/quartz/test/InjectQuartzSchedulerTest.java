@@ -23,12 +23,12 @@ import org.quartz.TriggerBuilder;
 
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InjectQuartzSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class)
                     .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that the missing @Embeddable check doesn't mistakely report
@@ -39,7 +39,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HibernateEntityEnhancerPresentEmbeddableTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TransactionTestUtils.class)
                     .addClasses(EntityWithEmbedded.class, EmbeddableWithAnnotation.class,

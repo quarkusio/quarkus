@@ -20,7 +20,7 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Alias;
 import io.smallrye.certs.junit5.Certificate;
@@ -33,8 +33,6 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithHttpServerUsingJKSWithAliasTest {
 
     static String configuration = """
-            quarkus.grpc.server.use-separate-server=false
-
             quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-alias-keystore.jks
             quarkus.http.ssl.certificate.key-store-password=password
             quarkus.http.ssl.certificate.key-store-alias=alias
@@ -43,7 +41,7 @@ public class TlsWithHttpServerUsingJKSWithAliasTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClass(HelloService.class)

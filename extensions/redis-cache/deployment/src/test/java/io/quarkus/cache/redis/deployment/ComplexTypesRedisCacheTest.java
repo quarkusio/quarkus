@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ComplexTypesRedisCacheTest {
     private static final String KEY_1 = "1";
@@ -21,7 +21,7 @@ public class ComplexTypesRedisCacheTest {
     private static final String KEY_3 = "3";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(ComplexCachedService.class, TestUtil.class));
 
     @Inject

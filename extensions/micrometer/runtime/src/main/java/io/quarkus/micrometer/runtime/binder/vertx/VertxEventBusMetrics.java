@@ -6,10 +6,10 @@ import java.util.concurrent.atomic.LongAdder;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.ReplyFailure;
 import io.vertx.core.spi.metrics.EventBusMetrics;
@@ -19,6 +19,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     private final Tags tags;
     private final MeterRegistry registry;
     private final Handler ignored;
+    private final Gauges<LongAdder> gauges;
 
     private Map<String, Handler> handlers = new ConcurrentHashMap<>();
 
@@ -27,11 +28,13 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     private final Meter.MeterProvider<DistributionSummary> written;
     private final Meter.MeterProvider<DistributionSummary> read;
     private final Meter.MeterProvider<Counter> replyFailures;
+    private final Meter.MeterProvider<Counter> scheduled;
 
-    VertxEventBusMetrics(MeterRegistry registry, Tags tags) {
+    VertxEventBusMetrics(MeterRegistry registry, Tags tags, Gauges<LongAdder> gauges) {
         this.registry = registry;
         this.tags = tags;
         this.ignored = new Handler(null);
+        this.gauges = gauges;
 
         published = Counter.builder("eventBus.published")
                 .description("Number of messages published to the event bus")
@@ -48,6 +51,9 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
         replyFailures = Counter.builder("eventBus.replyFailures")
                 .description("Count the number of reply failure")
                 .withRegistry(registry);
+        scheduled = Counter.builder("eventBus.scheduled")
+                .description("Number of messages scheduled for processing")
+                .withRegistry(registry);
     }
 
     private static boolean isInternal(String address) {
@@ -55,7 +61,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     }
 
     @Override
-    public Handler handlerRegistered(String address, String repliedAddress) {
+    public Handler handlerRegistered(String address) {
         if (isInternal(address)) {
             // Ignore internal metrics
             return ignored;
@@ -75,7 +81,11 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     }
 
     @Override
-    public void scheduleMessage(Handler handler, boolean b) {
+    public void scheduleMessage(Handler handler, boolean local) {
+        if (isValid(handler)) {
+            scheduled.withTags(this.tags.and("address", handler.address, "side", local ? "local" : "remote"))
+                    .increment();
+        }
     }
 
     @Override
@@ -150,20 +160,17 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
             }
 
             this.address = address;
-            this.count = new LongAdder();
-            this.delivered = new LongAdder();
-            this.discarded = new LongAdder();
-            Gauge.builder("eventBus.handlers", count::longValue)
+            this.count = gauges.builder("eventBus.handlers", LongAdder::longValue)
                     .description("Number of handlers per address")
                     .tags(tags.and("address", address))
                     .register(registry);
 
-            Gauge.builder("eventBus.delivered", delivered::longValue)
+            this.delivered = gauges.builder("eventBus.delivered", LongAdder::longValue)
                     .description("Number of messages delivered")
                     .tags(tags.and("address", address))
                     .register(registry);
 
-            Gauge.builder("eventBus.discarded", discarded::longValue)
+            this.discarded = gauges.builder("eventBus.discarded", LongAdder::longValue)
                     .description("Number of messages discarded")
                     .tags(tags.and("address", address))
                     .register(registry);

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Data Caching
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide explains how to cache expensive method calls of your CDI beans using simple annotations.
 :topics: cache,data
 :extensions: io.quarkus:quarkus-cache
@@ -320,6 +319,9 @@ If the key does not identify any cache entry, nothing will happen.
 === @CacheInvalidateAll
 
 When a method annotated with `@CacheInvalidateAll` is invoked, Quarkus will remove all entries from the cache.
+
+Cache invalidation is performed *after* the annotated method completes successfully.
+If the method throws an exception, the cache will *not* be invalidated.
 
 === @CacheKey
 

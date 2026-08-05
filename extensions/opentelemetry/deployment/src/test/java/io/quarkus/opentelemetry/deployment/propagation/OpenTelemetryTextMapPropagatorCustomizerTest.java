@@ -29,12 +29,12 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OpenTelemetryTextMapPropagatorCustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class)

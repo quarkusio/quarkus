@@ -1,8 +1,7 @@
 package io.quarkus.restclient.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
@@ -12,11 +11,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class RestClientRandomPortTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class, EchoClient.class))
             .overrideRuntimeConfigKey("quarkus.http.port", "0")
@@ -31,9 +30,8 @@ class RestClientRandomPortTest {
     @Test
     void config() {
         RestClientConfig echoClientConfig = restClientsConfig.getClient(EchoClient.class);
-        assertTrue(echoClientConfig.url().isPresent());
-        assertEquals("http://localhost:0", echoClientConfig.url().get());
-        assertNotEquals("http://localhost:0", echoClientConfig.urlReload());
+        assertThat(echoClientConfig.url()).hasValue("http://localhost:0");
+        assertThat(echoClientConfig.urlReload()).hasValueSatisfying(val -> assertThat(val).isNotEqualTo("http://localhost:0"));
     }
 
     @Test

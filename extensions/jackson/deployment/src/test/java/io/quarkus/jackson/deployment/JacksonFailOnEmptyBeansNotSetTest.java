@@ -6,15 +6,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidDefinitionException;
 
 public class JacksonFailOnEmptyBeansNotSetTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
 
     @Inject
     ObjectMapper objectMapper;

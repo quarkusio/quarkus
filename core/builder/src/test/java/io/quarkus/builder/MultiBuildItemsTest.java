@@ -38,7 +38,7 @@ public class MultiBuildItemsTest {
 
         {
             final List<ComparableItem1> actual = multis.get(idC1);
-            Assertions.assertEquals(Arrays.asList("c1.2", "c1.1"),
+            Assertions.assertEquals(Arrays.asList("c1.1", "c1.2"),
                     actual.stream().map(ComparableItem1::toString).collect(Collectors.toList()));
         }
 
@@ -65,6 +65,29 @@ public class MultiBuildItemsTest {
                     actual.stream().map(Item1::toString).collect(Collectors.toList()));
         }
 
+    }
+
+    @Test
+    public void testComparableSorting() {
+        final ItemId idC1 = new ItemId(ComparableItem1.class);
+
+        Map<ItemId, int[]> producingOrdinals = new HashMap<ItemId, int[]>();
+        producingOrdinals.put(idC1, new int[] { 2, 4 });
+
+        final MultiBuildItems multis = new MultiBuildItems(producingOrdinals);
+
+        multis.putInitial(idC1, new ComparableItem1("c1.z"));
+        multis.putInitial(idC1, new ComparableItem1("c1.a"));
+
+        multis.put(4, idC1, new ComparableItem1("c1.m"));
+        multis.put(2, idC1, new ComparableItem1("c1.b"));
+        multis.put(4, idC1, new ComparableItem1("c1.x"));
+        multis.put(2, idC1, new ComparableItem1("c1.d"));
+
+        final List<ComparableItem1> actual = multis.get(idC1);
+        Assertions.assertEquals(
+                Arrays.asList("c1.a", "c1.b", "c1.d", "c1.m", "c1.x", "c1.z"),
+                actual.stream().map(ComparableItem1::toString).collect(Collectors.toList()));
     }
 
     public static final class Item1 extends MultiBuildItem {

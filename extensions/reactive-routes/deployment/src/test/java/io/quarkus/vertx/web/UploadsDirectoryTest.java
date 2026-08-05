@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route.HttpMethod;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.FileUpload;
@@ -34,7 +34,7 @@ import io.vertx.ext.web.RoutingContext;
 public class UploadsDirectoryTest {
     private static final String UPLOADS_DIR = "target/test-uploads";
     @RegisterExtension
-    static final QuarkusUnitTest CONFIG = new QuarkusUnitTest()
+    static final QuarkusExtensionTest CONFIG = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Routes.class)
                     .addAsResource(new StringAsset(

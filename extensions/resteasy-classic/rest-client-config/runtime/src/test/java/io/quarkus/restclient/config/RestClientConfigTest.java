@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
@@ -361,6 +360,6 @@ class RestClientConfigTest {
         assertTrue(config.connectionPoolSize().isPresent());
         assertThat(config.connectionPoolSize().getAsInt()).isEqualTo(10);
         assertTrue(config.maxChunkSize().isPresent());
-        assertThat(config.maxChunkSize().get().asBigInteger()).isEqualTo(BigInteger.valueOf(1024));
+        assertThat(config.maxChunkSize().get().compareTo(1024) == 0);
     }
 }

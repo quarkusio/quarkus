@@ -45,7 +45,7 @@ public class WalkSubtreeTest {
     public void walkDirectorySubtree() {
         var list = new ArrayList<String>();
         PathTree.ofDirectoryOrArchive(testDir)
-                .walkIfContains("a/aa", visit -> list.add(visit.getRelativePath()));
+                .walkIfContains("a/aa", visit -> list.add(visit.getResourceName()));
         assertThat(list).containsExactlyInAnyOrder(
                 "a/aa",
                 "a/aa/1.txt",
@@ -60,7 +60,7 @@ public class WalkSubtreeTest {
     public void walkJarSubtree() {
         var list = new ArrayList<String>();
         PathTree.ofDirectoryOrArchive(testZip)
-                .walkIfContains("a/aa", visit -> list.add(visit.getRelativePath()));
+                .walkIfContains("a/aa", visit -> list.add(visit.getResourceName()));
         assertThat(list).containsExactlyInAnyOrder(
                 "a/aa",
                 "a/aa/1.txt",

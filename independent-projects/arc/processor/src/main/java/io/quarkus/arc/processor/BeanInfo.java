@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,9 +37,9 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.Methods.SubclassSkipPredicate;
 import io.quarkus.gizmo2.desc.MethodDesc;
 
@@ -86,6 +87,10 @@ public class BeanInfo implements InjectionTargetInfo {
     private final boolean defaultBean;
 
     private final List<MethodInfo> aroundInvokes;
+
+    private final List<MethodInfo> postConstructCallbacks;
+
+    private final List<MethodInfo> preDestroyCallbacks;
 
     private final InterceptionProxyInfo interceptionProxy;
 
@@ -173,6 +178,15 @@ public class BeanInfo implements InjectionTargetInfo {
         this.targetPackageName = targetPackageName;
         this.startupPriority = startupPriority;
         this.aroundInvokes = isInterceptor() || isDecorator() ? List.of() : Beans.getAroundInvokes(implClazz, beanDeployment);
+        if (isClassBean() && !isInterceptor()) {
+            this.postConstructCallbacks = Beans.getCallbacks(target.asClass(), DotNames.POST_CONSTRUCT,
+                    beanDeployment.getBeanArchiveIndex());
+            this.preDestroyCallbacks = Beans.getCallbacks(target.asClass(), DotNames.PRE_DESTROY,
+                    beanDeployment.getBeanArchiveIndex());
+        } else {
+            this.postConstructCallbacks = List.of();
+            this.preDestroyCallbacks = List.of();
+        }
     }
 
     @Override
@@ -457,8 +471,7 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         // test class bean with @PreDestroy interceptor or callback
         return isClassBean() && (!getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                || !Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
-                        .isEmpty());
+                || !preDestroyCallbacks.isEmpty());
     }
 
     public boolean isForceApplicationClass() {
@@ -531,6 +544,22 @@ public class BeanInfo implements InjectionTargetInfo {
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @return the list of {@code @PostConstruct} callback methods declared in the hierarchy of a bean class
+     */
+    List<MethodInfo> getPostConstructCallbacks() {
+        return postConstructCallbacks;
+    }
+
+    /**
+     *
+     * @return the list of {@code @PreDestroy} callback methods declared in the hierarchy of a bean class
+     */
+    List<MethodInfo> getPreDestroyCallbacks() {
+        return preDestroyCallbacks;
     }
 
     /**
@@ -748,7 +777,7 @@ public class BeanInfo implements InjectionTargetInfo {
             Interceptors.checkClassLevelInterceptorBindings(classLevelBindings, targetClass, beanDeployment);
 
             BindingsDiscovery bindingsDiscovery = new BindingsDiscovery(beanDeployment, bindingsSourceClass);
-            Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
+            Map<MethodSignatureKey, InterceptedMethodCandidate> candidates = new HashMap<>();
             Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(beanDeployment,
                     targetClass, bindingsDiscovery, candidates, classLevelBindings, bytecodeTransformerConsumer,
                     transformUnproxyableClasses, hasAroundInvokes());
@@ -766,11 +795,12 @@ public class BeanInfo implements InjectionTargetInfo {
             }
 
             Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
-            for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {
+            for (InterceptedMethodCandidate interceptedMethodCandidate : candidates.values()) {
                 List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver()
-                        .resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
+                        .resolve(InterceptionType.AROUND_INVOKE, interceptedMethodCandidate.bindings());
                 if (!interceptors.isEmpty() || !aroundInvokes.isEmpty()) {
-                    interceptedMethods.put(entry.getKey().method, new InterceptionInfo(interceptors, entry.getValue()));
+                    interceptedMethods.put(interceptedMethodCandidate.method(),
+                            new InterceptionInfo(interceptors, interceptedMethodCandidate.bindings()));
                 }
             }
             return interceptedMethods;
@@ -796,7 +826,7 @@ public class BeanInfo implements InjectionTargetInfo {
         // Decorators with the smaller priority values are called first
         Collections.sort(bound, Comparator.comparingInt(DecoratorInfo::getPriority).thenComparing(DecoratorInfo::getBeanClass));
 
-        Map<MethodKey, DecorationInfo> candidates = new HashMap<>();
+        Map<MethodSignatureKey, DecoratedMethodCandidate> candidates = new HashMap<>();
         ClassInfo classInfo = target.get().asClass();
         addDecoratedMethods(candidates, classInfo, classInfo, bound,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
@@ -804,13 +834,13 @@ public class BeanInfo implements InjectionTargetInfo {
                         beanDeployment.getAnnotationStore()));
 
         Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>();
-        for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {
-            decoratedMethods.put(entry.getKey().method, entry.getValue());
+        for (DecoratedMethodCandidate decoratedMethodCandidate : candidates.values()) {
+            decoratedMethods.put(decoratedMethodCandidate.method(), decoratedMethodCandidate.decoration());
         }
         return decoratedMethods;
     }
 
-    private void addDecoratedMethods(Map<MethodKey, DecorationInfo> decoratedMethods, ClassInfo classInfo,
+    private void addDecoratedMethods(Map<MethodSignatureKey, DecoratedMethodCandidate> decoratedMethods, ClassInfo classInfo,
             ClassInfo originalClassInfo, List<DecoratorInfo> boundDecorators, SubclassSkipPredicate skipPredicate) {
         skipPredicate.startProcessing(classInfo, originalClassInfo);
         for (MethodInfo method : classInfo.methods()) {
@@ -818,9 +848,9 @@ public class BeanInfo implements InjectionTargetInfo {
                 continue;
             }
             List<DecoratorMethod> matching = findMatchingDecorators(method, boundDecorators);
-            MethodKey key = new MethodKey(method);
+            MethodSignatureKey key = method.signatureKey();
             if (!matching.isEmpty() && !decoratedMethods.containsKey(key)) {
-                decoratedMethods.put(key, new DecorationInfo(matching));
+                decoratedMethods.put(key, new DecoratedMethodCandidate(method, new DecorationInfo(matching)));
             }
         }
         skipPredicate.methodsProcessed();
@@ -837,6 +867,12 @@ public class BeanInfo implements InjectionTargetInfo {
                 addDecoratedMethods(decoratedMethods, interfaceInfo, originalClassInfo, boundDecorators, skipPredicate);
             }
         }
+    }
+
+    private record DecoratedMethodCandidate(MethodInfo method, DecorationInfo decoration) {
+    }
+
+    record InterceptedMethodCandidate(MethodInfo method, Set<AnnotationInstance> bindings) {
     }
 
     private List<DecoratorMethod> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
@@ -897,7 +933,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private Map<InterceptionType, InterceptionInfo> initLifecycleInterceptors() {
         if (!isInterceptor() && isClassBean()) {
-            Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new HashMap<>();
+            Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new EnumMap<>(InterceptionType.class);
             Set<AnnotationInstance> classLevelBindings = new HashSet<>();
             Set<AnnotationInstance> constructorLevelBindings = new HashSet<>();
             addClassLevelBindings(target.get().asClass(), classLevelBindings);

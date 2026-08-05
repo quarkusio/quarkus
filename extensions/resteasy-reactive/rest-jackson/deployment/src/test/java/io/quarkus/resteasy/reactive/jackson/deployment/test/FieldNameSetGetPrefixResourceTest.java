@@ -10,14 +10,14 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.NonBlocking;
 
 // Ensures uncommon field names like "set", "get", and "is" are generated correctly.
 class FieldNameSetGetPrefixResourceTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Resource.class, Resource.UncommonBody.class).addAsResource(
                             new StringAsset(

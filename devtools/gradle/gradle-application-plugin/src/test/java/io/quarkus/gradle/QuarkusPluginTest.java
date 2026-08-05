@@ -5,13 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -24,8 +22,6 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public class QuarkusPluginTest {
 
@@ -87,26 +83,8 @@ public class QuarkusPluginTest {
     }
 
     @Test
-    public void shouldReturnMultipleOutputSourceDirectories() {
-        Project project = ProjectBuilder.builder().build();
-        project.getPluginManager().apply(QuarkusPlugin.ID);
-        project.getPluginManager().apply("java");
-        project.getPluginManager().apply("scala");
-
-        final QuarkusPluginExtension extension = project.getExtensions().getByType(QuarkusPluginExtension.class);
-
-        final Set<File> outputSourceDirs = extension.combinedOutputSourceDirs();
-        assertThat(outputSourceDirs).hasSize(4);
-        assertThat(outputSourceDirs).contains(
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/main"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/test"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/main"),
-                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/test"));
-    }
-
-    @Test
     public void shouldNotFailOnProjectDependenciesWithoutMain(@TempDir Path testProjectDir) throws IOException {
-        var kotlinVersion = System.getProperty("kotlin_version", "2.3.10");
+        var kotlinVersion = System.getProperty("kotlin_version", "2.4.0");
         var settingFile = testProjectDir.resolve("settings.gradle");
         var mppProjectDir = testProjectDir.resolve("mpp");
         var quarkusProjectDir = testProjectDir.resolve("quarkus");

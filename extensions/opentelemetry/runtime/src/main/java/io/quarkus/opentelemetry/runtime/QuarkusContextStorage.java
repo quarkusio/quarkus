@@ -70,7 +70,7 @@ public enum QuarkusContextStorage implements ContextStorage {
             log.debugv("Setting Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
         }
 
-        vertxContext.putLocal(OTEL_CONTEXT, otelToAttach);
+        VertxContext.localContextData(vertxContext).put(OTEL_CONTEXT, otelToAttach);
         OpenTelemetryUtil.setMDCData(otelToAttach, vertxContext);
 
         return new Scope() {
@@ -80,15 +80,11 @@ public enum QuarkusContextStorage implements ContextStorage {
                 // compare otel contexts when closing scope
                 final Context otelBefore = getOtelContext(vertxContext);
 
-                if (log.isDebugEnabled()) {
-                    log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
-                }
-
                 if (otelBefore != otelToAttach && log.isDebugEnabled()) {
                     // Different references can contain the same span data.
                     // Duplicated contexts can be duplicated.
                     Map<String, String> spanDataBefore = OpenTelemetryUtil.getSpanData(otelBefore);
-                    if (spanDataBefore != null && !spanDataBefore.isEmpty()) {
+                    if (!spanDataBefore.isEmpty()) {
                         log.debug(
                                 "Context in storage not the expected context, Scope.close was not called correctly. Details:" +
                                         " OTel context otelBefore: ref: " + System.identityHashCode(otelBefore) +
@@ -99,11 +95,20 @@ public enum QuarkusContextStorage implements ContextStorage {
                 }
 
                 if (otelBeforeAttach == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing Otel context: {0}", OpenTelemetryUtil.getSpanData(otelToAttach));
+                    }
                     OpenTelemetryUtil.clearMDCData(vertxContext);
-                    vertxContext.removeLocal(OTEL_CONTEXT);
+                    VertxContext.localContextData(vertxContext).remove(OTEL_CONTEXT);
                 } else {
+                    if (log.isDebugEnabled()) {
+                        log.debugv("Closing Otel context: {0} and restoring previous OTel context: {1}",
+                                OpenTelemetryUtil.getSpanData(otelToAttach),
+                                OpenTelemetryUtil.getSpanData(otelBeforeAttach));
+                    }
                     OpenTelemetryUtil.setMDCData(otelBeforeAttach, vertxContext);
-                    vertxContext.putLocal(OTEL_CONTEXT, otelBeforeAttach);
+                    VertxContext.localContextData(vertxContext).put(OTEL_CONTEXT,
+                            otelBeforeAttach);
                 }
             }
 
@@ -126,7 +131,7 @@ public enum QuarkusContextStorage implements ContextStorage {
     public Context current() {
         io.vertx.core.Context current = getVertxContext();
         if (current != null) {
-            return current.getLocal(OTEL_CONTEXT);
+            return (Context) VertxContext.localContextData(current).get(OTEL_CONTEXT);
         } else {
             return FALLBACK_CONTEXT_STORAGE.current();
         }
@@ -139,7 +144,10 @@ public enum QuarkusContextStorage implements ContextStorage {
      * @return the OpenTelemetry Context if exists in the Vert.x Context or null.
      */
     public static Context getOtelContext(io.vertx.core.Context vertxContext) {
-        return vertxContext != null && isDuplicatedContext(vertxContext) ? vertxContext.getLocal(OTEL_CONTEXT) : null;
+        if (vertxContext == null || !isDuplicatedContext(vertxContext)) {
+            return null;
+        }
+        return (Context) VertxContext.localContextData(vertxContext).get(OTEL_CONTEXT);
     }
 
     /**

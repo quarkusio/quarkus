@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Configure data sources in {project-name}
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: data,getting-started,reactive
 :topics: data,database,datasource,sql,jdbc,reactive
 :extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
@@ -95,6 +94,30 @@ The optimal pool size depends on many factors, such as the number of parallel ap
 Be aware that setting the pool size too low might cause some requests to time out while waiting for a connection.
 
 For more information about pool size adjustment properties, see the <<jdbc-configuration>> section.
+
+==== Read-only JDBC pools
+
+You can mark a JDBC pool as read-only so that connections are created with
+link:https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/Connection.html#setReadOnly(boolean)[`Connection.setReadOnly(true)`].
+The JDBC driver is responsible for enforcing read-only mode.
+
+This is useful for secondary pools that target read replicas.
+
+[source,properties]
+----
+quarkus.datasource.jdbc.read-only=true
+----
+
+For a named datasource:
+
+[source,properties]
+----
+quarkus.datasource."readonly".db-kind=postgresql
+quarkus.datasource."readonly".jdbc.url=jdbc:postgresql://replica:5432/mydb
+quarkus.datasource."readonly".jdbc.read-only=true
+----
+
+When the property is unset, Quarkus does not configure read-only mode and Agroal's default applies (connections are not read-only).
 
 
 === Configure a reactive datasource
@@ -672,6 +695,14 @@ Even with all the tracing infrastructure in place, the datasource tracing is not
 quarkus.datasource.jdbc.telemetry=true
 ----
 
+By default, only SQL statement executions are traced.
+Connection acquisition from the datasource (`getConnection()` calls) is not traced.
+To also trace connection acquisition, enable it explicitly:
+[source,properties]
+----
+quarkus.datasource.jdbc.telemetry.trace-connection=true
+----
+
 === Narayana transaction manager integration
 
 Integration is automatic if the Narayana JTA extension is also available.
@@ -711,6 +742,8 @@ Use a remote connection to a separate database, or use Dev Services to run the d
 
 ifndef::no-deprecated-test-resource[]
 ==== Run an integration test
+
+WARNING: `H2DatabaseTestResource` is deprecated. Dev Services for H2 automatically starts an in-process database when `quarkus.datasource.db-kind=h2` is set and no JDBC URL is configured. See xref:databases-dev-services.adoc[Dev Services for databases] for details.
 
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
 +

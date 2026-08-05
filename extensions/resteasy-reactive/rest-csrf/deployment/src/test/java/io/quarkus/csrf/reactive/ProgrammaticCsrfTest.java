@@ -27,7 +27,7 @@ import io.quarkus.csrf.reactive.runtime.RestCsrfConfig;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.security.CSRF;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.restassured.RestAssured;
@@ -39,7 +39,7 @@ import io.smallrye.mutiny.Uni;
 public class ProgrammaticCsrfTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, ProgrammaticCsrfConfig.class)
                     .addAsResource("templates/csrfToken.html"))

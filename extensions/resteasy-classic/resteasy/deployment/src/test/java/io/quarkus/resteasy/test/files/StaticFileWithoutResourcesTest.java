@@ -7,7 +7,7 @@ import java.io.File;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -16,7 +16,7 @@ import io.restassured.RestAssured;
 public class StaticFileWithoutResourcesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
                     .addAsResource(new File("src/test/resources/index.html"), "META-INF/resources/index.html"));

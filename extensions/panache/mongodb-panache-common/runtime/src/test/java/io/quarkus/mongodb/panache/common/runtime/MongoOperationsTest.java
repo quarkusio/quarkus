@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.panache.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,13 +16,27 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.bson.BsonDocument;
+import org.bson.BsonReader;
+import org.bson.BsonWriter;
+import org.bson.UuidRepresentation;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+import org.bson.codecs.StringCodec;
+import org.bson.codecs.UuidCodec;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 
 import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
@@ -57,6 +72,47 @@ class MongoOperationsTest {
         public String property;
     }
 
+    private enum TestEnum {
+        VALUE_A,
+        VALUE_B
+    }
+
+    private static class CustomType {
+        private final String inner;
+
+        CustomType(String inner) {
+            this.inner = inner;
+        }
+
+        public String getInner() {
+            return inner;
+        }
+
+        @Override
+        public String toString() {
+            return "CustomType{" + inner + "}";
+        }
+    }
+
+    private static class CustomTypeCodec implements Codec<CustomType> {
+        private final StringCodec stringCodec = new StringCodec();
+
+        @Override
+        public void encode(BsonWriter writer, CustomType value, EncoderContext encoderContext) {
+            stringCodec.encode(writer, value.getInner(), encoderContext);
+        }
+
+        @Override
+        public CustomType decode(BsonReader reader, DecoderContext decoderContext) {
+            return new CustomType(stringCodec.decode(reader, decoderContext));
+        }
+
+        @Override
+        public Class<CustomType> getEncoderClass() {
+            return CustomType.class;
+        }
+    }
+
     @BeforeAll
     static void setupFieldReplacement() {
         Map<String, Map<String, String>> replacementCache = new HashMap<>();
@@ -67,43 +123,80 @@ class MongoOperationsTest {
         MongoPropertyUtil.setReplacementCache(replacementCache);
     }
 
+    private static final CodecRegistry CODEC_REGISTRY = CodecRegistries.fromRegistries(
+            CodecRegistries.fromCodecs(new UuidCodec(UuidRepresentation.STANDARD), new CustomTypeCodec()),
+            MongoClientSettings.getDefaultCodecRegistry());
+
+    private static BsonDocument toBsonDoc(Bson bson) {
+        return bson.toBsonDocument(BsonDocument.class, CODEC_REGISTRY);
+    }
+
+    private static void assertBsonEquals(Bson expected, Bson actual) {
+        assertEquals(toBsonDoc(expected), toBsonDoc(actual));
+    }
+
     @Test
     public void testBindShorthandFilter() {
-        String query = operations.bindFilter(Object.class, "field", new Object[] { "a value" });
-        assertEquals("{'field':'a value'}", query);
+        Bson result = operations.bindFilter(Object.class, "field", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field", new Object[] { true });
-        assertEquals("{'field':true}", query);
+        result = operations.bindFilter(Object.class, "field", new Object[] { true });
+        assertBsonEquals(Filters.eq("field", true), result);
 
-        query = operations.bindFilter(Object.class, "field", new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
+        result = operations.bindFilter(Object.class, "field", new Object[] { LocalDate.of(2019, 3, 4) });
+        assertBsonEquals(Filters.eq("field", LocalDate.of(2019, 3, 4)), result);
 
-        query = operations.bindFilter(Object.class, "field", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        result = operations.bindFilter(Object.class, "field", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)), result);
 
-        query = operations.bindFilter(Object.class, "field",
+        result = operations.bindFilter(Object.class, "field",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)), result);
 
-        query = operations.bindFilter(Object.class, "field",
+        result = operations.bindFilter(Object.class, "field",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))), result);
 
-        query = operations.bindFilter(Object.class, "field",
+        result = operations.bindFilter(Object.class, "field",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
-        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+        assertBsonEquals(Filters.eq("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")), result);
 
-        //test field replacement
-        query = operations.bindFilter(DemoObj.class, "property", new Object[] { "a value" });
-        assertEquals("{'value':'a value'}", query);
+        // test field replacement
+        result = operations.bindFilter(DemoObj.class, "property", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("value", "a value"), result);
 
         // keywords (quoted)
-        query = operations.bindFilter(Object.class, "`instant` = ?1", new Object[] { "a value" });
-        assertEquals("{'instant':'a value'}", query);
+        result = operations.bindFilter(Object.class, "`instant` = ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("instant", "a value"), result);
 
         // keywords (unquoted)
-        query = operations.bindFilter(Object.class, "instant = ?1", new Object[] { "a value" });
-        assertEquals("{'instant':'a value'}", query);
+        result = operations.bindFilter(Object.class, "instant = ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("instant", "a value"), result);
+
+        // null value
+        result = operations.bindFilter(Object.class, "field", new Object[] { null });
+        assertBsonEquals(Filters.eq("field", null), result);
+    }
+
+    @Test
+    public void testBindShorthandFilterWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson result = operations.bindFilter(Object.class, "field", new Object[] { custom });
+        // the raw CustomType object is preserved, and the codec encodes it as "test" (not toString())
+        assertBsonEquals(Filters.eq("field", custom), result);
+    }
+
+    @Test
+    public void testBindShorthandFilterWithEnum() {
+        Bson result = operations.bindFilter(Object.class, "field", new Object[] { TestEnum.VALUE_A });
+        assertBsonEquals(Filters.eq("field", "VALUE_A"), result);
+    }
+
+    @Test
+    public void testBindShorthandFilterWithObjectId() {
+        ObjectId objectId = new ObjectId("507f1f77bcf86cd799439011");
+        Bson result = operations.bindFilter(Object.class, "field", new Object[] { objectId });
+        assertBsonEquals(Filters.eq("field", objectId), result);
     }
 
     private Object toDate(LocalDateTime of) {
@@ -112,321 +205,507 @@ class MongoOperationsTest {
 
     @Test
     public void testBindNativeFilterByIndex() {
-        String query = operations.bindFilter(DemoObj.class, "{'field': ?1}", new Object[] { "a value" });
-        assertEquals("{'field': 'a value'}", query);
+        Bson result = operations.bindFilter(DemoObj.class, "{'field': ?1}", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("field", "a value"), result);
 
-        query = operations.bindFilter(DemoObj.class, "{'field.sub': ?1}", new Object[] { "a value" });
-        assertEquals("{'field.sub': 'a value'}", query);
+        result = operations.bindFilter(DemoObj.class, "{'field.sub': ?1}", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("field.sub", "a value"), result);
 
-        //test that there are no field replacement for native queries
-        query = operations.bindFilter(DemoObj.class, "{'property': ?1}", new Object[] { "a value" });
-        assertEquals("{'property': 'a value'}", query);
+        // test that there are no field replacement for native queries
+        result = operations.bindFilter(DemoObj.class, "{'property': ?1}", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("property", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
+        result = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field': {\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDate.of(2019, 3, 4)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
+        result = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
+        result = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
+        result = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
+        result = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
-        assertEquals("{'field': UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+        assertBsonEquals(Filters.eq("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")), result);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1, 'isOk': ?2}", new Object[] { "a value", true });
-        assertEquals("{'field': 'a value', 'isOk': true}", query);
+        result = operations.bindFilter(Object.class, "{'field': ?1, 'isOk': ?2}", new Object[] { "a value", true });
+        assertInstanceOf(org.bson.Document.class, result);
+        org.bson.Document doc = (org.bson.Document) result;
+        assertEquals("a value", doc.get("field"));
+        assertEquals(true, doc.get("isOk"));
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
-        query = operations.bindFilter(DemoObj.class, "{ field: { '$in': ?1 } }", new Object[] { list });
-        assertEquals("{ field: { '$in': ['f1', 'f2'] } }", query);
+        result = operations.bindFilter(DemoObj.class, "{ field: { '$in': ?1 } }", new Object[] { list });
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        org.bson.Document inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(list, inDoc.get("$in"));
 
-        query = operations.bindFilter(DemoObj.class, "{ field: { '$in': ?1 }, isOk: ?2 }", new Object[] { list, true });
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true }", query);
+        result = operations.bindFilter(DemoObj.class, "{ field: { '$in': ?1 }, isOk: ?2 }", new Object[] { list, true });
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(list, inDoc.get("$in"));
+        assertEquals(true, doc.get("isOk"));
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': ?1 }, $or: [ {'property': ?2}, {'property': ?3} ] }",
                 new Object[] { list, "jpg", "gif" });
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }", query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(list, inDoc.get("$in"));
+        List<?> orList = (List<?>) doc.get("$or");
+        assertEquals(2, orList.size());
+        assertEquals("jpg", ((org.bson.Document) orList.get(0)).get("property"));
+        assertEquals("gif", ((org.bson.Document) orList.get(1)).get("property"));
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': ?1 }, isOk: ?2, $or: [ {'property': ?3}, {'property': ?4} ] }",
                 new Object[] { list, true, "jpg", "gif" });
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
-                query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(list, inDoc.get("$in"));
+        assertEquals(true, doc.get("isOk"));
+        orList = (List<?>) doc.get("$or");
+        assertEquals(2, orList.size());
+        assertEquals("jpg", ((org.bson.Document) orList.get(0)).get("property"));
+        assertEquals("gif", ((org.bson.Document) orList.get(1)).get("property"));
+    }
+
+    @Test
+    public void testBindNativeFilterByIndexWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson result = operations.bindFilter(DemoObj.class, "{'field': ?1}", new Object[] { custom });
+        assertBsonEquals(Filters.eq("field", custom), result);
+    }
+
+    @Test
+    public void testBindNativeFilterByIndexWithEnum() {
+        Bson result = operations.bindFilter(DemoObj.class, "{'field': ?1}", new Object[] { TestEnum.VALUE_A });
+        assertBsonEquals(Filters.eq("field", "VALUE_A"), result);
     }
 
     @Test
     public void testBindNativeFilterByName() {
-        String query = operations.bindFilter(Object.class, "{'field': :field}",
+        Bson result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field': 'a value'}", query);
+        assertBsonEquals(Filters.eq("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "{'field.sub': :field}",
+        result = operations.bindFilter(Object.class, "{'field.sub': :field}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field.sub': 'a value'}", query);
+        assertBsonEquals(Filters.eq("field.sub", "a value"), result);
 
-        //test that there are no field replacement for native queries
-        query = operations.bindFilter(DemoObj.class, "{'property': :field}",
+        // test that there are no field replacement for native queries
+        result = operations.bindFilter(DemoObj.class, "{'property': :field}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'property': 'a value'}", query);
+        assertBsonEquals(Filters.eq("property", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field}",
+        result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDate.of(2019, 3, 4)).map());
-        assertEquals("{'field': {\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDate.of(2019, 3, 4)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field}",
+        result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field}",
+        result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field}",
+        result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field}",
+        result = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());
-        assertEquals("{'field': UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+        assertBsonEquals(Filters.eq("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")), result);
 
-        query = operations.bindFilter(Object.class, "{'field': :field, 'isOk': :isOk}",
+        result = operations.bindFilter(Object.class, "{'field': :field, 'isOk': :isOk}",
                 Parameters.with("field", "a value").and("isOk", true).map());
-        assertEquals("{'field': 'a value', 'isOk': true}", query);
+        assertInstanceOf(org.bson.Document.class, result);
+        org.bson.Document doc = (org.bson.Document) result;
+        assertEquals("a value", doc.get("field"));
+        assertEquals(true, doc.get("isOk"));
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> ids = Arrays.asList("f1", "f2");
-        query = operations.bindFilter(DemoObj.class, "{ field: { '$in': :fields } }",
+        result = operations.bindFilter(DemoObj.class, "{ field: { '$in': :fields } }",
                 Parameters.with("fields", ids).map());
-        assertEquals("{ field: { '$in': ['f1', 'f2'] } }", query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        org.bson.Document inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(ids, inDoc.get("$in"));
 
-        query = operations.bindFilter(DemoObj.class, "{ field: { '$in': :fields }, isOk: :isOk }",
+        result = operations.bindFilter(DemoObj.class, "{ field: { '$in': :fields }, isOk: :isOk }",
                 Parameters.with("fields", ids).and("isOk", true).map());
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true }", query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(ids, inDoc.get("$in"));
+        assertEquals(true, doc.get("isOk"));
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': :fields }, $or: [ {'property': :p1}, {'property': :p2} ] }",
                 Parameters.with("fields", ids).and("p1", "jpg").and("p2", "gif").map());
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }", query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(ids, inDoc.get("$in"));
+        List<?> orList = (List<?>) doc.get("$or");
+        assertEquals(2, orList.size());
+        assertEquals("jpg", ((org.bson.Document) orList.get(0)).get("property"));
+        assertEquals("gif", ((org.bson.Document) orList.get(1)).get("property"));
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': :fields }, isOk: :isOk, $or: [ {'property': :p1}, {'property': :p2} ] }",
                 Parameters.with("fields", ids)
                         .and("isOk", true)
                         .and("p1", "jpg")
                         .and("p2", "gif").map());
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
-                query);
+        assertInstanceOf(org.bson.Document.class, result);
+        doc = (org.bson.Document) result;
+        inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(ids, inDoc.get("$in"));
+        assertEquals(true, doc.get("isOk"));
+        orList = (List<?>) doc.get("$or");
+        assertEquals(2, orList.size());
+        assertEquals("jpg", ((org.bson.Document) orList.get(0)).get("property"));
+        assertEquals("gif", ((org.bson.Document) orList.get(1)).get("property"));
+    }
+
+    @Test
+    public void testBindNativeFilterByNameWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson result = operations.bindFilter(DemoObj.class, "{'field': :field}",
+                Parameters.with("field", custom).map());
+        assertBsonEquals(Filters.eq("field", custom), result);
     }
 
     @Test
     public void testBindEnhancedFilterByIndex() {
-        String query = operations.bindFilter(Object.class, "field = ?1", new Object[] { "a value" });
-        assertEquals("{'field':'a value'}", query);
+        Bson result = operations.bindFilter(Object.class, "field = ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "{'field.sub': :field}",
+        result = operations.bindFilter(Object.class, "{'field.sub': :field}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field.sub': 'a value'}", query);
+        assertBsonEquals(Filters.eq("field.sub", "a value"), result);
 
-        //test field replacement
-        query = operations.bindFilter(DemoObj.class, "property = ?1", new Object[] { "a value" });
-        assertEquals("{'value':'a value'}", query);
+        // test field replacement
+        result = operations.bindFilter(DemoObj.class, "property = ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.eq("value", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
+        result = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDate.of(2019, 3, 4) });
+        assertBsonEquals(Filters.eq("field", LocalDate.of(2019, 3, 4)), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        result = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1",
+        result = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1",
+        result = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1",
+        result = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
-        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+        assertBsonEquals(Filters.eq("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1 and isOk = ?2", new Object[] { "a value", true });
-        assertEquals("{'field':'a value','isOk':true}", query);
+        result = operations.bindFilter(Object.class, "field = ?1 and isOk = ?2", new Object[] { "a value", true });
+        assertBsonEquals(Filters.and(Filters.eq("field", "a value"), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(Object.class, "field = ?1 or isOk = ?2", new Object[] { "a value", true });
-        assertEquals("{'$or':[{'field':'a value'},{'isOk':true}]}", query);
+        result = operations.bindFilter(Object.class, "field = ?1 or isOk = ?2", new Object[] { "a value", true });
+        assertBsonEquals(Filters.or(Filters.eq("field", "a value"), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(Object.class, "count >= ?1 and count < ?2", new Object[] { 5, 10 });
-        assertEquals("{'count':{'$gte':5},'count':{'$lt':10}}", query);
+        result = operations.bindFilter(Object.class, "count >= ?1 and count < ?2", new Object[] { 5, 10 });
+        assertBsonEquals(Filters.and(Filters.gte("count", 5), Filters.lt("count", 10)), result);
 
-        query = operations.bindFilter(Object.class, "field != ?1", new Object[] { "a value" });
-        assertEquals("{'field':{'$ne':'a value'}}", query);
+        result = operations.bindFilter(Object.class, "field != ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.ne("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field like ?1", new Object[] { "a value" });
-        assertEquals("{'field':{'$regex':'a value'}}", query);
+        result = operations.bindFilter(Object.class, "field like ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.regex("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field is not null", new Object[] {});
-        assertEquals("{'field':{'$exists':true}}", query);
+        // regex with JavaScript syntax
+        result = operations.bindFilter(Object.class, "field like ?1", new Object[] { "/uppercase.*/i" });
+        assertBsonEquals(Filters.regex("field", "uppercase.*", "i"), result);
 
-        query = operations.bindFilter(Object.class, "field is null", new Object[] {});
-        assertEquals("{'field':{'$exists':false}}", query);
+        result = operations.bindFilter(Object.class, "field is not null", new Object[] {});
+        assertBsonEquals(Filters.exists("field", true), result);
+
+        result = operations.bindFilter(Object.class, "field is null", new Object[] {});
+        assertBsonEquals(Filters.exists("field", false), result);
 
         // test with hardcoded value
-        query = operations.bindFilter(Object.class, "field = 'some hardcoded value'", new Object[] {});
-        assertEquals("{'field':'some hardcoded value'}", query);
+        result = operations.bindFilter(Object.class, "field = 'some hardcoded value'", new Object[] {});
+        assertBsonEquals(Filters.eq("field", "some hardcoded value"), result);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
-        query = operations.bindFilter(DemoObj.class, "field in ?1", new Object[] { list });
-        assertEquals("{'field':{'$in':['f1', 'f2']}}", query);
+        result = operations.bindFilter(DemoObj.class, "field in ?1", new Object[] { list });
+        assertBsonEquals(Filters.in("field", list), result);
 
-        query = operations.bindFilter(DemoObj.class, "field in ?1 and isOk = ?2", new Object[] { list, true });
-        assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
+        result = operations.bindFilter(DemoObj.class, "field in ?1 and isOk = ?2", new Object[] { list, true });
+        assertBsonEquals(Filters.and(Filters.in("field", list), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "field in ?1 and (property = ?2 or property = ?3)",
                 new Object[] { list, "jpg", "gif" });
-        assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
+        assertBsonEquals(Filters.and(
+                Filters.in("field", list),
+                Filters.or(Filters.eq("value", "jpg"), Filters.eq("value", "gif"))), result);
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "field in ?1 and isOk = ?2 and (property = ?3 or property = ?4)",
                 new Object[] { list, true, "jpg", "gif" });
-        assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true,'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
+        assertBsonEquals(Filters.and(
+                Filters.and(Filters.in("field", list), Filters.eq("isOk", true)),
+                Filters.or(Filters.eq("value", "jpg"), Filters.eq("value", "gif"))), result);
+    }
+
+    @Test
+    public void testBindEnhancedFilterByIndexWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson result = operations.bindFilter(Object.class, "field = ?1", new Object[] { custom });
+        assertBsonEquals(Filters.eq("field", custom), result);
+    }
+
+    @Test
+    public void testBindEnhancedFilterByIndexWithEnum() {
+        Bson result = operations.bindFilter(Object.class, "field = ?1", new Object[] { TestEnum.VALUE_A });
+        assertBsonEquals(Filters.eq("field", "VALUE_A"), result);
     }
 
     @Test
     public void testBindEnhancedFilterByName() {
-        String query = operations.bindFilter(Object.class, "field = :field",
+        Bson result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field':'a value'}", query);
+        assertBsonEquals(Filters.eq("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field.sub = :field",
+        result = operations.bindFilter(Object.class, "field.sub = :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field.sub':'a value'}", query);
+        assertBsonEquals(Filters.eq("field.sub", "a value"), result);
 
-        //test field replacement
-        query = operations.bindFilter(DemoObj.class, "property = :field",
+        // test field replacement
+        result = operations.bindFilter(DemoObj.class, "property = :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'value':'a value'}", query);
+        assertBsonEquals(Filters.eq("value", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field = :field",
+        result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDate.of(2019, 3, 4)).map());
-        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDate.of(2019, 3, 4)), result);
 
-        query = operations.bindFilter(Object.class, "field = :field",
+        result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)), result);
 
-        query = operations.bindFilter(Object.class, "field = :field",
+        result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)), result);
 
-        query = operations.bindFilter(Object.class, "field = :field",
+        result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
+        assertBsonEquals(Filters.eq("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))), result);
 
-        query = operations.bindFilter(Object.class, "field = :field",
+        result = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());
-        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+        assertBsonEquals(Filters.eq("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")), result);
 
-        query = operations.bindFilter(Object.class, "field = :field and isOk = :isOk",
+        result = operations.bindFilter(Object.class, "field = :field and isOk = :isOk",
                 Parameters.with("field", "a value").and("isOk", true).map());
-        assertEquals("{'field':'a value','isOk':true}", query);
+        assertBsonEquals(Filters.and(Filters.eq("field", "a value"), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(Object.class, "field = :field or isOk = :isOk",
+        result = operations.bindFilter(Object.class, "field = :field or isOk = :isOk",
                 Parameters.with("field", "a value").and("isOk", true).map());
-        assertEquals("{'$or':[{'field':'a value'},{'isOk':true}]}", query);
+        assertBsonEquals(Filters.or(Filters.eq("field", "a value"), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(Object.class, "count > :lower and count <= :upper",
+        result = operations.bindFilter(Object.class, "count > :lower and count <= :upper",
                 Parameters.with("lower", 5).and("upper", 10).map());
-        assertEquals("{'count':{'$gt':5},'count':{'$lte':10}}", query);
+        assertBsonEquals(Filters.and(Filters.gt("count", 5), Filters.lte("count", 10)), result);
 
-        query = operations.bindFilter(Object.class, "field != :field",
+        result = operations.bindFilter(Object.class, "field != :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field':{'$ne':'a value'}}", query);
+        assertBsonEquals(Filters.ne("field", "a value"), result);
 
-        query = operations.bindFilter(Object.class, "field like :field",
+        result = operations.bindFilter(Object.class, "field like :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'field':{'$regex':'a value'}}", query);
+        assertBsonEquals(Filters.regex("field", "a value"), result);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
-        query = operations.bindFilter(DemoObj.class, "field in :fields",
+        result = operations.bindFilter(DemoObj.class, "field in :fields",
                 Parameters.with("fields", list).map());
-        assertEquals("{'field':{'$in':['f1', 'f2']}}", query);
+        assertBsonEquals(Filters.in("field", list), result);
 
-        query = operations.bindFilter(DemoObj.class, "field in :fields and isOk = :isOk",
+        result = operations.bindFilter(DemoObj.class, "field in :fields and isOk = :isOk",
                 Parameters.with("fields", list).and("isOk", true).map());
-        assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
+        assertBsonEquals(Filters.and(Filters.in("field", list), Filters.eq("isOk", true)), result);
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "field in :fields and (property = :p1 or property = :p2)",
                 Parameters.with("fields", list).and("p1", "jpg").and("p2", "gif").map());
-        assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
+        assertBsonEquals(Filters.and(
+                Filters.in("field", list),
+                Filters.or(Filters.eq("value", "jpg"), Filters.eq("value", "gif"))), result);
 
-        query = operations.bindFilter(DemoObj.class,
+        result = operations.bindFilter(DemoObj.class,
                 "field in :fields and isOk = :isOk and (property = :p1 or property = :p2)",
                 Parameters.with("fields", list)
                         .and("isOk", true)
                         .and("p1", "jpg")
                         .and("p2", "gif").map());
-        assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true,'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
+        assertBsonEquals(Filters.and(
+                Filters.and(Filters.in("field", list), Filters.eq("isOk", true)),
+                Filters.or(Filters.eq("value", "jpg"), Filters.eq("value", "gif"))), result);
+    }
+
+    @Test
+    public void testBindEnhancedFilterByNameWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson result = operations.bindFilter(Object.class, "field = :field",
+                Parameters.with("field", custom).map());
+        assertBsonEquals(Filters.eq("field", custom), result);
     }
 
     @Test
     public void testBindUpdate() {
         // native update by index without $set
-        String update = operations.bindUpdate(DemoObj.class, "{'field': ?1}", new Object[] { "a value" });
-        assertEquals("{'$set':{'field': 'a value'}}", update);
+        Bson update = operations.bindUpdate(DemoObj.class, "{'field': ?1}", new Object[] { "a value" });
+        assertInstanceOf(org.bson.Document.class, update);
+        org.bson.Document updateDoc = (org.bson.Document) update;
+        org.bson.Document setDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals("a value", setDoc.get("field"));
 
-        // native update by index without $set
+        // native update by index without $set (list value)
         update = operations.bindUpdate(DemoObj.class, "{'listField': ?1}", new Object[] { List.of("value1", "value2") });
-        assertEquals("{'$set':{'listField': ['value1', 'value2']}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        setDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals(List.of("value1", "value2"), setDoc.get("listField"));
 
         // native update by name without $set
         update = operations.bindUpdate(Object.class, "{'field': :field}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'$set':{'field': 'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        setDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals("a value", setDoc.get("field"));
 
         // native update by index with $set
         update = operations.bindUpdate(DemoObj.class, "{'$set':{'field': ?1}}", new Object[] { "a value" });
-        assertEquals("{'$set':{'field': 'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        setDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals("a value", setDoc.get("field"));
 
         // native update by name with $set
         update = operations.bindUpdate(Object.class, "{'$set':{'field': :field}}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'$set':{'field': 'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        setDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals("a value", setDoc.get("field"));
 
         // native update by index with $inc
         update = operations.bindUpdate(DemoObj.class, "{'$inc':{'field': ?1}}", new Object[] { "a value" });
-        assertEquals("{'$inc':{'field': 'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        org.bson.Document incDoc = (org.bson.Document) updateDoc.get("$inc");
+        assertEquals("a value", incDoc.get("field"));
 
         // native update by name with $inc
         update = operations.bindUpdate(Object.class, "{'$inc':{'field': :field}}",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'$inc':{'field': 'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        incDoc = (org.bson.Document) updateDoc.get("$inc");
+        assertEquals("a value", incDoc.get("field"));
 
-        // shortand update
+        // shorthand update
         update = operations.bindUpdate(Object.class, "field", new Object[] { "a value" });
-        assertEquals("{'$set':{'field':'a value'}}", update);
+        assertInstanceOf(org.bson.Document.class, update);
+        updateDoc = (org.bson.Document) update;
+        org.bson.Document innerDoc = (org.bson.Document) updateDoc.get("$set");
+        assertEquals("a value", innerDoc.get("field"));
 
         // enhanced update by index
         update = operations.bindUpdate(Object.class, "field = ?1", new Object[] { "a value" });
-        assertEquals("{'$set':{'field':'a value'}}", update);
+        assertBsonEquals(
+                new org.bson.Document("$set", Filters.eq("field", "a value")),
+                update);
 
         // enhanced update by name
         update = operations.bindUpdate(Object.class, "field = :field",
                 Parameters.with("field", "a value").map());
-        assertEquals("{'$set':{'field':'a value'}}", update);
+        assertBsonEquals(
+                new org.bson.Document("$set", Filters.eq("field", "a value")),
+                update);
+    }
+
+    @Test
+    public void testBindUpdateWithCustomType() {
+        CustomType custom = new CustomType("test");
+        Bson update = operations.bindUpdate(Object.class, "field", new Object[] { custom });
+        assertBsonEquals(
+                new org.bson.Document("$set", Filters.eq("field", custom)),
+                update);
+    }
+
+    @Test
+    public void testBindInWithCustomTypes() {
+        // PanacheQL IN with custom types
+        List<CustomType> customList = Arrays.asList(new CustomType("a"), new CustomType("b"));
+        Bson result = operations.bindFilter(Object.class, "field in ?1", new Object[] { customList });
+        assertBsonEquals(Filters.in("field", customList), result);
+
+        // PanacheQL IN with custom types by name
+        result = operations.bindFilter(Object.class, "field in :values",
+                Parameters.with("values", customList).map());
+        assertBsonEquals(Filters.in("field", customList), result);
+
+        // native query IN with custom types
+        result = operations.bindFilter(Object.class, "{ field: { '$in': ?1 } }", new Object[] { customList });
+        assertInstanceOf(org.bson.Document.class, result);
+        org.bson.Document doc = (org.bson.Document) result;
+        org.bson.Document inDoc = (org.bson.Document) doc.get("field");
+        assertEquals(customList, inDoc.get("$in"));
+
+        // PanacheQL IN with a single value (not a collection)
+        result = operations.bindFilter(Object.class, "field in ?1", new Object[] { "single" });
+        assertBsonEquals(Filters.in("field", "single"), result);
+    }
+
+    @Test
+    public void testBindStringEscaping() {
+        // test string with single quotes
+        Bson result = operations.bindFilter(Object.class, "field", new Object[] { "it's a value" });
+        assertBsonEquals(Filters.eq("field", "it's a value"), result);
+
+        // test string with backslashes
+        result = operations.bindFilter(Object.class, "field", new Object[] { "path\\to\\file" });
+        assertBsonEquals(Filters.eq("field", "path\\to\\file"), result);
+
+        // test string with double quotes
+        result = operations.bindFilter(Object.class, "field", new Object[] { "say \"hello\"" });
+        assertBsonEquals(Filters.eq("field", "say \"hello\""), result);
+
+        // enhanced query with special characters
+        result = operations.bindFilter(Object.class, "field = ?1", new Object[] { "it's a value" });
+        assertBsonEquals(Filters.eq("field", "it's a value"), result);
+
+        // native query with special characters
+        result = operations.bindFilter(Object.class, "{'field': ?1}", new Object[] { "it's a value" });
+        assertBsonEquals(Filters.eq("field", "it's a value"), result);
     }
 }

@@ -16,12 +16,12 @@ import com.mongodb.client.MongoClient;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.MongoTestBase;
 import io.quarkus.mongodb.runtime.MongoClientCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TooManyNamedCustomizersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class, MyCustomizer.class, MySecondCustomizer.class))
             .withConfigurationResource("named-mongoclient.properties")
             .assertException(t -> Assertions.assertThat(t).isInstanceOf(DeploymentException.class)

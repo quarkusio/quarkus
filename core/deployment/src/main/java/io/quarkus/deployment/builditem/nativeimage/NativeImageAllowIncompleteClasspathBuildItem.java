@@ -15,7 +15,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @Deprecated Please don't use it unless there is general consensus that we can't practically find a better solution.
  */
-@Deprecated
+@Deprecated(since = "2.3")
 public final class NativeImageAllowIncompleteClasspathBuildItem extends MultiBuildItem {
 
     private final String extensionName;

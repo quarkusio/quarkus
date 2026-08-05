@@ -2,10 +2,8 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.runtime.annotations.RecordableConstructor;
@@ -21,8 +19,6 @@ public final class QuarkusPersistenceUnitDefinition {
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean fromPersistenceXml;
     private final boolean isHibernateValidatorPresent;
-    private final Optional<FormatMapperKind> jsonMapperCreator;
-    private final Optional<FormatMapperKind> xmlMapperCreator;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @RecordableConstructor
@@ -31,8 +27,6 @@ public final class QuarkusPersistenceUnitDefinition {
             List<RecordableXmlMapping> xmlMappings,
             boolean fromPersistenceXml,
             boolean hibernateValidatorPresent,
-            Optional<FormatMapperKind> jsonMapperCreator,
-            Optional<FormatMapperKind> xmlMapperCreator,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
         Objects.requireNonNull(config);
@@ -41,8 +35,6 @@ public final class QuarkusPersistenceUnitDefinition {
         this.xmlMappings = xmlMappings;
         this.fromPersistenceXml = fromPersistenceXml;
         this.isHibernateValidatorPresent = hibernateValidatorPresent;
-        this.jsonMapperCreator = jsonMapperCreator;
-        this.xmlMapperCreator = xmlMapperCreator;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
     }
 
@@ -73,14 +65,6 @@ public final class QuarkusPersistenceUnitDefinition {
 
     public boolean isHibernateValidatorPresent() {
         return isHibernateValidatorPresent;
-    }
-
-    public Optional<FormatMapperKind> getJsonMapperCreator() {
-        return jsonMapperCreator;
-    }
-
-    public Optional<FormatMapperKind> getXmlMapperCreator() {
-        return xmlMapperCreator;
     }
 
     public List<HibernateOrmIntegrationStaticDescriptor> getIntegrationStaticDescriptors() {

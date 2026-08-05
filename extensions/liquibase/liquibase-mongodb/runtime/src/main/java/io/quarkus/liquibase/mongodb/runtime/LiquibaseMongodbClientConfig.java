@@ -42,6 +42,16 @@ public interface LiquibaseMongodbClientConfig {
     Map<String, String> changeLogParameters();
 
     /**
+     * The liquibase change log lock table name. Name of table to use for tracking concurrent Liquibase usage.
+     */
+    Optional<String> databaseChangeLogLockTableName();
+
+    /**
+     * The liquibase change log table name. Name of table to use for tracking change history.
+     */
+    Optional<String> databaseChangeLogTableName();
+
+    /**
      * The list of contexts
      */
     Optional<List<String>> contexts();

@@ -10,14 +10,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobal;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DataNamespaceValidationTest {
 
     private static final String ITEM_NAME = "Test Name";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Item.class, OtherItem.class, Globals.class)
                     .addAsResource(new StringAsset(

@@ -23,6 +23,7 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
 
     private final String imagePrefix;
     private final String repository;
+    private final String name;
 
     private final String tag;
 
@@ -34,6 +35,7 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
         this.username = username;
         this.password = password;
         this.repository = repository;
+        this.name = repository.contains(SLASH) ? repository.substring(repository.lastIndexOf(SLASH) + 1) : repository;
 
         StringBuilder sb = new StringBuilder();
         registry.ifPresent(r -> sb.append(r).append(SLASH));
@@ -49,6 +51,7 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
         this.registry = registry;
         this.username = username;
         this.password = password;
+        this.name = name;
 
         StringBuilder imagePrefixSB = new StringBuilder();
         StringBuilder repositorySB = new StringBuilder();
@@ -94,5 +97,9 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
 
     public String getGroup() {
         return repository == null ? null : repository.split("/")[0];
+    }
+
+    public String getName() {
+        return name;
     }
 }

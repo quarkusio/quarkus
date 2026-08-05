@@ -13,13 +13,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.json.JsonSetArgs;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.core.type.TypeReference;
 
 @RequiresCommand("json.get")
 public class JsonCommandsTest extends DatasourceTestBase {

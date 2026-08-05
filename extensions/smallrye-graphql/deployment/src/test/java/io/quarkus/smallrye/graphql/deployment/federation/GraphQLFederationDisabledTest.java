@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -19,7 +19,7 @@ import io.restassured.RestAssured;
 public class GraphQLFederationDisabledTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FooApi.class, Foo.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

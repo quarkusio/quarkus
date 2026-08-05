@@ -17,12 +17,12 @@ import io.quarkus.qute.RenderedResults;
 import io.quarkus.qute.RenderedResults.RenderedResult;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RenderedResultsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(SimpleBean.class, FooTemplates.class)
                     .addAsResource(new StringAsset("quarkus.qute.suffixes=txt,html"), "application.properties")

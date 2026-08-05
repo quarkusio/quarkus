@@ -11,14 +11,14 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ShowRuntimeExceptionMessageTest extends AbstractGraphQLTest {
 
     private static final String ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE = "Something went wrong";
     private static final String ILLEGAL_STATE_EXCEPTION_MESSAGE = "Something else went wrong";
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestApi.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")

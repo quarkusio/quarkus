@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.SchedulerContext;
 import org.quartz.SchedulerException;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnsupportedPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     // can be tested with any Quartz property that we don't have a Quarkus equivalent for
                     // this test leverages org.quartz.context.key.SOME_KEY, which is a configuration equivalent of

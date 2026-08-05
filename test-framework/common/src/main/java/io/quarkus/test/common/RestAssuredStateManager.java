@@ -1,5 +1,6 @@
 package io.quarkus.test.common;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -8,9 +9,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
-import io.restassured.internal.path.json.ConfigurableJsonSlurper;
 import io.restassured.path.json.JsonPath;
 import io.restassured.specification.RequestSpecification;
+import io.smallrye.config.Config;
 
 /**
  * Utility class that sets the rest assured port to the default test port and meaningful timeouts.
@@ -56,18 +57,22 @@ public class RestAssuredStateManager {
         return defaultValue;
     }
 
+    @Deprecated(forRemoval = true, since = "3.36")
     public static void setURL(boolean useSecureConnection) {
         setURL(useSecureConnection, null, null);
     }
 
+    @Deprecated(forRemoval = true, since = "3.36")
     public static void setURL(boolean useSecureConnection, String additionalPath) {
         setURL(useSecureConnection, null, additionalPath);
     }
 
+    @Deprecated(forRemoval = true, since = "3.36")
     public static void setURL(boolean useSecureConnection, Integer port) {
         setURL(useSecureConnection, port, null);
     }
 
+    @Deprecated(forRemoval = true, since = "3.36")
     public static void setURL(boolean useSecureConnection, Integer port, String additionalPath) {
         if (!REST_ASSURED_PRESENT) {
             return;
@@ -130,6 +135,56 @@ public class RestAssuredStateManager {
         }
     }
 
+    public static void setTestUri(URI baseUri) {
+        setTestUri(baseUri, null);
+    }
+
+    public static void setTestUri(URI baseUri, String additionalPath) {
+        if (!REST_ASSURED_PRESENT) {
+            return;
+        }
+
+        oldPort = RestAssured.port;
+        RestAssured.port = baseUri.getPort();
+
+        oldBaseURI = RestAssured.baseURI;
+        RestAssured.baseURI = baseUri.getScheme() + "://" + baseUri.getHost();
+
+        oldBasePath = RestAssured.basePath;
+        StringBuilder bp = new StringBuilder();
+        if (baseUri.getPath().startsWith("/")) {
+            bp.append(baseUri.getPath().substring(1));
+        } else {
+            bp.append(baseUri.getPath());
+        }
+        if (bp.toString().endsWith("/")) {
+            bp.setLength(bp.length() - 1);
+        }
+        if (additionalPath != null) {
+            if (!additionalPath.startsWith("/")) {
+                bp.append("/");
+            }
+            bp.append(additionalPath);
+            if (bp.toString().endsWith("/")) {
+                bp.setLength(bp.length() - 1);
+            }
+        }
+        RestAssured.basePath = bp.toString();
+
+        oldRestAssuredConfig = RestAssured.config();
+
+        // TODO - This configuration can be set a single time at start
+        Duration timeout = Config.get()
+                .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
+        configureTimeouts(timeout);
+
+        oldRequestSpecification = RestAssured.requestSpecification;
+        if (Config.get()
+                .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
+            RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        }
+    }
+
     private static void configureTimeouts(Duration d) {
         RestAssured.config = RestAssured.config().httpClient(new HttpClientConfig()
                 .setParam("http.conn-manager.timeout", d.toMillis()) // this needs to be long
@@ -145,17 +200,6 @@ public class RestAssuredStateManager {
         clearURL();
 
         JsonPath.config = null;
-        // Reset the numberReturnType ThreadLocal in ConfigurableJsonSlurper as it is causing class loader leaks
-        try {
-            java.lang.reflect.Field numberReturnTypeField = ConfigurableJsonSlurper.class.getDeclaredField("numberReturnType");
-            numberReturnTypeField.setAccessible(true);
-            ThreadLocal<?> threadLocal = (ThreadLocal<?>) numberReturnTypeField.get(null);
-            if (threadLocal != null) {
-                threadLocal.remove();
-            }
-        } catch (Exception e) {
-            // Ignore if the field doesn't exist or can't be accessed
-        }
     }
 
     /**

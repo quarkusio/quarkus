@@ -15,7 +15,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.CaffeineCache;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class SpecializedCacheTest {
@@ -23,7 +23,8 @@ public class SpecializedCacheTest {
     private static final String CACHE_NAME = "test-cache";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CacheManager cacheManager;

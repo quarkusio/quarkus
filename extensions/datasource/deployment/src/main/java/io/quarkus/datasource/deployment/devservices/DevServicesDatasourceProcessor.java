@@ -7,12 +7,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.deployment.spi.DataSourceFeatureRequirementBuildItem;
+import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
@@ -60,6 +63,7 @@ public class DevServicesDatasourceProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             LaunchModeBuildItem launchMode,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
+            List<DataSourceFeatureRequirementBuildItem> featureRequirements,
             BuildProducer<DevServicesResultBuildItem> devServicesResultBuildItemBuildProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -69,6 +73,14 @@ public class DevServicesDatasourceProcessor {
                 devServicesSharedNetworkBuildItem);
 
         Map<String, DevServicesDatasourceResultBuildItem.DbResult> results = new HashMap<>();
+
+        Map<String, Set<DatabaseFeature>> featuresByDatasource = featureRequirements
+                .stream()
+                .collect(Collectors.groupingBy(
+                        DataSourceFeatureRequirementBuildItem::getDatasourceName,
+                        Collectors.mapping(
+                                DataSourceFeatureRequirementBuildItem::getFeature,
+                                Collectors.toSet())));
         //now we need to figure out if we need to launch some databases
         //note that because we run in dev and test mode only we know the runtime
         //config at build time, as they both execute in the same JVM
@@ -91,12 +103,14 @@ public class DevServicesDatasourceProcessor {
         Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
 
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
+            Set<DatabaseFeature> features = featuresByDatasource
+                    .getOrDefault(entry.getKey(), Collections.emptySet());
             DevServicesResultBuildItem devService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
                     installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
                     devDBProviderMap, entry.getValue(), configHandlersByDbType,
                     dockerStatusBuildItem, composeProjectBuildItem,
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
-                    devServicesConfig, useSharedNetwork, newDatasourceConfigs);
+                    devServicesConfig, useSharedNetwork, newDatasourceConfigs, features);
             if (devService != null) {
                 devServicesResultBuildItemBuildProducer.produce(devService);
             }
@@ -152,7 +166,8 @@ public class DevServicesDatasourceProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem, LaunchMode launchMode,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig, boolean useSharedNetwork,
-            Map<String, Object> configForWhichChangesShouldTriggerARestart) {
+            Map<String, Object> configForWhichChangesShouldTriggerARestart,
+            Set<DatabaseFeature> requiredFeatures) {
 
         String dataSourcePrettyName = getDataSourcePrettyName(dbName);
 
@@ -187,7 +202,8 @@ public class DevServicesDatasourceProcessor {
                 dataSourcePrettyName, defaultDbKind);
 
         try {
-            DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig);
+            DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig,
+                    dbName, requiredFeatures);
 
             Map<String, Function<DatasourceStartable, String>> devDebProperties = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
@@ -395,7 +411,9 @@ public class DevServicesDatasourceProcessor {
     }
 
     private static DevServicesDatasourceContainerConfig getContainerConfig(
-            DataSourceBuildTimeConfig dataSourceBuildTimeConfig) {
+            DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+            String datasourceName,
+            Set<DatabaseFeature> requiredFeatures) {
         return new DevServicesDatasourceContainerConfig(
                 dataSourceBuildTimeConfig.devservices().imageName(),
                 dataSourceBuildTimeConfig.devservices().containerEnv(),
@@ -410,7 +428,9 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
                 dataSourceBuildTimeConfig.devservices().volumes(),
                 dataSourceBuildTimeConfig.devservices().reuse(),
-                dataSourceBuildTimeConfig.devservices().showLogs());
+                dataSourceBuildTimeConfig.devservices().showLogs(),
+                datasourceName,
+                requiredFeatures);
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

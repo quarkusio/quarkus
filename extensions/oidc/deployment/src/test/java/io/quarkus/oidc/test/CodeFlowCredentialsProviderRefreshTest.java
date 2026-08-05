@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.credentials.CredentialsProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.smallrye.mutiny.Uni;
@@ -31,7 +31,7 @@ public class CodeFlowCredentialsProviderRefreshTest {
     private static final String NAMED_TENANT = "named";
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ProtectedResource.class,
                             ClientSecretProviderProducer.class)
@@ -59,10 +59,7 @@ public class CodeFlowCredentialsProviderRefreshTest {
                                             quarkus.oidc.named.logout.path=${quarkus.oidc.logout.path}
                                             quarkus.oidc.named.authentication.pkce-required=${quarkus.oidc.authentication.pkce-required}
                                             quarkus.oidc.named.credentials.client-secret.method=post
-
-                                            quarkus.log.category."org.htmlunit.javascript.host.css.CSSStyleSheet".level=FATAL
-                                            quarkus.log.category."org.htmlunit.css".level=FATAL
-                                            quarkus.log.file.enabled=true
+                                            quarkus.log.category."org.htmlunit".level=ERROR
                                             """),
                             "application.properties"));
 

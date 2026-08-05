@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class EmptyAuthenticationContextValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     // starting the dev service would be a waste
                     .addClass(StepUpAuthResource.class)

@@ -11,7 +11,7 @@ public class MdcVerticle extends AbstractVerticle {
     private static final Logger LOGGER = Logger.getLogger(MdcVerticle.class);
 
     @Override
-    public void start(Promise<Void> done) {
+    public void start(Promise<Void> promise) {
         String address = config().getString("id");
         vertx.eventBus().<String> consumer(address)
                 .handler(message -> {
@@ -22,9 +22,9 @@ public class MdcVerticle extends AbstractVerticle {
                         vertx.executeBlocking(() -> {
                             LOGGER.warn("Blocking task executed ### " + MDC.get(MDC_KEY));
                             return null;
-                        }).onComplete(bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
+                        }, false).onComplete(bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
                     });
                 })
-                .completionHandler(done);
+                .completion().onComplete(promise);
     }
 }

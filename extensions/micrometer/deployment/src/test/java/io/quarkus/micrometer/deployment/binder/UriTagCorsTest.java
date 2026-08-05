@@ -12,13 +12,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.micrometer.test.HelloResource;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.micrometer.test.VertxWebEndpoint;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class UriTagCorsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")

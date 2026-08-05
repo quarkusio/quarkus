@@ -96,6 +96,7 @@ public final class ClassNames {
             createConstant("org.hibernate.id.enhanced.TableGenerator"),
             createConstant("org.hibernate.id.uuid.UuidGenerator"),
             createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$CompositeBeforeExecutionGenerator"),
+            createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$CompositeOnAndBeforeExecutionGenerator"),
             createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$CompositeOnExecutionGenerator"),
             createConstant("org.hibernate.tuple.entity.CompositeGeneratorBuilder$DummyGenerator"));
 
@@ -121,6 +122,8 @@ public final class ClassNames {
             createConstant("jakarta.persistence.SequenceGenerators"),
             createConstant("jakarta.persistence.TableGenerator"),
             createConstant("jakarta.persistence.TableGenerators"),
+            createConstant("org.hibernate.annotations.Audited"),
+            createConstant("org.hibernate.annotations.Audited$Table"),
             createConstant("org.hibernate.annotations.CollectionTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistrations"),
@@ -149,8 +152,10 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.NamedNativeQuery"),
             createConstant("org.hibernate.annotations.NamedQueries"),
             createConstant("org.hibernate.annotations.NamedQuery"),
+            createConstant("org.hibernate.annotations.Nationalized"),
             createConstant("org.hibernate.annotations.NativeGenerator"),
             createConstant("org.hibernate.annotations.SoftDelete"),
+            createConstant("org.hibernate.annotations.Temporal"),
             createConstant("org.hibernate.annotations.TypeRegistration"),
             createConstant("org.hibernate.annotations.TypeRegistrations"));
 
@@ -260,12 +265,22 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.AnyKeyJdbcType"),
             createConstant("org.hibernate.annotations.AnyKeyJdbcTypeCode"),
             createConstant("org.hibernate.annotations.Array"),
+            createConstant("org.hibernate.annotations.Audited"),
+            createConstant("org.hibernate.annotations.Audited$CollectionTable"),
+            createConstant("org.hibernate.annotations.Audited$Excluded"),
+            createConstant("org.hibernate.annotations.Audited$SecondaryTable"),
+            createConstant("org.hibernate.annotations.Audited$SecondaryTables"),
+            createConstant("org.hibernate.annotations.Audited$Table"),
             createConstant("org.hibernate.annotations.AttributeAccessor"),
             createConstant("org.hibernate.annotations.AttributeBinderType"),
             createConstant("org.hibernate.annotations.Bag"),
             createConstant("org.hibernate.annotations.BatchSize"),
             createConstant("org.hibernate.annotations.Cache"),
             createConstant("org.hibernate.annotations.Cascade"),
+            createConstant("org.hibernate.annotations.Changelog"),
+            createConstant("org.hibernate.annotations.Changelog$ChangesetId"),
+            createConstant("org.hibernate.annotations.Changelog$ModifiedEntities"),
+            createConstant("org.hibernate.annotations.Changelog$Timestamp"),
             createConstant("org.hibernate.annotations.Check"),
             createConstant("org.hibernate.annotations.Checks"),
             createConstant("org.hibernate.annotations.Collate"),
@@ -282,7 +297,6 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.ColumnDefault"),
             createConstant("org.hibernate.annotations.ColumnTransformer"),
             createConstant("org.hibernate.annotations.ColumnTransformers"),
-            createConstant("org.hibernate.annotations.Columns"),
             createConstant("org.hibernate.annotations.Comment"),
             createConstant("org.hibernate.annotations.Comments"),
             createConstant("org.hibernate.annotations.CompositeType"),
@@ -389,6 +403,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.NativeGenerator"),
             createConstant("org.hibernate.annotations.NaturalId"),
             createConstant("org.hibernate.annotations.NaturalIdCache"),
+            createConstant("org.hibernate.annotations.NaturalIdClass"),
             createConstant("org.hibernate.annotations.NotFound"),
             createConstant("org.hibernate.annotations.OnDelete"),
             createConstant("org.hibernate.annotations.OptimisticLock"),
@@ -421,6 +436,10 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.Struct"),
             createConstant("org.hibernate.annotations.Subselect"),
             createConstant("org.hibernate.annotations.Synchronize"),
+            createConstant("org.hibernate.annotations.Temporal"),
+            createConstant("org.hibernate.annotations.Temporal$Excluded"),
+            createConstant("org.hibernate.annotations.Temporal$HistoryPartitioning"),
+            createConstant("org.hibernate.annotations.Temporal$HistoryTable"),
             createConstant("org.hibernate.annotations.TargetEmbeddable"),
             createConstant("org.hibernate.annotations.TenantId"),
             createConstant("org.hibernate.annotations.TimeZoneColumn"),
@@ -479,6 +498,9 @@ public final class ClassNames {
             createConstant("java.util.Calendar"),
             createConstant("java.util.Currency"),
             createConstant("java.util.Date"),
+            createConstant("java.sql.Date"),
+            createConstant("java.sql.Time"),
+            createConstant("java.sql.Timestamp"),
             createConstant("java.util.Locale"),
             createConstant("java.util.Map$Entry"),
             createConstant("java.util.TimeZone"),
@@ -500,6 +522,26 @@ public final class ClassNames {
             createConstant("org.geolatte.geom.codec.MySqlWkbDecoder"),
             createConstant("org.geolatte.geom.codec.HANAWkbDecoder"));
 
+    public static final List<DotName> HIBERNATE_VECTOR_TYPE_CONTRIBUTORS = List.of(
+            createConstant("org.hibernate.vector.internal.PGVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.OracleVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.MariaDBTypeContributor"),
+            createConstant("org.hibernate.vector.internal.MySQLTypeContributor"),
+            createConstant("org.hibernate.vector.internal.DB2VectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.CockroachTypeContributor"),
+            createConstant("org.hibernate.vector.internal.HANAVectorTypeContributor"),
+            createConstant("org.hibernate.vector.internal.SQLServerTypeContributor"));
+
+    public static final List<DotName> HIBERNATE_VECTOR_FUNCTION_CONTRIBUTORS = List.of(
+            createConstant("org.hibernate.vector.internal.PGVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.OracleVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.MariaDBFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.MySQLFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.DB2VectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.CockroachFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.HANAVectorFunctionContributor"),
+            createConstant("org.hibernate.vector.internal.SQLServerVectorFunctionContributor"));
+
     public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
             "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");
 
@@ -520,5 +562,7 @@ public final class ClassNames {
             // Accessed in org.hibernate.event.spi.EventEngine.<init>
             createConstant("org.hibernate.event.spi.EventEngineContributor"),
             // Accessed in org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryImpl.buildServiceRegistry
-            createConstant("org.hibernate.service.spi.SessionFactoryServiceContributor"));
+            createConstant("org.hibernate.service.spi.SessionFactoryServiceContributor"),
+            // Accessed in org.hibernate.engine.extension.internal.ExtensionIntegrationServiceImpl.create
+            createConstant("org.hibernate.engine.extension.spi.ExtensionIntegration"));
 }

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
@@ -35,7 +35,7 @@ public class ShutdownTimeoutTest {
     protected static final int HANDLER_WAIT_TIME = 50000;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setAllowTestClassOutsideDeployment(true)
             .setArchiveProducer(new Supplier<>() {
                 @Override

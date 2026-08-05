@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -18,7 +18,7 @@ import io.vertx.ext.web.RoutingContext;
 public class UniRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
@@ -26,7 +26,6 @@ public class UniRouteTest {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-buffer").then().statusCode(200).body(is("Buffer"));
         when().get("/hello-on-pool").then().statusCode(200).body(is("Pool"));
-        when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
         when().get("/person").then().statusCode(200)
                 .body("name", is("neo"))
@@ -56,11 +55,6 @@ public class UniRouteTest {
         @Route(path = "hello-buffer")
         Uni<Buffer> helloWithBuffer(RoutingContext context) {
             return Uni.createFrom().item(Buffer.buffer("Buffer"));
-        }
-
-        @Route(path = "hello-mutiny-buffer")
-        Uni<io.vertx.mutiny.core.buffer.Buffer> helloWithMutinyBuffer(RoutingContext context) {
-            return Uni.createFrom().item(io.vertx.mutiny.core.buffer.Buffer.buffer("Mutiny Buffer"));
         }
 
         @Route(path = "hello-on-pool")

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -28,7 +28,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 public class NonApplicationEscapeTest {
     private static final String APP_PROPS = "" +
@@ -36,7 +35,7 @@ public class NonApplicationEscapeTest {
             "quarkus.http.non-application-root-path=${quarkus.http.root-path}\n";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(MyObserver.class))
@@ -86,8 +85,7 @@ public class NonApplicationEscapeTest {
 
         WebClient.create(vertx)
                 .get(uri.getPort(), uri.getHost(), "/non-app-absolute")
-                .expect(ResponsePredicate.SC_OK)
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
                         result.set(response.bodyAsString());
@@ -107,8 +105,7 @@ public class NonApplicationEscapeTest {
 
         WebClient.create(vertx)
                 .get(uri.getPort(), uri.getHost(), "/non-app-absolute?query=true")
-                .expect(ResponsePredicate.SC_OK)
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
                         result.set(response.bodyAsString());

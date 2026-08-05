@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.gcp.functions.GoogleCloudFunctionInfo;
 import io.quarkus.gcp.functions.GoogleCloudFunctionRecorder;
 
@@ -95,12 +96,13 @@ public class GoogleCloudFunctionsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, GoogleCloudFunctionRecorder recorder) {
+    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, GoogleCloudFunctionRecorder recorder,
+            ShutdownContextBuildItem shutdown) {
 
         List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream()
                 .map(CloudFunctionBuildItem::build)
                 .collect(Collectors.toList());
 
-        recorder.selectDelegate(functionInfos);
+        recorder.selectDelegate(functionInfos, shutdown);
     }
 }

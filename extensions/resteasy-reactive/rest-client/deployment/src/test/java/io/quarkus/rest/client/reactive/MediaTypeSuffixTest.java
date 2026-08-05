@@ -15,14 +15,14 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MediaTypeSuffixTest {
 
     private static final String CUSTOM_JSON_MEDIA_TYPE = "application/vnd.search.v1+json";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, Client.class, TestJacksonBasicMessageBodyReader.class))
             .withConfigurationResource("media-type-suffix-application.properties");

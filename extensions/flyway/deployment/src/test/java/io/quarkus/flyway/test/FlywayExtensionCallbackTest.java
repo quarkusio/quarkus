@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionCallbackTest {
 
@@ -35,7 +35,7 @@ public class FlywayExtensionCallbackTest {
             .withInitSqlFile("src/test/resources/callback-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
             .withApplicationRoot((jar) -> jar

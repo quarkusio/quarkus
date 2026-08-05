@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Apache Kafka with Schema Registry and Avro
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
 :topics: messaging,kafka,apicurio,registry
 :extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka
@@ -90,7 +89,7 @@ include::{includes}/devtools/build.adoc[]
 the `movies.avsc` will get compiled to a `Movie.java` file
 placed in the `target/generated-sources/avsc` directory.
 
-Take a look at the https://avro.apache.org/docs/current/spec.html#schemas[Avro specification] to learn more about
+Take a look at the https://avro.apache.org/docs/current/specification/#schemas[Avro specification] to learn more about
 the Avro syntax and supported types.
 
 TIP: With Quarkus, there's no need to use a specific Maven plugin to process the Avro schema, this is all done for you by the `quarkus-avro` extension!
@@ -556,11 +555,11 @@ import java.util.Map;
 import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
+    private final StrimziKafkaCluster kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder().build();
 
     private GenericContainer<?> registry;
 

@@ -1,59 +1,34 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.spi.metrics.ClientMetrics;
 
 public class VertxClientMetrics
-        implements ClientMetrics<EventTiming, EventTiming, Object, Object> {
+        implements ClientMetrics<EventTiming, Object, Object> {
 
     private final String type;
     private final Timer processing;
-    private final LongAdder current = new LongAdder();
-    private final LongAdder queue = new LongAdder();
+    private final LongAdder current;
     private final Counter resetCount;
     private final Counter completed;
-    private final Timer queueDelay;
 
-    VertxClientMetrics(MeterRegistry registry, String type, Tags tags) {
+    VertxClientMetrics(MeterRegistry registry, String type, Tags tags, Gauges<LongAdder> gauges) {
         this.type = type;
-
-        queueDelay = Timer.builder(name("queue.delay"))
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
 
         processing = Timer.builder(name("processing"))
                 .description("Processing time, from request start to response end")
                 .tags(tags)
                 .register(registry);
 
-        Gauge.builder(name("queue.size"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return queue.doubleValue();
-            }
-        })
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .strongReference(true)
-                .register(registry);
-
-        Gauge.builder(name("current"), new Supplier<Number>() {
-            @Override
-            public Number get() {
-                return current.doubleValue();
-            }
-        })
+        current = gauges.builder(name("current"), LongAdder::doubleValue)
                 .description("The number of requests currently handled by the client")
                 .tags(tags)
-                .strongReference(true)
                 .register(registry);
 
         completed = Counter.builder(name("completed"))
@@ -72,25 +47,18 @@ public class VertxClientMetrics
     }
 
     @Override
-    public EventTiming enqueueRequest() {
-        queue.increment();
-        return new EventTiming(queueDelay);
-    }
-
-    @Override
-    public void dequeueRequest(EventTiming event) {
-        queue.decrement();
-        event.end();
-    }
-
-    @Override
-    public EventTiming requestBegin(String uri, Object request) {
+    public EventTiming init() {
         current.increment();
         return new EventTiming(processing);
     }
 
     @Override
-    public void requestEnd(EventTiming requestMetric) {
+    public void requestBegin(EventTiming et, String uri, Object request) {
+        // Ignoring request-alone metrics at the moment
+    }
+
+    @Override
+    public void requestEnd(EventTiming requestMetric, long bytesWritten) {
         // Ignoring request-alone metrics at the moment
     }
 
@@ -107,7 +75,7 @@ public class VertxClientMetrics
     }
 
     @Override
-    public void responseEnd(EventTiming event) {
+    public void responseEnd(EventTiming event, long bytesRead) {
         current.decrement();
         event.end();
         completed.increment();

@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
-:categories: web
 :topics: web,load-shedding
 :extensions: io.quarkus:quarkus-load-shedding
 :extension-status: experimental

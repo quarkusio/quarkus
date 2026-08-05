@@ -21,12 +21,12 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class BeanParamTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest();
 
     @TestHTTPResource
     URI baseUri;
@@ -128,8 +128,6 @@ public class BeanParamTest {
         private String restQueryOverridden = "restQueryOverridden";
         @QueryParam("queryParam")
         private String queryParam = "queryParam";
-
-        // FIXME: Matrix not supported
     }
 
     public static class MyBeanParamWithProperties {
@@ -198,8 +196,6 @@ public class BeanParamTest {
         public String getQueryParam() {
             return "queryParam";
         }
-
-        // FIXME: Matrix not supported
     }
 
     @Path("/")

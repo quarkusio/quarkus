@@ -16,7 +16,7 @@ public class Fruit {
     public Fruit() {
     }
 
-    public Fruit(int id, String name, String description) {
+    public Fruit(Integer id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;

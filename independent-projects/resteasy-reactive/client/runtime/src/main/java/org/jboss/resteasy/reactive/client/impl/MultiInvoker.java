@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -13,12 +14,14 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.client.BasicRestResponse;
 import org.jboss.resteasy.reactive.client.SseEvent;
 import org.jboss.resteasy.reactive.client.SseEventFilter;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -119,17 +122,30 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
     @Override
     public <R> Multi<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
+        return method(name, entity, responseType, false);
+    }
+
+    public <R> Multi<R> method(String name, Entity<?> entity, GenericType<R> responseType,
+            boolean wrapAsRestMultiResponse) {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
+        CompletableFuture<BasicRestResponse> restResponseFuture = wrapAsRestMultiResponse ? new CompletableFuture<>() : null;
         // FIXME: backpressure setting?
-        return Multi.createFrom().emitter(emitter -> {
+        Multi<R> multi = Multi.createFrom().emitter(emitter -> {
             MultiRequest<R> multiRequest = new MultiRequest<>(emitter);
             RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity, responseType,
                     false);
             restClientRequestContext.getResult().handle((response, connectionError) -> {
                 if (connectionError != null) {
                     emitter.fail(connectionError);
+                    if (restResponseFuture != null) {
+                        restResponseFuture.completeExceptionally(connectionError);
+                    }
                 } else {
                     HttpClientResponse vertxResponse = restClientRequestContext.getVertxClientResponse();
+                    if (restResponseFuture != null) {
+                        restResponseFuture.complete(
+                                new BasicRestResponseImpl(response.getStatus(), response.getStringHeaders()));
+                    }
                     if (!emitter.isCancelled()) {
                         if (response.getStatus() == 200
                                 && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
@@ -142,9 +158,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                                 && isNewlineDelimited(response)) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
                                     vertxResponse);
-
                         } else {
-                            // read stuff in chunks
                             registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
                         }
                         vertxResponse.resume();
@@ -155,6 +169,11 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 return null;
             });
         });
+        if (restResponseFuture != null) {
+            Uni<BasicRestResponse> responseUni = Uni.createFrom().completionStage(restResponseFuture);
+            return new RestMultiResponseImpl<>(multi, responseUni);
+        }
+        return multi;
     }
 
     private boolean isNewlineDelimited(ResponseImpl response) {

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.builditem;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -11,7 +13,7 @@ public final class AdditionalApplicationArchiveMarkerBuildItem extends MultiBuil
     private final String file;
 
     public AdditionalApplicationArchiveMarkerBuildItem(String file) {
-        this.file = file;
+        this.file = Objects.requireNonNull(file);
     }
 
     public String getFile() {

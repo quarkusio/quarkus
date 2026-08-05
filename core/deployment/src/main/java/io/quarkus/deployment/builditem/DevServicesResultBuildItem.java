@@ -77,9 +77,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     private final Consumer<Startable> postStartAction;
 
     /**
-     * A map of application config that is dependent on the started service
+     * A map of config keys to functions that resolve values from the started service.
      */
     private final Map<String, Function<Startable, String>> applicationConfigProvider;
+
     private final Set<String> highPriorityConfig;
     private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
     private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies;

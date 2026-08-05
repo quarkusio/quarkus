@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
-import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.aesh.terminal.utils.ANSIBuilder;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -30,7 +30,6 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.fusesource.jansi.Ansi;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateProject;
@@ -51,6 +50,7 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -89,6 +89,12 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "noCode", defaultValue = "false")
     private boolean noCode;
 
+    /**
+     * When true, do not include the Maven/Gradle wrapper
+     */
+    @Parameter(property = "noBuildToolWrapper", defaultValue = "false")
+    private boolean noBuildToolWrapper;
+
     @Parameter(property = "example")
     private String example;
 
@@ -109,6 +115,14 @@ public class CreateProjectMojo extends AbstractMojo {
      */
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
+
+    /**
+     * A target platform stream, for example: {@code 3.15} or {@code io.quarkus.platform:3.15}.
+     * When specified, the extension registry client will be used to resolve the platform BOM
+     * corresponding to the given stream.
+     */
+    @Parameter(property = "stream", required = false)
+    private String stream;
 
     /**
      * Version of Java used to build the project.
@@ -230,8 +244,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
         ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver(mvn, log);
-        ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
-                mvn, log);
+        ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, stream,
+                catalogResolver, mvn, log);
 
         File projectRoot = outputDirectory;
         File pom = project != null ? project.getFile() : null;
@@ -313,6 +327,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .resourcePath(path)
                     .example(example)
                     .noCode(noCode)
+                    .noBuildToolWrapper(noBuildToolWrapper)
                     .appConfig(appConfig)
                     .data(data);
 
@@ -362,8 +377,18 @@ public class CreateProjectMojo extends AbstractMojo {
     }
 
     static ExtensionCatalog resolveExtensionsCatalog(AbstractMojo mojo, String groupId, String artifactId, String version,
-            ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
+            String stream, ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver,
+            MessageWriter log)
             throws MojoExecutionException {
+
+        if (!isBlank(stream)) {
+            if (!isBlank(groupId) || !isBlank(artifactId) || !isBlank(version)) {
+                throw new MojoExecutionException(
+                        "The 'stream' parameter cannot be combined with 'platformGroupId', 'platformArtifactId', or 'platformVersion'."
+                                + " Please use either 'stream' or the platform coordinates, not both.");
+            }
+            return resolveExtensionsCatalogForStream(mojo, stream, catalogResolver);
+        }
 
         if (catalogResolver.hasRegistries()) {
             try {
@@ -378,6 +403,29 @@ public class CreateProjectMojo extends AbstractMojo {
             }
         }
         return resolveExtensionCatalogDirectly(mojo, groupId, artifactId, version, catalogResolver, artifactResolver, log);
+    }
+
+    private static ExtensionCatalog resolveExtensionsCatalogForStream(AbstractMojo mojo, String stream,
+            ExtensionCatalogResolver catalogResolver) throws MojoExecutionException {
+        if (!catalogResolver.hasRegistries()) {
+            throw new MojoExecutionException(
+                    "Specifying a stream requires the Quarkus extension registry client."
+                            + " Please make sure the registry client is enabled.");
+        }
+        final PlatformStreamCoords streamCoords;
+        try {
+            streamCoords = PlatformStreamCoords.fromString(stream.trim());
+        } catch (IllegalArgumentException e) {
+            throw new MojoExecutionException(
+                    "Invalid stream value '" + stream + "'."
+                            + " Value should be specified as 'platformKey:streamId', for example: 3.15 or io.quarkus.platform:3.15",
+                    e);
+        }
+        try {
+            return catalogResolver.resolveExtensionCatalog(streamCoords);
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to resolve the extension catalog for stream '" + stream + "'", e);
+        }
     }
 
     private static ExtensionCatalog resolveExtensionCatalogDirectly(AbstractMojo mojo, String groupId, String artifactId,
@@ -463,7 +511,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void sanitizeOptions() {
         if (className != null) {
-            className = className.replaceAll("\\.(java|kotlin|scala)$", "");
+            className = className.replaceAll("\\.(java|kotlin)$", "");
             int idx = className.lastIndexOf('.');
             if (idx >= 0 && isBlank(packageName)) {
                 // if it's a full qualified class name, we use the package name part (only if the packageName wasn't already defined)
@@ -486,15 +534,17 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info("");
         getLog().info("========================================================================================");
         getLog().info(
-                ansi().a("Your new application has been created in ").bold().a(root.getAbsolutePath()).boldOff().toString());
-        getLog().info(ansi().a("Navigate into this directory and launch your application with ")
+                ANSIBuilder.builder().append("Your new application has been created in ").bold().append(root.getAbsolutePath())
+                        .boldOff().toString());
+        getLog().info(ANSIBuilder.builder().append("Navigate into this directory and launch your application with ")
                 .bold()
-                .fg(Ansi.Color.CYAN)
-                .a("mvn quarkus:dev")
+                .cyanText()
+                .append("mvn quarkus:dev")
                 .reset()
                 .toString());
         getLog().info(
-                ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080")
+                ANSIBuilder.builder().append("Your application will be accessible on ").bold().cyanText()
+                        .append("http://localhost:8080")
                         .reset().toString());
         getLog().info("========================================================================================");
         getLog().info("");

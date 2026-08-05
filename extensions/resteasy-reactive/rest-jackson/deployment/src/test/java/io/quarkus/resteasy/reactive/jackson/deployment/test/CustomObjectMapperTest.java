@@ -19,17 +19,18 @@ import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.http.ContentType;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class CustomObjectMapperTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withEmptyApplication();
 
     /**
      * Because we have configured the server Object Mapper instance with:
@@ -174,10 +175,10 @@ public class CustomObjectMapperTest {
         @Override
         public ObjectMapper getContext(final Class<?> type) {
             COUNT.incrementAndGet();
-            final ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
-                    .enable(SerializationFeature.WRITE_ENUMS_USING_INDEX);
-            return objectMapper;
+            return JsonMapper.builder()
+                    .enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
+                    .enable(EnumFeature.WRITE_ENUMS_USING_INDEX)
+                    .build();
         }
     }
 }

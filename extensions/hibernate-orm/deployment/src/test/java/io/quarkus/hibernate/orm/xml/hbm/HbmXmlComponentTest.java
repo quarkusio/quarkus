@@ -12,11 +12,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HbmXmlComponentTest {
     @RegisterExtension
-    final static QuarkusUnitTest TEST = new QuarkusUnitTest()
+    final static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClass(SmokeTestUtils.class)
                     .addClass(SchemaUtil.class)

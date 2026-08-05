@@ -4,7 +4,6 @@ import static io.quarkus.devtools.commands.CreateExtension.extractQuarkiverseExt
 import static io.quarkus.devtools.commands.CreateExtension.isQuarkiverseGroupId;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
@@ -245,9 +244,8 @@ public class CreateExtensionMojo extends AbstractMojo {
 
         if (!isBlank(artifactId)) {
             if (isBlank(extensionId)) {
-                getLog().warn(ansi().a(
-                        "the given 'artifactId' has been automatically converted to 'extensionId' for backward compatibility.")
-                        .toString());
+                getLog().warn(
+                        "the given 'artifactId' has been automatically converted to 'extensionId' for backward compatibility.");
                 if (artifactId.startsWith("quarkus-")) {
                     namespaceId = "quarkus-";
                     extensionId = artifactId.replace("quarkus-", "");

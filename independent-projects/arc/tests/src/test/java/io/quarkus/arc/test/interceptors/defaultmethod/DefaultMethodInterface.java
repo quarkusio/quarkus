@@ -2,11 +2,11 @@ package io.quarkus.arc.test.interceptors.defaultmethod;
 
 public interface DefaultMethodInterface {
 
-    @NextBinding // This annotation should be ignored
+    @NextBinding
     default String defaultMethod() {
         return "default method";
     }
 
-    @NextBinding // This annotation should be ignored
+    @NextBinding // ignored on abstract interface methods
     String ping();
 }

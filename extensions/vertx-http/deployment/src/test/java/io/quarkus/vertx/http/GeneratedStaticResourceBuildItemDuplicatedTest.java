@@ -14,13 +14,13 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 
 public class GeneratedStaticResourceBuildItemDuplicatedTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+    final static QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot(
             (jar) -> jar.add(new StringAsset(""), "application.properties"))
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override

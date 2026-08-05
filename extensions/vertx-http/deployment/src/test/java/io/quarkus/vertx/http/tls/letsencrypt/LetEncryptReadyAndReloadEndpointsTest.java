@@ -16,7 +16,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
@@ -51,7 +51,7 @@ public class LetEncryptReadyAndReloadEndpointsTest {
             """.formatted(SELF_SIGNED_CERT, SELF_SIGNED_KEY);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, LetsEncryptFlowTestBase.class)
                     .addAsResource(new StringAsset((configuration)), "application.properties"));

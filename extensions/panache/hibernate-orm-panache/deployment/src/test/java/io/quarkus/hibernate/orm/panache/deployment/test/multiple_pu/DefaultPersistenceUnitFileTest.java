@@ -9,19 +9,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu.first.FirstEntity;
 import io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu.second.SecondEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class DefaultPersistenceUnitFileTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                     .addAsResource(new StringAsset(
-                            "quarkus.datasource.db-kind=h2\n" +
-                                    "quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1"),
+                            "quarkus.datasource.db-kind=h2"),
                             "application.properties"));
 
     @Test

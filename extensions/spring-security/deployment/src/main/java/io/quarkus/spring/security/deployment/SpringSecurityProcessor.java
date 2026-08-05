@@ -5,6 +5,7 @@ import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurit
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,12 +27,11 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -238,7 +238,8 @@ class SpringSecurityProcessor {
          * For each meta-annotation add the value of @PreAuthorize to the method tracking map
          */
         Set<DotName> classesInNeedOfAnnotationTransformation = new HashSet<>();
-        for (ClassInfo metaAnnotation : metaAnnotations.values()) {
+        for (ClassInfo metaAnnotation : metaAnnotations.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList()) {
             for (AnnotationInstance instance : index.getIndex().getAnnotations(metaAnnotation.name())) {
                 if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                     continue;
@@ -286,7 +287,7 @@ class SpringSecurityProcessor {
         Map<DotName, Set<FieldInfo>> stringPropertiesInNeedOfGeneratedAccessors = new HashMap<>();
 
         for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+                .entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
             AnnotationInstance instance = entry.getValue();
             MethodInfo methodInfo = entry.getKey();
             String value = instance.value().asString().trim();
@@ -340,9 +341,10 @@ class SpringSecurityProcessor {
 
         // actually generate the accessor classes as beans
         if (!stringPropertiesInNeedOfGeneratedAccessors.isEmpty()) {
-            GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+            GeneratedBeanGizmo2Adaptor classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
             Set<String> generatedBeanClassNames = new HashSet<>(stringPropertiesInNeedOfGeneratedAccessors.keySet().size());
-            for (Map.Entry<DotName, Set<FieldInfo>> entry : stringPropertiesInNeedOfGeneratedAccessors.entrySet()) {
+            for (Map.Entry<DotName, Set<FieldInfo>> entry : stringPropertiesInNeedOfGeneratedAccessors.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey()).toList()) {
                 String generateClassName = StringPropertyAccessorGenerator.generate(entry.getKey(), entry.getValue(),
                         classOutput);
                 generatedBeanClassNames.add(generateClassName);
@@ -368,10 +370,13 @@ class SpringSecurityProcessor {
         Set<String> beansReferencedInPreAuthorized = new HashSet<>();
         BeanMethodInvocationGenerator beanMethodInvocationGenerator = new BeanMethodInvocationGenerator(index.getIndex(),
                 springBeansNameToDotName, springBeansNameToClassInfo, beansReferencedInPreAuthorized,
-                new GeneratedClassGizmoAdaptor(generatedClasses, true));
+                (resourceName, bytes) -> {
+                    String className = resourceName.substring(0, resourceName.length() - 6).replace('/', '.');
+                    generatedClasses.produce(new GeneratedClassBuildItem(true, className, bytes));
+                });
 
         for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+                .entrySet().stream().sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
             AnnotationInstance instance = entry.getValue();
 
             MethodInfo methodInfo = entry.getKey();

@@ -12,12 +12,12 @@ import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ExitCodeTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication();
 
     @Test
@@ -52,6 +52,30 @@ public class ExitCodeTestCase {
         Assertions.assertFalse(future.isDone());
         Quarkus.asyncExit(10);
         Assertions.assertEquals(10, future.get());
+    }
+
+    @Test
+    public void testWaitToExitWithThrowable() throws ExecutionException, InterruptedException {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Throwable> throwableFuture = new CompletableFuture<>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ApplicationLifecycleManager.run(Application.currentApplication(), WaitToExitApplication.class,
+                        new BiConsumer<Integer, Throwable>() {
+                            @Override
+                            public void accept(Integer integer, Throwable cause) {
+                                future.complete(integer);
+                                throwableFuture.complete(cause);
+                            }
+                        });
+            }
+        }).start();
+        Thread.sleep(500);
+        Assertions.assertFalse(future.isDone());
+        Quarkus.asyncExit(10, new RuntimeException("I've failed"));
+        Assertions.assertEquals(10, future.get());
+        Assertions.assertEquals("I've failed", throwableFuture.get().getMessage());
     }
 
     @Test

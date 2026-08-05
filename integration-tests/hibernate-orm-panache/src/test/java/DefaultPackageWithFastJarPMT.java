@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
-import io.quarkus.it.panache.defaultpu.TestResources;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -14,7 +13,7 @@ public class DefaultPackageWithFastJarPMT {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(PackagelessCat.class, TestResources.class))
+                    .addClasses(PackagelessCat.class))
             .setApplicationName("default-package")
             .setApplicationVersion(Version.getVersion())
             .withConfigurationResource("application.properties")

@@ -11,13 +11,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class ClientMultipleBodyParamLogMessageTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(Client.class));
+                    .addClass(Client.class))
+            .overrideConfigKey(
+                    "quarkus.log.category.\"org.jboss.resteasy.reactive.common.processor.EndpointIndexer\".level",
+                    "OFF");
 
     @Test
     void basicTest() {

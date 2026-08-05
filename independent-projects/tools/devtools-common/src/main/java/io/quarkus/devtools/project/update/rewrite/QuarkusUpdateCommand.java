@@ -57,6 +57,7 @@ public class QuarkusUpdateCommand {
                 runMavenUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, logFile, dryRun);
                 break;
             case GRADLE:
+            case GRADLE_KOTLIN_DSL:
                 runGradleUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, logFile, dryRun);
                 break;
             default:
@@ -158,6 +159,7 @@ public class QuarkusUpdateCommand {
         List<String> command = new ArrayList<>();
         command.add(mvnBinary);
         command.add("-B");
+        command.add("-ntp");
         command.add("-e");
         command.add("process-sources");
         final String mavenSettings = getMavenSettingsArg();
@@ -174,6 +176,7 @@ public class QuarkusUpdateCommand {
         final List<String> command = new ArrayList<>();
         command.add(mvnBinary);
         command.add("-B");
+        command.add("-ntp");
         command.add("-e");
         command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,

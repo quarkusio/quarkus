@@ -80,4 +80,61 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
             assertTrue(getSpans().isEmpty(), "No spans should be recorded when OpenTelemetry is disabled.");
         });
     }
+
+    protected void testConnectionNotTraced(String dbKind) {
+        given()
+                .queryParam("id", 2)
+                .when().post("/hit/" + dbKind)
+                .then()
+                .statusCode(200)
+                .body("message", Matchers.equalTo("Hit message."));
+
+        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+            List<Map<String, Object>> spans = getSpans();
+            assertFalse(spans.isEmpty());
+
+            // Verify no connection acquisition span is present (only statement spans with db.operation)
+            for (Map<String, Object> spanData : spans) {
+                if (spanData.get("attributes") instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> attributes = (Map<String, Object>) spanData.get("attributes");
+                    if (attributes.containsKey("db.system") && !attributes.containsKey("db.operation")) {
+                        throw new AssertionError(
+                                "Connection acquisition span should not be present when trace-connection is disabled. "
+                                        + "Span attributes: " + attributes);
+                    }
+                }
+            }
+        });
+    }
+
+    protected void testConnectionTraced(String dbKind) {
+        given()
+                .queryParam("id", 1)
+                .when().post("/hit/" + dbKind)
+                .then()
+                .statusCode(200)
+                .body("message", Matchers.equalTo("Hit message."));
+
+        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+            List<Map<String, Object>> spans = getSpans();
+            assertFalse(spans.isEmpty());
+
+            // Verify at least one connection acquisition span IS present
+            // (has db.system but no db.operation)
+            boolean connectionSpanFound = false;
+            for (Map<String, Object> spanData : spans) {
+                if (spanData.get("attributes") instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> attributes = (Map<String, Object>) spanData.get("attributes");
+                    if (attributes.containsKey("db.system") && !attributes.containsKey("db.operation")) {
+                        connectionSpanFound = true;
+                        break;
+                    }
+                }
+            }
+            assertTrue(connectionSpanFound,
+                    "Connection acquisition span should be present when trace-connection is enabled.");
+        });
+    }
 }

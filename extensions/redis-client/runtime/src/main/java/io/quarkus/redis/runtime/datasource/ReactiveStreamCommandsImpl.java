@@ -24,7 +24,7 @@ import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<K, F, V>
@@ -112,6 +112,9 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         // the response is an array with two elements:
         // 1. the stream id
         // 2. the payload (another array)
+        // When XREADGROUP CLAIM is used, claimed (pending) entries have two extra elements:
+        // 3. milliseconds since last delivery
+        // 4. delivery count
 
         if (response == null) {
             return null;
@@ -124,19 +127,32 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
             var streamId = response.get(0).toString();
             var payload = response.get(1);
             var content = decodeMessagePayload(payload);
+            if (response.size() > 2) {
+                var durationSinceLastDelivery = Duration.ofMillis(response.get(2).toLong());
+                var deliveryCount = response.get(3).toInteger();
+                return new StreamMessage<>(key, streamId, content, durationSinceLastDelivery, deliveryCount);
+            }
             return new StreamMessage<>(key, streamId, content);
         }
     }
 
     Map<F, V> decodeMessagePayload(Response response) {
         Map<F, V> map = new HashMap<>();
-        F current = null;
-        for (Response nested : response) {
-            if (current == null) {
-                current = marshaller.decode(typeOfField, nested);
-            } else {
-                map.put(current, marshaller.decode(typeOfValue, nested));
-                current = null;
+        if (isMap(response)) {
+            for (String key : response.getKeys()) {
+                F field = marshaller.decode(typeOfField, key.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                V value = marshaller.decode(typeOfValue, response.get(key));
+                map.put(field, value);
+            }
+        } else {
+            F current = null;
+            for (Response nested : response) {
+                if (current == null) {
+                    current = marshaller.decode(typeOfField, nested);
+                } else {
+                    map.put(current, marshaller.decode(typeOfValue, nested));
+                    current = null;
+                }
             }
         }
         return map;
@@ -256,12 +272,19 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         if (r == null) {
             return List.of();
         }
-        // The response is a _map_ key -> list, in this case
         List<StreamMessage<K, F, V>> list = new ArrayList<>();
-        for (Response response : r) {
-            // Each response is a _list_ where the first element is the key.
-            // The other elements are a list of array (stream id, message)
-            list.addAll(decodeMessageListPrefixedByKey(response));
+        if (isMap(r)) {
+            for (String keyStr : r.getKeys()) {
+                K key = marshaller.decode(typeOfKey, keyStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                Response messages = r.get(keyStr);
+                for (Response msg : messages) {
+                    list.add(decodeMessageWithStreamId(key, msg));
+                }
+            }
+        } else {
+            for (Response response : r) {
+                list.addAll(decodeMessageListPrefixedByKey(response));
+            }
         }
         return list;
     }

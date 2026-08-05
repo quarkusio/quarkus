@@ -5,6 +5,8 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -18,7 +20,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.Compressed;
 import io.quarkus.vertx.http.Uncompressed;
 import io.restassured.response.ExtractableResponse;
@@ -27,7 +29,7 @@ import io.restassured.response.Response;
 public class CompressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(MyEndpoint.class)
                     .addAsManifestResource(new StringAsset(MyEndpoint.MESSAGE), "resources/file.txt")
@@ -168,7 +170,7 @@ public class CompressionTest {
         @GET
         @Produces(MediaType.SERVER_SENT_EVENTS)
         @Path("stream-uncompressed")
-        public void uncompressedSseSink(Sse sse, SseEventSink sink) {
+        public void uncompressedSseSink(Sse sse, SseEventSink sink) throws IOException {
             doSend(sse, sink);
         }
 
@@ -176,11 +178,11 @@ public class CompressionTest {
         @Produces(MediaType.SERVER_SENT_EVENTS)
         @Compressed
         @Path("stream-compressed")
-        public void compressedSseSink(Sse sse, SseEventSink sink) {
+        public void compressedSseSink(Sse sse, SseEventSink sink) throws IOException {
             doSend(sse, sink);
         }
 
-        private void doSend(Sse sse, SseEventSink sink) {
+        private void doSend(Sse sse, SseEventSink sink) throws IOException {
             for (var i = 0; i < 1000; i++) {
                 var event = sse.newEventBuilder().data(String.class, MESSAGE).build();
                 sink.send(event);

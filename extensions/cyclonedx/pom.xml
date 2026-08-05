@@ -15,8 +15,10 @@
     <packaging>pom</packaging>
     <modules>
         <module>generator</module>
+        <module>deployment-spi</module>
         <module>deployment</module>
         <module>runtime</module>
+        <module>endpoint</module>
     </modules>
 
 </project>

@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Hibernate ORM"
+description: "Object-relational mapping with JPA/Hibernate for relational database access"
 metadata:
   short-name: "JPA"
   keywords:
@@ -8,6 +9,7 @@ metadata:
   - "jpa"
   - "hibernate"
   guide: "https://quarkus.io/guides/hibernate-orm"
+  quickstart: "hibernate-orm-quickstart"
   categories:
   - "data"
   status: "stable"

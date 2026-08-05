@@ -32,11 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 
 public class MultiByteFileTest {
     public static final int BYTES_SENT = 5_000_000; // 5 megs
@@ -50,7 +51,7 @@ public class MultiByteFileTest {
     Vertx vertx;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Resource.class, FormData.class, Client.class, ClientForm.class));
 
@@ -137,7 +138,7 @@ public class MultiByteFileTest {
                 () -> {
                     long iteration = i.getAndIncrement();
                     if (iteration > BYTES_SENT / 2) {
-                        throw new RuntimeException("forced");
+                        throw VertxException.noStackTrace("forced");
                     }
                     return (byte) ((iteration + 1) % 123);
                 }).atMost(BYTES_SENT);

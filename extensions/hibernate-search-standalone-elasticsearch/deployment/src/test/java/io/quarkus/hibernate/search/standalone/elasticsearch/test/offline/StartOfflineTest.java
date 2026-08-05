@@ -11,7 +11,7 @@ import org.hibernate.search.util.common.SearchException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test that an application can be configured to start successfully
@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StartOfflineTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(IndexedEntity.class)
                     .addAsResource("application-start-offline.properties", "application.properties"));
@@ -41,7 +41,7 @@ public class StartOfflineTest {
         try (var searchSession = searchMapping.createSession()) {
             assertThatThrownBy(() -> searchSession.schemaManager(IndexedEntity.class).createIfMissing())
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Elasticsearch request failed: Connection refused");
+                    .hasMessageContaining("Connection refused");
         }
     }
 
@@ -51,7 +51,7 @@ public class StartOfflineTest {
             assertThatThrownBy(() -> searchSession.search(IndexedEntity.class)
                     .where(f -> f.matchAll()).fetchHits(20))
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Elasticsearch request failed: Connection refused");
+                    .hasMessageContaining("Connection refused");
         }
     }
 

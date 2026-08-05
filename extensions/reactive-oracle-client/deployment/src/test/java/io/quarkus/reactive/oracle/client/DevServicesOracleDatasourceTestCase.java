@@ -12,13 +12,13 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.mutiny.sqlclient.Pool;
 
 public class DevServicesOracleDatasourceTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withEmptyApplication()
             // Expect no warnings from reactive
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()

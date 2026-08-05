@@ -13,111 +13,119 @@ import { updateWhenLocaleChanges, dynamicMsg } from 'localization';
 
 /**
  * This component shows the Bottom Drawer
- * 
+ *
  */
 export class QwcFooter extends observeState(LitElement) {
-        
+
     storageControl = new StorageController(this);
-    
+
     static styles = css`
-    
+
         .openIcon {
             cursor: pointer;
             font-size: var(--lumo-font-size-s);
+            color: var(--lumo-contrast-50pct);
+            transition: color var(--devui-transition-fast, 0.15s ease);
         }
-        
+
         .openIcon:hover {
-            color: var(--quarkus-blue);
+            color: var(--lumo-primary-color);
         }
-        
+
         #footer {
-            background: var(--lumo-contrast-5pct);
+            background: var(--lumo-base-color);
             overflow: hidden;
-            margin-right: 5px;
-            margin-left: 5px;
-            border-radius: 15px 15px 0px 0px;
+            margin: 0;
+            border-radius: 0;
+            border-top: 1px solid var(--lumo-contrast-10pct);
             display: flex;
             flex-direction: column;
         }
         .footerOpen {
-            
+
         }
         .footerClose {
             max-height: 38px;
             overflow: hidden;
         }
-        
+
         .dragOpen {
             overflow: hidden;
-            height: 4px;
+            height: 3px;
             cursor: row-resize;
-            background: var(--lumo-contrast-10pct);
+            background: transparent;
+            position: relative;
+            transition: background var(--devui-transition-fast, 0.15s ease);
         }
-    
+
+        .dragOpen::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--lumo-contrast-20pct);
+            transition: background var(--devui-transition-fast, 0.15s ease), width var(--devui-transition-fast, 0.15s ease);
+        }
+
+        .dragOpen:hover::after {
+            background: var(--lumo-primary-color);
+            width: 48px;
+        }
+
         .resizeIcon {
             width: 0px;
         }
-    
+
         @media screen and (max-width: 1600px) {
             .dragOpen {
-                height: 5px;
-                background: var(--lumo-contrast-10pct);
+                height: 4px;
             }
         }
-    
+
         @media screen and (max-width: 1280px) {
             .dragOpen {
-                height: 6px;
-                background: var(--lumo-contrast-20pct);
-            }
-            #footer {
-                margin-right: 0px;
-                margin-left: 0px;
-                border-radius: 0px 0px 0px 0px;
+                height: 5px;
             }
             .resizeIcon {
                 width: var(--lumo-icon-size-s);
                 cursor: row-resize;
             }
         }
-    
+
         @media screen and (max-width: 1152px) {
             .dragOpen {
-                height: 7px;
-                background: var(--lumo-contrast-20pct);
+                height: 5px;
             }
         }
-    
+
         @media screen and (max-width: 1024px) {
             .dragOpen {
-                height: 7px;
-                background: var(--lumo-contrast-30pct);
+                height: 6px;
             }
         }
-    
+
         @media screen and (max-width: 900px) {
             .dragOpen {
-                height: 8px;
-                background: var(--lumo-contrast-30pct);
+                height: 6px;
             }
-        } 
-        
+        }
+
         vaadin-menu-bar-button {
             background-color: transparent;
         }
-        
+
         vaadin-menu-bar-button:hover {
             background-color: transparent;
         }
-    
-        .dragOpen:hover {
-            background: var(--quarkus-blue);
-        }
-        
+
         .dragClose {
             display:none;
         }
-        
+
         vaadin-tabsheet {
             overflow: hidden;
         }
@@ -130,50 +138,54 @@ export class QwcFooter extends observeState(LitElement) {
             justify-content: flex-start;
             font-size: var(--lumo-font-size-s);
         }
-        
+
         vaadin-tabs {
-            max-width: 100%; 
+            max-width: 100%;
             overflow: hidden;
         }
         .tabsOpen {
             height: 100%;
         }
-    
+
         .tabsClose {
             max-height: 0px;
             visibility: collapse;
         }
-        
+
         vaadin-tab {
             overflow: hidden;
+            font-size: var(--lumo-font-size-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 500;
         }
         .tabOpen {
-            
+
         }
         .tabClose {
             max-height: 0px;
             visibility: hidden;
         }
-        
+
         .controlsOpen {
         }
-        
+
         .controlsClose {
             display:none;
         }
-    
+
         .tabContentOpen {
             font-size: var(--lumo-font-size-s);
             overflow: auto;
         }
-    
+
         .tabContentClose {
             font-size: var(--lumo-font-size-s);
             overflow: hidden;
             max-height: 0px;
             visibility: hidden;
         }
-        
+
     `;
 
     static properties = {
@@ -263,31 +275,31 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     render() {
-        
+
         var selectedComponentName = devuiState.footer[this._selectedTab];
         if(!selectedComponentName){ // Might have been removed
             this._tabSelected(0);
         }
-        
+
             return html`<div id="footer" class="${this._footerClass}" style="height: ${this._height}px;" @dblclick=${this._doubleClicked}>
                         <div class="${this._dragClass}" @mousedown=${this._mousedown}></div>
                         <vaadin-tabsheet theme="minimal" class="${this._tabsheetClass}">
-        
+
                             ${this._renderTabBodies()}
-        
+
                             <qwc-ws-status slot="prefix"></qwc-ws-status>
                             <vaadin-icon slot="prefix" class="openIcon" icon="font-awesome-solid:chevron-${this._arrow}" @click=${this._openCloseClicked}></vaadin-icon>
-                            
+
                             <vaadin-tabs slot="tabs" class="${this._tabsClass}" theme="small" selected=${this._selectedTab}>
                                 ${this._renderTabHeaders()}
                             </vaadin-tabs>
-        
+
                             <div class="${this._controlsClass}" slot="suffix">
                                 ${this._renderControls()}
                             </div>
-        
+
                             ${this._renderResizeIcon()}
-                            
+
                         </vaadin-tabsheet>
                     </div>`;
     }
@@ -297,22 +309,22 @@ export class QwcFooter extends observeState(LitElement) {
                 this._renderTabHeader(footerTab, index)
             )}`;
     }
-    
+
     _renderTabHeader(footerTab, index){
         import(footerTab.componentRef);
         return html`<vaadin-tab id="tab-${index}" class="${this._tabClass}" @click=${() => this._tabSelected(index)}>${dynamicMsg('footer', footerTab.title)}</vaadin-tab>`;
     }
-    
+
     _renderControls(){
         return html`<vaadin-menu-bar
                             theme="icon tertiary-inline small"
-                            .items="${this._controlButtons}" 
+                            .items="${this._controlButtons}"
                             @item-selected="${this._controlButtonClicked}">
                         </vaadin-menu-bar>`;
     }
-    
+
     _renderTabBodies(){
-        
+
         return html`${devuiState.footer.map((footerTab, index) =>
                 html`<div class="${this._tabContentClass}" tab="tab-${index}">
                     ${this._renderTabBody(footerTab)}
@@ -359,7 +371,7 @@ export class QwcFooter extends observeState(LitElement) {
     _mousemove = (e) => {
         const height = this._originalHeight - (e.y - this._originalMouseY);
         this._height = height;
-        
+
         // Snap close
         if(this._height<=70){
             this._height = this._originalHeight;
@@ -371,20 +383,20 @@ export class QwcFooter extends observeState(LitElement) {
     _mouseup = (e) => {
         document.removeEventListener('mousemove', this._mousemove, true);
         document.removeEventListener('mouseup', this._mouseup, true);
-        
+
         if(this._height){
             this.storageControl.set('height', this._height);
         }
     }
 
     _doubleClicked(e) {
-        if(e.target.tagName.toLowerCase() === "vaadin-tabs" 
+        if(e.target.tagName.toLowerCase() === "vaadin-tabs"
                 || e.target.tagName.toLowerCase() === "vaadin-tabsheet"){
-            
+
                 this._openCloseClicked(e);
         }
     }
-    
+
     _openCloseClicked(e){
         if(this._isOpen){
             this._close();
@@ -402,7 +414,7 @@ export class QwcFooter extends observeState(LitElement) {
             }
         }
     }
-    
+
     _open(){
         this._arrow = "down";
         this._footerClass = "footerOpen";
@@ -415,7 +427,7 @@ export class QwcFooter extends observeState(LitElement) {
         this._isOpen=true;
         this.storageControl.set('state', "open");
     }
-    
+
     _close(){
         this._arrow = "up";
         this._footerClass = "footerClose";
@@ -428,7 +440,7 @@ export class QwcFooter extends observeState(LitElement) {
         this._isOpen=false;
         this.storageControl.set('state', "close");
     }
-    
+
     _controlButtonClicked(e){
         LogController.fireCallback(e);
     }

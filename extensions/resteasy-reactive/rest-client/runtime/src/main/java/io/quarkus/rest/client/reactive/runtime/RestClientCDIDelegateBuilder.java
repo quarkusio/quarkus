@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -90,6 +89,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureShared(builder);
         configureLogging(builder);
         configureCustomProperties(builder);
+        configureDomainSocket(builder);
         configureClientOptionsCustomizer(builder);
     }
 
@@ -146,11 +146,11 @@ public class RestClientCDIDelegateBuilder<T> {
         }
 
         Optional<Integer> maxChunkSize = oneOf(
-                restClientConfig.maxChunkSize().map(intChunkSize()),
+                restClientConfig.maxChunkSize().map(MemorySize::asIntValue),
                 restClientConfig.multipart().maxChunkSize().isPresent()
                         ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
                         : Optional.empty(),
-                configRoot.maxChunkSize().map(intChunkSize()),
+                configRoot.maxChunkSize().map(MemorySize::asIntValue),
                 configRoot.multipart().maxChunkSize().isPresent()
                         ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
                         : Optional.empty());
@@ -165,11 +165,14 @@ public class RestClientCDIDelegateBuilder<T> {
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
 
+        Boolean http3 = oneOf(restClientConfig.http3()).orElse(configRoot.http3());
+        builder.property(QuarkusRestClientProperties.HTTP3, http3);
+
         Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
                 configRoot.http2UpgradeMaxContentLength());
         if (http2UpgradeMaxContentLength.isPresent()) {
             builder.property(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH,
-                    (int) http2UpgradeMaxContentLength.get().asLongValue());
+                    http2UpgradeMaxContentLength.get().asIntValue());
         }
 
         Optional<Boolean> alpn = oneOf(restClientConfig.alpn(), configRoot.alpn());
@@ -181,10 +184,6 @@ public class RestClientCDIDelegateBuilder<T> {
         builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
 
         builder.disableDefaultMapper(restClientConfig.disableDefaultMapper());
-    }
-
-    private static Function<MemorySize, Integer> intChunkSize() {
-        return m -> (int) m.asLongValue();
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {
@@ -451,6 +450,10 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
+    }
+
+    private void configureDomainSocket(QuarkusRestClientBuilder builder) {
+        restClientConfig.domainSocket().ifPresent(builder::domainSocket);
     }
 
     private void configureClientOptionsCustomizer(QuarkusRestClientBuilder builder) {

@@ -28,7 +28,7 @@ import io.quarkus.micrometer.test.MockServiceDiscoveryProvider;
 import io.quarkus.micrometer.test.MockServiceDiscoveryProviderLoader;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.api.observability.StorkObservation;
@@ -37,7 +37,7 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkMetricsServiceDiscoveryFailTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "mock")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")

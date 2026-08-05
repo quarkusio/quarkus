@@ -156,11 +156,34 @@ public class Quarkus {
      *
      * The error code supplied here will override the value returned from the main application.
      *
+     * The first call to asyncExit that sets the error code will have that error code and throwable
+     * supplied to the {@link #run(Class, BiConsumer, String...)} exitHandler
+     *
+     * @param code The exit code. This may be overridden if an exception occurs on shutdown
+     * @param throwable The exit exception. This may be overridden if an exception occurs on shutdown.
+     */
+    public static void asyncExit(int code, Throwable throwable) {
+        terminateForIDE();
+        ApplicationLifecycleManager.exit(code, throwable);
+    }
+
+    /**
+     * Exits the application in an async manner. Calling this method
+     * will initiate the Quarkus shutdown process, and then immediately return.
+     *
+     * This method will unblock the {@link #waitForExit()} method.
+     *
+     * Note that if the main thread is executing a Quarkus application this will only take
+     * effect if {@link #waitForExit()} has been called, otherwise the application will continue
+     * to execute (i.e. this does not initiate the shutdown process, it just signals the main
+     * thread that the application is done so that shutdown can run when the main thread returns).
+     *
+     * The error code supplied here will override the value returned from the main application.
+     *
      * @param code The exit code. This may be overridden if an exception occurs on shutdown
      */
     public static void asyncExit(int code) {
-        terminateForIDE();
-        ApplicationLifecycleManager.exit(code);
+        asyncExit(code, null);
     }
 
     /**
@@ -176,8 +199,7 @@ public class Quarkus {
      *
      */
     public static void asyncExit() {
-        terminateForIDE();
-        ApplicationLifecycleManager.exit(-1);
+        asyncExit(-1);
     }
 
     /**

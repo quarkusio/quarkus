@@ -35,13 +35,14 @@ final class JacksonSerializationUtils {
         if (type.kind() == Kind.PRIMITIVE) {
             return true;
         }
-        if (isBoxedPrimitive(type)) {
+        String typeName = type.name().toString();
+        if ("java.lang.String".equals(typeName)) {
             return true;
         }
-        if ("java.lang.String".equals(type.name().toString())) {
-            return true;
-        }
-
+        // Note: boxed primitives (Integer, Long, etc.) are intentionally NOT treated as basic JSON types
+        // for deserialization. Using JsonNode.asInt() etc. silently coerces invalid values (e.g., "ten" to 0)
+        // instead of throwing, which differs from standard Jackson behavior. Boxed primitives are delegated
+        // to context.readTreeAsValue() which performs proper type validation.
         return false;
     }
 

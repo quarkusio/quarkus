@@ -8,12 +8,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientBuilderFactory;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ReactiveRestClientBuilderFactoryTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(HelloClient2.class, EchoResource.class))
             .withConfigurationResource("factory-test-application.properties");
 

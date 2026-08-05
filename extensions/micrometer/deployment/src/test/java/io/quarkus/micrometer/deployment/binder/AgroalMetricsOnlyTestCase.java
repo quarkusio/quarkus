@@ -10,17 +10,16 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @DisabledOnOs(OS.WINDOWS)
 public class AgroalMetricsOnlyTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.metrics.enabled", "true")
-            .overrideRuntimeConfigKey("quarkus.datasource.username", "username-named")
-            .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:tcp://localhost/mem:testing");
+            .overrideRuntimeConfigKey("quarkus.datasource.username", "username-named");
 
     @Inject
     MeterRegistry registry;

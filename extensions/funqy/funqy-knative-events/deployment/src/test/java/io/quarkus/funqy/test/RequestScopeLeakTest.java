@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.funqy.Funq;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
@@ -25,7 +25,7 @@ import io.vertx.core.Vertx;
 public class RequestScopeLeakTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class, Identity.class, Greeting.class, MyFunction.class)
                     .addAsResource("greeting-uni.properties", "application.properties"));

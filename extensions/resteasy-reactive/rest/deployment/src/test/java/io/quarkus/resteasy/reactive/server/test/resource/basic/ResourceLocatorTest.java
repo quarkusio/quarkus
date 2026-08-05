@@ -43,7 +43,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.Resource
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource2;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource3;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorSubresource3Interface;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -68,7 +68,7 @@ public class ResourceLocatorTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(new Supplier<>() {
                 @Override

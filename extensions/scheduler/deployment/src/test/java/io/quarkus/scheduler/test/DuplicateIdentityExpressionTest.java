@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DuplicateIdentityExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setExpectedException(IllegalStateException.class)
             .withApplicationRoot((jar) -> jar
                     .addClasses(DuplicateIdentityExpressionTest.InvalidBean.class)

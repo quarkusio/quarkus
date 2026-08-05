@@ -7,14 +7,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.config.EncoderConfig;
 import io.restassured.parsing.Parser;
 
 public class MappingTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("trigger.properties", "application.properties")
                     .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
@@ -97,6 +97,14 @@ public class MappingTest {
                 .header("ce-id", nullValue())
                 .header("ce-type", nullValue())
                 .header("ce-source", nullValue());
+    }
+
+    @Test
+    public void testNoopPost() {
+        RestAssured.given().contentType("application/json")
+                .body("{}")
+                .post("/noop")
+                .then().statusCode(204);
     }
 
     @Test

@@ -3,10 +3,12 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.runtime.MockedThroughWrapper;
 
@@ -16,6 +18,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
     private final String configKey;
+    private final boolean lazyDelegate;
 
     private T delegate;
     private Object mock;
@@ -25,7 +28,16 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;
-        if (!lazyDelegate) {
+        this.lazyDelegate = lazyDelegate;
+    }
+
+    @PostConstruct
+    @NoClassInterceptors
+    void init() {
+        if (!lazyDelegate &&
+        // we don't want to create an instance when the instance is one of Arc's client proxies as this means
+        // that we would have multiple HTTP clients and could cause leaks
+                (!(this instanceof ClientProxy))) {
             constructDelegate();
         }
     }

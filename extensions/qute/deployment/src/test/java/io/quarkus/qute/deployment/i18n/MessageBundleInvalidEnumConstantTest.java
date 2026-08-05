@@ -9,12 +9,12 @@ import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.deployment.MessageBundleException;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleInvalidEnumConstantTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Messages.class, UnderscoredEnum.class)
                     .addAsResource("messages/enu_invalid.properties"))

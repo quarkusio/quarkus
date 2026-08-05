@@ -12,14 +12,14 @@ import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NaiveLoadSheddingTest {
     private static final int NUM_THREADS = 20;
     private static final int NUM_REQUESTS = 10;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyResource.class))
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "5")
             .overrideConfigKey("quarkus.load-shedding.max-limit", "10")

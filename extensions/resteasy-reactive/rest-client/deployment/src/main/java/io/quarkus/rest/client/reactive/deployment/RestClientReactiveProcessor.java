@@ -23,7 +23,6 @@ import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_W
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST_SCOPED;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
@@ -55,7 +54,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -88,6 +86,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -241,7 +241,7 @@ class RestClientReactiveProcessor {
         enrichers.produce(new JaxrsClientReactiveEnricherBuildItem(new MicroProfileRestClientEnricher()));
     }
 
-    private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, CompositeIndex index) {
+    private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, IndexView index) {
         for (MethodInfo method : startingInterface.methods()) {
             if (isRestMethod(method)) {
                 listOfKnownMethods.add(method);
@@ -366,7 +366,7 @@ class RestClientReactiveProcessor {
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
         Gizmo classGizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, null, true));
         populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);
@@ -549,10 +549,10 @@ class RestClientReactiveProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             RestClientsBuildTimeConfig clientsConfig,
             BuildProducer<RegisteredRestClientBuildItem> producer) {
-        CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+        IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> seen = new HashSet<>();
 
-        List<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
+        Collection<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
         for (AnnotationInstance instance : actualInstances) {
             AnnotationTarget annotationTarget = instance.target();
             ClassInfo classInfo = annotationTarget.asClass();
@@ -596,11 +596,13 @@ class RestClientReactiveProcessor {
     void generateRestClientConfigBuilder(
             List<RegisteredRestClientBuildItem> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvider,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         RestClientConfigUtils.generateRestClientConfigBuilder(toRegisteredRestClients(restClients), generatedClass,
-                staticInitConfigBuilder, runTimeConfigBuilder);
+                generatedResource, generatedServiceProvider, staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep
@@ -617,7 +619,7 @@ class RestClientReactiveProcessor {
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
 
-        CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+        IndexView index = combinedIndexBuildItem.getIndex();
 
         Set<DotName> requestedRestClientMocks = Collections.emptySet();
         if (launchMode.getLaunchMode() == LaunchMode.TEST) {
@@ -668,8 +670,7 @@ class RestClientReactiveProcessor {
                     .orElse(BuiltinScope.APPLICATION).getInfo();
 
             Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
-            boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
-                    || requestedRestClientMocks.contains(jaxrsInterface.name());
+            boolean lazyDelegate = requestedRestClientMocks.contains(jaxrsInterface.name());
 
             final String configKeyValue = configKey.orElse(null);
             final String baseUriValue = baseUri.orElse("");

@@ -7,12 +7,13 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class PostgreSqlLifecycleManager implements QuarkusTestResourceLifecycleManager {
     private static final Logger LOGGER = Logger.getLogger(PostgreSqlLifecycleManager.class);
     private static final String QUARKUS = "quarkus";
-    private static final String POSTGRES_IMAGE = System.getProperty("postgres.image");
+    private static final String POSTGRES_IMAGE = DockerImageNames.getImage("postgres.image");
     private StartedPostgresContainer postgresContainer;
 
     @Override

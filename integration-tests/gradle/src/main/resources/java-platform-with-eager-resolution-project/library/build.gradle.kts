@@ -10,6 +10,6 @@ javaPlatform.allowDependencies()
 dependencies{
     api(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     constraints{
-        api("org.assertj:assertj-core:3.26.3")
+        api("org.assertj:assertj-core:3.27.7")
     }
 }

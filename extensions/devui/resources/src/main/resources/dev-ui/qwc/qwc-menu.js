@@ -15,28 +15,36 @@ import { msg, updateWhenLocaleChanges, dynamicMsg } from 'localization';
 export class QwcMenu extends observeState(LitElement) {
     routerController = new RouterController(this);
     storageControl = new StorageController(this);
-    
+
     static styles = css`
             .left {
                 height: 100%;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                border-right: 1px solid var(--lumo-contrast-5pct);
+                background: var(--lumo-base-color);
             }
 
             .menu {
                 height: 100%;
                 display: flex;
                 flex-direction: column;
+                padding: 8px 6px;
+                gap: 2px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                transition: width var(--devui-transition-normal, 0.2s ease);
             }
-            
+
             .menuSizeControl {
                 cursor: pointer;
-                color: var(--lumo-contrast-10pct);
+                color: var(--lumo-contrast-20pct);
+                transition: color var(--devui-transition-fast, 0.15s ease);
             }
-            
+
             .menuSizeControl:hover {
-                color: var(--lumo-primary-color-50pct);
+                color: var(--lumo-primary-color);
             }
 
             @media screen and (max-width: 1280px) {
@@ -44,7 +52,7 @@ export class QwcMenu extends observeState(LitElement) {
                     display: none;
                 }
                 .menu, .left {
-                    width: 35px!important;
+                    width: 42px!important;
                 }
                 vaadin-icon {
                     width: var(--lumo-icon-size-s);
@@ -56,33 +64,43 @@ export class QwcMenu extends observeState(LitElement) {
                 display: flex;
                 flex-direction: row;
                 align-items:center;
-                padding-top: 10px;
-                padding-bottom: 10px;
-                padding-left: 5px;
+                padding: 8px 10px;
                 gap: 10px;
                 cursor: pointer;
-                border-left: 3px solid transparent;
-                color: var(--lumo-contrast-70pct);
-                height:30px;
+                border-left: none;
+                color: var(--lumo-contrast-60pct);
+                height: 20px;
                 text-decoration: none;
                 justify-content: space-between;
-                margin: 2px 6px 2px 0;
-                border-radius: 0 8px 8px 0;
-                transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                margin: 0;
+                border-radius: var(--devui-radius-md, 8px);
+                transition: background-color var(--devui-transition-fast, 0.15s ease),
+                            color var(--devui-transition-fast, 0.15s ease),
+                            box-shadow var(--devui-transition-fast, 0.15s ease);
+                position: relative;
             }
 
-            .item:hover{
-                border-left: 3px solid var(--lumo-primary-color-50pct);
-                background-color: var(--lumo-primary-color-10pct);
+            .item:hover {
+                background-color: var(--lumo-contrast-5pct);
                 color: var(--lumo-contrast-90pct);
             }
 
             .selected {
-                border-left: 3px solid var(--lumo-primary-color);
-                cursor: default;
                 background-color: var(--lumo-primary-color-10pct);
                 color: var(--lumo-primary-text-color);
                 font-weight: 500;
+                cursor: default;
+            }
+
+            .selected:hover {
+                background-color: var(--lumo-primary-color-10pct);
+                color: var(--lumo-primary-text-color);
+            }
+
+            .item vaadin-icon {
+                flex-shrink: 0;
+                width: var(--lumo-icon-size-s);
+                height: var(--lumo-icon-size-s);
             }
 
             .itemref{
@@ -98,21 +116,29 @@ export class QwcMenu extends observeState(LitElement) {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
+                padding: 8px 6px;
+                border-top: 1px solid var(--lumo-contrast-5pct);
             }
 
             .quarkusVersion {
                 padding-left: 5px;
                 width: 100%;
             }
-    
+
             .quarkusVersion span {
                 cursor: pointer;
-                font-size: small;
-                color: var(--lumo-contrast-50pct);
+                font-size: var(--lumo-font-size-xs);
+                color: var(--lumo-contrast-40pct);
+                transition: color var(--devui-transition-fast, 0.15s ease);
             }
-    
+
             .quarkusVersion span:hover {
-                color: var(--lumo-primary-color-50pct);
+                color: var(--lumo-primary-color);
+            }
+
+            /* Tooltip for collapsed menu */
+            .item[title] {
+                position: relative;
             }
         `;
 
@@ -123,7 +149,7 @@ export class QwcMenu extends observeState(LitElement) {
         _customMenuNamespaces: {state: true},
         _dynamicMenuNamespaces: {state: true}
     };
-    
+
     constructor() {
         super();
         updateWhenLocaleChanges(this);
@@ -137,14 +163,14 @@ export class QwcMenu extends observeState(LitElement) {
         this._customMenuNamespaces = [];
         this._dynamicMenuNamespaces = null;
     }
-    
+
     connectedCallback() {
         super.connectedCallback();
         this._selectedPage = "devui-extensions"; // default
         this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         this._restoreState();
     }
-    
+
     _restoreState(){
         const storedState = this.storageControl.get("state");
         if(storedState && storedState === "small"){
@@ -153,7 +179,7 @@ export class QwcMenu extends observeState(LitElement) {
             this._larger();
         }
     }
-    
+
     _updateSelection(event){
         let currentPage = this.routerController.getCurrentPage();
         this._selectedPage = currentPage.namespace;
@@ -181,21 +207,21 @@ export class QwcMenu extends observeState(LitElement) {
     _handleDragOver(event) {
         event.preventDefault();
     }
-    
+
     _handleDrop(event) {
         event.preventDefault();
-    
+
         const data = event.dataTransfer.getData('application/json');
         if(data){
             const customMenu = JSON.parse(data);
-    
+
             let storedMenu = this._restoreDynamicMenuItems();
-        
+
             const index = storedMenu.findIndex(obj => obj.id === customMenu.id);
             if (index === -1) {
                 storedMenu.push(customMenu);
             }
-        
+
             this._storeDynamicMenuItems(storedMenu);
             this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         }
@@ -209,7 +235,7 @@ export class QwcMenu extends observeState(LitElement) {
             return [];
         }
     }
-    
+
     _storeDynamicMenuItems(menu){
         this.storageControl.set('customPageLinks', JSON.stringify(menu));
     }
@@ -221,8 +247,8 @@ export class QwcMenu extends observeState(LitElement) {
                         ${this._renderIcon("chevron-right", "larger")}
                     </div>`;
     }
-    
-    _renderVersion(){    
+
+    _renderVersion(){
         if(this._show){
             return html`<div class="quarkusVersion">
                             <span @click="${this._quarkus}">Quarkus ${devuiState.applicationInfo.quarkusVersion}</span>
@@ -234,14 +260,14 @@ export class QwcMenu extends observeState(LitElement) {
         if(page){
             const index = devuiState.cards.active.findIndex(obj => obj.namespace === page.namespace); // Only show if that extension is added
             if (index !== -1) {
-            
+
                 let extensionName = "";
                 if(page.metadata && page.metadata.extensionName){
                     extensionName = page.metadata.extensionName;
                 }
-            
+
                 let text = msg('Remove', { id: 'menu-remove-context-item' });
-            
+
                 let items = [{ text: text, action: 'remove', id: page.id , namespace: page.namespace}];
                 return html`<vaadin-context-menu .items=${items} @item-selected=${this._handleContextMenu} title="${extensionName}">
                             ${this._renderItem(page, -1, 'page')}
@@ -249,7 +275,7 @@ export class QwcMenu extends observeState(LitElement) {
             }
         }
     }
-    
+
     _handleContextMenu(event){
         const selectedItem = event.detail.value;
         if (selectedItem && selectedItem.action === 'remove') {
@@ -259,20 +285,20 @@ export class QwcMenu extends observeState(LitElement) {
                 storedMenu.splice(index, 1);
             }
             this._storeDynamicMenuItems(storedMenu);
-            this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();  
+            this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         }
     }
-    
+
     _storageChange(event){
         if(event.detail.method === "remove" && event.detail.key.startsWith("qwc-menu-")){
             this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
             this._restoreState();
         }
     }
-    
+
     _renderItem(page, index, dynamicNamespace='menu'){
         if(dynamicNamespace!='menu'){
-            
+
         }
         var defaultSelection = false;
         if(index===0)defaultSelection = true;
@@ -280,7 +306,7 @@ export class QwcMenu extends observeState(LitElement) {
             import(page.componentRef);
             this.routerController.addRouteForMenu(page, defaultSelection);
         }
-        
+
         // Each namespace has one place on the menu
         if(!this._customMenuNamespaces.includes(page.namespace)){
             this._customMenuNamespaces.push(page.namespace);
@@ -292,9 +318,20 @@ export class QwcMenu extends observeState(LitElement) {
                     displayName = dynamicMsg(dynamicNamespace, page.title);
                 }
             }
-            
+
             let classnames = this._getClassNamesForMenuItem(page, index);
-            return html`<div class="${classnames}" @click=${() => this.routerController.go(page)}>
+
+            // Add tooltip when collapsed
+            let tooltipName = "";
+            if(!this._show){
+                if(page.namespaceLabel){
+                    tooltipName = dynamicMsg(dynamicNamespace, page.namespaceLabel);
+                }else{
+                    tooltipName = dynamicMsg(dynamicNamespace, page.title);
+                }
+            }
+
+            return html`<div class="${classnames}" title="${tooltipName}" @click=${() => this.routerController.go(page)}>
                     <div>
                         <vaadin-icon icon="${page.icon}"></vaadin-icon>
                         <span class="item-text" data-page="${page.componentName}">${displayName}</span>
@@ -307,7 +344,7 @@ export class QwcMenu extends observeState(LitElement) {
     _renderMenuAction(page, classnames){
         if(page.menuActionComponent && this._show && classnames.includes("selected")){
             import(`./${page.menuActionComponent}.js`);
-            
+
             const tagName = unsafeStatic(page.menuActionComponent);
             return staticHtml`<${tagName}></${tagName}>`;
         }
@@ -324,12 +361,12 @@ export class QwcMenu extends observeState(LitElement) {
         if(!page.includeInMenu ){
             return "hidden";
         }
-        
+
         const selected = this._selectedPage === page.namespace;
         if(selected){
             return "item selected";
         }
-        
+
         // Else check for default
         let pages = devuiState.menu;
         let hasMenuItem = false;
@@ -342,11 +379,11 @@ export class QwcMenu extends observeState(LitElement) {
             // Check the dynamic pages
             hasMenuItem = this._dynamicMenuNamespaces.some(item => item.namespace === this._selectedPage);
         }
-        
+
         if(!hasMenuItem && index === 0){
             return "item selected";
         }
-        
+
         return "item";
     }
 
@@ -362,14 +399,14 @@ export class QwcMenu extends observeState(LitElement) {
         }
     }
 
-    _doubleClicked(e) {    
+    _doubleClicked(e) {
         if(e.target.tagName.toLowerCase() === "div"){
             if(this._show){
                 this._smaller();
             }else {
                 this._larger();
             }
-        } 
+        }
     }
 
     _changeMenuSize(e){
@@ -389,10 +426,10 @@ export class QwcMenu extends observeState(LitElement) {
 
     _larger() {
         this._show = true;
-        this._width = 250;
+        this._width = 240;
         this.storageControl.set('state', "large");
     }
-    
+
     _quarkus(e) {
         window.open("https://quarkus.io", '_blank').focus();
     }

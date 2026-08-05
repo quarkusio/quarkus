@@ -20,13 +20,15 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.KeyStoreFactory;
+import io.quarkus.tls.KeyStoreProvider;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.TrustStoreFactory;
+import io.quarkus.tls.TrustStoreProvider;
 import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.tls.runtime.CertificateRecorder;
-import io.quarkus.tls.runtime.KeyStoreProvider;
 import io.quarkus.tls.runtime.LetsEncryptRecorder;
-import io.quarkus.tls.runtime.TrustStoreProvider;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.smallrye.common.annotation.Identifier;
@@ -39,7 +41,8 @@ public class CertificatesProcessor {
 
     @BuildStep
     public UnremovableBeanBuildItem unremovableBeans() {
-        return UnremovableBeanBuildItem.beanTypes(KeyStoreProvider.class, TrustStoreProvider.class);
+        return UnremovableBeanBuildItem.beanTypes(KeyStoreProvider.class, TrustStoreProvider.class,
+                KeyStoreFactory.class, TrustStoreFactory.class);
     }
 
     @BuildStep

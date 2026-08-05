@@ -20,23 +20,23 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.impl.NoStackTraceException;
 
 public class ErrorDuringStreamingTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @Inject
@@ -87,12 +87,18 @@ public class ErrorDuringStreamingTestCase {
                 .onSuccess(new Handler<>() {
                     @Override
                     public void handle(HttpClientRequest event) {
-                        event.connect().onFailure(failure)
+                        event.send().onFailure(failure)
                                 .onSuccess(response -> {
                                     response
                                             .handler(bodyConsumer::accept)
                                             .exceptionHandler(latch::completeExceptionally)
-                                            .end(latch::complete);
+                                            .end().onComplete(ar -> {
+                                                if (ar.failed()) {
+                                                    latch.completeExceptionally(ar.cause());
+                                                } else {
+                                                    latch.complete(null);
+                                                }
+                                            });
                                 });
 
                     }
@@ -107,7 +113,7 @@ public class ErrorDuringStreamingTestCase {
             return Multi.createFrom().emitter(emitter -> {
                 emit(emitter);
                 if (fail) {
-                    throw new NoStackTraceException("dummy");
+                    emitter.fail(new VertxException("dummy"));
                 } else {
                     emit(emitter);
                     emitter.complete();

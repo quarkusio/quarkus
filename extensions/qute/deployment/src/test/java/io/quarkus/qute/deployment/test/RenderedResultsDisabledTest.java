@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.RenderedResults;
 import io.quarkus.qute.Template;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RenderedResultsDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(SimpleBean.class)
                     .addAsResource(new StringAsset("quarkus.qute.test-mode.record-rendered-results=false"),

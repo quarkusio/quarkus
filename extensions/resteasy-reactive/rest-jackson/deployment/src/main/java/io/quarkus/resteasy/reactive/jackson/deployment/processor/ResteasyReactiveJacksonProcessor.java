@@ -20,7 +20,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Cookie;
@@ -41,8 +43,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
@@ -60,7 +60,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
@@ -88,6 +87,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonO
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.deployment.ContextResolversBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ResponseTypeUnwrapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
@@ -96,6 +96,8 @@ import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class ResteasyReactiveJacksonProcessor {
 
@@ -383,7 +385,6 @@ public class ResteasyReactiveJacksonProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SynthesisFinishedBuildItem.class)
     public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
             Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {
@@ -396,24 +397,31 @@ public class ResteasyReactiveJacksonProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public void handleEndpointParams(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem jaxRsIndex, CombinedIndexBuildItem index,
+            List<ResponseTypeUnwrapperBuildItem> responseTypeUnwrappers,
             ResteasyReactiveServerJacksonRecorder recorder,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
 
         IndexView indexView = jaxRsIndex.getIndexView();
+        Set<DotName> additionalUnwrapTypes = new HashSet<>();
+        for (ResponseTypeUnwrapperBuildItem item : responseTypeUnwrappers) {
+            additionalUnwrapTypes.add(item.getWrapperType());
+        }
 
         Map<String, ClassInfo> serializedClasses = new HashMap<>();
         Map<String, ClassInfo> deserializedClasses = new HashMap<>();
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView,
+                    additionalUnwrapTypes);
             if (effectiveReturnClassInfo != null && !effectiveReturnClassInfo.isEnum()) {
                 serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
             }
 
-            if (methodInfo.hasAnnotation(POST.class)) {
+            if (methodInfo.hasAnnotation(POST.class) || methodInfo.hasAnnotation(PUT.class)
+                    || methodInfo.hasAnnotation(PATCH.class)) {
                 for (Type paramType : methodInfo.parameterTypes()) {
-                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView);
+                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView, additionalUnwrapTypes);
                     if (effectiveParamClassInfo != null) {
                         deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
                     }
@@ -529,21 +537,26 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView) {
+        return getEffectiveClassInfo(type, indexView, Set.of());
+    }
+
+    private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView, Set<DotName> additionalUnwrapTypes) {
         if (type.kind() == Type.Kind.VOID) {
             return null;
         }
-        Type effectiveReturnType = getEffectiveType(type);
+        Type effectiveReturnType = getEffectiveType(type, additionalUnwrapTypes);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
-    private static Type getEffectiveType(Type type) {
+    private static Type getEffectiveType(Type type, Set<DotName> additionalUnwrapTypes) {
         Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI) ||
+                additionalUnwrapTypes.contains(effectiveReturnType.name())) {
             if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
             }
@@ -553,8 +566,14 @@ public class ResteasyReactiveJacksonProcessor {
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
         }
         return effectiveReturnType;

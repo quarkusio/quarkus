@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Reproducibility.orderedBeans;
+import static io.quarkus.arc.processor.Reproducibility.orderedClasses;
 import static io.quarkus.arc.processor.Reproducibility.orderedDecorators;
 import static io.quarkus.arc.processor.Reproducibility.orderedInterceptors;
 import static io.quarkus.arc.processor.Reproducibility.orderedObservers;
@@ -182,22 +183,24 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
                     // All interceptor bindings
                     // Set<String>
-                    LocalVar interceptorBindings = bc.localVar("interceptorBindings", bc.new_(HashSet.class));
-                    for (ClassInfo binding : beanDeployment.getInterceptorBindings()) {
-                        bc.withSet(interceptorBindings).add(Const.of(binding.name().toString()));
-                    }
+                    LocalVar interceptorBindings = bc.localVar("interceptorBindings",
+                            bc.setOf(orderedClasses(beanDeployment.getInterceptorBindings()),
+                                    binding -> Const.of(binding.name().toString())));
 
                     // Transitive interceptor bindings
                     // Map<Class, Set<Annotation>>
                     LocalVar transitiveBindings = bc.localVar("transitiveBindings", bc.new_(HashMap.class));
-                    beanDeployment.getTransitiveInterceptorBindings().forEach((binding, transitives) -> {
-                        LocalVar transitivesSet = bc.localVar("transitives", bc.new_(HashSet.class));
-                        for (AnnotationInstance transitive : transitives) {
-                            ClassInfo transitiveClass = beanDeployment.getInterceptorBinding(transitive.name());
-                            bc.withSet(transitivesSet).add(annotationLiterals.create(bc, transitiveClass, transitive));
-                        }
-                        bc.withMap(transitiveBindings).put(Const.of(classDescOf(binding)), transitivesSet);
-                    });
+                    beanDeployment.getTransitiveInterceptorBindings().entrySet().stream()
+                            .sorted(Map.Entry.comparingByKey())
+                            .forEach(entry -> {
+                                LocalVar transitivesSet = bc.localVar("transitives",
+                                        bc.setOf(Reproducibility.orderedAnnotations(entry.getValue()), transitive -> {
+                                            ClassInfo transitiveClass = beanDeployment
+                                                    .getInterceptorBinding(transitive.name());
+                                            return annotationLiterals.create(bc, transitiveClass, transitive);
+                                        }));
+                                bc.withMap(transitiveBindings).put(Const.of(classDescOf(entry.getKey())), transitivesSet);
+                            });
 
                     // removed beans
                     // Supplier<Collection<RemovedBean>>
@@ -238,13 +241,14 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
                     // Qualifier non-binding members
                     LocalVar qualifiersNonbindingMembers = bc.localVar("qualifiersNonbindingMembers", bc.new_(HashMap.class));
-                    beanDeployment.getQualifierNonbindingMembers().forEach((qualifier, nonbindingMembers) -> {
-                        LocalVar nonbindingMembersSet = bc.localVar("nonbindingMembers", bc.new_(HashSet.class));
-                        for (String nonbindingMember : nonbindingMembers) {
-                            bc.withSet(nonbindingMembersSet).add(Const.of(nonbindingMember));
-                        }
-                        bc.withMap(qualifiersNonbindingMembers).put(Const.of(qualifier.toString()), nonbindingMembersSet);
-                    });
+                    beanDeployment.getQualifierNonbindingMembers().entrySet().stream()
+                            .sorted(Map.Entry.comparingByKey())
+                            .forEach(entry -> {
+                                LocalVar nonbindingMembersSet = bc.localVar("nonbindingMembers",
+                                        bc.setOf(entry.getValue().stream().sorted().toList(), Const::of));
+                                bc.withMap(qualifiersNonbindingMembers).put(Const.of(entry.getKey().toString()),
+                                        nonbindingMembersSet);
+                            });
 
                     // context instances
                     LocalVar contextInstances;

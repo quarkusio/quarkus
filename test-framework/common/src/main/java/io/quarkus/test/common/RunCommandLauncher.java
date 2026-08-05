@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -110,7 +109,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         Path logFile = logFilePath;
 
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
@@ -160,7 +159,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             throw new RuntimeException("Unable to start target quarkus application " + this.waitTimeSeconds + "s");
         }
 
-        return Optional.empty();
+        return ListeningAddresses.EMPTY;
     }
 
     public void includeAsSysProps(Map<String, String> systemProps) {

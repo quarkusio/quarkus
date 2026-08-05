@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment.util;
 
-import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_BYTES_PER_CHARACTER;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_NO_BACKSLASH_ESCAPES;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_APPLICATION_CONTINUITY;
@@ -13,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,9 +38,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
@@ -48,9 +46,7 @@ import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -65,28 +61,6 @@ public final class HibernateProcessorUtil {
     private HibernateProcessorUtil() {
     }
 
-    public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
-        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
-            return Optional.empty();
-        }
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            return Optional.of(FormatMapperKind.JACKSON);
-        } else if (capabilities.isPresent(Capability.JSONB)) {
-            return Optional.of(FormatMapperKind.JSONB);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
-        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
-            return Optional.empty();
-        }
-        return capabilities.isPresent(Capability.JAXB)
-                ? Optional.of(FormatMapperKind.JAXB)
-                : Optional.empty();
-    }
-
     public static boolean isHibernateValidatorPresent(Capabilities capabilities) {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
     }
@@ -95,14 +69,13 @@ public final class HibernateProcessorUtil {
             String persistenceUnitName,
             Optional<String> dbKind,
             Optional<String> explicitDialect,
-            Optional<String> explicitDbMinVersion,
+            Optional<String> dbVersion,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector) {
         Optional<String> dialect = explicitDialect;
         Optional<String> dbProductName = Optional.empty();
-        Optional<String> dbProductVersion = explicitDbMinVersion;
+        Optional<String> dbProductVersion = dbVersion;
 
         if (dbKind.isPresent() || explicitDialect.isPresent()) {
             for (DatabaseKindDialectBuildItem item : dbKindDialectBuildItems) {
@@ -115,7 +88,7 @@ public final class HibernateProcessorUtil {
                     if (dbProductName.isEmpty() && explicitDialect.isEmpty()) {
                         dialect = item.getDialectOptional();
                     }
-                    if (explicitDbMinVersion.isEmpty()) {
+                    if (dbVersion.isEmpty()) {
                         dbProductVersion = item.getDefaultDatabaseProductVersion();
                     }
                     break;
@@ -143,11 +116,15 @@ public final class HibernateProcessorUtil {
 
         Optional<SupportedDatabaseKind> supportedDbKind = dbKind.flatMap(SupportedDatabaseKind::from);
 
-        handleDialectSpecificSettings(
-                persistenceUnitName,
-                puPropertiesCollector,
-                dialectConfig,
-                supportedDbKind);
+        // dialectConfig is null for persistence units contributed through the SPI, which do not support
+        // storage-engine or dialect-specific customization.
+        if (dialectConfig != null) {
+            handleDialectSpecificSettings(
+                    persistenceUnitName,
+                    puPropertiesCollector,
+                    dialectConfig,
+                    supportedDbKind);
+        }
 
         return supportedDbKind;
     }
@@ -457,23 +434,48 @@ public final class HibernateProcessorUtil {
 
     private static void configureCaching(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
+        Properties p = descriptor.getProperties();
         if (config.secondLevelCachingEnabled()) {
-            Properties p = descriptor.getProperties();
             p.putIfAbsent(AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.USE_QUERY_CACHE, Boolean.TRUE);
             p.putIfAbsent(AvailableSettings.JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
-            Map<String, String> cacheConfigEntries = HibernateConfigUtil.getCacheConfigEntries(config);
-            for (Map.Entry<String, String> entry : cacheConfigEntries.entrySet()) {
-                descriptor.getProperties().setProperty(entry.getKey(), entry.getValue());
-            }
+            p.putIfAbsent(QuarkusPersistenceUnitCacheConfiguration.CONFIG_KEY, toQuarkusCacheConfiguration(config));
         } else {
-            Properties p = descriptor.getProperties();
             p.put(AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.FALSE);
             p.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(AvailableSettings.USE_QUERY_CACHE, Boolean.FALSE);
             p.put(AvailableSettings.JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
+    }
+
+    private static QuarkusPersistenceUnitCacheConfiguration toQuarkusCacheConfiguration(
+            HibernateOrmConfigPersistenceUnit config) {
+        Map<String, QuarkusPersistenceUnitCacheConfiguration.Cache> caches = new HashMap<>();
+        for (var regionEntry : config.cache().entrySet()) {
+            String cacheName = regionEntry.getKey();
+            var cacheConfig = regionEntry.getValue();
+            var memory = cacheConfig.memory();
+
+            // Validate mutual exclusivity
+            if (memory.objectCount().isPresent() && memory.maximumWeight().isPresent()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'object-count' and 'maximum-weight' are mutually exclusive. "
+                                + "Use 'object-count' for count-based eviction or 'maximum-weight' for weight-based eviction.");
+            }
+            if (memory.weigherClass().isPresent() && memory.maximumWeight().isEmpty()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'weigher-class' requires 'maximum-weight' to be set.");
+            }
+
+            caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(
+                    memory.objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),
+                    cacheConfig.expiration().maxIdle()
+                            .orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxIdle()),
+                    memory.maximumWeight().orElse(-1L),
+                    memory.weigherClass().orElse(null)));
+        }
+        return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }
 
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
@@ -559,10 +561,7 @@ public final class HibernateProcessorUtil {
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
     }
 
-    public static JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck(Capabilities capabilities,
-            Optional<FormatMapperKind> jsonMapper) {
-        return jsonMapper.isEmpty() ? JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(false, false)
-                : JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(true,
-                        capabilities.isPresent(Capability.JACKSON));
+    private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
+        return first.isPresent() ? first : second;
     }
 }

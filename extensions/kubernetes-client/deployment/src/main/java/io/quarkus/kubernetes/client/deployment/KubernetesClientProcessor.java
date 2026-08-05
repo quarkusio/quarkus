@@ -22,7 +22,6 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.CustomResource;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.VersionInfo;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
@@ -30,6 +29,7 @@ import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.impl.KubernetesClientImpl;
 import io.fabric8.kubernetes.client.utils.OpenIDConnectionUtils;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
+import io.fabric8.kubernetes.model.jackson.UnwrappedTypeResolverBuilder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -51,7 +51,7 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientObjectMapperProducer
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesSerializationProducer;
-import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildTimeConfig;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -99,7 +99,7 @@ public class KubernetesClientProcessor {
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
-            KubernetesClientBuildConfig kubernetesClientConfig,
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -111,7 +111,7 @@ public class KubernetesClientProcessor {
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
 
         kubernetesClientCapabilityProducer
-                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac()));
+                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientBuildTimeConfig.generateRbac()));
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();
@@ -194,11 +194,12 @@ public class KubernetesClientProcessor {
                 .methods().build());
 
         reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
+                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, VersionInfo.class)
                         .reason(getClass().getName())
                         .methods().fields().build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class)
+                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class,
+                        UnwrappedTypeResolverBuilder.class)
                 .reason(getClass().getName())
                 .methods().build());
 

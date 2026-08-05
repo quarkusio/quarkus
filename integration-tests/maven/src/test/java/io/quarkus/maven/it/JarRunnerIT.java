@@ -49,6 +49,7 @@ import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
 import io.quarkus.test.junit.common.DisabledOnSemeru;
+import io.quarkus.test.junit.common.EnabledOnSemeru;
 import io.smallrye.common.process.ProcessUtil;
 
 @DisableForNative
@@ -700,6 +701,49 @@ public class JarRunnerIT extends MojoTestBase {
 
             assertThat(logs).contains("rest");
             assertThat(logs).doesNotContain("-Xlog:aot"); // this is what is printed when there is an error
+        } finally {
+            process.destroy();
+        }
+
+    }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_25)
+    @EnabledOnSemeru(reason = "SCC is only supported on Semeru")
+    public void testThatSccFileUsable() throws Exception {
+        File testDir = initProject("projects/scc", "projects/project-scc");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(List.of("verify"), Collections.emptyMap());
+
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        assertThat(running.log()).containsIgnoringCase("SCC cache");
+        running.stop();
+
+        Path jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(jar.getFileName(), output,
+                List.of("-Xshareclasses:name=quarkus-app,cacheDir=app-scc,readonly"))
+                .directory(jar.getParent().toFile()).start();
+        try {
+            // Wait until server up
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(10, TimeUnit.SECONDS)
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/hello", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThat(logs).contains("rest");
         } finally {
             process.destroy();
         }

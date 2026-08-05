@@ -91,6 +91,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_SIGNATURE_ALGORITHM,
         CREDENTIALS_JWT_LIFESPAN,
         CREDENTIALS_JWT_ASSERTION,
+        CREDENTIALS_FOR_ALL_ENDPOINTS,
         CREDENTIALS_JWT_AUDIENCE,
         CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH,
         CREDENTIALS_JWT_TOKEN_ID,
@@ -316,6 +317,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                         return false;
                     }
                 };
+            }
+
+            @Override
+            public boolean forAllEndpoints() {
+                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_FOR_ALL_ENDPOINTS, true);
+                return false;
             }
         };
     }

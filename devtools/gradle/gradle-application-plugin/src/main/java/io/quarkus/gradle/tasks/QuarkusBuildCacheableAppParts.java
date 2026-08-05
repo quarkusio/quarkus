@@ -4,11 +4,13 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.LocalState;
 import org.gradle.api.tasks.OutputDirectories;
 import org.gradle.api.tasks.TaskAction;
 
@@ -58,6 +60,19 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
             }
         }
         return outputs;
+    }
+
+    @LocalState
+    public Set<File> getLocalStateFiles() {
+        return Set.of(
+                genBuildDir().toFile(),
+                fastJar(),
+                gradleBuildDir().resolve("lib").toFile(),
+                runnerJar(),
+                nativeRunner(),
+                nativeSources(),
+                gradleBuildDir().resolve(nativeImageSourceJarDirName()).toFile(),
+                artifactProperties());
     }
 
     @SuppressWarnings("deprecation") // legacy JAR

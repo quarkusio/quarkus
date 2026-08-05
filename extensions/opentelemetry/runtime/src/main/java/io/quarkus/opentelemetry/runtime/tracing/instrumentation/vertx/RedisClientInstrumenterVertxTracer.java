@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 
-import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_NAMESPACE;
+import static io.opentelemetry.semconv.DbAttributes.DB_NAMESPACE;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
@@ -16,7 +16,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
-import io.opentelemetry.instrumentation.api.internal.AttributesExtractorUtil;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
@@ -50,7 +49,7 @@ public class RedisClientInstrumenterVertxTracer implements
             return true;
         }
 
-        return "redis".equals(tagExtractor.extract(request).get("db.type"));
+        return "redis".equals(tagExtractor.extract(request).get("db.system"));
     }
 
     @Override
@@ -100,11 +99,11 @@ public class RedisClientInstrumenterVertxTracer implements
 
     static class CommandTrace {
 
-        // From io.vertx.redis.client.impl.CommandReporter.Tags
-        static final String DB_STATEMENT = "db.statement";
+        // From io.vertx.redis.client.impl.CommandReporter.Tags (Vert.x 5)
+        static final String DB_OPERATION_NAME = "db.operation.name";
         static final String DB_USER = "db.user";
         static final String NETWORK_PEER_ADDRESS = "network.peer.address";
-        static final String DB_INSTANCE = "db.instance";
+        static final String DB_NAMESPACE = "db.namespace";
         static final String NETWORK_PEER_PORT = "network.peer.port";
         static final String SERVER_ADDRESS = "server.address";
         static final String SERVER_PORT = "server.port";
@@ -121,7 +120,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         public String operation() {
-            return attributes.get(DB_STATEMENT);
+            return attributes.get(DB_OPERATION_NAME);
         }
 
         public String user() {
@@ -150,7 +149,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         public String dbIndex() {
-            return attributes.get(DB_INSTANCE);
+            return attributes.get(DB_NAMESPACE);
         }
 
         static int parsePort(String port) {
@@ -181,7 +180,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         @Override
-        public String getDbSystem(final CommandTrace commandTrace) {
+        public String getDbSystemName(final CommandTrace commandTrace) {
             return REDIS;
         }
 
@@ -194,7 +193,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         @Override
         public String getDbNamespace(CommandTrace commandTrace) {
-            return null;
+            return commandTrace.dbIndex();
         }
 
         // kept for compatibility reasons
@@ -231,7 +230,9 @@ public class RedisClientInstrumenterVertxTracer implements
         @Override
         public void onStart(AttributesBuilder attributes, io.opentelemetry.context.Context parentContext,
                 CommandTrace request) {
-            AttributesExtractorUtil.internalSet(attributes, DB_NAMESPACE, request.dbIndex());
+            if (request.dbIndex() != null) {
+                attributes.put(DB_NAMESPACE, request.dbIndex());
+            }
         }
 
         @Override

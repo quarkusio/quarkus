@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
@@ -43,6 +44,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartParser;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectiveContextInjectedBeanFactory;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.processor.ScannedApplication;
@@ -69,11 +71,11 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
@@ -104,13 +106,6 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 return !Context.isOnEventLoopThread();
             }
         });
-        org.jboss.resteasy.reactive.server.core.BlockingOperationSupport.setIoThreadDetector(
-                new org.jboss.resteasy.reactive.server.core.BlockingOperationSupport.IOThreadDetector() {
-                    @Override
-                    public boolean isBlockingAllowed() {
-                        return !Context.isOnEventLoopThread();
-                    }
-                });
     }
 
     private Path deploymentDir;
@@ -139,6 +134,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     private int maxFormAttributeSize = 2048;
 
     private int maxParameters = 1000;
+    private int maxMultipartPartHeaderSize = MultipartParser.ParseState.DEFAULT_MAX_PART_HEADER_SIZE;
+    private int maxMultipartHeaderCount = MultipartParser.ParseState.DEFAULT_MAX_HEADER_COUNT;
 
     public static Vertx getVertx() {
         return vertx;
@@ -356,18 +353,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         Thread.currentThread().setContextClassLoader(testClassLoader);
         vertx = Vertx.vertx();
         Router router = Router.router(vertx);
-        verticleId = vertx.deployVerticle(new Verticle() {
+        verticleId = vertx.deployVerticle(new AbstractVerticle() {
             private HttpServer server;
-
-            @Override
-            public Vertx getVertx() {
-                return vertx;
-            }
-
-            @Override
-            public void init(Vertx vertx, Context context) {
-
-            }
 
             @Override
             public void start(Promise<Void> startPromise) throws Exception {
@@ -406,7 +393,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters);
+                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters,
+                maxMultipartPartHeaderSize, maxMultipartHeaderCount);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());
@@ -453,11 +441,11 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 executor = null;
             }
             if (verticleId != null) {
-                vertx.undeploy(verticleId).toCompletionStage().toCompletableFuture().get();
+                vertx.undeploy(verticleId).await(10, TimeUnit.SECONDS);
                 verticleId = null;
             }
             if (vertx != null) {
-                vertx.close().toCompletionStage().toCompletableFuture().get();
+                vertx.close().await(10, TimeUnit.SECONDS);
                 vertx = null;
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);

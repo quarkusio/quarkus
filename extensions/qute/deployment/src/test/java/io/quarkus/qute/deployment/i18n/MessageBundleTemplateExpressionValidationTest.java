@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleTemplateExpressionValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBundle.class, Item.class)
                     .addAsResource(new StringAsset(

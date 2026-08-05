@@ -10,6 +10,7 @@ import org.keycloak.adapters.authorization.spi.HttpResponse;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -119,7 +120,7 @@ public class VertxHttpFacade implements HttpRequest, HttpResponse {
 
             @Override
             public String getRelativePath() {
-                return routingContext.normalizedPath();
+                return HttpSecurityUtils.normalizePath(routingContext.normalizedPath());
             }
 
             @Override
@@ -156,8 +157,8 @@ public class VertxHttpFacade implements HttpRequest, HttpResponse {
             @Override
             public InputStream getInputStream(boolean buffered) {
                 try {
-                    if (routingContext.getBody() != null) {
-                        return new ByteArrayInputStream(routingContext.getBody().getBytes());
+                    if (routingContext.body() != null) {
+                        return new ByteArrayInputStream(routingContext.body().buffer().getBytes());
                     }
                     if (routingContext.request().isEnded()) {
                         return new ByteArrayInputStream(new byte[0]);

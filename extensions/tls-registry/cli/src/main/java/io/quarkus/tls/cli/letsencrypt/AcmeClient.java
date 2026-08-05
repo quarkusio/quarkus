@@ -1,7 +1,11 @@
 package io.quarkus.tls.cli.letsencrypt;
 
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.AUDIT;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.x500.cert.acme.AcmeAccount;
@@ -24,6 +28,10 @@ public class AcmeClient extends AcmeClientSpi {
 
     private static final String TOKEN_REGEX = "[A-Za-z0-9_-]+";
 
+    // Rate limiting: max 10 requests per minute to prevent DoS and Let's Encrypt rate limit exhaustion
+    private static final int MAX_REQUESTS_PER_MINUTE = 10;
+    private static final long RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+
     private final String challengeUrl;
     private final String certsUrl;
     private final WebClientOptions options;
@@ -35,17 +43,32 @@ public class AcmeClient extends AcmeClientSpi {
 
     private final WebClient managementClient;
 
+    private final AtomicInteger requestCount = new AtomicInteger(0);
+    private final AtomicLong windowStartTime = new AtomicLong(System.currentTimeMillis());
+
     public AcmeClient(String managementUrl,
             String managementUser,
             String managementPassword,
-            String managementKey) {
+            String managementKey,
+            boolean insecureMode) {
         this.vertx = Vertx.vertx();
         LOGGER.infof("\uD83D\uDD35 Creating AcmeClient with %s", managementUrl);
 
         // It will need to become configurable to support mTLS, etc
         options = new WebClientOptions();
         if (managementUrl.startsWith("https://")) {
-            options.setSsl(true).setTrustAll(true).setVerifyHost(false);
+            options.setSsl(true);
+
+            // Only disable SSL validation if explicitly requested for development/testing
+            if (insecureMode) {
+                AUDIT.error("SSL certificate validation DISABLED for management endpoint: " + managementUrl);
+                AUDIT.error("This configuration is INSECURE and must not be used in production");
+                LOGGER.warn("⚠️  WARNING: SSL certificate validation is DISABLED");
+                LOGGER.warn("⚠️  This is INSECURE and should only be used for development/testing");
+                LOGGER.warn("⚠️  NEVER use --insecure flag in production environments");
+                options.setTrustAll(true).setVerifyHost(false);
+            }
+            // Otherwise, use system trust store for proper SSL validation (secure default)
         }
         this.managementClient = WebClient.create(vertx, options);
         if (managementUrl.endsWith("/q/lets-encrypt")) {
@@ -58,6 +81,27 @@ public class AcmeClient extends AcmeClientSpi {
         this.managementUser = managementUser;
         this.managementPassword = managementPassword;
         this.managementKey = managementKey;
+    }
+
+    private void checkRateLimit(String operation) {
+        long now = System.currentTimeMillis();
+        long windowStart = windowStartTime.get();
+
+        if (now - windowStart >= RATE_LIMIT_WINDOW_MS) {
+            if (windowStartTime.compareAndSet(windowStart, now)) {
+                requestCount.set(0);
+            }
+        }
+
+        int currentCount = requestCount.incrementAndGet();
+        if (currentCount > MAX_REQUESTS_PER_MINUTE) {
+            AUDIT.warn("Rate limit exceeded - operation: " + operation + ", requests: " + currentCount + "/"
+                    + MAX_REQUESTS_PER_MINUTE + ", endpoint: " + challengeUrl);
+            LOGGER.warn("⚠️  Rate limit exceeded: " + currentCount + " requests in the last minute");
+            LOGGER.warn("⚠️  Maximum allowed: " + MAX_REQUESTS_PER_MINUTE + " requests per minute");
+            throw new RuntimeException(
+                    "Rate limit exceeded: too many ACME challenge requests. Wait 60 seconds and try again.");
+        }
     }
 
     public boolean checkReadiness() {
@@ -75,17 +119,17 @@ public class AcmeClient extends AcmeClientSpi {
                 }
                 case 404 -> {
                     LOGGER.error(
-                            "⚠\uFE0F Let's Encrypt challenge endpoint is not found, make sure that the build-time property `quarkus.tls.lets-encrypt.enabled` is set to `true`");
+                            "⚠️ Let's Encrypt challenge endpoint is not found, make sure that the build-time property `quarkus.tls.lets-encrypt.enabled` is set to `true`");
                     return false;
                 }
                 default -> {
-                    LOGGER.warn("⚠\uFE0F Unexpected status code from the management challenge endpoint: " + status);
+                    LOGGER.warn("⚠️ Unexpected status code from the management challenge endpoint: " + status);
                     return false;
                 }
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to check the management challenge endpoint status", e);
-            LOGGER.error("⚠\uFE0F Quarkus management endpoint is not ready, make sure the Quarkus application is running.");
+            LOGGER.error("⚠️ Quarkus management endpoint is not ready, make sure the Quarkus application is running.");
             return false;
         }
 
@@ -99,6 +143,7 @@ public class AcmeClient extends AcmeClientSpi {
         AcmeChallenge selectedChallenge = null;
         for (AcmeChallenge challenge : challenges) {
             if (challenge.getType() == AcmeChallenge.Type.HTTP_01) {
+                AUDIT.info("Selected HTTP-01 challenge for domain validation");
                 LOGGER.debug("HTTP 01 challenge is selected");
                 selectedChallenge = challenge;
                 break;
@@ -111,11 +156,15 @@ public class AcmeClient extends AcmeClientSpi {
         // ensure the token is valid before proceeding
         String token = selectedChallenge.getToken();
         if (!token.matches(TOKEN_REGEX)) {
+            AUDIT.error("Invalid challenge token format - rejecting");
             throw new RuntimeException("Invalid certificate authority challenge");
         }
 
         LOGGER.debugf("Preparing a selected challenge content for token %s", token);
         String selectedChallengeString = selectedChallenge.getKeyAuthorization(account);
+
+        // Check rate limit before uploading challenge
+        checkRateLimit("challenge-upload");
 
         // respond to the http challenge
         if (managementClient != null) {
@@ -125,13 +174,16 @@ public class AcmeClient extends AcmeClientSpi {
             HttpRequest<Buffer> request = managementClient.getAbs(challengeUrl);
             request.addQueryParam("challenge-resource", token).addQueryParam("challenge-content", selectedChallengeString);
             addKeyAndUser(request);
+            AUDIT.info("Uploading challenge to management endpoint - token: " + token.substring(0, Math.min(8, token.length()))
+                    + "..., endpoint: " + challengeUrl);
             LOGGER.debugf("Sending token %s and challenge content to the management challenge endpoint", token,
                     selectedChallengeString);
 
             HttpResponse<Buffer> response = await(request.send());
 
             if (response.statusCode() != 204) {
-                LOGGER.error("⚠\uFE0F Failed to upload challenge content to the management challenge endpoint, status code: "
+                AUDIT.error("Failed to upload challenge - status: " + response.statusCode() + ", endpoint: " + challengeUrl);
+                LOGGER.error("⚠️ Failed to upload challenge content to the management challenge endpoint, status code: "
                         + response.statusCode());
                 throw new RuntimeException("Failed to respond to certificate authority challenge");
             } else {
@@ -155,6 +207,9 @@ public class AcmeClient extends AcmeClientSpi {
 
         LOGGER.debugf("Requesting the management challenge endpoint to delete a challenge resource %s", token);
 
+        // Check rate limit before cleanup
+        checkRateLimit("challenge-cleanup");
+
         HttpRequest<Buffer> request = managementClient.deleteAbs(challengeUrl);
         addKeyAndUser(request);
         HttpResponse<Buffer> response = await(request.send());
@@ -166,6 +221,10 @@ public class AcmeClient extends AcmeClientSpi {
     public void certificateChainAndKeyAreReady() {
         LOGGER.info(
                 "\uD83D\uDD35 Notifying management challenge endpoint that a new certificate chain and private key are ready");
+
+        // Check rate limit before notification
+        checkRateLimit("certificate-notification");
+
         HttpRequest<Buffer> request = managementClient.postAbs(certsUrl);
         addKeyAndUser(request);
         HttpResponse<Buffer> response = await(request.send());
@@ -176,10 +235,13 @@ public class AcmeClient extends AcmeClientSpi {
 
     private void addKeyAndUser(HttpRequest<Buffer> request) {
         if (managementKey != null) {
+            AUDIT.info("Using API key authentication for management endpoint");
             request.addQueryParam("key", managementKey);
-        }
-        if (managementUser != null && managementPassword != null) {
+        } else if (managementUser != null && managementPassword != null) {
+            AUDIT.info("Using basic authentication for management endpoint (user: " + managementUser + ")");
             request.basicAuthentication(managementUser, managementPassword);
+        } else {
+            AUDIT.warn("No authentication credentials provided for management endpoint");
         }
     }
 

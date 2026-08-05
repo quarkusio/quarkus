@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Management interface reference
 include::_attributes.adoc[]
-:categories: observability
 :summary: Management interface configuration
 :numbered:
 :sectnums:
@@ -13,9 +12,17 @@ include::_attributes.adoc[]
 :topics: management,observability
 :extensions: io.quarkus:quarkus-vertx-http
 
-By default, Quarkus exposes the _management_ endpoints under `/q` on the main HTTP server.
-The same HTTP server provides the application endpoints and the management endpoints.
+Various Quarkus extensions contribute non-application endpoints that provide different kinds of information about the application.
+Examples of such extensions are the xref:smallrye-health.adoc[health], xref:telemetry-micrometer.adoc[metrics], xref:openapi-swaggerui.adoc[OpenAPI] and xref:info.adoc[info] extensions.
 
+These non-application endpoints are normally accessible under the `/q` prefix like so:
+
+* `/q/health`
+* `/q/metrics`
+* `/q/openapi`
+* `/q/info`
+
+By default, these management endpoints are served by the same HTTP server as your application endpoints.
 This document presents how you can use a separate HTTP server (bound to a different network interface and port) for the management endpoints.
 It avoids exposing these endpoints on the main server and, therefore, prevents undesired accesses.
 
@@ -236,6 +243,56 @@ Health probes (using HTTP actions) and Prometheus scrape URLs are configured usi
 ====
 Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, you cannot use the management interface, as KNative does not support containers will multiple exposed ports.
 ====
+
+== CORS filter
+
+To make your Quarkus management interface accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
+For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
+
+The management interface uses the same CORS filter mechanism as the main HTTP server, but with separate configuration under `quarkus.management.cors.*`.
+
+For example, to allow requests from a specific origin:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.cors.enabled=true
+quarkus.management.cors.origins=http://example.com
+----
+
+When CORS is enabled without configuring specific origins, only same-origin requests are allowed.
+
+== HTTP Host header validation
+
+The management interface supports the same HTTP `Host` header validation as the main HTTP server, but with separate configuration under `quarkus.management.host-validation.*`.
+
+When `quarkus.management.host` is set to a localhost name (`localhost`, `127.0.0.1`, or `[::1]`), host validation is automatically enabled in **dev** and **production** modes.
+
+[WARNING]
+====
+This automatic behavior is a change from previous Quarkus versions.
+If the management interface is accessed through a reverse proxy or a non-localhost host name, configure the allowed hosts explicitly or disable automatic validation.
+====
+
+For example, to restrict requests to specific host names:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host-validation.allowed-hosts=management.example.com
+----
+
+To disable automatic localhost validation:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host-validation.require-localhost=false
+----
+
+For more details on the available options and reverse proxy considerations, see the xref:http-reference.adoc#host-header-validation[HTTP Host header validation] section in the HTTP reference guide.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.management.host-validation.adoc[leveloffset=+1, opts=optional]
 
 == Security
 

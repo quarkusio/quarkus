@@ -23,10 +23,7 @@ public interface PrometheusConfig {
     boolean annotations();
 
     /**
-     * When true (the default), emit a set of annotations to identify services that should be scraped by prometheus
-     * for metrics.
-     * <p>
-     * In configurations that use the Prometheus operator with ServiceMonitor, annotations may not be necessary.
+     * When true (the default), generate a {@code ServiceMonitor} resource for Prometheus Operator based setups.
      */
     @WithDefault("true")
     boolean generateServiceMonitor();

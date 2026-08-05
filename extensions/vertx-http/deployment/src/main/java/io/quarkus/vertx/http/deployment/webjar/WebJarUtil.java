@@ -11,6 +11,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -65,6 +66,7 @@ public class WebJarUtil {
             WebJarBuildItem webJar,
             ResolvedDependency resourcesArtifact, WebJarResourcesTargetVisitor visitor) {
         final ResolvedDependency userApplication = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+        final Collection<ResolvedDependency> dependencies = curateOutcomeBuildItem.getApplicationModel().getDependencies();
 
         ClassLoader classLoader = WebJarUtil.class.getClassLoader();
 
@@ -84,7 +86,8 @@ public class WebJarUtil {
                 try {
                     Files.walkFileTree(pathVisit.getPath(),
                             new ResourcesFileVisitor(visitor, pathVisit.getPath(), resourcesArtifact,
-                                    userApplication, new CombinedWebJarResourcesFilter(filters), classLoader, webJar));
+                                    userApplication, dependencies, new CombinedWebJarResourcesFilter(filters),
+                                    classLoader, webJar));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -107,12 +110,12 @@ public class WebJarUtil {
         return artifact.getArtifactId() + type;
     }
 
-    private static InputStream getOverride(ResolvedDependency userApplication, ClassLoader classLoader, String filename,
-            String moduleName,
+    private static InputStream getOverride(ResolvedDependency userApplication, Collection<ResolvedDependency> dependencies,
+            ClassLoader classLoader, String filename, String moduleName,
             boolean useDefaultQuarkusBranding) {
 
-        // First check if the developer supplied the files
-        InputStream overrideStream = getCustomOverride(userApplication, filename, moduleName);
+        // First check if the developer supplied the files (application resources, then dependencies)
+        InputStream overrideStream = getCustomOverride(userApplication, dependencies, filename, moduleName);
         if (overrideStream == null && useDefaultQuarkusBranding) {
             // Else check if Quarkus has a default branding
             overrideStream = getQuarkusOverride(classLoader, filename, moduleName);
@@ -120,8 +123,9 @@ public class WebJarUtil {
         return overrideStream;
     }
 
-    private static InputStream getCustomOverride(ResolvedDependency userApplication, String filename, String moduleName) {
-        // Check if the developer supplied the files
+    private static InputStream getCustomOverride(ResolvedDependency userApplication,
+            Collection<ResolvedDependency> dependencies, String filename, String moduleName) {
+        // First check if the developer supplied the files in the application itself
         byte[] content = readFromPathTree(userApplication.getContentTree(), CUSTOM_MEDIA_FOLDER + moduleName);
         if (content != null) {
             return new ByteArrayInputStream(content);
@@ -130,6 +134,19 @@ public class WebJarUtil {
         content = readFromPathTree(userApplication.getContentTree(), CUSTOM_MEDIA_FOLDER + filename);
         if (content != null) {
             return new ByteArrayInputStream(content);
+        }
+
+        // Then check application dependencies
+        for (ResolvedDependency dep : dependencies) {
+            content = readFromPathTree(dep.getContentTree(), CUSTOM_MEDIA_FOLDER + moduleName);
+            if (content != null) {
+                return new ByteArrayInputStream(content);
+            }
+
+            content = readFromPathTree(dep.getContentTree(), CUSTOM_MEDIA_FOLDER + filename);
+            if (content != null) {
+                return new ByteArrayInputStream(content);
+            }
         }
 
         return null;
@@ -165,17 +182,20 @@ public class WebJarUtil {
         private final Path rootFolderToCopy;
         private final ResolvedDependency resourcesArtifact;
         private final ResolvedDependency userApplication;
+        private final Collection<ResolvedDependency> dependencies;
         private final WebJarResourcesFilter filter;
         private final ClassLoader classLoader;
         private final WebJarBuildItem webJar;
 
         public ResourcesFileVisitor(WebJarResourcesTargetVisitor visitor, Path rootFolderToCopy,
-                ResolvedDependency resourcesArtifact, ResolvedDependency userApplication, WebJarResourcesFilter filter,
+                ResolvedDependency resourcesArtifact, ResolvedDependency userApplication,
+                Collection<ResolvedDependency> dependencies, WebJarResourcesFilter filter,
                 ClassLoader classLoader, WebJarBuildItem webJar) {
             this.visitor = visitor;
             this.rootFolderToCopy = rootFolderToCopy;
             this.resourcesArtifact = resourcesArtifact;
             this.userApplication = userApplication;
+            this.dependencies = dependencies;
             this.filter = filter;
             this.classLoader = classLoader;
             this.webJar = webJar;
@@ -197,7 +217,7 @@ public class WebJarUtil {
             boolean overrideFileCreated = false;
             if (OVERRIDABLE_RESOURCES.contains(fileName)) {
                 try (WebJarResourcesFilter.FilterResult filterResult = filter.apply(fileName,
-                        getOverride(userApplication, classLoader,
+                        getOverride(userApplication, dependencies, classLoader,
                                 fileName, moduleName, webJar.getUseDefaultQuarkusBranding()))) {
                     if (filterResult.hasStream()) {
                         overrideFileCreated = true;

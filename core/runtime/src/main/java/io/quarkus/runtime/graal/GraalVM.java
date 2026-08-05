@@ -49,8 +49,11 @@ public final class GraalVM {
             if (versionMatcher.find()) {
                 String vendor = versionMatcher.group(VENDOR_PREFIX_GROUP);
                 if (GRAALVM_CE_VERS_PREFIX.equals(vendor) || ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)) {
+                    Distribution dist = ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)
+                            ? Distribution.ORACLE
+                            : Distribution.GRAALVM;
                     String version = versionMatcher.group(VERSION_GROUP);
-                    String tokens[] = version.split("\\.", 3);
+                    String[] tokens = version.split("\\.", 3);
                     String jdkFeature = tokens[0];
                     String jdkVers = jdkFeature;
                     if (tokens.length == 3 && !graalVMFutureVers(tokens)) {
@@ -60,7 +63,7 @@ public final class GraalVM {
                     }
                     // For JDK 26+ there is no more version mapping use the JDK version
                     String versionMapping = Version.GRAAL_MAPPING.getOrDefault(jdkFeature, version);
-                    return new Version(value, versionMapping, jdkVers, Distribution.GRAALVM);
+                    return new Version(value, versionMapping, jdkVers, dist);
                 } else if (LIBERICA_NIK_VERS_PREFIX.equals(vendor)) {
                     return new Version(value, versionMatcher.group(VERSION_GROUP), Distribution.LIBERICA);
                 } else if (MANDREL_VERS_PREFIX.equals(vendor)) {
@@ -76,8 +79,8 @@ public final class GraalVM {
         // Anything beyond 25.0 is a future GraalVM version not suitable for Runtime.Version.parse()
         private static boolean graalVMFutureVers(String[] tokens) {
             try {
-                int feature = Integer.valueOf(tokens[0]);
-                int interim = Integer.valueOf(tokens[1]);
+                int feature = Integer.parseInt(tokens[0]);
+                int interim = Integer.parseInt(tokens[1]);
                 return feature > 25 || (feature == 25 && interim > 0);
             } catch (NumberFormatException e) {
                 return false;
@@ -95,6 +98,8 @@ public final class GraalVM {
         public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
         public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
+        public static final Version VERSION_25_0_4 = new Version("GraalVM 25.0.4", "25.0.4", "25", Distribution.GRAALVM);
+        public static final Version VERSION_25_1_0 = new Version("GraalVM 25.1.0", "25.1.0", "25", Distribution.GRAALVM);
 
         // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
         // till we have a consensus on how to move forward in
@@ -117,10 +122,12 @@ public final class GraalVM {
         }
 
         /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
+         * The minimum version of GraalVM known to work with Quarkus (even with some issues).
+         * Versions prior to this are expected to cause major issues and are thus not allowed.
+         *
+         * See {@link #MINIMUM_SUPPORTED} for the minimum fully supported version.
          */
-        public static final Version MINIMUM = VERSION_23_1_0;
+        public static final Version MINIMUM = VERSION_25_0_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.
@@ -130,7 +137,7 @@ public final class GraalVM {
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
          */
-        public static final Version MINIMUM_SUPPORTED = MINIMUM;
+        public static final Version MINIMUM_SUPPORTED = VERSION_25_0_0;
 
         private static final String DEFAULT_JDK_VERSION = "25";
         protected final String fullVersion;
@@ -266,6 +273,7 @@ public final class GraalVM {
 
     public enum Distribution {
         GRAALVM,
+        ORACLE,
         LIBERICA,
         MANDREL;
     }

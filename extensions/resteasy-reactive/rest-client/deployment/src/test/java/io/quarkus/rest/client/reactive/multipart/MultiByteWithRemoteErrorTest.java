@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
@@ -35,7 +35,7 @@ public class MultiByteWithRemoteErrorTest {
     Vertx vertx;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Client.class, Form.class));
 
@@ -58,7 +58,7 @@ public class MultiByteWithRemoteErrorTest {
                         }));
 
         CompletableFuture<Integer> port = new CompletableFuture<>();
-        netServer.listen(server -> port.complete(server.result().actualPort()));
+        netServer.listen().onComplete(server -> port.complete(server.result().actualPort()));
 
         await().atMost(Duration.ofSeconds(5)).until(port::isDone);
 

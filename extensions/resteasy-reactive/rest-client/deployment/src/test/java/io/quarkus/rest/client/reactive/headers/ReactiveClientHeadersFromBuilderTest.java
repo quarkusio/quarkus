@@ -28,7 +28,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -45,7 +45,7 @@ public class ReactiveClientHeadersFromBuilderTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, TestJacksonBasicMessageBodyReader.class)
                     .addAsResource(
                             new StringAsset("my.property-value=" + HEADER_VALUE),

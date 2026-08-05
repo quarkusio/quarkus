@@ -55,6 +55,10 @@
                     <groupId>org.jboss.resteasy</groupId>
                     <artifactId>resteasy-client</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.resteasy.microprofile</groupId>
+                    <artifactId>microprofile-rest-client</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

@@ -12,11 +12,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DialectSpecificSettingsOracleIgnoredTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-oracle-dialect.properties", "application.properties"))

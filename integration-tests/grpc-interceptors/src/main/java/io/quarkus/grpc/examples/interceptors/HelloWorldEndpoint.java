@@ -8,6 +8,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
 import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
@@ -18,6 +20,10 @@ import io.smallrye.mutiny.Uni;
 @Path("/hello")
 public class HelloWorldEndpoint {
     static Set<String> invoked = new HashSet<>();
+
+    @RestClient
+    PingRestClient pingRestClient;
+
     @GrpcClient("hello")
     GreeterGrpc.GreeterBlockingStub blockingHelloService;
 
@@ -42,5 +48,19 @@ public class HelloWorldEndpoint {
     public Uni<String> helloMutiny(@PathParam("name") String name) {
         return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(HelloReply::getMessage);
+    }
+
+    @GET
+    @Path("/ping")
+    public String ping() {
+        return "pong";
+    }
+
+    @GET
+    @Path("/rest-then-grpc/{name}")
+    public String restThenGrpc(@PathParam("name") String name) {
+        String pingResult = pingRestClient.ping();
+        HelloReply helloReply = blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build());
+        return pingResult + " " + helloReply.getMessage();
     }
 }

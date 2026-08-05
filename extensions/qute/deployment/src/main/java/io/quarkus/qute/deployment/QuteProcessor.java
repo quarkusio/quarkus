@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -94,6 +95,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -113,6 +115,7 @@ import io.quarkus.paths.PathTreeUtils;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.EngineBuilder.ParserConfigurator;
 import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
@@ -121,6 +124,7 @@ import io.quarkus.qute.Identifiers;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
+import io.quarkus.qute.ParserConfig;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.RenderedResults;
@@ -183,6 +187,8 @@ public class QuteProcessor {
     private static final String IGNORE_FRAGMENTS = "ignoreFragments";
     private static final String DEFAULT_ROOT_PATH = "templates";
 
+    private static final String QUTE_CONFIG_FILE = ".qute";
+    private static final String ALT_EXPR_PROPERTY = "alt-expr-syntax";
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
             "isOdd", "even", "isEven", "isLast", "isFirst");
 
@@ -796,7 +802,25 @@ public class QuteProcessor {
                 }
             }
 
-        }).build();
+        });
+
+        if (effectiveTemplatePaths.hasNonDefaultParserConfig()) {
+            // Any of the discovered templates defines a non-default parser config
+            builder.configureParser(new ParserConfigurator() {
+
+                @Override
+                public ParserConfig getConfig(String templateId, Optional<Variant> variant) {
+                    TemplatePathBuildItem p = effectiveTemplatePaths.findByPath(templateId);
+                    if (p != null) {
+                        ParserConfig config = p.getParserConfig();
+                        if (config != null) {
+                            return config;
+                        }
+                    }
+                    return ParserConfig.DEFAULT;
+                }
+            });
+        }
 
         Engine dummyEngine = builder.build();
         List<CheckedTemplateBuildItem> checkedFragments = checkedTemplates.stream().filter(CheckedTemplateBuildItem::isFragment)
@@ -1952,6 +1976,7 @@ public class QuteProcessor {
     void generateValueResolvers(QuteConfig config,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
@@ -1974,7 +1999,7 @@ public class QuteProcessor {
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                new Function<String, String>() {
+                generatedServiceProviders, new Function<String, String>() {
                     @Override
                     public String apply(String name) {
                         int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);
@@ -2116,6 +2141,7 @@ public class QuteProcessor {
                                         Set.copyOf(method.getMatchNames()),
                                         method.getMatchRegex(), method.getParams()));
                     }
+                    extensionMethods.sort(Comparator.comparing(e -> e.method().toString()));
                     String generatedType = extensionMethodGenerator.generateNamespaceResolver(
                             priorityEntry.getValue().get(0).getMethod().declaringClass(), nsEntry.getKey(),
                             priorityEntry.getKey(), extensionMethods);
@@ -2256,7 +2282,7 @@ public class QuteProcessor {
 
         final boolean tryLocateSource = launchMode.getLaunchMode().isDev()
                 && DevModeType.LOCAL == launchMode.getDevModeType().orElse(null);
-        final Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
+        final List<ApplicationArchive> allApplicationArchives = applicationArchives.getAllArchives();
         final Set<ArtifactKey> appArtifactKeys = new HashSet<>(allApplicationArchives.size());
         for (var archive : allApplicationArchives) {
             appArtifactKeys.add(archive.getKey());
@@ -2266,13 +2292,13 @@ public class QuteProcessor {
             // Skip extension archives that are also application archives
             if (!appArtifactKeys.contains(artifact.getKey())) {
                 scanPathTree(artifact.getContentTree(), templateRoots, watchedPaths, templatePaths, nativeImageResources,
-                        config, excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource);
+                        config, excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource, null);
             }
         }
-        for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
+        for (ApplicationArchive archive : applicationArchives.getArchives()) {
             archive.accept(
                     tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
-                            excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource));
+                            excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null, tryLocateSource, null));
         }
         WorkspaceModule appModule;
         if (tryLocateSource) {
@@ -2280,9 +2306,11 @@ public class QuteProcessor {
         } else {
             appModule = null;
         }
+        ParserConfig appParserConfig = config.altExprSyntax() ? TemplatePathBuildItem.ALT_PARSER_CONFIG : ParserConfig.DEFAULT;
         applicationArchives.getRootArchive().accept(
                 tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
-                        excludePatterns, TemplatePathBuildItem.ROOT_ARCHIVE_PRIORITY, appModule, tryLocateSource));
+                        excludePatterns, TemplatePathBuildItem.ROOT_ARCHIVE_PRIORITY, appModule, tryLocateSource,
+                        appParserConfig));
     }
 
     private void scanPathTree(PathTree pathTree, TemplateRootsBuildItem templateRoots,
@@ -2290,9 +2318,29 @@ public class QuteProcessor {
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config, List<Pattern> excludePatterns,
-            int templatePriority, WorkspaceModule module, boolean tryLocateSource) {
+            int templatePriority, WorkspaceModule module, boolean tryLocateSource, ParserConfig parserConfig) {
         for (String templateRoot : templateRoots) {
             if (PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot)) {
+                ParserConfig effectiveParserConfig;
+                if (parserConfig == null
+                        && PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot + '/' + QUTE_CONFIG_FILE)) {
+                    // Derive the parser config from the .qute file
+                    effectiveParserConfig = pathTree.apply(templateRoot + '/' + QUTE_CONFIG_FILE, visit -> {
+                        Properties props = new Properties();
+                        try (var input = Files.newInputStream(visit.getPath())) {
+                            props.load(input);
+                        } catch (IOException e) {
+                            LOGGER.warnf("Unable to read %s file: %s", templateRoot + "/.qute", e);
+                        }
+                        if (Boolean.parseBoolean(props.getProperty(ALT_EXPR_PROPERTY, "false"))) {
+                            return TemplatePathBuildItem.ALT_PARSER_CONFIG;
+                        }
+                        return null;
+                    });
+                } else {
+                    effectiveParserConfig = parserConfig;
+                }
+
                 pathTree.walkIfContains(templateRoot, visit -> {
                     Path path = visit.getPath();
                     if (Files.isRegularFile(path)) {
@@ -2302,7 +2350,7 @@ public class QuteProcessor {
                         }
                         LOGGER.debugf("Found template: %s", path);
                         // remove templateRoot + /
-                        final String relativePath = visit.getRelativePath();
+                        final String relativePath = visit.getResourceName();
                         String templatePath = relativePath.substring(templateRoot.length() + 1);
                         for (Pattern p : excludePatterns) {
                             if (p.matcher(templatePath).matches()) {
@@ -2314,7 +2362,7 @@ public class QuteProcessor {
                         URI source = null;
                         if (module != null) {
                             for (SourceDir resources : module.getMainSources().getResourceDirs()) {
-                                Path sourcePath = resources.getDir().resolve(visit.getRelativePath());
+                                Path sourcePath = resources.getDir().resolve(visit.getResourceName());
                                 if (Files.isRegularFile(sourcePath)) {
                                     LOGGER.debugf("Source file found for template %s: %s", templatePath, sourcePath);
                                     source = sourcePath.toUri();
@@ -2329,7 +2377,7 @@ public class QuteProcessor {
                             }
                         }
                         produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
-                                relativePath, templatePath, path, config, templatePriority, source);
+                                relativePath, templatePath, path, config, templatePriority, source, effectiveParserConfig);
                     }
                 });
             }
@@ -2656,7 +2704,7 @@ public class QuteProcessor {
 
     @BuildStep
     @Record(value = STATIC_INIT)
-    void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
+    void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteConfig config, QuteRecorder recorder,
             EffectiveTemplatePathsBuildItem effectiveTemplatePaths, Optional<TemplateVariantsBuildItem> templateVariants,
             TemplateRootsBuildItem templateRoots, List<TemplatePathExcludeBuildItem> templatePathExcludes) {
 
@@ -2679,12 +2727,54 @@ public class QuteProcessor {
             excludePatterns.add(exclude.getRegexPattern());
         }
 
+        Map<ParserConfig, Set<String>> nonDefaultParserConfigs;
+        if (effectiveTemplatePaths.hasNonDefaultParserConfig()) {
+            nonDefaultParserConfigs = new HashMap<>();
+            for (TemplatePathBuildItem t : effectiveTemplatePaths.getTemplatePaths()) {
+                if (t.hasNonDefaultParserConfig()) {
+                    Set<String> ids = nonDefaultParserConfigs.get(t.getParserConfig());
+                    if (ids == null) {
+                        ids = new HashSet<>();
+                        nonDefaultParserConfigs.put(t.getParserConfig(), ids);
+                    }
+                    ids.add(t.getPath());
+                    // Add path with no suffix if the path represents the default variant
+                    Map.Entry<String, List<String>> variantEntry = templateVariants.isPresent()
+                            ? templateVariants.get().getVariantEntryContaining(t.getPath())
+                            : null;
+                    if (variantEntry != null
+                            && t.getPath().equals(findDefaultVariant(config, variantEntry.getValue()))) {
+                        ids.add(variantEntry.getKey());
+                    }
+                }
+            }
+        } else {
+            nonDefaultParserConfigs = Map.of();
+        }
+
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
                 .scope(BuiltinScope.SINGLETON.getInfo())
                 .supplier(recorder.createContext(variants,
                         templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()),
-                        excludePatterns, templates))
+                        templates, excludePatterns, nonDefaultParserConfigs))
                 .done());
+    }
+
+    private String findDefaultVariant(QuteConfig config, List<String> variants) {
+        if (variants.isEmpty()) {
+            return null;
+        }
+        if (variants.size() == 1) {
+            return variants.get(0);
+        }
+        for (String suffix : config.suffixes()) {
+            for (String variant : variants) {
+                if (variant.endsWith(suffix)) {
+                    return variant;
+                }
+            }
+        }
+        return null;
     }
 
     @BuildStep
@@ -3665,7 +3755,8 @@ public class QuteProcessor {
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String resourcePath,
-            String templatePath, Path originalPath, QuteConfig config, int templatePriority, URI source) {
+            String templatePath, Path originalPath, QuteConfig config, int templatePriority, URI source,
+            ParserConfig parserConfig) {
         if (templatePath.isEmpty()) {
             return;
         }
@@ -3679,13 +3770,16 @@ public class QuteProcessor {
         }
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(resourcePath, restartNeeded));
         nativeImageResources.produce(new NativeImageResourceBuildItem(resourcePath));
-        templatePaths.produce(TemplatePathBuildItem.builder()
+        TemplatePathBuildItem.Builder builder = TemplatePathBuildItem.builder()
                 .path(templatePath)
                 .fullPath(originalPath)
                 .source(source)
                 .priority(templatePriority)
-                .content(readTemplateContent(originalPath, config.defaultCharset()))
-                .build());
+                .content(readTemplateContent(originalPath, config.defaultCharset()));
+        if (parserConfig != null) {
+            builder.parserConfig(parserConfig);
+        }
+        templatePaths.produce(builder.build());
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {
@@ -3860,8 +3954,7 @@ public class QuteProcessor {
 
     enum Code implements ErrorCode {
 
-        INCORRECT_EXPRESSION,
-        ;
+        INCORRECT_EXPRESSION,;
 
         @Override
         public String getName() {

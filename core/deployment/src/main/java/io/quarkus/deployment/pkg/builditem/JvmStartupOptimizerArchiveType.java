@@ -5,7 +5,8 @@ package io.quarkus.deployment.pkg.builditem;
  */
 public enum JvmStartupOptimizerArchiveType {
     AppCDS("-XX:SharedArchiveFile"),
-    AOT("-XX:AOTCache");
+    AOT("-XX:AOTCache"),
+    SCC("-Xshareclasses:cacheDir");
 
     private final String jvmFlag;
 

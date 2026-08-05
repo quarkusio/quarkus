@@ -5,14 +5,14 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.ForwardedHandlerInitializer;
 import io.restassured.RestAssured;
 
 public class TrustedForwarderProxyFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ForwardedHandlerInitializer.class)
                     .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +

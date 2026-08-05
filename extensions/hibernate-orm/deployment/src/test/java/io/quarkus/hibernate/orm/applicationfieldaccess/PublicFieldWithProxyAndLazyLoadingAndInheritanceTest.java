@@ -18,12 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.TransactionTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PublicFieldWithProxyAndLazyLoadingAndInheritanceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TransactionTestUtils.class)
                     .addClasses(Containing.class, Contained.class, ContainedExtended.class)
@@ -92,7 +92,7 @@ public class PublicFieldWithProxyAndLazyLoadingAndInheritanceTest {
     /**
      * A class whose bytecode is transformed by Quarkus to replace public field access with getter/setter access.
      * <p>
-     * (Test bytecode was not transformed by Quarkus when using QuarkusUnitTest last time I checked).
+     * (Test bytecode was not transformed by Quarkus when using QuarkusExtensionTest last time I checked).
      */
     private static class FieldAccessEnhancedDelegate {
 

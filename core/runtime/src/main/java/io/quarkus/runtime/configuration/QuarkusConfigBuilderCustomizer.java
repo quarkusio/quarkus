@@ -28,9 +28,18 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
     public static final String QUARKUS_CONFIG_MAPPING_VALIDATE_UNKNOWN = "quarkus.config.mapping.validate-unknown";
     public static final String QUARKUS_CONFIG_LOG_VALUES = "quarkus.config.log.values";
 
+    private final LaunchMode launchMode;
+
+    public QuarkusConfigBuilderCustomizer() {
+        this(LaunchMode.current());
+    }
+
+    public QuarkusConfigBuilderCustomizer(LaunchMode launchMode) {
+        this.launchMode = launchMode;
+    }
+
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
-        LaunchMode launchMode = LaunchMode.current();
         builder.withDefaultValue(launchMode.getProfileKey(), launchMode.getDefaultProfile());
 
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
@@ -40,7 +49,7 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
                     @Override
                     public String apply(final String name) {
                         return SMALLRYE_CONFIG_PROFILE.equals(name) ? launchMode.getProfileKey() : name;
-                    };
+                    }
                 });
             }
 

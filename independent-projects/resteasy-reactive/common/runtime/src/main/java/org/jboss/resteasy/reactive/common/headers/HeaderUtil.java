@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.EntityTag;
@@ -34,14 +35,29 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
 public class HeaderUtil {
     private static final List<Locale> LANGUAGE_WILDCARD = List.of(new Locale("*"));
 
-    private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
-        @Override
-        protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
-            return RuntimeDelegate.getInstance().createHeaderDelegate(type);
-        }
-    };
+    private static volatile ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = newHeaderDelegateCache();
+
+    private static ClassValue<RuntimeDelegate.HeaderDelegate<?>> newHeaderDelegateCache() {
+        return new ClassValue<>() {
+            @Override
+            protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
+                return RuntimeDelegate.getInstance().createHeaderDelegate(type);
+            }
+        };
+    }
+
+    /**
+     * Clears the cached {@link RuntimeDelegate.HeaderDelegate} instances. This is only needed in test
+     * scenarios where the {@link RuntimeDelegate} is swapped between tests (e.g., the Jakarta REST TCK).
+     */
+    public static void clearHeaderDelegateCache() {
+        HEADER_DELEGATE_CACHE = newHeaderDelegateCache();
+    }
 
     public static String headerToString(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         if (obj instanceof String) {
             return (String) obj;
         } else {
@@ -197,16 +213,43 @@ public class HeaderUtil {
             return null;
         }
         if (list.size() == 1) {
-            return headerToString(list.get(0));
+            String s = headerToString(list.get(0));
+            return s != null ? s : "";
         }
         StringBuilder sb = new StringBuilder();
         for (Object s : list) {
-            if (!sb.isEmpty()) {
-                sb.append(",");
+            String str = headerToString(s);
+            if (str != null) {
+                if (!sb.isEmpty()) {
+                    sb.append(",");
+                }
+                sb.append(str);
             }
-            sb.append(headerToString(s));
         }
         return sb.toString();
+    }
+
+    public static boolean containsHeaderString(MultivaluedMap<String, ? extends Object> headers, String name,
+            String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        List<? extends Object> values = headers.get(name);
+        if (values == null) {
+            return false;
+        }
+        for (Object value : values) {
+            String str = headerToString(value);
+            if (valueSeparatorRegex != null) {
+                for (String token : str.split(valueSeparatorRegex)) {
+                    if (valuePredicate.test(token.trim())) {
+                        return true;
+                    }
+                }
+            } else {
+                if (valuePredicate.test(str.trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings(value = "unchecked")
@@ -424,5 +467,30 @@ public class HeaderUtil {
             }
         }
         return null;
+    }
+
+    /**
+     * Sanitizes a filename from a multipart {@code Content-Disposition} header by stripping path components and
+     * null bytes to prevent path traversal attacks.
+     *
+     * @param fileName the raw filename from the Content-Disposition header
+     * @return the base filename, or {@code null} if the input is null, empty, or resolves to a risky name ({@code .}
+     *         or {@code ..})
+     */
+    public static String sanitizeFileName(String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+        fileName = fileName.replace("\0", "");
+        int lastSlash = fileName.lastIndexOf('/');
+        int lastBackslash = fileName.lastIndexOf('\\');
+        int lastSep = Math.max(lastSlash, lastBackslash);
+        if (lastSep >= 0) {
+            fileName = fileName.substring(lastSep + 1);
+        }
+        if (fileName.isEmpty() || ".".equals(fileName) || "..".equals(fileName)) {
+            return null;
+        }
+        return fileName;
     }
 }

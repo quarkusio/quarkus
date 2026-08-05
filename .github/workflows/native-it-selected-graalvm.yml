@@ -4,33 +4,34 @@ permissions:
   contents: read
   packages: read
 
-on:
-  workflow_dispatch:
-    inputs:
-      BRANCH:
-        description: 'Branch to use'
-        required: true
-        default: 'main'
-        type: string
-      NATIVE_COMPILER:
-        description: 'the native compiler to use'
-        required: true
-        default: 'mandrel'
-        type: choice
-        options:
-          - mandrel
-          - graalvm-community
-          - graalvm
-          - liberica
-      NATIVE_COMPILER_VERSION:
-        description: 'the native compiler version to use'
-        required: true
-        default: '25'
-        type: choice
-        options:
-          - '17'
-          - '21'
-          - '25'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#    inputs:
+#      BRANCH:
+#        description: 'Branch to use'
+#        required: true
+#        default: 'main'
+#        type: string
+#      NATIVE_COMPILER:
+#        description: 'the native compiler to use'
+#        required: true
+#        default: 'mandrel'
+#        type: choice
+#        options:
+#          - mandrel
+#          - graalvm-community
+#          - graalvm
+#          - liberica
+#      NATIVE_COMPILER_VERSION:
+#        description: 'the native compiler version to use'
+#        required: true
+#        default: '25'
+#        type: choice
+#        options:
+#          - '21'
+#          - '25'
+on: [workflow_dispatch]
 
 env:
   # Workaround testsuite locale issue
@@ -40,9 +41,6 @@ env:
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
   PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
-  DB_USER: hibernate_orm_test
-  DB_PASSWORD: hibernate_orm_test
-  DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
 
@@ -51,36 +49,43 @@ defaults:
     shell: bash
 
 jobs:
-  build-jdk17:
-    name: "Initial JDK 17 Build - ${{ inputs.BRANCH }}"
+  initial-build:
+    name: "Initial Build - ${{ inputs.BRANCH }}"
     runs-on: ubuntu-latest
     outputs:
-      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
-      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+      base-jdk-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      scalpel_args: ${{ steps.get-scalpel-args.outputs.scalpel_args }}
+      scalpel_impacted: ${{ steps.get-scalpel-impacted.outputs.impacted_modules }}
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
       m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
       quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
       quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
     steps:
-      - name: Gradle Enterprise environment
-        run: |
-          echo "GE_TAGS=jdk-17" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 17 Build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.BRANCH }}
-          # this is important for GIB to work
+          # this is important for Scalpel to work
           fetch-depth: 0
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Gradle Enterprise environment
+        run: |
+          echo "GE_TAGS=jdk-${{ steps.base-jdk.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK ${{ steps.base-jdk.outputs.base-jdk-version }} Build" >> "$GITHUB_ENV"
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
       - name: Generate cache key
         id: cache-key
         run: |
@@ -95,7 +100,7 @@ jobs:
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: ~/.m2/repository
           # This will always fail but we will default to the best matching restore keys
@@ -108,10 +113,10 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
-          job-name: "Initial JDK 17 Build"
+          job-name: "Initial JDK ${{ steps.base-jdk.outputs.base-jdk-version }} Build"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -120,53 +125,53 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
-      - name: Get GIB arguments
-        id: get-gib-args
+      - name: Get Scalpel arguments
+        id: get-scalpel-args
         env:
           PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
         run: |
-          # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
-          # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
-          # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
-          # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
-          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+          # See also: https://github.com/maveniverse/scalpel#configuration
+          # Scalpel is configured as a Maven core extension in .mvn/extensions.xml
+          # Default Scalpel settings are in .mvn/maven.config
+          # It auto-detects GITHUB_BASE_REF on GitHub Actions
+          SCALPEL_ARGS="-Dincremental"
           if [ -n "$PULL_REQUEST_BASE" ]
           then
             # The PR defines a clear merge target so just use that branch for reference, *unless*:
             # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
+            SCALPEL_ARGS+=" -Dscalpel.baseBranch=origin/$PULL_REQUEST_BASE -Dscalpel.disableOnBaseBranch='\d+\.\d+'"
           else
             # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
             # - the current branch is main or some released branch like 1.10
             # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
-            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+            SCALPEL_ARGS+=" -Dscalpel.baseBranch=refs/remotes/quarkusio/main -Dscalpel.fetchBaseBranch=true -Dscalpel.disableOnBranch='main|\d+\.\d+|.*backport.*'"
           fi
-          echo "GIB_ARGS: $GIB_ARGS"
-          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
-      - name: Get GIB impacted modules
-        id: get-gib-impacted
-        # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
+          echo "SCALPEL_ARGS: $SCALPEL_ARGS"
+          echo "scalpel_args=${SCALPEL_ARGS}" >> $GITHUB_OUTPUT
+      - name: Get Scalpel impacted modules
+        id: get-scalpel-impacted
+        # mvnw just for creating scalpel-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          if [ -f gib-impacted.log ]
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci ${{ steps.get-scalpel-args.outputs.scalpel_args }} -Dscalpel.impactedLog=scalpel-impacted.log validate
+          if [ -f scalpel-impacted.log ]
           then
-            GIB_IMPACTED=$(cat gib-impacted.log)
+            SCALPEL_IMPACTED=$(cat scalpel-impacted.log)
           else
-            GIB_IMPACTED='_all_'
+            SCALPEL_IMPACTED='_all_'
           fi
-          echo "GIB_IMPACTED: ${GIB_IMPACTED}"
+          echo "SCALPEL_IMPACTED: ${SCALPEL_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
-          echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo "${SCALPEL_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -181,10 +186,10 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: "build-reports-Initial JDK 17 Build"
+          name: "build-reports-Initial JDK ${{ steps.base-jdk.outputs.base-jdk-version }} Build"
           path: |
             build-reports.zip
           retention-days: 7
@@ -192,19 +197,19 @@ jobs:
   calculate-test-jobs:
     name: Calculate Test Jobs
     runs-on: ubuntu-latest
-    needs: build-jdk17
+    needs: initial-build
     env:
-      GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
+      SCALPEL_IMPACTED_MODULES: ${{ needs.initial-build.outputs.scalpel_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh native "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           # Remove Windows from the matrix
           json=$(echo $json | jq 'del(.include[] | select(."os-name" == "windows-latest"))')
           json=$(echo $json | tr -d '\n')
@@ -213,8 +218,8 @@ jobs:
       - name: Calculate matrix from virtual-threads-tests.json
         id: calc-virtual-threads-matrix
         run: |
-          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
-          json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
+          json=$(.github/filter-integration-tests-json.sh virtual-threads "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
           # Remove Windows from the matrix
           json=$(echo $json | jq 'del(.include[] | select(."os-name" == "windows-latest"))')
           json=$(echo $json | tr -d '\n')
@@ -224,7 +229,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}} - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
     runs-on: ${{matrix.os-name}}
-    needs: [build-jdk17, calculate-test-jobs]
+    needs: [initial-build, calculate-test-jobs]
     timeout-minutes: ${{matrix.timeout}}
     strategy:
       max-parallel: 12
@@ -236,30 +241,30 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          key: ${{ needs.initial-build.outputs.m2-cache-key }}
           restore-keys: |
-            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
-            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
+            ${{ needs.initial-build.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.initial-build.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
+      - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@0def53c0fd8534bc13416c9469f5be45265824fd # v1.6.3
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}
@@ -271,7 +276,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -294,7 +299,7 @@ jobs:
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -304,7 +309,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}} - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
-    needs: [build-jdk17, calculate-test-jobs]
+    needs: [initial-build, calculate-test-jobs]
     runs-on: ${{matrix.os-name}}
     env:
       # leave more space for the actual native compilation and execution
@@ -321,17 +326,17 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@0def53c0fd8534bc13416c9469f5be45265824fd # v1.6.3
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}
@@ -343,22 +348,22 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          key: ${{ needs.initial-build.outputs.m2-cache-key }}
           restore-keys: |
-            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
-            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
+            ${{ needs.initial-build.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.initial-build.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
@@ -367,12 +372,12 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
-          key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
+          key: ${{ needs.initial-build.outputs.quarkus-metadata-cache-key }}
           # The key is restored from default branch if not found, but still branch specific to override the default after first run
-          restore-keys: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key-default }}
+          restore-keys: ${{ needs.initial-build.outputs.quarkus-metadata-cache-key-default }}
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -382,7 +387,7 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -398,7 +403,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -409,17 +414,17 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
-    needs: [build-jdk17,native-tests,virtual-thread-native-tests]
+    needs: [initial-build,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: build-reports-artifacts
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+      - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Produce report and add it as job summary
         uses: quarkusio/action-build-reporter@main
         with:

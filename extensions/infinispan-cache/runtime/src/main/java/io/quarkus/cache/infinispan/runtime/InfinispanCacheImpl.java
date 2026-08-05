@@ -31,7 +31,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 /**
  * This class is an internal Quarkus cache implementation using Infinispan.
@@ -122,7 +122,7 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                                     public V call() throws Exception {
                                         return valueLoader.apply(key);
                                     }
-                                }).toCompletionStage()
+                                }, false).toCompletionStage()
                                         .thenComposeAsync(newValue -> {
                                             InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue, resultAsync,
                                                     executor);

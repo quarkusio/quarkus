@@ -32,10 +32,9 @@ import io.grpc.reflection.v1.ServerReflectionResponse;
 import io.grpc.reflection.v1.ServiceResponse;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 
 /**
  * Check the behavior of the reflection service.
@@ -43,7 +42,7 @@ import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 public class GrpcReflectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(HealthGrpc.class.getPackage())
                     .addPackage(MutinyReflectableServiceGrpc.class.getPackage())
@@ -54,18 +53,15 @@ public class GrpcReflectionTest {
     @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
-    private UnicastProcessor<ServerReflectionRequest> processor;
     private ResettableSubscriber<ServerReflectionResponse> subscriber;
 
     @BeforeEach
     public void setUp() {
-        processor = UnicastProcessor.create();
         subscriber = new ResettableSubscriber<>();
     }
 
     @AfterEach
     public void cleanUp() {
-        processor.onComplete();
         subscriber.cancel();
     }
 
@@ -115,10 +111,9 @@ public class GrpcReflectionTest {
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
         subscriber.reset();
-        Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(processor);
+        Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(Multi.createFrom().item(request));
         multi.subscribe().withSubscriber(subscriber);
         subscriber.awaitForSubscription();
-        processor.onNext(request);
         return subscriber.awaitAndGetLast();
     }
 

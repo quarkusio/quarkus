@@ -20,21 +20,6 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
     private final Properties buildSystemProperties;
     private final Optional<Set<ArtifactKey>> includedOptionalDependencies;
 
-    /**
-     * @deprecated in favor of {@link #OutputTargetBuildItem(Path, String, String, boolean, Properties, Optional)}
-     *
-     * @param outputDirectory build output directory
-     * @param baseName base runner name
-     * @param rebuild indicates whether the application is being re-built
-     * @param buildSystemProperties build system properties
-     * @param includedOptionalDependencies included optional dependencies
-     */
-    @Deprecated(forRemoval = true)
-    public OutputTargetBuildItem(Path outputDirectory, String baseName, boolean rebuild, Properties buildSystemProperties,
-            Optional<Set<ArtifactKey>> includedOptionalDependencies) {
-        this(outputDirectory, baseName, baseName, rebuild, buildSystemProperties, includedOptionalDependencies);
-    }
-
     public OutputTargetBuildItem(Path outputDirectory, String baseName, String originalBaseName, boolean rebuild,
             Properties buildSystemProperties,
             Optional<Set<ArtifactKey>> includedOptionalDependencies) {

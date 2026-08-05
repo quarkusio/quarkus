@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that custom context can be declared and is propagated.
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CustomContextTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(CustomContextTest.class, CustomContext.class, CustomContextProvider.class)
                     .addAsServiceProvider(ThreadContextProvider.class, CustomContextProvider.class));

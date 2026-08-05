@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing REST Services with Quarkus REST (formerly RESTEasy Reactive)
 include::_attributes.adoc[]
-:categories: web
 :topics: rest,resteasy-reactive,virtual-threads
 :extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.
@@ -140,6 +139,57 @@ public static class MyApplication extends Application {
 This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
 be accessible at `/api/rest/`. You can also set the <<quarkus-rest-common_quarkus-rest-path,`quarkus.rest.path`>> build time property to set the root path if you
 don't want to use an annotation.
+
+==== Duplicate endpoint detection
+
+Quarkus detects duplicate REST endpoints at build time. If two methods resolve to the same effective path pattern,
+HTTP method, and content types, the build will fail with a deployment error indicating which methods conflict.
+
+For example, the following two classes both expose `GET /hello` producing `text/plain`, which is a duplicate:
+
+[source,java]
+----
+@Path("hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() { ... }
+}
+
+@Path("")
+public class GreetingResource2 {
+
+    @Path("hello")
+    @GET
+    public String hello() { ... }
+}
+----
+
+This also applies when only the path parameter name differs. The following two methods are
+considered duplicates because `{parentId}` and `{product}` both match the same URL paths:
+
+[source,java]
+----
+@Path("api-path")
+public class MyResource {
+
+    @GET
+    @Path("v1/{parentId}")
+    public String getByParentId(@PathParam("parentId") Long parentId) { ... }
+
+    @GET
+    @Path("v1/{product}")
+    public String getByProduct(@PathParam("product") Long product) { ... }
+}
+----
+
+To receive a warning instead of a build failure, set the following configuration property:
+
+[source,properties]
+----
+quarkus.rest.fail-on-duplicate=false
+----
 
 === Declaring endpoints: HTTP methods
 
@@ -954,6 +1004,11 @@ when the client isn't going to use the response anyway.
 If instead of cancelling the pipeline, it should be completed regardless of the state of the HTTP connection, Quarkus REST provides the `org.jboss.resteasy.reactive.server.Cancellable` annotation
 which can be applied to REST classes or methods to control the cancellation behavior.
 
+NOTE: When a client drops the connection, `ContainerResponseFilter` implementations are normally skipped.
+If you need a `ContainerResponseFilter` to run even when the connection is closed, annotate the filter class with `@Cancellable(false)`.
+Only filters explicitly marked as non-cancellable will run; other response filters are still skipped.
+For declarative response filters, use `@ServerResponseFilter(cancellable = false)` to achieve the same effect.
+
 === Streaming support
 
 If you want to stream your response element by element, you can make your endpoint method return a
@@ -1035,7 +1090,9 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import java.util.List;import java.util.Map;import org.eclipse.microprofile.reactive.messaging.Channel;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 
 import io.smallrye.mutiny.Multi;
 import org.jboss.resteasy.reactive.RestMulti;
@@ -1699,6 +1756,11 @@ When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` imp
 
 Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
 
+[NOTE]
+====
+Reflection-free serializers are not compatible with Kotlin classes, since they break Kotlin-specific features such as default parameter values and non-null type enforcement. As a result, reflection-free serializers are not generated for Kotlin classes.
+====
+
 ===== Completely customized per method serialization/deserialization
 
 There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis or on a per Jakarta REST resource basis. For such use cases, you can use the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations in the REST method or in the REST resource at class level. These annotations allow you to fully configure the `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader`.
@@ -2023,7 +2085,7 @@ Using this injected bean of type `RestLinksProvider`, you can get the links by t
 
 ==== JSON Hypertext Application Language (HAL) support
 
-The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links.
+The https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-08[HAL] standard is a simple format to represent web links.
 
 To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-rest-jsonb` or the `quarkus-rest-jackson` extension.
 
@@ -2031,7 +2093,7 @@ To enable the HAL support, add the `quarkus-hal` extension to your project. Also
 |GAV|Usage
 
 |`io.quarkus:quarkus-hal`
-|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+|https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-08[HAL]
 
 |===
 
@@ -3366,6 +3428,7 @@ Or plain text:
 < {"name":"roquefort"}
 ----
 
+[[http-compression]]
 === HTTP Compression
 
 The body of an HTTP response is not compressed by default.
@@ -3384,6 +3447,10 @@ The response body is never compressed if:
 TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+You can also set a minimum response body size (in bytes) for compression using `quarkus.http.compression-content-size-threshold`, control the compression level with `quarkus.http.compression-level`, and enable Brotli by adding `br` to `quarkus.http.compressors`.
+
+TIP: See the xref:http-reference.adoc#http-compression[HTTP reference guide] for the full list of compression configuration options including minimum response size, compression level, Brotli, and request decompression.
 
 
 == Include/Exclude Jakarta REST classes

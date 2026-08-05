@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.funqy.Funq;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FunqMethodVisibilityTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Hello.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);

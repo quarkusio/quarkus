@@ -11,10 +11,11 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.Shareable;
+import io.vertx.core.spi.json.JsonCodec;
 
 /**
  * Implementation utilities (details) affecting the way JSON objects are wrapped.
- *
+ * <p>
  * This class is copied from {@code io.vertx.core.json.impl.JsonUtil} as it is internal to Vert.x
  */
 public final class JsonUtil {
@@ -50,16 +51,17 @@ public final class JsonUtil {
      * @param val java type
      * @return wrapped type or {@code val} if not applicable.
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static Object wrapJsonValue(Object val) {
         if (val == null) {
             return null;
         }
 
         // perform wrapping
-        if (val instanceof Map) {
-            val = new JsonObject((Map) val);
-        } else if (val instanceof List) {
-            val = new JsonArray((List) val);
+        if (val instanceof Map map) {
+            val = new JsonObject(map);
+        } else if (val instanceof List list) {
+            val = new JsonArray(list);
         } else if (val instanceof Instant) {
             val = ISO_INSTANT.format((Instant) val);
         } else if (val instanceof byte[]) {
@@ -73,7 +75,7 @@ public final class JsonUtil {
         return val;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "StatementWithEmptyBody", "rawtypes" })
     public static Object checkAndCopy(Object val) {
         if (val == null) {
             // OK
@@ -90,14 +92,12 @@ public final class JsonUtil {
             val = val.toString();
         } else if (val instanceof Shareable) {
             // Shareable objects know how to copy themselves, this covers:
-            // JsonObject, JsonArray or any user defined type that can shared across the cluster
+            // JsonObject, JsonArray or any user defined Shareable type
             val = ((Shareable) val).copy();
-        } else if (val instanceof Map) {
-            val = (new JsonObject((Map) val)).copy();
-        } else if (val instanceof List) {
-            val = (new JsonArray((List) val)).copy();
-        } else if (val instanceof Buffer) {
-            val = ((Buffer) val).copy();
+        } else if (val instanceof Map map) {
+            val = (new JsonObject(map)).copy();
+        } else if (val instanceof List list) {
+            val = (new JsonArray(list)).copy();
         } else if (val instanceof byte[]) {
             // OK
         } else if (val instanceof Instant) {
@@ -108,5 +108,15 @@ public final class JsonUtil {
             throw new IllegalStateException("Illegal type in Json: " + val.getClass());
         }
         return val;
+    }
+
+    public static JsonCodec loadJacksonCodec() {
+        try {
+            // we need to resort to reflection as we can't directly reference `io.vertx.core.json.jackson.v3.JacksonCodec` due to it being part of the MR resources
+            return (JsonCodec) Class.forName("io.vertx.core.json.jackson.v3.JacksonCodec", true, Thread.currentThread()
+                    .getContextClassLoader()).getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to create instance of `io.vertx.core.json.jackson.v3.JacksonCodec`", e);
+        }
     }
 }

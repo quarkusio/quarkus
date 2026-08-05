@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 abstract class AbstractSecurityAnnotationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             """
@@ -36,9 +36,7 @@ abstract class AbstractSecurityAnnotationTest {
             .overrideConfigKey("quarkus.security.users.embedded.users.foo", "foo")
             .overrideConfigKey("quarkus.security.users.embedded.roles.foo", "user")
             .overrideConfigKey("quarkus.security.users.embedded.users.bar", "bar")
-            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin")
-            .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:mem:test")
-            .overrideRuntimeConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create");
+            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin");
 
     @Entity
     @Table(name = "item")

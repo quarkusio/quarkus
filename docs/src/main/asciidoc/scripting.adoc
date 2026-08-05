@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scripting with Quarkus
 include::_attributes.adoc[]
-:categories: command-line
 :summary: Easy Quarkus-based scripting with jbang.
 :extension-status: preview
 :topics: scripting,jbang
@@ -150,7 +149,7 @@ For now the application does nothing new.
 ====
 To edit the JBang script in an IDE/editor with content assist you can run `jbang edit quarkusapp.java` or `jbang edit quarkusapp.java`.
 
-For more information please refer to the https://www.jbang.dev/documentation/guide/latest/editing.html[the JBang documentation].
+For more information please refer to the https://www.jbang.dev/documentation/jbang/latest/editing.html[the JBang documentation].
 ====
 
 

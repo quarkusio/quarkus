@@ -31,9 +31,12 @@ import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
 
@@ -48,7 +51,7 @@ import org.htmlunit.WebRequest;
 import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,7 +77,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
 
     @OidcWireMock
@@ -385,6 +388,42 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowJwtBearerAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-jwt-bearer-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowSpiffeAuthentication() throws Exception {
+        defineCodeFlowJwtBearerAndSpiffeTokenStubs();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-spiffe-auth");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("alice:alice", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
         final String refreshJwtToken = generateAlreadyExpiredRefreshToken();
@@ -517,7 +556,7 @@ public class CodeFlowAuthorizationTest {
                                         StandardCharsets.UTF_8))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
+                                if (line.contains("Verifying the signed UserInfo with the local JWK keys")) {
                                     lineConfirmingVerificationDetected = true;
                                 } else if (line.contains("Response contains signed UserInfo")) {
                                     signedUserInfoResponseFilterMessageDetected = true;
@@ -781,6 +820,167 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
+    @Test
+    public void testConcurrentCodeFlowTokenRefreshWithEmitOn() throws Exception {
+        defineCodeFlowConcurrentRefreshStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-concurrent-refresh");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+            assertEquals("hello", textPage.getContent());
+
+            var cookies = new HashMap<String, String>();
+            for (var c : webClient.getCookieManager().getCookies()) {
+                cookies.put(c.getName(), c.getValue());
+            }
+
+            Thread.sleep(2000);
+            var errors = new CopyOnWriteArrayList<String>();
+            IntStream.range(0, 5).parallel().forEach(i -> {
+                var spec = RestAssured.given().redirects().follow(false);
+                for (var entry : cookies.entrySet()) {
+                    spec.cookie(entry.getKey(), entry.getValue());
+                }
+                var response = spec.get("http://localhost:8081/code-flow-concurrent-refresh");
+                if (response.statusCode() != 200) {
+                    errors.add("Request " + i + ": expected 200 but got " + response.statusCode()
+                            + ". Response: " + response.body().asString());
+                }
+            });
+            assertTrue(errors.isEmpty(), String.join("\n", errors));
+        } finally {
+            clearCache();
+        }
+    }
+
+    @Test
+    public void testCodeFlowIssuerValidation() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-present");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowIssuerValidationWrongIssuer() throws IOException {
+        defineCodeFlowIssuerStub("quarkus-iss-mismatch", "login-iss-mismatch", "https://wrong-issuer.example.com");
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-mismatch");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            try {
+                form.getInputByValue("login").click();
+                fail("401 status is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                String body = ex.getResponse().getContentAsString();
+                assertTrue(body.contains("does not match the expected issuer"));
+            }
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowIssuerValidationMissingIssuerWhenRequired() throws IOException {
+        defineCodeFlowIssuerStub("quarkus-iss-missing", "login-iss-missing", null);
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-missing");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            try {
+                form.getInputByValue("login").click();
+                fail("401 status is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                String body = ex.getResponse().getContentAsString();
+                assertTrue(body.contains("'iss' parameter is required but is not present"));
+            }
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void defineCodeFlowIssuerStub(String realm, String loginEndpoint, String issInResponse) {
+        // Login page
+        wireMockServer.stubFor(
+                get(urlPathMatching("/auth/realms/" + realm + "[/]?"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "text/html")
+                                .withBody("<html>\n"
+                                        + "<body>\n"
+                                        + " <form action=\"/" + loginEndpoint + "\" name=\"form\">\n"
+                                        + "  <input type=\"text\" id=\"username\" name=\"username\"/>\n"
+                                        + "  <input type=\"password\" id=\"password\" name=\"password\"/>\n"
+                                        + "  <input type=\"hidden\" id=\"state\" name=\"state\" value=\"{{request.query.state}}\"/>\n"
+                                        + "  <input type=\"hidden\" id=\"redirect_uri\" name=\"redirect_uri\" value=\"{{request.query.redirect_uri}}\"/>\n"
+                                        + "  <input type=\"submit\" id=\"login\" value=\"login\"/>\n"
+                                        + "</form>\n"
+                                        + "</body>\n"
+                                        + "</html>")
+                                .withTransformers("response-template")));
+
+        // Login redirect
+        String issParam = issInResponse != null ? "&iss=" + issInResponse : "";
+        wireMockServer.stubFor(
+                get(urlPathMatching("/" + loginEndpoint))
+                        .willReturn(aResponse()
+                                .withHeader("Location",
+                                        "{{request.query.redirect_uri}}?state={{request.query.state}}"
+                                                + "&code=58af24f2-9093-4674-a431-4a9d66be719c" + issParam)
+                                .withStatus(302)
+                                .withTransformers("response-template")));
+    }
+
+    private void defineCodeFlowConcurrentRefreshStub() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-1\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")));
+
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
+                        .withRequestBody(containing("refresh_token=concurrent-refresh-token-1"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\",\n" +
+                                        "  \"refresh_token\": \"concurrent-refresh-token-2\",\n" +
+                                        "  \"id_token\": \"{{basic-scheme-id-token 'alice'}}\"\n" +
+                                        "}")
+                                .withTransformers("response-template")
+                                .withFixedDelay(2000)));
+    }
+
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
@@ -1004,6 +1204,35 @@ public class CodeFlowAuthorizationTest {
                                         OidcWiremockTestResource.generateJwtToken("bob", Set.of(), "sub", "ID",
                                                 Set.of("quarkus-web-app"))
                                         + "\""
+                                        + "}")));
+    }
+
+    private void defineCodeFlowJwtBearerAndSpiffeTokenStubs() {
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/jwt-bearer-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/spiffe-auth-token")
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-spiffe"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                         + "}")));
     }
 

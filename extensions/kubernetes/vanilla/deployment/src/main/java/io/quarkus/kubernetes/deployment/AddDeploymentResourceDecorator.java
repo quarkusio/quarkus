@@ -1,43 +1,35 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import java.util.HashMap;
-
-import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
-import io.fabric8.kubernetes.api.model.KubernetesListFluent;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 
-public class AddDeploymentResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
-
-    private final String name;
-    private final PlatformConfiguration config;
-
-    @Override
-    public void visit(KubernetesListFluent<?> list) {
-        list.addToItems(new DeploymentBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                .withReplicas(1)
-                .withNewSelector()
-                .withMatchLabels(new HashMap<String, String>())
-                .endSelector()
-                .withNewTemplate()
-                .withNewMetadata()
-                .endMetadata()
-                .withNewSpec()
-                .addNewContainer()
-                .withName(name)
-                .endContainer()
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build());
+public class AddDeploymentResourceDecorator
+        extends BaseAddDeploymentResourceDecorator<Deployment, DeploymentBuilder, PlatformConfiguration> {
+    public AddDeploymentResourceDecorator(String name, PlatformConfiguration config, DeploymentResourceKind toRemove) {
+        super(name, DeploymentResourceKind.Deployment, config, toRemove);
     }
 
-    public AddDeploymentResourceDecorator(String name, PlatformConfiguration config) {
-        this.name = name;
-        this.config = config;
+    @Override
+    protected DeploymentBuilder builderWithName(String name) {
+        return new DeploymentBuilder().withNewMetadata().withName(name).endMetadata();
+    }
+
+    @Override
+    protected void initBuilderWithDefaults(DeploymentBuilder builder) {
+        final var spec = builder.editOrNewSpec();
+
+        // match labels for selector
+        initSelectorMatchLabels(spec.editOrNewSelector())
+                .endSelector();
+
+        // replicas
+        spec.withReplicas(replicas(spec.getReplicas(), replicasAwareOrNull()));
+
+        // configure main application pod and container
+        configurePodSpec(spec.editOrNewTemplate().editOrNewSpec())
+                .endSpec().endTemplate();
+
+        spec.endSpec();
     }
 }

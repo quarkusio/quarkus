@@ -10,23 +10,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.HttpInstrumenterVertxTracer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 
 public class OpenTelemetryDisabledSdkTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.sdk.disabled", "true");
 
     @Inject
-    LateBoundSpanProcessor spanProcessor;
+    SpanExporter spanExporter;
 
     @Inject
     OpenTelemetry openTelemetry;
@@ -40,7 +40,7 @@ public class OpenTelemetryDisabledSdkTest {
     @Test
     void testNoTracer() {
         // The OTel API doesn't provide a clear way to check if a tracer is an effective NOOP tracer.
-        Assertions.assertTrue(spanProcessor.isDelegateNull(), "SpanProcessor delegate must not be set");
+        Assertions.assertEquals("NoopSpanExporter{}", spanExporter.toString(), "SpanExporter must be a NOOP implementation");
     }
 
     @Test

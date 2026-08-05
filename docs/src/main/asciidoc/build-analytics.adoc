@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Build analytics
-:categories: analytics
 :summary: This guide presents what build analytics is and how to configure it.
 
 The Quarkus team has limited knowledge, from Maven download numbers, of the remarkable growth of Quarkus and the number of users reporting issues/concerns. Still, we need more insight into the platforms, operating system, Java combinations, and build tools our users employ.

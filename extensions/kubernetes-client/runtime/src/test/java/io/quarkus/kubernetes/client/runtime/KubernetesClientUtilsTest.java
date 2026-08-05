@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,10 +32,12 @@ class KubernetesClientUtilsTest {
 
     @Test
     void shouldGetClientWithTrustCerts() throws Exception {
+        io.smallrye.config.Config config = io.smallrye.config.Config.getOrCreate();
         System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE,
                 new File(getClass().getResource("/test-kubeconfig").toURI()).getAbsolutePath());
         try (KubernetesClient client = KubernetesClientUtils.createClient()) {
             assertTrue(client.getConfiguration().isTrustCerts());
         }
+        ConfigProviderResolver.instance().releaseConfig(config);
     }
 }

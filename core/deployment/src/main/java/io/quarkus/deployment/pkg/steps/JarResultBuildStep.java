@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -32,6 +34,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -42,6 +45,7 @@ import io.quarkus.deployment.pkg.jar.FastJarBuilder;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarBuilder;
 import io.quarkus.deployment.pkg.jar.NativeImageSourceJarBuilder;
 import io.quarkus.deployment.pkg.jar.UberJarBuilder;
+import io.quarkus.deployment.sbom.SbomGeneratedResourceBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
@@ -85,7 +89,7 @@ public class JarResultBuildStep {
         return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
                 jarBuildItem.getLibraryDir() == null ? Map.of()
                         : Map.of("library-dir", jarBuildItem.getLibraryDir().toString()),
-                jarBuildItem.getManifestConfig());
+                jarBuildItem.getCoreSbomConfig());
     }
 
     @SuppressWarnings("deprecation") // JarType#LEGACY_JAR
@@ -100,18 +104,23 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             List<UberJarMergedResourceBuildItem> uberJarMergedResourceBuildItems,
             List<UberJarIgnoredResourceBuildItem> uberJarIgnoredResourceBuildItems,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
             MainClassBuildItem mainClassBuildItem,
             Optional<JvmStartupOptimizerArchiveRequestedBuildItem> jvmStartupOptimizerArchiveRequested,
+            JarTreeShakeBuildItem treeShakeResult,
+            List<SbomGeneratedResourceBuildItem> sbomResources,
             ExecutorService buildExecutor)
             throws Exception {
 
         if (jvmStartupOptimizerArchiveRequested.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, jvmStartupOptimizerArchiveRequested.get());
         }
+
+        List<GeneratedResourceBuildItem> allResources = mergeResources(generatedResources, sbomResources);
 
         Set<ArtifactKey> removedArtifactKeys = getRemovedArtifactKeys(classLoadingConfig);
         Set<ArtifactKey> parentFirstArtifactKeys = getParentFirstArtifactKeys(curateOutcomeBuildItem, classLoadingConfig);
@@ -125,12 +134,14 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
+                    generatedServiceProviders,
                     removedArtifactKeys,
                     uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case LEGACY_JAR -> new LegacyThinJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -139,10 +150,12 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
+                    generatedServiceProviders,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case FAST_JAR, MUTABLE_JAR -> new FastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -152,11 +165,13 @@ public class JarResultBuildStep {
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
+                    generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
             case AOT_JAR -> new AotFastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -166,11 +181,13 @@ public class JarResultBuildStep {
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
+                    generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
                     buildExecutor,
-                    jvmRequirements).build();
+                    jvmRequirements,
+                    treeShakeResult).build();
         };
     }
 
@@ -187,8 +204,11 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
+            JarTreeShakeBuildItem treeShakeResult,
+            List<SbomGeneratedResourceBuildItem> sbomResources,
             ExecutorService buildExecutor,
             ResolvedJVMRequirements jvmRequirements) throws Exception {
 
@@ -200,11 +220,13 @@ public class JarResultBuildStep {
                 applicationArchivesBuildItem,
                 transformedClasses,
                 generatedClasses,
-                generatedResources,
+                mergeResources(generatedResources, sbomResources),
+                generatedServiceProviders,
                 nativeImageResources,
                 getRemovedArtifactKeys(classLoadingConfig),
                 buildExecutor,
-                jvmRequirements).build();
+                jvmRequirements,
+                treeShakeResult).build();
     }
 
     // the idea here is to just dump the class names of the generated and transformed classes into a file
@@ -235,6 +257,20 @@ public class JarResultBuildStep {
                 writer.write(classes.toString());
             }
         }
+    }
+
+    private static List<GeneratedResourceBuildItem> mergeResources(
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<SbomGeneratedResourceBuildItem> sbomResources) {
+        if (sbomResources.isEmpty()) {
+            return generatedResources;
+        }
+        List<GeneratedResourceBuildItem> result = new ArrayList<>(generatedResources.size() + sbomResources.size());
+        result.addAll(generatedResources);
+        for (SbomGeneratedResourceBuildItem sbom : sbomResources) {
+            result.add(new GeneratedResourceBuildItem(sbom.getName(), sbom.getData()));
+        }
+        return result;
     }
 
     static class JarRequired implements BooleanSupplier {

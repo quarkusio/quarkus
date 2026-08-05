@@ -8,8 +8,6 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -24,7 +22,6 @@ public class ShouldNotPinTest {
 
     @ParameterizedTest
     @MethodSource
-    @EnabledForJreRange(min = JRE.JAVA_21)
     void testShouldNotPinButPinEventDetected(Class<?> clazz, String methodName) {
         runTestAndAssertFailure(clazz, methodName, "was expected to NOT pin the carrier thread");
     }
@@ -39,7 +36,6 @@ public class ShouldNotPinTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_21)
     void shouldNotPinOnMethodOverridesClassAnnotation() {
         runTestAndAssertSuccess(LoomUnitExampleShouldNotPinOnClassTest.class, "overrideClassAnnotation");
         runTestAndAssertSuccess(LoomUnitExampleShouldNotPinOnSuperClassTest.class, "overrideClassAnnotation");

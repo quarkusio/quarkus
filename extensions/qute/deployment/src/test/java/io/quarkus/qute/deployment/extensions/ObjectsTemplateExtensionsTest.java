@@ -11,12 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ObjectsTemplateExtensionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset(
                             "{name == 'hallo' ? 'yes' : 'no'}::{name eq 'hello' ? 'yes' : 'no'}::{name is 'hi' ? 'yes' : 'no'}::{#if name eq 'hallo'}ok{/if}"

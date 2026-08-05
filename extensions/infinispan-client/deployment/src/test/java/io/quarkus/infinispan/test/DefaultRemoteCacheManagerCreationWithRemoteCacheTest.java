@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.infinispan.client.Remote;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DefaultRemoteCacheManagerCreationWithRemoteCacheTest {
 
@@ -28,7 +28,7 @@ public class DefaultRemoteCacheManagerCreationWithRemoteCacheTest {
     RemoteCache cache2;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("empty-application-infinispan-client.properties");
 
     @Test

@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SPIFFE client"
+metadata:
+  keywords:
+  - "spiffe"
+  - "spire"
+  - "svid"
+  - "workload identity"
+  - "zero trust"
+  guide: "https://quarkus.io/guides/security-spiffe-client"
+  categories:
+  - "security"
+  status: "experimental"
+  config:
+  - "quarkus.spiffe-client."

@@ -7,12 +7,13 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MariaDbLifecycleManager implements QuarkusTestResourceLifecycleManager {
     private static final Logger LOGGER = Logger.getLogger(MariaDbLifecycleManager.class);
     private static final String QUARKUS = "quarkus";
-    private static final String MARIADB_IMAGE = System.getProperty("mariadb.image");
+    private static final String MARIADB_IMAGE = DockerImageNames.getImage("mariadb.image");
     private StartedMariaDBContainer mariaDbContainer;
 
     @Override

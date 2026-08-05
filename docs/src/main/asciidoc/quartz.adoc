@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scheduling Periodic Tasks with Quartz
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: You need clustering support for your scheduled tasks? This guide explains how to use the Quartz extension for that.
 :topics: scheduling,cronjob,quartz
 :extensions: io.quarkus:quarkus-quartz
@@ -138,6 +137,8 @@ public class TaskBean {
 <3> Create a new `Task` with the current start time.
 <4> Persist the task in database using xref:hibernate-orm-panache.adoc[Panache].
 
+TIP: The `@Scheduled#description()` value, if set, is stored in the `DESCRIPTION` column of the `QRTZ_JOB_DETAILS` table.
+
 === Scheduling Jobs Programmatically
 
 An injected `io.quarkus.scheduler.Scheduler` can be used to <<scheduler-reference.adoc#programmatic_scheduling,schedule a job programmatically>>.
@@ -190,7 +191,7 @@ public class TaskBean {
 ----
 <1> Inject the underlying `org.quartz.Scheduler` instance.
 <2> Schedule a new job using the Quartz API.
-<3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a link:cdi-reference[bean archive].
+<3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a xref:cdi-reference.adoc[bean archive].
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.
 

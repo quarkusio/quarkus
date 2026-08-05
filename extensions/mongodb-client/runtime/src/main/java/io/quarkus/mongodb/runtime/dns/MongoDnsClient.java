@@ -29,8 +29,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.dns.DnsClientOptions;
+import io.vertx.core.dns.SrvRecord;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.dns.SrvRecord;
 
 @RegisterForReflection
 public class MongoDnsClient implements DnsClient {

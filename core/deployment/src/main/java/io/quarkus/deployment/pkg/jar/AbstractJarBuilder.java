@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
@@ -52,6 +53,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final TransformedClassesBuildItem transformedClasses;
     protected final List<GeneratedClassBuildItem> generatedClasses;
     protected final List<GeneratedResourceBuildItem> generatedResources;
+    protected final List<GeneratedServiceProviderBuildItem> generatedServiceProviders;
     protected final Set<ArtifactKey> removedArtifactKeys;
     protected final ExecutorService executorService;
     protected final ResolvedJVMRequirements jvmRequirements;
@@ -65,6 +67,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> removedArtifactKeys,
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
@@ -77,6 +80,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.transformedClasses = transformedClasses;
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
+        this.generatedServiceProviders = generatedServiceProviders;
         this.removedArtifactKeys = removedArtifactKeys;
         this.executorService = executorService;
         this.jvmRequirements = jvmRequirements;
@@ -150,7 +154,10 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 if (Files.isDirectory(pathEntry.getValue())) {
                     archiveCreator.addDirectory(pathEntry.getKey());
                 } else {
-                    archiveCreator.addFile(pathEntry.getValue(), pathEntry.getKey());
+                    // it's an expected behavior that there might be already an entry for
+                    // an application file as transformed classes have been added first
+                    // and should take precedence
+                    archiveCreator.addFileIfNotExists(pathEntry.getValue(), pathEntry.getKey());
                 }
             }
         } catch (RuntimeException re) {
@@ -162,34 +169,22 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
+    /**
+     * Copy application content to the archive.
+     * <p>
+     * The order of operations is important here: higher priority content is added first
+     * so that it takes precedence over lower priority content (first-write-wins in the archive creator).
+     * <p>
+     * Note: concatenated entries (services, etc.) are collected into a map but NOT written to the archive.
+     * Callers are responsible for writing them after all sources have been collected
+     * (see {@link #writeConcatenatedEntries(ArchiveCreator, Map)}).
+     */
     protected void copyApplicationContent(ArchiveCreator archiveCreator,
             Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
 
-        // the order of operations is important here as we override elements in order
-        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
-
-        //TODO: this is probably broken in gradle
-        //        if (Files.exists(augmentOutcome.getConfigDir())) {
-        //            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
-        //        }
-        for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = fromClassNameToResourceName(i.internalName());
-            archiveCreator.addFile(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
-        }
-
-        for (GeneratedResourceBuildItem i : generatedResources) {
-            if (ignoredEntriesPredicate.test(i.getName())) {
-                continue;
-            }
-            if (i.getName().startsWith("META-INF/services/")) {
-                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
-                continue;
-            }
-            archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
-        }
-
+        // transformed classes first (highest priority - these replace the original classes)
         for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
@@ -199,6 +194,32 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             }
         }
 
+        // then, generated classes and resources
+        for (GeneratedClassBuildItem i : generatedClasses) {
+            String fileName = fromClassNameToResourceName(i.internalName());
+            archiveCreator.addFile(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
+        }
+
+        for (GeneratedResourceBuildItem i : generatedResources) {
+            if (ignoredEntriesPredicate.test(i.getName())) {
+                continue;
+            }
+            archiveCreator.addFile(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
+        }
+
+        for (GeneratedServiceProviderBuildItem item : generatedServiceProviders) {
+            String path = "META-INF/services/" + item.getServiceInterfaceName();
+            byte[] content = (item.getImplementationClassName() + System.lineSeparator())
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            concatenatedEntries.computeIfAbsent(path, (u) -> new ArrayList<>()).add(content);
+        }
+
+        // then the root archive files, note that in the case of Uberjars, dependencies will be added last
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+    }
+
+    protected static void writeConcatenatedEntries(ArchiveCreator archiveCreator,
+            Map<String, List<byte[]>> concatenatedEntries) throws IOException {
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());
         }

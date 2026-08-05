@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
-
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
@@ -12,7 +10,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -23,7 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public class GraphQLTerminateContextTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((JavaArchive jar) -> jar
                     .addClasses(TestTerminateContextResource.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

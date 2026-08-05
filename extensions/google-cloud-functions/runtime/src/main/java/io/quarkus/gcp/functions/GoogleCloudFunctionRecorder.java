@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -15,7 +16,8 @@ public class GoogleCloudFunctionRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public void selectDelegate(List<GoogleCloudFunctionInfo> cloudFunctions) {
+    public void selectDelegate(List<GoogleCloudFunctionInfo> cloudFunctions,
+            ShutdownContext shutdownContext) {
         Map<GoogleCloudFunctionInfo.FunctionType, String> delegates = new HashMap<>();
         // if a function name is defined, check that it exists
         if (runtimeConfig.getValue().function().isPresent()) {
@@ -44,5 +46,14 @@ public class GoogleCloudFunctionRecorder {
         QuarkusBackgroundFunction.setDelegates(delegates.get(GoogleCloudFunctionInfo.FunctionType.BACKGROUND),
                 delegates.get(GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
         QuarkusCloudEventsFunction.setDelegate(delegates.get(GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
+
+        shutdownContext.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                QuarkusHttpFunction.clearState();
+                QuarkusBackgroundFunction.clearState();
+                QuarkusCloudEventsFunction.clearState();
+            }
+        });
     }
 }

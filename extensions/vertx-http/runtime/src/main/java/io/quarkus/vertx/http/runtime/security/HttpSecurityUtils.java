@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import javax.naming.InvalidNameException;
@@ -14,6 +15,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.vertx.http.runtime.DefaultAuthConfig;
 import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.internal.net.RFC3986;
 import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
@@ -25,6 +27,115 @@ public final class HttpSecurityUtils {
 
     private HttpSecurityUtils() {
 
+    }
+
+    /**
+     * Removes matrix parameters from the path.
+     * <p>
+     * The path may contain one or more path segments separated by a forward slash `/`.
+     * Each path segment may contain matrix parameters that are separated from the path value
+     * by a semicolon ';' character.
+     * <p>
+     * When the current path segment contains a semicolon ';', it has all its data
+     * removed starting from this semicolon character.
+     * <p>
+     * For example, passing both `/a;/b;` and `/a;a1=1;a2=2/b;b1=1;b2=2` paths to this function
+     * produces the `/a/b` path.
+     * <p>
+     *
+     * @param path the path that may contain matrix parameters.
+     * @return the path without the matrix parameters.
+     */
+    public static String pathWithoutMatrixParams(String path) {
+        if (path.indexOf(';') == -1) {
+            return path;
+        }
+        StringBuilder sb = new StringBuilder(path.length());
+        boolean inMatrix = false;
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if (c == ';') {
+                inMatrix = true;
+            } else if (c == '/') {
+                inMatrix = false;
+                sb.append(c);
+            } else if (!inMatrix) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Fully normalizes a request path to its canonical form, closing the gap between
+     * the security layer's partial decoding and downstream handlers' full decoding.
+     * <p>
+     * Transformations applied in order:
+     * <ol>
+     * <li>Fully decode percent-encoded characters (loop handles double/triple encoding)</li>
+     * <li>Strip matrix parameters — after decoding so that encoded semicolons ({@code %3B}) are caught</li>
+     * <li>Remove null bytes</li>
+     * <li>Normalize backslashes to forward slashes</li>
+     * <li>Resolve dot segments ({@code .} and {@code ..})</li>
+     * </ol>
+     *
+     * @param path the path from {@link RoutingContext#normalizedPath()}
+     * @return the fully normalized path
+     */
+    public static String normalizePath(String path) {
+        while (path.indexOf('%') >= 0) {
+            String decoded = decodePercent(path);
+            if (decoded.equals(path)) {
+                break;
+            }
+            path = decoded;
+        }
+        path = pathWithoutMatrixParams(path);
+        if (path.indexOf('\0') >= 0) {
+            path = path.replace("\0", "");
+        }
+        if (path.indexOf('\\') >= 0) {
+            path = path.replace('\\', '/');
+        }
+        path = RFC3986.removeDotSegments(path);
+        return path;
+    }
+
+    /**
+     * RFC 3986 percent-decoding. Malformed sequences are left as-is.
+     */
+    private static String decodePercent(String path) {
+        byte[] buf = path.getBytes(StandardCharsets.UTF_8);
+        int pos = 0;
+        int i = 0;
+        boolean modified = false;
+        while (i < path.length()) {
+            char c = path.charAt(i);
+            if (c == '%' && i + 2 < path.length()) {
+                int hi = hexDigit(path.charAt(i + 1));
+                int lo = hexDigit(path.charAt(i + 2));
+                if (hi >= 0 && lo >= 0) {
+                    buf[pos++] = (byte) ((hi << 4) | lo);
+                    i += 3;
+                    modified = true;
+                    continue;
+                }
+            }
+            buf[pos++] = (byte) c;
+            i++;
+        }
+        return modified ? new String(buf, 0, pos, StandardCharsets.UTF_8) : path;
+    }
+
+    private static int hexDigit(char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
     }
 
     /**

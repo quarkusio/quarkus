@@ -224,6 +224,16 @@ public class TestNativeConfig implements NativeConfig {
         return false;
     }
 
+    @Override
+    public Pgo pgo() {
+        return new Pgo() {
+            @Override
+            public boolean enabled() {
+                return false;
+            }
+        };
+    }
+
     private class TestBuildImageConfig implements BuilderImageConfig {
         private final String image;
         private final ImagePullStrategy pull;

@@ -18,6 +18,7 @@ import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.UserContextInternal;
 
 public final class SecuritySupport {
 
@@ -120,7 +121,8 @@ public final class SecuritySupport {
         onClose(); // cancel previous timer that closes connection when identity expired
         this.identity = updatedIdentity;
         // this shouldn't be necessary (and probably isn't) but updating ctx it just to stay on the safe side
-        this.routingContext.setUser(new QuarkusHttpUser(updatedIdentity));
+        UserContextInternal userContextInternal = (UserContextInternal) this.routingContext.userContext();
+        userContextInternal.setUser(new QuarkusHttpUser(updatedIdentity));
         this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, updatedIdentity);
         if (connection.isClosed()) {
             // it could be that while we were updating identity, connection has been closed

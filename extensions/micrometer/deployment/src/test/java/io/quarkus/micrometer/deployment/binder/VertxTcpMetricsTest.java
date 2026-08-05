@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.net.NetSocket;
@@ -23,7 +23,7 @@ import io.vertx.mutiny.core.net.NetSocket;
 public class VertxTcpMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
@@ -39,6 +39,10 @@ public class VertxTcpMetricsTest {
         return Metrics.globalRegistry.find(name);
     }
 
+    private Search getServerMeter(String name) {
+        return Metrics.globalRegistry.find(name).tag("port", "8888");
+    }
+
     @Test
     void testTcpMetrics() {
         server.start();
@@ -46,17 +50,19 @@ public class VertxTcpMetricsTest {
             Assertions.assertEquals("HELLO", client.sendAndAwait("hello"));
             Assertions.assertEquals("HOW ARE YOU?", client.sendAndAwait("How are you?"));
 
-            await().untilAsserted(() -> Assertions.assertEquals(1, getMeter("tcp.connections").longTaskTimer().activeTasks()));
+            await().untilAsserted(
+                    () -> Assertions.assertEquals(1, getServerMeter("tcp.connections").longTaskTimer().activeTasks()));
             await().untilAsserted(
                     () -> Assertions.assertEquals(1, getMeter("telnet.connections").longTaskTimer().activeTasks()));
 
             client.quit();
 
-            await().untilAsserted(() -> Assertions.assertEquals(0, getMeter("tcp.connections").longTaskTimer().activeTasks()));
+            await().untilAsserted(
+                    () -> Assertions.assertEquals(0, getServerMeter("tcp.connections").longTaskTimer().activeTasks()));
             await().untilAsserted(
                     () -> Assertions.assertEquals(0, getMeter("telnet.connections").longTaskTimer().activeTasks()));
-            await().until(() -> getMeter("tcp.bytes.written").summary().totalAmount() > 0);
-            await().until(() -> getMeter("tcp.bytes.read").summary().totalAmount() > 0);
+            await().until(() -> getServerMeter("tcp.bytes.written").summary().totalAmount() > 0);
+            await().until(() -> getServerMeter("tcp.bytes.read").summary().totalAmount() > 0);
             await().until(() -> getMeter("telnet.bytes.written").summary().totalAmount() > 0);
             await().until(() -> getMeter("telnet.bytes.read").summary().totalAmount() > 0);
         } catch (InterruptedException e) {

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class StorkResponseTimeLoadBalancerTest {
 
@@ -24,7 +24,7 @@ public class StorkResponseTimeLoadBalancerTest {
     private static WireMockServer server;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-stat-lb.properties");

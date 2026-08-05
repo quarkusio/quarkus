@@ -19,7 +19,7 @@ import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -34,7 +34,7 @@ import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 public class PayloadPermissionCheckerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
                             AdminEndpoint.class, InclusiveEndpoint.class, MetaAnnotationEndpoint.class,

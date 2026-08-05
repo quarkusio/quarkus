@@ -39,7 +39,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJackso
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -50,7 +50,7 @@ public class SecureFieldDetectionTest {
     private static final String SECURITY_SERIALIZATION = "security_serialization";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MultiResource.class, UniResource.class, ObjectResource.class, ResponseResource.class,
                             PlainResource.class, TestIdentityProvider.class, TestIdentityController.class,

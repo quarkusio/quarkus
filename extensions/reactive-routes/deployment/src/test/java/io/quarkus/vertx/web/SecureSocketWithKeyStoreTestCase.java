@@ -6,12 +6,12 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SecureSocketWithKeyStoreTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = QuarkusUnitTest.withSecuredConnection()
+    static QuarkusExtensionTest runner = QuarkusExtensionTest.withSecuredConnection()
             .withApplicationRoot((jar) -> jar
                     .addClass(TestRoute.class)
                     .addAsResource("application-keystore.properties", "application.properties")

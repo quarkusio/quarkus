@@ -37,4 +37,34 @@ public class FilterResource {
         return "ok";
     }
 
+    @GET
+    @Path("/apply-on-success/ok")
+    public String applyOnSuccessOk() {
+        return "ok";
+    }
+
+    @GET
+    @Path("/apply-on-success/no-content")
+    public Response applyOnSuccessNoContent() {
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/apply-on-success/custom-in-range")
+    public Response applyOnSuccessCustomInRange() {
+        return Response.status(267).entity("custom-success").build();
+    }
+
+    @GET
+    @Path("/apply-on-success/error")
+    public Response applyOnSuccessError() {
+        return Response.status(403).entity("forbidden").build();
+    }
+
+    @GET
+    @Path("/apply-on-success/server-error")
+    public Response applyOnSuccessServerError() {
+        return Response.status(500).entity("error").build();
+    }
+
 }

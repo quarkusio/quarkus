@@ -15,7 +15,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.arc.properties.UnlessBuildProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 class OpenApiBuildTimeExcludedClassTestCase {
@@ -23,7 +23,7 @@ class OpenApiBuildTimeExcludedClassTestCase {
     static String quarkusProfile;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(IfBuildProfileTest.class,
                             IfBuildProfileBar.class,

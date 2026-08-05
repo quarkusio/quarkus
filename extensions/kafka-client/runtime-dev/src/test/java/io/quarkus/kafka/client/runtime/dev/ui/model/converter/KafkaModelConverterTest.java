@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.common.utils.Bytes;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.kafka.client.runtime.dev.ui.model.decoder.KafkaMessageDecoderRegistry;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaMessage;
 
 class KafkaModelConverterTest {
@@ -40,6 +42,7 @@ class KafkaModelConverterTest {
                 Optional.empty());
 
         KafkaModelConverter converter = new KafkaModelConverter();
+        converter.decoderRegistry = new KafkaMessageDecoderRegistry(List.of());
 
         // When converting the record
         KafkaMessage message = converter.convert(record);
@@ -50,7 +53,7 @@ class KafkaModelConverterTest {
         assertEquals(0, message.getPartition());
         assertEquals(100L, message.getOffset());
         assertEquals("test-key", message.getKey());
-        assertEquals("test-value", message.getValue());
+        assertEquals("test-value", message.getValue().value());
 
         // Headers should contain the last value for duplicate keys
         Map<String, String> convertedHeaders = message.getHeaders();
@@ -81,6 +84,7 @@ class KafkaModelConverterTest {
                 Optional.empty());
 
         KafkaModelConverter converter = new KafkaModelConverter();
+        converter.decoderRegistry = new KafkaMessageDecoderRegistry(List.of());
 
         // When converting the record
         KafkaMessage message = converter.convert(record);
@@ -113,6 +117,7 @@ class KafkaModelConverterTest {
                 Optional.empty());
 
         KafkaModelConverter converter = new KafkaModelConverter();
+        converter.decoderRegistry = new KafkaMessageDecoderRegistry(List.of());
 
         // When converting the record
         KafkaMessage message = converter.convert(record);

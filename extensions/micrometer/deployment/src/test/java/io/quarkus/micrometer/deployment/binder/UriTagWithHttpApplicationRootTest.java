@@ -23,12 +23,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.micrometer.test.ServletEndpoint;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.micrometer.test.VertxWebEndpoint;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class UriTagWithHttpApplicationRootTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.http.root-path", "/foo")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

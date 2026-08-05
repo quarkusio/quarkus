@@ -63,6 +63,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.ClassTransformer;
@@ -182,6 +183,7 @@ public class InterceptedStaticMethodsProcessor {
             CompletedApplicationClassPredicateBuildItem applicationClassPredicate,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
 
@@ -193,7 +195,7 @@ public class InterceptedStaticMethodsProcessor {
         Map<DotName, String> baseToGeneratedInitializer = new HashMap<>();
 
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                new Predicate<String>() {
+                generatedServiceProviders, new Predicate<String>() {
                     @Override
                     public boolean test(String name) {
                         if (InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.equals(name)) {

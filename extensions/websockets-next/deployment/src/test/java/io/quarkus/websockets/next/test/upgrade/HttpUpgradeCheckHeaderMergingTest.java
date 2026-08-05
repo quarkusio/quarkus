@@ -14,7 +14,7 @@ import jakarta.enterprise.context.Dependent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -27,7 +27,7 @@ import io.smallrye.mutiny.Uni;
 public class HttpUpgradeCheckHeaderMergingTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Headers.class, Header1HttpUpgradeCheck.class,
                             Header2HttpUpgradeCheck.class, Header3HttpUpgradeCheck.class, WSClient.class));

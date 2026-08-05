@@ -20,4 +20,13 @@ public final class TemplateVariantsBuildItem extends SimpleBuildItem {
         return variants;
     }
 
+    public Map.Entry<String, List<String>> getVariantEntryContaining(String templateId) {
+        for (Map.Entry<String, List<String>> e : variants.entrySet()) {
+            if (e.getValue().contains(templateId)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
 }

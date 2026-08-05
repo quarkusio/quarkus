@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Default orm.xml used by implicitOrmXmlEntityDiscovery test.
+     Kept empty so it doesn't interfere with other tests that implicitly load it. -->
+<entity-mappings
+        xmlns="http://java.sun.com/xml/ns/persistence/orm"
+        version="2.0">
+</entity-mappings>

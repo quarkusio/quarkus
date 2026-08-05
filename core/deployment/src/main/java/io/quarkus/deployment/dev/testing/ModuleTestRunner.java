@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.logging.Logger;
 import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
@@ -14,6 +15,8 @@ import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.DevModeContext;
 
 public class ModuleTestRunner {
+
+    private static final Logger log = Logger.getLogger(ModuleTestRunner.class);
 
     final TestState testState = new TestState();
     private final TestSupport testSupport;
@@ -37,7 +40,23 @@ public class ModuleTestRunner {
         }
     }
 
+    public synchronized void reset() {
+        if (runner != null) {
+            try {
+                runner.abort();
+            } catch (Exception e) {
+                log.debug("Exception while aborting runner during reset", e);
+            }
+            runner = null;
+        }
+    }
+
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
+        return prepare(classScanResult, reRunFailures, runId, listener, null);
+    }
+
+    Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener,
+            String specificSelection) {
 
         var old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
@@ -56,7 +75,7 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
-                        .setSpecificSelection(testSupport.specificSelection)
+                        .setSpecificSelection(specificSelection != null ? specificSelection : testSupport.specificSelection)
                         .setIncludeEngines(testSupport.includeEngines)
                         .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
@@ -80,7 +99,15 @@ public class ModuleTestRunner {
                 runner = builder
                         .build();
             }
-            var prepared = runner.prepare();
+            Runnable prepared;
+            try {
+                prepared = runner.prepare();
+            } catch (Exception e) {
+                synchronized (this) {
+                    runner = null;
+                }
+                throw e;
+            }
             return new Runnable() {
                 @Override
                 public void run() {
@@ -103,5 +130,9 @@ public class ModuleTestRunner {
 
     public TestState getTestState() {
         return testState;
+    }
+
+    public boolean hasTestClassUsageData() {
+        return testClassUsages.hasData();
     }
 }

@@ -19,4 +19,10 @@ public class HostAliasConverter {
         return b;
     }
 
+    public static io.fabric8.kubernetes.api.model.HostAlias toKubeHostAlias(Map.Entry<String, HostAliasConfig> e) {
+        final var b = new io.fabric8.kubernetes.api.model.HostAliasBuilder();
+        b.withIp(e.getKey());
+        e.getValue().hostnames().ifPresent(b::withHostnames);
+        return b.build();
+    }
 }

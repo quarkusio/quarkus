@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.test.runtime.ImplicitSimpleKeyCacheTest.CachedService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests a cache shared between different beans.
@@ -20,7 +20,7 @@ public class SharedCacheTest {
     private static final Object KEY = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(CachedService.class, LocalCachedService.class));
 
     @Inject

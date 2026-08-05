@@ -1,9 +1,12 @@
 package io.quarkus.vertx.core.runtime.graal;
 
+import static io.quarkus.vertx.core.runtime.graal.VertxSubstitutions.HTTP3_QUIC_NOT_AVAILABLE_MESSAGE;
+
+import java.lang.ref.Cleaner;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.BooleanSupplier;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
@@ -13,47 +16,14 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import io.netty.channel.Channel;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import io.vertx.core.MultiMap;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.dns.AddressResolverOptions;
-import io.vertx.core.eventbus.EventBusOptions;
-import io.vertx.core.eventbus.impl.HandlerHolder;
-import io.vertx.core.eventbus.impl.HandlerRegistration;
-import io.vertx.core.eventbus.impl.MessageImpl;
-import io.vertx.core.eventbus.impl.OutboundDeliveryContext;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.impl.resolver.DefaultResolverProvider;
-import io.vertx.core.impl.transports.JDKTransport;
-import io.vertx.core.net.NetServerOptions;
-import io.vertx.core.spi.resolver.ResolverProvider;
-import io.vertx.core.spi.transport.Transport;
-
-@TargetClass(className = "io.vertx.core.impl.VertxBuilder")
-final class Target_io_vertx_core_impl_VertxBuilder {
-    @Substitute
-    public static Transport nativeTransport() {
-        return JDKTransport.INSTANCE;
-    }
-}
-
-/**
- * This substitution forces the usage of the blocking DNS resolver
- */
-@TargetClass(className = "io.vertx.core.spi.resolver.ResolverProvider")
-final class TargetResolverProvider {
-
-    @Substitute
-    public static ResolverProvider factory(Vertx vertx, AddressResolverOptions options) {
-        return new DefaultResolverProvider();
-    }
-}
+import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.internal.WorkerPool;
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {
@@ -66,78 +36,6 @@ final class Target_io_vertx_core_net_OpenSSLEngineOptions {
     @Substitute
     public static boolean isAlpnAvailable() {
         return false;
-    }
-}
-
-@SuppressWarnings("rawtypes")
-@TargetClass(className = "io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
-final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusClusteredEventBus {
-
-    @Substitute
-    private NetServerOptions getServerOptions() {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    public void start(Promise<Void> promise) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    public void close(Promise<Void> promise) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    public MessageImpl createMessage(boolean send, boolean isLocal, String address, MultiMap headers, Object body,
-            String codecName) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected <T> void onLocalRegistration(HandlerHolder<T> handlerHolder, Promise<Void> promise) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected <T> HandlerHolder<T> createHandlerHolder(HandlerRegistration<T> registration, boolean replyHandler,
-            boolean localOnly, ContextInternal context) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected <T> void onLocalUnregistration(HandlerHolder<T> handlerHolder, Promise<Void> completionHandler) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected <T> void sendOrPub(OutboundDeliveryContext<T> sendContext) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected String generateReplyAddress() {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    protected boolean isMessageLocal(MessageImpl msg) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    ConcurrentMap connections() {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    VertxInternal vertx() {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    EventBusOptions options() {
-        throw new RuntimeException("Not Implemented");
     }
 }
 
@@ -198,6 +96,111 @@ final class Target_io_vertx_core_spi_tls_DefaultJDKCipherSuite {
     }
 }
 
-class VertxSubstitutions {
+@TargetClass(className = "io.vertx.core.impl.WorkerExecutorImpl")
+final class Target_io_vertx_core_impl_WorkerExecutorImpl {
+    // Access the package-private constructor via @TargetClass
+    @Alias
+    public Target_io_vertx_core_impl_WorkerExecutorImpl(VertxInternal vertx, Cleaner cleaner, WorkerPool pool) {
+    }
+}
 
+/*
+ * Vert.x core substitutions that cut QUIC reachability from always-reachable Vert.x classes.
+ * The Netty-level Quiche substitutions are in the netty extension NettySubstitutions class
+ * (to have the same JPMS module as the target classes).
+ */
+
+@TargetClass(className = "io.vertx.core.net.impl.ConnectionBase", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_net_impl_ConnectionBase {
+
+    @Alias
+    Channel channel;
+
+    @Alias
+    VertxInternal vertx;
+
+    @Substitute
+    io.vertx.core.net.SocketAddress channelRemoteAddress() {
+        java.net.SocketAddress addr = channel.remoteAddress();
+        return addr != null ? vertx.transport().convert(addr) : null;
+    }
+
+    @Substitute
+    io.vertx.core.net.SocketAddress channelLocalAddress() {
+        java.net.SocketAddress addr = channel.localAddress();
+        return addr != null ? vertx.transport().convert(addr) : null;
+    }
+}
+
+@TargetClass(className = "io.vertx.core.http.impl.HybridHttpServer", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_http_impl_HybridHttpServer {
+
+    @Substitute
+    public io.vertx.core.internal.http.HttpServerInternal quicServer(
+            io.vertx.core.spi.metrics.HttpServerMetrics<?, ?> httpMetrics) {
+        throw new UnsupportedOperationException(HTTP3_QUIC_NOT_AVAILABLE_MESSAGE);
+    }
+}
+
+@TargetClass(className = "io.vertx.core.net.impl.quic.QuicServerImpl", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_net_impl_quic_QuicServerImpl {
+
+    @Substitute
+    public static io.vertx.core.net.QuicServer create(VertxInternal vertx,
+            io.vertx.core.net.QuicServerConfig config,
+            io.vertx.core.net.ServerSSLOptions sslOptions) {
+        throw new UnsupportedOperationException(HTTP3_QUIC_NOT_AVAILABLE_MESSAGE);
+    }
+}
+
+@TargetClass(className = "io.vertx.core.net.impl.quic.QuicClientImpl", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_net_impl_quic_QuicClientImpl {
+
+    @Substitute
+    public static io.vertx.core.net.QuicClient create(VertxInternal vertx,
+            io.vertx.core.net.QuicClientConfig config,
+            io.vertx.core.net.ClientSSLOptions sslOptions) {
+        throw new UnsupportedOperationException(HTTP3_QUIC_NOT_AVAILABLE_MESSAGE);
+    }
+}
+
+@TargetClass(className = "io.vertx.core.http.impl.quic.QuicHttpServer", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_http_impl_quic_QuicHttpServer {
+
+    @Substitute
+    Target_io_vertx_core_http_impl_quic_QuicHttpServer(
+            VertxInternal vertx,
+            io.vertx.core.http.HttpServerConfig config,
+            io.vertx.core.net.ServerSSLOptions sslOptions,
+            io.vertx.core.spi.metrics.HttpServerMetrics<?, ?> httpMetrics) {
+        throw new UnsupportedOperationException(HTTP3_QUIC_NOT_AVAILABLE_MESSAGE);
+    }
+}
+
+@TargetClass(className = "io.vertx.core.http.impl.quic.QuicHttpClientTransport", onlyWith = IsQuarkusHttp3Absent.class)
+final class Target_io_vertx_core_http_impl_quic_QuicHttpClientTransport {
+
+    @Substitute
+    Target_io_vertx_core_http_impl_quic_QuicHttpClientTransport(
+            VertxInternal vertx,
+            io.vertx.core.http.HttpClientConfig config) {
+        throw new UnsupportedOperationException(HTTP3_QUIC_NOT_AVAILABLE_MESSAGE);
+    }
+}
+
+class IsQuarkusHttp3Absent implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            Class.forName("io.quarkus.http3.runtime.Http3Recorder");
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+}
+
+class VertxSubstitutions {
+    public static final String HTTP3_QUIC_NOT_AVAILABLE_MESSAGE = "HTTP/3 (QUIC) is not available - add the quarkus-http3 extension";
 }

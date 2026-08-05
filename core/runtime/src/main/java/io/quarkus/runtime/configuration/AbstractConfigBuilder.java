@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -31,7 +32,11 @@ import io.smallrye.config.common.MapBackedConfigSource;
 public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
     protected static void withSharedBuilder(SmallRyeConfigBuilder builder) {
-        builder.withMappingIgnore("quarkus.**");
+        builder.addDefaultInterceptors().withCustomizers(new QuarkusConfigBuilderCustomizer());
+    }
+
+    protected static void withProfiles(SmallRyeConfigBuilder builder, List<String> profiles) {
+        builder.withProfiles(profiles);
     }
 
     protected static void withDefaultValues(SmallRyeConfigBuilder builder, Map<String, String> values) {

@@ -12,7 +12,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
@@ -20,11 +20,7 @@ public class FormAuthJpaTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.datasource.db-kind=h2\n" +
-            "quarkus.datasource.username=sa\n" +
-            "quarkus.datasource.password=sa\n" +
-            "quarkus.datasource.jdbc.url=jdbc:h2:mem:minimal-config'\n" +
             "quarkus.hibernate-orm.sql-load-script=import.sql\n" +
-            "quarkus.hibernate-orm.schema-management.strategy=drop-and-create\n" +
             "#quarkus.hibernate-orm.log.sql=true\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +
@@ -39,7 +35,7 @@ public class FormAuthJpaTestCase {
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

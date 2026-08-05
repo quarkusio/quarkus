@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common
 
 import io.quarkus.arc.Arc
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import org.jboss.shrinkwrap.api.spec.JavaArchive
@@ -14,7 +14,7 @@ class BasicTest {
 
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
+        val config = QuarkusExtensionTest()
             .withApplicationRoot { jar: JavaArchive -> jar.addClass(Greeting::class.java) }
             .withConfigurationResource("basic.properties")
     }

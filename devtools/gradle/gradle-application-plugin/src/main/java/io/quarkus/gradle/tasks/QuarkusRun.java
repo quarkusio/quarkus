@@ -27,6 +27,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.smallrye.common.process.ProcessBuilder;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
     private final SourceSet mainSourceSet;
@@ -55,7 +57,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
+        workingDirectory.convention(projectDir);
 
         jvmArgs = objectFactory.listProperty(String.class);
     }
@@ -80,7 +82,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
      */
     @Deprecated
     public void setWorkingDir(String workingDir) {
-        workingDirectory.set(getProject().file(workingDir));
+        workingDirectory.set(projectDir.toPath().resolve(workingDir).toFile());
     }
 
     @Input
@@ -103,17 +105,17 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     public void runQuarkus() {
         ApplicationModel appModel = resolveAppModelForBuild();
         Properties sysProps = new Properties();
-        sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getQuarkusValues());
+        sysProps.putAll(effectiveProvider().buildEffectiveConfiguration(appModel, Map.of()).getQuarkusValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getLayout().getBuildDirectory().getAsFile().get().toPath())
-                .setBaseName(extension().finalName())
+                .setTargetDirectory(buildDir.toPath())
+                .setBaseName(getExtensionView().getFinalName().get())
                 .setBuildSystemProperties(sysProps)
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
-                .setMode(QuarkusBootstrap.Mode.TEST)
+                .setMode(QuarkusBootstrap.Mode.RUN)
                 .build().bootstrap()) {
 
             AugmentAction action = curatedApplication.createAugmentor();
@@ -150,7 +152,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                         args.addAll(1, getJvmArgs());
                     }
 
-                    getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
+                    getLogger().info("Executing \"" + String.join(" ", args) + "\"");
                     Path wd = (Path) cmd.get(1);
                     File wdir = wd != null ? wd.toFile() : workingDirectory.get();
 
@@ -192,13 +194,13 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
             },
                     RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
-                getProject().getLogger().error("quarkus.run.target " + target + " is not found");
+                getLogger().error("quarkus.run.target " + target + " is not found");
                 return;
             }
             if (tooMany.get() != null) {
-                getProject().getLogger().error(
+                getLogger().error(
                         "Too many installed extensions support quarkus:run.  Use -Dquarkus.run.target=<target> to choose");
-                getProject().getLogger().error("Extensions: " + tooMany.get());
+                getLogger().error("Extensions: " + tooMany.get());
             }
         } catch (BootstrapException e) {
             throw new GradleException("Failed to run application", e);

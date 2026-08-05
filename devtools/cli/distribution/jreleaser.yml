@@ -3,7 +3,7 @@ project:
   description: CLI for Quarkus
   longDescription: |
     Create projects, manage extensions and perform build and development tasks for Quarkus,
-    the Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM.
+    the supersonic subatomic Java framework.
   authors:
     - Quarkus Community
   license: Apache-2.0

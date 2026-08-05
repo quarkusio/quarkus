@@ -13,6 +13,12 @@
     <artifactId>quarkus-integration-test-virtual-threads-jms</artifactId>
     <name>Quarkus - Integration Tests - Virtual Threads - JMS </name>
 
+    <properties>
+        <enforcer.requiresMinimalDeploymentDependency.nonSuperfluous>
+            quarkus-jms-spi-deployment
+        </enforcer.requiresMinimalDeploymentDependency.nonSuperfluous>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -76,10 +82,16 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Use the "compile" scope because we need to include the VirtualThreadsAssertions in the app -->
+        <!-- Use the "compile" scope but exclude all transitive dependencies because we only need to include the VirtualThreadsAssertions in the app -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-vertx</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -127,6 +139,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jms-spi-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

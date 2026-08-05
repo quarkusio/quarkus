@@ -7,21 +7,33 @@ import static io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfi
 import static java.util.Optional.ofNullable;
 
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.formatters.StructuredFormatter.Key;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
 
 public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter {
 
+    private static final Logger LOG = Logger.getLogger(JsonFormatter.class);
+
     private Set<String> excludedKeys;
     private Map<String, AdditionalField> additionalFields;
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
+    private boolean flatMdc = false;
+    private List<JsonProvider> discoveredProviders = Collections.emptyList();
+    private volatile List<JsonProvider> jsonProviders;
 
     public enum AdditionalKey {
         ECS_VERSION("ecs.version"),
@@ -104,6 +116,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.additionalFields = additionalFields;
     }
 
+    public void setDiscoveredProviders(List<JsonProvider> providers) {
+        this.discoveredProviders = List.copyOf(providers);
+    }
+
     public void setLogFormat(LogFormat logFormat) {
         this.logFormat = logFormat;
     }
@@ -112,16 +128,43 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.tracePrefix = tracePrefix;
     }
 
+    public boolean isFlatMdc() {
+        return flatMdc;
+    }
+
+    public void setFlatMdc(boolean flatMdc) {
+        this.flatMdc = flatMdc;
+    }
+
     @Override
     protected Generator createGenerator(final Writer writer) {
         Generator superGenerator = super.createGenerator(writer);
-        return new FormatterJsonGenerator(superGenerator, this.excludedKeys);
+        // In ECS mode, pass the resolved stack trace key so the generator can strip
+        // the leading ": " that jboss's StackTraceFormatter unconditionally prepends
+        // to the rendered stack trace string.
+        // Also pass the process name key so the generator can extract just the basename
+        // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
+        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
+        String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
+        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc);
     }
 
     @Override
     protected void after(final Generator generator, final ExtLogRecord record) throws Exception {
 
-        if (logFormat.equals(LogFormat.GCP)) {
+        if (logFormat.equals(LogFormat.ECS)) {
+            // In ECS mode the FORMATTED output type writes error.stack_trace as a flat string
+            // but does not write error.message or error.type as separate top-level fields.
+            // Write them here so the output is fully ECS-compliant.
+            final Throwable thrown = record.getThrown();
+            if (thrown != null) {
+                final String message = thrown.getMessage();
+                if (message != null && !message.isEmpty()) {
+                    generator.add(getKey(Key.EXCEPTION_MESSAGE), message);
+                }
+                generator.add(getKey(Key.EXCEPTION_TYPE), thrown.getClass().getName());
+            }
+        } else if (logFormat.equals(LogFormat.GCP)) {
             final Map<String, String> mdcCopy = record.getMdcCopy();
             if (!mdcCopy.isEmpty()) {
                 Map<String, AdditionalField> current = new HashMap<>(additionalFields);
@@ -143,10 +186,31 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                 // fast path
                 addToGenerator(additionalFields, generator);
             }
-        } else {
-            // fast path
+        }
+
+        // fast path for additional fields (GCP already handled above, ECS falls through here)
+        if (!logFormat.equals(LogFormat.GCP)) {
             addToGenerator(additionalFields, generator);
         }
+
+        JsonLogGenerator jsonLogGenerator = new JsonLogGenerator(generator, this.excludedKeys);
+        for (JsonProvider provider : getJsonProviders()) {
+            provider.writeTo(jsonLogGenerator, record);
+        }
+    }
+
+    private List<JsonProvider> getJsonProviders() {
+        if (jsonProviders != null) {
+            return jsonProviders;
+        }
+        List<JsonProvider> result = new ArrayList<>(discoveredProviders);
+        try {
+            CDI.current().select(JsonProvider.class).forEach(result::add);
+            jsonProviders = Collections.unmodifiableList(result);
+        } catch (Throwable ignored) {
+            LOG.debug("CDI not available, JsonProvider CDI beans will not be loaded");
+        }
+        return result;
     }
 
     private void addToGenerator(Map<String, AdditionalField> fields, Generator generator) throws Exception {
@@ -165,80 +229,225 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
     }
 
-    private static class FormatterJsonGenerator implements Generator {
-        private final Generator generator;
-        private final Set<String> excludedKeys;
+    /**
+     * A JSON generator for use with {@link JsonProvider}.
+     * Writes JSON fields for the current log record, respecting any keys configured via
+     * {@code quarkus.log.*.json.excluded-keys}.
+     */
+    public static final class JsonLogGenerator {
 
-        private FormatterJsonGenerator(final Generator generator, final Set<String> excludedKeys) {
-            this.generator = generator;
+        private final Generator delegate;
+        private final Set<String> excludedKeys;
+        private int skippedDepth = 0;
+
+        JsonLogGenerator(final Generator delegate, final Set<String> excludedKeys) {
+            this.delegate = delegate;
             this.excludedKeys = excludedKeys;
+        }
+
+        public JsonLogGenerator add(final String key, final boolean value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, String.valueOf(value));
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final int value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final long value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final Map<String, ?> value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final String value) throws Exception {
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startObject(final String key) throws Exception {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endObject() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startArray(final String key) throws Exception {
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endArray() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
+            return this;
+        }
+    }
+
+    private static final class FormatterJsonGenerator implements Generator {
+
+        private final Generator delegate;
+        private final Set<String> excludedKeys;
+        /**
+         * When non-null, values written under this key will have a leading {@code ": "} stripped.
+         * jboss's {@code StackTraceFormatter.renderStackTrace} unconditionally prepends {@code ": "}
+         * before the exception class name. ECS requires a clean stack trace string.
+         */
+        private final String stackTraceKeyToTrim;
+        /**
+         * When non-null, values written under this key will be reduced to their basename.
+         * jboss-logmanager records the full JVM path as the process name
+         * (e.g. {@code /usr/lib/jvm/java-25-openjdk-amd64/bin/java}). ECS requires only
+         * the short process name (e.g. {@code java}).
+         */
+        private final String processNameKey;
+        private final boolean flatMdc;
+        private int skippedDepth = 0;
+
+        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
+                final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc) {
+            this.delegate = delegate;
+            this.excludedKeys = excludedKeys;
+            this.stackTraceKeyToTrim = stackTraceKeyToTrim;
+            this.processNameKey = processNameKey;
+            this.flatMdc = flatMdc;
         }
 
         @Override
         public Generator begin() throws Exception {
-            generator.begin();
+            delegate.begin();
             return this;
         }
 
         @Override
         public Generator add(final String key, final int value) throws Exception {
-            if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
             }
             return this;
         }
 
         @Override
         public Generator add(final String key, final long value) throws Exception {
-            if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                delegate.add(key, value);
             }
             return this;
         }
 
         @Override
         public Generator add(final String key, final Map<String, ?> value) throws Exception {
-            if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                if (flatMdc && value != null && !value.isEmpty()) {
+                    for (Map.Entry<String, ?> entry : value.entrySet()) {
+                        Object v = entry.getValue();
+                        if (v != null) {
+                            delegate.add(entry.getKey(), v.toString());
+                        }
+                    }
+                } else if (!flatMdc) {
+                    delegate.add(key, value);
+                }
             }
             return this;
         }
 
         @Override
         public Generator add(final String key, final String value) throws Exception {
-            if (!excludedKeys.contains(key)) {
-                generator.add(key, value);
+            if (skippedDepth == 0 && !excludedKeys.contains(key)) {
+                String actual = value;
+                // Strip the leading ": " that jboss's StackTraceFormatter prepends to the rendered
+                // stack trace string. Only applied to the specific key configured for this purpose.
+                if (stackTraceKeyToTrim != null && stackTraceKeyToTrim.equals(key)
+                        && value != null && value.startsWith(": ")) {
+                    actual = value.substring(2);
+                    // Extract the basename from a full path for the process name.
+                    // ECS process.name must be the short executable name, not a full filesystem path.
+                } else if (processNameKey != null && processNameKey.equals(key)
+                        && value != null && value.contains("/")) {
+                    actual = value.substring(value.lastIndexOf('/') + 1);
+                }
+                delegate.add(key, actual);
             }
             return this;
         }
 
         @Override
         public Generator startObject(final String key) throws Exception {
-            generator.startObject(key);
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
             return this;
         }
 
         @Override
         public Generator endObject() throws Exception {
-            generator.endObject();
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
             return this;
         }
 
         @Override
         public Generator startArray(final String key) throws Exception {
-            generator.startArray(key);
+            if (skippedDepth > 0 || (key != null && excludedKeys.contains(key))) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
             return this;
         }
 
         @Override
         public Generator endArray() throws Exception {
-            generator.endArray();
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
             return this;
         }
 
         @Override
         public Generator end() throws Exception {
-            generator.end();
+            delegate.end();
             return this;
         }
     }

@@ -13,14 +13,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mysqlclient.MySQLPool;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.sqlclient.Pool;
 
 public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
@@ -28,12 +27,6 @@ public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @Inject
     InjectableInstance<io.vertx.mutiny.sqlclient.Pool> mutinyPool;
-
-    @Inject
-    InjectableInstance<MySQLPool> vendorPool;
-
-    @Inject
-    InjectableInstance<io.vertx.mutiny.mysqlclient.MySQLPool> mutinyVendorPool;
 
     @Test
     public void pool() {
@@ -43,16 +36,6 @@ public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
     @Test
     public void mutinyPool() {
         doTest(mutinyPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
-    }
-
-    @Test
-    public void vendorPool() {
-        doTest(vendorPool, Pool::getConnection);
-    }
-
-    @Test
-    public void mutinyVendorPool() {
-        doTest(mutinyVendorPool, io.vertx.mutiny.sqlclient.Pool::getConnection);
     }
 
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {

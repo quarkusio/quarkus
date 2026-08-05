@@ -6,13 +6,13 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class StaticResourcesCachingDisabledTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest test = new QuarkusUnitTest()
+    final static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .add(new StringAsset(
                             "quarkus.http.static-resources.caching-enabled=false\n"),

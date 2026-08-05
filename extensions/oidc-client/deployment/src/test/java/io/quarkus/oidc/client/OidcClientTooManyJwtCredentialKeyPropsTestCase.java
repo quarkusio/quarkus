@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "# Disable Dev Services, Keycloak is started by a Maven plugin\n"
@@ -37,8 +37,8 @@ public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
                 }
                 assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertEquals(
-                        "Only a single OIDC JWT credential key property can be configured, but you have configured:"
-                                + " quarkus.oidc-client.credentials.jwt.key,quarkus.oidc-client.credentials.jwt.secret",
+                        "Only one of JWT secret or JWT private key authentication methods can be configured,"
+                                + " but 'quarkus.oidc-client.credentials.jwt' has both a JWT secret and a JWT key property set",
                         te.getMessage(),
                         "Too many JWT credential key properties are configured");
             });

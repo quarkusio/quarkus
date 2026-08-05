@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.kubernetes.client.KubernetesConfigCustomizer;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class KubernetesClientCDITest {
 
@@ -24,7 +24,7 @@ public class KubernetesClientCDITest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Customizer.class))
             .overrideConfigKey("quarkus.kubernetes-client.devservices.enabled", "false");

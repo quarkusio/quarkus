@@ -2,10 +2,13 @@ package io.quarkus.devui.deployment.extension;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import io.quarkus.devui.spi.page.Card;
+import io.quarkus.devui.spi.page.CardAction;
+import io.quarkus.devui.spi.page.CardText;
 import io.quarkus.devui.spi.page.LibraryLink;
 import io.quarkus.devui.spi.page.Page;
 
@@ -31,6 +34,8 @@ public class Extension {
     private final List<Page> settingPages = new ArrayList<>();
     private final List<Page> unlistedPages = new ArrayList<>();
     private Card card = null; // Custom card
+    private List<CardAction> cardActions = null;
+    private List<CardText> cardTexts = null;
     private List<LibraryLink> libraryLinks = null;
     private String darkLogo = null;
     private String lightLogo = null;
@@ -197,6 +202,26 @@ public class Extension {
 
     public List<Page> getCardPages() {
         return cardPages;
+    }
+
+    public void addCardAction(CardAction action) {
+        if (this.cardActions == null)
+            this.cardActions = new LinkedList<>();
+        this.cardActions.add(action);
+    }
+
+    public List<CardAction> getCardActions() {
+        return cardActions == null ? Collections.emptyList() : cardActions;
+    }
+
+    public void addCardText(CardText text) {
+        if (this.cardTexts == null)
+            this.cardTexts = new LinkedList<>();
+        this.cardTexts.add(text);
+    }
+
+    public List<CardText> getCardTexts() {
+        return cardTexts == null ? Collections.emptyList() : cardTexts;
     }
 
     public void addMenuPage(Page page) {

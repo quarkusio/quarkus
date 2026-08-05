@@ -20,12 +20,12 @@ import io.quarkus.spring.security.deployment.springapp.ComponentWithClassAnnotat
 import io.quarkus.spring.security.deployment.springapp.DenyAllOnClass;
 import io.quarkus.spring.security.deployment.springapp.Person;
 import io.quarkus.spring.security.deployment.springapp.Roles;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SpringPreAuthorizeClassAnnotatedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Roles.class,
                             Person.class,

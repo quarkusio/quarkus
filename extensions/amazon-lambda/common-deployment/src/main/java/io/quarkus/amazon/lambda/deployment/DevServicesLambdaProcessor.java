@@ -14,6 +14,8 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.LambdaHotReplacementRecorder;
 import io.quarkus.amazon.lambda.runtime.MockEventServer;
 import io.quarkus.amazon.lambda.runtime.MockEventServerConfig;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsLiveReloadSupportedByLaunchMode;
 import io.quarkus.deployment.IsProduction;
@@ -55,7 +57,9 @@ public class DevServicesLambdaProcessor {
     @BuildStep(onlyIfNot = IsProduction.class) // This is required for testing so run it even if devservices.enabled=false
     public void startEventServer(LaunchModeBuildItem launchModeBuildItem,
             LambdaBuildConfig config,
+            Capabilities capabilities,
             Optional<EventServerOverrideBuildItem> override,
+            Optional<EventServerPortOverrideBuildItem> portOverride,
             BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer) {
         LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
         if (!launchMode.isDevOrTest())
@@ -77,12 +81,23 @@ public class DevServicesLambdaProcessor {
         String portPropertySuffix = isTest ? "test-port" : "dev-port";
         String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
 
+        int resolvedOverridePort = portOverride.map(EventServerPortOverrideBuildItem::getPort).orElse(Integer.MIN_VALUE);
+        // Both the Lambda mock event server and Vert.x HTTP default to 8080 in dev mode.
+        // When HTTP is present, use an ephemeral port for the event server to avoid the conflict.
+        // amazon-lambda-http / amazon-lambda-rest may already supply EventServerPortOverrideBuildItem(0).
+        if (resolvedOverridePort < 0
+                && launchMode == LaunchMode.DEVELOPMENT
+                && capabilities.isPresent(Capability.VERTX_HTTP)) {
+            resolvedOverridePort = 0;
+        }
+        final int overridePort = resolvedOverridePort;
+
         // No compose support, and no using of external services, so no need to discover existing services
 
         DevServicesResultBuildItem buildItem = DevServicesResultBuildItem.owned().feature(Feature.AMAZON_LAMBDA)
                 .serviceName(Feature.AMAZON_LAMBDA.getName())
                 .serviceConfig(config)
-                .startable(() -> new StartableEventServer(server, propName, isTest))
+                .startable(() -> new StartableEventServer(server, propName, isTest, overridePort))
                 .highPriorityConfig(Set.of(propName)) // Pass through the external config for the port, so that it can be overridden if it's an ephemeral port
                 .configProvider(
                         Map.of(propName, s -> String.valueOf(s.getExposedPort()),
@@ -98,25 +113,32 @@ public class DevServicesLambdaProcessor {
         private final MockEventServer server;
         private final String propName;
         private final boolean isTest;
+        private final int overridePort;
 
-        public StartableEventServer(MockEventServer server, String propName, boolean isTest) {
+        public StartableEventServer(MockEventServer server, String propName, boolean isTest, int overridePort) {
             this.server = server;
             this.propName = propName;
             this.isTest = isTest;
+            this.overridePort = overridePort;
         }
 
         @Override
         public void start() {
             // Technically, we shouldn't peek at the runtime config, but every dev service does it
             // However, we won't get defaults, so we need to fill our own in
-            int port = isTest ? Integer.parseInt(MockEventServerConfig.TEST_PORT)
-                    : Integer.parseInt(MockEventServerConfig.DEV_PORT);
+            int port;
+            if (overridePort >= 0) {
+                port = overridePort;
+            } else {
+                port = isTest ? Integer.parseInt(MockEventServerConfig.TEST_PORT)
+                        : Integer.parseInt(MockEventServerConfig.DEV_PORT);
+            }
             int configuredPort = ConfigProvider.getConfig().getOptionalValue(propName, Integer.class)
                     .or(() -> Optional.of(port))
                     .get();
 
             server.start(configuredPort);
-            log.debugf("Starting event server on port %d", configuredPort);
+            log.debugf("Started event server on port %d", server.getPort());
         }
 
         public int getExposedPort() {

@@ -77,7 +77,7 @@ public abstract class MutableBaseJvmOption<T extends MutableBaseJvmOption<T>> im
         var map = factory.newMap(3);
         map.put(BootstrapConstants.MAPPABLE_NAME, getName());
         map.put(BootstrapConstants.MAPPABLE_JVM_OPTION_GROUP_PREFIX, getPropertyGroupPrefix());
-        map.put(BootstrapConstants.MAPPABLE_VALUES, getValues());
+        map.put(BootstrapConstants.MAPPABLE_VALUES, Mappable.toStringCollection(getValues(), factory));
         return map;
     }
 

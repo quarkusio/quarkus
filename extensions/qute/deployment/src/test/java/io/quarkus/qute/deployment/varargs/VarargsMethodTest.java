@@ -15,12 +15,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.TemplateExtension;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class VarargsMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class)
                     .addAsResource(new StringAsset("{foo.getStr}:{foo.getStr('foo','bar','baz')}"),

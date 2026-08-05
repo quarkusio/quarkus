@@ -30,7 +30,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoE
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoQueryParamsResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoSimpleResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoSimpleSingletonResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
@@ -48,7 +48,7 @@ public class UriInfoTest {
     private static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest quarkusUnitTest = new QuarkusUnitTest()
+    static QuarkusExtensionTest quarkusExtensionTest = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

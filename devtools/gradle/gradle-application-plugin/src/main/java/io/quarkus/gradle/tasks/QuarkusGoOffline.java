@@ -5,9 +5,11 @@ import javax.inject.Inject;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.runtime.LaunchMode;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusGoOffline extends QuarkusTask {
 
     private Configuration compileClasspath;

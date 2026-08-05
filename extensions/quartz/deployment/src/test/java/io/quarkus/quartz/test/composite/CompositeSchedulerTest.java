@@ -17,13 +17,13 @@ import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.runtime.Constituent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Identifier;
 
 public class CompositeSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.use-composite-scheduler", "true");

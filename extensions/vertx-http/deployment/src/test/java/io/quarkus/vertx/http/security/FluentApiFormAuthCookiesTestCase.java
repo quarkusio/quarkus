@@ -6,14 +6,14 @@ import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig.CookieSameSite;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 
 public class FluentApiFormAuthCookiesTestCase extends AbstractFormAuthCookiesTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = createQuarkusApp("", HttpSecurityConfigurator.class);
+    static QuarkusExtensionTest test = createQuarkusApp("", HttpSecurityConfigurator.class);
 
     public static class HttpSecurityConfigurator {
 

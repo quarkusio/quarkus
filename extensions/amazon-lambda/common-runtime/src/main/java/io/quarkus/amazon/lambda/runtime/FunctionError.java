@@ -1,8 +1,12 @@
 package io.quarkus.amazon.lambda.runtime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FunctionError {
 
+    @JsonProperty("errorType")
     private String errorType;
+    @JsonProperty("errorMessage")
     private String errorMessage;
 
     public FunctionError(String errorType, String errorMessage) {

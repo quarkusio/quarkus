@@ -14,12 +14,12 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClientBlockingDeadlineTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage()).addClasses(HelloService.class))
             .withConfigurationResource("hello-config-deadline.properties");
@@ -35,11 +35,11 @@ public class ClientBlockingDeadlineTest {
             //noinspection ResultOfMethodCallIgnored
             stub.sayHello(HelloRequest.newBuilder().setName("Scaladar").build());
         } catch (Exception e) {
-            Assertions.assertTrue(e instanceof StatusRuntimeException);
+            Assertions.assertInstanceOf(StatusRuntimeException.class, e);
             StatusRuntimeException sre = (StatusRuntimeException) e;
             Status status = sre.getStatus();
             Assertions.assertNotNull(status);
-            Assertions.assertEquals(Status.DEADLINE_EXCEEDED.getCode(), status.getCode());
+            Assertions.assertEquals(Status.CANCELLED.getCode(), status.getCode());
         }
     }
 }

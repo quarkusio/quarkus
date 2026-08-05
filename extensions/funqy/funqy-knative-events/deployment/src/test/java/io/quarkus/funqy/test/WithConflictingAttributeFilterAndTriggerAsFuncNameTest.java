@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class WithConflictingAttributeFilterAndTriggerAsFuncNameTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().assertException(t -> {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().assertException(t -> {
         Throwable i = t;
         boolean found = false;
         while (i != null) {

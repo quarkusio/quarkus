@@ -3,6 +3,7 @@ package io.quarkus.arquillian;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,9 +24,7 @@ abstract class QuarkusJunitCallbacks {
             collectCallbacks(testInstance.getClass(), befores, (Class<? extends Annotation>) testInstance.getClass()
                     .getClassLoader().loadClass(className));
             for (Method before : befores) {
-                if (before.canAccess(testInstance) && before.getParameters().length == 0) {
-                    before.invoke(testInstance);
-                }
+                invokeCallback(before, testInstance);
             }
         }
     }
@@ -37,10 +36,20 @@ abstract class QuarkusJunitCallbacks {
             collectCallbacks(testInstance.getClass(), afters, (Class<? extends Annotation>) testInstance.getClass()
                     .getClassLoader().loadClass(className));
             for (Method after : afters) {
-                if (after.canAccess(testInstance) && after.getParameters().length == 0) {
-                    after.invoke(testInstance);
-                }
+                invokeCallback(after, testInstance);
             }
+        }
+    }
+
+    /**
+     * A class level callback is static unless the test declares the per class test instance lifecycle, and
+     * {@link Method#canAccess(Object)} rejects a non-null object for a static method.
+     */
+    private static void invokeCallback(Method callback, Object testInstance)
+            throws IllegalAccessException, InvocationTargetException {
+        Object target = Modifier.isStatic(callback.getModifiers()) ? null : testInstance;
+        if (callback.canAccess(target) && callback.getParameters().length == 0) {
+            callback.invoke(target);
         }
     }
 

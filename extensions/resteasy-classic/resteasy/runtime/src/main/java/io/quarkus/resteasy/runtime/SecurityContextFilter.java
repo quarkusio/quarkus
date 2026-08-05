@@ -106,7 +106,9 @@ public class SecurityContextFilter implements ContainerRequestFilter {
                 return Uni.createFrom().nullItem();
             }
         };
-        routingContext.setUser(new QuarkusHttpUser(newIdentity));
+        // TODO: see if we can find a better way for setting a user on a RoutingContext user context
+        ((io.vertx.ext.web.impl.UserContextInternal) routingContext.userContext())
+                .setUser(new QuarkusHttpUser(newIdentity));
         currentIdentityAssociation.setIdentity(newIdentity);
     }
 }

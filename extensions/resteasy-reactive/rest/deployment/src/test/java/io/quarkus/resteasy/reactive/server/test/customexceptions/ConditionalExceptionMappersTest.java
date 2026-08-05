@@ -18,13 +18,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class ConditionalExceptionMappersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

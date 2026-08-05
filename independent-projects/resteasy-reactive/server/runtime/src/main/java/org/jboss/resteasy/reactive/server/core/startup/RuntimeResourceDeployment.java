@@ -47,6 +47,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor
 import org.jboss.resteasy.reactive.server.core.parameters.BodyParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.EntityPartListExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.FormParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.InjectParamExtractor;
@@ -649,7 +650,9 @@ public class RuntimeResourceDeployment {
                 MultipartFormParamExtractor.Type multiPartType = null;
                 Class<Object> typeClass = null;
                 Type genericType = null;
-                if (param.type.equals(FileUpload.class.getName())) {
+                if (param.type.equals("jakarta.ws.rs.core.EntityPart")) {
+                    multiPartType = MultipartFormParamExtractor.Type.EntityPart;
+                } else if (param.type.equals(FileUpload.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.FileUpload;
                 } else if (param.type.equals(File.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.File;
@@ -711,6 +714,8 @@ public class RuntimeResourceDeployment {
                 }
             case MULTI_PART_DATA_INPUT:
                 return MultipartDataInputExtractor.INSTANCE;
+            case ENTITY_PART_LIST:
+                return EntityPartListExtractor.INSTANCE;
             case CUSTOM:
                 return param.customParameterExtractor;
             default:

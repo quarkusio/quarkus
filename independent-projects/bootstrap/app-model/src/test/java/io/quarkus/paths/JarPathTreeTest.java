@@ -9,6 +9,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -155,5 +156,92 @@ public class JarPathTreeTest {
         var visitor = new PathCollectingVisitor();
         tree.walk(visitor);
         assertThat(visitor.visitedPaths).containsExactlyInAnyOrderEntriesOf(DirectoryPathTreeTest.getMultiReleaseMappedPaths());
+    }
+
+    @Test
+    public void openAcceptGetRoot() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            open.accept("README.md", visit -> {
+                assertThat(visit).isNotNull();
+                assertThat(visit.getRelativePath("/")).isEqualTo("README.md");
+                assertThat(visit.getRoot()).isEqualTo(root);
+                try {
+                    assertThat(Files.readString(visit.getPath())).isEqualTo("test readme");
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
+    }
+
+    @Test
+    public void openWalkGetRoot() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            open.walk(visit -> {
+                assertThat(visit.getRoot()).isEqualTo(root);
+            });
+        }
+    }
+
+    @Test
+    public void openApplyGetRoot() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            String content = open.apply("README.md", visit -> {
+                assertThat(visit).isNotNull();
+                assertThat(visit.getRoot()).isEqualTo(root);
+                try {
+                    return Files.readString(visit.getPath());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+            assertThat(content).isEqualTo("test readme");
+        }
+    }
+
+    @Test
+    public void interruptFlagPreservedDuringAccept() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            Thread.currentThread().interrupt();
+            final AtomicBoolean visited = new AtomicBoolean();
+            open.accept("README.md", visit -> {
+                assertThat(visit).isNotNull();
+                visited.set(true);
+            });
+            assertThat(visited).isTrue();
+            assertThat(Thread.interrupted()).as("interrupt flag should be restored after accept").isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    public void interruptFlagPreservedDuringWalk() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            Thread.currentThread().interrupt();
+            final AtomicBoolean visited = new AtomicBoolean();
+            open.walk(visit -> visited.set(true));
+            assertThat(visited).isTrue();
+            assertThat(Thread.interrupted()).as("interrupt flag should be restored after walk").isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    public void interruptFlagPreservedDuringContains() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try (OpenPathTree open = tree.open()) {
+            Thread.currentThread().interrupt();
+            assertThat(open.contains("README.md")).isTrue();
+            assertThat(Thread.interrupted()).as("interrupt flag should be restored after contains").isTrue();
+        } finally {
+            Thread.interrupted();
+        }
     }
 }

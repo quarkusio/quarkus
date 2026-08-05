@@ -16,13 +16,13 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.ext.web.RoutingContext;
 
 public class LazyAuthRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
                             "quarkus.http.auth.permission.secured.paths=/hello-auth-app-properties\n" +

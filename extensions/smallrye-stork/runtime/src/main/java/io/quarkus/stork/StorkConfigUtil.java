@@ -34,15 +34,15 @@ public class StorkConfigUtil {
     public static List<ServiceConfig> toStorkServiceConfig(StorkConfiguration storkConfiguration) {
         List<ServiceConfig> storkServicesConfigs = new ArrayList<>();
         Set<String> servicesConfigs = storkConfiguration.serviceConfiguration().keySet();
-        SimpleServiceConfig.Builder builder = new SimpleServiceConfig.Builder();
         for (String serviceName : servicesConfigs) {
+            SimpleServiceConfig.Builder builder = new SimpleServiceConfig.Builder();
             builder.setServiceName(serviceName);
             ServiceConfiguration serviceConfiguration = storkConfiguration.serviceConfiguration().get(serviceName);
             if (serviceConfiguration.serviceDiscovery().isPresent()) {
                 SimpleServiceConfig.SimpleServiceDiscoveryConfig storkServiceDiscoveryConfig = new SimpleServiceConfig.SimpleServiceDiscoveryConfig(
                         serviceConfiguration.serviceDiscovery().get().type(),
                         serviceConfiguration.serviceDiscovery().get().params());
-                builder = builder.setServiceDiscovery(storkServiceDiscoveryConfig);
+                builder.setServiceDiscovery(storkServiceDiscoveryConfig);
                 SimpleServiceConfig.SimpleLoadBalancerConfig loadBalancerConfig = new SimpleServiceConfig.SimpleLoadBalancerConfig(
                         serviceConfiguration.loadBalancer().type(), serviceConfiguration.loadBalancer().parameters());
                 builder.setLoadBalancer(loadBalancerConfig);
@@ -74,7 +74,7 @@ public class StorkConfigUtil {
      * @throws IllegalArgumentException if {@code serviceRegistrarType} is null or blank
      */
 
-    public static ServiceConfiguration buildDefaultRegistrarConfiguration(String serviceRegistrarType, String healthCheckPath) {
+    public static ServiceConfiguration buildRegistrarOnlyConfiguration(String serviceRegistrarType, String healthCheckPath) {
         requireRegistrarTypeNotBlank(serviceRegistrarType);
         Map<String, String> parameters = new HashMap<>();
         Config quarkusConfig = ConfigProvider.getConfig();
@@ -83,7 +83,24 @@ public class StorkConfigUtil {
                     + getOrDefaultPort(parameters, quarkusConfig) + healthCheckPath;
             parameters.put("health-check-url", healthCheckPath);
         }
-        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, true, parameters);
+        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, true,
+                parameters);
+        return new ServiceConfiguration() {
+            @Override
+            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
+                return Optional.empty();
+            }
+
+            @Override
+            public StorkLoadBalancerConfiguration loadBalancer() {
+                return null;
+            }
+
+            @Override
+            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
+                return Optional.of(registrar);
+            }
+        };
     }
 
     /**
@@ -112,25 +129,22 @@ public class StorkConfigUtil {
             parameters.put("health-check-url", healthCheckUrl);
         }
         boolean enabled = storkServiceRegistrarConfiguration.map(StorkServiceRegistrarConfiguration::enabled).orElse(true);
-        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, enabled, parameters);
-    }
-
-    private static ServiceConfiguration buildServiceConfigurationWithRegistrar(String type, boolean enabled,
-            Map<String, String> parameters) {
+        StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, enabled,
+                parameters);
         return new ServiceConfiguration() {
             @Override
             public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return Optional.empty();
+                return serviceConfiguration.serviceDiscovery();
             }
 
             @Override
             public StorkLoadBalancerConfiguration loadBalancer() {
-                return null;
+                return serviceConfiguration.loadBalancer();
             }
 
             @Override
             public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.of(buildServiceRegistrarConfiguration(type, enabled, parameters));
+                return Optional.of(registrar);
             }
         };
     }

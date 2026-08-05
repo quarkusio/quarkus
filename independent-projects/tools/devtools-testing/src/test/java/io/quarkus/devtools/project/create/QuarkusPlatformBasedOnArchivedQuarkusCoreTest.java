@@ -82,7 +82,7 @@ public class QuarkusPlatformBasedOnArchivedQuarkusCoreTest extends MultiplePlatf
         createProject(projectDir, List.of("rabbit"));
 
         assertModel(projectDir,
-                List.of(mainPlatformBom(), ArtifactCoords.pom(ACME_PLATFORM_KEY, "acme-zoo-bom", "5.0.5")),
+                List.of(ArtifactCoords.pom(ACME_PLATFORM_KEY, "acme-zoo-bom", "5.0.5"), mainPlatformBom()),
                 List.of(ArtifactCoords.jar("org.acme", "acme-rabbit", null)),
                 "3.0.5");
     }
@@ -93,7 +93,7 @@ public class QuarkusPlatformBasedOnArchivedQuarkusCoreTest extends MultiplePlatf
         createProject(projectDir, List.of("rabbit", "quarkus-rest", "quarkus-magic"));
 
         assertModel(projectDir,
-                List.of(mainPlatformBom(), ArtifactCoords.pom(ACME_PLATFORM_KEY, "acme-zoo-bom", "5.0.5")),
+                List.of(ArtifactCoords.pom(ACME_PLATFORM_KEY, "acme-zoo-bom", "5.0.5"), mainPlatformBom()),
                 List.of(ArtifactCoords.jar("org.acme", "acme-rabbit", null),
                         ArtifactCoords.jar(OTHER_PLATFORM_KEY, "quarkus-rest", null),
                         ArtifactCoords.jar(OTHER_PLATFORM_KEY, "quarkus-magic", null)),

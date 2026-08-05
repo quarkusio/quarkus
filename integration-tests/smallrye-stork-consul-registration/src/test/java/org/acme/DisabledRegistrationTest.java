@@ -1,5 +1,7 @@
 package org.acme;
 
+import static org.hamcrest.Matchers.hasSize;
+
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -39,9 +41,10 @@ public class DisabledRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/my-service")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/my-service")
                 .then()
-                .statusCode(404);
+                .statusCode(200)
+                .body("$", hasSize(0));
 
     }
 

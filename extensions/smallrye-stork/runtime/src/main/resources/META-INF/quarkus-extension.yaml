@@ -9,6 +9,6 @@ metadata:
   guide: "https://quarkus.io/guides/stork"
   categories:
     - "web"
-  status: "preview"
+  status: "stable"
   config:
     - "quarkus.stork."

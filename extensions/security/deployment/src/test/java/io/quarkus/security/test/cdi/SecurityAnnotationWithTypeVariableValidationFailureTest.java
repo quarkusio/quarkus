@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Type variables are currently not supported for secured interfaces.
@@ -25,7 +25,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SecurityAnnotationWithTypeVariableValidationFailureTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(SecuredInterface.class, ParametrizedType.class, Repository.class, SecuredInterfaceImpl.class))
             .assertException(throwable -> {

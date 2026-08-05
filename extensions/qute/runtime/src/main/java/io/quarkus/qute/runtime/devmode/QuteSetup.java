@@ -4,6 +4,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.qute.Engine;
@@ -18,10 +20,17 @@ public class QuteSetup implements HotReplacementSetup {
             @Override
             public void accept(Set<String> files) {
                 // Make sure all templates are reloaded
-                Engine engine = Arc.container().instance(Engine.class).get();
-                engine.clearTemplates();
-                TemplateProducer templateProducer = Arc.container().instance(TemplateProducer.class).get();
-                templateProducer.clearInjectedTemplates();
+                ArcContainer container = Arc.container();
+                if (container != null) {
+                    InstanceHandle<Engine> engineHandle = container.instance(Engine.class);
+                    if (engineHandle.isAvailable()) {
+                        engineHandle.get().clearTemplates();
+                    }
+                    InstanceHandle<TemplateProducer> templateProducerHandle = container.instance(TemplateProducer.class);
+                    if (templateProducerHandle.isAvailable()) {
+                        templateProducerHandle.get().clearInjectedTemplates();
+                    }
+                }
             }
         });
     }

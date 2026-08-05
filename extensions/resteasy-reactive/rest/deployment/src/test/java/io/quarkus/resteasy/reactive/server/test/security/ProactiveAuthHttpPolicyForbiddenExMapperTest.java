@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class ProactiveAuthHttpPolicyForbiddenExMapperTest {
@@ -31,7 +31,7 @@ public class ProactiveAuthHttpPolicyForbiddenExMapperTest {
             "quarkus.http.auth.permission.roles.policy=user-policy";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

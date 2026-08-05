@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Accessing application properties with Spring Boot properties API
 include::_attributes.adoc[]
-:categories: compatibility
 :summary: Use Spring Boot's @ConfigurationProperties in place of MicroProfile Config annotations
 :topics: spring,configuration,compatibility
 :extensions: io.quarkus:quarkus-spring-boot-properties
@@ -398,3 +397,5 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
 * xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
 * xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-tx.adoc[Quarkus - Extension for Spring Transaction]
+* xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]

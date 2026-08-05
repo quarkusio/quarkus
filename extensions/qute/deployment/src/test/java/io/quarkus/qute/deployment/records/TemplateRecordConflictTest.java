@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TemplateRecordConflictTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(monkFoo.class, monk_foo.class)
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/TemplateRecordConflictTest/monk_foo.txt"))

@@ -87,6 +87,10 @@ public abstract class AbstractManagedJpaOperations<PanacheQueryType>
         return getSession(entity.getClass()).chain(Mutiny.Session::flush);
     }
 
+    public Uni<Void> flush(Class<?> clazz) {
+        return getSession(clazz).chain(Mutiny.Session::flush);
+    }
+
     @Override
     public Uni<Void> delete(Mutiny.Session session, Object entity) {
         return session.remove(entity);

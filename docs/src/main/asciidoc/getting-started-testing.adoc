@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="testing"]
 = Testing Your Application
 include::_attributes.adoc[]
-:categories: core, native, tooling
 :summary: This guide covers testing in JVM mode, native mode, and injection of resources into tests
 :numbered:
 :sectnums:
@@ -470,7 +469,7 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
-link:https://docs.junit.org/current/user-guide/#writing-tests-test-execution-order-classes[JUnit User Guide].
+link:https://docs.junit.org/current/writing-tests/test-execution-order.html#classes[JUnit User Guide].
 The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
 `quarkus.test.class-orderer`. The Quarkus orderer will attempt to sort according to the secondary orderer, with the constraint that tests which require the same application instance are grouped.
 The property accepts the FQCN of the `ClassOrderer` to use as a secondary orderer. It can be set to an orderer that is provided by JUnit or even your own custom one.
@@ -706,9 +705,118 @@ match the value of `quarkus.test.profile.tags`.
 * `quarkus.test.profile.tags=test2,test3`: In this case only `MultipleTagsTest` will be run because `MultipleTagsTest` is the only `QuarkusTestProfile` implementation whose `tags` method
 matches the value of `quarkus.test.profile.tags`.
 
+== Conditional test execution based on application configuration
+
+Quarkus provides `@EnabledIfConfig` and `@DisabledIfConfig` annotations to conditionally enable or disable tests based on application configuration.
+These work similarly to JUnit's https://docs.junit.org/6.1.2/writing-tests/conditional-test-execution.html[`@EnabledIfSystemProperty` and `@DisabledIfSystemProperty`], but resolve values through the full MicroProfile Config system.
+This means that any registered `ConfigSource` is consulted, including `application.properties`, system properties, environment variables, and any custom config sources.
+
+Both annotations accept the following attributes:
+
+* `named` — the configuration key to look up
+* `matches` — a regular expression to match against the resolved value
+* `disabledReason` (optional) — a custom reason to display when the test is skipped
+
+=== `@EnabledIfConfig`
+
+`@EnabledIfConfig` enables a test only when the specified configuration key exists and its value matches the given regular expression.
+If the key is not defined, the test is **disabled**.
+
+[source,java]
+----
+@QuarkusTest
+@EnabledIfConfig(named = "my.feature.enabled", matches = "true") <1>
+public class FeatureEnabledTest {
+
+    @Test
+    public void testFeature() {
+        // runs only when my.feature.enabled=true
+    }
+}
+----
+<1> The test class is enabled only when `my.feature.enabled` resolves to `true`.
+
+You can also apply the annotation to individual methods:
+
+[source,java]
+----
+@QuarkusTest
+public class MixedTest {
+
+    @Test
+    @EnabledIfConfig(named = "db.type", matches = "postgresql")
+    public void postgresOnly() {
+        // runs only when db.type=postgresql
+    }
+
+    @Test
+    public void alwaysRuns() {
+        // runs regardless of configuration
+    }
+}
+----
+
+=== `@DisabledIfConfig`
+
+`@DisabledIfConfig` disables a test when the specified configuration key exists and its value matches the given regular expression.
+If the key is not defined, the test remains **enabled**.
+
+[source,java]
+----
+@QuarkusTest
+@DisabledIfConfig(named = "ci.slow.tests.skip", matches = "true",
+    disabledReason = "Slow tests are skipped in this CI environment") <1>
+public class SlowTest {
+
+    @Test
+    public void longRunningTest() {
+        // skipped when ci.slow.tests.skip=true
+    }
+}
+----
+<1> The optional `disabledReason` provides context when the test is skipped.
+
+=== Repeatable annotations
+
+Both annotations are `@Repeatable` and can be stacked on the same class or method, but the evaluation semantics differ:
+
+* **Multiple `@EnabledIfConfig`**: the test is enabled only when **all** conditions match (AND semantics). If any single condition does not match, the test is disabled.
+* **Multiple `@DisabledIfConfig`**: the test is disabled when **any** condition matches (OR semantics). The first matching condition disables the test.
+
+[source,java]
+----
+@QuarkusTest
+@EnabledIfConfig(named = "db.type", matches = "postgresql")
+@EnabledIfConfig(named = "test.integration", matches = "true")
+public class PostgresIntegrationTest {
+
+    @Test
+    public void test() {
+        // runs only when BOTH conditions are satisfied
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@DisabledIfConfig(named = "ci.skip.slow", matches = "true")
+@DisabledIfConfig(named = "ci.skip.db", matches = "true")
+public class SlowDatabaseTest {
+
+    @Test
+    public void test() {
+        // skipped if EITHER condition matches
+    }
+}
+----
+
+NOTE: These annotations are not `@Inherited`.
+If you need the same conditions on a subclass, redeclare the annotations on the subclass.
+
 == Nested Tests
 
-JUnit https://docs.junit.org/current/user-guide/#writing-tests-nested[@Nested tests] are useful for structuring more complex test scenarios.
+JUnit https://docs.junit.org/current/writing-tests/nested-tests.html[@Nested tests] are useful for structuring more complex test scenarios.
 However, note that it is not possible to assign different test profiles or resources to nested tests within the same parent class.
 
 == Mock Support
@@ -1100,7 +1208,7 @@ remove duplicates. If you want to only enable a test resource on a single test c
 
 NOTE: When using multiple test resources, they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
 
-Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
+Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus/blob/main/test-framework/keycloak-server/src/main/java/io/quarkus/test/keycloak/server/KeycloakTestResourceLifecycleManager.java[here]),
 or starting a mock HTTP server using https://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
@@ -1339,7 +1447,7 @@ public class GreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved by the _Failsafe Maven Plugin_.
 <2> We extend our previous tests as a convenience, but you can also implement your tests.
 
-More information can be found in the link:building-native-image#testing-the-native-executable[Testing the native executable Guide].
+More information can be found in the xref:building-native-image.adoc#testing-the-native-executable[Testing the native executable Guide].
 
 [IMPORTANT]
 ====
@@ -1491,7 +1599,7 @@ To test against a running instance that only accepts SSL/TLS connection (example
 
 == Mixing `@QuarkusTest` with other type of tests
 
-Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusUnitTest`
+Mixing tests annotated with `@QuarkusTest` with tests annotated with either `@QuarkusDevModeTest`, `@QuarkusProdModeTest` or `@QuarkusExtensionTest`
 is not allowed in a single execution run (in a single Maven Surefire Plugin execution, for instance),
 while the latter three can coexist.
 
@@ -1535,7 +1643,7 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 ----
 
 [NOTE]
---
+=====
 Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.
 
 For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
@@ -1613,7 +1721,7 @@ idea.module {
 }
 ----
 ====
---
+=====
 
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE

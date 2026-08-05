@@ -20,7 +20,7 @@ import org.keycloak.representations.idm.RolesRepresentation;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
@@ -31,7 +31,7 @@ import io.smallrye.certs.junit5.Certificates;
 public class KeycloakAdminClientMutualTlsDevServicesTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest app = new QuarkusUnitTest()
+    final static QuarkusExtensionTest app = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(MtlsResource.class)
                     .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")

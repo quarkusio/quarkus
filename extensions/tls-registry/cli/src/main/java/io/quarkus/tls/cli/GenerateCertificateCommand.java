@@ -5,6 +5,7 @@ import static io.quarkus.tls.cli.Constants.PK_FILE;
 import static io.quarkus.tls.cli.DotEnvHelper.addOrReplaceProperty;
 import static io.quarkus.tls.cli.DotEnvHelper.readDotEnvFile;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.AUDIT;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -70,6 +71,11 @@ public class GenerateCertificateCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         LOGGER.info("\uD83D\uDD0E Looking for the Quarkus Dev CA certificate...");
 
+        if ("password".equals(password)) {
+            LOGGER.warn("⚠️  WARNING: Using default password 'password' for keystore");
+            LOGGER.warn("⚠️  This is INSECURE for production use");
+        }
+
         if (!CA_FILE.exists() || !PK_FILE.exists() || selfSigned) {
             LOGGER.info("\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
             generateSelfSignedCertificate();
@@ -92,12 +98,14 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
+        AUDIT.debug("Generating self-signed certificate - name: " + name + ", cn: " + cn);
         new CertificateGenerator(directory, renew).generate(new CertificateRequest()
                 .withName(name)
                 .withCN(cn)
                 .withPassword(password)
                 .withDuration(Duration.ofDays(365))
                 .withFormat(Format.PKCS12));
+        AUDIT.debug("Self-signed certificate written to: " + directory.resolve(name + "-keystore.p12"));
         LOGGER.infof("✅ Self-signed certificate generated successfully and exported into `%s-keystore.p12`", name);
         printConfig(directory.resolve(name + "-keystore.p12"), password);
 
@@ -113,6 +121,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
             List<String> dotEnvContent = readDotEnvFile();
             addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.path", certificatePathProperty);
             addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.password", password);
+            AUDIT.debug("Writing TLS keystore configuration to .env file: " + DOT_ENV_FILE.getAbsolutePath());
             Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
         } catch (IOException e) {
             LOGGER.error("Failed to read .env file", e);
@@ -154,6 +163,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
+        AUDIT.debug("Generating CA-signed certificate - name: " + name + ", cn: " + cn);
         new CertificateGenerator(directory, renew).generate(new CertificateRequest()
                 .withName(name)
                 .withCN(cn)
@@ -161,6 +171,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
                 .withDuration(Duration.ofDays(365))
                 .withFormat(Format.PKCS12)
                 .signedWith(issuerCert, issuerPrivateKey));
+        AUDIT.debug("CA-signed certificate written to: " + directory.resolve(name + "-keystore.p12"));
 
     }
 }

@@ -10,6 +10,7 @@ import java.util.List;
 import jakarta.ws.rs.Priorities;
 
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -99,7 +100,8 @@ public class OidcClientReactiveFilterBuildStep {
     void registerDetectUnauthorizedResponseFilterForCustomFilters(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer, CombinedIndexBuildItem indexBuildItem) {
         var annotatedRestClientNames = detectCustomFiltersThatRequireResponseFilter(
-                AbstractOidcClientRequestReactiveFilter.class, RegisterProvider.class, indexBuildItem.getIndex());
+                AbstractOidcClientRequestReactiveFilter.class, RegisterProvider.class, RegisterProviders.class,
+                indexBuildItem.getIndex());
         boolean detectionEnabledForCustomFilters = !annotatedRestClientNames.isEmpty();
         if (detectionEnabledForCustomFilters) {
             // client filter responsibility must be the other way around for response because

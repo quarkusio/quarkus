@@ -2,13 +2,11 @@ package io.quarkus.deployment;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -34,26 +32,8 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     }
 
     @Override
-    @Deprecated
-    public Path getArchiveLocation() {
-        return openTree.getOriginalTree().getRoots().iterator().next();
-    }
-
-    @Override
-    @Deprecated
-    public PathsCollection getRootDirs() {
-        return PathsCollection.from(openTree.getRoots());
-    }
-
-    @Override
     public PathCollection getRootDirectories() {
         return PathList.from(openTree.getRoots());
-    }
-
-    @Override
-    @Deprecated
-    public PathsCollection getPaths() {
-        return PathsCollection.from(openTree.getOriginalTree().getRoots());
     }
 
     @Override

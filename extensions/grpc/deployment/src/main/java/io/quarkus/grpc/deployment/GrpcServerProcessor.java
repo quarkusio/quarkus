@@ -8,17 +8,20 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
-import static java.util.Arrays.asList;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -26,8 +29,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.transaction.Transaction;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
@@ -38,7 +39,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -57,8 +57,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -71,7 +69,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
@@ -90,7 +87,6 @@ import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcIntercepto
 import io.quarkus.grpc.runtime.supports.context.RoutingContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.exc.DefaultExceptionHandlerProvider;
 import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
-import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -108,12 +104,6 @@ public class GrpcServerProcessor {
     private static final Set<String> BLOCKING_SKIPPED_METHODS = Set.of("bindService", "<init>", "<clinit>", "withCompression");
 
     private static final Logger log = Logger.getLogger(GrpcServerProcessor.class);
-
-    private static final String SSL_PREFIX = "quarkus.grpc.server.ssl.";
-    private static final String CERTIFICATE = SSL_PREFIX + "certificate";
-    private static final String KEY = SSL_PREFIX + "key";
-    private static final String KEY_STORE = SSL_PREFIX + "key-store";
-    private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {
@@ -230,12 +220,20 @@ public class GrpcServerProcessor {
         }
     }
 
+    private static final DotName ABSTRACT_COROUTINE_SERVER_IMPL = DotName
+            .createSimple("io.grpc.kotlin.AbstractCoroutineServerImpl");
+
     @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
-        Collection<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
+        // TODO: this can be reverted once Jandex outputs stably ordered collections
+        List<ClassInfo> bindableServices = index.getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE)
+                .stream()
+                .sorted(Comparator.comparing(ClassInfo::name))
+                .toList();
 
+        Set<DotName> registered = new HashSet<>();
         for (ClassInfo service : bindableServices) {
             if (service.interfaceNames().contains(GrpcDotNames.MUTINY_BEAN)) {
                 // Ignore the generated beans
@@ -244,6 +242,7 @@ public class GrpcServerProcessor {
             if (Modifier.isAbstract(service.flags())) {
                 continue;
             }
+            registered.add(service.name());
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
             Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(service, index, false);
             Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(service, index, true);
@@ -254,6 +253,200 @@ public class GrpcServerProcessor {
                 item.registerVirtualMethod(method);
             }
             bindables.produce(item);
+        }
+
+        // Discover Kotlin coroutine gRPC services that extend AbstractCoroutineServerImpl.
+        // grpc-kotlin-stub may not be Jandex-indexed, so the BindableService hierarchy isn't visible.
+        // Fall back to walking the superclass chain by name for @GrpcService-annotated classes.
+        for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.GRPC_SERVICE)) {
+            if (annotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+            ClassInfo service = annotation.target().asClass();
+            if (registered.contains(service.name()) || Modifier.isAbstract(service.flags())) {
+                continue;
+            }
+            if (extendsCoroutineServerImpl(service, index)) {
+                log.debugf("Discovered Kotlin coroutine gRPC service '%s'", service.name());
+                BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
+                item.isCoroutineService = true;
+                bindables.produce(item);
+            }
+        }
+    }
+
+    private static boolean extendsCoroutineServerImpl(ClassInfo service, IndexView index) {
+        DotName superName = service.superName();
+        while (superName != null) {
+            if (superName.equals(ABSTRACT_COROUTINE_SERVER_IMPL)) {
+                return true;
+            }
+            ClassInfo superClass = index.getClassByName(superName);
+            if (superClass == null) {
+                break;
+            }
+            superName = superClass.superName();
+        }
+        return false;
+    }
+
+    private static final String ABSTRACT_COROUTINE_SERVER_IMPL_INTERNAL = "io/grpc/kotlin/AbstractCoroutineServerImpl";
+    private static final String ARC_INTERNAL = "io/quarkus/arc/Arc";
+    private static final String ARC_CONTAINER_INTERNAL = "io/quarkus/arc/ArcContainer";
+    private static final String INSTANCE_HANDLE_INTERNAL = "io/quarkus/arc/InstanceHandle";
+    private static final String CONTEXT_PRESERVING_DISPATCHER_INTERNAL = "io/quarkus/vertx/kotlin/runtime/ContextPreservingCoroutineDispatcher";
+    private static final String COROUTINE_CONTEXT_INTERNAL = "kotlin/coroutines/CoroutineContext";
+
+    /**
+     * Ensures Vert.x context propagation in Kotlin coroutine gRPC services.
+     *
+     * <h2>Problem</h2>
+     * grpc-kotlin's {@code AbstractCoroutineServerImpl} has an immutable {@code context} val
+     * that defaults to {@code EmptyCoroutineContext}. The generated {@code bindService()} passes
+     * {@code this.context} to {@code ServerCalls.unaryServerMethodDefinition(...)}, which then
+     * launches coroutines on {@code Dispatchers.Default} — losing the Vert.x duplicated context
+     * that was set up by {@code GrpcDuplicatedContextGrpcInterceptor}.
+     *
+     * <h2>Transformation</h2>
+     * For each {@code @GrpcService} extending {@code AbstractCoroutineServerImpl}, this step
+     * locates the class defining {@code bindService()} (typically the generated
+     * {@code *CoroutineImplBase}) and uses ASM to replace every {@code this.getContext()} call
+     * inside {@code bindService()} with a CDI lookup of
+     * {@code ContextPreservingCoroutineDispatcher} — a Vert.x-aware {@code CoroutineDispatcher}
+     * that dispatches via {@code runOnContext}, preserving the duplicated context.
+     *
+     * <h2>Example</h2>
+     *
+     * <pre>{@code
+     * // Before (what the user/codegen writes in bindService()):
+     * unaryServerMethodDefinition(
+     *     context = this.context,  // EmptyCoroutineContext → Dispatchers.Default
+     *     descriptor = GreeterGrpc.getSayHelloMethod(),
+     *     implementation = ::sayHello,
+     * )
+     *
+     * // After transformation (effective behavior):
+     * unaryServerMethodDefinition(
+     *     context = Arc.container().instance(ContextPreservingCoroutineDispatcher.class).get(),
+     *     descriptor = GreeterGrpc.getSayHelloMethod(),
+     *     implementation = ::sayHello,
+     * )
+     * }</pre>
+     */
+    @BuildStep
+    void transformCoroutineServices(
+            List<BindableServiceBuildItem> bindables,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        IndexView index = combinedIndex.getIndex();
+        boolean hasCoroutineServices = false;
+
+        for (BindableServiceBuildItem bindable : bindables) {
+            if (!bindable.isCoroutineService) {
+                continue;
+            }
+
+            ClassInfo classInfo = index.getClassByName(bindable.serviceClass);
+            if (classInfo == null) {
+                continue;
+            }
+            String classWithBindService = findClassDefiningBindService(classInfo, index);
+            if (classWithBindService == null) {
+                continue;
+            }
+
+            hasCoroutineServices = true;
+            log.debugf("Transforming coroutine gRPC service '%s' to propagate Vert.x context", classWithBindService);
+
+            transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(classWithBindService)
+                    .setVisitorFunction(new CoroutineBindServiceTransformer())
+                    .build());
+        }
+
+        if (hasCoroutineServices) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CONTEXT_PRESERVING_DISPATCHER_INTERNAL
+                    .replace('/', '.')));
+        }
+    }
+
+    private static String findClassDefiningBindService(ClassInfo classInfo, IndexView index) {
+        ClassInfo current = classInfo;
+        while (current != null) {
+            for (MethodInfo method : current.methods()) {
+                if (method.name().equals("bindService") && method.parametersCount() == 0) {
+                    return current.name().toString();
+                }
+            }
+            DotName superName = current.superName();
+            if (superName == null || superName.equals(ABSTRACT_COROUTINE_SERVER_IMPL)) {
+                break;
+            }
+            current = index.getClassByName(superName);
+        }
+        return null;
+    }
+
+    /**
+     * Replaces the {@code this.getContext()} call in {@code bindService()} with a lookup
+     * of {@code ContextPreservingCoroutineDispatcher} from Arc, so that grpc-kotlin launches coroutines
+     * with a Vert.x-aware dispatcher instead of {@code EmptyCoroutineContext}.
+     */
+    static class CoroutineBindServiceTransformer
+            implements BiFunction<String, org.objectweb.asm.ClassVisitor, org.objectweb.asm.ClassVisitor> {
+
+        @Override
+        public org.objectweb.asm.ClassVisitor apply(String className,
+                org.objectweb.asm.ClassVisitor outputClassVisitor) {
+            return new org.objectweb.asm.ClassVisitor(io.quarkus.gizmo.Gizmo.ASM_API_VERSION, outputClassVisitor) {
+
+                @Override
+                public org.objectweb.asm.MethodVisitor visitMethod(int access, String name, String descriptor,
+                        String signature, String[] exceptions) {
+                    org.objectweb.asm.MethodVisitor mv = super.visitMethod(access, name, descriptor, signature,
+                            exceptions);
+                    if (!"bindService".equals(name)) {
+                        return mv;
+                    }
+                    return new org.objectweb.asm.MethodVisitor(io.quarkus.gizmo.Gizmo.ASM_API_VERSION, mv) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                                boolean isInterface) {
+                            if ("getContext".equals(name)
+                                    && "()Lkotlin/coroutines/CoroutineContext;".equals(descriptor)) {
+                                // Drop the 'this' that was pushed for the getContext() call
+                                super.visitInsn(org.objectweb.asm.Opcodes.POP);
+                                // Arc.container()
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKESTATIC,
+                                        ARC_INTERNAL, "container",
+                                        "()L" + ARC_CONTAINER_INTERNAL + ";", false);
+                                // .instance(ContextPreservingCoroutineDispatcher.class)
+                                super.visitLdcInsn(
+                                        org.objectweb.asm.Type.getObjectType(CONTEXT_PRESERVING_DISPATCHER_INTERNAL));
+                                super.visitInsn(org.objectweb.asm.Opcodes.ICONST_0);
+                                super.visitTypeInsn(org.objectweb.asm.Opcodes.ANEWARRAY,
+                                        "java/lang/annotation/Annotation");
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKEINTERFACE,
+                                        ARC_CONTAINER_INTERNAL, "instance",
+                                        "(Ljava/lang/Class;[Ljava/lang/annotation/Annotation;)L"
+                                                + INSTANCE_HANDLE_INTERNAL + ";",
+                                        true);
+                                // .get()
+                                super.visitMethodInsn(org.objectweb.asm.Opcodes.INVOKEINTERFACE,
+                                        INSTANCE_HANDLE_INTERNAL, "get",
+                                        "()Ljava/lang/Object;", true);
+                                // cast to CoroutineContext
+                                super.visitTypeInsn(org.objectweb.asm.Opcodes.CHECKCAST,
+                                        COROUTINE_CONTEXT_INTERNAL);
+                            } else {
+                                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                            }
+                        }
+                    };
+                }
+            };
         }
     }
 
@@ -547,21 +740,6 @@ public class GrpcServerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsProduction.class)
-    KubernetesPortBuildItem registerGrpcServiceInKubernetes(List<BindableServiceBuildItem> bindables) {
-        if (!bindables.isEmpty()) {
-            boolean useSeparateServer = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.use-separate-server",
-                    Boolean.class)
-                    .orElse(true);
-            if (useSeparateServer) {
-                // Only expose the named port "grpc" if the gRPC server is exposed using a separate server.
-                // TODO - Querying a runtime configuration during deployment
-                return KubernetesPortBuildItem.fromRuntimeConfiguration("grpc", "quarkus.grpc.server.port", 9000, true);
-            }
-        }
-        return null;
-    }
-
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             Capabilities capabilities,
@@ -646,7 +824,7 @@ public class GrpcServerProcessor {
             }
         }
 
-        Map<String, Set<String>> registeredInterceptors = new HashMap<>();
+        Map<String, Set<String>> registeredInterceptors = new LinkedHashMap<>();
         for (AnnotationInstance annotation : found) {
             String interceptorClass = annotation.value().asString();
             if (annotation.target().kind() != Kind.CLASS) {
@@ -658,24 +836,25 @@ public class GrpcServerProcessor {
             // the interceptors defined on the user bean have to be applied to the generated bean:
             targetClass = delegateMap.getOrDefault(targetClass, targetClass);
 
-            Set<String> registered = registeredInterceptors.computeIfAbsent(targetClass, k -> new HashSet<>());
+            Set<String> registered = registeredInterceptors.computeIfAbsent(targetClass, k -> new LinkedHashSet<>());
             registered.add(interceptorClass);
             superfluousInterceptors.remove(interceptorClass);
         }
 
-        Set<Class<?>> globalInterceptors = new HashSet<>();
-        for (String interceptor : interceptors.globalInterceptors) {
+        Set<Class<?>> globalInterceptors = new LinkedHashSet<>();
+        for (String interceptor : interceptors.globalInterceptors.stream().sorted().toList()) {
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(interceptor).constructors(false).build());
             globalInterceptors.add(recorderContext.classProxy(interceptor));
         }
-        for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors) {
+        for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors
+                .stream().sorted(Comparator.comparing(AdditionalGlobalInterceptorBuildItem::interceptorClass)).toList()) {
             globalInterceptors.add(recorderContext.classProxy(globalInterceptorBuildItem.interceptorClass()));
         }
 
-        Map<String, Set<Class<?>>> perClientInterceptors = new HashMap<>();
+        Map<String, Set<Class<?>>> perClientInterceptors = new LinkedHashMap<>();
         for (Entry<String, Set<String>> entry : registeredInterceptors.entrySet()) {
-            Set<Class<?>> interceptorClasses = new HashSet<>();
+            Set<Class<?>> interceptorClasses = new LinkedHashSet<>();
             for (String interceptorClass : entry.getValue()) {
                 interceptorClasses.add(recorderContext.classProxy(interceptorClass));
             }
@@ -690,7 +869,7 @@ public class GrpcServerProcessor {
                         .done());
 
         if (!superfluousInterceptors.isEmpty()) {
-            log.warnf("At least one unused gRPC interceptor found: %s. If there are meant to be used globally, " +
+            log.warnf("At least one unused gRPC interceptor found: %s. If they are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));
         }
     }
@@ -739,7 +918,7 @@ public class GrpcServerProcessor {
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
                     // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
                     // sure that exceptions raised during proactive authentication or HTTP authorization are handled
-                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue);
+                    recorder.addMainRouterErrorHandler(routerRuntimeValue);
                 }
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();
@@ -761,14 +940,6 @@ public class GrpcServerProcessor {
         return null;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    void definializeGrpcFieldsForDevMode(BuildProducer<BytecodeTransformerBuildItem> transformers) {
-        transformers.produce(new BytecodeTransformerBuildItem("io.grpc.internal.InternalHandlerRegistry",
-                new FieldDefinalizingVisitor("services", "methods")));
-        transformers.produce(new BytecodeTransformerBuildItem(ServerImpl.class.getName(),
-                new FieldDefinalizingVisitor("interceptors")));
-    }
-
     @BuildStep
     void addHealthChecks(GrpcServerBuildTimeConfig config,
             List<BindableServiceBuildItem> bindables,
@@ -787,15 +958,6 @@ public class GrpcServerProcessor {
         }
         if (healthEnabled || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));
-        }
-    }
-
-    @BuildStep
-    void registerSslResources(BuildProducer<NativeImageResourceBuildItem> resourceBuildItem) {
-        Config config = ConfigProvider.getConfig();
-        for (String sslProperty : asList(CERTIFICATE, KEY, KEY_STORE, TRUST_STORE)) {
-            config.getOptionalValue(sslProperty, String.class)
-                    .ifPresent(value -> ResourceRegistrationUtils.registerResourceForProperty(resourceBuildItem, value));
         }
     }
 
@@ -829,7 +991,7 @@ public class GrpcServerProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
 
             // Grpc service to blocking method
-            Map<String, List<String>> blocking = new HashMap<>();
+            Map<String, List<String>> blocking = new LinkedHashMap<>();
             for (BindableServiceBuildItem bindable : bindables) {
                 if (bindable.hasBlockingMethods()) {
                     blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);

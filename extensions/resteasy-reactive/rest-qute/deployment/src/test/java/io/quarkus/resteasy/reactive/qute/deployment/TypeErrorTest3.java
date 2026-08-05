@@ -3,13 +3,13 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.constraint.Assert;
 
 public class TypeErrorTest3 {
 
     @RegisterExtension
-    static final QuarkusUnitTest configError = new QuarkusUnitTest()
+    static final QuarkusExtensionTest configError = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TypeErrorResource.class)
                     .addAsResource("templates/TypeErrorResource/typeError3.txt"))

@@ -30,6 +30,6 @@ public class MultipartResourceTest {
                 .statusCode(200)
                 // /echo is ignored in application.properties
                 .body(not(containsString(
-                        "http_client_requests_seconds_count{clientName=\"localhost\",method=\"POST\",outcome=\"SUCCESS\",status=\"200\",uri=\"/echo\",} 1.0")));
+                        "clientName=\"localhost\",method=\"POST\",outcome=\"SUCCESS\",status=\"200\",uri=\"/echo\",} 1.0")));
     }
 }

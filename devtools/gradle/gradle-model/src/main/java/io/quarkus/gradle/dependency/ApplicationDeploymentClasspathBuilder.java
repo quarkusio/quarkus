@@ -58,8 +58,11 @@ public class ApplicationDeploymentClasspathBuilder {
     private static final String DISABLE_QUARKUS_COMPONENT_VARIANTS = "disableQuarkusComponentVariants";
 
     public static boolean isDisableComponentVariants(Project project) {
-        final Object value = project.getProperties().get(DISABLE_QUARKUS_COMPONENT_VARIANTS);
-        return value != null && Boolean.parseBoolean(String.valueOf(value));
+        // Use gradleProperty rather than Project.getProperties().get(...): the latter is not allowed
+        // under Isolated Projects, while the former resolves a single named property in a way that is
+        // configuration-cache and Isolated-Projects friendly.
+        final String value = project.getProviders().gradleProperty(DISABLE_QUARKUS_COMPONENT_VARIANTS).getOrNull();
+        return value != null && Boolean.parseBoolean(value);
     }
 
     public static String getLaunchModeAlias(LaunchMode mode) {
@@ -412,6 +415,14 @@ public class ApplicationDeploymentClasspathBuilder {
      */
     public Configuration getCompileOnly() {
         this.getDeploymentConfiguration().resolve();
+        return project.getConfigurations().getByName(compileOnlyConfigurationName);
+    }
+
+    /**
+     * Returns the compile-only configuration without eagerly resolving the deployment configuration.
+     * This is used by {@code QuarkusApplicationModelTask} which resolves lazily.
+     */
+    public Configuration getCompileOnlyWithoutResolvingDeployment() {
         return project.getConfigurations().getByName(compileOnlyConfigurationName);
     }
 

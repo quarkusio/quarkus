@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.PermissionsAllowed;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnusedParamPermissionsAllowedValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .assertException(t -> {
                 Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
                 Assertions.assertTrue(t.getMessage().contains("nestedParam1.something"));

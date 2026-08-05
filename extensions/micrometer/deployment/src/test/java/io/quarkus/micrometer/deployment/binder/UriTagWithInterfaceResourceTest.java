@@ -16,14 +16,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.restassured.RestAssured;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 
 class UriTagWithInterfaceResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
@@ -74,7 +75,8 @@ class UriTagWithInterfaceResourceTest {
 
         @Override
         public String getTemplatizedPath(String param) {
-            return ((HttpServerRequestInternal) request.getCurrent().request()).context().getLocal("UrlPathTemplate");
+            HttpServerRequestInternal req = (HttpServerRequestInternal) request.getCurrent().request();
+            return (String) VertxContext.localContextData(req.context()).get("UrlPathTemplate");
         }
     }
 

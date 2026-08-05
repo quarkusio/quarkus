@@ -41,10 +41,10 @@ public class VerticleInstanceHotReloadTest {
 
         public void init(@Observes Router router) throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.deployVerticle(new MyVerticle(),
-                    ar -> latch.countDown());
-            router.get("/").handler(rc -> vertx.eventBus().<String> request("address", "",
-                    ar -> rc.response().end(ar.result().body())));
+            vertx.deployVerticle(new MyVerticle())
+                    .onComplete(ar -> latch.countDown());
+            router.get("/").handler(rc -> vertx.eventBus().<String> request("address", "")
+                    .onComplete(ar -> rc.response().end(ar.result().body())));
             latch.await();
         }
     }

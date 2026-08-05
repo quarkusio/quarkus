@@ -1,5 +1,8 @@
 package io.quarkus.vertx.web.deployment;
 
+import static io.quarkus.arc.processor.Reproducibility.BEAN_COMPARATOR;
+import static io.quarkus.arc.processor.Reproducibility.METHOD_COMPARATOR;
+
 import java.util.List;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -9,7 +12,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 
-public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
+public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem implements Comparable<AnnotatedRouteHandlerBuildItem> {
 
     private final BeanInfo bean;
     private final List<AnnotationInstance> routes;
@@ -65,6 +68,15 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
 
     public HttpCompression getCompression() {
         return compression;
+    }
+
+    @Override
+    public int compareTo(AnnotatedRouteHandlerBuildItem other) {
+        int result = BEAN_COMPARATOR.compare(bean, other.bean);
+        if (result != 0) {
+            return result;
+        }
+        return METHOD_COMPARATOR.compare(method, other.method);
     }
 
 }

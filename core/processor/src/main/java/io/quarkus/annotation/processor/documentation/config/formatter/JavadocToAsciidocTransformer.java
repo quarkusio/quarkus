@@ -62,8 +62,8 @@ public final class JavadocToAsciidocTransformer {
     private static final String SUB_SCRIPT_ASCIDOC_STYLE = "~";
     private static final String SUPER_SCRIPT_ASCIDOC_STYLE = "^";
     private static final String SMALL_ASCIDOC_STYLE = "[.small]";
-    private static final String ORDERED_LIST_ITEM_ASCIDOC_STYLE = " . ";
-    private static final String UNORDERED_LIST_ITEM_ASCIDOC_STYLE = " - ";
+    private static final String ORDERED_LIST_MARKER = ".";
+    private static final String UNORDERED_LIST_MARKER = "*";
     private static final String UNDERLINE_ASCIDOC_STYLE = "[.underline]";
     private static final String LINE_THROUGH_ASCIDOC_STYLE = "[.line-through]";
     private static final String HARD_LINE_BREAK_ASCIDOC_STYLE = " +\n";
@@ -189,17 +189,32 @@ public final class JavadocToAsciidocTransformer {
                     break;
                 case ORDERED_LIST_NODE:
                 case UN_ORDERED_LIST_NODE:
-                    newLine(sb);
+                    if (context.listDepth > 0) {
+                        // Nested list: we're already on a new line from the parent list item,
+                        // no need for an extra newline
+                    } else {
+                        newLine(sb);
+                    }
+                    context.listDepth++;
                     htmlToAsciidoc(sb, childNode, inlineMacroMode, context);
-                    newLine(sb);
-                    newLine(sb);
+                    context.listDepth--;
+                    if (context.listDepth == 0) {
+                        newLine(sb);
+                        newLine(sb);
+                    }
                     break;
                 case LIST_ITEM_NODE:
-                    final String marker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)
-                            ? ORDERED_LIST_ITEM_ASCIDOC_STYLE
-                            : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
+                    final String listMarker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)
+                            ? ORDERED_LIST_MARKER
+                            : UNORDERED_LIST_MARKER;
                     newLine(sb);
-                    sb.append(marker);
+                    sb.append(' ');
+                    for (int i = 0; i < context.listDepth; i++) {
+                        sb.append(listMarker);
+                    }
+                    sb.append(' ');
+                    // Track that we're in a list item to strip leading whitespace from the first text node
+                    context.firstTextInListItem = true;
                     htmlToAsciidoc(sb, childNode, inlineMacroMode, context);
                     break;
                 case LINK_NODE:
@@ -271,6 +286,16 @@ public final class JavadocToAsciidocTransformer {
 
                     if (text.isEmpty()) {
                         break;
+                    }
+
+                    // Trim leading whitespace for the first text node inside a list item
+                    // (HTML formatting often introduces extra spaces/newlines)
+                    if (context.firstTextInListItem) {
+                        text = text.stripLeading();
+                        context.firstTextInListItem = false;
+                        if (text.isEmpty()) {
+                            break;
+                        }
                     }
 
                     // Indenting the first line of a paragraph by one or more spaces makes the block literal
@@ -553,5 +578,7 @@ public final class JavadocToAsciidocTransformer {
 
         boolean inTable;
         boolean firstTableRow;
+        int listDepth;
+        boolean firstTextInListItem;
     }
 }

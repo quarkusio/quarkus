@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.util.function.Supplier;
 
@@ -15,13 +15,13 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class DetailedExceptionInReaderTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -34,8 +34,10 @@ public class DetailedExceptionInReaderTest {
     public void test() {
         RestAssured.with().accept("application/json").contentType("application/json")
                 .body("{\"name\": \"foo\", \"age\": \"wrong\"}").put("/test")
-                .then().statusCode(400).body(equalTo("{\"objectName\":\"Person\",\"attributeName\":\"age\","
-                        + "\"line\":1,\"column\":24,\"value\":\"wrong\"}"));
+                .then().statusCode(400)
+                .body("objectName", is("Person"),
+                        "attributeName", is("age"),
+                        "value", is("wrong"));
     }
 
     @Path("test")

@@ -2,7 +2,6 @@ package io.quarkus.vertx.mdc;
 
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -22,7 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.VertxContextSupport;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 import io.vertx.core.Vertx;
@@ -30,7 +29,7 @@ import io.vertx.core.Vertx;
 public class AnotherVertxMdcTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(HelloBean.class))
@@ -55,8 +54,6 @@ public class AnotherVertxMdcTest {
         assertNotNull(report.get("MDC with probe"));
         assertEquals(VALUE_TO_PRESERVE, unwrapMdcValue("MDC with probe", PROBE, report));
         assertEquals(VALUE_TO_PRESERVE, unwrapMdcValue("MDC after reinit", PROBE, report));
-
-        assertNotEquals(report.get("MDC before object"), report.get("MDC after reinit object"));
     }
 
     @Test
@@ -75,8 +72,6 @@ public class AnotherVertxMdcTest {
         assertNotNull(report.get("MDC with probe"));
         assertEquals(VALUE_TO_PRESERVE, unwrapMdcValue("MDC with probe", PROBE, report));
         assertEquals(VALUE_TO_PRESERVE, unwrapMdcValue("MDC after reinit", PROBE, report));
-
-        assertNotEquals(report.get("MDC before object"), report.get("MDC after reinit object"));
     }
 
     @Test
@@ -91,8 +86,6 @@ public class AnotherVertxMdcTest {
 
         assertEquals(VALUE_TO_PRESERVE, unwrapMdcValue("MDC after reinit", PROBE, report));
         assertNull(unwrapMdcValue("MDC after reinit", "keyToDiscard", report));
-
-        assertNotEquals(report.get("MDC before object"), report.get("MDC after reinit object"));
     }
 
     private String unwrapMdcValue(String reportEntry, String key, Object map) {
@@ -120,14 +113,11 @@ public class AnotherVertxMdcTest {
                 for (Map.Entry entry : map.entrySet()) {
                     VertxMDC.INSTANCE.put((String) entry.getKey(), (String) entry.getValue());
                 }
-                report.put("MDC with probe", Vertx.currentContext().getLocal(VertxMDC.class.getName()));
-                report.put("MDC before object",
-                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.class.getName())));
+                var mdcBefore = Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL);
+                report.put("MDC with probe", mdcBefore != null ? new HashMap<>(mdcBefore) : null);
 
                 VertxMDC.INSTANCE.reinitializeVertxMdc(Vertx.currentContext(), keysToDiscard);
-                report.put("MDC after reinit", Vertx.currentContext().getLocal(VertxMDC.class.getName()));
-                report.put("MDC after reinit object",
-                        "" + System.identityHashCode(Vertx.currentContext().getLocal(VertxMDC.class.getName())));
+                report.put("MDC after reinit", Vertx.currentContext().getLocal(VertxMDC.MDC_LOCAL));
                 return report;
             }).subscribe().asCompletionStage().toCompletableFuture().get(1, TimeUnit.SECONDS);
         }

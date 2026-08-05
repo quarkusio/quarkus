@@ -26,7 +26,7 @@ import io.quarkus.mongodb.panache.common.reactive.runtime.ReactiveMongoOperation
 import io.quarkus.mongodb.panache.common.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.smallrye.mutiny.Multi;
@@ -37,7 +37,7 @@ import io.smallrye.mutiny.Uni;
 public class MongoDatabaseResolverTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "quarkus.arc.remove-unused-beans=false\n" +

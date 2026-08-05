@@ -6,27 +6,45 @@ import static io.quarkus.security.runtime.SecurityProviderUtils.insertProvider;
 import static io.quarkus.security.runtime.SecurityProviderUtils.loadProvider;
 import static io.quarkus.security.runtime.SecurityProviderUtils.loadProviderWithParams;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
-import java.security.SecureRandom;
 import java.security.Security;
+import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class SecurityProviderRecorder {
 
     private static final Logger LOG = Logger.getLogger(SecurityProviderRecorder.class);
 
+    public void configureProvider(String providerName, List<String> providerConfigs) {
+        Provider provider = Security.getProvider(providerName);
+        if (provider == null) {
+            throw new ConfigurationException(
+                    String.format("Security provider '%s' is not available", providerName),
+                    Set.of("quarkus.security.security-providers"));
+        }
+        for (String providerConfig : providerConfigs) {
+            try {
+                Provider configured = provider.configure(providerConfig);
+                LOG.debugf("Registering security provider: %s (configured from %s)", configured.getName(), providerConfig);
+                SecurityProviderUtils.addProvider(configured);
+            } catch (Exception e) {
+                throw new ConfigurationException(
+                        String.format("Failed to configure security provider '%s'", providerName), e,
+                        Set.of("quarkus.security.security-provider-config." + providerName));
+            }
+        }
+    }
+
     public void addBouncyCastleProvider(boolean inFipsMode) {
         final String providerName = inFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                 : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
         addProvider(loadProvider(providerName));
-        if (inFipsMode) {
-            setSecureRandomStrongAlgorithmIfNecessary();
-        }
     }
 
     public void addBouncyCastleJsseProvider() {
@@ -44,23 +62,5 @@ public class SecurityProviderRecorder {
         Provider bcJsse = loadProviderWithParams(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME,
                 new Class[] { boolean.class, Provider.class }, new Object[] { true, bc });
         insertProvider(bcJsse, sunIndex + 1);
-        setSecureRandomStrongAlgorithmIfNecessary();
-    }
-
-    private void setSecureRandomStrongAlgorithmIfNecessary() {
-        try {
-            // workaround for the issue on OpenJDK 17 & RHEL8 & FIPS
-            // see https://github.com/bcgit/bc-java/issues/1285#issuecomment-2068958587
-            // we can remove this when OpenJDK 17 support is dropped or if it starts working on newer versions of RHEL8+
-            SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            SecureRandom secRandom = new SecureRandom();
-            String origStrongAlgorithms = Security.getProperty("securerandom.strongAlgorithms");
-            String usedAlgorithm = secRandom.getAlgorithm() + ":" + secRandom.getProvider().getName();
-            String strongAlgorithms = origStrongAlgorithms == null ? usedAlgorithm : usedAlgorithm + "," + origStrongAlgorithms;
-            LOG.debugf("Strong SecureRandom algorithm '%s' is not available. "
-                    + "Using fallback algorithm '%s'.", origStrongAlgorithms, usedAlgorithm);
-            Security.setProperty("securerandom.strongAlgorithms", strongAlgorithms);
-        }
     }
 }

@@ -2,6 +2,7 @@ package io.quarkus.cyclonedx.deployment;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -13,10 +14,11 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot
 public interface CycloneDxConfig {
     /**
-     * Whether to skip SBOM generation
+     * Whether to CycloneDX SBOM generation is enabled.
+     * If this option is false, the rest of the configuration will be ignored.
      */
-    @WithDefault("false")
-    boolean skip();
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * SBOM file format. Supported formats are {code json} and {code xml}.
@@ -42,4 +44,84 @@ public interface CycloneDxConfig {
      */
     @WithDefault("false")
     boolean includeLicenseText();
+
+    /**
+     * Whether to pretty-print the generated SBOM output.
+     *
+     * @return whether to pretty-print the generated SBOM output
+     */
+    @WithDefault("false")
+    boolean prettyPrint();
+
+    /**
+     * Whether to include only library components in generated SBOMs, excluding
+     * generic file components such as non-Maven JARs and other files.
+     *
+     * @return whether to include only library components
+     */
+    @WithDefault("false")
+    boolean librariesOnly();
+
+    /**
+     * Whether to include only runtime dependencies in generated SBOMs, excluding
+     * development/build-time dependencies entirely.
+     *
+     * @return whether to include only runtime dependencies
+     */
+    @WithDefault("false")
+    boolean runtimeOnly();
+
+    /**
+     * Whether to include the {@code quarkus:component:scope} custom property on each component
+     * in generated SBOMs. This property indicates whether a component is a {@code runtime} or
+     * {@code development} dependency. Since development dependencies are now also marked with the
+     * standard CycloneDX {@code scope} set to {@code excluded}, the custom property is redundant
+     * for most consumers and is disabled by default.
+     *
+     * @return whether to include the quarkus:component:scope property
+     */
+    @WithDefault("false")
+    boolean includeQuarkusComponentScope();
+
+    /**
+     * Embedded dependency SBOM configuration
+     */
+    @ConfigDocSection
+    EmbeddedSbomConfig embedded();
+
+    /**
+     * Embedded dependency SBOM configuration
+     */
+    interface EmbeddedSbomConfig {
+
+        /**
+         * Whether a dependency SBOM should be embedded in the final application.
+         *
+         * @return true, if dependency SBOM should be embedded in the final application, false - otherwise
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Base resource name for the embedded dependency SBOM.
+         * If {@link #compress()} is enabled, the actual classpath resource name will
+         * have a {@code .gz} extension appended (e.g., {@code META-INF/sbom/dependency.cdx.json.gz}).
+         *
+         * @return base resource name for the embedded dependency SBOM
+         */
+        @WithDefault("META-INF/sbom/dependency.cdx.json")
+        String resourceName();
+
+        /**
+         * Whether to compress the embedded SBOM with GZIP.
+         * When enabled, the SBOM will be stored compressed in the application
+         * with a {@code .gz} extension appended to the {@link #resourceName()},
+         * and served compressed through the endpoint with {@code Content-Encoding: gzip}.
+         *
+         * @return whether to compress the embedded SBOM with GZIP
+         */
+        @WithDefault("true")
+        boolean compress();
+    }
+
 }

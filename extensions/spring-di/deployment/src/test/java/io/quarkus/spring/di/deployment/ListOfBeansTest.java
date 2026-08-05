@@ -15,12 +15,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ListOfBeansTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, Bar.class, CdiBean.class, ServiceAlpha.class, ServiceBravo.class, Service.class,
                             Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class))

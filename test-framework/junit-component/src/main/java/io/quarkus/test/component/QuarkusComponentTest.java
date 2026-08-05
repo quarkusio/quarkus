@@ -87,4 +87,11 @@ public @interface QuarkusComponentTest {
      */
     boolean useSystemConfigSources() default false;
 
+    /**
+     * If set to {@code true} then discovered config sources (e.g. {@code application.yaml}) are included in the test config.
+     *
+     * @see QuarkusComponentTestExtensionBuilder#useDiscoveredConfigSources(boolean)
+     */
+    boolean useDiscoveredConfigSources() default false;
+
 }

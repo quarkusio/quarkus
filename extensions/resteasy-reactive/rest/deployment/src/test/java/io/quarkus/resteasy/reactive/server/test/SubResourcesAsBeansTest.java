@@ -19,12 +19,12 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.resteasy.reactive.server.spi.SubResourcesAsBeansBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SubResourcesAsBeansTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .addBuildChainCustomizer(new Consumer<>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {

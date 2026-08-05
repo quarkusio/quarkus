@@ -27,6 +27,23 @@ public interface DataSourceReactiveRuntimeConfig {
     Optional<Boolean> cachePreparedStatements();
 
     /**
+     * The maximum number of prepared statements that the client will cache.
+     * <p>
+     * Only effective when {@code cache-prepared-statements} is enabled (PostgreSQL, MySQL/MariaDB, Db2).
+     */
+    @ConfigDocDefault("256")
+    OptionalInt preparedStatementCacheMaxSize();
+
+    /**
+     * The maximum length of SQL text that the client will cache in a prepared statement.
+     * Queries exceeding this limit are not cached.
+     * <p>
+     * Only effective when {@code cache-prepared-statements} is enabled (PostgreSQL, MySQL/MariaDB, Db2).
+     */
+    @ConfigDocDefault("2048")
+    OptionalInt preparedStatementCacheSqlLimit();
+
+    /**
      * The datasource URLs.
      * <p>
      * If multiple values are set, this datasource will create a pool with a list of servers instead of a single server.
@@ -119,6 +136,35 @@ public interface DataSourceReactiveRuntimeConfig {
      */
     @WithDefault("NONE")
     String hostnameVerificationAlgorithm();
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If set, the TLS configuration with the given name is used for SSL/TLS.
+     * When set, manual trust/key certificate properties are ignored.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
+     * The maximum time to wait for a connection from the pool.
+     */
+    @ConfigDocDefault("30S")
+    Optional<Duration> connectionTimeout();
+
+    /**
+     * The maximum number of requests allowed in the wait queue of the pool.
+     * If the queue is full, further requests are rejected.
+     * <p>
+     * A value of -1 means there is no limit.
+     */
+    @ConfigDocDefault("-1")
+    OptionalInt maxWaitQueueSize();
+
+    /**
+     * How often the pool is checked for idle connections eligible for removal.
+     */
+    @ConfigDocDefault("1S")
+    Optional<Duration> poolCleanerPeriod();
 
     /**
      * The maximum time a connection remains unused in the pool before it is closed.

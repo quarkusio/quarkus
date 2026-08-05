@@ -9,11 +9,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OverrideBuildDefaultInRuntimeTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withEmptyApplication()
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {

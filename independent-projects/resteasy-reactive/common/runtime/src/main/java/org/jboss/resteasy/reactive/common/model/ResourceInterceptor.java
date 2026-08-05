@@ -18,6 +18,7 @@ public class ResourceInterceptor<T>
     private int priority = Priorities.USER; // default priority as defined by spec
     private boolean nonBlockingRequired; // whether or not @NonBlocking was specified on the class
     private boolean withFormRead; // whether or not '@WithFormRead' was set on this filter
+    private boolean cancellable = true;
 
     /**
      * The class names of the {@code @NameBinding} annotations that the method is annotated with.
@@ -85,6 +86,14 @@ public class ResourceInterceptor<T>
 
     public void setWithFormRead(boolean withFormRead) {
         this.withFormRead = withFormRead;
+    }
+
+    public boolean isCancellable() {
+        return cancellable;
+    }
+
+    public void setCancellable(boolean cancellable) {
+        this.cancellable = cancellable;
     }
 
     public RuntimeType getRuntimeType() {

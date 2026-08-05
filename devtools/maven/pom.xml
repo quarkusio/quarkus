@@ -43,6 +43,14 @@
                   <groupId>org.apache.maven.wagon</groupId>
                   <artifactId>*</artifactId>
               </exclusion>
+              <exclusion>
+                  <groupId>org.apache.httpcomponents</groupId>
+                  <artifactId>httpclient</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.apache.httpcomponents</groupId>
+                  <artifactId>httpcore</artifactId>
+              </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -207,6 +215,11 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -227,30 +240,10 @@
             </resource>
         </resources>
         <plugins>
-            <!-- Jansi is shaded to workaround a classloading issue on Windows, see https://github.com/quarkusio/quarkus/issues/19673 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.fusesource.jansi:jansi</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>0.3.5</version>
+                <version>1.0.1</version>
                 <executions>
                     <execution>
                         <id>index-project</id>

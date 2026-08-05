@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.multipart.FormDataParser;
@@ -48,6 +48,8 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setMaxParameters(configuration.limits().maxParameters())
+                        .setMaxPartHeaderSize(configuration.limits().maxMultipartPartHeaderSize())
+                        .setMaxHeaderCount(configuration.limits().maxMultipartHeaderCount())
                         .setDeleteUploadsOnEnd(configuration.body().deleteUploadedFilesOnEnd())
                         .setFileContentTypes(configuration.body().multiPart().fileContentTypes())
                         .setDefaultCharset(configuration.body().defaultCharset().name())

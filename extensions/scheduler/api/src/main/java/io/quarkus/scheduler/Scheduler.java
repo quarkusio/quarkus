@@ -232,6 +232,15 @@ public interface Scheduler {
         THIS setExecutionMaxDelay(String maxDelay);
 
         /**
+         * {@link Scheduled#description()}
+         *
+         * @param description
+         * @return self
+         * @see Scheduled#description()
+         */
+        THIS setDescription(String description);
+
+        /**
          *
          * @param task
          * @return self

@@ -7,8 +7,10 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
 
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -19,10 +21,14 @@ public class HttpRequestMetric extends RequestMetricInfo {
     final static ConcurrentHashMap<String, String> vertxWebToUriTemplate = new ConcurrentHashMap<>();
 
     private HttpServerRequestInternal request;
+    private HttpRequest httpRequest;
     private String initialPath;
     private String templatePath;
     private String currentRoutePath;
+    private String normalizedPath;
+    private boolean normalizedPathComputed = false;
     private final LongAdder activeRequests;
+    private Context executionContext;
 
     private boolean requestActive = false;
 
@@ -32,16 +38,25 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     public HttpRequestMetric(HttpRequest request, LongAdder activeRequests) {
-        this.request = (HttpServerRequestInternal) request;
-        this.initialPath = this.request.path();
+        this.httpRequest = request;
+        if (request instanceof HttpServerRequestInternal internal) {
+            this.request = internal;
+        }
+        this.initialPath = request.uri();
         this.activeRequests = activeRequests;
     }
 
     public String getNormalizedUriPath(Map<Pattern, String> matchPatterns, List<Pattern> ignorePatterns) {
-        if (isCORSPreflightRequest()) {
-            return filterIgnored("/cors-preflight", ignorePatterns);
+        if (normalizedPathComputed) {
+            return normalizedPath;
         }
-        return super.getNormalizedUriPath(matchPatterns, ignorePatterns, initialPath);
+        if (isCORSPreflightRequest()) {
+            normalizedPath = filterIgnored("/cors-preflight", ignorePatterns);
+        } else {
+            normalizedPath = super.getNormalizedUriPath(matchPatterns, ignorePatterns, initialPath);
+        }
+        normalizedPathComputed = true;
+        return normalizedPath;
     }
 
     public String getInitialPath() {
@@ -74,6 +89,18 @@ public class HttpRequestMetric extends RequestMetricInfo {
         return request;
     }
 
+    public HttpRequest httpRequest() {
+        return httpRequest;
+    }
+
+    public void setExecutionContext(Context ctx) {
+        this.executionContext = ctx;
+    }
+
+    public Context getExecutionContext() {
+        return executionContext;
+    }
+
     public void requestStarted() {
         if (!requestActive) {
             requestActive = true;
@@ -100,6 +127,13 @@ public class HttpRequestMetric extends RequestMetricInfo {
         }
     }
 
+    public String getRoute() {
+        if (currentRoutePath == null || currentRoutePath.isEmpty()) {
+            return "";
+        }
+        return currentRoutePath;
+    }
+
     public static HttpRequestMetric getRequestMetric(RoutingContext context) {
         HttpServerRequestInternal internalRequest = (HttpServerRequestInternal) context.request();
         return (HttpRequestMetric) internalRequest.metric();
@@ -107,10 +141,12 @@ public class HttpRequestMetric extends RequestMetricInfo {
 
     String getUrlTemplatePath() {
         String urlTemplatePath = null;
-        if (request != null) {
-            urlTemplatePath = request.context().getLocal("UrlPathTemplate");
+        if (executionContext != null && VertxContext.isDuplicatedContext(executionContext)) {
+            urlTemplatePath = (String) VertxContext.localContextData(executionContext).get("UrlPathTemplate");
         }
-        // Fall back to Servlet container filter set templatePath if a path was not set in the request context
+        if (urlTemplatePath == null && request != null && VertxContext.isDuplicatedContext(request.context())) {
+            urlTemplatePath = (String) VertxContext.localContextData(request.context()).get("UrlPathTemplate");
+        }
         return (urlTemplatePath == null ? templatePath : urlTemplatePath);
     }
 
@@ -121,9 +157,10 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     private boolean isCORSPreflightRequest() {
-        return request.method() == HttpMethod.OPTIONS
-                && request.getHeader("Origin") != null
-                && request.getHeader("Access-Control-Request-Method") != null
-                && request.getHeader("Access-Control-Request-Headers") != null;
+        HttpRequest req = httpRequest();
+        return req.method() == HttpMethod.OPTIONS
+                && req.headers().get("Origin") != null
+                && req.headers().get("Access-Control-Request-Method") != null
+                && req.headers().get("Access-Control-Request-Headers") != null;
     }
 }

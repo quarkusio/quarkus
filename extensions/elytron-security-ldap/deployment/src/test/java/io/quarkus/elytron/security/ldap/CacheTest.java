@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.elytron.security.ldap.rest.SingleRoleSecuredServlet;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.ldap.LdapServerTestResource;
 import io.restassured.RestAssured;
@@ -16,7 +16,7 @@ public class CacheTest {
     };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("cache/application.properties", "application.properties"));

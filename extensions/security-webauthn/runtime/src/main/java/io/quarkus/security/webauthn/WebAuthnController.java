@@ -95,7 +95,7 @@ public class WebAuthnController {
     public void login(RoutingContext ctx) {
         try {
             // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnResp = ctx.getBodyAsJson();
+            final JsonObject webauthnResp = ctx.body().asJsonObject();
 
             withContext(() -> security.login(webauthnResp, ctx))
                     .onItem().call(record -> security.storage().update(record.getCredentialID(), record.getCounter()))
@@ -120,7 +120,7 @@ public class WebAuthnController {
         try {
             final String username = ctx.queryParams().get("username");
             // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnResp = ctx.getBodyAsJson();
+            final JsonObject webauthnResp = ctx.body().asJsonObject();
 
             withContext(() -> security.register(username, webauthnResp, ctx))
                     .onItem().call(record -> security.storage().create(record))

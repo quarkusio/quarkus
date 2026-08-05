@@ -14,12 +14,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DevServicesPostgresqlDatasourceWithVolumeTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.datasource.db-kind", "postgresql")
             // The official postgres image will execute all the scripts in the folder "docker-entrypoint-initdb.d"
             .overrideConfigKey("quarkus.datasource.devservices.volumes.\"classpath:./init-db.sql\"",

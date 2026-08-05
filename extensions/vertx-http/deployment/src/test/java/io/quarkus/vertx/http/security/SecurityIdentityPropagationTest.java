@@ -18,7 +18,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Router;
@@ -26,7 +26,7 @@ import io.vertx.ext.web.Router;
 public class SecurityIdentityPropagationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RouterObserver.class, UserInfo.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.propagate-security-identity=true"),

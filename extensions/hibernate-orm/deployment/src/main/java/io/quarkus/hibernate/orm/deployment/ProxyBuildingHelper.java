@@ -35,7 +35,7 @@ final class ProxyBuildingHelper implements AutoCloseable {
         //Lazy initialization of Byte Buddy: we'll likely need it, but if we can avoid loading it
         //in some corner cases it's worth avoiding it.
         if (this.byteBuddyProxyHelper == null) {
-            bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
+            bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V21);
             this.byteBuddyProxyHelper = bytecodeProvider.getByteBuddyProxyHelper();
         }
         return this.byteBuddyProxyHelper;

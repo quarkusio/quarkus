@@ -13,7 +13,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.openapi.api.SmallRyeOASConfig;
 
@@ -63,7 +63,7 @@ abstract class MergeSchemaExamplesTestCases {
 
     static class MergeSchemaExamplesDefaultTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
-        static QuarkusUnitTest runner = new QuarkusUnitTest()
+        static QuarkusExtensionTest runner = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(Resource.class, Bean.class));
 
@@ -74,7 +74,7 @@ abstract class MergeSchemaExamplesTestCases {
 
     static class MergeSchemaExamplesQuarkusFalseTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
-        static QuarkusUnitTest runner = new QuarkusUnitTest()
+        static QuarkusExtensionTest runner = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(Resource.class, Bean.class)
                         .addAsResource(new StringAsset("quarkus.smallrye-openapi.merge-schema-examples=false\n"),
@@ -87,7 +87,7 @@ abstract class MergeSchemaExamplesTestCases {
 
     static class MergeSchemaExamplesSmallRyeFalseTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
-        static QuarkusUnitTest runner = new QuarkusUnitTest()
+        static QuarkusExtensionTest runner = new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClasses(Resource.class, Bean.class)
                         .addAsResource(new StringAsset(SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES + "=false\n"),

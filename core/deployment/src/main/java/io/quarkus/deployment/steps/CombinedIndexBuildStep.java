@@ -1,17 +1,14 @@
 package io.quarkus.deployment.steps;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -21,7 +18,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.index.IndexWrapper;
-import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class CombinedIndexBuildStep {
@@ -32,22 +29,17 @@ public class CombinedIndexBuildStep {
             LiveReloadBuildItem liveReloadBuildItem) {
         List<IndexView> archiveIndexes = new ArrayList<>();
 
-        for (ApplicationArchive i : archives.getAllApplicationArchives()) {
+        for (ApplicationArchive i : archives.getAllArchives()) {
             archiveIndexes.add(i.getIndex());
         }
 
         CompositeIndex archivesIndex = CompositeIndex.create(archiveIndexes);
 
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        Set<DotName> knownMissingClasses = new HashSet<>();
-
+        LazyIndexer indexer = new LazyIndexer(Thread.currentThread().getContextClassLoader(), archivesIndex);
         for (AdditionalIndexedClassesBuildItem additionalIndexedClasses : additionalIndexedClassesItems) {
-            for (String classToIndex : additionalIndexedClasses.getClassesToIndex()) {
-                IndexingUtil.indexClass(classToIndex, indexer, archivesIndex, additionalIndex,
-                        knownMissingClasses, Thread.currentThread().getContextClassLoader());
-            }
+            indexer.addAll(additionalIndexedClasses.getClassesToIndex());
         }
+        LazyIndexer.Result result = indexer.complete();
 
         PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
         if (index == null) {
@@ -56,11 +48,11 @@ public class CombinedIndexBuildStep {
         }
 
         Map<DotName, Optional<ClassInfo>> additionalClasses = index.getAdditionalClasses();
-        for (DotName knownMissingClass : knownMissingClasses) {
+        for (DotName knownMissingClass : result.missingAnnotations()) {
             additionalClasses.put(knownMissingClass, Optional.empty());
         }
 
-        CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, indexer.complete());
+        CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, result.index());
         RuntimeUpdatesProcessor.setLastStartIndex(compositeIndex);
         return new CombinedIndexBuildItem(compositeIndex,
                 new IndexWrapper(compositeIndex, Thread.currentThread().getContextClassLoader(), index));

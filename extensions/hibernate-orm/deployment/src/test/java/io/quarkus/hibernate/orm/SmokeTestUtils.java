@@ -7,12 +7,14 @@ import java.util.function.Function;
 
 import jakarta.persistence.EntityManager;
 
+import io.quarkus.test.QuarkusExtensionTest;
+
 /**
  * Very simple reusable tests that simply check that persistence doesn't seem to explode.
  * <p>
  * Ideally we should rather use an abstract base class and subclass it with an inner class annotated with
  * {@link org.junit.jupiter.api.Nested @Nested} in relevant tests.
- * But unfortunately {@code @Nested} doesn't work with {@link io.quarkus.test.QuarkusUnitTest} at the moment.
+ * But unfortunately {@code @Nested} doesn't work with {@link QuarkusExtensionTest} at the moment.
  */
 public final class SmokeTestUtils {
 

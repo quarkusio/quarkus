@@ -28,4 +28,12 @@ public interface SecretsRoleConfig {
      */
     @WithDefault("true")
     boolean generate();
+
+    /**
+     * If set to true, the role name is prefixed with the application name, producing a unique name per application
+     * (e.g. {@code my-app-view-secrets}). This prevents name conflicts when multiple applications sharing the same
+     * namespace each manage their own role.
+     */
+    @WithDefault("false")
+    boolean prefixName();
 }

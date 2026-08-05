@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -26,12 +26,12 @@ import io.restassured.RestAssured;
  */
 public class SimpleContextPropagationTest {
     private static Class[] testClasses = {
-            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class,
+            ContextEndpoint.class, RequestBean.class, ContextEntity.class, CompletionExceptionMapper.class,
             TransactionalBean.class
     };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application.properties"));

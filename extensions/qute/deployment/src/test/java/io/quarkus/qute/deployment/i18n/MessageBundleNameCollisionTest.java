@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.i18n.MessageBundles;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleNameCollisionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.default-locale", "en_US")
             .withApplicationRoot((jar) -> jar
                     .addClasses(EmailBundles.class)

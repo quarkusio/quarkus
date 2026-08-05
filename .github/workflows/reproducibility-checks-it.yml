@@ -1,0 +1,86 @@
+name: Reproducibility checks - Integration tests
+
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}"
+  cancel-in-progress: ${{ github.repository != 'quarkusio/quarkus' }}
+
+env:
+  LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  QUICK_INSTALL_MAVEN_ARGS: "-Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dno-build-cache -Dno-test-modules -Prelocations"
+  NUM_RUNS: "5"
+
+jobs:
+  reproducibility-checks-it:
+    name: Reproducibility checks - Integration tests
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Set up JDK 21
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Install diffoscope
+        # procyon-decompiler lets diffoscope render .class files as readable
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y diffoscope procyon-decompiler
+      - name: Print disk usage before build
+        run: .github/ci-disk-usage.sh
+      - name: Build Quarkus
+        run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
+      - name: Run integration test reproducibility check
+        env:
+          EXTRA_MAVEN_ARGS: "--settings .github/mvn-settings.xml"
+        run: .github/check-it-reproducibility.sh
+      - name: Append report to job summary
+        if: always()
+        run: |
+          report=$(ls -td reproducibility-checks/*/report.md 2>/dev/null | head -1 || true)
+          if [[ -n "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Print disk usage after build
+        if: always()
+        run: .github/ci-disk-usage.sh
+      - name: Upload reproducibility results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: it-reproducibility-results
+          path: |
+            reproducibility-checks/*/report.md
+            reproducibility-checks/*/*.txt
+            reproducibility-checks/*/diffs
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Report status
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 55831
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

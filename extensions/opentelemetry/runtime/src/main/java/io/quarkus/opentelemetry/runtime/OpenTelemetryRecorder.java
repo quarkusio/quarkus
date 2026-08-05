@@ -26,6 +26,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
@@ -62,6 +63,16 @@ public class OpenTelemetryRecorder {
                                         WEBENGINE_VERSION, quarkusVersion)))
                         .getAttributes());
                 return result;
+            }
+        };
+    }
+
+    @RuntimeInit
+    public Supplier<Resource> kubernetesResource() {
+        return new Supplier<>() {
+            @Override
+            public Resource get() {
+                return KubernetesResourceProvider.createResource();
             }
         };
     }

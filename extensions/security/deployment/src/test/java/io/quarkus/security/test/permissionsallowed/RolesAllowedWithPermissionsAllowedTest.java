@@ -19,14 +19,14 @@ import io.quarkus.security.StringPermission;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RolesAllowedWithPermissionsAllowedTest {
 
     private static final String SUCCESS = "success";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 

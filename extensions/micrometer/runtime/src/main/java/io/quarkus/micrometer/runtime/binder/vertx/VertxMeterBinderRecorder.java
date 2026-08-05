@@ -7,9 +7,8 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.annotations.RuntimeInit;
-import io.quarkus.runtime.annotations.StaticInit;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.internal.VertxBootstrap;
 
 @Recorder
 public class VertxMeterBinderRecorder {
@@ -17,17 +16,18 @@ public class VertxMeterBinderRecorder {
     static VertxMeterBinderAdapter binderAdapter = new VertxMeterBinderAdapter();
     static volatile HttpBinderConfiguration devModeConfig;
 
-    @StaticInit
-    public Consumer<VertxOptions> setVertxMetricsOptions() {
-        return new Consumer<>() {
-            @Override
-            public void accept(VertxOptions vertxOptions) {
-                vertxOptions.setMetricsOptions(binderAdapter);
-            }
+    public Consumer<VertxBootstrap> configureMetricFactory() {
+        return bootstrap -> {
+            bootstrap.metricsFactory(binderAdapter);
         };
     }
 
-    @RuntimeInit
+    public Consumer<VertxOptions> configureMetricsOptions() {
+        return options -> {
+            options.setMetricsOptions(binderAdapter);
+        };
+    }
+
     public void configureBinderAdapter() {
         HttpBinderConfiguration httpConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
         OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper = Arc.container()

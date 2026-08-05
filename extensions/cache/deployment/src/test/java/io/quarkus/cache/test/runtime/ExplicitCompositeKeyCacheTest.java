@@ -15,7 +15,7 @@ import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests a cache with <b>explicit composite</b> cache keys.<br>
@@ -29,7 +29,8 @@ public class ExplicitCompositeKeyCacheTest {
     private static final BigDecimal KEY_2_ELEMENT_2 = new BigDecimal(456);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

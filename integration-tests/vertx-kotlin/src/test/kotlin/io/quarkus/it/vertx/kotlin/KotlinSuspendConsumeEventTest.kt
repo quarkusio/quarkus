@@ -50,13 +50,4 @@ class KotlinSuspendConsumeEventTest {
         SuspendMessageConsumers.latch.await(2, TimeUnit.SECONDS)
         assertEquals("test header - payload", SuspendMessageConsumers.message)
     }
-
-    @Test
-    fun mutinyHeadersPayload() {
-        val options = DeliveryOptions().addHeader("header", "test mutiny header")
-        bus.send("suspend-mutiny-headers-payload", "payload", options)
-
-        SuspendMessageConsumers.latch.await(2, TimeUnit.SECONDS)
-        assertEquals("test mutiny header - payload", SuspendMessageConsumers.message)
-    }
 }

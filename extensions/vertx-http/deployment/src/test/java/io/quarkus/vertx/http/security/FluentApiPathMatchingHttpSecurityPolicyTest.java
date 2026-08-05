@@ -7,12 +7,12 @@ import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FluentApiPathMatchingHttpSecurityPolicyTest extends PathMatchingHttpSecurityPolicyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = createQuarkusUnitTest("", HttpPermissionsConfig.class);
+    static QuarkusExtensionTest test = createQuarkusExtensionTest("", HttpPermissionsConfig.class);
 
     public static class HttpPermissionsConfig {
 
@@ -26,6 +26,8 @@ public class FluentApiPathMatchingHttpSecurityPolicyTest extends PathMatchingHtt
                     "/api/next/*/prev", "/api/*/bar").authenticated();
 
             httpSecurity.path("/api/fubar/baz*").authenticated();
+
+            httpSecurity.path("/api/baz%3Bv=1.1").authenticated();
 
             httpSecurity.path("/q/*").authenticated();
 

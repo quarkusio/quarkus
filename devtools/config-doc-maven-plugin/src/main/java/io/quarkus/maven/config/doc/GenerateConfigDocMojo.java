@@ -13,9 +13,11 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -30,6 +32,7 @@ import io.quarkus.annotation.processor.documentation.config.merger.JavadocReposi
 import io.quarkus.annotation.processor.documentation.config.merger.MergedModel;
 import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.merger.ModelMerger;
+import io.quarkus.annotation.processor.documentation.config.model.AbstractConfigItem;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
@@ -102,7 +105,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
         String normalizedTheme = normalizedFormat.normalizeTheme(theme);
         Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips, normalizedFormat);
-        Engine quteEngine = initializeQuteEngine(formatter, normalizedFormat, normalizedTheme);
+        Set<String> duplicatePropertyPaths = collectDuplicatePropertyPaths(mergedModel);
+        Engine quteEngine = initializeQuteEngine(formatter, duplicatePropertyPaths, normalizedFormat, normalizedTheme);
 
         // we generate a file per extension + top level prefix
         for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : mergedModel.getConfigRoots()
@@ -300,7 +304,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         }
     }
 
-    private static Engine initializeQuteEngine(Formatter formatter, Format format, String theme) {
+    private static Engine initializeQuteEngine(Formatter formatter, Set<String> duplicatePropertyPaths, Format format,
+            String theme) {
         EngineBuilder engineBuilder = Engine.builder()
                 .addDefaults()
                 .addSectionHelper(new UserTagSectionHelper.Factory("configProperty", "configProperty"))
@@ -333,12 +338,18 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("toAnchor")
                         .applyToParameters(2)
-                        .resolveSync(ctx -> formatter
-                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
-                                        .artifactId() +
-                                // the additional suffix
-                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
-                                        "_" + ((ConfigProperty) ctx.getBase()).getPath().property()))
+                        .resolveSync(ctx -> {
+                            ConfigProperty configProperty = (ConfigProperty) ctx.getBase();
+                            String base = ((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture()
+                                    .join()).artifactId() +
+                                    ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
+                                    "_" + configProperty.getPath().property();
+                            if (configProperty.getPhase().isFixedAtBuildTime()
+                                    && duplicatePropertyPaths.contains(configProperty.getPath().property())) {
+                                base += "_bt";
+                            }
+                            return formatter.toAnchor(base);
+                        })
                         .build())
                 // we need a different anchor for sections as otherwise we can have a conflict
                 // (typically when you have an `enabled` property with parent name just under the section level)
@@ -477,6 +488,44 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 is.close();
             } catch (IOException e) {
                 throw new UncheckedIOException("Unable to close InputStream for template: " + template, e);
+            }
+        }
+    }
+
+    private static Set<String> collectDuplicatePropertyPaths(MergedModel mergedModel) {
+        Set<String> seenBuildTime = new HashSet<>();
+        Set<String> seenRunTime = new HashSet<>();
+
+        for (Map<ConfigRootKey, ConfigRoot> configRoots : mergedModel.getConfigRoots().values()) {
+            for (ConfigRoot configRoot : configRoots.values()) {
+                collectPropertyPhases(configRoot, seenBuildTime, seenRunTime);
+            }
+        }
+        for (ConfigRoot configRoot : mergedModel.getConfigRootsInSpecificFile().values()) {
+            collectPropertyPhases(configRoot, seenBuildTime, seenRunTime);
+        }
+        for (List<ConfigSection> sections : mergedModel.getGeneratedConfigSections().values()) {
+            for (ConfigSection section : sections) {
+                collectPropertyPhases(section, seenBuildTime, seenRunTime);
+            }
+        }
+
+        seenBuildTime.retainAll(seenRunTime);
+        return seenBuildTime;
+    }
+
+    private static void collectPropertyPhases(ConfigItemCollection collection, Set<String> seenBuildTime,
+            Set<String> seenRunTime) {
+        for (AbstractConfigItem item : collection.getItems()) {
+            if (item instanceof ConfigProperty configProperty) {
+                String path = configProperty.getPath().property();
+                if (configProperty.getPhase().isFixedAtBuildTime()) {
+                    seenBuildTime.add(path);
+                } else {
+                    seenRunTime.add(path);
+                }
+            } else if (item instanceof ConfigSection configSection) {
+                collectPropertyPhases(configSection, seenBuildTime, seenRunTime);
             }
         }
     }

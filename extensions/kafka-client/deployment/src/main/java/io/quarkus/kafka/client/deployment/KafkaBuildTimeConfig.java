@@ -39,6 +39,18 @@ public interface KafkaBuildTimeConfig {
     boolean snappyLoadFromSharedClassLoader();
 
     /**
+     * Whether Kafka JMX MBean registration is enabled.
+     * <p>
+     * When disabled, the {@code AppInfoParser.registerAppInfo} and {@code unregisterAppInfo} methods
+     * no longer register JMX MBean while preserving internal metrics registration.
+     * <p>
+     * When disabled, also sets the default value of the `kafka.metric.reporters` property to empty value.
+     */
+    @WithName("jmx.enabled")
+    @WithDefault("true")
+    boolean jmxEnabled();
+
+    /**
      * Dev Services.
      * <p>
      * Dev Services allows Quarkus to automatically start Kafka in dev and test mode.

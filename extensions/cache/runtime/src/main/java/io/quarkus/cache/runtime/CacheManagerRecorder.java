@@ -5,6 +5,7 @@ import static io.quarkus.cache.runtime.CacheBuildConfig.CAFFEINE_CACHE_TYPE;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -58,7 +59,7 @@ public class CacheManagerRecorder {
         };
     }
 
-    private Map<String, String> mapCacheTypeByCacheName(Set<String> cacheNames) {
+    private Map<String, String> mapCacheTypeByCacheName(List<String> cacheNames) {
         Map<String, String> cacheTypeByName = new HashMap<>(cacheNames.size());
         for (String cacheName : cacheNames) {
             CacheBuildConfig.CacheTypeBuildConfig cacheTypeBuildConfig = cacheBuildConfig.cacheTypeByName().get(cacheName);
@@ -88,7 +89,7 @@ public class CacheManagerRecorder {
 
     private Map<String, Supplier<CacheManager>> createCacheSupplierByCacheType(
             Collection<CacheManagerInfo> infos,
-            Set<String> cacheNames,
+            List<String> cacheNames,
             boolean micrometerMetricsEnabled) {
 
         Map<String, String> cacheTypeByCacheName = mapCacheTypeByCacheName(cacheNames);
@@ -116,7 +117,7 @@ public class CacheManagerRecorder {
     }
 
     public Supplier<CacheManager> resolveCacheInfo(
-            Collection<CacheManagerInfo> infos, Set<String> cacheNames,
+            Collection<CacheManagerInfo> infos, List<String> cacheNames,
             boolean micrometerMetricsEnabled) {
 
         Map<String, Supplier<CacheManager>> suppliersByType = createCacheSupplierByCacheType(

@@ -21,12 +21,12 @@ import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CacheConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot(
             jar -> jar.addClass(TestResource.class).addAsResource("cache-config-test.properties", "application.properties"));
 
     private static final String CACHE_NAME = "test-cache";

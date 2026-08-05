@@ -25,14 +25,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.reactive.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnsupportedPropertiesTest {
 
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SpyingIdentifierGeneratorEntity.class)
                     .addClass(SettingsSpyingIdentifierGenerator.class))

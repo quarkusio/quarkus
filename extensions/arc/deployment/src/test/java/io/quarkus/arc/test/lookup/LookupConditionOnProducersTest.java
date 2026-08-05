@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.arc.lookup.LookupUnlessProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LookupConditionOnProducersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, Service.class, ServiceProducer.class))
             .overrideConfigKey("service.alpha.enabled", "false");

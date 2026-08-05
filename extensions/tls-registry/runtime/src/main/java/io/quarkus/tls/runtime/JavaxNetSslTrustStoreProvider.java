@@ -19,6 +19,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.TrustStoreConfig.CertificateExpiryPolicy;
 import io.quarkus.tls.runtime.keystores.ExpiryTrustOptions;
 import io.vertx.core.Vertx;

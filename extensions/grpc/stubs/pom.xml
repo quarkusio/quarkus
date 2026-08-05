@@ -23,10 +23,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-codegen</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
@@ -107,6 +103,13 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-grpc-codegen</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>post-process</id>
@@ -115,7 +118,12 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includeProjectDependencies>false</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <executableDependency>
+                                <groupId>io.quarkus</groupId>
+                                <artifactId>quarkus-grpc-codegen</artifactId>
+                            </executableDependency>
                             <arguments>
                                 <argument>${project.build.directory}/generated-sources/protobuf/grpc-java</argument>
                             </arguments>

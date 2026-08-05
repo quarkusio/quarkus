@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.http.HttpClientOptions;
 
@@ -26,7 +26,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest app = new QuarkusUnitTest()
+    static final QuarkusExtensionTest app = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class));
 
     @Test

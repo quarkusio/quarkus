@@ -5,6 +5,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.client.spi.TokenProvider;
 
 @Singleton
 public class TokensProducer extends AbstractTokensProducer {
@@ -13,5 +14,11 @@ public class TokensProducer extends AbstractTokensProducer {
     @RequestScoped
     public Tokens produceTokens() {
         return awaitTokens();
+    }
+
+    @Produces
+    @RequestScoped
+    public TokenProvider produceTokenProvider() {
+        return new TokenProviderImpl(this);
     }
 }

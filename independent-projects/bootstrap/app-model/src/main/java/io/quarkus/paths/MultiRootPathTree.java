@@ -80,12 +80,12 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
         if (trees.length == 0) {
             return;
         }
         for (PathTree t : trees) {
-            t.walkIfContains(relativePath, visitor);
+            t.walkIfContains(resourceDirName, visitor);
         }
     }
 
@@ -98,7 +98,7 @@ public class MultiRootPathTree implements OpenPathTree {
         if (trees.length > 0) {
             Set<String> result = new HashSet<>();
             for (PathTree t : trees) {
-                t.walk(visit -> result.add(visit.getRelativePath()));
+                t.walk(visit -> result.add(visit.getResourceName()));
             }
             return result;
         }
@@ -106,63 +106,60 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
-    public <T> T apply(String relativePath, Function<PathVisit, T> func) {
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+        final AtomicBoolean applied = new AtomicBoolean();
+        var wrapper = new Function<PathVisit, T>() {
+            @Override
+            public T apply(PathVisit pathVisit) {
+                if (pathVisit != null) {
+                    applied.set(true);
+                    return func.apply(pathVisit);
+                }
+                return null;
+            }
+        };
+
         for (PathTree tree : trees) {
-            T result = tree.apply(relativePath, func);
-            if (result != null) {
+            T result = tree.apply(resourceName, wrapper);
+            if (applied.get()) {
                 return result;
             }
+        }
+        if (!applied.get()) {
+            return func.apply(null);
         }
         return null;
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> func) {
-        final AtomicBoolean consumed = new AtomicBoolean();
-        final Consumer<PathVisit> wrapper = new Consumer<>() {
-            @Override
-            public void accept(PathVisit t) {
-                if (t != null) {
-                    func.accept(t);
-                    consumed.set(true);
-                }
-            }
-        };
+    public void accept(String resourceName, Consumer<PathVisit> func) {
+        final NonNullVisitConsumer wrapper = new NonNullVisitConsumer(func);
         for (PathTree tree : trees) {
-            tree.accept(relativePath, wrapper);
-            if (consumed.get()) {
+            tree.accept(resourceName, wrapper);
+            if (wrapper.accepted) {
                 break;
             }
         }
-        if (!consumed.get()) {
+        if (!wrapper.accepted) {
             func.accept(null);
         }
     }
 
     @Override
-    public void acceptAll(String relativePath, Consumer<PathVisit> func) {
-        final AtomicBoolean consumed = new AtomicBoolean();
-        final Consumer<PathVisit> wrapper = new Consumer<>() {
-            @Override
-            public void accept(PathVisit t) {
-                if (t != null) {
-                    func.accept(t);
-                    consumed.set(true);
-                }
-            }
-        };
+    public void acceptAll(String resourceName, Consumer<PathVisit> func) {
+        final NonNullVisitConsumer wrapper = new NonNullVisitConsumer(func);
         for (PathTree tree : trees) {
-            tree.accept(relativePath, wrapper);
+            tree.accept(resourceName, wrapper);
         }
-        if (!consumed.get()) {
+        if (!wrapper.accepted) {
             func.accept(null);
         }
     }
 
     @Override
-    public boolean contains(String relativePath) {
+    public boolean contains(String resourceName) {
         for (PathTree tree : trees) {
-            if (tree.contains(relativePath)) {
+            if (tree.contains(resourceName)) {
                 return true;
             }
         }
@@ -172,8 +169,8 @@ public class MultiRootPathTree implements OpenPathTree {
     @Override
     public Path getPath(String relativePath) {
         for (PathTree tree : trees) {
-            if (tree instanceof OpenPathTree) {
-                final Path p = ((OpenPathTree) tree).getPath(relativePath);
+            if (tree instanceof OpenPathTree openTree) {
+                final Path p = openTree.getPath(relativePath);
                 if (p != null) {
                     return p;
                 }
@@ -225,6 +222,24 @@ public class MultiRootPathTree implements OpenPathTree {
 
     @Override
     public String toString() {
-        return roots.stream().map(p -> p.toString()).collect(Collectors.joining(", ", "[", "]"));
+        return roots.stream().map(Path::toString).collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    private static class NonNullVisitConsumer implements Consumer<PathVisit> {
+
+        final Consumer<PathVisit> delegate;
+        boolean accepted;
+
+        private NonNullVisitConsumer(Consumer<PathVisit> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void accept(PathVisit visit) {
+            if (visit != null) {
+                accepted = true;
+                delegate.accept(visit);
+            }
+        }
     }
 }

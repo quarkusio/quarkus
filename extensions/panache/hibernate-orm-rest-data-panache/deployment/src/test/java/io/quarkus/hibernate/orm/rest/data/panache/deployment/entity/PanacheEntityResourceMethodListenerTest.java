@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.response.Response;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -26,7 +26,7 @@ class PanacheEntityResourceMethodListenerTest {
     public static final AtomicInteger ON_AFTER_DELETE_COUNTER = new AtomicInteger(0);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
                             Item.class, ItemsResource.class, ItemRestDataResourceMethodListener.class)

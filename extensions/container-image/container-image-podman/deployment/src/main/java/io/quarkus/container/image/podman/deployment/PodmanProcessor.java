@@ -187,11 +187,12 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             OutputTargetBuildItem outputTargetBuildItem,
             PodmanConfig podmanConfig,
             ContainerImageConfig containerImageConfig,
+            ContainerImageInfoBuildItem containerImageInfo,
             BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
         // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
 
         String baseImage = requestBuildItem.getOriginalContainerImage();
-        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
 
         Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
 
@@ -235,6 +236,11 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
                 .arguments(dockerBuildArgs)
                 .error().logOnSuccess(false).inherited()
                 .run();
+
+        if (containerImageConfig.isPushExplicitlyEnabled()) {
+            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
+            pushImage(enhancedImage, executableName, podmanConfig);
+        }
 
         LOG.infof("Created AOT enhanced container image %s", enhancedImage);
         return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);

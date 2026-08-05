@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,55 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.qute.Expression.Part;
 
 public class ExpressionTest {
+
+    @Test
+    public void testSpecialSyntax() {
+        assertEquals("foo{bar}", Engine.builder()
+                .addDefaults()
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{=bar}{bar}")
+                .data("bar", "foo")
+                .render());
+        assertEquals("foo{bar}", Engine.builder()
+                .addDefaults()
+                .configureParser((id, variant) -> new ParserConfig('>'))
+                .build()
+                .parse("{>bar}{bar}")
+                .data("bar", "foo")
+                .render());
+        // Literal base with chaining parts
+        assertEquals("foobar", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{='foo'.concat('bar')}")
+                .render());
+        assertEquals("3", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{='bar'.length}")
+                .render());
+        assertEquals("1", Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .configureParser((id, variant) -> new ParserConfig('='))
+                .build()
+                .parse("{=1.intValue}")
+                .render());
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('#'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('@'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('/'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('_'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('|'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('!'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('1'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('š'));
+        assertThrows(IllegalArgumentException.class, () -> new ParserConfig('✅'));
+    }
 
     @Test
     public void testExpressions() throws InterruptedException, ExecutionException {

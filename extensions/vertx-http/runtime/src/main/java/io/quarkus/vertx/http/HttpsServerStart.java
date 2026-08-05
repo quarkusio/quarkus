@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http;
 
-import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerConfig;
+import io.vertx.core.net.ServerSSLOptions;
 
 /**
  * Quarkus fires a CDI event of this type asynchronously when the HTTPS server starts listening
@@ -16,6 +17,6 @@ import io.vertx.core.http.HttpServerOptions;
  * }
  * </pre>
  */
-public record HttpsServerStart(HttpServerOptions options) {
+public record HttpsServerStart(HttpServerConfig config, ServerSSLOptions sslOptions) {
 
 }

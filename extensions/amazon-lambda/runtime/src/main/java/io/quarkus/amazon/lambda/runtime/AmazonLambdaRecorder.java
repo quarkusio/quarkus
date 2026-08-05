@@ -13,7 +13,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
@@ -22,6 +21,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.value.registry.ValueRegistry;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Used for Amazon Lambda java runtime
@@ -37,9 +38,13 @@ public class AmazonLambdaRecorder {
     protected static Set<Class<?>> expectedExceptionClasses;
 
     private final RuntimeValue<LambdaConfig> runtimeConfig;
+    private final RuntimeValue<ValueRegistry> valueRegistry;
 
-    public AmazonLambdaRecorder(RuntimeValue<LambdaConfig> runtimeConfig) {
+    public AmazonLambdaRecorder(
+            RuntimeValue<LambdaConfig> runtimeConfig,
+            RuntimeValue<ValueRegistry> valueRegistry) {
         this.runtimeConfig = runtimeConfig;
+        this.valueRegistry = valueRegistry;
     }
 
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
@@ -65,7 +70,12 @@ public class AmazonLambdaRecorder {
             objectReader = new JacksonInputReader(objectMapper.readerFor(requestHandlerDefinition.inputType()));
         }
 
-        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(requestHandlerDefinition.outputType()));
+        Class<?> outputTypeForWriter = requestHandlerDefinition.outputType();
+        if (Record.class.equals(requestHandlerDefinition.outputType())) {
+            // Jackson won't properly serialize if the type is `Record`
+            outputTypeForWriter = Object.class;
+        }
+        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(outputTypeForWriter));
     }
 
     public void setBeanContainer(BeanContainer container) {
@@ -141,6 +151,12 @@ public class AmazonLambdaRecorder {
         }
     }
 
+    public void startPollLoopIfDevOrTestOrExplicit(ShutdownContext context, LaunchMode launchMode) {
+        if (launchMode.isDevOrTest() || AmazonLambdaApi.isTestMode()) {
+            startPollLoop(context, launchMode);
+        }
+    }
+
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context, LaunchMode launchMode) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
@@ -180,8 +196,7 @@ public class AmazonLambdaRecorder {
                 return expectedExceptionClasses.stream().noneMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
             }
         };
-        loop.startPollLoop(context);
-
+        loop.startPollLoop(valueRegistry.getValue(), context);
     }
 
     public record RequestHandlerDefinition(Class<? extends RequestHandler<?, ?>> handlerClass,

@@ -14,11 +14,11 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class OverlappingResourceClassPathTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

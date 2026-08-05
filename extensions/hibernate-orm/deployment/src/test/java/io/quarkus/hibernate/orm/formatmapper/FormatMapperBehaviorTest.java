@@ -10,16 +10,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FormatMapperBehaviorTest {
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyJsonEntity.class, MyXmlEntity.class)
                     .addClasses(SchemaUtil.class, SmokeTestUtils.class))
-            .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.mapping.format.global", "ignore");
+            .withConfigurationResource("application.properties");
 
     @Inject
     SessionFactory sessionFactory;

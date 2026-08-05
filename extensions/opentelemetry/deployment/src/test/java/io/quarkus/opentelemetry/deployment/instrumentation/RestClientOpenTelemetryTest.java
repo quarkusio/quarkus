@@ -42,12 +42,12 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExpo
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class RestClientOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addPackage(TestSpanExporter.class.getPackage())
             .addClasses(SemconvResolver.class)
             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),

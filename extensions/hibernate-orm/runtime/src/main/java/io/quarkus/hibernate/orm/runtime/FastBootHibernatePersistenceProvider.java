@@ -20,6 +20,7 @@ import jakarta.persistence.spi.PersistenceUnitInfo;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
+import org.hibernate.cache.jcache.ConfigSettings;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.cfg.QuerySettings;
@@ -38,6 +39,8 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
+import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCaffeineCacheManager;
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -208,10 +211,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
             }
-            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
+            RuntimeSettingsResult runtimeSettingsResult = buildRuntimeSettings(persistenceUnitName, recordedState,
+                    puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
-                    recordedState, puConfig, runtimeSettings);
+                    recordedState, puConfig, runtimeSettingsResult.settings());
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -220,23 +224,26 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     persistenceUnit,
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
-                    runtimeSettings,
+                    runtimeSettingsResult.settings(),
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
-                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
+                    runtimeSettingsResult.importScripts());
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
+    private record RuntimeSettingsResult(RuntimeSettings settings, SchemaToolingUtil.PreparedImportScripts importScripts) {
+    }
+
+    private RuntimeSettingsResult buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig) {
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
-        unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
+        SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+                runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
@@ -277,6 +284,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         // but now the dialect is there, and we'll reuse it.
         // Keeping this information would prevent us from getting the actual information from the database on start.
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
+
+        var cacheConfiguration = (QuarkusPersistenceUnitCacheConfiguration) buildTimeSettings.getAllSettings()
+                .get(QuarkusPersistenceUnitCacheConfiguration.CONFIG_KEY);
+        if (cacheConfiguration != null) { // Equivalent to "caching is enabled"
+            var cacheManager = new QuarkusPersistenceUnitCaffeineCacheManager(persistenceUnitName, false, cacheConfiguration);
+            runtimeSettingsBuilder.put(ConfigSettings.CACHE_MANAGER, cacheManager);
+        }
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."
@@ -337,7 +351,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        return runtimeSettingsBuilder.build();
+        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts);
     }
 
     public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
@@ -346,10 +360,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 || DatabaseKind.isDB2(dbKind.toString());
     }
 
-    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
-        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+    private SchemaToolingUtil.PreparedImportScripts unzipZipFilesAndReplaceZipsInImportFiles(
+            Builder runtimeSettingsBuilder) {
+        SchemaToolingUtil.PreparedImportScripts importScripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
                 (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
-        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                importScripts.getRewrittenValue());
+        return importScripts;
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
@@ -19,7 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.graphql.api.Subscription;
 import io.smallrye.graphql.client.Response;
@@ -44,7 +43,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationClientInitTest {
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SecuredApi.class, Foo.class)
                     .addAsResource("application-secured.properties", "application.properties")
@@ -72,13 +71,13 @@ public class DynamicGraphQLClientWebSocketAuthenticationClientInitTest {
             for (int i = 0; i < 3; i++) {
                 Response response = client.executeSync("{ foo { message} }");
                 assertTrue(response.hasData());
-                assertEquals("foo", response.getData().getJsonObject("foo").getString("message"));
+                assertEquals("foo", response.getData().get("foo").get("message").asText());
             }
 
             // Unauthorized query
             Response response = client.executeSync("{ bar { message} }");
             assertTrue(response.hasData());
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("bar").getValueType());
+            assertTrue(response.getData().get("bar").isNull());
         }
     }
 
@@ -93,7 +92,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationClientInitTest {
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
             assertTrue(response.hasData());
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
+            assertTrue(response.getData().get("foo").isNull());
         }
     }
 

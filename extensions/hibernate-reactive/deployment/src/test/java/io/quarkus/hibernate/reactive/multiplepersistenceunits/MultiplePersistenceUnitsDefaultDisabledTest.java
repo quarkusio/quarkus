@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.DefaultEntity;
 import io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.inventory.Plane;
 import io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.user.User;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
@@ -24,7 +23,7 @@ import io.smallrye.mutiny.Uni;
 public class MultiplePersistenceUnitsDefaultDisabledTest extends BaseMultiplePersistenceUnitTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)
@@ -49,7 +48,6 @@ public class MultiplePersistenceUnitsDefaultDisabledTest extends BaseMultiplePer
     }
 
     @Test
-    @Transactional
     @RunOnVertxContext
     public void createEntityAndRefetch(UniAsserter uniAsserter) {
         assertNotNull(usersEntityManager);

@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.time.Year;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -156,6 +158,8 @@ public final class DotNames {
     public static final DotName DURATION = DotName.createSimple(Duration.class.getName());
     public static final DotName INSTANT = DotName.createSimple(Instant.class.getName());
     public static final DotName ZONED_DATETIME = DotName.createSimple(ZonedDateTime.class.getName());
+    public static final DotName YEAR = DotName.createSimple(Year.class.getName());
+    public static final DotName YEAR_MONTH = DotName.createSimple(YearMonth.class.getName());
 
     // https://docs.hibernate.org/stable/orm/userguide/html_single/#basic
     // Should be in sync with org.hibernate.type.BasicTypeRegistry
@@ -175,7 +179,7 @@ public final class DotNames {
             LOCAL_DATE, LOCAL_TIME, LOCAL_DATETIME,
             OFFSET_TIME, OFFSET_DATETIME,
             DURATION, INSTANT,
-            ZONED_DATETIME, TIMEZONE,
+            ZONED_DATETIME, YEAR, YEAR_MONTH, TIMEZONE,
             LOCALE, URL, UUID,
             BLOB, CLOB, NCLOB));
 

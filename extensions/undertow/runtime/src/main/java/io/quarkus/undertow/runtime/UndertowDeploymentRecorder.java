@@ -1,7 +1,6 @@
 package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -109,8 +108,8 @@ import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -391,8 +390,8 @@ public class UndertowDeploymentRecorder {
 
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
                 servletRuntimeConfig.getValue().directBuffers().orElse(DEFAULT_DIRECT_BUFFERS),
-                (int) servletRuntimeConfig.getValue().bufferSize()
-                        .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
+                servletRuntimeConfig.getValue().bufferSize()
+                        .orElse(MemorySize.of(DEFAULT_BUFFER_SIZE)).asIntValue());
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
@@ -436,20 +435,24 @@ public class UndertowDeploymentRecorder {
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
 
+                Buffer buffer = null;
+                if (event.body() != null) {
+                    buffer = event.body().buffer();
+                }
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
-                        event.getBody());
+                        buffer);
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
 
-                // Note that we can't add an end handler in a separate HttpCompressionHandler because VertxHttpExchange does set
-                // its own end handler and so the end handlers added previously are just ignored...
+                // Note that we can't use HttpCompressionHandler because VertxHttpExchange sets its own
+                // response end handler. However, headersEndHandler is safe to use here since
+                // VertxHttpExchange does not set one. We must use addHeadersEndHandler (not addEndHandler)
+                // because headers need to be modified BEFORE they are flushed to the network.
                 if (!compressMediaTypes.isEmpty()) {
-                    event.addEndHandler(new Handler<AsyncResult<Void>>() {
+                    event.addHeadersEndHandler(new Handler<Void>() {
 
                         @Override
-                        public void handle(AsyncResult<Void> result) {
-                            if (result.succeeded()) {
-                                HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
-                            }
+                        public void handle(Void result) {
+                            HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
                         }
                     });
                 }

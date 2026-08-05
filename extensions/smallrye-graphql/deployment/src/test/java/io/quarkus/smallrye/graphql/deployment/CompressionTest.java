@@ -10,7 +10,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class CompressionTest extends AbstractGraphQLTest {
@@ -19,7 +19,7 @@ public class CompressionTest extends AbstractGraphQLTest {
     private static final String TAU = "6.28";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
             .overrideConfigKey("quarkus.http.enable-compression", "true");

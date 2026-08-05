@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common
 
 import io.quarkus.arc.Arc
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonBuilder
@@ -19,7 +19,7 @@ class JsonBuilderCustomizerTest {
 
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
+        val config = QuarkusExtensionTest()
             .withApplicationRoot { jar: JavaArchive -> jar.addClasses(Greeting::class.java, HighPriorityCustomizer::class.java, LowPriorityCustomizer::class.java) }
             .withConfigurationResource("basic.properties")
     }

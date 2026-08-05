@@ -37,7 +37,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Class testing some of the examples used in the docs
@@ -47,7 +47,7 @@ public class ManualTracingAndPropagationTest {
     private static final Logger logger = Logger.getLogger(ManualTracingAndPropagationTest.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(HelloSpan.class)

@@ -27,10 +27,10 @@ public class ImplicitConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/quarkus-integration-test-smallrye-stork-consul-registration")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/quarkus-integration-test-smallrye-stork-consul-registration")
                 .then()
                 .statusCode(200)
-                .body(containsString("\"Service\": \"quarkus-integration-test-smallrye-stork-consul-registration\""));
+                .body(containsString("\"ServiceName\": \"quarkus-integration-test-smallrye-stork-consul-registration\""));
 
     }
 

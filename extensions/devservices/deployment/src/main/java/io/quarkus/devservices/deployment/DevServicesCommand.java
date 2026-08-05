@@ -6,15 +6,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.aesh.command.Command;
+import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandResult;
 import org.aesh.command.GroupCommand;
-import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.invocation.CommandInvocation;
 
 import io.quarkus.deployment.console.SetCompleter;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 
-@GroupCommandDefinition(name = "devservices", description = "Dev Service Commands")
+@CommandDefinition(name = "devservices", description = "Dev Service Commands")
 public class DevServicesCommand implements GroupCommand {
     static List<DevServiceDescriptionBuildItem> serviceDescriptions;
 

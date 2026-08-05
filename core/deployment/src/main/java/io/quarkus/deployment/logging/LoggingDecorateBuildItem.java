@@ -3,6 +3,7 @@ package io.quarkus.deployment.logging;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.ClassInfo;
@@ -33,12 +34,24 @@ public final class LoggingDecorateBuildItem extends SimpleBuildItem {
         return knowClassesIndex;
     }
 
+    /**
+     * Returns a list of ordered known classes. Normally, we don't require the build items
+     * to have reproducible collections, since stabilizing order is a responsibility of
+     * {@code io.quarkus.deployment.annotations.Record} annotated build steps.
+     * <p>
+     * However, this build item is used by the number of bytecode-recording build steps.
+     * Repeating the ordering logic in all of them seems like a waste, so we do it here instead.
+     *
+     * @return a list of ordered known classes, sorted by their name.
+     *
+     */
     public List<String> getKnowClasses() {
         List<String> knowClasses = new ArrayList<>();
         Collection<ClassInfo> knownClasses = knowClassesIndex.getKnownClasses();
         for (ClassInfo ci : knownClasses) {
             knowClasses.add(ci.name().toString());
         }
+        Collections.sort(knowClasses);
         return knowClasses;
     }
 

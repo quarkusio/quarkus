@@ -15,12 +15,12 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.cache.QuteCache;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("{#cached}{counter.val}{/cached}::"
                             + "{#cached key=(myKey or 'alpha')}{counter.getVal(fail)}{/cached}"),

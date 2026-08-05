@@ -26,14 +26,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 public class MpHttpServerMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)

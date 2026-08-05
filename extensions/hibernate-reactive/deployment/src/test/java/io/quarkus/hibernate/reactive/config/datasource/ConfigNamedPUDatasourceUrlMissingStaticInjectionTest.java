@@ -12,13 +12,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.config.MyEntity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class ConfigNamedPUDatasourceUrlMissingStaticInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application-config-named-pu.properties")
             .overrideConfigKey("quarkus.datasource.\"mydatasource\".reactive.url", "")

@@ -8,11 +8,11 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class HttpServerTest {
     @RegisterExtension
-    static final QuarkusUnitTest CONFIG = new QuarkusUnitTest();
+    static final QuarkusExtensionTest CONFIG = new QuarkusExtensionTest();
 
     @Inject
     HttpServer webServer;
@@ -22,5 +22,11 @@ public class HttpServerTest {
         assertTrue(webServer.getPort() > 0);
         assertEquals(-1, webServer.getSecurePort());
         assertEquals(-1, webServer.getManagementPort());
+    }
+
+    @Test
+    void uris() {
+        assertTrue(webServer.getLocalBaseUri().toString().contains(String.valueOf(webServer.getPort())));
+        assertTrue(webServer.getManagementBaseUri().isEmpty());
     }
 }

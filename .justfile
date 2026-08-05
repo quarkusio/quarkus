@@ -1,3 +1,5 @@
+default: 
+   just --list
 
 mvncmd := env_var_or_default("QMVNCMD", "./mvnw -T0.8C")
 
@@ -12,6 +14,10 @@ build-fast:
 # build docs (including config doc for all modules), skipping as much unnecessary as possible. 
 build-docs:
     {{mvncmd}} -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install
+
+# build docs, sync to website, serve with Jekyll, and open browser
+docs-preview:
+    bash docs/docs-preview.sh
 
 # format code according to Quarkus coding conventions
 format:

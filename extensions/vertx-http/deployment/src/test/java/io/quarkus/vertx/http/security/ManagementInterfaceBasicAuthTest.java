@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.ManagementInterface;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -29,7 +29,7 @@ import io.restassured.RestAssured;
 public class ManagementInterfaceBasicAuthTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
@@ -39,7 +39,7 @@ public class ManagementInterfaceBasicAuthTest {
                             quarkus.management.enabled=true
                             quarkus.management.auth.enabled=true
                             quarkus.management.auth.policy.r1.roles-allowed=admin
-                            quarkus.management.auth.permission.roles1.paths=/admin
+                            quarkus.management.auth.permission.roles1.paths=/q/metrics
                             quarkus.management.auth.permission.roles1.policy=r1
                             """), "application.properties");
         }
@@ -70,12 +70,49 @@ public class ManagementInterfaceBasicAuthTest {
     }
 
     @Test
-    public void testBasicAuthFailure() {
+    public void testBasicAuthFailureWithoutPassword() {
+        RestAssured
+                .given()
+                .redirects().follow(false)
+                .get(metrics)
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWithoutPasswordWithMatrix() {
+        RestAssured
+                .given()
+                .redirects().follow(false)
+                .get(metrics.toString() + ";a=a1")
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWrongPassword() {
         RestAssured
                 .given()
                 .auth().preemptive().basic("admin", "wrongpassword")
                 .redirects().follow(false)
                 .get(metrics)
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    public void testBasicAuthFailureWrongPasswordWithMatrix() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("admin", "wrongpassword")
+                .redirects().follow(false)
+                .get(metrics + ";a=a1")
                 .then()
                 .assertThat()
                 .statusCode(401);

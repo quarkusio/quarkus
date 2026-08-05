@@ -1699,6 +1699,45 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("projection-aggregate-function")
+    @Transactional
+    public String testProjectionWithAggregateFunction() {
+        // Clean up and setup test data
+        Cat.deleteAll();
+        CatOwner.deleteAll();
+
+        CatOwner owner1 = new CatOwner("Owner1");
+        owner1.persist();
+        CatOwner owner2 = new CatOwner("Owner2");
+        owner2.persist();
+
+        Cat cat1 = new Cat("Cat1", owner1);
+        cat1.weight = 5.0;
+        cat1.persist();
+
+        Cat cat2 = new Cat("Cat2", owner1);
+        cat2.weight = 7.0;
+        cat2.persist();
+
+        Cat cat3 = new Cat("Cat3", owner2);
+        cat3.weight = 3.0;
+        cat3.persist();
+
+        // Test projection with aggregate function
+        List<CatOwnerWeightDto> results = Cat.find("FROM Cat c GROUP BY c.owner ORDER BY c.owner.name")
+                .project(CatOwnerWeightDto.class)
+                .list();
+
+        Assertions.assertEquals(2, results.size());
+        Assertions.assertEquals("Owner1", results.get(0).ownerName());
+        Assertions.assertEquals(12.0, results.get(0).totalWeight());
+        Assertions.assertEquals("Owner2", results.get(1).ownerName());
+        Assertions.assertEquals(3.0, results.get(1).totalWeight());
+
+        return "OK";
+    }
+
+    @GET
     @Path("model3")
     @Transactional
     public String testModel3() {
@@ -2048,6 +2087,50 @@ public class TestEndpoint {
         assertEquals(josePerson.id, persons.get(0).id);
         persons = Person.findAll(Sort.by("description.size", Sort.Direction.Ascending)).list();
         assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("testCaseInsensitiveSorting")
+    @Transactional
+    public String testCaseInsensitiveSorting() {
+        Person.deleteAll();
+
+        Person apple = new Person();
+        apple.name = "apple";
+        apple.persist();
+
+        Person BANANA = new Person();
+        BANANA.name = "BANANA";
+        BANANA.persist();
+
+        Person cherry = new Person();
+        cherry.name = "cherry";
+        cherry.persist();
+
+        // Test case-insensitive ascending sort
+        List<Person> persons = Person.findAll(Sort.ascendingIgnoreCase("name")).list();
+        assertEquals(3, persons.size());
+        assertEquals("apple", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("cherry", persons.get(2).name);
+
+        // Test case-insensitive descending sort
+        persons = Person.findAll(Sort.descendingIgnoreCase("name")).list();
+        assertEquals(3, persons.size());
+        assertEquals("cherry", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("apple", persons.get(2).name);
+
+        // Test fluent API
+        persons = Person.findAll(Sort.by("name").ignoreCase()).list();
+        assertEquals(3, persons.size());
+        assertEquals("apple", persons.get(0).name);
+        assertEquals("BANANA", persons.get(1).name);
+        assertEquals("cherry", persons.get(2).name);
 
         Person.deleteAll();
 

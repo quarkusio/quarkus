@@ -7,14 +7,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.WebSocketException;
 
 public class MultipleAmbiguousGlobalErrorHandlersTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(GlobalErrorHandlers.class);
             })

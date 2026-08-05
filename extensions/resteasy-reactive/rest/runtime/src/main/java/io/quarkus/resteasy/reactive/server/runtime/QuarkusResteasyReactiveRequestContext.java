@@ -18,8 +18,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.RoutingUtils;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
@@ -36,6 +36,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         this.association = currentIdentityAssociation;
         if (VertxContext.isOnDuplicatedContext()) {
             VertxContextSafetyToggle.setCurrentContextSafe(true);
+        }
+        // If a CDI request context is already active (e.g. activated by a @RouteFilter),
+        // capture it so that it can be reused when the handler chain resumes on a worker thread
+        if (requestContext.isRequestContextActive()) {
+            captureCDIRequestScope();
         }
     }
 
@@ -109,8 +114,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     @Override
     public ForwardedInfo getForwardedInfo() {
-        io.quarkus.vertx.http.runtime.ForwardedInfo vertxForwardedInfo = ((HttpServerRequestInternal) request).context()
-                .getLocal(io.quarkus.vertx.http.runtime.ForwardedInfo.CONTEXT_KEY);
+        io.quarkus.vertx.http.runtime.ForwardedInfo vertxForwardedInfo = ContextLocals.<io.quarkus.vertx.http.runtime.ForwardedInfo> get(
+                io.quarkus.vertx.http.runtime.ForwardedInfo.CONTEXT_KEY)
+                .orElse(null);
         if (vertxForwardedInfo == null) {
             return null;
         }

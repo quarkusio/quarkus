@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.info.runtime.spi.InfoContributor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ExternalInfoContributorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .addBuildChainCustomizer(
                     buildChainBuilder -> buildChainBuilder.addBuildStep(
                             context -> new AdditionalBeanBuildItem(TestInfoContributor.class))

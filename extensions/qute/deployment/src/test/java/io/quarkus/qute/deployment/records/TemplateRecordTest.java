@@ -21,13 +21,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 
 public class TemplateRecordTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloInt.class, helloWorld.class, hello.class, hello$name.class, hello$top.class)
                     .addAsResource(new StringAsset("Hello {val}!"),

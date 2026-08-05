@@ -24,12 +24,12 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SyntheticBeanBuildItemProxyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(SyntheticBeanBuildItemProxyTest.class, SynthBean.class))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -44,7 +44,7 @@ public class SyntheticBeanBuildItemProxyTest {
                     public void execute(BuildContext context) {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                                "test", "" + TestRecorder.class.hashCode(), true);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

@@ -1,5 +1,8 @@
 package io.quarkus.micrometer.runtime.binder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +12,55 @@ import io.micrometer.core.instrument.Tag;
  * Test tag creation
  */
 public class HttpCommonTagsTest {
+
+    @Test
+    public void testStandardMethodsAreAllowed() {
+        Assertions.assertEquals(Tag.of("method", "GET"), HttpCommonTags.method("GET"));
+        Assertions.assertEquals(Tag.of("method", "HEAD"), HttpCommonTags.method("HEAD"));
+        Assertions.assertEquals(Tag.of("method", "POST"), HttpCommonTags.method("POST"));
+        Assertions.assertEquals(Tag.of("method", "PUT"), HttpCommonTags.method("PUT"));
+        Assertions.assertEquals(Tag.of("method", "DELETE"), HttpCommonTags.method("DELETE"));
+        Assertions.assertEquals(Tag.of("method", "CONNECT"), HttpCommonTags.method("CONNECT"));
+        Assertions.assertEquals(Tag.of("method", "OPTIONS"), HttpCommonTags.method("OPTIONS"));
+        Assertions.assertEquals(Tag.of("method", "TRACE"), HttpCommonTags.method("TRACE"));
+        Assertions.assertEquals(Tag.of("method", "PATCH"), HttpCommonTags.method("PATCH"));
+        Assertions.assertEquals(Tag.of("method", "QUERY"), HttpCommonTags.method("QUERY"));
+    }
+
+    @Test
+    public void testNonStandardMethodsAreRejected() {
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method(null));
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("WELL"));
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("FOOBAR"));
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("get"));
+    }
+
+    @Test
+    public void testAdditionalMethodsAreAllowed() {
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("PROPFIND"));
+
+        HttpCommonTags.setAdditionalHttpMethods(List.of("PROPFIND", "MKCOL"));
+
+        Assertions.assertEquals(Tag.of("method", "PROPFIND"), HttpCommonTags.method("PROPFIND"));
+        Assertions.assertEquals(Tag.of("method", "MKCOL"), HttpCommonTags.method("MKCOL"));
+        Assertions.assertEquals(Tag.of("method", "GET"), HttpCommonTags.method("GET"));
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("FOOBAR"));
+    }
+
+    @Test
+    public void testAdditionalMethodsCappedAt32() {
+        // 10 standard methods + 23 additional = 33, exceeding the cap of 32
+        List<String> methods = new ArrayList<>(23);
+        for (int i = 1; i <= 23; i++) {
+            methods.add("CUSTOM" + i);
+        }
+        HttpCommonTags.setAdditionalHttpMethods(methods);
+
+        // CUSTOM1 fits within the 32 cap
+        Assertions.assertEquals(Tag.of("method", "CUSTOM1"), HttpCommonTags.method("CUSTOM1"));
+        // CUSTOM23 is the 33rd method and should be rejected
+        Assertions.assertEquals(HttpCommonTags.METHOD_UNKNOWN, HttpCommonTags.method("CUSTOM23"));
+    }
 
     @Test
     public void testStatus() {

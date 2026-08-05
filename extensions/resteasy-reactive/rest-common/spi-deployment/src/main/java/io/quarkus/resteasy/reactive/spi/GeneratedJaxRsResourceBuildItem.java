@@ -6,7 +6,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  * Represents a JAX-RS resource that is generated.
  * Meant to be used by extension that generate JAX-RS resources as part of their build time processing
  */
-public final class GeneratedJaxRsResourceBuildItem extends MultiBuildItem {
+public final class GeneratedJaxRsResourceBuildItem extends MultiBuildItem
+        implements Comparable<GeneratedJaxRsResourceBuildItem> {
 
     private final String binaryName;
     private final String internalName;
@@ -44,5 +45,10 @@ public final class GeneratedJaxRsResourceBuildItem extends MultiBuildItem {
 
     public byte[] getData() {
         return data;
+    }
+
+    @Override
+    public int compareTo(GeneratedJaxRsResourceBuildItem o) {
+        return binaryName.compareTo(o.binaryName());
     }
 }

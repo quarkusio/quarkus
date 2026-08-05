@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionConfigDefaultDataSourceTest {
 
@@ -20,7 +20,7 @@ public class FlywayExtensionConfigDefaultDataSourceTest {
     FlywayExtensionConfigFixture fixture;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(FlywayExtensionConfigFixture.class)
                     .addClasses(FlywayExtensionCallback.class, FlywayExtensionCallback2.class)

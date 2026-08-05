@@ -58,13 +58,26 @@ public abstract class QuarkusPluginExtensionView {
         getQuarkusProfileEnvVariable().set(getProviderFactory().environmentVariable("QUARKUS_PROFILE"));
         getCachingRelevantProperties().set(extension.getCachingRelevantProperties());
         getForcedProperties().set(extension.forcedPropertiesProperty());
-        Map<String, Object> projectProperties = new HashMap<>();
-        for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
-            if ((entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))) {
-                projectProperties.put(entry.getKey(), entry.getValue());
-            }
+        getProjectProperties().set(getQuarkusAndPlatformProjectProperties(project));
+    }
+
+    private Provider<Map<String, String>> getQuarkusAndPlatformProjectProperties(Project project) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) >= 0) {
+            // gradlePropertiesPrefixedBy is configuration-cache and Isolated-Projects friendly, unlike
+            // Project.getProperties() which is not allowed under Isolated Projects.
+            return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.")
+                    .zip(getProviderFactory().gradlePropertiesPrefixedBy("platform.quarkus."),
+                            (quarkus, platform) -> {
+                                Map<String, String> merged = new HashMap<>(quarkus);
+                                merged.putAll(platform);
+                                return merged;
+                            });
+        } else {
+            return getProviderFactory().provider(() -> project.getProperties().entrySet().stream()
+                    .filter(e -> e.getValue() != null
+                            && (e.getKey().startsWith("quarkus.") || e.getKey().startsWith("platform.quarkus.")))
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString())));
         }
-        getProjectProperties().set(projectProperties);
     }
 
     private Provider<Map<String, String>> getQuarkusRelevantProjectProperties(Project project) {

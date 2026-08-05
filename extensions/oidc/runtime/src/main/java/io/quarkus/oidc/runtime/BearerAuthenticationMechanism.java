@@ -77,12 +77,12 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
 
             List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
             if (proofs == null || proofs.isEmpty()) {
-                LOG.warn("DPOP proof header must be present to verify the DPOP access token binding");
-                throw new AuthenticationFailedException(tokenMap(token));
+                LOG.warn("DPoP proof header must be present to verify the DPoP access token binding");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
             if (proofs.size() != 1) {
-                LOG.warn("Only a single DPOP proof header is accepted");
-                throw new AuthenticationFailedException(tokenMap(token));
+                LOG.warnf("Only a single DPoP proof header is accepted, %d headers are available", proofs.size());
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
             String proof = proofs.get(0);
 
@@ -91,29 +91,29 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             JsonObject proofJwtClaims = OidcCommonUtils.decodeJwtContent(proof);
 
             if (!OidcConstants.DPOP_TOKEN_TYPE.equals(proofJwtHeaders.getString(OidcConstants.TOKEN_TYPE_HEADER))) {
-                LOG.warn("Invalid DPOP proof token type ('typ') header");
-                throw new AuthenticationFailedException(tokenMap(token));
+                LOG.warn("Invalid DPoP proof token type ('typ') header");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
             // Check HTTP method and request URI
             String proofHttpMethod = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_METHOD);
             if (proofHttpMethod == null) {
-                LOG.warn("DPOP proof HTTP method claim is missing");
-                throw new AuthenticationFailedException(tokenMap(token));
+                LOG.warn("DPoP proof HTTP method claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
             String httpMethod = context.request().method().name();
             if (!httpMethod.equals(proofHttpMethod)) {
-                LOG.warnf("DPOP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
+                LOG.warnf("DPoP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
                         httpMethod);
-                throw new AuthenticationFailedException(tokenMap(token));
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
             // Check HTTP request URI
             String proofHttpRequestUri = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_REQUEST_URI);
             if (proofHttpRequestUri == null) {
-                LOG.warn("DPOP proof HTTP request uri claim is missing");
-                throw new AuthenticationFailedException(tokenMap(token));
+                LOG.warn("DPoP proof HTTP request uri claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
             String httpRequestUri = context.request().absoluteURI();
@@ -122,24 +122,32 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 httpRequestUri = httpRequestUri.substring(0, queryIndex);
             }
             if (!httpRequestUri.equals(proofHttpRequestUri)) {
-                LOG.warnf("DPOP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
+                LOG.warnf("DPoP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
                         httpRequestUri);
-                throw new AuthenticationFailedException(tokenMap(token));
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
             if (dPoPNonceProvider != null) {
                 String proofNonce = proofJwtClaims.getString(OidcConstants.NONCE);
                 if (proofNonce == null) {
-                    LOG.debug("Required DPOP proof nonce claim is missing");
+                    /*
+                     * Set HTTP error status to `401` and the error code value to `use_dpop_nonce`.
+                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                     */
+                    LOG.debug("Required DPoP proof nonce claim is missing");
                     throw new AuthenticationFailedException(Map.of(
                             OidcConstants.ACCESS_TOKEN_VALUE, token,
                             OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
                 }
                 if (!dPoPNonceProvider.isValid(proofNonce)) {
-                    LOG.tracef("DPOP proof nonce claim '%s' is not valid", proofNonce);
+                    /*
+                     * This same error code is used when supplying a new nonce value when there was a nonce mismatch.
+                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                     */
+                    LOG.tracef("DPoP proof nonce claim '%s' is invalid", proofNonce);
                     throw new AuthenticationFailedException(Map.of(
                             OidcConstants.ACCESS_TOKEN_VALUE, token,
-                            OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE));
+                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
                 }
             }
 
@@ -162,6 +170,10 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, token);
     }
 
+    private static Map<String, Object> invalidDPoPProofMap(String token) {
+        return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, token, OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE);
+    }
+
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         Uni<TenantConfigContext> tenantContext = resolver.resolveContext(context);
         return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
@@ -173,14 +185,8 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                             StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
                 } else {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
-                    if (isInvalidOrMissingDpopNonce(context)) {
-                        final String errorAttributeValue;
-                        if (getAuthenticationFailureFromEvent(context).getAttribute(OidcConstants.USE_DPOP_NONCE) != null) {
-                            errorAttributeValue = OidcConstants.USE_DPOP_NONCE;
-                        } else {
-                            errorAttributeValue = OidcConstants.INVALID_DPOP_PROOF;
-                        }
-                        wwwAuthHeaderValue += " error=\"%s\"".formatted(errorAttributeValue);
+                    if (isMissingOrMismatchedDpopNonce(context)) {
+                        wwwAuthHeaderValue += " error=\"%s\"".formatted(OidcConstants.USE_DPOP_NONCE);
                         return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
                                 Map.of(
                                         HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue,
@@ -197,11 +203,10 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         });
     }
 
-    private boolean isInvalidOrMissingDpopNonce(RoutingContext context) {
+    private boolean isMissingOrMismatchedDpopNonce(RoutingContext context) {
         if (dPoPNonceProvider != null) {
             final AuthenticationFailedException authFailure = getAuthenticationFailureFromEvent(context);
-            return authFailure != null && (authFailure.getAttribute(OidcConstants.USE_DPOP_NONCE) != null
-                    || authFailure.getAttribute(OidcConstants.INVALID_DPOP_PROOF) != null);
+            return authFailure != null && authFailure.getAttribute(OidcConstants.USE_DPOP_NONCE) != null;
         }
         return false;
     }

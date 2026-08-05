@@ -399,8 +399,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        Bson docQuery = Document.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         Bson docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, docQuery, docSort);
@@ -410,8 +409,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
      * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
      * and like <code>firstname = ?1</code> for PanacheQL one.
      */
-    public String bindFilter(Class<?> clazz, String query, Object[] params) {
-        String bindQuery = bindQuery(clazz, query, params);
+    public Bson bindFilter(Class<?> clazz, String query, Object[] params) {
+        Bson bindQuery = bindQuery(clazz, query, params);
         LOGGER.debug(bindQuery);
         return bindQuery;
     }
@@ -420,8 +419,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
      * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
      * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
      */
-    public String bindFilter(Class<?> clazz, String query, Map<String, Object> params) {
-        String bindQuery = bindQuery(clazz, query, params);
+    public Bson bindFilter(Class<?> clazz, String query, Map<String, Object> params) {
+        Bson bindQuery = bindQuery(clazz, query, params);
         LOGGER.debug(bindQuery);
         return bindQuery;
     }
@@ -431,10 +430,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
      * and like <code>firstname = ?1 and lastname = ?2</code> for PanacheQL one.
      * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
-    String bindUpdate(Class<?> clazz, String query, Object[] params) {
-        String bindUpdate = bindQuery(clazz, query, params);
+    Bson bindUpdate(Class<?> clazz, String query, Object[] params) {
+        Bson bindUpdate = bindQuery(clazz, query, params);
         if (!containsUpdateOperator(query)) {
-            bindUpdate = "{'$set':" + bindUpdate + "}";
+            bindUpdate = new Document("$set", bindUpdate);
         }
         LOGGER.debug(bindUpdate);
         return bindUpdate;
@@ -445,10 +444,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
      * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
      * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
-    String bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
-        String bindUpdate = bindQuery(clazz, query, params);
+    Bson bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
+        Bson bindUpdate = bindQuery(clazz, query, params);
         if (!containsUpdateOperator(query)) {
-            bindUpdate = "{'$set':" + bindUpdate + "}";
+            bindUpdate = new Document("$set", bindUpdate);
         }
         LOGGER.debug(bindUpdate);
         return bindUpdate;
@@ -463,34 +462,26 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return false;
     }
 
-    String bindQuery(Class<?> clazz, String query, Object[] params) {
-        String bindQuery = null;
-
+    Bson bindQuery(Class<?> clazz, String query, Object[] params) {
         //determine the type of the query
         if (query.charAt(0) == '{') {
             //this is a native query
-            bindQuery = NativeQueryBinder.bindQuery(query, params);
+            return NativeQueryBinder.bindQuery(query, params);
         } else {
             //this is a PanacheQL query
-            bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
+            return PanacheQlQueryBinder.bindQuery(clazz, query, params);
         }
-
-        return bindQuery;
     }
 
-    String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
-        String bindQuery = null;
-
+    Bson bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
         //determine the type of the query
         if (query.charAt(0) == '{') {
             //this is a native query
-            bindQuery = NativeQueryBinder.bindQuery(query, params);
+            return NativeQueryBinder.bindQuery(query, params);
         } else {
             //this is a PanacheQL query
-            bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
+            return PanacheQlQueryBinder.bindQuery(clazz, query, params);
         }
-
-        return bindQuery;
     }
 
     public QueryType find(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -498,8 +489,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        Bson docQuery = Document.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         Bson docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, docQuery, docSort);
@@ -647,8 +637,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public Uni<Long> count(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.countDocuments(Panache.getCurrentSession(), docQuery);
@@ -657,8 +646,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public Uni<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.countDocuments(Panache.getCurrentSession(), docQuery);
@@ -697,8 +685,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.deleteMany(Panache.getCurrentSession(), docQuery).map(DeleteResult::getDeletedCount);
@@ -707,8 +694,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindFilter(entityClass, query, params);
-        BsonDocument docQuery = BsonDocument.parse(bindQuery);
+        Bson docQuery = bindFilter(entityClass, query, params);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         if (Panache.getCurrentSession() != null) {
             return collection.deleteMany(Panache.getCurrentSession(), docQuery).map(DeleteResult::getDeletedCount);
@@ -746,15 +732,13 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {
-        String bindUpdate = bindUpdate(entityClass, update, params);
-        Bson docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = bindUpdate(entityClass, update, params);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return createUpdate(collection, entityClass, docUpdate);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
-        String bindUpdate = bindUpdate(entityClass, update, params);
-        Bson docUpdate = Document.parse(bindUpdate);
+        Bson docUpdate = bindUpdate(entityClass, update, params);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return createUpdate(collection, entityClass, docUpdate);
     }

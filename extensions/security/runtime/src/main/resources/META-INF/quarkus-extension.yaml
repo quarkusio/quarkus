@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Security"
+description: "Core security framework providing authentication, authorization, and identity management"
 metadata:
   unlisted: true
   keywords:

@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -44,6 +43,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     private String nativeImagePath;
     private String configuredOutputDirectory;
     private Class<?> testClass;
+    private boolean pgoEnabled;
 
     private Process quarkusProcess;
     private final Map<String, String> systemProps = new HashMap<>();
@@ -62,6 +62,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         this.argLine = initContext.argLine();
         this.env = initContext.env();
         this.testClass = initContext.testClass();
+        this.pgoEnabled = initContext.pgoEnabled();
     }
 
     @Override
@@ -85,7 +86,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         start(new String[0], true);
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
@@ -93,7 +94,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         if (startedFunction != null) {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logRuntimeConfig.file().path().toPath());
-            return Optional.empty();
+            return ListeningAddresses.EMPTY;
         } else {
             return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
         }
@@ -126,6 +127,12 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         for (Map.Entry<String, String> e : systemProps.entrySet()) {
             args.add("-D" + e.getKey() + "=" + e.getValue());
         }
+        if (pgoEnabled) {
+            Path iprofFile = resolveIProfFile(nativeImagePath);
+            if (iprofFile != null) {
+                args.add("-XX:ProfilesDumpFile=" + iprofFile.toAbsolutePath());
+            }
+        }
         args.addAll(Arrays.asList(programArgs));
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
@@ -143,6 +150,14 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         } else {
             quarkusProcess = LauncherUtil.launchProcess(args, env);
         }
+    }
+
+    private Path resolveIProfFile(String path) {
+        Path parent = Path.of(path).getParent();
+        if (parent == null) {
+            return null;
+        }
+        return parent.resolve("default.iprof");
     }
 
     private void waitForStartedSupplier(Supplier<Boolean> startedSupplier, Process quarkusProcess, long waitTime) {
@@ -265,5 +280,13 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     @Override
     public void close() {
         LauncherUtil.destroyProcess(quarkusProcess);
+        if (pgoEnabled) {
+            Path iprofFile = resolveIProfFile(nativeImagePath);
+            if ((iprofFile != null) && Files.exists(iprofFile)) {
+                log.infof("PGO profile '%s' created", iprofFile.toAbsolutePath());
+            } else {
+                log.warn("PGO profile file not found after instrumented run");
+            }
+        }
     }
 }

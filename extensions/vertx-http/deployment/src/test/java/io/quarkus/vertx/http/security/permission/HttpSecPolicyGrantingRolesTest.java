@@ -26,7 +26,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.vertx.http.security.CustomPermission;
 import io.quarkus.vertx.http.security.CustomPermissionWithActions;
@@ -41,7 +41,7 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecPolicyGrantingRolesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
             .addClasses(TestIdentityController.class, TestIdentityProvider.class, RolesPathHandler.class,
                     CDIBean.class, CustomPermission.class, CustomPermissionWithActions.class, AuthenticatedUser.class,
                     AuthenticatedUserImpl.class)

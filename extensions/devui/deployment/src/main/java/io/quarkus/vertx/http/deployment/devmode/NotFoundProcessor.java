@@ -57,7 +57,7 @@ public class NotFoundProcessor {
         }
 
         // Static files
-        Set<String> staticRoots = applicationArchivesBuildItem.getAllApplicationArchives().stream()
+        Set<String> staticRoots = applicationArchivesBuildItem.getAllArchives().stream()
                 .map(i -> i.apply(t -> {
                     var p = t.getPath(META_INF_RESOURCES);
                     return p == null ? null : p.toAbsolutePath().toString();

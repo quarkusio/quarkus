@@ -44,7 +44,7 @@ public class HibernateSearchDevModeFailingOrmTest {
         config.modifyResourceFile(
                 "application.properties",
                 s -> APPLICATION_PROPERTIES + """
-                        quarkus.datasource.jdbc.min-size=20
+                        quarkus.datasource.jdbc.url=INCORRECT
                         """);
         RestAssured.when().put("/test/hibernate-search-outbox-polling/check-agents-running").then()
                 .statusCode(500);

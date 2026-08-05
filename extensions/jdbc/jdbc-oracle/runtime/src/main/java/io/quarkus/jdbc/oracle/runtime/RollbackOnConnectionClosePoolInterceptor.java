@@ -48,7 +48,7 @@ public class RollbackOnConnectionClosePoolInterceptor implements AgroalPoolInter
 
         try {
             if (connection.unwrap(Connection.class) instanceof OracleConnection oracleConnection) {
-                if (connection.isClosed() || connection.getAutoCommit()) {
+                if (oracleConnection.isClosed() || oracleConnection.getAutoCommit()) {
                     return;
                 }
 

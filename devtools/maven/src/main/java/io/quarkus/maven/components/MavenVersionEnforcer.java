@@ -37,17 +37,18 @@ public class MavenVersionEnforcer {
 
     private static Properties loadQuarkusProperties() throws IOException {
         final String resource = "quarkus.properties";
-        final InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
-        if (is == null) {
-            throw new IOException("Could not locate " + resource + " on the classpath");
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource)) {
+            if (is == null) {
+                throw new IOException("Could not locate " + resource + " on the classpath");
+            }
+            final Properties props = new Properties();
+            try {
+                props.load(is);
+            } catch (IOException e) {
+                throw new IOException("Failed to load " + resource + " from the classpath", e);
+            }
+            return props;
         }
-        final Properties props = new Properties();
-        try {
-            props.load(is);
-        } catch (IOException e) {
-            throw new IOException("Failed to load " + resource + " from the classpath", e);
-        }
-        return props;
     }
 
     /**

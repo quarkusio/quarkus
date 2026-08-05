@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.kotlin
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.websockets.next.test.utils.WSClient
 import io.vertx.core.Vertx
@@ -15,7 +15,7 @@ import java.net.URI
 class KotlinWebSocketTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
+        val test = QuarkusExtensionTest()
             .withApplicationRoot { jar ->
                 jar.addClasses(Echo::class.java, EchoSuspend::class.java, EchoUni::class.java,
                     BinaryEcho::class.java, BinaryEchoSuspend::class.java, BinaryEchoUni::class.java,

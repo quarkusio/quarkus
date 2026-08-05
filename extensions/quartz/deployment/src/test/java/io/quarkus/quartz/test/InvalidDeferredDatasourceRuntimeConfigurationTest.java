@@ -16,12 +16,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class InvalidDeferredDatasourceRuntimeConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             // add a mock pretending to provide Agroal Capability to pass our validation
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override

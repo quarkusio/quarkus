@@ -9,6 +9,7 @@ import java.util.Map;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
+import io.strimzi.test.container.StrimziKafkaCluster;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
@@ -18,7 +19,6 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
 
     protected String strimziKafkaContainerImage;
     protected Integer kafkaPort;
-    protected boolean kraft;
 
     protected StrimziKafkaContainer kafka;
     protected KafkaCompanion kafkaCompanion;
@@ -42,11 +42,11 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
     }
 
     protected StrimziKafkaContainer createContainer(String imageName) {
+        var builder = new StrimziKafkaCluster.StrimziKafkaClusterBuilder();
         if (imageName == null) {
-            return new StrimziKafkaContainer();
-        } else {
-            return new StrimziKafkaContainer(imageName);
+            return builder.build().getBrokers().stream().findFirst().get();
         }
+        return builder.withImage(imageName).build().getBrokers().stream().findFirst().get();
     }
 
     @Override
@@ -55,9 +55,7 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
             strimziKafkaContainerImage = initArgs.get(STRIMZI_KAFKA_IMAGE_KEY);
             String portString = initArgs.get(KAFKA_PORT_KEY);
             kafkaPort = portString == null ? null : Integer.parseInt(portString);
-            kafka = createContainer(strimziKafkaContainerImage)
-                    .withNodeId(1)
-                    .withBrokerId(1);
+            kafka = createContainer(strimziKafkaContainerImage);
             if (kafkaPort != null) {
                 kafka.withPort(kafkaPort);
             }

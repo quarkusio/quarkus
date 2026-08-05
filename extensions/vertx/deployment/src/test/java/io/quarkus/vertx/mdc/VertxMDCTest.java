@@ -33,14 +33,13 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 /*
 This test was mostly based on https://github.com/reactiverse/reactiverse-contextual-logging/blob/39e691d3a8fd78d19ee120cab8d8b38a4ef67813/src/test/java/io/reactiverse/contextual/logging/ContextualLoggingIT.java
@@ -50,7 +49,7 @@ public class VertxMDCTest {
     private static final Logger LOGGER = Logger.getLogger(VertxMDCTest.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(VerticleDeployer.class)
@@ -150,8 +149,7 @@ public class VertxMDCTest {
     private void sendRequests(List<String> ids, CountDownLatch done) {
         WebClient webClient = WebClient.create(vertx, new WebClientOptions().setDefaultPort(VERTICLE_PORT));
 
-        HttpRequest<Buffer> request = webClient.get("/")
-                .expect(ResponsePredicate.SC_OK);
+        HttpRequest<Buffer> request = webClient.get("/");
 
         List<? extends Future<?>> futures = ids.stream()
                 .map(id -> request.putHeader(REQUEST_ID_HEADER, id).send())

@@ -12,7 +12,7 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Annotate implementations of {@code org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback} to provide further
+ * Annotate implementations of {@link ElasticsearchClientConfigConfigurer} to provide further
  * configuration of injected Elasticsearch {@code RestClient} You may provide multiple implementations each annotated with
  * {@code ElasticsearchClientConfig} and configuration provided by each implementation will be applied in a randomly ordered
  * cascading manner
@@ -25,4 +25,5 @@ public @interface ElasticsearchClientConfig {
     class Literal extends AnnotationLiteral<ElasticsearchClientConfig> implements ElasticsearchClientConfig {
 
     }
+
 }

@@ -20,8 +20,8 @@
         },
         {
             "category": "Data3",
-            "timeout": 75,
-            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
+            "timeout": 80,
+            "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, hibernate-orm-temporal, liquibase, liquibase-mongodb",
             "os-name": "ubuntu-latest"
         },
         {
@@ -32,8 +32,8 @@
         },
         {
             "category": "Data5",
-            "timeout": 80,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb, hibernate-orm-spatial",
+            "timeout": 90,
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb, hibernate-orm-spatial, hibernate-orm-vector, agroal",
             "os-name": "ubuntu-latest"
         },
         {
@@ -81,7 +81,7 @@
         {
             "category": "Security2",
             "timeout": 75,
-            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services, oidc-spiffe",
             "os-name": "ubuntu-latest"
         },
         {
@@ -93,19 +93,25 @@
         {
             "category": "Cache",
             "timeout": 80,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache, cache-multiple-backends",
+            "test-modules": "hibernate-orm-cache, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache, cache-multiple-backends",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "HTTP",
             "timeout": 130,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools, smallrye-stork-consul-registration",
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools, smallrye-stork-consul-registration, http-3-rest, http-3-rest-client",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Native Transport",
+            "timeout": 55,
+            "test-modules": "vertx-native-transport/epoll, vertx-native-transport/nio-fallback, vertx-native-transport/native-transport-disabled",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc1",
-            "timeout": 70,
-            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator",
+            "timeout": 80,
+            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator, signals, signals-command-mode",
             "os-name": "ubuntu-latest"
         },
         {
@@ -123,19 +129,19 @@
         {
             "category": "Observability",
             "timeout": 130,
-            "test-modules": "micrometer-prometheus, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
+            "test-modules": "micrometer-prometheus, micrometer-prometheus-opentelemetry, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Spring",
             "timeout": 60,
-            "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest",
+            "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest, spring-tx",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "gRPC",
             "timeout": 80,
-            "test-modules": "grpc-health, grpc-encoding, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12, grpc-test-random-port",
+            "test-modules": "grpc-domain-socket, grpc-health, grpc-encoding, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-streaming-native, grpc-tls, grpc-tls-p12, grpc-test-random-port",
             "os-name": "ubuntu-latest"
         },
         {

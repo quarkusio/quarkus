@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -23,10 +24,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogManager;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -40,7 +37,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -55,22 +51,27 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.gizmo.Gizmo;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
+import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
+import io.quarkus.vertx.deployment.spi.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.impl.SysProps;
+import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
 import io.vertx.core.spi.VertxServiceProvider;
-import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
 
@@ -93,14 +94,15 @@ class VertxCoreProcessor {
                 ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(LateBoundMDCProvider.class.getName()).methods().fields().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("io.vertx.core.json.jackson.v3.JacksonCodec").methods(false).fields(false)
+                        .constructors(true).build());
         nativeImageResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.logmanager.MDCProvider"));
         return NativeImageConfigBuildItem.builder()
-                .addRuntimeInitializedClass("io.vertx.core.buffer.impl.VertxByteBufAllocator")
-                .addRuntimeInitializedClass("io.vertx.core.buffer.impl.PartialPooledByteBufAllocator")
-                .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
-                .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
-
-                .addNativeImageSystemProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true")
+                .addRuntimeInitializedClass("io.vertx.core.impl.buffer.VertxByteBufAllocator")
+                .addRuntimeInitializedClass("io.vertx.core.http.impl.tcp.VertxHttp2ClientUpgradeCodec")
+                .addRuntimeInitializedClass("io.vertx.core.file.FileSystemOptions")
+                .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true")
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())
                 .build();
@@ -115,97 +117,6 @@ class VertxCoreProcessor {
     @BuildStep
     LogCleanupFilterBuildItem cleanupVertxWarnings() {
         return new LogCleanupFilterBuildItem("io.vertx.core.impl.ContextImpl", "You have disabled TCCL checks");
-    }
-
-    @BuildStep
-    void overrideContextInternalInterfaceToAddSafeGuards(BuildProducer<BytecodeTransformerBuildItem> transformer) {
-        List<String> classes = List.of(
-                "io.vertx.core.impl.ContextInternal", "io.vertx.core.impl.AbstractContext");
-
-        for (String name : classes) {
-            if (QuarkusClassLoader.isClassPresentAtRuntime(name)) {
-                final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
-                        .setClassToTransform(name)
-                        .setCacheable(true)
-                        .setVisitorFunction(
-                                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                                    @Override
-                                    public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                            String signature,
-                                            String[] exceptions) {
-                                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature,
-                                                exceptions);
-
-                                        if (name.equals("get") || name.equals("put") || name.equals("remove")) {
-                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                                @Override
-                                                public void visitCode() {
-                                                    super.visitCode();
-                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                            VertxLocalsHelper.class.getName().replace('.', '/'),
-                                                            "throwOnRootContextAccess",
-                                                            "()V", false);
-                                                }
-                                            };
-                                        }
-
-                                        if (name.equals("getLocal")
-                                                && descriptor.equals("(Ljava/lang/Object;)Ljava/lang/Object;")) {
-                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                                @Override
-                                                public void visitCode() {
-                                                    super.visitCode();
-                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
-                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
-                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "getLocal",
-                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Ljava/lang/Object;",
-                                                            false);
-                                                    visitInsn(Opcodes.ARETURN);
-                                                }
-                                            };
-                                        }
-
-                                        if (name.equals("putLocal")
-                                                && descriptor.equals("(Ljava/lang/Object;Ljava/lang/Object;)V")) {
-                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                                @Override
-                                                public void visitCode() {
-                                                    super.visitCode();
-                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
-                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
-                                                    visitVarInsn(Opcodes.ALOAD, 2); // second param (object)
-                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "putLocal",
-                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;Ljava/lang/Object;)V",
-                                                            false);
-                                                    visitInsn(Opcodes.RETURN);
-                                                }
-                                            };
-                                        }
-
-                                        if (name.equals("removeLocal") && descriptor.equals("(Ljava/lang/Object;)Z")) {
-                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                                @Override
-                                                public void visitCode() {
-                                                    super.visitCode();
-                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
-                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
-                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "removeLocal",
-                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Z", false);
-                                                    visitInsn(Type.getType(Boolean.TYPE).getOpcode(Opcodes.IRETURN));
-                                                }
-                                            };
-                                        }
-
-                                        return visitor;
-                                    }
-                                })
-                        .build();
-                transformer.produce(transformation);
-            }
-        }
     }
 
     @BuildStep
@@ -238,26 +149,32 @@ class VertxCoreProcessor {
             VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
+            List<VertxBootstrapConsumerBuildItem> vertxBootstrapConsumers,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem,
-            MutinyRuntimeInitBuildItem mutinyRuntimeInitBuildItem) throws IOException, ClassNotFoundException {
+            MutinyRuntimeInitBuildItem barrier_mutinyRuntimeInitBuildItem) throws IOException, ClassNotFoundException {
 
         // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
         recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
-        List<Consumer<VertxOptions>> consumers = vertxOptionsConsumers.stream()
+        List<Consumer<VertxBootstrap>> bootstrapCustomizer = vertxBootstrapConsumers.stream()
                 .sorted()
+                .map(VertxBootstrapConsumerBuildItem::getConsumer)
+                .toList();
+
+        List<Consumer<VertxOptions>> optionsCustomizer = vertxOptionsConsumers.stream()
                 .map(VertxOptionsConsumerBuildItem::getConsumer)
                 .toList();
 
-        // resolve the services at build time
-        List<VertxServiceProvider> vertxServiceProviders = loadServices(VertxServiceProvider.class);
-        List<VerticleFactory> verticleFactories = loadServices(VerticleFactory.class);
+        // resolve the service class names at build time, they will be instantiated at runtime
+        List<String> vertxServiceProviderClassNames = loadServiceClassNames(VertxServiceProvider.class);
+        List<String> verticleFactoryClassNames = loadServiceClassNames(VerticleFactory.class);
 
-        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
-                vertxServiceProviders, verticleFactories, executorBuildItem.getExecutorProxy());
+        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, bootstrapCustomizer,
+                optionsCustomizer,
+                vertxServiceProviderClassNames, verticleFactoryClassNames, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
@@ -272,6 +189,46 @@ class VertxCoreProcessor {
             handleBlockingWarningsInDevOrTestMode();
         }
         return new CoreVertxBuildItem(vertx);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void detectNativeTransports(VertxBuildTimeConfig buildTimeConfig, VertxCoreRecorder recorder) {
+        Set<String> detected = new HashSet<>();
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
+            detected.add(NativeTransportType.EPOLL.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
+            detected.add(NativeTransportType.KQUEUE.transportName);
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            detected.add(NativeTransportType.IO_URING.transportName);
+        }
+
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        NativeTransportMode mode = buildTimeConfig.nativeTransport();
+        boolean preferNative = mode != NativeTransportMode.DISABLED || requestedType != NativeTransportType.AUTO;
+
+        if (requestedType != NativeTransportType.AUTO && !detected.contains(requestedType.transportName)) {
+            String msg = String.format(
+                    "Native transport '%s' was requested (quarkus.vertx.native-transport-type=%s) "
+                            + "but its dependency is not on the classpath. "
+                            + "See the Native Transport Reference guide for the required dependency.",
+                    requestedType.transportName, requestedType.name().toLowerCase().replace('_', '-'));
+            if (mode == NativeTransportMode.REQUIRED) {
+                throw new ConfigurationException(msg);
+            }
+            log.warn(msg);
+        } else if (preferNative && detected.isEmpty()) {
+            log.warn("Native transport was requested but no native transport dependency was found on the classpath. "
+                    + "The application will fall back to Java NIO. "
+                    + "See the Native Transport Reference guide for dependency information.");
+        } else if (!detected.isEmpty()) {
+            log.debugf("Detected native transport(s) on classpath: %s", detected);
+        }
+
+        recorder.setDetectedNativeTransports(detected);
     }
 
     @BuildStep
@@ -460,22 +417,15 @@ class VertxCoreProcessor {
         }
     }
 
-    private <T> List<T> loadServices(Class<T> serviceClass) throws IOException, ClassNotFoundException {
-        List<T> services = new ArrayList<>();
+    private List<String> loadServiceClassNames(Class<?> serviceClass) throws IOException, ClassNotFoundException {
+        List<String> serviceClassNames = new ArrayList<>();
         for (Class<?> serviceImplClass : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + serviceClass.getName())) {
             if (!QuarkusClassLoader.isClassPresentAtRuntime(serviceImplClass.getName())) {
                 continue;
             }
-            try {
-                services.add(serviceClass.cast(serviceImplClass.getDeclaredConstructor().newInstance()));
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "Failed to instantiate declared " + serviceClass.getSimpleName() + " class: "
-                                + serviceImplClass.getName(),
-                        e);
-            }
+            serviceClassNames.add(serviceImplClass.getName());
         }
-        return services;
+        return serviceClassNames;
     }
 }

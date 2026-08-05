@@ -21,6 +21,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
@@ -42,7 +43,8 @@ public class MSSQLDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            DevServicesConfig devServicesConfig) {
 
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
@@ -61,6 +63,12 @@ public class MSSQLDevServicesProcessor {
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
 
+                // Workaround for https://github.com/microsoft/mssql-docker/issues/954
+                // SQL Server 2025 crashes when the visible CPU count is not a power of 2.
+                int safeCpuCount = Integer.highestOneBit(Runtime.getRuntime().availableProcessors());
+                container.withCreateContainerCmdModifier(
+                        cmd -> cmd.getHostConfig().withCpusetCpus("0-" + (safeCpuCount - 1)));
+
                 String effectivePassword = containerConfig.getPassword()
                         .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
 
@@ -71,6 +79,13 @@ public class MSSQLDevServicesProcessor {
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 container.withEnv(containerConfig.getContainerEnv());
+
+                String effectiveImageName = containerConfig.getImageName()
+                        .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql"));
+                if (devServicesConfig.licenseAcceptance()
+                        .map(images -> images.contains(effectiveImageName)).orElse(false)) {
+                    container.addEnv("ACCEPT_EULA", "Y");
+                }
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
@@ -114,7 +129,19 @@ public class MSSQLDevServicesProcessor {
 
         @Override
         protected void configure() {
-            super.configure();
+            try {
+                super.configure();
+            } catch (IllegalStateException e) {
+                if (e.getMessage() != null && e.getMessage().contains("license agreement")) {
+                    throw new IllegalStateException(
+                            "The container image " + getDockerImageName()
+                                    + " requires you to accept a license agreement."
+                                    + " To accept, add the following to your Quarkus configuration:"
+                                    + " quarkus.devservices.license-acceptance=" + getDockerImageName(),
+                            e);
+                }
+                throw e;
+            }
 
             if (useSharedNetwork) {
                 return;

@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.*;
 
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 

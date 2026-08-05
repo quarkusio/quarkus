@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
@@ -20,14 +20,13 @@ import io.vertx.ext.web.RoutingContext;
 public class CompletionStageRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
     public void testCsRoute() {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-buffer").then().statusCode(200).body(is("Buffer"));
-        when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
         when().get("/person").then().statusCode(200)
                 .body("name", is("neo"))
@@ -57,11 +56,6 @@ public class CompletionStageRouteTest {
         @Route(path = "hello-buffer")
         CompletionStage<Buffer> helloWithBuffer(RoutingContext context) {
             return CompletableFuture.completedFuture(Buffer.buffer("Buffer"));
-        }
-
-        @Route(path = "hello-mutiny-buffer")
-        CompletionStage<io.vertx.mutiny.core.buffer.Buffer> helloWithMutinyBuffer(RoutingContext context) {
-            return CompletableFuture.completedFuture(io.vertx.mutiny.core.buffer.Buffer.buffer("Mutiny Buffer"));
         }
 
         @Route(path = "failure")

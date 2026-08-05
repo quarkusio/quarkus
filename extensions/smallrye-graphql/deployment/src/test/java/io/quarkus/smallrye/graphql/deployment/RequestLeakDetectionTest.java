@@ -21,9 +21,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ResponseBody;
+import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -32,7 +33,7 @@ import io.vertx.core.Vertx;
 public class RequestLeakDetectionTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addClasses(RequestLeakDetectionTest.MyGraphQLApi.class, MyRequestScopeBean.class, Barrier.class, Task.class)
             .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -84,13 +85,13 @@ public class RequestLeakDetectionTest extends AbstractGraphQLTest {
         @Query
         public Uni<Foo> foo(int val) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            Vertx.currentContext().putLocal("count", val);
+            ContextLocals.put("count", val);
             bean.setValue(val);
 
             return Uni.createFrom().<Integer> emitter(e -> {
                 barrier.enqueue(Vertx.currentContext(), () -> {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                    int r = Vertx.currentContext().getLocal("count");
+                    int r = ContextLocals.get("count", -1);
                     Assertions.assertEquals(r, val);
                     e.complete(bean.getValue());
                 });
@@ -99,7 +100,7 @@ public class RequestLeakDetectionTest extends AbstractGraphQLTest {
 
         public Foo nested(@Source Foo foo) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            int r = Vertx.currentContext().getLocal("count");
+            int r = ContextLocals.get("count", -1);
             String rAsString = Integer.toString(r);
             Assertions.assertEquals(rAsString, foo.value);
             Assertions.assertEquals(bean.getValue(), r);
@@ -108,7 +109,7 @@ public class RequestLeakDetectionTest extends AbstractGraphQLTest {
 
         public Uni<Foo> nestedUni(@Source Foo foo) {
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-            int r = Vertx.currentContext().getLocal("count");
+            int r = ContextLocals.get("count", -1);
             String rAsString = Integer.toString(r);
             Assertions.assertEquals(rAsString, foo.value);
             Assertions.assertEquals(bean.getValue(), r);

@@ -2,7 +2,7 @@ package io.quarkus.oidc.common;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 /**

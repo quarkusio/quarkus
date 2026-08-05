@@ -87,6 +87,10 @@ public final class MtlsAuthenticationMechanism implements HttpAuthenticationMech
             return Uni.createFrom().nullItem();
         }
 
+        if (request.sslSession() == null) { // can happen when Quarkus communicates with a trusted proxy over HTTP protocol
+            return Uni.createFrom().nullItem();
+        }
+
         Certificate certificate;
 
         try {

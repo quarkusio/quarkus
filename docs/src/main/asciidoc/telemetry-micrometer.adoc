@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Micrometer Metrics
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: observability
 :summary: Use Micrometer to collect metrics produced by Quarkus, its extensions, and your application.
 :base-units: https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/BaseUnits.java
 :concepts: https://docs.micrometer.io/micrometer/reference/concepts
@@ -24,6 +23,8 @@ IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 NOTE: By default, the metrics are exposed on the main HTTP server.
 If you would like to surface metrics from a separate management port, see the <<management-interface,Managed interface>> section.
 
+NOTE: `quarkus-micrometer` now uses the Prometheus client v1.x. For help migrating from the old client, please check the https://github.com/micrometer-metrics/micrometer/wiki/1.13-Migration-Guide[Prometheus Java client 0.x to 1.x upgrade]  from Micrometer.
+
 == Micrometer and monitoring system extensions
 
 Quarkus Micrometer extensions are structured in the same way as the Micrometer project.
@@ -33,7 +34,7 @@ Other Quarkus and Quarkiverse extensions use the Quarkus Micrometer extension to
 Quarkus extensions:
 
 - micrometer
-- micrometer-registry-prometheus
+- micrometer-registry-prometheus (Prometheus client v1.x)
 - micrometer-opentelemetry
 
 link:https://github.com/quarkiverse/quarkus-micrometer-registry[Quarkiverse extensions] (may be incomplete):
@@ -180,7 +181,7 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
 <1> The method returns a `@Singleton`.
 <2> The method returns the specific type of `MeterRegistry`
 
-This example corresponds to the following instructions in the Micrometer documentation: link:https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink[Micrometer StatsD: Customizing the Metrics Sink]
+This example corresponds to the following instructions in the Micrometer documentation: link:https://docs.micrometer.io/micrometer/reference/implementations/statsD.html#_customizing_the_metrics_sink[Micrometer StatsD: Customizing the Metrics Sink]
 
 Use MicroProfile Config to inject any configuration attributes you need to configure the registry.
 Most Micrometer registry extensions, like `quarkus-micrometer-registry-statsd`, provide registry-specific configuration objects that are integrated with the Quarkus configuration model.
@@ -201,7 +202,7 @@ Micrometer applies naming conventions to convert registered meter names to match
 
 Given the following declaration of a timer: `registry.timer("http.server.requests")`, applied naming conventions will emit the following metrics for different monitoring systems:
 
-- Prometheus: `http_server_requests_duration_seconds`
+- Prometheus: `http_server_requests_seconds`
 - Atlas: `httpServerRequests`
 - Graphite: `http.server.requests`
 - InfluxDB: `http_server_requests`
@@ -771,7 +772,6 @@ public class CustomConfiguration {
                 if(id.getName().startsWith("myservice")) {
                     return DistributionStatisticConfig.builder()
                         .percentiles(0.5, 0.95)     // median and 95th percentile, not aggregable
-                        .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
                         .build()
                         .merge(config);
                 }
@@ -788,7 +788,7 @@ Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifi
 to all `MeterRegistry` instances.
 An application configuration property is also injected and used as a tag value.
 Additional examples of MeterFilters can be found in the
-link:https://micrometer.io/docs/concepts[official documentation].
+link:https://docs.micrometer.io/micrometer/reference/concepts.html[official documentation].
 
 === Use `HttpServerMetricsTagsContributor` for server HTTP requests
 

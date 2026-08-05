@@ -22,11 +22,4 @@ class SmartPackageFileStrategyHandlerTest {
                         "package my.kotlin.app.qute\n\nimport my.kotlin.app.qute.Something\nimport jakarta.ws.rs.core.MediaType\n");
     }
 
-    @Test
-    void testRefactorScala() {
-        assertThat(SmartPackageFileStrategyHandler.refactorPackage(
-                "package org.acme.qute\n\nimport org.acme.qute.Something\nimport org.acme.qute.\\{GET, Path, Produces}\nimport jakarta.ws.rs.core.MediaType\n",
-                "my.scala.app")).isEqualTo(
-                        "package my.scala.app.qute\n\nimport my.scala.app.qute.Something\nimport my.scala.app.qute.\\{GET, Path, Produces}\nimport jakarta.ws.rs.core.MediaType\n");
-    }
 }

@@ -1,21 +1,26 @@
 package io.quarkus.oidc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.List;
+import java.util.logging.LogRecord;
+import java.util.stream.Collectors;
 
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
 import org.htmlunit.WebClient;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
@@ -29,10 +34,12 @@ public class CodeTenantReauthenticateTestCase {
     };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
-                    .addAsResource("application-tenant-reauthenticate.properties", "application.properties"));
+                    .addAsResource("application-tenant-reauthenticate.properties", "application.properties"))
+            .setLogRecordPredicate(r -> true)
+            .assertLogRecords(r -> assertLogRecord(r));
 
     @Test
     public void testDefaultTenant() throws Exception {
@@ -170,5 +177,11 @@ public class CodeTenantReauthenticateTestCase {
         String sessionCookie = "q_session" + (tenantId == null ? "" : "_" + tenantId);
 
         return webClient.getCookieManager().getCookie(sessionCookie);
+    }
+
+    private static void assertLogRecord(List<LogRecord> records) {
+        List<LogRecord> userInfoRecords = records.stream()
+                .filter(r -> r.getMessage().contains("UserInfo request succeeded")).collect(Collectors.toList());
+        assertFalse(userInfoRecords.isEmpty());
     }
 }

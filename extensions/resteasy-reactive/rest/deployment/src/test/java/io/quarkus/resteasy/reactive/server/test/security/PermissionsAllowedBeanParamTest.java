@@ -14,14 +14,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
 
 public class PermissionsAllowedBeanParamTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, SimpleBeanParam.class,
                             SimpleResource.class, SimpleBeanParamPermission.class, MyPermission.class, MyBeanParam.class,

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quarkus.io/schemas/quarkus-extension-schema.json",
+  "title": "Quarkus Extension Descriptor (minimal)",
+  "description": "Minimal schema for META-INF/quarkus-extension.yaml focusing on validated core metadata fields.",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "stable",
+            "preview",
+            "experimental",
+            "deprecated"
+          ],
+          "description": "Maturity status. Must be a single string (not an array)."
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

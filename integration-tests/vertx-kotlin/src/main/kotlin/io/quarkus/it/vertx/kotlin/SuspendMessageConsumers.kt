@@ -1,6 +1,7 @@
 package io.quarkus.it.vertx.kotlin
 
 import io.quarkus.vertx.ConsumeEvent
+import io.vertx.core.MultiMap
 import jakarta.inject.Singleton
 import java.util.concurrent.CountDownLatch
 import kotlinx.coroutines.delay
@@ -40,14 +41,7 @@ class SuspendMessageConsumers {
     }
 
     @ConsumeEvent("suspend-headers-payload")
-    suspend fun headersPayload(headers: io.vertx.core.MultiMap, msg: String) {
-        delay(100)
-        message = "${headers["header"]} - $msg"
-        latch.countDown()
-    }
-
-    @ConsumeEvent("suspend-mutiny-headers-payload")
-    suspend fun mutinyHeadersPayload(headers: io.vertx.mutiny.core.MultiMap, msg: String) {
+    suspend fun headersPayload(headers: MultiMap, msg: String) {
         delay(100)
         message = "${headers["header"]} - $msg"
         latch.countDown()

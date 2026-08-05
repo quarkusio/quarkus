@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="maven-tooling"]
 = Quarkus and Maven
 include::_attributes.adoc[]
-:categories: tooling, native
 :summary: Develop and build your Quarkus application with Maven
 :devtools-no-gradle:
 :topics: maven,tooling
@@ -62,6 +61,10 @@ If you are using the Maven command, the following table lists the attributes you
 | `platformVersion`
 | The version currently recommended by the xref:extension-registry-user.adoc[Quarkus Extension Registry]
 | The version of the platform you want the project to use. It can also accept a version range, in which case the latest from the specified range will be used.
+
+| `stream`
+| _Not set_
+| A target platform stream, for example `3.15` or `io.quarkus.platform:3.15`. When specified, the extension registry client will be used to resolve the platform BOM corresponding to the given stream. Cannot be combined with `platformGroupId`, `platformArtifactId`, or `platformVersion`.
 
 | `javaVersion`
 | 17
@@ -519,17 +522,17 @@ Note that in this case the build itself runs in a Docker container too, so you d
 
 [TIP]
 ====
-By default, the native executable will be generated using the `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
+By default, the native executable will be generated using the `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
 
 If you want to build a native executable with a different Docker image (for instance to use a different GraalVM version),
 use the `-Dquarkus.native.builder-image=<image name>` build argument.
 
-The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io].
+The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi10-quarkus-mandrel-builder-image?tab=tags[quay.io].
 Be aware that a given Quarkus version might not be compatible with all the images available.
 
-Starting from Quarkus 3.19, the _builder_ image is based on UBI 9, and thus requires an UBI 9 base image if you want to run the native executable in a container.
-You can switch back to UBI 8, by setting the `quarkus.native.builder-image` property to one of the available image from the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
-For example ``quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}` is using UBI 8, and so the resulting native executable will be compatible with UBI 8 base images.
+The _builder_ image is based on UBI 10, and thus requires an UBI 10 base image if you want to run the native executable in a container.
+You can switch to an older UBI version by setting the `quarkus.native.builder-image` property to one of the available images from the https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 9)] or the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 8)].
+For example `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` is using UBI 9, and so the resulting native executable will be compatible with UBI 9 base images.
 
 ====
 
@@ -643,6 +646,8 @@ TIP: The `fast-jar` packaging results in creating an artifact that starts a litt
 because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
 on the classpath that the legacy jar necessitates, when loading a class or resource.
 
+TIP: You can reduce the size of the produced JAR by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
+
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
@@ -657,6 +662,8 @@ option, this takes a comma separated list of entries to ignore.
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
+
+TIP: You can reduce the size of the produced Uber-Jar by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
 
 ==== Uber-Jar file name suffix
 

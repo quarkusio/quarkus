@@ -1,6 +1,7 @@
 package io.quarkus.registry.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -159,6 +160,20 @@ public class RegistriesConfigLocatorTest {
 
         final RegistriesConfig completeConfig = serializeDeserialize(actualConfig);
         assertThat(completeConfig).isEqualTo(expectedConfig);
+    }
+
+    @Test
+    void testRegistryOfferingWithoutValueFromYamlThrows() {
+        assertThatThrownBy(() -> RegistriesConfigLocator.load(new StringReader("""
+                ---
+                registries:
+                - registry.acme.org:
+                    offering:
+                """)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("registry.acme.org")
+                .hasMessageContaining(Constants.OFFERING)
+                .hasMessageContaining("must not be empty");
     }
 
     @Test

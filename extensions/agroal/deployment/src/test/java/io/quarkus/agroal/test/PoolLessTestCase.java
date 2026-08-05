@@ -11,12 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PoolLessTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("base.properties")
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withConfigurationResource("base.properties")
             .overrideConfigKey("quarkus.datasource.jdbc.metrics.enabled", "true")
             .overrideConfigKey("quarkus.datasource.jdbc.pooling-enabled", "false");
 

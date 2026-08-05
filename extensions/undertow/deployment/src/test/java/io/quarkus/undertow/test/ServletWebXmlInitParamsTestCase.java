@@ -6,7 +6,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class ServletWebXmlInitParamsTestCase {
@@ -67,7 +67,7 @@ public class ServletWebXmlInitParamsTestCase {
             "</web-app>";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlInitParamsServlet.class, WebXmlInitParamsFilter.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));

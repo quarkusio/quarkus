@@ -13,12 +13,12 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LocalizedFileResourceBundleNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClass(Messages1.class)
                     .addAsResource(new StringAsset("{msg:hello}"), "templates/foo.html")
                     .addAsResource(new StringAsset("hello=Hello!"), "messages/msg_en_US.properties")

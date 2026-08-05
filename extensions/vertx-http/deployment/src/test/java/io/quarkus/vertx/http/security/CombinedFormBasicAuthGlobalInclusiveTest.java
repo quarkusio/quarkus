@@ -15,7 +15,7 @@ import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
@@ -27,7 +27,7 @@ import io.vertx.ext.web.RoutingContext;
 class CombinedFormBasicAuthGlobalInclusiveTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot(jar -> jar
             .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
                     PathHandler.class, CustomMechanism.class)
             .addAsResource(new StringAsset("""

@@ -33,6 +33,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
+import io.quarkus.vertx.http.deployment.spi.WebDependencyJarBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.webdependency.locator.runtime.WebDependencyLocatorRecorder;
 import io.vertx.core.Handler;
@@ -159,10 +160,30 @@ public class WebDependencyLocatorProcessor {
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<ImportMapBuildItem> im,
             CurateOutcomeBuildItem curateOutcome,
+            List<WebDependencyJarBuildItem> webDependencyJars,
             WebDependencyLocatorRecorder recorder) throws Exception {
 
         LibInfo webjarsLibInfo = getLibInfo(curateOutcome, WEBJARS_PREFIX, WEBJARS_NAME);
         LibInfo mvnpmNameLibInfo = getLibInfo(curateOutcome, MVNPM_PREFIX, MVNPM_NAME);
+
+        // Merge extension-declared web dependency JARs into mvnpm discovery
+        Map<String, String> directImportMappings = new HashMap<>();
+        if (!webDependencyJars.isEmpty()) {
+            if (mvnpmNameLibInfo == null) {
+                mvnpmNameLibInfo = new LibInfo(new HashMap<>(), new HashSet<>());
+            }
+            for (WebDependencyJarBuildItem webDep : webDependencyJars) {
+                if (!webDep.getImportMappings().isEmpty()) {
+                    directImportMappings.putAll(webDep.getImportMappings());
+                } else {
+                    try {
+                        mvnpmNameLibInfo.jars.add(webDep.getJarPath().toUri().toURL());
+                    } catch (MalformedURLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+        }
 
         if (webjarsLibInfo != null || mvnpmNameLibInfo != null) {
 
@@ -179,6 +200,9 @@ public class WebDependencyLocatorProcessor {
                 }
                 // Also create a importmap endpoint
                 Aggregator aggregator = new Aggregator(mvnpmNameLibInfo.jars);
+                if (!directImportMappings.isEmpty()) {
+                    aggregator.addMappings(directImportMappings);
+                }
                 Map<String, String> importMappings = config.importMappings();
                 if (!importMappings.containsKey(config.appRoot() + SLASH)) {
                     // Add default for app/

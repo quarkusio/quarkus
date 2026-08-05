@@ -24,6 +24,7 @@
         <module>rest-qute</module>
         <module>rest-servlet</module>
         <module>rest-links</module>
+        <module>rest-data-hibernate-json-types</module>
         <module>rest-kotlin</module>
         <module>rest-kotlin-serialization-common</module>
         <module>rest-kotlin-serialization</module>

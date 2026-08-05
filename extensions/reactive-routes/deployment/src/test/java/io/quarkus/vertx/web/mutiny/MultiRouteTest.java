@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
@@ -17,7 +17,7 @@ import io.vertx.ext.web.RoutingContext;
 public class MultiRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
@@ -38,8 +38,6 @@ public class MultiRouteTest {
                 .header("content-type", is(nullValue()));
         when().get("/buffers").then().statusCode(200).body(is("Buffer Buffer Buffer."));
         when().get("/buffers-and-fail").then().statusCode(200).body(containsString("Buffer"));
-
-        when().get("/mutiny-buffer").then().statusCode(200).body(is("BufferBuffer"));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
@@ -97,12 +95,6 @@ public class MultiRouteTest {
                             Buffer.buffer(" Buffer.")),
                     Multi.createFrom().failure(new IOException("boom")));
 
-        }
-
-        @Route(path = "mutiny-buffer")
-        Multi<io.vertx.mutiny.core.buffer.Buffer> bufferMutiny(RoutingContext context) {
-            return Multi.createFrom().items(io.vertx.mutiny.core.buffer.Buffer.buffer("Buffer"),
-                    io.vertx.mutiny.core.buffer.Buffer.buffer("Buffer"));
         }
 
         @Route(path = "void")

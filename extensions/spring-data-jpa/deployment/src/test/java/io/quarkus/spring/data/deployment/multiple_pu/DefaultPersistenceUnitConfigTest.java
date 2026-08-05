@@ -8,13 +8,13 @@ import io.quarkus.spring.data.deployment.multiple_pu.first.FirstEntity;
 import io.quarkus.spring.data.deployment.multiple_pu.first.FirstEntityRepository;
 import io.quarkus.spring.data.deployment.multiple_pu.second.SecondEntity;
 import io.quarkus.spring.data.deployment.multiple_pu.second.SecondEntityRepository;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class DefaultPersistenceUnitConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FirstEntity.class, SecondEntity.class,
                             FirstEntityRepository.class, SecondEntityRepository.class,

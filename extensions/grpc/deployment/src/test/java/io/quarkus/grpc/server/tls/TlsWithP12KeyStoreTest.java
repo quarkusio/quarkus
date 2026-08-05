@@ -20,7 +20,7 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -31,13 +31,12 @@ import io.smallrye.certs.junit5.Certificates;
 public class TlsWithP12KeyStoreTest {
 
     static String configuration = """
-            quarkus.grpc.server.ssl.key-store=target/certs/grpc-keystore.p12
-            quarkus.grpc.server.ssl.key-store-password=password
-            quarkus.grpc.server.alpn=true
+            quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-keystore.p12
+            quarkus.http.ssl.certificate.key-store-password=password
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClass(HelloService.class)
@@ -51,7 +50,7 @@ public class TlsWithP12KeyStoreTest {
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(certs)
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .useTransportSecurity()
                 .build();

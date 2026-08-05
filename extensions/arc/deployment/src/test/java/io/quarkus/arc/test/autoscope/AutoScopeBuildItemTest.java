@@ -21,12 +21,12 @@ import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AutoScopeBuildItemTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(SimpleBean.class))
             .addBuildChainCustomizer(b -> {

@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,12 +18,13 @@ import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
 public class KnativeTest {
-
+    private static final String VERSION = "0.1-SNAPSHOT";
+    public static final String APPLICATION_NAME = "knative";
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("knative")
-            .setApplicationVersion("0.1-SNAPSHOT")
+            .setApplicationName(APPLICATION_NAME)
+            .setApplicationVersion(VERSION)
             .withConfigurationResource("knative.properties");
 
     @ProdBuildResults
@@ -44,6 +47,12 @@ public class KnativeTest {
                     assertThat(s.getMetadata()).satisfies(m -> {
                         assertThat(m.getNamespace()).isNull();
                         assertThat(m.getAnnotations().get("app.quarkus.io/quarkus-version")).isNotBlank();
+                        final var labels = m.getLabels();
+                        final var expected = new TreeMap(Map.of("app.kubernetes.io/managed-by", "quarkus",
+                                "app.kubernetes.io/name", APPLICATION_NAME,
+                                "app.kubernetes.io/version", VERSION));
+                        assertThat(labels).isEqualTo(expected);
+
                     });
 
                     assertThat(spec.getTemplate()).satisfies(template -> {

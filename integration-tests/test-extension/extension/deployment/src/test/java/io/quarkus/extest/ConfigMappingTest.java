@@ -11,11 +11,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
 import io.quarkus.extest.runtime.config.TestMappingRunTime;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigMappingTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application.properties"));
 

@@ -12,12 +12,12 @@ import io.quarkus.qute.Locate;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BlankLocateValueTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(CustomLocator.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);

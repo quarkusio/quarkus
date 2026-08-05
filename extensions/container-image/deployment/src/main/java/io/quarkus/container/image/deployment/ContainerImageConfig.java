@@ -88,6 +88,18 @@ public interface ContainerImageConfig {
      */
     Optional<String> builder();
 
+    /**
+     * The suffix to be used to create a new container image when an AOT file has been created.
+     * When this value is empty, Quarkus will interpret this as a request to not create a separate
+     * container image, but instead will just re-create the original one with the AOT file included
+     */
+    @WithDefault("-aot")
+    Optional<String> aotImageSuffix();
+
+    default String effectiveAotImageSuffix() {
+        return aotImageSuffix().orElse("").strip();
+    }
+
     default boolean isBuildExplicitlyEnabled() {
         return build().isPresent() && build().get();
     }

@@ -32,13 +32,14 @@ public class GeneratedStaticResourcesDevModeTest {
                 .statusCode(200)
                 .body(Matchers.containsString("This is the title of the webpage!"));
 
-        devMode.modifyResourceFile("META-INF/generated-resources-test/bytes/index.html", s -> s.replace("webpage", "Matheus"));
+        devMode.modifyResourceFile("META-INF/generated-resources-test/bytes/index.html",
+                s -> s.replace("webpage", "lorem ipsum"));
 
         RestAssured.given()
                 .get("/bytes/")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("This is the title of the Matheus!"));
+                .body(Matchers.containsString("This is the title of the lorem ipsum!"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.quarkus.jdbc.mysql.runtime;
 
+import java.time.Duration;
 import java.util.Map;
 
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -22,4 +23,20 @@ public class MySQLAgroalConnectionConfigurer implements AgroalConnectionConfigur
         dataSourceConfiguration.connectionPoolConfiguration().exceptionSorter(new MySQLExceptionSorter());
     }
 
+    @Override
+    public void setKeepAlive(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, boolean keepAlive) {
+        // The MySQL JDBC driver has its own keep-alive mechanism that can be enabled via a JDBC property
+        // https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-networking.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("tcpKeepAlive", Boolean.toString(keepAlive));
+    }
+
+    @Override
+    public void setReadTimeout(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, Duration timeout) {
+        // https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-networking.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("socketTimeout", Long.toString(timeout.toMillis()));
+    }
 }

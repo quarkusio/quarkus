@@ -46,6 +46,7 @@ quarkus-my-quarkiverse-ext/docs/modules/ROOT/examples/
 quarkus-my-quarkiverse-ext/docs/modules/ROOT/examples/.keepme
 quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc
 quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/
+quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/config-reference.adoc
 quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/index.adoc
 quarkus-my-quarkiverse-ext/docs/pom.xml
 quarkus-my-quarkiverse-ext/docs/templates/

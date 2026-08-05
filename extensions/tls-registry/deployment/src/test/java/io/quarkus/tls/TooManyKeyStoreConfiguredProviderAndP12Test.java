@@ -11,9 +11,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.KeyStoreProvider;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -30,13 +28,14 @@ public class TooManyKeyStoreConfiguredProviderAndP12Test {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestKeyStoreProvider.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t)
-                        .hasMessageContaining("cannot be configured with a provider and PEM or PKCS12 or JKS at the same time");
+                        .hasMessageContaining(
+                                "cannot be configured with a provider and PEM, PKCS12, JKS, or other at the same time");
             });
 
     @Test

@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.fabric8.knative.serving.v1.Service;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
@@ -53,13 +54,36 @@ public class KnativeWithExistingDeploymentResourceTest {
                 .singleElement()
                 .satisfies(e -> {
                     assertThat(e).isInstanceOfSatisfying(Deployment.class, deployment -> {
-                        assertThat(deployment.getSpec().getTemplate().getSpec().getContainers()).allSatisfy(container -> {
-                            assertThat(container.getLivenessProbe().getHttpGet().getPort().getIntVal()).isEqualTo(8080);
-                            assertThat(container.getReadinessProbe().getHttpGet().getPort().getIntVal()).isEqualTo(8080);
+                        assertThat(deployment.getSpec().getTemplate().getSpec().getContainers())
+                                .singleElement()
+                                .satisfies(container -> {
+                                    assertThat(container.getLivenessProbe().getHttpGet().getPort().getIntVal()).isEqualTo(8080);
+                                    assertThat(container.getReadinessProbe().getHttpGet().getPort().getIntVal())
+                                            .isEqualTo(8080);
 
-                            assertThat(container.getResources().getRequests().get("memory").getAmount()).isEqualTo("128");
-                            assertThat(container.getResources().getLimits().get("memory").getAmount()).isEqualTo("768");
-                        });
+                                    final var resources = container.getResources();
+                                    assertThat(resources.getRequests().get("memory").getAmount())
+                                            .isEqualTo("128");
+                                    assertThat(resources.getLimits().get("memory").getAmount()).isEqualTo("768");
+                                });
+                    });
+                });
+
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())
+                && APP_NAME.equals(i.getMetadata().getName()))
+                .singleElement()
+                .satisfies(e -> {
+                    assertThat(e).isInstanceOfSatisfying(Service.class, service -> {
+                        final var template = service.getSpec().getTemplate();
+                        assertThat(template.getMetadata()).isNull();
+                        assertThat(template.getSpec().getContainers())
+                                .singleElement()
+                                .satisfies(container -> {
+                                    final var resources = container.getResources();
+                                    assertThat(resources.getRequests().get("memory").getAmount())
+                                            .isEqualTo("256");
+                                    assertThat(resources.getLimits().get("memory").getAmount()).isEqualTo("768");
+                                });
                     });
                 });
     }

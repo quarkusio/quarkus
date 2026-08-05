@@ -1,29 +1,31 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.Map;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 
-import io.smallrye.config.WithDefault;
-
-public interface ConfigMapVolumeConfig {
+public interface ConfigMapVolumeConfig extends VolumeConfig {
     /**
      * The name of the ConfigMap to mount.
      */
     String configMapName();
 
-    /**
-     * Default mode. When specifying an octal number, leading zero must be present.
-     */
-    @WithDefault("0600")
-    String defaultMode();
+    default Volume toVolume(String name) {
+        final var volume = new VolumeBuilder()
+                .withName(name)
+                .withNewConfigMap();
+        items().forEach((k, v) -> {
+            final var item = volume.addNewItem().withKey(k).withPath(v.path());
+            if (v.hasExplicitMode()) {
+                item.withMode(v.mode());
+            }
+            item.endItem();
+        });
 
-    /**
-     * The list of files to be mounted.
-     */
-    Map<String, VolumeItemConfig> items();
-
-    /**
-     * Optional
-     */
-    @WithDefault("false")
-    boolean optional();
+        return volume
+                .withName(configMapName())
+                .withDefaultMode(FilePermissionUtil.parseInt(defaultMode()))
+                .withOptional(optional())
+                .endConfigMap()
+                .build();
+    }
 }

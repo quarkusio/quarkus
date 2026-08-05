@@ -16,13 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.annotations.StaticInitSafe;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.common.MapBackedConfigSource;
 
 public class ProviderConfigInjectionTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot(
             jar -> jar.addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
                     StaticConfigSource.class.getName(), RuntimeConfigSource.class.getName()));
 

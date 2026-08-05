@@ -111,7 +111,7 @@ public class OidcTokenCredentialProducer {
         if (codeFlowAccessTokenResult == null) {
             return tokenIntrospectionFromIdentityAttribute();
         } else {
-            return tokenIntrospectionInstance(codeFlowAccessTokenResult.introspectionResult);
+            return tokenIntrospectionInstance(codeFlowAccessTokenResult.introspectionResult());
         }
     }
 

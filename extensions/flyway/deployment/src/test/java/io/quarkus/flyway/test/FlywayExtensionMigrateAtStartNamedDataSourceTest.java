@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.flyway.FlywayDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Same as {@link FlywayExtensionMigrateAtStartTest} for named datasources.
@@ -24,7 +24,7 @@ public class FlywayExtensionMigrateAtStartNamedDataSourceTest {
     Flyway flywayUsers;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("migrate-at-start-config-named-datasource.properties", "application.properties"));

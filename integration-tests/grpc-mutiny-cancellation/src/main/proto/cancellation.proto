@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "examples";
+
+package cancellation;
+
+service TestService {
+  rpc OneToOne (google.protobuf.Empty) returns (Item) {}
+  rpc OneToMany (google.protobuf.Empty) returns (stream Item) {}
+  rpc ManyToOne (stream Item) returns (Item) {}
+  rpc ManyToMany (stream Item) returns (stream Item) {}
+
+  // used to report request status events from the server to the client
+  rpc readStatus(google.protobuf.Empty) returns (stream StatusResponse) {}
+}
+
+message Item {
+  int32 value = 1;
+}
+
+message StatusResponse {
+  enum Status {
+    UNSPECIFIED = 0;
+    READY = 1;
+    SUBSCRIBED = 2;
+    CANCELLED = 3;
+  }
+  Status status = 1;
+}

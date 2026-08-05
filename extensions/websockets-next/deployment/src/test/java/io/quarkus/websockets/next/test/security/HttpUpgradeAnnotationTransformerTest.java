@@ -18,7 +18,7 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -28,7 +28,7 @@ import io.quarkus.websockets.next.test.utils.WSClient;
 public class HttpUpgradeAnnotationTransformerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, WSClient.class, SecurityTestUtils.class, IdentityMock.class,
                             CdiBeanSecurity.class, AdminEndpoint.class));

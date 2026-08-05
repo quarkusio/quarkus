@@ -34,13 +34,13 @@ public class MethodKeyTest {
         List<MethodKey> keys = Arrays.asList(hasName, getList3, getList2, getList1, isActive, getName);
         Collections.sort(keys);
         assertEquals("getList", keys.get(0).name);
-        assertEquals(1, keys.get(0).params.size());
-        assertEquals("int", keys.get(0).params.get(0).toString());
+        assertEquals(2, keys.get(0).params.size());
         assertEquals("getList", keys.get(1).name);
         assertEquals(1, keys.get(1).params.size());
-        assertEquals("java.lang.String", keys.get(1).params.get(0).toString());
+        assertEquals("int", keys.get(1).params.get(0).toString());
         assertEquals("getList", keys.get(2).name);
-        assertEquals(2, keys.get(2).params.size());
+        assertEquals(1, keys.get(2).params.size());
+        assertEquals("java.lang.String", keys.get(2).params.get(0).toString());
         assertEquals("getName", keys.get(3).name);
         assertEquals("hasName", keys.get(4).name);
         assertEquals("isActive", keys.get(5).name);

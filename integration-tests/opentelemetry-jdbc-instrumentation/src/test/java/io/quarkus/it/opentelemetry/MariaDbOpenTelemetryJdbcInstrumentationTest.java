@@ -14,4 +14,9 @@ public class MariaDbOpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJd
         testQueryTraced("mariadb", "MariaDbHit");
     }
 
+    @Test
+    void testMariaDbConnectionNotTraced() {
+        testConnectionNotTraced("mariadb");
+    }
+
 }

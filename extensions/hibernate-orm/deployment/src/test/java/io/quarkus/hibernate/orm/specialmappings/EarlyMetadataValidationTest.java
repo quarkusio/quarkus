@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.specialmappings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * The particular model used in this test requires access to the ProxyFactoryFactory service
@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EarlyMetadataValidationTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest TEST = new QuarkusUnitTest()
+    final static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DataIdentity.class, IdVersionPK.class, NormalPointEntity.class, PointEntity.class)
                     .addAsResource("application.properties"));

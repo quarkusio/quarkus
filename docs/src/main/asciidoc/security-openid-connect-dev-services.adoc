@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services and Dev UI for OpenID Connect (OIDC)
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: security
 :keywords: sso oidc security keycloak
 :topics: security,oidc,keycloak,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-oidc
@@ -309,6 +308,36 @@ quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/
 Policy jars can also be located in the file system.
 <2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
+== Disable HTTPS
+
+In some cases, you might see Keycloak `HTTPS required` errors that cause either Keycloak startup or communication failures.
+
+You might be facing a Docker issue that mainly affects MacOS users attempting to use Keycloak locally where the ports do not automatically bind to `localhost`.
+
+The easiest option to resolve it is to disable HTTPS with a `quarkus.keycloak.devservices.disable-https=true` property.
+It runs the following Keycloak admin command inside your Keycloak container everytime it restarts:
+
+[source,bash]
+----
+kcadm.sh update realms/master -s sslRequired=NONE
+----
+
+Another approach is to provide a localhost with port bindings configuration.
+
+A common solution is to update your `docker-compose` file to use a private IPv4 address, such as `localhost`.
+For example:
+
+[source,yaml]
+----
+    ports:
+      - "127.0.0.1:8081:8080"
+----
+
+Alternatively, you can change the default behaviour within MacOS Docker Desktop to use `localhost` when binding ports.
+Inside the Docker Desktop, go to `Settings > Resources > Network > Port Binding Behaviour` and change it to `localhost by default`.
+Be aware that this change is applied to all docker containers, and may have unforeseen side affects.
+Update to the latest version of Docker if you do not see this Docker Desktop option.
+
 == Disable Dev Services for Keycloak
 
 Dev Services for Keycloak is not activated if either `quarkus.oidc.auth-server-url` is already initialized or the default OIDC tenant is disabled with `quarkus.oidc.tenant.enabled=false`, regardless of whether you work with Keycloak or not.
@@ -439,10 +468,17 @@ Whichever user you choose, no password is required.
 
 == Configuration reference
 
+=== Keycloak Dev Services
+
 include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+
+=== OIDC Dev Services
+
+include::{generated-dir}/config/quarkus-devservices-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
 
 == References
 
+* xref:dev-services.adoc[Dev Services Overview]
 * xref:dev-ui.adoc[Dev UI]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]

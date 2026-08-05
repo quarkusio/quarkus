@@ -22,8 +22,8 @@ public class ValidateExtensionTaskTest {
 
     @Test
     public void shouldValidateExtensionDependencies() throws IOException {
-        TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-core"),
-                List.of("io.quarkus:quarkus-core-deployment"));
+        TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-jdbc-h2"),
+                List.of("io.quarkus:quarkus-jdbc-h2-deployment"));
 
         BuildResult validationResult = GradleRunner.create()
                 .withPluginClasspath()
@@ -36,7 +36,7 @@ public class ValidateExtensionTaskTest {
     }
 
     @Test
-    public void shouldDetectMissionExtensionDependency() throws IOException {
+    public void shouldDetectMissingExtensionDependency() throws IOException {
         TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-jdbc-h2"), List.of());
 
         BuildResult validationResult = GradleRunner.create()
@@ -85,5 +85,44 @@ public class ValidateExtensionTaskTest {
 
         assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SKIPPED);
+    }
+
+    @Test
+    public void shouldValidateExtensionWithParallelExecution() throws IOException {
+        TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-jdbc-h2"),
+                List.of("io.quarkus:quarkus-jdbc-h2-deployment"));
+
+        BuildResult validationResult = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME, "--parallel")
+                .build();
+
+        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.SUCCESS);
+
+        // Verify no unsafe configuration resolution errors in output
+        assertThat(validationResult.getOutput())
+                .doesNotContain("was attempted without an exclusive lock");
+    }
+
+    @Test
+    public void shouldDetectInvalidRuntimeDependencyWithParallelExecution() throws IOException {
+        TestUtils.createExtensionProject(testProjectDir, false,
+                List.of("io.quarkus:quarkus-jdbc-h2", "io.quarkus:quarkus-jdbc-h2-deployment"),
+                List.of());
+
+        BuildResult validationResult = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME, "--parallel")
+                .buildAndFail();
+
+        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.FAILED);
+        assertThat(validationResult.getOutput()).contains("Quarkus Extension Dependency Verification Error");
+        assertThat(validationResult.getOutput())
+                .contains("The following deployment artifact(s) appear on the runtime classpath:");
+        assertThat(validationResult.getOutput()).contains("- io.quarkus:quarkus-core-deployment");
     }
 }

@@ -18,12 +18,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporter;
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DistributionSummaryTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(ManualHistogramBean.class)

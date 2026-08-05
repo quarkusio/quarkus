@@ -36,7 +36,7 @@ public class CustomTenantResolver implements TenantResolver {
         }
 
         if ("tenant-web-app".equals(tenantId)
-                && context.getCookie("q_session_tenant-web-app") != null) {
+                && context.request().getCookie("q_session_tenant-web-app") != null) {
             context.put("reauthenticated", "true");
             return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
         }

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Uni;
@@ -38,7 +38,7 @@ import io.vertx.ext.web.Router;
 public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(Opening.class, Responding.class, OpeningHttpUpgradeCheck.class,
                             RejectingHttpUpgradeCheck.class, WSClient.class, OpeningHttpUpgradeCheckBean.class,

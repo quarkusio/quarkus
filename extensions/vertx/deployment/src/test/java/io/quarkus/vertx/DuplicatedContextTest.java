@@ -19,7 +19,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.vertx.ContextLocals;
@@ -29,8 +29,10 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServer;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
 
@@ -41,23 +43,25 @@ import io.vertx.mutiny.core.eventbus.Message;
 public class DuplicatedContextTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyConsumers.class));
     private Vertx vertx;
+    private HttpServer server;
 
     @BeforeEach
     public void init() {
         vertx = Vertx.vertx();
-        vertx.createHttpServer()
+        server = vertx.createHttpServer()
                 .requestHandler(req -> req.response().end("hey!"))
-                .listen(8082).toCompletionStage().toCompletableFuture().join();
+                .listen(8082).await();
     }
 
     @AfterEach
     public void cleanup() {
+        server.close().await();
         if (vertx != null) {
-            vertx.close().toCompletionStage().toCompletableFuture().join();
+            vertx.close().await();
         }
     }
 
@@ -132,7 +136,7 @@ public class DuplicatedContextTest {
                             .replaceWithVoid());
         }
 
-        Uni.join().all(unis).andFailFast()
+        Uni.join().all(unis).andCollectFailures()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .await().atMost(Duration.ofSeconds(60));
 
@@ -161,20 +165,26 @@ public class DuplicatedContextTest {
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
 
-            context.putLocal("key", id);
+            ContextLocals.put("key", id);
 
             return Uni.createFrom().completionStage(
-                    () -> vertx.createHttpClient().request(HttpMethod.GET, 8082, "localhost", "/hey")
-                            .compose(request -> request.end().compose(x -> request.response()))
-                            .compose(HttpClientResponse::body)
-                            .map(Buffer::toString)
-                            .map(msg -> {
-                                Assertions.assertEquals("hey!", msg);
-                                Assertions.assertEquals(id, ContextLocals.get("key", null));
-                                Assertions.assertSame(Vertx.currentContext(), context);
-                                VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
-                                return "OK-" + ContextLocals.get("key", null);
-                            }).toCompletionStage());
+                    () -> {
+                        HttpClientAgent client = vertx.createHttpClient();
+                        return client.request(HttpMethod.GET, 8082, "localhost", "/hey")
+                                .compose(request -> request.end().compose(x -> request.response()))
+                                .compose(HttpClientResponse::body)
+                                .map(Buffer::toString)
+                                .map(msg -> {
+                                    Assertions.assertEquals("hey!", msg);
+                                    Assertions.assertEquals(id, ContextLocals.get("key", null));
+                                    Assertions.assertSame(Vertx.currentContext(), context);
+                                    VertxContextSafetyToggle.validateContextIfExists("Not marked as safe",
+                                            "Not marked as safe");
+                                    return "OK-" + ContextLocals.get("key", null);
+                                })
+                                .eventually(client::close)
+                                .toCompletionStage();
+                    });
         }
 
         @ConsumeEvent(value = "context-blocking")
@@ -188,52 +198,48 @@ public class DuplicatedContextTest {
 
         @ConsumeEvent(value = "context-send")
         public void consumeSend(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }
 
         @ConsumeEvent(value = "context-send-blocking")
         public void consumeSendBlocking(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }
 
         @ConsumeEvent(value = "context-publish")
         public void consumePublish1(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }
 
         @ConsumeEvent(value = "context-publish")
         public void consumePublish2(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }
@@ -241,13 +247,12 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-publish-blocking")
         @Blocking
         public void consumePublishBlocking1(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }
@@ -255,13 +260,12 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-publish-blocking")
         @Blocking
         public void consumePublishBlocking2(String s) {
-            Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
-            context.putLocal("key", s);
+            ContextLocals.put("key", s);
 
             probes.add(s);
         }

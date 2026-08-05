@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.hotreload;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -13,7 +16,7 @@ import io.vertx.ext.web.Router;
 @ApplicationScoped
 public class SomeSink {
 
-    private JsonArray items = new JsonArray();
+    private final List<String> items = new CopyOnWriteArrayList<>();
 
     @Inject
     Router router;
@@ -24,7 +27,7 @@ public class SomeSink {
     }
 
     public void init(@Observes StartupEvent event) {
-        router.get("/").handler(rc -> rc.response().end(items.encode()));
+        router.get("/").handler(rc -> rc.response().end(new JsonArray(items).encode()));
     }
 
 }

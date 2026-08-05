@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.Authenticated;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.response.Response;
 
 public class ConcurrentAuthTest extends AbstractGraphQLTest {
@@ -45,7 +45,7 @@ public class ConcurrentAuthTest extends AbstractGraphQLTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FilmResource.class, Film.class, GalaxyService.class)
                     .addAsResource(new StringAsset(getPropertyAsString(PROPERTIES)), "application.properties")

@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -77,7 +78,8 @@ public class ServerExceptionMappingFeature implements FeatureScanner {
             //additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
                     classOutput, unwrappableTypes, additionalBeanAnnotations, (m) -> false);
-            for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
+            for (Map.Entry<String, String> entry : generatedClassNames.entrySet().stream().sorted(Entry.comparingByKey())
+                    .toList()) {
                 ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>().setClassName(entry.getValue());
                 scannedApplication.getExceptionMappers().addExceptionMapper(entry.getKey(), mapper);
                 AnnotationValue priorityValue = instance.value("priority");

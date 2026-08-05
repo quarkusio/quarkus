@@ -34,13 +34,13 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExpo
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class GrpcOpenInstrumentationDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addPackage(TestSpanExporter.class.getPackage())
                     .addClasses(HelloService.class)
@@ -56,7 +56,7 @@ public class GrpcOpenInstrumentationDisabledTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.hello.host", "localhost")
-            .overrideConfigKey("quarkus.grpc.clients.hello.port", "9001")
+            .overrideConfigKey("quarkus.grpc.clients.hello.port", "8081")
             .overrideConfigKey("quarkus.otel.instrument.grpc", "false");
 
     @Inject

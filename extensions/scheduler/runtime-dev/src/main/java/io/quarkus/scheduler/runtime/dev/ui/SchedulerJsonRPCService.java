@@ -119,6 +119,9 @@ public class SchedulerJsonRPCService {
                 } else {
                     putConfigLookup("every", schedule.every(), scheduleJson);
                 }
+                if (!schedule.description().isBlank()) {
+                    putConfigLookup("description", schedule.description(), scheduleJson);
+                }
                 if (schedule.delay() > 0) {
                     scheduleJson.put("delay", schedule.delay());
                     scheduleJson.put("delayUnit", schedule.delayUnit().toString().toLowerCase());

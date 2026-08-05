@@ -1,15 +1,12 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
 import static io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler.createFile;
-import static org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler.PREFIX;
-import static org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler.SUFFIX;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -18,6 +15,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -48,8 +46,6 @@ public class QuarkusServerFileBodyHandler implements ServerMessageBodyReader<Fil
     public File readFrom(Class<File> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        // unfortunately we don't do much here to avoid the file leak
-        // however this should never be called in a real world scenario
-        return FileBodyHandler.doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile());
+        return FileBodyHandler.doRead(httpHeaders, entityStream, createFile(CurrentRequestManager.get()).toFile());
     }
 }

@@ -22,7 +22,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
@@ -70,7 +69,7 @@ public class StaticResourcesProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep
     public void nativeImageResource(Optional<StaticResourcesBuildItem> staticResources,
             BuildProducer<NativeImageResourceBuildItem> producer) {
         if (staticResources.isPresent()) {
@@ -92,7 +91,7 @@ public class StaticResourcesProcessor {
             final Set<String> collectedDirs = new HashSet<>();
             visitRuntimeMetaInfResources(visit -> {
                 if (Files.isDirectory(visit.getPath())) {
-                    final String relativePath = visit.getRelativePath();
+                    final String relativePath = visit.getResourceName();
                     if (collectedDirs.add(relativePath)) {
                         producer.produce(new NativeImageResourceBuildItem(relativePath));
                     }
@@ -112,7 +111,7 @@ public class StaticResourcesProcessor {
         visitRuntimeMetaInfResources(visit -> {
             Path visitPath = visit.getPath();
             if (!Files.isDirectory(visitPath)) {
-                String rel = visit.getRelativePath();
+                String rel = visit.getResourceName();
                 // Ensure that the relative path starts with the prefix before calling substring
                 if (rel.startsWith(prefix)) {
                     // Strip the "META-INF/resources/" prefix and add the remainder

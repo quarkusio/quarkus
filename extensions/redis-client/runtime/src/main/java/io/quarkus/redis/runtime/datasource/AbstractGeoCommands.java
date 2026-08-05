@@ -27,8 +27,8 @@ import io.quarkus.redis.datasource.geo.GeoSearchStoreArgs;
 import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.GeoValue;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 

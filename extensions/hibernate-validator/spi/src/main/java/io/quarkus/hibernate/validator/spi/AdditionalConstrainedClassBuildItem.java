@@ -2,7 +2,8 @@ package io.quarkus.hibernate.validator.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class AdditionalConstrainedClassBuildItem extends MultiBuildItem {
+public final class AdditionalConstrainedClassBuildItem extends MultiBuildItem
+        implements Comparable<AdditionalConstrainedClassBuildItem> {
 
     private static final byte[] EMPTY = new byte[0];
 
@@ -44,5 +45,10 @@ public final class AdditionalConstrainedClassBuildItem extends MultiBuildItem {
 
     public boolean isGenerated() {
         return clazz == null;
+    }
+
+    @Override
+    public int compareTo(AdditionalConstrainedClassBuildItem that) {
+        return name.compareTo(that.name);
     }
 }

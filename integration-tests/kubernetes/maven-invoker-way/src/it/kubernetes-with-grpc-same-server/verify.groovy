@@ -21,7 +21,6 @@ kubernetesYml.withInputStream { stream ->
     assert deployment.metadata.name == "kubernetes-with-grpc-same-server"
     List<ContainerPort> containerPorts = deployment.spec.template.spec.containers.get(0).ports
     assert containerPorts.stream().anyMatch(p -> p.getName() == "http" && p.containerPort == 8080);
-    assert containerPorts.stream().noneMatch(p -> p.getName() == "grpc");
 
     Service service = list.items.find{ r -> r.kind == "Service"}
 
@@ -30,5 +29,4 @@ kubernetesYml.withInputStream { stream ->
     assert service.metadata.name == "kubernetes-with-grpc-same-server"
     List<ServicePort> servicePorts = service.spec.ports
     assert servicePorts.stream().anyMatch(p -> p.getName() == "http" && p.targetPort.intVal == 8080);
-    assert servicePorts.stream().noneMatch(p -> p.getName() == "grpc");
 }

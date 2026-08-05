@@ -10,7 +10,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CertificateRevocationListTest {
 
@@ -20,7 +20,7 @@ public class CertificateRevocationListTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
@@ -31,8 +31,8 @@ public class CertificateRevocationListTest {
     void test() {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
         TlsConfiguration foo = certificates.get("foo").orElseThrow();
-        assertThat(def.getSSLOptions().getCrlValues()).hasSize(1);
-        assertThat(foo.getSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(def.getServerSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(foo.getServerSSLOptions().getCrlValues()).hasSize(1);
     }
 
 }

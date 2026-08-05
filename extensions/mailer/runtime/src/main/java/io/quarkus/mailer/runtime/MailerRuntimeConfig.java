@@ -8,6 +8,7 @@ import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -282,4 +283,20 @@ public interface MailerRuntimeConfig {
      * Some SMTP servers have the requirement to allow only a number of emails sent per connection.
      */
     OptionalLong maxMailsPerConnection();
+
+    /**
+     * The credentials provider name.
+     */
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProvider();
+
+    /**
+     * The credentials provider bean name.
+     * <p>
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
+     * <p>
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
+     */
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
 }

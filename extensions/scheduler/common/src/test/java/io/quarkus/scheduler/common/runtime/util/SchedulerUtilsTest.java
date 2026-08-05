@@ -145,6 +145,11 @@ public class SchedulerUtilsTest {
                 return "";
             }
 
+            @Override
+            public String description() {
+                return "";
+            }
+
         };
     }
 }

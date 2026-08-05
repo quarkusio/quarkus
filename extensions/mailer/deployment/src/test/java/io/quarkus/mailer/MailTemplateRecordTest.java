@@ -10,13 +10,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.qute.CheckedTemplate;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.ext.mail.MailMessage;
 
 public class MailTemplateRecordTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(confirmation.class)
                     .addAsResource("mock-config.properties", "application.properties")

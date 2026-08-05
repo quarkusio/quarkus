@@ -36,7 +36,7 @@ import io.netty.util.internal.ObjectUtil;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.impl.VertxByteBufAllocator;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 
 /**
  * A FileUpload implementation that is responsible for sending Multi&lt;Byte&gt; as a file in a multipart message.

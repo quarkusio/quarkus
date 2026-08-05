@@ -15,14 +15,14 @@ import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class WrongLocationClassTargetTest {
 
     private static final String TEMPLATE_LOCATION = "/path/to/my/custom/template/basic.html";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(CustomLocator.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);

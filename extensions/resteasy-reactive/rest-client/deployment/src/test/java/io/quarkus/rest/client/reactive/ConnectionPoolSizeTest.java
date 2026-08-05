@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.headers.ClientHeaderParamFromPropertyTest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -29,7 +29,7 @@ import io.vertx.core.Vertx;
 @Disabled("these tests seem unstable while their intent is also unclear")
 public class ConnectionPoolSizeTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class).addClasses(ClientHeaderParamFromPropertyTest.Client.class));
 

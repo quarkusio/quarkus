@@ -33,7 +33,7 @@ import org.htmlunit.WebRequest;
 import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
-import org.htmlunit.util.Cookie;
+import org.htmlunit.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -42,10 +42,10 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpClient;
 
 /**
@@ -170,6 +170,22 @@ public class BearerTokenAuthorizationTest {
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(499, ex.getStatusCode());
                 assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testJavaScriptRequestCustomResponse() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("HX-Problem-Request", "true");
+                webClient.getPage("http://localhost:8081/tenant/tenant-web-app-javascript/api/user/webapp");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertEquals("OIDC-SPA", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
             }
 
             webClient.getCookieManager().clearCookies();
@@ -993,7 +1009,7 @@ public class BearerTokenAuthorizationTest {
                     .await().indefinitely();
         } finally {
             if (httpClient != null) {
-                httpClient.closeAndAwait();
+                httpClient.close().await().indefinitely();
             }
             vertx.closeAndAwait();
         }
@@ -1183,15 +1199,26 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testConcurrentTokenRefresh() {
-        var result = RestAssured.given().auth().oauth2(getAccessTokenWithAcr(Set.of()))
+    public void testConcurrentTokenRefresh() throws InterruptedException {
+        var result1 = refreshTokenConcurrently(0, 1);
+        assertEquals(result1.accessToken1(), result1.accessToken2());
+        Thread.sleep(150); // just so that there is a small delay
+        var result2 = refreshTokenConcurrently(1, 1);
+        assertEquals(result2.accessToken1(), result2.accessToken2());
+        assertEquals(result1.accessToken1(), result2.accessToken1());
+    }
+
+    private static TenantRefreshTokenResource.ConcurrentRefreshResult refreshTokenConcurrently(int expectedCountBefore,
+            int expectedCountAfter) {
+        return RestAssured.given()
                 .queryParam("refresh_token", "refresh_token_1")
+                .queryParam("expected_count_before", expectedCountBefore)
+                .queryParam("expected_count_after", expectedCountAfter)
                 .when().get("/tenant-refresh/concurrent-token-refresh")
                 .then()
                 .statusCode(200)
                 .body(Matchers.notNullValue())
                 .extract().as(TenantRefreshTokenResource.ConcurrentRefreshResult.class);
-        assertEquals(result.accessToken1(), result.accessToken2());
     }
 
     private String getAccessToken(String userName, String clientId) {

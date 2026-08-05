@@ -109,6 +109,7 @@ public class KindProcessor extends BaseVanillaKubernetesProcessor {
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
+            Capabilities capabilities,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -133,7 +134,7 @@ public class KindProcessor extends BaseVanillaKubernetesProcessor {
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
         return super.decorators(applicationInfo, outputTarget,
-                packageConfig,
+                capabilities, packageConfig,
                 metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
                 envs,
                 image, command, ports, portName,

@@ -51,4 +51,18 @@ class UserResourceTest {
                 .collect(Collectors.toSet());
         Assertions.assertTrue(names.contains("emailIdx"));
     }
+
+    @Test
+    public void validateChangeLogTableName() {
+        long entries = mongoClient.getDatabase("users").getCollection("UserChangelog").countDocuments();
+
+        Assertions.assertEquals(1, entries);
+    }
+
+    @Test
+    public void validateChangeLogLockTableName() {
+        long entries = mongoClient.getDatabase("users").getCollection("UserChangelogLock").countDocuments();
+
+        Assertions.assertEquals(1, entries);
+    }
 }

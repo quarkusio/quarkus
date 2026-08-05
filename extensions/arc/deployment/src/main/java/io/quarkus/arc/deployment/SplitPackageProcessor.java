@@ -68,10 +68,10 @@ public class SplitPackageProcessor {
         }
 
         // for all app archives
-        for (ApplicationArchive archive : archivesBuildItem.getAllApplicationArchives()) {
+        for (ApplicationArchive archive : archivesBuildItem.getAllArchives()) {
             // and for each known class in each archive
             for (ClassInfo classInfo : archive.getIndex().getKnownClasses()) {
-                String packageName = DotNames.packageName(classInfo.name());
+                String packageName = DotNames.packagePrefix(classInfo.name());
                 packageToArchiveMap.compute(packageName, (key, val) -> {
                     Set<ApplicationArchive> returnValue = val == null ? new HashSet<>() : val;
                     boolean add = true;

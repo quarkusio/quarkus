@@ -1,5 +1,7 @@
 package io.quarkus.vertx.core.runtime.context;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -39,7 +41,7 @@ import io.vertx.core.Vertx;
  */
 public final class VertxContextSafetyToggle {
 
-    private static final Object ACCESS_TOGGLE_KEY = new Object();
+    private static final String ACCESS_TOGGLE_KEY = "___QUARKUS_CONTEXT_ACCESS_TOGGLE____";
     public static final String UNRESTRICTED_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT";
 
     /**
@@ -73,21 +75,23 @@ public final class VertxContextSafetyToggle {
         }
     }
 
+    private static Boolean getToggleFlag(final Context context) {
+        return (Boolean) context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new).get(ACCESS_TOGGLE_KEY);
+    }
+
     private static void checkIsSafe(final Context context, final String errorMessageOnVeto, final String errorMessageOnDoubt) {
         if (!VertxContext.isDuplicatedContext(context)) {
             throw new IllegalStateException(
                     "Can't get the context safety flag: the current context is not a duplicated context");
         }
-        final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
-        if (safeFlag == Boolean.TRUE) {
-            return;
-        } else if (safeFlag == null && UNRESTRICTED_BY_DEFAULT) {
-            //flag was not set, and we're instructed to consider the undefined safeFlag as safe
-            return;
+        Boolean maybe = getToggleFlag(context);
+        if (maybe == null) {
+            if (UNRESTRICTED_BY_DEFAULT) {
+                return;
+            }
+            throw new IllegalStateException(errorMessageOnDoubt);
         } else {
-            if (safeFlag == null) {
-                throw new IllegalStateException(errorMessageOnDoubt);
-            } else {
+            if (!maybe) {
                 throw new IllegalStateException(errorMessageOnVeto);
             }
         }
@@ -121,10 +125,12 @@ public final class VertxContextSafetyToggle {
                     "Can't set the context safety flag: the current context is not a duplicated context");
         } else {
             // save storm of true -> true transitions by shielding it
-            if (safe && context.getLocal(ACCESS_TOGGLE_KEY) == Boolean.TRUE) {
+            ConcurrentHashMap<String, Object> map = context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+            Boolean maybe = (Boolean) map.get(ACCESS_TOGGLE_KEY);
+            if (safe && maybe == Boolean.TRUE) {
                 return;
             }
-            context.putLocal(ACCESS_TOGGLE_KEY, Boolean.valueOf(safe));
+            map.put(ACCESS_TOGGLE_KEY, safe);
         }
     }
 
@@ -133,11 +139,7 @@ public final class VertxContextSafetyToggle {
             throw new IllegalStateException(
                     "Can't get the context safety flag: the current context is not a duplicated context");
         }
-        final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
-        if (safeFlag == Boolean.TRUE) {
-            return true;
-        }
-        return false;
+        return getToggleFlag(context) == Boolean.TRUE;
     }
 
     public static boolean isExplicitlyMarkedAsUnsafe(final Context context) {
@@ -145,11 +147,7 @@ public final class VertxContextSafetyToggle {
             throw new IllegalStateException(
                     "Can't get the context safety flag: the current context is not a duplicated context");
         }
-        final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
-        if (safeFlag == Boolean.FALSE) {
-            return true;
-        }
-        return false;
+        return getToggleFlag(context) == Boolean.FALSE;
     }
 
 }

@@ -117,12 +117,12 @@ public class CatalogMergeUtility {
                 return currentValue;
             }
             for (var e : ((Map<?, ?>) value).entrySet()) {
-                if (e.getKey() instanceof String) {
+                if (e.getKey() instanceof String eKey) {
                     try {
-                        putIfAbscentRecursively(e.getKey().toString(), e.getValue(), currentMap);
+                        putIfAbscentRecursively(eKey, e.getValue(), currentMap);
                     } catch (UnsupportedOperationException ex) {
                         currentMap = new HashMap(currentMap);
-                        putIfAbscentRecursively(e.getKey().toString(), e.getValue(), currentMap);
+                        putIfAbscentRecursively(eKey, e.getValue(), currentMap);
                     }
                 }
             }

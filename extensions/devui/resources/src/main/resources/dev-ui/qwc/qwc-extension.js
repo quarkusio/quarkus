@@ -25,6 +25,13 @@ export class QwcExtension extends observeState(LitElement) {
 
         qui-card {
             height: 100%;
+            transition: transform var(--devui-transition-normal, 0.2s ease),
+                        box-shadow var(--devui-transition-normal, 0.2s ease);
+        }
+
+        :host(:hover) qui-card {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--lumo-contrast-10pct);
         }
 
         .card-header {
@@ -33,6 +40,26 @@ export class QwcExtension extends observeState(LitElement) {
             justify-content: space-between;
             align-items: center;
             width: 100%;
+            gap: 8px;
+        }
+
+        .card-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .card-header-left img {
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .card-header-name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .card-footer {
@@ -43,30 +70,82 @@ export class QwcExtension extends observeState(LitElement) {
             width: 100%;
             padding: 10px;
             box-sizing: border-box;
-            color: var(--lumo-contrast-50pct);
+            color: var(--lumo-contrast-40pct);
         }
 
         .card-footer a {
-            color: var(--lumo-contrast-50pct);
+            color: var(--lumo-contrast-40pct);
         }
 
         :host(:hover) .config, :host(:hover) .more, :host(:hover) .guide, :host(:hover) .fav {
             visibility:visible;
+            opacity: 1;
         }
 
         .guide, .more, .config, .fav {
             visibility:hidden;
+            opacity: 0;
             --vaadin-icon-size: var(--lumo-font-size-m);
+            transition: opacity var(--devui-transition-fast, 0.15s ease), color var(--devui-transition-fast, 0.15s ease);
         }
 
         .icon {
             font-size: x-small;
             cursor: pointer;
+            color: var(--lumo-contrast-40pct);
+        }
+
+        .icon:hover {
+            color: var(--lumo-primary-color);
         }
 
         .headerTools {
             display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* Status pill styling */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
             gap: 4px;
+            font-size: var(--lumo-font-size-xxs);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-experimental {
+            background-color: hsla(30, 100%, 50%, 0.12);
+            color: var(--lumo-warning-text-color);
+        }
+        .status-experimental .status-dot {
+            background-color: var(--lumo-warning-color);
+        }
+
+        .status-preview {
+            background-color: var(--lumo-contrast-5pct);
+            color: var(--lumo-contrast-60pct);
+        }
+        .status-preview .status-dot {
+            background-color: var(--lumo-contrast-40pct);
+        }
+
+        .status-stable {
+            background-color: hsla(145, 72%, 30%, 0.12);
+            color: var(--lumo-success-text-color);
+        }
+        .status-stable .status-dot {
+            background-color: var(--lumo-success-color);
         }
         `;
 
@@ -125,12 +204,21 @@ export class QwcExtension extends observeState(LitElement) {
             <qui-card actionable ?inactive=${!isActive} accent="${accent}"
                 footer="${this._hasFooter() ? '' : null}">
                 <div slot="header" class="card-header">
-                    <div>${this.name}</div>
+                    <div class="card-header-left">
+                        ${this._renderHeaderLogo()}
+                        <span class="card-header-name">${this.name}</span>
+                    </div>
                     ${this._headerToolBar()}
                 </div>
                 <slot name="content" slot="content"></slot>
                 ${this._renderFooter()}
             </qui-card>`;
+    }
+
+    _renderHeaderLogo(){
+        if(this.logoUrl){
+            return html`<img src="${this.logoUrl}" width="20" height="20" @error="${(e) => e.target.style.display = 'none'}">`;
+        }
     }
 
     _hasFooter(){
@@ -141,7 +229,7 @@ export class QwcExtension extends observeState(LitElement) {
         return html`<div slot="footer" class="card-footer">
             ${this._renderConfigFilterIcon()}
             ${this._renderStatus()}
-            <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="${msg(str`More about the ${this.name} extension`, { id: 'extensions-more' })}"></vaadin-icon>
+            <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis" @click="${() => (this._dialogOpened = true)}" title="${msg(str`More about the ${this.name} extension`, { id: 'extensions-more' })}"></vaadin-icon>
         </div>`;
     }
 
@@ -177,18 +265,10 @@ export class QwcExtension extends observeState(LitElement) {
     }
 
     _renderStatus(){
-        var l = this._statusLevelOnCard();
-
-        if(l) {
-            return html`<qui-badge level="${l}" small><span>${this.status.toUpperCase()}</span></qui-badge>`;
-        }
-    }
-
-    _statusLevelOnCard(){
         if(this.status === "experimental") {
-            return "warning";
+            return html`<span class="status-pill status-experimental"><span class="status-dot"></span>${this.status.toUpperCase()}</span>`;
         } else if(this.status === "preview") {
-            return "contrast";
+            return html`<span class="status-pill status-preview"><span class="status-dot"></span>${this.status.toUpperCase()}</span>`;
         }
         return null;
     }
@@ -196,13 +276,17 @@ export class QwcExtension extends observeState(LitElement) {
     _statusLevel(){
         if(this.status === "stable") {
             return "success";
+        } else if(this.status === "experimental") {
+            return "warning";
+        } else if(this.status === "preview") {
+            return "contrast";
         }
-        return this._statusLevelOnCard();
+        return null;
     }
 
     _renderDialog(){
         return html`
-            ${this._renderLogo()}
+            ${this._renderDialogLogo()}
             <table>
                 <tr>
                     <td><b>${msg('Name', { id: 'extensions-name' })}</b></td>
@@ -234,7 +318,7 @@ export class QwcExtension extends observeState(LitElement) {
                 </tr>
                 <tr>
                     <td><b>${msg('Status', { id: 'extensions-status' })}</b></td>
-                    <td><qui-badge level="${this._statusLevel()}" small><span>${this.status.toUpperCase()}</span></qui-badge></td>
+                    <td>${this._renderStatus()}</td>
                 </tr>
                 <tr>
                     <td><b>${msg('Config Filter', { id: 'extensions-config-filter' })}</b></td>
@@ -264,7 +348,7 @@ export class QwcExtension extends observeState(LitElement) {
         `;
     }
 
-    _renderLogo(){
+    _renderDialogLogo(){
         if(this.logoUrl){
             return html`<img style="position: absolute;right: 10px;" src="${this.logoUrl}" height="45" @error="${(e) => e.target.style.display = 'none'}">`;
         }
@@ -292,7 +376,7 @@ export class QwcExtension extends observeState(LitElement) {
 
     _renderGuideDetails() {
         return this.guide
-          ? html`<span style="cursor:pointer" @click=${this._guide}>${this.guide}</span>`
+          ? html`<span style="cursor:pointer;color:var(--lumo-primary-text-color);" @click=${this._guide}>${this.guide}</span>`
           : html``;
     }
 
@@ -306,7 +390,7 @@ export class QwcExtension extends observeState(LitElement) {
 
     _renderArtifact(){
         if(this.artifact){
-            return html`<code>${this.artifact}</code>`;
+            return html`<code style="font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: var(--lumo-font-size-s);">${this.artifact}</code>`;
         }else{
             return html``;
         }

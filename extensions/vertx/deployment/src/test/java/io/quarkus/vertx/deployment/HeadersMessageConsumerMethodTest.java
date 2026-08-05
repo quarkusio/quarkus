@@ -18,17 +18,17 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.mutiny.core.MultiMap;
 
 public class HeadersMessageConsumerMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> {
                 jar.addClasses(VertxMessageConsumers.class);
                 jar.addClasses(MutinyMessageConsumers.class);
@@ -89,7 +89,7 @@ public class HeadersMessageConsumerMethodTest {
                 .addHeader("header", "testRequest");
 
         // When
-        bus.request("vertx-headers-reply", "String", options, ar -> {
+        bus.request("vertx-headers-reply", "String", options).onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -113,7 +113,7 @@ public class HeadersMessageConsumerMethodTest {
                 .addHeader("header", "testMutinyRequest");
 
         // When
-        bus.request("mutiny-headers-reply", "String", options, ar -> {
+        bus.request("mutiny-headers-reply", "String", options).onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -137,7 +137,7 @@ public class HeadersMessageConsumerMethodTest {
                 .addHeader("header", "testRequestUni");
 
         // When
-        bus.request("vertx-headers-replyUni", "String", options, ar -> {
+        bus.request("vertx-headers-replyUni", "String", options).onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -161,7 +161,7 @@ public class HeadersMessageConsumerMethodTest {
                 .addHeader("header", "testMutinyRequestUni");
 
         // When
-        bus.request("mutiny-headers-replyUni", "String", options, ar -> {
+        bus.request("mutiny-headers-replyUni", "String", options).onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());

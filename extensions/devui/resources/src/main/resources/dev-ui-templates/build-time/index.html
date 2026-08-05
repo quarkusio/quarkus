@@ -21,9 +21,19 @@
         <title>Dev UI</title>
 
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
             body {
                 {themeVars}
                 --lumo-clickable-cursor: pointer;
+                --lumo-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                --devui-header-height: 50px;
+                --devui-transition-fast: 0.15s ease;
+                --devui-transition-normal: 0.2s ease;
+                --devui-transition-slow: 0.3s ease;
+                --devui-radius-sm: 6px;
+                --devui-radius-md: 8px;
+                --devui-radius-lg: 12px;
                 margin: 0;
                 width:100vw;
                 height: 100vh;
@@ -34,8 +44,10 @@
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                color: var(--lumo-body-text-color);                        
+                color: var(--lumo-body-text-color);
                 background: var(--lumo-base-color);
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
             }
 
             /*Contains the menu and pages*/
@@ -46,14 +58,15 @@
                 justify-content: flex-start;
                 flex:1;
             }
-  
-            #page {              
+
+            #page {
                 overflow-y: auto;
                 overflow-x: hidden;
                 flex: 1;
                 padding-bottom: 10px;
+                animation: devui-fade-in var(--devui-transition-slow) ease;
             }
-            
+
             .loading {
                 position: absolute;
                 top: 50%;
@@ -64,6 +77,27 @@
             qwc-footer {
                 overflow: hidden;
                 min-height: 38px;
+            }
+
+            @keyframes devui-fade-in {
+                from { opacity: 0; transform: translateY(4px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            /* Global scrollbar styling */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: var(--lumo-contrast-20pct);
+                border-radius: 3px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--lumo-contrast-30pct);
             }
         </style>
     </head>

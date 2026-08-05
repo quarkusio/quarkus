@@ -381,11 +381,12 @@ public class ServerEndpointIndexer
         validateMethodsForInjectableBean(currentClassInfo);
 
         // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
-        Map<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
-        Map<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
+        LinkedHashMap<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
+        LinkedHashMap<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
         // records do not have field injection, we use their constructor, so field rules do not apply
         boolean applyFieldRules = !currentClassInfo.isRecord();
-        for (FieldInfo field : currentClassInfo.fields()) {
+        // Keep build deterministic by using field order.
+        for (FieldInfo field : currentClassInfo.fieldsInDeclarationOrder()) {
             // We don't do any injection in static fields
             if (Modifier.isStatic(field.flags())) {
                 continue;
@@ -716,7 +717,8 @@ public class ServerEndpointIndexer
         } else if (elementType.equals(FileUpload.class.getName())
                 || elementType.equals(Path.class.getName())
                 || elementType.equals(File.class.getName())
-                || elementType.equals(InputStream.class.getName())) {
+                || elementType.equals(InputStream.class.getName())
+                || elementType.equals("jakarta.ws.rs.core.EntityPart")) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {
@@ -787,7 +789,7 @@ public class ServerEndpointIndexer
 
     public interface FieldInjectionIndexerExtension {
 
-        void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
+        void handleFieldInjection(String currentTypeName, LinkedHashMap<FieldInfo, ServerIndexedParameter> fieldExtractors,
                 boolean superTypeIsInjectable, IndexView indexView);
     }
 

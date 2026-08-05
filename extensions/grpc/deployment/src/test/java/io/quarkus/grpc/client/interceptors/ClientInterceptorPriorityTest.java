@@ -15,17 +15,19 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.server.services.MutinyHelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ClientInterceptorPriorityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withApplicationRoot(
             root -> root
+                    .addPackage(HelloWorldProto.class.getPackage())
                     .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class,
                             MySecondClientInterceptor.class, MyThirdClientInterceptor.class, Calls.class,
                             GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,

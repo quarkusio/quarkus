@@ -3,6 +3,8 @@ package io.quarkus.tls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -12,7 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -45,7 +47,7 @@ public class ExpiredTrustStoreWithMTLSAndServerRejectionTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
@@ -60,12 +62,12 @@ public class ExpiredTrustStoreWithMTLSAndServerRejectionTest {
     @AfterEach
     void cleanup() {
         if (server != null) {
-            server.close().toCompletionStage().toCompletableFuture().join();
+            server.close().await();
         }
     }
 
     @Test
-    void testServerRejection() throws InterruptedException {
+    void testServerRejection() {
         TlsConfiguration cf = certificates.get("warn").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
@@ -79,9 +81,9 @@ public class ExpiredTrustStoreWithMTLSAndServerRejectionTest {
                 .setClientAuth(ClientAuth.REQUIRED)
                 .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
                 .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).await();
 
-        assertThatThrownBy(() -> client.get(8081, "localhost", "/").send().toCompletionStage().toCompletableFuture().join())
-                .hasMessageContaining("SSLHandshakeException");
+        assertThatThrownBy(() -> client.get(8081, "localhost", "/").send().await())
+                .hasCauseInstanceOf(SSLHandshakeException.class);
     }
 }

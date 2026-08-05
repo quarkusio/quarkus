@@ -1,8 +1,6 @@
 package io.quarkus.netty.deployment;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -17,14 +15,12 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultChannelId;
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -48,9 +44,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -88,6 +84,18 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SystemPropertyBuildItem disableNettyDefaultEndpointVerification() {
+        /*
+         * Netty 4.2 defaults endpoint verification to "HTTPS", which is read during
+         * SslContext static initialization (build time in native mode). Vert.x explicitly
+         * manages hostname verification via configureSSLOptions(verifyHost, sslOptions),
+         * so the Netty default is not needed and causes SSL failures in native mode when
+         * Vert.x's runtime override on the SslContextBuilder doesn't take effect.
+         */
+        return new SystemPropertyBuildItem("io.netty.handler.ssl.defaultEndpointVerificationAlgorithm", "NONE");
+    }
+
+    @BuildStep
     public SystemPropertyBuildItem limitArenaSize(NettyBuildTimeConfig config,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
@@ -108,6 +116,17 @@ class NettyProcessor {
     @BuildStep
     public SystemPropertyBuildItem disableFinalizers() {
         return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem ignoreExpensiveClean() {
+        // On JDK 25+ without --enable-native-access, Netty's CleanerJava25 (shared arenas) has
+        // hasExpensiveClean()=true. Without this flag, unpooled direct buffers fall back to the NOOP
+        // cleaner (GC-only deallocation), which causes unbounded native memory growth and OOM kills
+        // on containers. This flag forces unpooled buffers to use the shared arena path instead —
+        // expensive but deterministic.
+        // See https://github.com/quarkusio/quarkus/issues/54011
+        return new SystemPropertyBuildItem("io.netty.ignoreExpensiveClean", "true");
     }
 
     @BuildStep
@@ -149,7 +168,7 @@ class NettyProcessor {
 
         final NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.tryReflectionSetAccessible", "true")
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "false");
+                .addNativeImageSystemProperty("io.netty.noUnsafe", "true");
         return builder.build();
     }
 
@@ -194,8 +213,11 @@ class NettyProcessor {
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
+                // Spotted with Netty 4.1.135.Final
+                .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
+                .addRuntimeInitializedClass("io.netty.util.internal.CleanerJava24Linker")
                 // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 // Runtime initialize to respect run-time provided values of the following properties:
@@ -229,7 +251,8 @@ class NettyProcessor {
                     // when initializing CRLF_BUF and ZERO_CRLF_CRLF_BUF
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpContentCompressor");
             // Zstd is an optional dependency, runtime initialize to avoid IllegalStateException when zstd is not
             // available. This will result in a runtime ClassNotFoundException if the user tries to use zstd.
             if (!QuarkusClassLoader.isClassPresentAtRuntime("com.github.luben.zstd.Zstd")) {
@@ -303,6 +326,25 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            // Runtime initialize due to kernel version checking, native library loading, and kernel feature probing
+            // in static initializer, and to respect the run-time provided value of io.netty.transport.noNative
+            builder.addRuntimeInitializedClass("io.netty.channel.uring.IoUring")
+                    // Runtime initialize due to native library loading in static initializer
+                    .addRuntimeInitializedClass("io.netty.channel.uring.Native")
+                    // Runtime initialize due to system properties read in static initializer
+                    .addRuntimeInitializedClass("io.netty.channel.uring.IoUringDatagramChannel");
+        } else {
+            log.debug("Not registering Netty native io_uring classes as they were not found");
+        }
+
+        // * [IMPORTANT] Netty QUIC/Quiche classes: runtime-init is NOT registered here.
+        // *
+        // * => When http3 is absent, Vert.x substitutions cut all reachability to these classes.
+        // * => When http3 is present, Http3Processor registers them for runtime initialization.
+
+        // tcnative is handled via RuntimeInitializedPackageBuildItem in #runtimeInitQuicAndTcnative
+
         // Runtime initialize due to platform dependent initialization and to respect the run-time provided value of the
         // properties:
         // - io.netty.maxDirectMemory
@@ -371,6 +413,13 @@ class NettyProcessor {
 
         return builder //TODO: make configurable
                 .build();
+    }
+
+    @BuildStep
+    void runtimeInitQuicAndTcnative(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
+            runtimeInitializedPackages.produce(new RuntimeInitializedPackageBuildItem("io.netty.internal.tcnative"));
+        }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -492,279 +541,54 @@ class NettyProcessor {
     }
 
     /**
-     * Transforms {@code io.netty.util.internal.CleanerJava9} to take advantage of the fact that we know we are in Java 17+
-     * Generated bytecode structure:
+     * Rewrites {@code PlatformDependent0} to avoid the {@code MethodHandle} lookup used by Netty for virtual thread
+     * detection (which has a noticeable impact on startup). Since we target Java 21+, {@code Thread.isVirtual()} is
+     * always available and can be called directly.
+     * <p>
+     * The upstream Netty 4.2.x code initializes a {@code MethodHandle} at class load time:
      *
      * <pre>{@code
-     * final class CleanerJava9 implements Cleaner {
-     *     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CleanerJava9.class);
-     *     private static final boolean SUPPORTED;
+     * static final MethodHandle IS_VIRTUAL_THREAD_METHOD_HANDLE = getIsVirtualThreadMethodHandle();
      *
-     *     private static void freeDirectBufferPrivileged(ByteBuffer buffer) {
-     *         Exception error = AccessController.doPrivileged(new PrivilegedAction(buffer));
-     *         if (error != null) {
-     *             PlatformDependent0.throwException(error);
-     *         }
-     *     }
-     *
-     *     static {
-     *         boolean var2 = false;
-     *         Throwable var3 = null;
-     *         if (!PlatformDependent0.hasUnsafe()) {
-     *             var3 = new UnsupportedOperationException("sun.misc.Unsafe unavailable");
-     *         } else {
-     *             try {
-     *                 ByteBuffer var0 = ByteBuffer.allocateDirect(1);
-     *                 PlatformDependent0.UNSAFE.invokeCleaner(var0);
-     *                 var2 = true;
-     *             } catch (Throwable var4) {
-     *                 var3 = var4;
-     *             }
-     *         }
-     *
-     *         SUPPORTED = var2;
-     *         if (var3 != null) {
-     *             logger.debug("java.nio.ByteBuffer.cleaner(): unavailable", var3);
-     *         } else {
-     *             logger.debug("java.nio.ByteBuffer.cleaner(): available");
-     *         }
-     *     }
-     *
-     *     public void freeDirectBuffer(ByteBuffer var1) {
-     *         if (System.getSecurityManager() != null) {
-     *             freeDirectBufferPrivileged(var1);
-     *         } else {
-     *             PlatformDependent0.UNSAFE.invokeCleaner(var1);
-     *         }
-     *     }
-     *
-     *     public static boolean isSupported() {
-     *         return SUPPORTED;
+     * private static MethodHandle getIsVirtualThreadMethodHandle() {
+     *     try {
+     *         MethodHandle methodHandle = MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual",
+     *                 methodType(boolean.class));
+     *         boolean isVirtual = (boolean) methodHandle.invokeExact(Thread.currentThread());
+     *         return methodHandle;
+     *     } catch (Throwable e) {
+     *         ...
+     *         return null;
      *     }
      * }
      * }</pre>
-     */
-    @BuildStep
-    BytecodeTransformerBuildItem transformCleanerJava9() {
-        String className = "io.netty.util.internal.CleanerJava9";
-        return new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                .setCacheable(true).setVisitorFunction(
-                        new BiFunction<>() {
-                            @Override
-                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                                FieldDescriptor supportedFieldDescriptor = FieldDescriptor
-                                        .of(className, "SUPPORTED", boolean.class);
-
-                                ClassTransformer transformer = new ClassTransformer(className);
-
-                                transformer.addField(supportedFieldDescriptor)
-                                        .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-                                transformer.removeField("INVOKE_CLEANER", Method.class);
-
-                                {
-                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className, "<clinit>",
-                                            void.class);
-                                    transformer.removeMethod(methodDescriptor);
-
-                                    {
-                                        MethodCreator clinitMethod = transformer.addMethod(methodDescriptor).setModifiers(
-                                                Modifier.PUBLIC | Modifier.STATIC);
-
-                                        // Initialize logger
-                                        ResultHandle cleanerClass = clinitMethod.loadClass(className);
-                                        ResultHandle loggerInstance = clinitMethod.invokeStaticMethod(
-                                                MethodDescriptor.ofMethod(
-                                                        "io.netty.util.internal.logging.InternalLoggerFactory",
-                                                        "getInstance",
-                                                        InternalLogger.class.getName(),
-                                                        Class.class),
-                                                cleanerClass);
-                                        FieldDescriptor loggerFieldDescriptor = FieldDescriptor.of(
-                                                className, "logger",
-                                                InternalLogger.class.getName());
-                                        clinitMethod.writeStaticField(loggerFieldDescriptor, loggerInstance);
-
-                                        // Initialize SUPPORTED
-                                        AssignableResultHandle supportedVar = clinitMethod.createVariable(boolean.class);
-                                        clinitMethod.assign(supportedVar, clinitMethod.load(false));
-                                        AssignableResultHandle errorVar = clinitMethod.createVariable(Throwable.class);
-                                        clinitMethod.assign(errorVar, clinitMethod.loadNull());
-
-                                        // Check if Unsafe is available
-                                        ResultHandle hasUnsafe = clinitMethod.invokeStaticMethod(
-                                                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent0",
-                                                        "hasUnsafe",
-                                                        boolean.class));
-
-                                        BranchResult hasUnsafeResult = clinitMethod.ifTrue(hasUnsafe);
-                                        BytecodeCreator hasUnsafeTrueBranch = hasUnsafeResult.trueBranch();
-
-                                        // Try block
-                                        {
-                                            TryBlock tryBlock = hasUnsafeTrueBranch.tryBlock();
-
-                                            // ByteBuffer buffer = ByteBuffer.allocateDirect(1);
-                                            ResultHandle buffer = tryBlock.invokeStaticMethod(
-                                                    MethodDescriptor.ofMethod(ByteBuffer.class, "allocateDirect",
-                                                            ByteBuffer.class,
-                                                            int.class),
-                                                    tryBlock.load(1));
-
-                                            // PlatformDependent0.UNSAFE.invokeCleaner(buffer);
-                                            ResultHandle unsafe = tryBlock.readStaticField(
-                                                    FieldDescriptor.of("io.netty.util.internal.PlatformDependent0",
-                                                            "UNSAFE",
-                                                            "sun.misc.Unsafe"));
-                                            tryBlock.invokeVirtualMethod(
-                                                    MethodDescriptor.ofMethod("sun.misc.Unsafe",
-                                                            "invokeCleaner",
-                                                            void.class,
-                                                            ByteBuffer.class),
-                                                    unsafe,
-                                                    buffer);
-
-                                            tryBlock.assign(supportedVar, tryBlock.load(true));
-
-                                            // Catch block
-                                            CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                                            catchBlock.assign(errorVar, catchBlock.getCaughtException());
-                                        }
-
-                                        // Handle else branch (Unsafe unavailable)
-                                        BytecodeCreator hasUnsafeFalseBranch = hasUnsafeResult.falseBranch();
-                                        ResultHandle unsupportedEx = hasUnsafeFalseBranch.newInstance(
-                                                MethodDescriptor.ofConstructor(UnsupportedOperationException.class,
-                                                        String.class),
-                                                hasUnsafeFalseBranch.load("sun.misc.Unsafe unavailable"));
-                                        hasUnsafeFalseBranch.assign(errorVar, unsupportedEx);
-
-                                        // Write SUPPORTED field
-                                        clinitMethod.writeStaticField(supportedFieldDescriptor, supportedVar);
-
-                                        // Log the result
-
-                                        // if (error == null) {
-                                        //   logger.debug("java.nio.ByteBuffer.cleaner(): available");
-                                        // }
-                                        BranchResult errorCheck = clinitMethod.ifNull(errorVar);
-                                        BytecodeCreator errorNull = errorCheck.trueBranch();
-                                        errorNull.invokeInterfaceMethod(
-                                                MethodDescriptor.ofMethod(
-                                                        "io.netty.util.internal.logging.InternalLogger",
-                                                        "debug",
-                                                        void.class,
-                                                        String.class),
-                                                errorNull.readStaticField(loggerFieldDescriptor),
-                                                errorNull.load("java.nio.ByteBuffer.cleaner(): available"));
-
-                                        // else {
-                                        //   logger.debug("java.nio.ByteBuffer.cleaner(): unavailable", error);
-                                        // }
-                                        BytecodeCreator errorNotNull = errorCheck.falseBranch();
-                                        errorNotNull.invokeInterfaceMethod(
-                                                MethodDescriptor.ofMethod(
-                                                        "io.netty.util.internal.logging.InternalLogger",
-                                                        "debug",
-                                                        void.class,
-                                                        String.class,
-                                                        Throwable.class),
-                                                errorNotNull.readStaticField(loggerFieldDescriptor),
-                                                errorNotNull.load("java.nio.ByteBuffer.cleaner(): unavailable"),
-                                                errorVar);
-
-                                        clinitMethod.returnValue(null);
-                                    }
-                                }
-
-                                {
-                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className, "isSupported",
-                                            boolean.class);
-                                    transformer.removeMethod(methodDescriptor);
-                                    MethodCreator isSupportedMethod = transformer.addMethod(methodDescriptor);
-                                    isSupportedMethod.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-                                    isSupportedMethod.returnValue(isSupportedMethod.readStaticField(supportedFieldDescriptor));
-                                }
-
-                                {
-                                    MethodDescriptor freeDirectBufferDescriptor = MethodDescriptor.ofMethod(className,
-                                            "freeDirectBuffer", void.class, ByteBuffer.class);
-                                    transformer.removeMethod(freeDirectBufferDescriptor);
-                                    MethodCreator freeDirectBufferMethod = transformer.addMethod(freeDirectBufferDescriptor);
-                                    freeDirectBufferMethod.setModifiers(Opcodes.ACC_PUBLIC);
-
-                                    ResultHandle bufferParam = freeDirectBufferMethod.getMethodParam(0);
-
-                                    // if (System.getSecurityManager() == null)
-                                    ResultHandle securityManager = freeDirectBufferMethod.invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(System.class, "getSecurityManager",
-                                                    SecurityManager.class));
-
-                                    BranchResult securityCheck = freeDirectBufferMethod.ifNull(securityManager);
-
-                                    // True branch: No security manager - direct call
-                                    BytecodeCreator noSecurityBranch = securityCheck.trueBranch();
-
-                                    // PlatformDependent0.UNSAFE.invokeCleaner(buffer);
-                                    ResultHandle unsafe = noSecurityBranch.readStaticField(
-                                            FieldDescriptor.of("io.netty.util.internal.PlatformDependent0",
-                                                    "UNSAFE",
-                                                    "sun.misc.Unsafe"));
-                                    noSecurityBranch.invokeVirtualMethod(
-                                            MethodDescriptor.ofMethod("sun.misc.Unsafe",
-                                                    "invokeCleaner",
-                                                    void.class,
-                                                    ByteBuffer.class),
-                                            unsafe,
-                                            bufferParam);
-
-                                    // False branch: With security manager - call privileged method
-                                    BytecodeCreator withSecurityBranch = securityCheck.falseBranch();
-
-                                    // freeDirectBufferPrivileged(buffer);
-                                    withSecurityBranch.invokeStaticMethod(
-                                            MethodDescriptor.ofMethod("io.netty.util.internal.CleanerJava9",
-                                                    "freeDirectBufferPrivileged",
-                                                    void.class,
-                                                    ByteBuffer.class),
-                                            bufferParam);
-
-                                    // Return from method (void)
-                                    freeDirectBufferMethod.returnValue(null);
-                                }
-
-                                {
-                                    transformer.removeMethod("access$000", Method.class);
-                                }
-
-                                return transformer.applyTo(classVisitor);
-                            }
-                        })
-                .build();
-    }
-
-    /**
-     * When the application targets Java 21+, then we can convert {@code io.netty.util.internal.PlatformDependent0} to depend
-     * explicitly on Virtual Threads instead of Netty needing to use reflection (that has a noticeable impact on startup).
-     * The change makes the {@code IS_VIRTUAL_THREAD_METHOD} and {@code BASE_VIRTUAL_THREAD_CLASS} fields {@code null} while
-     * also
-     * converting the {@code isVirtualThread} method to:
+     *
+     * and then uses it in:
      *
      * <pre>{@code
-     * static boolean isVirtualThread() {
+     * static boolean isVirtualThread(Thread thread) {
+     *     if (thread == null || IS_VIRTUAL_THREAD_METHOD_HANDLE == null) {
+     *         return false;
+     *     }
+     *     try {
+     *         return (boolean) IS_VIRTUAL_THREAD_METHOD_HANDLE.invokeExact(thread);
+     *     } catch (Throwable t) {
+     *         ...
+     *     }
+     * }
+     * }</pre>
+     *
+     * We replace {@code getIsVirtualThreadMethodHandle()} to return {@code null} (skipping the lookup)
+     * and {@code isVirtualThread(Thread)} with a direct call:
+     *
+     * <pre>{@code
+     * static boolean isVirtualThread(Thread thread) {
      *     return thread != null && thread.isVirtual();
      * }
      * }</pre>
-     *
-     * The reason we don't remove the aforementioned fields is that to do that we would have to transform the class loading
-     * initialization method,
-     * which would be to brittle.
      */
     @BuildStep
-    void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
-            BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion().isJava21OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return;
-        }
+    void transformPlatformDependent0(BuildProducer<BytecodeTransformerBuildItem> producer) {
         String className = "io.netty.util.internal.PlatformDependent0";
         producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                 .setCacheable(true).setVisitorFunction(
@@ -775,22 +599,12 @@ class NettyProcessor {
 
                                 {
                                     MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
-                                            "getIsVirtualThreadMethod",
-                                            Method.class);
+                                            "getIsVirtualThreadMethodHandle",
+                                            "java.lang.invoke.MethodHandle");
                                     transformer.removeMethod(methodDescriptor);
-                                    MethodCreator getIsVirtualThreadMethod = transformer.addMethod(methodDescriptor)
+                                    MethodCreator method = transformer.addMethod(methodDescriptor)
                                             .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
-                                    getIsVirtualThreadMethod.returnValue(getIsVirtualThreadMethod.loadNull());
-                                }
-
-                                {
-                                    MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
-                                            "getBaseVirtualThreadClass",
-                                            Class.class);
-                                    transformer.removeMethod(methodDescriptor);
-                                    MethodCreator getBaseVirtualThreadClassMethod = transformer.addMethod(methodDescriptor)
-                                            .setModifiers(Modifier.STATIC | Modifier.PRIVATE);
-                                    getBaseVirtualThreadClassMethod.returnValue(getBaseVirtualThreadClassMethod.loadNull());
+                                    method.returnValue(method.loadNull());
                                 }
 
                                 {
@@ -830,22 +644,43 @@ class NettyProcessor {
     }
 
     /**
-     * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we know we are using Java 17+.
+     * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we target Java 21+.
      * <p>
-     * Generates:
+     * The upstream Netty 4.2.x code uses reflection:
      *
-     * <pre>
-     * public static int processHandlePid(ClassLoader classLoader) {
+     * <pre>{@code
+     * static int processHandlePid(ClassLoader loader) {
+     *     int nilValue = -1;
+     *     if (PlatformDependent.javaVersion() >= 9) {
+     *         Long pid;
+     *         try {
+     *             Class<?> processHandleImplType = Class.forName("java.lang.ProcessHandle", true, loader);
+     *             Method processHandleCurrent = processHandleImplType.getMethod("current");
+     *             Object processHandleInstance = processHandleCurrent.invoke(null);
+     *             Method processHandlePid = processHandleImplType.getMethod("pid");
+     *             pid = (Long) processHandlePid.invoke(processHandleInstance);
+     *         } catch (Exception e) {
+     *             logger.debug("Could not invoke ProcessHandle.current().pid();", e);
+     *             return nilValue;
+     *         }
+     *         if (pid > Integer.MAX_VALUE || pid < Integer.MIN_VALUE) {
+     *             throw new IllegalStateException("Current process ID exceeds int range: " + pid);
+     *         }
+     *         return pid.intValue();
+     *     }
+     *     return nilValue;
+     * }
+     * }</pre>
+     *
+     * We replace it with direct {@code ProcessHandle} API calls:
+     *
+     * <pre>{@code
+     * static int processHandlePid(ClassLoader classLoader) {
      *     int resultVar;
      *     try {
      *         ProcessHandle processHandle = ProcessHandle.current();
-     *
      *         long pid = processHandle.pid();
-     *
-     *         long maxInt = 2147483647L;
-     *         int cmp = Long.compare(pid, maxInt);
-     *
-     *         if (cmp > 0) {
+     *         if (pid > Integer.MAX_VALUE) {
      *             resultVar = -1;
      *         } else {
      *             resultVar = (int) pid;
@@ -854,10 +689,9 @@ class NettyProcessor {
      *         logger.debug("Could not invoke ProcessHandle.current().pid();", e);
      *         resultVar = -1;
      *     }
-     *
      *     return resultVar;
      * }
-     * </pre>
+     * }</pre>
      */
     @BuildStep
     void transformDefaultChannelId(BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
@@ -954,12 +788,21 @@ class NettyProcessor {
     }
 
     @BuildStep
-    void nativeTransportsEnableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+    void enableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
+        // Netty 4.2 on JDK 24+ uses CleanerJava24Linker (FFM malloc/free) for direct buffer
+        // allocation when native access is granted to io.netty.common. Without this, JDK 25+
+        // falls back to CleanerJava25 (shared arenas with expensive thread-local handshakes)
+        // or NOOP (GC-only deallocation for unpooled buffers, causing container OOM).
+        // See https://github.com/quarkusio/quarkus/issues/54011
+        nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.common"));
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.epoll"));
         }
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.kqueue"));
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
+            nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.io_uring"));
         }
     }
 
@@ -968,6 +811,37 @@ class NettyProcessor {
         producer.produce(new IndexDependencyBuildItem("io.netty", "netty-transport"));
     }
 
+    /**
+     * Optimizes {@code ChannelHandlerAdapter#isSharable()} to avoid the per-call annotation lookup via
+     * {@code ThreadLocal} + {@code WeakHashMap} cache that Netty uses.
+     * <p>
+     * The upstream Netty 4.2.x code:
+     *
+     * <pre>{@code
+     * public boolean isSharable() {
+     *     Class<?> clazz = getClass();
+     *     Map<Class<?>, Boolean> cache = InternalThreadLocalMap.get().handlerSharableCache();
+     *     Boolean sharable = cache.get(clazz);
+     *     if (sharable == null) {
+     *         sharable = clazz.isAnnotationPresent(Sharable.class);
+     *         cache.put(clazz, sharable);
+     *     }
+     *     return sharable;
+     * }
+     * }</pre>
+     *
+     * We replace it with a compile-time marker interface approach: all classes annotated with {@code @Sharable}
+     * get the {@code NettySharable} marker interface added, and {@code isSharable()} becomes:
+     *
+     * <pre>{@code
+     * public boolean isSharable() {
+     *     if (this instanceof NettySharable) {
+     *         return true;
+     *     }
+     *     return this.isSharable0(); // original method, fallback for non-indexed classes
+     * }
+     * }</pre>
+     */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void transformIsSharable(CombinedIndexBuildItem indexBuildItem,

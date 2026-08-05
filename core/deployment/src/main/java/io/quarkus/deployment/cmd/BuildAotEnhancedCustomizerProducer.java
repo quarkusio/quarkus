@@ -1,7 +1,6 @@
 package io.quarkus.deployment.cmd;
 
 import java.nio.file.Path;
-import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -23,7 +22,7 @@ public class BuildAotEnhancedCustomizerProducer implements
         String originalContainerImage = (String) context.get("original-container-image");
         String containerWorkingDirectory = (String) context.get("container-working-directory");
         Path aotFile = (Path) context.get("aot-file");
-        return new AbstractMap.SimpleEntry<>(List.of(new BuildChainCustomizer()),
+        return Map.entry(List.of(new BuildChainCustomizer()),
                 List.of(new BuildExecutionCustomizer(originalContainerImage, containerWorkingDirectory, aotFile)));
     }
 

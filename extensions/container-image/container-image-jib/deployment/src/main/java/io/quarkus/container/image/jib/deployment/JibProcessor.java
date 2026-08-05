@@ -141,7 +141,8 @@ public class JibProcessor {
         }
 
         producer.produce(
-                new JvmStartupOptimizerArchiveContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
+                new JvmStartupOptimizerArchiveContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion),
+                        jibConfig.jvmAdditionalArguments()));
     }
 
     private String determineBaseJvmImage(ContainerImageJibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
@@ -453,7 +454,7 @@ public class JibProcessor {
         List<String> entrypoint;
         if (jibConfig.jvmEntrypoint().isPresent()) {
             entrypoint = Collections.unmodifiableList(jibConfig.jvmEntrypoint().get());
-        } else if (containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
+        } else if (ContainerImages.containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
             // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used because it would lead to using different JVM args
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
@@ -678,14 +679,6 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    // TODO: this needs to be a lot more sophisticated
-    private boolean containsRunJava(String baseJvmImage) {
-        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
@@ -944,14 +937,27 @@ public class JibProcessor {
     @BuildStep
     public BuildAotOptimizedContainerImageResultBuildItem buildAotOptimizedContainerImageBuildItem(
             ContainerImageJibConfig jibConfig,
+            ContainerImageConfig containerImageConfig,
             BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
 
         // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
 
         String baseImage = requestBuildItem.getOriginalContainerImage();
-        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
+
+        boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
 
         try {
+            ImageReference enhancedImageReference = ImageReference.parse(enhancedImage);
+            Containerizer containerizer;
+            if (pushContainerImage) {
+                RegistryImage registryImage = toRegistryImage(enhancedImageReference, containerImageConfig.username(),
+                        containerImageConfig.password());
+                containerizer = Containerizer.to(registryImage);
+            } else {
+                containerizer = dockerDaemonContainerizer(jibConfig, enhancedImageReference);
+            }
+
             createPatchedInstance(jibConfig, baseImage)
                     .addLayer(
                             // Add the app.aot file to the working directory
@@ -959,7 +965,7 @@ public class JibProcessor {
                             AbsoluteUnixPath.get(requestBuildItem.getContainerWorkingDirectory()))
                     .addEnvironmentVariable("JAVA_TOOL_OPTIONS",
                             "-XX:AOTCache=%s".formatted(requestBuildItem.getAotFile().getFileName().toString()))
-                    .containerize(dockerDaemonContainerizer(jibConfig, ImageReference.parse(enhancedImage)));
+                    .containerize(containerizer);
 
             log.infof("Created AOT enhanced container image %s", enhancedImage);
             return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);

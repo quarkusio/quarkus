@@ -229,11 +229,12 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             OutputTargetBuildItem outputTargetBuildItem,
             DockerConfig dockerConfig,
             ContainerImageConfig containerImageConfig,
+            ContainerImageInfoBuildItem containerImageInfo,
             BuildAotOptimizedContainerImageRequestBuildItem requestBuildItem) {
         // TODO: this needs a lot of hardening as for the time being it assumes the image is in the docker daemon and only writes the new one there
 
         String baseImage = requestBuildItem.getOriginalContainerImage();
-        String enhancedImage = requestBuildItem.getOriginalContainerImage() + "-aot";
+        String enhancedImage = requestBuildItem.getOriginalContainerImage() + containerImageConfig.effectiveAotImageSuffix();
 
         Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
 
@@ -256,6 +257,8 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             throw new UnsupportedOperationException("Unable to save enhanced Dockerfile contents to disk", e);
         }
 
+        boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
+
         String executableName = getExecutableName(dockerConfig, ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
         var dockerBuildArgs = getDockerBuildArgs(enhancedImage, new DockerfilePaths() {
             @Override
@@ -268,7 +271,12 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
                 return outputDirectory;
             }
         }, containerImageConfig,
-                dockerConfig, false, executableName, Collections.emptyList());
+                dockerConfig, pushContainerImage, executableName, Collections.emptyList());
+
+        boolean useBuildx = dockerConfig.buildx().useBuildx();
+        if (useBuildx && pushContainerImage) {
+            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
+        }
 
         LOG.infof("Executing the following command to build image: '%s %s'", executableName,
                 String.join(" ", dockerBuildArgs));
@@ -277,6 +285,11 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
                 .arguments(dockerBuildArgs)
                 .error().logOnSuccess(false).inherited()
                 .run();
+
+        if (!useBuildx && pushContainerImage) {
+            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
+            pushImage(enhancedImage, executableName, dockerConfig);
+        }
 
         LOG.infof("Created AOT enhanced container image %s", enhancedImage);
         return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);

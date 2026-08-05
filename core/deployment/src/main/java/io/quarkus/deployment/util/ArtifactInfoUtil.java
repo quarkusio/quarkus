@@ -26,19 +26,6 @@ public final class ArtifactInfoUtil {
      * <p>
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      *
-     * @return the result, or throws
-     * @deprecated use {@link #groupIdAndArtifactId(Class, CurateOutcomeBuildItem)}
-     */
-    @Deprecated
-    public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz) {
-        return groupIdAndArtifactId(clazz, null);
-    }
-
-    /**
-     * Returns a Map.Entry containing the groupId and the artifactId of the module the contains the BuildItem
-     * <p>
-     * The way this works is by depending on the pom.properties file that should be present in the deployment jar
-     *
      * @param clazz the caller clazz. (must not be {@code null})
      * @param curateOutcomeBuildItem the application model that gets searched for the caller clazz. optional
      * @return the result, or throws
@@ -92,8 +79,7 @@ public final class ArtifactInfoUtil {
 
             if (codeLocation.toString().endsWith(".jar")) {
                 // Search inside the jar for pom properties, needed for workspace artifacts
-                try (FileSystem fs = ZipUtils.newFileSystem(Paths.get(codeLocation.toURI()),
-                        Thread.currentThread().getContextClassLoader())) {
+                try (FileSystem fs = ZipUtils.newFileSystem(Paths.get(codeLocation.toURI()))) {
                     Entry<String, String> ret = groupIdAndArtifactId(fs);
                     if (ret == null) {
                         throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "

@@ -8,17 +8,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -29,7 +32,7 @@ import io.vertx.ext.web.RoutingContext;
 public class RouteMethodParametersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleBean.class));
 
@@ -65,6 +68,14 @@ public class RouteMethodParametersTest {
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
                 .post("/hello-body-pojo?id=13").then().statusCode(200).body("name", is("Eleven"))
                 .body("id", is(13));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
+                .post("/hello-body-uni").then().statusCode(200).body("name", is("Eleven"))
+                .body("id", is(11));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
+                .post("/hello-body-cs").then().statusCode(200).body("name", is("Eleven"))
+                .body("id", is(11));
+        given().contentType("application/json")
+                .post("/hello-body-pojo-empty").then().statusCode(200).body(is("null"));
         when().get("/hello-params-conversion?id=22&size=100&valid=false&doubles=2").then().statusCode(200)
                 .body(is("id=22,size=100,valid=false,doubles=[2.0]"));
         when().get("/hello-param-conversion-optional").then().statusCode(200)
@@ -160,6 +171,25 @@ public class RouteMethodParametersTest {
         Person helloBodyPojo(@Body Person person, @Param("id") Optional<String> primaryKey) {
             person.setId(primaryKey.map(Integer::valueOf).orElse(11));
             return person;
+        }
+
+        @Route(produces = "application/json")
+        Uni<Person> helloBodyUni(@Body JsonObject body) {
+            Person p = body.mapTo(Person.class);
+            p.setId(11);
+            return Uni.createFrom().item(p);
+        }
+
+        @Route(produces = "application/json")
+        CompletionStage<Person> helloBodyCs(@Body JsonObject body) {
+            Person p = body.mapTo(Person.class);
+            p.setId(11);
+            return CompletableFuture.completedFuture(p);
+        }
+
+        @Route
+        String helloBodyPojoEmpty(@Body Person person) {
+            return String.valueOf(person);
         }
 
         @Route

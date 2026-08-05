@@ -4,12 +4,14 @@ permissions:
   pull-requests: write
   packages: read
 
-on:
-  pull_request_target:
-    types: [closed]
-    paths:
-      - 'docs/src/main/asciidoc/**'
-      - '.github/workflows/doc-build.yml'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  pull_request_target:
+#    types: [closed]
+#    paths:
+#      - 'docs/src/main/asciidoc/**'
+#      - '.github/workflows/doc-build.yml'
+on: [workflow_dispatch]
 
 jobs:
   preview-teardown:

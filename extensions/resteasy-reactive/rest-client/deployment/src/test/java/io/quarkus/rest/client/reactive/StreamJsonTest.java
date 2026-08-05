@@ -24,11 +24,7 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
@@ -36,13 +32,16 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 public class StreamJsonTest {
 
     private static final long TICK_EVERY_MS = 200;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class));
 
     @TestHTTPResource
@@ -212,7 +211,7 @@ public class StreamJsonTest {
         @Path("/single-pojo")
         @Produces(RestMediaType.APPLICATION_STREAM_JSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
-        public String getPojosAsString() throws JsonProcessingException {
+        public String getPojosAsString() throws JacksonException {
             ObjectMapper mapper = new ObjectMapper();
             StringBuilder result = new StringBuilder();
             ObjectWriter objectWriter = mapper.writerFor(Message.class);

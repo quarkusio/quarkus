@@ -12,7 +12,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
@@ -22,7 +22,7 @@ import io.vertx.ext.web.RoutingContext;
 public class SSEMultiRouteWithContentTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
@@ -54,10 +54,6 @@ public class SSEMultiRouteWithContentTypeTest {
 
         when().get("/buffers").then().statusCode(200)
                 .body(is("data: Buffer\nid: 0\n\ndata: Buffer\nid: 1\n\ndata: Buffer.\nid: 2\n\n"))
-                .header("content-type", is("text/event-stream"));
-
-        when().get("/mutiny-buffer").then().statusCode(200)
-                .body(is("data: Buffer\nid: 0\n\ndata: Mutiny\nid: 1\n\n"))
                 .header("content-type", is("text/event-stream"));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
@@ -146,12 +142,6 @@ public class SSEMultiRouteWithContentTypeTest {
         Multi<Buffer> buffers() {
             return Multi.createFrom()
                     .items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"), Buffer.buffer("Buffer."));
-        }
-
-        @Route(path = "mutiny-buffer", produces = EVENT_STREAM)
-        Multi<io.vertx.mutiny.core.buffer.Buffer> bufferMutiny() {
-            return Multi.createFrom().items(io.vertx.mutiny.core.buffer.Buffer.buffer("Buffer"),
-                    io.vertx.mutiny.core.buffer.Buffer.buffer("Mutiny"));
         }
 
         @Route(path = "void", produces = EVENT_STREAM)

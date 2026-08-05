@@ -19,17 +19,17 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.NoStackTraceException;
+import io.vertx.core.VertxException;
 
 public class BufferEntityInExceptionMapperTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(
                     Client.class, Resource.class, DummyExceptionMapper.class));
 
@@ -40,7 +40,7 @@ public class BufferEntityInExceptionMapperTest {
     public void testBlocking() {
         Client client = createClient();
 
-        assertThatThrownBy(client::hello).isInstanceOfSatisfying(NoStackTraceException.class,
+        assertThatThrownBy(client::hello).isInstanceOfSatisfying(VertxException.class,
                 e -> assertThat(e).hasMessage("dummy"));
     }
 
@@ -50,7 +50,7 @@ public class BufferEntityInExceptionMapperTest {
         Client client = createClient();
 
         asserter.assertThat(
-                () -> client.uniHello().onFailure(NoStackTraceException.class).recoverWithItem(Throwable::getMessage),
+                () -> client.uniHello().onFailure(VertxException.class).recoverWithItem(Throwable::getMessage),
                 (res) -> {
                     assertThat(res).isEqualTo("dummy");
                 });
@@ -92,7 +92,7 @@ public class BufferEntityInExceptionMapperTest {
         @Override
         public RuntimeException toThrowable(Response response) {
             response.bufferEntity();
-            return new NoStackTraceException("dummy");
+            return new VertxException("dummy");
         }
 
     }

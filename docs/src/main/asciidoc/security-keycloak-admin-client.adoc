@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Keycloak Admin Client
 include::_attributes.adoc[]
-:categories: security
 :keywords: sso oidc security keycloak
 :topics: security,authentication,authorization,keycloak,sso
 :extensions: io.quarkus:quarkus-keycloak-admin-rest-client,io.quarkus:quarkus-keycloak-admin-resteasy-client

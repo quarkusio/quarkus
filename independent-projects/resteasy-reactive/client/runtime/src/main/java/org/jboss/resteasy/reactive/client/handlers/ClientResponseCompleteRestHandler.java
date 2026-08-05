@@ -4,12 +4,15 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.ParameterizedType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -22,8 +25,10 @@ import org.jboss.resteasy.reactive.client.impl.multipart.FileDownloadImpl;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
@@ -61,53 +66,63 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                 && parseContent) { // this case means that a specific response type was requested
             if (context.getResponseMultipartParts() != null) {
                 GenericType<?> responseType = context.getResponseType();
-                if (!(responseType.getType() instanceof Class)) {
-                    throw new IllegalArgumentException("Not supported return type for a multipart message, " +
-                            "expected a non-generic class got : " + responseType.getType());
-                }
-                Class<?> responseClass = (Class<?>) responseType.getType();
-                MultipartResponseData multipartData = multipartDataMap.get(responseClass);
-                if (multipartData == null) {
-                    throw new IllegalStateException("Failed to find multipart data for class " + responseClass + ". " +
-                            "If it's meant to be used as multipart response type, consider annotating it with @MultipartForm");
-                }
-                Object result = multipartData.newInstance();
-                builder.entity(result);
-                List<InterfaceHttpData> parts = context.getResponseMultipartParts();
-                for (InterfaceHttpData httpData : parts) {
-                    FieldFiller fieldFiller = null;
-                    // find the correct filler
-                    for (FieldFiller ff : multipartData.getFieldFillers()) {
-                        if (ff.getPartName().equals(httpData.getName())) {
-                            fieldFiller = ff;
-                            break;
+
+                if (isEntityPartList(responseType)) {
+                    List<EntityPart> entityParts = new ArrayList<>();
+                    for (InterfaceHttpData httpData : context.getResponseMultipartParts()) {
+                        entityParts.add(nettyPartToEntityPart(httpData));
+                    }
+                    builder.entity(entityParts);
+                } else {
+
+                    if (!(responseType.getType() instanceof Class)) {
+                        throw new IllegalArgumentException("Not supported return type for a multipart message, " +
+                                "expected a non-generic class got : " + responseType.getType());
+                    }
+                    Class<?> responseClass = (Class<?>) responseType.getType();
+                    MultipartResponseData multipartData = multipartDataMap.get(responseClass);
+                    if (multipartData == null) {
+                        throw new IllegalStateException("Failed to find multipart data for class " + responseClass + ". " +
+                                "If it's meant to be used as multipart response type, consider annotating it with @MultipartForm");
+                    }
+                    Object result = multipartData.newInstance();
+                    builder.entity(result);
+                    List<InterfaceHttpData> parts = context.getResponseMultipartParts();
+                    for (InterfaceHttpData httpData : parts) {
+                        FieldFiller fieldFiller = null;
+                        // find the correct filler
+                        for (FieldFiller ff : multipartData.getFieldFillers()) {
+                            if (ff.getPartName().equals(httpData.getName())) {
+                                fieldFiller = ff;
+                                break;
+                            }
+                        }
+                        if (fieldFiller == null) {
+                            continue;
+                        }
+                        if (httpData instanceof Attribute at) {
+                            // TODO: get rid of ByteArrayInputStream
+                            // TODO: maybe we could extract something closer to input stream from attribute
+                            ByteArrayInputStream in = new ByteArrayInputStream(
+                                    at.getValue().getBytes(StandardCharsets.UTF_8));
+                            Object fieldValue = context.readEntity(in,
+                                    fieldFiller.getFieldType(),
+                                    MediaType.valueOf(fieldFiller.getMediaType()),
+                                    context.getMethodDeclaredAnnotationsSafe(),
+                                    // FIXME: we have strings, it wants objects, perhaps there's
+                                    // an Object->String conversion too many
+                                    (MultivaluedMap) responseContext.getHeaders());
+                            if (fieldValue != null) {
+                                fieldFiller.set(result, fieldValue);
+                            }
+                        } else if (httpData instanceof FileUpload fu) {
+                            fieldFiller.set(result, new FileDownloadImpl(fu));
+                        } else {
+                            throw new IllegalArgumentException("Unsupported multipart message element type. " +
+                                    "Expected FileAttribute or Attribute, got: " + httpData.getClass());
                         }
                     }
-                    if (fieldFiller == null) {
-                        continue;
-                    }
-                    if (httpData instanceof Attribute at) {
-                        // TODO: get rid of ByteArrayInputStream
-                        // TODO: maybe we could extract something closer to input stream from attribute
-                        ByteArrayInputStream in = new ByteArrayInputStream(
-                                at.getValue().getBytes(StandardCharsets.UTF_8));
-                        Object fieldValue = context.readEntity(in,
-                                fieldFiller.getFieldType(),
-                                MediaType.valueOf(fieldFiller.getMediaType()),
-                                context.getMethodDeclaredAnnotationsSafe(),
-                                // FIXME: we have strings, it wants objects, perhaps there's
-                                // an Object->String conversion too many
-                                (MultivaluedMap) responseContext.getHeaders());
-                        if (fieldValue != null) {
-                            fieldFiller.set(result, fieldValue);
-                        }
-                    } else if (httpData instanceof FileUpload fu) {
-                        fieldFiller.set(result, new FileDownloadImpl(fu));
-                    } else {
-                        throw new IllegalArgumentException("Unsupported multipart message element type. " +
-                                "Expected FileAttribute or Attribute, got: " + httpData.getClass());
-                    }
-                }
+                } // close the else block for non-EntityPart multipart
             } else {
                 Class<?> rawType = context.getResponseType().getRawType();
                 if (context.isFileDownload()) {
@@ -141,6 +156,47 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
             builder.entityStream(entityStream);
         }
         return builder.build();
+    }
+
+    private static boolean isEntityPartList(GenericType<?> responseType) {
+        if (responseType.getRawType() != List.class) {
+            return false;
+        }
+        if (responseType.getType() instanceof ParameterizedType pt) {
+            java.lang.reflect.Type[] args = pt.getActualTypeArguments();
+            return args.length == 1 && args[0] == EntityPart.class;
+        }
+        return false;
+    }
+
+    private static EntityPart nettyPartToEntityPart(InterfaceHttpData httpData) throws IOException {
+        String name = httpData.getName();
+        String fileName = null;
+        InputStream content;
+        MediaType mediaType;
+        MultivaluedMap<String, String> headers = new QuarkusMultivaluedHashMap<>();
+
+        if (httpData instanceof FileUpload fu) {
+            fileName = fu.getFilename();
+            String ct = fu.getContentType();
+            mediaType = ct != null ? MediaType.valueOf(ct) : MediaType.APPLICATION_OCTET_STREAM_TYPE;
+            content = new ByteArrayInputStream(fu.get());
+        } else if (httpData instanceof Attribute at) {
+            mediaType = MediaType.TEXT_PLAIN_TYPE;
+            content = new ByteArrayInputStream(at.getValue().getBytes(StandardCharsets.UTF_8));
+        } else {
+            throw new IllegalArgumentException(
+                    "Unsupported multipart response element type: " + httpData.getClass());
+        }
+
+        headers.putSingle("Content-Type", mediaType.toString());
+        StringBuilder cd = new StringBuilder("form-data; name=\"").append(name).append("\"");
+        if (fileName != null) {
+            cd.append("; filename=\"").append(fileName).append("\"");
+        }
+        headers.putSingle("Content-Disposition", cd.toString());
+
+        return new EntityPartImpl(name, fileName, headers, mediaType, content);
     }
 
 }

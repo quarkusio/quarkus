@@ -34,6 +34,7 @@ import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInit
 import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStrategyProviderInitiator;
 import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
+import org.hibernate.service.internal.ChangesetCoordinatorInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
@@ -252,6 +253,9 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         // Custom Quarkus implementation: overrides the internal cache to leverage Caffeine
         serviceInitiators.add(QuarkusInternalCacheFactoryInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(ChangesetCoordinatorInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

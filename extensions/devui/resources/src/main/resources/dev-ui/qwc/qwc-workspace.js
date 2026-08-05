@@ -48,12 +48,21 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
         .split vaadin-split-layout {
             width: 100%;
+            height: 100%;
+            flex: 1 1 0;
+            min-height: 0;
         }
-    
+
         .files {
             height: 100%;
             display: flex;
             padding-left: 10px;
+            overflow-y: auto;
+        }
+
+        .mainPart {
+            height: 100%;
+            overflow-y: auto;
         }
         .nothing {
             display: flex;
@@ -278,7 +287,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _renderResultSplitView(){
         if(this._actionResult && this._actionResult.content && this._actionResult.display === "split"){
-            return html`<detail-content style="width: 50%;">
+            return html`<detail-content style="width: 50%;overflow-y: auto;">
                 <div class="actionSplitScreen">
                     <div class="actionButtonBar">
                         <vaadin-button theme="icon" aria-label="Close" @click="${this._clearActionResult}">
@@ -527,7 +536,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             if(err.error.message){
                 notifier.showErrorMessage(err.message + ". " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }else {
-                notifier.showErrorMessage(msg('An error occured.', { id: 'workspace-error' }) + " " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
+                notifier.showErrorMessage(msg('An error occurred.', { id: 'workspace-error' }) + " " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }
         });
     }

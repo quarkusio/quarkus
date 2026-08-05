@@ -9,14 +9,26 @@ export class QwcNoData extends LitElement {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            border: 1px solid var(--lumo-contrast-20pct);
-            border-radius: 9px;
-            padding: 30px;
+            gap: 12px;
+            border: 1px dashed var(--lumo-contrast-15pct);
+            border-radius: var(--devui-radius-lg, 12px);
+            padding: 40px 30px;
             margin: 30px;
+            color: var(--lumo-contrast-50pct);
+            font-size: var(--lumo-font-size-s);
+            animation: devui-fade-in var(--devui-transition-slow, 0.3s ease);
+        }
+        @keyframes devui-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .nodata a {
-            color: var(--lumo-contrast-90pct);
+            color: var(--lumo-primary-text-color);
+            text-decoration: none;
+            transition: opacity var(--devui-transition-fast, 0.15s ease);
+        }
+        .nodata a:hover {
+            opacity: 0.8;
         }
     `;
 

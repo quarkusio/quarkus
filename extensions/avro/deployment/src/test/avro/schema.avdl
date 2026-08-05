@@ -1,0 +1,36 @@
+// Optional default namespace (if absent, the default namespace is the null namespace).
+namespace org.apache.avro.test;
+
+// Optional main schema definition; if used, the IDL file is equivalent to a .avsc file.
+schema TestRecord;
+
+/** Documentation for the enum type Kind */
+@aliases(["org.foo.KindOf"])
+enum Kind {
+	FOO,
+	BAR, // the bar enum value
+	BAZ
+} = FOO;
+
+// For schema evolution purposes, unmatched values do not throw an error, but are resolved to FOO.
+/** MD5 hash; good enough to avoid most collisions, and smaller than (for example) SHA256. */
+fixed MD5(16);
+
+record TestRecord {
+	/** Record name; has no intrinsic order */
+	string @order("ignore") name;
+
+	Kind @order("descending") kind;
+
+	MD5 hash;
+	/*
+	Note that 'null' is the first union type. Just like .avsc / .avpr files, the default value must be of the first union type.
+	*/
+	union{null, MD5}
+			/** Optional field */
+			@aliases(["hash"]) nullableHash = null;
+	// Shorthand syntax; the null in this union is placed based on the default value (or first is there's no default).
+	MD5? anotherNullableHash = null;
+
+	array<long> arrayOfLongs;
+}

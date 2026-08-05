@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -13,6 +14,7 @@ import java.lang.instrument.ClassDefinition;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
@@ -148,7 +150,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
             BiFunction<String, byte[], byte[]> classTransformers,
             TestSupport testSupport, AtomicReference<Throwable> deploymentProblem) {
-        this.applicationRoot = applicationRoot;
+        this.applicationRoot = applicationRoot != null ? applicationRoot.normalize() : null;
         this.context = context;
         this.compiler = compiler;
         this.devModeType = devModeType;
@@ -430,18 +432,76 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public void updateFile(String file, byte[] data) {
-        if (file.startsWith("/")) {
-            file = file.substring(1);
-        }
+        requireNonNull(data, "data");
+        Path resolve = resolveApplicationPath(file);
         try {
-            Path resolve = applicationRoot.resolve(file);
             if (!Files.exists(resolve.getParent())) {
                 Files.createDirectories(resolve.getParent());
             }
+            validateExistingPathComponents(applicationRoot.toAbsolutePath().normalize(), resolve, file);
             Files.write(resolve, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void deleteFile(String file) {
+        Path resolve = resolveApplicationPath(file);
+        try {
+            Files.deleteIfExists(resolve);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Path resolveApplicationPath(String file) {
+        file = normalizeFile(file);
+        Path normalizedRoot = applicationRoot.toAbsolutePath().normalize();
+        Path relativePath = Path.of(file);
+        Path resolved = normalizedRoot.resolve(relativePath).normalize();
+        if (relativePath.isAbsolute() || resolved.equals(normalizedRoot) || !resolved.startsWith(normalizedRoot)
+                || file.length() >= 2 && file.charAt(1) == ':') {
+            throw new IllegalArgumentException("Path is not below the application root: " + file);
+        }
+        validateExistingPathComponents(normalizedRoot, resolved, file);
+        return resolved;
+    }
+
+    private static void validateExistingPathComponents(Path normalizedRoot, Path resolved, String file) {
+        final Path realRoot;
+        try {
+            realRoot = normalizedRoot.toRealPath();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to validate the application root for remote-dev path: " + file, e);
+        }
+        Path current = normalizedRoot;
+        for (Path element : normalizedRoot.relativize(resolved)) {
+            current = current.resolve(element);
+            if (Files.isSymbolicLink(current)) {
+                throw new IllegalArgumentException("Symbolic links are not allowed in remote-dev paths: " + file);
+            }
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                try {
+                    if (!current.toRealPath().startsWith(realRoot)) {
+                        throw new IllegalArgumentException("Path leaves the application root: " + file);
+                    }
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("Unable to validate remote-dev path: " + file, e);
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    private static String normalizeFile(String file) {
+        requireNonNull(file, "file");
+        file = file.replace('\\', '/');
+        if (file.startsWith("/")) {
+            file = file.substring(1);
+        }
+        return file;
     }
 
     @Override
@@ -722,6 +782,21 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             startTestScanningTimer();
         }
         return ret;
+    }
+
+    /**
+     * Compile and detect changed application and test classes for one-shot test execution.
+     * Returns a merged ClassScanResult, or null if no changes were detected.
+     */
+    public ClassScanResult checkForChangedClassesForTests() {
+        ClassScanResult appChanges = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test, true);
+        ClassScanResult testChanges = new ClassScanResult();
+        if (testSupport != null && testSupport.getCompiler() != null) {
+            testChanges = checkForChangedClasses(testSupport.getCompiler(),
+                    s -> s.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test, true);
+        }
+        ClassScanResult merged = ClassScanResult.merge(testChanges, appChanges);
+        return merged.isChanged() ? merged : null;
     }
 
     private void collectRecompilationTargets(DotName changedDependency, Set<DotName> knownRecompilationTargets) {

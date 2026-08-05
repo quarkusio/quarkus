@@ -1,6 +1,8 @@
 package io.quarkus.test.junit.classloading;
 
+import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.createTempApplicationProperties;
 import static io.quarkus.runtime.LaunchMode.TEST;
+import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.TEST_PROFILE;
 
 import java.io.Closeable;
 import java.io.File;
@@ -47,7 +49,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.TestProfileAndProperties;
-import io.quarkus.test.junit.TestProfileAndProperties.TestProfileConfigSource;
 import io.quarkus.test.junit.TestResourceUtil;
 
 /**
@@ -561,19 +562,18 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         return curatedApplication.getOrCreateBaseRuntimeClassLoader();
     }
 
-    @SuppressWarnings("unchecked")
     private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Optional<Class<?>> profile)
             throws Exception {
 
-        // Generate Profile Resource
         List<Path> additionalPaths = new ArrayList<>();
+        // Generate Profile Resource
         if (profile.isPresent()) {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(profile.get().getClassLoader());
 
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.of(profile.get(), TEST);
-            TestProfileConfigSource testProfileConfigSource = testProfileAndProperties.toTestProfileConfigSource();
-            additionalPaths.add(testProfileConfigSource.getPropertiesLocation());
+            additionalPaths.add(createTempApplicationProperties(
+                    TEST_PROFILE.getName(), testProfileAndProperties.properties(), TEST_PROFILE));
 
             Thread.currentThread().setContextClassLoader(old);
         }

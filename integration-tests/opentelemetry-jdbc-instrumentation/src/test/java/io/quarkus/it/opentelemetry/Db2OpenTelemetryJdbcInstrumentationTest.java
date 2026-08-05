@@ -16,4 +16,9 @@ public class Db2OpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJdbcIn
         testQueryTraced("db2", "Db2Hit");
     }
 
+    @Test
+    void testDb2ConnectionNotTraced() {
+        testConnectionNotTraced("db2");
+    }
+
 }

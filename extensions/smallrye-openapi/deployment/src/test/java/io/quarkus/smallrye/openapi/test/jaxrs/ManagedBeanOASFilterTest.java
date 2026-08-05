@@ -21,7 +21,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.OpenApiFilter.RunStage;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -29,7 +29,7 @@ class ManagedBeanOASFilterTest {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyFilter1.class, MyFilter2.class)
                     .addAsResource(new StringAsset("""

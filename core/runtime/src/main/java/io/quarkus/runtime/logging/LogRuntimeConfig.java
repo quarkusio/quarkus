@@ -21,7 +21,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.CharsetConverter;
 import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.MemorySize;
-import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
@@ -246,7 +245,6 @@ public interface LogRuntimeConfig {
              * on the size of the file before it is rotated.
              */
             @WithDefault("10M")
-            @WithConverter(MemorySizeConverter.class)
             MemorySize maxFileSize();
 
             /**
@@ -428,7 +426,7 @@ public interface LogRuntimeConfig {
          * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
          * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
          */
-        Optional<@WithConverter(MemorySizeConverter.class) MemorySize> maxLength();
+        Optional<MemorySize> maxLength();
 
         /**
          * Syslog async logging config

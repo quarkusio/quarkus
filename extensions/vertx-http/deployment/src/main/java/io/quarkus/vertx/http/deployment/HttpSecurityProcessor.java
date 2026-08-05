@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -503,7 +504,7 @@ public class HttpSecurityProcessor {
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             final var methodCache = new HashMap<MethodInfo, RuntimeValue<MethodDescription>>();
-            final var methodDescriptionToInterceptor = new HashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
+            final var methodDescriptionToInterceptor = new LinkedHashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
             for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
                 var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorMethod.interceptorBinding);
                 for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {

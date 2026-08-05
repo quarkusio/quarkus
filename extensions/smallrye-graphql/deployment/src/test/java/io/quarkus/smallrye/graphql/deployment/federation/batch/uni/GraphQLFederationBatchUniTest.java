@@ -10,13 +10,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest;
 import io.quarkus.smallrye.graphql.deployment.federation.batch.Foo;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class GraphQLFederationBatchUniTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(FooApiUni.class, Foo.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true\n" +

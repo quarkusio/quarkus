@@ -18,7 +18,7 @@ public class TestIdentityAssociationTest {
 
     @BeforeEach
     void init() {
-        sut = new TestIdentityAssociation(new DelegateSecurityIdentityAssociation());
+        sut = new TestIdentityAssociation(new DelegatingSecurityIdentityAssociation(new DelegateSecurityIdentityAssociation()));
 
         BlockingOperationControl.setIoThreadDetector(new IOThreadDetector[0]);
     }

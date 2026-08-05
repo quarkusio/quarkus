@@ -28,8 +28,10 @@ public final class OracleNativeImage {
         //We register it for the sake of people not using Agroal.
         // "oracle.jdbc.OracleDriver" is what's listed in the serviceloader resource from Oracle,
         // but it delegates all use to "oracle.jdbc.driver.OracleDriver" - which is also what's recommended by the docs.
-        final String driverName = "oracle.jdbc.driver.OracleDriver";
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
+        // Flyway's OracleDatabaseType also returns "oracle.jdbc.OracleDriver" as the driver class name,
+        // so we need to make sure both are registered for reflection.
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.driver.OracleDriver",
+                "oracle.jdbc.OracleDriver").build());
 
         // This is needed when using XA and we use the `@RegisterForReflection` trick to make sure all nested classes are registered for reflection
         additionalIndexedClasses

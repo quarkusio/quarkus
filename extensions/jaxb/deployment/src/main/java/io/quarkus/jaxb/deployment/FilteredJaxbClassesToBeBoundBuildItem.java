@@ -2,7 +2,8 @@ package io.quarkus.jaxb.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -33,8 +34,8 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
     }
 
     public static class Builder {
-        private final Set<String> classNames = new LinkedHashSet<>();
-        private final Set<Predicate<String>> classNamePredicateExcludes = new LinkedHashSet<>();
+        private final Set<String> classNames = new HashSet<>();
+        private final Set<Predicate<String>> classNamePredicateExcludes = new HashSet<>();
 
         public Builder classNameExcludes(Collection<String> classNameExcludes) {
             final String packMatch = ".*";
@@ -61,6 +62,7 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
 
         public FilteredJaxbClassesToBeBoundBuildItem build() {
             final List<Class<?>> classes = classNames.stream()
+                    .sorted(Comparator.naturalOrder())
                     .filter(className -> this.classNamePredicateExcludes.stream().noneMatch(p -> p.test(className)))
                     .map(FilteredJaxbClassesToBeBoundBuildItem::getClassByName)
                     .filter(JaxbType::isValidType)

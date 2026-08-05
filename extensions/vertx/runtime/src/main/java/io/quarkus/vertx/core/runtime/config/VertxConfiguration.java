@@ -109,24 +109,17 @@ public interface VertxConfiguration {
     boolean useAsyncDNS();
 
     /**
-     * The event bus configuration.
-     */
-    EventBusConfiguration eventbus();
-
-    /**
-     * The cluster configuration.
-     */
-    ClusterConfiguration cluster();
-
-    /**
      * The address resolver configuration.
      */
     AddressResolverConfiguration resolver();
 
     /**
-     * Enable or disable native transport
+     * The interval of the blocked thread checker.
+     * The blocked thread checker periodically checks if any event loop or worker thread
+     * has been blocked for longer than the configured thresholds
+     * ({@code max-event-loop-execute-time} and {@code max-worker-execute-time}).
      */
-    @WithDefault("false")
-    boolean preferNativeTransport();
+    @WithDefault("1s")
+    Duration blockedThreadCheckInterval();
 
 }

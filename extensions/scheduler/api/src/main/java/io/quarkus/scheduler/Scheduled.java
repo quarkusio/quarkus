@@ -85,6 +85,12 @@ public @interface Scheduled {
     String QUARTZ = "QUARTZ";
 
     /**
+     * Maximum length of the {@link #description()} value. This limit is derived from the {@code VARCHAR(250)} column used
+     * in Quartz JDBC schemas for the {@code DESCRIPTION} column in {@code QRTZ_JOB_DETAILS} and {@code QRTZ_TRIGGERS} tables.
+     */
+    int DESCRIPTION_MAX_LENGTH = 250;
+
+    /**
      * Optionally defines a unique identifier for this job.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
@@ -97,6 +103,21 @@ public @interface Scheduled {
      * @return the unique identity of the schedule
      */
     String identity() default "";
+
+    /**
+     * Optionally defines a brief description of what the job does.
+     * <p>
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(description = "${myJob.description}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(description =
+     * "${myJob.description:My job}")}.
+     * <p>
+     * Note that when using the Quartz scheduler with a JDBC job store, the description is limited to
+     * {@value #DESCRIPTION_MAX_LENGTH} characters.
+     *
+     * @return the description
+     */
+    String description() default "";
 
     /**
      * Defines a cron-like expression. For example "0 15 10 * * ?" fires at 10:15am every day.

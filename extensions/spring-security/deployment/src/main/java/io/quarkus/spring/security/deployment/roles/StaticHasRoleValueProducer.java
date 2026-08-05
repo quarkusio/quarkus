@@ -1,7 +1,8 @@
 package io.quarkus.spring.security.deployment.roles;
 
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
 
 public class StaticHasRoleValueProducer implements HasRoleValueProducer {
 
@@ -12,7 +13,7 @@ public class StaticHasRoleValueProducer implements HasRoleValueProducer {
     }
 
     @Override
-    public ResultHandle apply(BytecodeCreator creator) {
-        return creator.load(value);
+    public Expr apply(BlockCreator creator) {
+        return Const.of(value);
     }
 }

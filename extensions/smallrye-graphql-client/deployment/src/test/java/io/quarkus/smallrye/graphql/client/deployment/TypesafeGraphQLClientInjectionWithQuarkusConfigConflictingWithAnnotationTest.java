@@ -15,7 +15,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.Testing2GraphQLClientApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TypesafeGraphQLClientInjectionWithQuarkusConfigConflictingWithAnnotationTest {
 
@@ -23,7 +23,7 @@ public class TypesafeGraphQLClientInjectionWithQuarkusConfigConflictingWithAnnot
             System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, Testing2GraphQLClientApi.class,
                             Person.class, PersonDto.class)

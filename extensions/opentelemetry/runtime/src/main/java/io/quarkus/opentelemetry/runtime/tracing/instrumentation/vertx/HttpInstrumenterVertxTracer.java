@@ -10,7 +10,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+
+import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
@@ -42,7 +45,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.HttpRequestHead;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -51,6 +54,8 @@ import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
 public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest, HttpResponse> {
+    private static final Logger logger = Logger.getLogger(HttpInstrumenterVertxTracer.class);
+
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
 
@@ -104,7 +109,9 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             final OpenTelemetryVertxTracer.SpanOperation spanOperation,
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
-
+        if (logger.isDebugEnabled()) {
+            logger.debugv("http failure: {0}", failure);
+        }
         HttpServerRoute.update(spanOperation.getSpanContext(), SERVER_FILTER, RouteGetter.ROUTE_GETTER,
                 ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
@@ -122,12 +129,18 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 request,
                 operation, headers, tagExtractor);
         if (spanOperation != null) {
-            Context runningCtx = spanOperation.getContext();
-            if (VertxContext.isDuplicatedContext(runningCtx)) {
-                String pathTemplate = runningCtx.getLocal("ClientUrlPathTemplate");
-                if (pathTemplate != null && !pathTemplate.isEmpty()) {
-                    Span.fromContext(spanOperation.getSpanContext())
-                            .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);
+            // Use the trace operation provided by Vert.x when it differs from the default HTTP method name.
+            HttpRequest httpRequest = (HttpRequest) spanOperation.getRequest();
+            if (operation != null && !operation.equals(httpRequest.method().name())) {
+                Span.fromContext(spanOperation.getSpanContext()).updateName(operation);
+            } else {
+                Context runningCtx = spanOperation.getContext();
+                if (VertxContext.isDuplicatedContext(runningCtx)) {
+                    String pathTemplate = (String) VertxContext.localContextData(runningCtx).get("ClientUrlPathTemplate");
+                    if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                        Span.fromContext(spanOperation.getSpanContext())
+                                .updateName(httpRequest.method().name() + " " + pathTemplate);
+                    }
                 }
             }
         }
@@ -193,11 +206,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         @Override
         public String get(final io.opentelemetry.context.Context context, final HttpRequestSpan requestSpan,
                 final HttpResponse response) {
+            Context ctx = requestSpan.getContext();
+            ConcurrentHashMap<String, Object> data = VertxContext.localContextData(ctx);
             // RESTEasy
-            String route = requestSpan.getContext().getLocal("UrlPathTemplate");
+            String route = (String) data.get("UrlPathTemplate");
             if (route == null) {
                 // Vert.x
-                route = requestSpan.getContext().getLocal("VertxRoute");
+                route = (String) data.get("VertxRoute");
             }
 
             if (route != null && route.length() >= 1) {
@@ -454,8 +469,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -513,8 +533,13 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public int id() {
+        public long id() {
             return httpRequest.id();
+        }
+
+        @Override
+        public HttpVersion version() {
+            return httpRequest.version();
         }
 
         @Override
@@ -534,12 +559,12 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @Override
         public MultiMap headers() {
-            HeadersAdaptor headers = new HeadersAdaptor(new HeadersMultiMap()) {
+            HeadersAdaptor headers = new HeadersAdaptor(Http1xHeaders.httpHeaders()) {
                 @Override
-                public MultiMap set(final String name, final String value) {
-                    MultiMap result = super.set(name, value);
+                public HeadersAdaptor set(final String name, final String value) {
+                    super.set(name, value);
                     WriteHeadersHttpRequest.this.headers.accept(name, value);
-                    return result;
+                    return this;
                 }
             };
             if (httpRequest.headers() != null) {

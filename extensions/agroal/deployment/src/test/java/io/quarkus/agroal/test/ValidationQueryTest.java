@@ -12,7 +12,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ValidationQueryTest {
 
@@ -24,7 +24,7 @@ public class ValidationQueryTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-datasource-with-validation.properties")
             .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:default?queryLog=%s;DATABASE_EVENT_LISTENER=io.quarkus.agroal.test.QueryLoggingH2DBEventListener" //Register QueryLoggingH2DBEventListener

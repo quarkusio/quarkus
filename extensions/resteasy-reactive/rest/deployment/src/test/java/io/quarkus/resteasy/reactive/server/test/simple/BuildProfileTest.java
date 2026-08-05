@@ -28,7 +28,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.arc.properties.UnlessBuildProperty;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * The integration test for the support of build time conditions on JAX-RS resource classes.
@@ -36,7 +36,7 @@ import io.quarkus.test.QuarkusUnitTest;
 class BuildProfileTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(
                             ResourceTest1.class, ResourceTest2.class, ResponseFilter1.class, ResponseFilter2.class,

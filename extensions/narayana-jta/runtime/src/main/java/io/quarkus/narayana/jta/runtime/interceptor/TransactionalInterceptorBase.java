@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +17,7 @@ import java.util.function.Function;
 
 import jakarta.inject.Inject;
 import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.RollbackException;
 import jakarta.transaction.Status;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
@@ -30,6 +34,8 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
@@ -40,13 +46,28 @@ import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
+
+    // Test whether both Vertx and reactive-transactions modules are in the class path
+    private static final MethodHandle REACTIVE_INTERCEPTOR_SHOULD_RUN = reactiveInterceptorShouldRun();
+
+    private static MethodHandle reactiveInterceptorShouldRun() {
+        try {
+            Class<?> vertxContext = Class.forName("io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase", true,
+                    Thread.currentThread().getContextClassLoader());
+            return MethodHandles.publicLookup().findStatic(vertxContext, "reactiveInterceptorShouldRun",
+                    MethodType.methodType(boolean.class));
+        } catch (NoClassDefFoundError | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+            // This means Vert.x is not on the classpath
+            return null;
+        }
+    }
 
     protected TransactionalInterceptorBase(boolean userTransactionAvailable) {
         this.userTransactionAvailable = userTransactionAvailable;
@@ -61,6 +82,16 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             return doIntercept(tm, tx, ic);
         } finally {
             resetUserTransactionAvailability(previousUserTransactionAvailability);
+        }
+    }
+
+    protected void checkBlockingAllowed() {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new BlockingOperationNotAllowedException(
+                    "@Transactional cannot start a JTA transaction within a reactive pipeline." +
+                            " If the annotated method is intended to be blocking, ensure it is executed on a worker thread, for example by annotating it with @Blocking."
+                            +
+                            " If the annotated method is intended to be reactive, consider using Hibernate Reactive, which supports @Transactional in a reactive context.");
         }
     }
 
@@ -366,7 +397,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         for (Class<?> rollbackOnClass : transactional.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(t.getClass())) {
-                tx.setRollbackOnly();
+                safeSetRollbackOnly(tx);
                 return;
             }
         }
@@ -374,7 +405,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
         if (rollbackAnnotation != null) {
             if (rollbackAnnotation.value()) {
-                tx.setRollbackOnly();
+                safeSetRollbackOnly(tx);
             }
             // in both cases, behaviour is specified by the annotation
             return;
@@ -382,8 +413,29 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         // RuntimeException and Error are un-checked exceptions and rollback is expected
         if (t instanceof RuntimeException || t instanceof Error) {
-            tx.setRollbackOnly();
+            safeSetRollbackOnly(tx);
             return;
+        }
+    }
+
+    /**
+     * Sets the transaction to rollback-only, guarding against the case where
+     * the transaction has already been rolled back (e.g., by the transaction reaper).
+     * <p>
+     * Without this guard, {@code tx.setRollbackOnly()} on a dead transaction throws
+     * {@link IllegalStateException}, which would propagate through
+     * {@link #handleExceptionNoThrow} and mask the original business exception.
+     */
+    private void safeSetRollbackOnly(Transaction tx) throws SystemException {
+        try {
+            int status = tx.getStatus();
+            if (status != Status.STATUS_NO_TRANSACTION
+                    && status != Status.STATUS_ROLLEDBACK
+                    && status != Status.STATUS_COMMITTED) {
+                tx.setRollbackOnly();
+            }
+        } catch (IllegalStateException e) {
+            log.warn("Cannot set rollback-only, transaction already ended", e);
         }
     }
 
@@ -396,7 +448,11 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     protected void endTransaction(TransactionManager tm, Transaction tx, RunnableWithException afterEndTransaction)
             throws Exception {
         try {
-            if (tx != tm.getTransaction()) {
+            Transaction current = tm.getTransaction();
+            if (current == null) {
+                throw new RollbackException("Transaction was already rolled back (e.g., by the transaction reaper)");
+            }
+            if (tx != current) {
                 throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
             }
 
@@ -432,5 +488,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
+    }
+
+    protected boolean willReactiveTransactionalInterceptorRun() throws Exception {
+        try {
+            return REACTIVE_INTERCEPTOR_SHOULD_RUN == null ? false : (boolean) REACTIVE_INTERCEPTOR_SHOULD_RUN.invokeExact();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

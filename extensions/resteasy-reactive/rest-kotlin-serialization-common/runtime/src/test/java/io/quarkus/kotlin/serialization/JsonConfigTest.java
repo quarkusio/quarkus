@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonConfiguration;
 
 public class JsonConfigTest {
 
-    private static final Set<String> EXCLUSIONS = Set.of("classDiscriminatorMode");
+    private static final Set<String> EXCLUSIONS = Set.of("classDiscriminatorMode", "exceptionsWithDebugInfo");
 
     @Test
     public void ensureJsonCoverage() {

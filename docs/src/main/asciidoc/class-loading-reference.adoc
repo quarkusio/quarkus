@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Class Loading Reference
 include::_attributes.adoc[]
-:categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
 :topics: internals,extensions
 
@@ -50,7 +49,7 @@ At the moment we have the following use cases for bootstrapping Quarkus:
 - Gradle creating a production application
 - Gradle dev mode
 - QuarkusTest (Maven, Gradle and IDE)
-- QuarkusUnitTest (Maven, Gradle and IDE)
+- QuarkusExtensionTest (Maven, Gradle and IDE)
 - QuarkusDevModeTest (Maven, Gradle and IDE)
 - Arquillian Adaptor
 

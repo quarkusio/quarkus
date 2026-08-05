@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = AWS Lambda with Quarkus REST, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an AWS Lambda.
 :devtools-no-gradle:
 :topics: aws,lambda,serverless,function,cloud
@@ -231,10 +230,12 @@ Value               https://234asdf234as.execute-api.us-east-1.amazonaws.com/
 The `Value` attribute is the root URL for your lambda. Copy it to your browser and add `hello` at the end.
 
 [NOTE]
+====
 Responses for binary types will be automatically encoded with base64.  This is different from the behavior using
 `quarkus:dev`, which will return the raw bytes.  Amazon's API has additional restrictions requiring the base64 encoding.
 In general, client code will automatically handle this encoding, but in certain custom situations, you should be aware
 you may need to manually manage that encoding.
+====
 
 == Deploying a native executable
 

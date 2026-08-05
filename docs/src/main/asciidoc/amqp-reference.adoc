@@ -5,11 +5,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging AMQP 1.0 Connector Reference Documentation
 include::_attributes.adoc[]
-:categories: messaging
 :extensions: io.quarkus:quarkus-messaging-amqp
 :topics: messaging,amqp
 
-This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
+This guide is the companion to the xref:amqp.adoc[Getting Started with AMQP 1.0].
 It explains in more details the configuration and usage of the AMQP connector for reactive messaging.
 
 TIP: This documentation does not cover all the details of the connector.
@@ -275,7 +274,7 @@ For example, you can send to a dynamic address based on the incoming message:
 
 [source, java]
 ----
-String addressName = selectAddressFromIncommingMessage(incoming);
+String addressName = selectAddressFromIncomingMessage(incoming);
 OutgoingAmqpMetadata metadata = OutgoingAmqpMetadata.builder()
     .withAddress(addressName)
     .withDurable(true)

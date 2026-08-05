@@ -1,9 +1,11 @@
 name: Develocity - Publish Maven Build Scans
 
-on:
-  workflow_run:
-    workflows: [ "Quarkus CI" ]
-    types: [ completed ]
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_run:
+#    workflows: [ "Quarkus CI" ]
+#    types: [ completed ]
+on: [workflow_dispatch]
 
 defaults:
   run:
@@ -21,18 +23,18 @@ jobs:
     steps:
       - name: Setup Build Scan link capture
         id: setup
-        uses: gradle/develocity-actions/setup-maven@v2.1
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           add-pr-comment: false
           add-job-summary: true
       - name: Publish Maven Build Scans
         id: publish
-        uses: gradle/develocity-actions/maven-publish-build-scan@v2.1
+        uses: gradle/develocity-actions/maven-publish-build-scan@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
       - name: Upload JSON file
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-metadata.json
           path: ${{ steps.setup.outputs.build-metadata-file-path }}

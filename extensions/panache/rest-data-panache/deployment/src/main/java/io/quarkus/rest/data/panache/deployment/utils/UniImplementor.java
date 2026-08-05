@@ -7,9 +7,12 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import jakarta.ws.rs.WebApplicationException;
+
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -102,13 +105,30 @@ public final class UniImplementor {
 
     /**
      * Given a Uni instance, this method implements the `onFailure` method:
-     * uni.onFailure(ex -> ...).
+     * uni.onFailure().transform(ex -> ...).
+     *
+     * WebApplicationException and SecurityException are returned as-is
+     * so they can be handled by the framework's exception mappers.
+     * All other exceptions are wrapped in a RestDataPanacheException.
      */
     public static ResultHandle onFailure(BytecodeCreator creator, ResultHandle uniInstance, String message) {
-        return onFailure(creator, uniInstance,
-                (body, ex) -> body.newInstance(
-                        MethodDescriptor.ofConstructor(RestDataPanacheException.class, String.class, Throwable.class),
-                        body.load(message), ex));
+        FunctionCreator lambda = creator.createFunction(Function.class);
+        BytecodeCreator body = lambda.getBytecode();
+        ResultHandle exception = body.checkCast(body.getMethodParam(0), Throwable.class);
+
+        BranchResult isWae = body.ifTrue(body.instanceOf(exception, WebApplicationException.class));
+        isWae.trueBranch().returnValue(exception);
+        BranchResult isSec = body.ifTrue(body.instanceOf(exception, SecurityException.class));
+        isSec.trueBranch().returnValue(exception);
+
+        body.returnValue(body.newInstance(
+                MethodDescriptor.ofConstructor(RestDataPanacheException.class, String.class, Throwable.class),
+                body.load(message), exception));
+
+        ResultHandle uniOnFailure = creator.invokeInterfaceMethod(ofMethod(Uni.class, "onFailure", UniOnFailure.class),
+                uniInstance);
+        return creator.invokeVirtualMethod(ofMethod(UniOnFailure.class, "transform", Uni.class, Function.class),
+                uniOnFailure, lambda.getInstance());
     }
 
     /**

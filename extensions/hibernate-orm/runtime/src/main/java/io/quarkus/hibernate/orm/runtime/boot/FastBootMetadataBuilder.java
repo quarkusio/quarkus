@@ -65,7 +65,7 @@ import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoo
 import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
+import org.hibernate.temporal.spi.ChangesetCoordinator;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
@@ -168,6 +168,11 @@ public class FastBootMetadataBuilder {
             providedServices.add(new ProvidedService(postBuildProvidedService,
                     standardServiceRegistry.getService(postBuildProvidedService)));
         }
+
+        // The ChangesetCoordinator is configured during metadata building (AuditHelper.contributeIdentifierSupplier)
+        // and must be preserved as a ProvidedService to survive registry resetAndReactivate() at runtime.
+        providedServices.add(new ProvidedService<>(ChangesetCoordinator.class,
+                standardServiceRegistry.getService(ChangesetCoordinator.class)));
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
         // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
@@ -396,23 +401,11 @@ public class FastBootMetadataBuilder {
             }
         }
 
-        cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
-                QuarkusInfinispanRegionFactory.class.getName());
-
         for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
             Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
             if (listenerOptional.isPresent()) {
                 listenerOptional.get().contributeBootProperties(cfg::put);
             }
-        }
-
-        // If there's any mapping lib that we can work with available we'll set the default mapper:
-        if (puDefinition.getJsonMapperCreator().isPresent()) {
-            cfg.put(AvailableSettings.JSON_FORMAT_MAPPER, puDefinition.getJsonMapperCreator().get().create());
-        }
-        // If there's any mapping lib that we can work with available we'll set the default mapper:
-        if (puDefinition.getXmlMapperCreator().isPresent()) {
-            cfg.put(AvailableSettings.XML_FORMAT_MAPPER, puDefinition.getXmlMapperCreator().get().create());
         }
 
         return mergedSettings;
@@ -636,7 +629,7 @@ public class FastBootMetadataBuilder {
 
         metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
         metamodelBuilder.applyScanOptions(new StandardScanOptions(
-                (String) buildTimeSettings.get(org.hibernate.cfg.AvailableSettings.SCANNER_DISCOVERY),
+                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
                 persistenceUnit.isExcludeUnlistedClasses()));
 
         if (cacheRegionDefinitions != null) {

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that a failure during static init is correctly propagated and doesn't trigger other, cascading failures.
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StaticInitFailureTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClass(EntityWithIncorrectMapping.class))
             .withConfigurationResource("application.properties")

@@ -210,7 +210,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         private volatile URL url;
 
         private Resource(PathVisit visit) {
-            name = visit.getRelativePath();
+            name = visit.getResourceName();
             path = visit.getPath();
         }
 

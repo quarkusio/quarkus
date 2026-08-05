@@ -6,7 +6,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class ContextPathTestCase {
@@ -14,7 +14,7 @@ public class ContextPathTestCase {
     private static final String CONTEXT_PATH = "/foo";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestServlet.class, TestGreeter.class)
                     .addAsResource(new StringAsset("index"), "META-INF/resources/index.html")

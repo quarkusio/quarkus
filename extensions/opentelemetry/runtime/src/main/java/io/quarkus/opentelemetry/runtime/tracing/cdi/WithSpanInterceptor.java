@@ -220,7 +220,7 @@ public class WithSpanInterceptor {
                     break;
                 }
             }
-            if (spanName.isEmpty()) {
+            if (spanName == null || spanName.isEmpty()) {
                 spanName = SpanNames.fromMethod(methodRequest.getMethod());
             }
             return spanName;

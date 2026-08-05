@@ -4,13 +4,13 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.function.Supplier;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Add a log to the footer of dev ui
  */
-public final class FooterLogBuildItem extends AbstractDevUIBuildItem {
+public final class FooterLogBuildItem extends AbstractDevBuildItem {
 
     private final String name;
     private final Supplier<Flow.Publisher<String>> publisherSupplier;

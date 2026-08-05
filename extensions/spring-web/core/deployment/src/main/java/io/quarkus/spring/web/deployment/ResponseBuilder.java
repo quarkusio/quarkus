@@ -1,46 +1,45 @@
 package io.quarkus.spring.web.deployment;
 
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 final class ResponseBuilder {
 
-    private final MethodCreator methodCreator;
+    private static final MethodDesc RESPONSE_STATUS = MethodDesc.of(Response.class, "status",
+            Response.ResponseBuilder.class, int.class);
+    private static final MethodDesc RESPONSE_BUILDER_BUILD = MethodDesc.of(Response.ResponseBuilder.class, "build",
+            Response.class);
+    private static final MethodDesc RESPONSE_BUILDER_TYPE = MethodDesc.of(Response.ResponseBuilder.class, "type",
+            Response.ResponseBuilder.class, MediaType.class);
+    private static final MethodDesc RESPONSE_BUILDER_ENTITY = MethodDesc.of(Response.ResponseBuilder.class, "entity",
+            Response.ResponseBuilder.class, Object.class);
 
-    private final ResultHandle delegate;
+    private final BlockCreator bc;
 
-    ResponseBuilder(MethodCreator methodCreator, int status) {
-        this.methodCreator = methodCreator;
-        this.delegate = withStatus(status);
+    private final LocalVar delegate;
+
+    ResponseBuilder(BlockCreator bc, int status) {
+        this.bc = bc;
+        this.delegate = bc.localVar("responseBuilder", bc.invokeStatic(RESPONSE_STATUS, Const.of(status)));
     }
 
-    public ResultHandle build() {
-        return methodCreator.invokeVirtualMethod(
-                ofMethod(Response.ResponseBuilder.class, "build", Response.class), delegate);
+    public Expr build() {
+        return bc.invokeVirtual(RESPONSE_BUILDER_BUILD, delegate);
     }
 
-    public ResponseBuilder withType(ResultHandle type) {
-        methodCreator.invokeVirtualMethod(
-                ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class, MediaType.class),
-                delegate, type);
+    public ResponseBuilder withType(Expr type) {
+        bc.invokeVirtual(RESPONSE_BUILDER_TYPE, delegate, type);
         return this;
     }
 
-    public ResponseBuilder withEntity(ResultHandle entity) {
-        methodCreator.invokeVirtualMethod(
-                ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class, Object.class),
-                delegate, entity);
+    public ResponseBuilder withEntity(Expr entity) {
+        bc.invokeVirtual(RESPONSE_BUILDER_ENTITY, delegate, entity);
         return this;
-    }
-
-    private ResultHandle withStatus(int status) {
-        return methodCreator.invokeStaticMethod(
-                ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                methodCreator.load(status));
     }
 }

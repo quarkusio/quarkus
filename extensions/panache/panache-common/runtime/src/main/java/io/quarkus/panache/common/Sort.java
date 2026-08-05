@@ -54,24 +54,46 @@ public class Sort {
         NULLS_LAST;
     }
 
+    /**
+     * Represents the case instructions
+     */
+    public enum Case {
+        /**
+         * Sort while ignoring case
+         */
+        IGNORE,
+        /**
+         * Sort by respecting case (default)
+         */
+        RESPECT;
+    }
+
     public static class Column {
         private String name;
+        // never null
         private Direction direction;
+        // can be null for unspecified
         private NullPrecedence nullPrecedence;
+        // never null
+        private Case caseInstruction;
 
         public Column(String name) {
             this(name, Direction.Ascending);
         }
 
         public Column(String name, Direction direction) {
-            this.name = name;
-            this.direction = direction;
+            this(name, direction, null);
         }
 
         public Column(String name, Direction direction, NullPrecedence nullPrecedence) {
+            this(name, direction, nullPrecedence, Case.RESPECT);
+        }
+
+        public Column(String name, Direction direction, NullPrecedence nullPrecedence, Case caseInstruction) {
             this.name = name;
             this.direction = direction;
             this.nullPrecedence = nullPrecedence;
+            this.caseInstruction = caseInstruction;
         }
 
         public String getName() {
@@ -96,6 +118,18 @@ public class Sort {
 
         public void setNullPrecedence(NullPrecedence nullPrecedence) {
             this.nullPrecedence = nullPrecedence;
+        }
+
+        public boolean isIgnoreCase() {
+            return caseInstruction == Case.IGNORE;
+        }
+
+        public void setCase(Case caseInstruction) {
+            this.caseInstruction = caseInstruction;
+        }
+
+        public void setIgnoreCase() {
+            this.caseInstruction = Case.IGNORE;
         }
     }
 
@@ -207,6 +241,42 @@ public class Sort {
     }
 
     /**
+     * Sort by the given columns, in ascending order, case-insensitive.
+     *
+     * @param columns the columns to sort on, in ascending order, case-insensitive.
+     * @return a new Sort instance which sorts on the given columns in ascending order, case-insensitive.
+     * @see #descendingIgnoreCase(String...)
+     * @see #ignoreCase()
+     */
+    public static Sort ascendingIgnoreCase(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            Column col = new Column(column, Direction.Ascending);
+            col.setIgnoreCase();
+            sort.columns.add(col);
+        }
+        return sort;
+    }
+
+    /**
+     * Sort by the given columns, in descending order, case-insensitive.
+     *
+     * @param columns the columns to sort on, in descending order, case-insensitive.
+     * @return a new Sort instance which sorts on the given columns in descending order, case-insensitive.
+     * @see #ascendingIgnoreCase(String...)
+     * @see #ignoreCase()
+     */
+    public static Sort descendingIgnoreCase(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            Column col = new Column(column, Direction.Descending);
+            col.setIgnoreCase();
+            sort.columns.add(col);
+        }
+        return sort;
+    }
+
+    /**
      * Sets the order to descending for all current sort columns.
      *
      * @return this instance, modified.
@@ -239,6 +309,42 @@ public class Sort {
     public Sort direction(Direction direction) {
         for (Column column : columns) {
             column.direction = direction;
+        }
+        return this;
+    }
+
+    /**
+     * Sets null precedence to NULLS FIRST for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsLast()
+     * @see #nullPrecedence(NullPrecedence)
+     */
+    public Sort nullsFirst() {
+        return nullPrecedence(NullPrecedence.NULLS_FIRST);
+    }
+
+    /**
+     * Sets null precedence to NULLS LAST for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsFirst()
+     * @see #nullPrecedence(NullPrecedence)
+     */
+    public Sort nullsLast() {
+        return nullPrecedence(NullPrecedence.NULLS_LAST);
+    }
+
+    /**
+     * Sets null precedence for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsFirst()
+     * @see #nullsLast()
+     */
+    public Sort nullPrecedence(NullPrecedence nullPrecedence) {
+        for (Column column : columns) {
+            column.setNullPrecedence(nullPrecedence);
         }
         return this;
     }
@@ -292,6 +398,70 @@ public class Sort {
     public Sort and(String name, Direction direction, NullPrecedence nullPrecedence) {
         columns.add(new Column(name, direction, nullPrecedence));
         return this;
+    }
+
+    /**
+     * Adds a sort column, in the given order, case-insensitive.
+     *
+     * @param name the new column to sort on, in the given order, case-insensitive.
+     * @param direction the direction to sort on.
+     * @return this instance, modified.
+     * @see #andIgnoreCase(String)
+     * @see #ignoreCase()
+     */
+    public Sort andIgnoreCase(String name, Direction direction) {
+        Column col = new Column(name, direction);
+        col.setIgnoreCase();
+        columns.add(col);
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in ascending order, case-insensitive.
+     *
+     * @param name the new column to sort on, in ascending order, case-insensitive.
+     * @return this instance, modified.
+     * @see #andIgnoreCase(String, Direction)
+     * @see #ignoreCase()
+     */
+    public Sort andIgnoreCase(String name) {
+        return andIgnoreCase(name, Direction.Ascending);
+    }
+
+    /**
+     * Sets case-insensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #ignoreCase()
+     * @see #respectCase()
+     */
+    public Sort setCase(Case caseInstruction) {
+        for (Column column : columns) {
+            column.setCase(caseInstruction);
+        }
+        return this;
+    }
+
+    /**
+     * Sets case-sensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #ignoreCase()
+     * @see #setCase(Case)
+     */
+    public Sort respectCase() {
+        return setCase(Case.RESPECT);
+    }
+
+    /**
+     * Sets case-insensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #respectCase()
+     * @see #setCase(Case)
+     */
+    public Sort ignoreCase() {
+        return setCase(Case.IGNORE);
     }
 
     /**

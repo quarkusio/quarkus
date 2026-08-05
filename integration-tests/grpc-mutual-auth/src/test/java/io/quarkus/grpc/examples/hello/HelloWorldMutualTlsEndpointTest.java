@@ -1,25 +1,18 @@
 package io.quarkus.grpc.examples.hello;
 
-import static io.restassured.RestAssured.get;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.jupiter.api.Test;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.vertx.core.Vertx;
 
 @QuarkusTest
-class HelloWorldMutualTlsEndpointTest {
+class HelloWorldMutualTlsEndpointTest extends VertxHelloWorldMutualTlsEndpointTestBase {
 
-    @Test
-    public void testHelloWorldServiceUsingBlockingStub() {
-        String response = get("/hello/blocking/neo").asString();
-        assertThat(response).isEqualTo("Hello neo");
+    @Inject
+    Vertx vertx;
+
+    @Override
+    Vertx vertx() {
+        return vertx;
     }
-
-    @Test
-    public void testHelloWorldServiceUsingMutinyStub() {
-        String response = get("/hello/mutiny/neo-mutiny").asString();
-        assertThat(response).isEqualTo("Hello neo-mutiny");
-    }
-
 }

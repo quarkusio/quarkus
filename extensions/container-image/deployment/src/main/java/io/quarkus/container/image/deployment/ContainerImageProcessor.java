@@ -126,18 +126,22 @@ public class ContainerImageProcessor {
     }
 
     /**
-     * Since user.name which is default value can be uppercase and uppercase values
-     * are not allowed
-     * in the repository part of image references, we need to make the username
-     * lowercase.
-     * If spaces exist in the user name, we replace them with the dash character.
+     * Resolve the effective container image group.
      *
-     * We purposely don't change the value of an explicitly set group.
+     * If a group is provided, use it. Otherwise, unless a single-segment image
+     * was requested or the group property was explicitly specified, derive the
+     * group from user.name.
+     *
+     * The derived user.name value is sanitized to better align with container image
+     * group/namespace/registry naming rules.
+     *
+     * The resulting value is then lowercased and empty values are discarded.
      */
     static Optional<String> getEffectiveGroup(Optional<String> group, boolean isSingleSegmentRequested) {
         return group.or(() -> isSingleSegmentRequested || isGroupSpecified()
                 ? Optional.empty()
-                : Optional.ofNullable(System.getProperty("user.name")).map(s -> s.replace(' ', '-')))
+                : Optional.ofNullable(System.getProperty("user.name"))
+                        .map(ContainerImageProcessor::sanitizeDerivedGroupName))
                 .map(String::toLowerCase)
                 .filter(Predicate.not(StringUtil::isNullOrEmpty));
     }
@@ -154,5 +158,15 @@ public class ContainerImageProcessor {
     static boolean isGroupSpecified() {
         return StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
                 .anyMatch(n -> n.equals("quarkus.container-image.group") || n.equals("QUARKUS_CONTAINER_IMAGE_GROUP"));
+    }
+
+    private static String sanitizeDerivedGroupName(String userName) {
+        return userName
+                // Replace any disallowed character(s) with a single dash
+                .replaceAll("[^A-Za-z0-9._-]+", "-")
+                // Collapse repeats of the same separator into one
+                .replaceAll("([._-])\\1+", "$1")
+                // Trim leading/trailing separators
+                .replaceAll("^[._-]+|[._-]+$", "");
     }
 }

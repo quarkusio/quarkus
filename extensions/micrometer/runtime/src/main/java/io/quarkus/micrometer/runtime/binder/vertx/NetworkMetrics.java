@@ -4,32 +4,34 @@ import java.util.concurrent.atomic.LongAdder;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.core.spi.metrics.TCPMetrics;
+import io.vertx.core.spi.metrics.TransportMetrics;
 
-public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
+public class NetworkMetrics implements TransportMetrics<LongTaskTimer.Sample> {
 
     final MeterRegistry registry;
     final DistributionSummary received;
     final DistributionSummary sent;
     final Meter.MeterProvider<Counter> exceptionCounter;
-    final Gauge activeConnections;
 
     final Tags tags;
     private final LongTaskTimer connDuration;
     private final LongAdder connCount;
 
     public NetworkMetrics(MeterRegistry registry, Tags tags, String prefix, String receivedDesc, String sentDesc,
-            String connDurationDesc, String connCountDesc) {
+            String connDurationDesc, String connCountDesc, Gauges<LongAdder> gauges) {
         this.registry = registry;
         this.tags = tags == null ? Tags.empty() : tags;
-        connCount = new LongAdder();
+        connCount = gauges.builder(prefix + ".active.connections", LongAdder::longValue)
+                .description(connCountDesc)
+                .tags(this.tags)
+                .register(registry);
         received = DistributionSummary.builder(prefix + ".bytes.read")
                 .description(receivedDesc)
                 .tags(this.tags)
@@ -44,10 +46,6 @@ public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
                 .register(registry);
         exceptionCounter = Counter.builder(prefix + ".errors")
                 .withRegistry(registry);
-        activeConnections = Gauge.builder(prefix + ".active.connections", connCount, LongAdder::longValue)
-                .description(connCountDesc)
-                .tags(this.tags)
-                .register(registry);
     }
 
     /**
@@ -120,6 +118,14 @@ public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
         exceptionCounter
                 .withTags(this.tags.and(Tag.of("class", t.getClass().getName())))
                 .increment();
+    }
+
+    LongTaskTimer getConnDuration() {
+        return connDuration;
+    }
+
+    LongAdder getConnCount() {
+        return connCount;
     }
 
     public static String toString(SocketAddress remoteAddress) {

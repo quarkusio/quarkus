@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class NonAppEndpointsEqualRootPath {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(TracerRouter.class)
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)

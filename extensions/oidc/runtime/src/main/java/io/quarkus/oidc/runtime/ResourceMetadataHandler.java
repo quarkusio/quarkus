@@ -218,15 +218,21 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
         }
     }
 
-    static String buildAbsoluteResourceIdentifierUrl(RoutingContext context, DefaultTenantConfigResolver resolver,
+    public static String buildAbsoluteResourceIdentifierUrl(RoutingContext context, DefaultTenantConfigResolver resolver,
             OidcTenantConfig oidcConfig) {
-        String configuredResource = getResourceMetadataPath(oidcConfig, resolver.getRootPath());
+        return buildAbsoluteResourceIdentifierUrl(context, oidcConfig,
+                resolver.getRootPath(), resolver.isEnableHttpForwardedPrefix());
+    }
+
+    public static String buildAbsoluteResourceIdentifierUrl(RoutingContext context, OidcTenantConfig oidcConfig,
+            String httpRootPath, boolean enableHttpForwardedPrefix) {
+        String configuredResource = getResourceMetadataPath(oidcConfig, httpRootPath);
 
         if (configuredResource.startsWith(HTTP_SCHEME)) {
             return configuredResource;
         } else {
             String authority = URI.create(context.request().absoluteURI()).getAuthority();
-            return buildUri(context, resolver.isEnableHttpForwardedPrefix(),
+            return buildUri(context, enableHttpForwardedPrefix,
                     oidcConfig.resourceMetadata().forceHttpsScheme(), authority, configuredResource);
         }
     }

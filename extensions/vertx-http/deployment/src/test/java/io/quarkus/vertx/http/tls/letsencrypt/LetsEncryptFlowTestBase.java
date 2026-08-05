@@ -45,7 +45,7 @@ public abstract class LetsEncryptFlowTestBase {
     private String tlsConfigurationName;
 
     static <T> T await(Future<T> future) {
-        return future.toCompletionStage().toCompletableFuture().join();
+        return future.await();
     }
 
     public void initFlow(Vertx vertx, String tlsConfigurationName) {
@@ -181,14 +181,16 @@ public abstract class LetsEncryptFlowTestBase {
         // Verify the application is serving the new certificate
         // We should not use the WebClient as the connection are still established with the old certificate.
         URL url = new URL(getApplicationEndpoint());
-        assertThatThrownBy(() -> vertx.createHttpClient(
+        var httpClient = vertx.createHttpClient(
                 new HttpClientOptions().setSsl(true).setDefaultPort(url.getPort())
-                        .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath())))
+                        .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath())));
+        assertThatThrownBy(() -> httpClient
                 .request(HttpMethod.GET, "/tls")
                 .flatMap(HttpClientRequest::send)
                 .flatMap(HttpClientResponse::body)
                 .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+                .await()).hasCauseInstanceOf(SSLHandshakeException.class);
+        httpClient.close();
 
         WebClient newWebClient = WebClient.create(vertx,
                 options.setTrustOptions(new PemTrustOptions().addCertPath(ACME_CA.getAbsolutePath())));

@@ -10,7 +10,7 @@ import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SecurityDisabledTestCase {
 
@@ -19,7 +19,7 @@ public class SecurityDisabledTestCase {
     };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-security-disabled.properties", "application.properties"));

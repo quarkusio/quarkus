@@ -11,7 +11,6 @@ import com.amazonaws.services.lambda.runtime.events.models.kinesis.Record;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.funqy.lambda.model.cloudevents.CloudEventDataV1;
 import io.quarkus.funqy.lambda.model.cloudevents.CloudEventV1;
 import io.quarkus.funqy.lambda.model.kinesis.PipesKinesisEvent;
@@ -20,7 +19,7 @@ import io.quarkus.funqy.lambda.model.pipes.Response;
 
 public class FunqyAmazonLambdaProcessor {
 
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep
     public void process(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 // io CloudEvents

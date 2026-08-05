@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.hibernate.orm.enhancer.Address;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.constraint.Assert;
 
 /**
@@ -24,7 +24,7 @@ public class JPAFastBootingTest {
             .build();
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(Address.class))
             .withConfigurationResource("application.properties")

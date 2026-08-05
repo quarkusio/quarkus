@@ -24,12 +24,14 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
@@ -38,8 +40,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.OpenPathTree;
-import io.quarkus.sbom.ApplicationComponent;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
 
 public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
@@ -61,6 +62,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private final List<UberJarMergedResourceBuildItem> mergedResources;
     private final List<UberJarIgnoredResourceBuildItem> ignoredResources;
+    private final JarTreeShakeBuildItem treeShakeResult;
 
     public UberJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -71,16 +73,20 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             Set<ArtifactKey> removedArtifactKeys,
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             ExecutorService executorService,
-            ResolvedJVMRequirements jvmRequirements) {
+            ResolvedJVMRequirements jvmRequirements,
+            JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
+                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
+                jvmRequirements);
 
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;
+        this.treeShakeResult = treeShakeResult;
     }
 
     @Override
@@ -129,15 +135,12 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setFlags(appArtifact.getFlags())
                     .build();
         }
-        final ApplicationManifestConfig manifestConfig = ApplicationManifestConfig.builder()
-                .setMainComponent(ApplicationComponent.builder()
-                        .setPath(runnerJar)
-                        .setResolvedDependency(appArtifact)
-                        .build())
-                .setRunnerPath(runnerJar)
-                .addComponents(curateOutcome.getApplicationModel().getDependencies())
-                .build();
-
+        final CoreSbomContributionConfig manifestConfig = new CoreSbomContributionConfig()
+                .setMainArtifact(appArtifact)
+                .setMainPath(runnerJar);
+        for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies()) {
+            manifestConfig.addComponent(dep, null, treeShakeResult.computePedigree(dep.getKey()));
+        }
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }
@@ -149,7 +152,6 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 executorService)) {
             LOG.info("Building uber jar: " + runnerJar);
 
-            final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
             final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
             final Set<String> mergeResourcePaths = mergedResources.stream()
                     .map(UberJarMergedResourceBuildItem::getPath)
@@ -166,10 +168,11 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             attachRunnerMetadata(manifest, mainClass.getClassName(), "", jvmRequirements);
             archiveCreator.addManifest(manifest);
 
-            final Set<String> existingEntries = new HashSet<>();
-            generatedResources.stream()
-                    .map(GeneratedResourceBuildItem::getName)
-                    .forEach(existingEntries::add);
+            // application content is added first so that it takes precedence over dependency content
+            // the archive creator uses first-write-wins semantics
+            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+
+            final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
 
             for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
 
@@ -179,15 +182,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     continue;
                 }
 
-                for (Path resolvedDep : appDep.getResolvedPaths()) {
-                    Set<String> transformedFilesByJar = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
-                    if (transformedFilesByJar != null) {
-                        existingEntries.addAll(transformedFilesByJar);
-                    }
-                }
-
                 walkFileDependencyForDependency(archiveCreator, duplicateCatcher,
-                        concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
+                        concatenatedEntries, allIgnoredEntriesPredicate, appDep,
                         mergeResourcePaths);
             }
 
@@ -211,7 +207,9 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             }
 
-            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+            // write concatenated entries (services, etc.) after all sources have been collected
+            writeConcatenatedEntries(archiveCreator, concatenatedEntries);
+
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
@@ -241,7 +239,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private void walkFileDependencyForDependency(ArchiveCreator archiveCreator,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep, Set<String> existingEntries,
+            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep,
             Set<String> mergeResourcePaths) throws IOException {
 
         // The reason opening and closing a path tree right away works, unlike creating and closing a ZipFileSystem,
@@ -251,7 +249,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         try (OpenPathTree pathTree = appDep.getContentTree().open()) {
             pathTree.walkRaw(visit -> {
                 try {
-                    final String relativePath = visit.getRelativePath();
+                    final String relativePath = visit.getResourceName();
                     if (Files.isDirectory(visit.getPath())) {
                         if (!relativePath.isEmpty()) {
                             archiveCreator.addDirectory(relativePath);
@@ -259,8 +257,23 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         return;
                     }
 
+                    // When tree shake level is CLASSES, skip non-reachable classes
+                    // Skip filtering for multi-release version entries (META-INF/versions/)
+                    if (treeShakeResult.isClassesShaken()
+                            && relativePath.endsWith(".class") && !relativePath.equals("module-info.class")
+                            && !relativePath.startsWith("META-INF/versions/")) {
+                        String className = relativePath.substring(0, relativePath.length() - 6).replace('/', '.');
+                        if (!treeShakeResult.getReachableClassNames().contains(className)) {
+                            // Keep inner classes if the outer class is reachable
+                            int dollarIdx = className.indexOf('$');
+                            if (dollarIdx < 0
+                                    || !treeShakeResult.getReachableClassNames().contains(className.substring(0, dollarIdx))) {
+                                return;
+                            }
+                        }
+                    }
+
                     final Path file = visit.getPath();
-                    //if this has been transformed we do not copy it
                     // if it's a signature file (under the <jar>/META-INF directory),
                     // then we don't add it to the uber jar
                     if (isBlockOrSF(relativePath) &&
@@ -272,18 +285,16 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         return;
                     }
 
-                    if (!existingEntries.contains(relativePath)) {
-                        if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
-                                || mergeResourcePaths.contains(relativePath)) {
-                            concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
-                                    .add(Files.readAllBytes(file));
-                        } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                            if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
-                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                        .add(appDep);
-                            }
-                            archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
+                    if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
+                            || mergeResourcePaths.contains(relativePath)) {
+                        concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                .add(Files.readAllBytes(file));
+                    } else if (!ignoredEntriesPredicate.test(relativePath)) {
+                        if (!UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(relativePath)) {
+                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                    .add(appDep);
                         }
+                        archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
@@ -353,7 +364,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         @Override
         public boolean test(String path) {
-            return path.startsWith("META-INF/maven/");
+            return path.startsWith("META-INF/maven/") || path.startsWith("META-INF/license/");
         }
     }
 }

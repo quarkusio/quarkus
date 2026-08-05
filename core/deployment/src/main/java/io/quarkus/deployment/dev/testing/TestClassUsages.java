@@ -38,6 +38,10 @@ public class TestClassUsages implements Serializable {
         classNames.putAll(newData.classNames);
     }
 
+    public synchronized boolean hasData() {
+        return !classNames.isEmpty();
+    }
+
     public synchronized PostDiscoveryFilter getTestsToRun(Set<String> changedClasses, TestState testState) {
 
         Set<UniqueId> touchedIds = new HashSet<>();

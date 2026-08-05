@@ -1,5 +1,6 @@
 package io.quarkus.agroal.runtime;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
@@ -26,6 +27,16 @@ public interface AgroalConnectionConfigurer {
     default void setExceptionSorter(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
         log.warnv("Agroal does not support detecting if a connection is still usable after an exception for database kind: {0}",
                 databaseKind);
+    }
+
+    default void setKeepAlive(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, boolean keepAlive) {
+        log.warnv("Agroal does not support KeepAlive for database kind: {0}", databaseKind);
+    }
+
+    default void setReadTimeout(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, Duration timeout) {
+        log.warnv("Agroal does not support setting the read timeout for database kind: {0}", databaseKind);
     }
 
 }

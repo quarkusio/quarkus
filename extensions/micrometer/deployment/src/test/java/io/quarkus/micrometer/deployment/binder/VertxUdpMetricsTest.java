@@ -14,14 +14,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.datagram.DatagramSocket;
 
 public class VertxUdpMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar

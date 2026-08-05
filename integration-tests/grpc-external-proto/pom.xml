@@ -13,4 +13,24 @@
     <artifactId>quarkus-integration-test-external-proto</artifactId>
     <name>Quarkus - Integration Tests - Helper project containing packaging a proto file for grpc-external-proto-test
     </name>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/proto</directory>
+                <targetPath>src/main/proto</targetPath>
+            </resource>
+            <resource>
+                <directory>src/test/proto</directory>
+                <targetPath>src/test/proto</targetPath>
+            </resource>
+            <resource>
+                <directory>proto</directory>
+                <targetPath>proto</targetPath>
+            </resource>
+        </resources>
+    </build>
 </project>

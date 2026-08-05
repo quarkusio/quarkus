@@ -40,7 +40,7 @@ public class VirtualThreadCollector {
     @Inject
     public VirtualThreadCollector(MicrometerConfig mc) {
         var config = mc.binder().virtualThreads();
-        this.enabled = Runtime.version().major() >= 21 && config.enabled().orElse(true);
+        this.enabled = Runtime.version().feature() >= 21 && config.enabled().orElse(true);
         MeterBinder instantiated = null;
         if (enabled) {
             if (config.tags().isPresent()) {

@@ -11,7 +11,7 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
     public CustomCountPanacheQuery(Uni<Mutiny.Session> em, String query, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonManagedPanacheQueryImpl<Entity>(em, query, null, null, paramsArrayOrMap) {
+        super(new CommonManagedPanacheQueryImpl<Entity>(em, null, query, null, null, paramsArrayOrMap) {
             {
                 this.customCountQueryForSpring = customCountQuery;
             }

@@ -9,7 +9,7 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class OverrideContainerConfigOnDevServicesTest {
 
@@ -17,7 +17,7 @@ public class OverrideContainerConfigOnDevServicesTest {
     RemoteCacheManager cacheManager;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("server-config-override.xml"))
             .withConfigurationResource("dev-services-adds-server-config.properties");

@@ -45,13 +45,15 @@ class HandlerChain {
             LoggingScope loggingScope,
             Map<Class<?>, MultipartResponseData> multipartData,
             ClientLogger clientLogger,
-            List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers,
+            String domainSocketPath) {
         this.clientCaptureCurrentContextRestHandler = new ClientCaptureCurrentContextRestHandler(captureStacktrace);
         this.clientSwitchToRequestContextRestHandler = new ClientSwitchToRequestContextRestHandler();
         this.clientSendHandler = new ClientSendRequestHandler(httpClientOptions, followRedirects, loggingScope,
                 clientLogger,
                 multipartData,
-                clientRequestCustomizers);
+                clientRequestCustomizers,
+                domainSocketPath);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
         this.clientErrorHandler = new ClientErrorHandler(loggingScope);

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -26,7 +26,7 @@ import io.vertx.core.Vertx;
 public class HttpUpgradePermitAllAnnotationTest extends SecurityTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(Endpoint.class, AdminService.class, UserService.class,
                     TestIdentityProvider.class, TestIdentityController.class, WSClient.class));
 

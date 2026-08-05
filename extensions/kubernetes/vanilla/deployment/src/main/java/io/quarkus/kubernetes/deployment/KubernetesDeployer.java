@@ -18,20 +18,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Serialization;
-import io.fabric8.kubernetes.api.builder.Visitor;
 import io.fabric8.kubernetes.api.model.APIResourceList;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
-import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
-import io.fabric8.kubernetes.api.model.LabelSelectorFluent;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
@@ -88,8 +84,7 @@ public class KubernetesDeployer {
             return;
         }
 
-        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(containerImageInfo, targets,
-                containerImageConfig);
+        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(targets);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
         if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
             preventImplicitContainerImagePush.produce(new PreventImplicitContainerImagePushBuildItem());
@@ -161,10 +156,7 @@ public class KubernetesDeployer {
      *
      * If the user specifies deployment targets, pick the first one.
      */
-    private DeploymentTargetEntry determineDeploymentTarget(
-            ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets,
-            ContainerImageConfig containerImageConfig) {
+    private DeploymentTargetEntry determineDeploymentTarget(EnabledKubernetesDeploymentTargetsBuildItem targets) {
         final DeploymentTargetEntry selectedTarget;
 
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplicitlyConfiguredDeploymentTargets();
@@ -411,13 +403,17 @@ public class KubernetesDeployer {
 
     private static void checkLabelSelectorVersions(DeploymentTargetEntry deploymnetTarget, HasMetadata resource,
             Optional<HasMetadata> existing) {
-        if (!existing.isPresent()) {
+        if (existing.isEmpty()) {
             return;
         }
 
-        if (resource instanceof Deployment) {
-            Optional<String> version = getLabelSelectorVersion(resource);
-            Optional<String> existingVersion = getLabelSelectorVersion(existing.get());
+        if (resource instanceof Deployment deployment) {
+            Optional<String> version = getLabelSelectorVersion(deployment);
+            final var hasMetadata = existing.get();
+            Optional<String> existingVersion = Optional.empty();
+            if (hasMetadata instanceof Deployment existingDeployment) {
+                existingVersion = getLabelSelectorVersion(existingDeployment);
+            }
             if (version.isPresent() && existingVersion.isPresent()) {
                 if (!version.get().equals(existingVersion.get())) {
                     throw new IllegalStateException(String.format(
@@ -436,16 +432,15 @@ public class KubernetesDeployer {
         }
     }
 
-    private static Optional<String> getLabelSelectorVersion(HasMetadata resource) {
-        AtomicReference<String> version = new AtomicReference<>();
-        KubernetesList list = new KubernetesListBuilder().addToItems(resource).accept(new Visitor<LabelSelectorFluent<?>>() {
-            @Override
-            public void visit(LabelSelectorFluent<?> item) {
-                if (item.getMatchLabels() != null) {
-                    version.set(item.getMatchLabels().get(VERSION_LABEL));
-                }
+    private static Optional<String> getLabelSelectorVersion(Deployment deployment) {
+        final var spec = deployment.getSpec();
+        if (spec != null) {
+            final var selector = spec.getSelector();
+            if (selector != null) {
+                return Optional.ofNullable(selector.getMatchLabels())
+                        .map(m -> m.get(VERSION_LABEL));
             }
-        }).build();
-        return Optional.ofNullable(version.get());
+        }
+        return Optional.empty();
     }
 }

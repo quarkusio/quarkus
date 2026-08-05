@@ -20,6 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -66,7 +68,8 @@ public class AugmentActionImpl implements AugmentAction {
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
 
     private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
-            GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
+            GeneratedResourceBuildItem.class, GeneratedServiceProviderBuildItem.class,
+            ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
             TransformedClassesBuildItem.class, ResolvedJVMRequirements.class };
 
@@ -87,16 +90,6 @@ public class AugmentActionImpl implements AugmentAction {
 
     public AugmentActionImpl(CuratedApplication curatedApplication) {
         this(curatedApplication, Collections.emptyList(), Collections.emptyList());
-    }
-
-    /**
-     * Leaving this here for backwards compatibility, even though this is only internal.
-     *
-     * @Deprecated use one of the other constructors
-     */
-    @Deprecated
-    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
-        this(curatedApplication, chainCustomizers, Collections.emptyList());
     }
 
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,
@@ -265,15 +258,21 @@ public class AugmentActionImpl implements AugmentAction {
             properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, effectiveArtifact));
         } else {
             if (effectiveArtifact.getType().endsWith("-container")) {
-                // in this case we write "path" as to contain the path to the artifact from which the container was built
-                try {
-                    ArtifactResultBuildItem baseArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 2);
-                    if (baseArtifact.getPath() != null) {
-                        properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, baseArtifact));
+                List<PrioritizedArtifactResultBuildItem> list = toSortedPrioritizedArtifactResultStream(
+                        artifactResultBuildItems).toList();
+                boolean pathSet = false;
+                if (list.size() >= 2) {
+                    for (int i = list.size() - 1; i >= 0; i--) {
+                        ArtifactResultBuildItem baseArtifact = list.get(i).bi();
+                        if (baseArtifact.getPath() != null) {
+                            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, baseArtifact));
+                            pathSet = true;
+                            break;
+                        }
                     }
-                } catch (IndexOutOfBoundsException e) {
-                    // this should never happen really as a container is always built from some other artifact
-                    log.debug(e);
+                }
+                if (!pathSet) {
+                    log.warn("Unable to set `path` on artifact metadata. This can cause problems for integration tests");
                 }
             }
         }
@@ -292,9 +291,7 @@ public class AugmentActionImpl implements AugmentAction {
 
     private ArtifactResultBuildItem effectiveArtifact(List<ArtifactResultBuildItem> artifactResultBuildItems) {
 
-        Optional<PrioritizedArtifactResultBuildItem> first = artifactResultBuildItems.stream()
-                .map(PrioritizedArtifactResultBuildItem::new)
-                .sorted(((o1, o2) -> Integer.compare(o2.getPriority(), o1.getPriority())))
+        Optional<PrioritizedArtifactResultBuildItem> first = toSortedPrioritizedArtifactResultStream(artifactResultBuildItems)
                 .filter(bi -> bi.getPriority() > 0).findFirst();
 
         if (first.isEmpty()) {
@@ -302,6 +299,13 @@ public class AugmentActionImpl implements AugmentAction {
         }
 
         return first.get().bi();
+    }
+
+    private Stream<PrioritizedArtifactResultBuildItem> toSortedPrioritizedArtifactResultStream(
+            List<ArtifactResultBuildItem> artifactResultBuildItems) {
+        return artifactResultBuildItems.stream()
+                .map(PrioritizedArtifactResultBuildItem::new)
+                .sorted(((o1, o2) -> Integer.compare(o2.getPriority(), o1.getPriority())));
     }
 
     private record PrioritizedArtifactResultBuildItem(ArtifactResultBuildItem bi) {

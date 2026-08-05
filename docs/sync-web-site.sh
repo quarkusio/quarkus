@@ -30,17 +30,18 @@ if [ $# -ge 2 ]; then
   TARGET_DIR=$2
 fi
 
-if [ -z $TARGET_DIR ]; then
+if [ -z "$TARGET_DIR" ]; then
   TARGET_DIR=target/web-site
-  rm -rf ${TARGET_DIR}
+  rm -rf "$TARGET_DIR"
   GIT_OPTIONS=""
   if [[ "$QUARKUS_WEB_SITE_PUSH" != "true" ]]; then
     GIT_OPTIONS="--depth=1"
-  fi
-  if [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
-    git clone --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+    # Read-only clone: always use HTTPS (works without SSH keys)
+    git clone --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git "$TARGET_DIR" || exit 1
+  elif [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
+    git clone --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git "$TARGET_DIR" || exit 1
   else
-    git clone --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+    git clone --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git "$TARGET_DIR" || exit 1
   fi
 fi
 
@@ -136,6 +137,15 @@ if [ -f target/relations.yaml ]; then
   mkdir -p $TARGET_INDEX
   echo "# Generated file. Do not edit" > $TARGET_INDEX/relations.yaml
   cat target/relations.yaml >> $TARGET_INDEX/relations.yaml
+  echo
+fi
+
+if [ -f target/categories.yaml ]; then
+  echo
+  echo "Copying target/categories.yaml to $TARGET_INDEX/categories.yaml"
+  mkdir -p $TARGET_INDEX
+  echo "# Generated file. Do not edit" > $TARGET_INDEX/categories.yaml
+  cat target/categories.yaml >> $TARGET_INDEX/categories.yaml
   echo
 fi
 

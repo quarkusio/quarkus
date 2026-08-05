@@ -21,11 +21,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.configuration.EchoResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MpClassNameScopeOverrideTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class, MPRestClient.class, HelloClientWithBaseUri.class))
             .withConfigurationResource("mp-classname-scope-test-application.properties");

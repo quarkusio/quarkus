@@ -7,4 +7,8 @@ public interface ServerRestHandler extends RestHandler<ResteasyReactiveRequestCo
 
     void handle(ResteasyReactiveRequestContext requestContext) throws Exception;
 
+    default boolean isCancellable() {
+        return true;
+    }
+
 }

@@ -16,12 +16,12 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.invent
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.shared.SharedEntity;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.user.User;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.user.subpackage.OtherUserInSubPackage;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultiplePersistenceUnitsPackageAnnotationsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(Plane.class.getPackage().getName())
                     .addPackage(SharedEntity.class.getPackage().getName())

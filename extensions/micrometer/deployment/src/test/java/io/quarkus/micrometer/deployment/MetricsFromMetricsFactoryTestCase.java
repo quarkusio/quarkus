@@ -19,12 +19,12 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.micrometer.runtime.MicrometerMetricsFactory;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.test.MeasureThis;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MetricsFromMetricsFactoryTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

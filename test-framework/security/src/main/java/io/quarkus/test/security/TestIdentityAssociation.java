@@ -1,5 +1,7 @@
 package io.quarkus.test.security;
 
+import static io.quarkus.test.security.TestIdentityAssociation.determineDelegate;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -38,10 +40,10 @@ public class TestIdentityAssociation implements CurrentIdentityAssociation {
      * A request scoped delegate that allows the system to function as normal when
      * the user has not been explicitly overridden
      */
-    private final CurrentIdentityAssociation delegate;
+    private final DelegatingSecurityIdentityAssociation delegate;
 
-    TestIdentityAssociation(DelegateSecurityIdentityAssociation defaultDelegate) {
-        this.delegate = determineDelegate(defaultDelegate);
+    TestIdentityAssociation(DelegatingSecurityIdentityAssociation delegate) {
+        this.delegate = delegate;
     }
 
     @PostConstruct
@@ -82,6 +84,12 @@ public class TestIdentityAssociation implements CurrentIdentityAssociation {
 
     @Override
     public SecurityIdentity getIdentity() {
+        // if we can determine that delegate's identity is not set, we can avoid blocking when resolving anonymous
+        // identity on IO thread
+        if (delegate.isIdentityNotSet() && testIdentity != null && !isPathBasedIdentity) {
+            return testIdentity;
+        }
+
         //we check the underlying identity first
         //in most cases this will have been set by the TestHttpAuthenticationMechanism
         //this means that all the usual auth process will run, including augmentors and
@@ -100,7 +108,7 @@ public class TestIdentityAssociation implements CurrentIdentityAssociation {
     }
 
     @SuppressWarnings("unchecked")
-    private static CurrentIdentityAssociation determineDelegate(DelegateSecurityIdentityAssociation defaultDelegate) {
+    static CurrentIdentityAssociation determineDelegate(DelegateSecurityIdentityAssociation defaultDelegate) {
         String delegateIdentityAssociationClassName = System.getProperty(DELEGATE_IDENTITY_ASSOCIATION_KEY);
         if (delegateIdentityAssociationClassName != null) {
             final Class<? extends CurrentIdentityAssociation> delegateClass;
@@ -130,5 +138,39 @@ class DelegateSecurityIdentityAssociation extends AbstractSecurityIdentityAssoci
     @Override
     protected IdentityProviderManager getIdentityProviderManager() {
         return identityProviderManager;
+    }
+}
+
+@RequestScoped
+class DelegatingSecurityIdentityAssociation {
+
+    private final CurrentIdentityAssociation delegate;
+    private volatile boolean isIdentitySet = false;
+
+    @Inject
+    DelegatingSecurityIdentityAssociation(DelegateSecurityIdentityAssociation defaultDelegate) {
+        this.delegate = determineDelegate(defaultDelegate);
+    }
+
+    void setIdentity(SecurityIdentity identity) {
+        isIdentitySet = identity != null;
+        delegate.setIdentity(identity);
+    }
+
+    void setIdentity(Uni<SecurityIdentity> identity) {
+        isIdentitySet = identity != null;
+        delegate.setIdentity(identity);
+    }
+
+    SecurityIdentity getIdentity() {
+        return delegate.getIdentity();
+    }
+
+    Uni<SecurityIdentity> getDeferredIdentity() {
+        return delegate.getDeferredIdentity();
+    }
+
+    boolean isIdentityNotSet() {
+        return !isIdentitySet;
     }
 }

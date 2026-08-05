@@ -8,10 +8,10 @@ export const templates = {
     'quarkus-websockets-next-endpoint-class': 'Classe de point de terminaison',
     'quarkus-websockets-next-connections': 'Connexions',
     'quarkus-websockets-next-path': 'Chemin',
-    'quarkus-websockets-next-callbacks': 'Rappels',
+    'quarkus-websockets-next-callbacks': 'Callbacks',
     'quarkus-websockets-next-type': 'Type',
     'quarkus-websockets-next-id': 'Identifiant',
-    'quarkus-websockets-next-handshake-path': 'Chemin de poignée de main',
+    'quarkus-websockets-next-handshake-path': 'Chemin du handshake',
     'quarkus-websockets-next-creation-time': 'Temps de création',
     'quarkus-websockets-next-actions': 'Actions',
     'quarkus-websockets-next-back': 'Retour',
@@ -23,7 +23,7 @@ export const templates = {
     'quarkus-websockets-next-open-dev-ui-connection': 'Ouvrir la connexion Dev UI',
     'quarkus-websockets-next-connect': 'Se connecter',
     'quarkus-websockets-next-open-dev-ui-connection-tooltip': 'Ouvrir une nouvelle connexion Dev UI',
-    'quarkus-websockets-next-dev-ui-connection': 'Interface de Dev connexion',
+    'quarkus-websockets-next-dev-ui-connection': 'Connexion Dev UI',
     'quarkus-websockets-next-regular-connection': 'Connexion régulière',
     'quarkus-websockets-next-manage': 'Gérer',
     'quarkus-websockets-next-opened-dev-ui-connection': 'Connexion Dev UI ouverte',
@@ -37,5 +37,5 @@ export const templates = {
     'quarkus-websockets-next-open-connections': str`Ouvrir les connexions pour le point de terminaison : ${0}`,
     'quarkus-websockets-next-connection-messages-limit': str`Limite des messages de connexion : ${0}`,
     'quarkus-websockets-next-connection': str`Connexion : ${0}`,
-    'quarkus-websockets-next-endpoint-handshake': str`Point de terminaison : ${0} | Chemin de poignée de main : ${1}`
+    'quarkus-websockets-next-endpoint-handshake': str`Point de terminaison : ${0} | Chemin du handshake : ${1}`
 };

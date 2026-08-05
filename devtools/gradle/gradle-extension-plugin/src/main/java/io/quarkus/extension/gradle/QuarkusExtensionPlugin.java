@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
+import io.quarkus.gradle.GradleVersionSupport;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.ExtensionConstants;
 import io.quarkus.gradle.tooling.ToolingUtils;
@@ -36,6 +37,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     public static final String EXTENSION_DESCRIPTOR_TASK_NAME = "extensionDescriptor";
     public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
+    private static final String DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME = "quarkusDeploymentClasspath";
 
     public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
 
@@ -44,6 +46,8 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
+        GradleVersionSupport.requireMinimumGradleVersion();
+
         final QuarkusExtensionConfiguration quarkusExt = project.getExtensions().create(EXTENSION_CONFIGURATION_NAME,
                 QuarkusExtensionConfiguration.class);
 
@@ -87,9 +91,21 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                         javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
 
                 validateExtensionTask.configure(task -> {
-                    Configuration deploymentModuleClasspath = deploymentProject.getConfigurations()
-                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-                    task.setDeploymentModuleClasspath(deploymentModuleClasspath);
+                    // Create a local resolvable configuration that depends on the deployment project.
+                    // This avoids cross-project configuration resolution issues in Gradle 9.x.
+                    Configuration deploymentClasspath = project.getConfigurations()
+                            .findByName(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
+                    if (deploymentClasspath == null) {
+                        deploymentClasspath = project.getConfigurations().create(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME);
+                        deploymentClasspath.setCanBeConsumed(false);
+                        deploymentClasspath.setCanBeResolved(true);
+                        deploymentClasspath.setTransitive(true);
+                        // Add project dependency on deployment module
+                        project.getDependencies().add(DEPLOYMENT_CLASSPATH_CONFIGURATION_NAME,
+                                project.getDependencies().project(
+                                        java.util.Map.of("path", deploymentProject.getPath())));
+                    }
+                    task.setDeploymentModuleClasspath(deploymentClasspath);
                 });
 
                 deploymentProject.getTasks().withType(Test.class).configureEach(test -> {

@@ -1,6 +1,5 @@
 package io.quarkus.deployment.builditem;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.paths.PathCollection;
 
@@ -32,14 +31,6 @@ public final class AdditionalApplicationArchiveBuildItem extends MultiBuildItem 
      */
     public AdditionalApplicationArchiveBuildItem(PathCollection path) {
         this.path = path;
-    }
-
-    /**
-     * @deprecated Use {@link #getResolvedPaths()} instead.
-     */
-    @Deprecated
-    public PathsCollection getPaths() {
-        return PathsCollection.from(path);
     }
 
     public PathCollection getResolvedPaths() {

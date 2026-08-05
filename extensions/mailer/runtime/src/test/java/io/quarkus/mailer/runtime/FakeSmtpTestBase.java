@@ -323,6 +323,16 @@ public class FakeSmtpTestBase {
         public OptionalLong maxMailsPerConnection() {
             return OptionalLong.empty();
         }
+
+        @Override
+        public Optional<String> credentialsProvider() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> credentialsProviderName() {
+            return Optional.empty();
+        }
     }
 
 }

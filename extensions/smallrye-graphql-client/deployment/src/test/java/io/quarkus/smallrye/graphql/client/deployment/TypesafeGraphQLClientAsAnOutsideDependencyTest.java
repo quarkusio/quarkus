@@ -17,7 +17,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApiWithNoConfigKey;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TypesafeGraphQLClientAsAnOutsideDependencyTest {
 
@@ -28,7 +28,7 @@ public class TypesafeGraphQLClientAsAnOutsideDependencyTest {
             .addClasses(TestingGraphQLClientApiWithNoConfigKey.class, Person.class);
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PersonDto.class, TestingGraphQLApi.class)
                     .addAsResource(

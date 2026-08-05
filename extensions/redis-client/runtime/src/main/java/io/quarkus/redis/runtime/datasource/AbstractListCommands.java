@@ -17,8 +17,8 @@ import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.Position;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
 
@@ -67,7 +67,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
     }
 
     KeyValue<K, V> decodeKeyValue(Response r) {
-        if (r != null && r.getDelegate() != null) {
+        if (r != null) {
             Response r1 = r.get(0);
             Response r2 = r.get(1);
             K key = marshaller.decode(typeOfKey, r1);
@@ -78,7 +78,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
     }
 
     KeyValue<K, V> decodeKeyValueWithList(Response r) {
-        if (r != null && r.getDelegate() != null) {
+        if (r != null) {
             Response r1 = r.get(0);
             Response r2 = r.get(1).get(0);
             K key = marshaller.decode(typeOfKey, r1);
@@ -107,7 +107,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
     }
 
     List<KeyValue<K, V>> decodeListOfKeyValue(Response r) {
-        if (r == null || r.getDelegate() == null) {
+        if (r == null) {
             return Collections.emptyList();
         }
         List<KeyValue<K, V>> res = new ArrayList<>();

@@ -13,6 +13,8 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Reporting an issue](#reporting-an-issue)
 - [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
   * [Using snapshots](#using-snapshots)
+    + [Using the GitHub Action (CI)](#using-the-github-action-ci)
+    + [Installing snapshots locally](#installing-snapshots-locally)
   * [Building main](#building-main)
   * [Updating the version](#updating-the-version)
 - [Before you contribute](#before-you-contribute)
@@ -64,10 +66,6 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Check security vulnerabilities](#check-security-vulnerabilities)
   * [External Maven repositories](#external-maven-repositories)
 - [LLM Usage Policy](#llm-usage-policy)
-  * [Acceptable Use of LLMs](#acceptable-use-of-llms)
-  * [Unacceptable Use](#unacceptable-use)
-  * [Consequences](#consequences)
-  * [If in Doubt](#if-in-doubt)
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
@@ -106,7 +104,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on <https://central.sonatype.com/repository/maven-snapshots>
+* either use the snapshots we publish daily on <https://github.com/quarkusio/quarkus-ecosystem-ci/releases>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -114,52 +112,41 @@ the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
 
-Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
+Snapshots are published daily with version `999-SNAPSHOT` as GitHub Releases in the
+[quarkusio/quarkus-ecosystem-ci](https://github.com/quarkusio/quarkus-ecosystem-ci/releases) repository.
+Each release contains a `maven-repo.tar.gz` asset with pre-built Maven artifacts.
+You will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add <https://central.sonatype.com/repository/maven-snapshots> as a Maven repository **and** a plugin
-repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
+You can browse the available snapshots at <https://github.com/quarkusio/quarkus-ecosystem-ci/releases>.
+Releases follow the naming convention `Quarkus 999-SNAPSHOT (main) (YYYY-MM-DD)`.
 
-```xml
+#### Using the GitHub Action (CI)
 
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-    <profiles>
-        <profile>
-            <id>quarkus-snapshots</id>
-            <repositories>
-                <repository>
-                    <id>quarkus-snapshots-repository</id>
-                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-                    <releases>
-                        <enabled>false</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>quarkus-snapshots-plugin-repository</id>
-                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-                    <releases>
-                        <enabled>false</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </pluginRepository>
-            </pluginRepositories>
-        </profile>
-    </profiles>
-    <activeProfiles>
-        <activeProfile>quarkus-snapshots</activeProfile>
-    </activeProfiles>
-</settings>
+If you are setting up CI, you can use the
+[install-quarkus-snapshots-action](https://github.com/quarkusio/install-quarkus-snapshots-action/)
+to automatically download and install snapshots into your local Maven repository.
+
+#### Installing snapshots locally
+
+> [!NOTE]
+> This script requires the [GitHub CLI](https://cli.github.com/) (`gh`) to be installed and properly configured.
+
+To install snapshots locally, run the following command to download and extract the latest snapshot
+into your local Maven repository:
+
+```sh
+curl -sL https://raw.githubusercontent.com/quarkusio/quarkus-ecosystem-ci/main/setup-quarkus | bash
 ```
 
-You can check the last publication date here: <https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/io/quarkus/quarkus-core/999-SNAPSHOT/>.
+You can also specify a branch (defaults to `main`):
+
+```sh
+curl -sL https://raw.githubusercontent.com/quarkusio/quarkus-ecosystem-ci/main/setup-quarkus | bash -s -- 3.21
+```
+
+> [!TIP]
+> Use `./mvnw -nsu` (or `--no-snapshot-updates`) when building your project to prevent Maven from
+> trying to fetch snapshots from remote repositories, ensuring it uses the locally installed artifacts.
 
 ### Building main
 
@@ -809,10 +796,10 @@ To include them into your project a few things have to be changed.
 
 ```xml
 <properties>
-    <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
+    <quarkus-plugin.version>4.0.999-SNAPSHOT</quarkus-plugin.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-    <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
+    <quarkus.platform.version>4.0.999-SNAPSHOT</quarkus.platform.version>
     .
     .
     .
@@ -854,12 +841,9 @@ repositories {
 }
 ```
 
-**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds:
-```gradle
-    maven {
-        url 'https://central.sonatype.com/repository/maven-snapshots/'
-    }
-```
+**Note** When using daily snapshot builds instead of local builds, download and install the snapshots into your local Maven
+repository first (see [Using snapshots](#using-snapshots)), then add `mavenLocal()` to the first position in the
+`repositories` section.
 
 ### MicroProfile TCK's
 
@@ -948,34 +932,9 @@ When a dependency relies on an external repository that is not Maven Central, we
 
 ## LLM Usage Policy
 
-At Quarkus, we welcome tools that help developers become more productive — including Large Language Models (LLMs) and Agents like ChatGPT, GitHub Copilot, and others.
+The Quarkus project has a dedicated AI and LLM usage policy that applies to all contributions (issues, pull requests, comments, discussions, and other project interactions).
 
-However, recent patterns of use have led to increased moderation burden, low-value contributions, and reduced community signal. To ensure a healthy and productive community, the following expectations apply:
-
-### Acceptable Use of LLMs
-
-- LLMs may be used to **assist your development** — e.g. drafting code, writing documentation, proposing fixes — as long as **you understand, validate**, and **take responsibility for the results.**
-- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an Agent/LLM "spit out."
-- You may use Agents/LLMs to help you **write better**, but not to **post more**.
-
-### Unacceptable Use
-
-- Submitting code, tests, comments, or issues that appear to be **copied directly from an LLM with little or no human oversight** is **not acceptable**.
-- Posting **large volumes of low-effort suggestions, vague issues, or links with no context** — even if technically accurate — is considered spam.
-- Submitting **AI-generated tests that do not validate actual behavior** or meaningfully cover functionality is not helpful and will be rejected.
-- Using bots, agents, or automated tools to open PRs, file issues, or post content **without human authorship and responsibility** is not allowed.
-
-### Consequences
-
-- We may close issues, PRs, or discussions that violate this policy without detailed explanation.
-- Repeated violations may result in temporary or permanent restrictions from participating in the project.
-
-### If in Doubt
-
-If you're unsure whether your use of Agent/LLMs is acceptable — ask! We're happy to help contributors learn how to use AI tools effectively **without creating noise**.
-
-> This isn’t about banning AI — it’s about keeping Quarkus collaborative, human-driven, and focused on quality.
-
+Please read the [AI and LLM Usage Policy](AI_POLICY.md) before opening issues or pull requests.
 
 
 ## The small print

@@ -15,7 +15,7 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.test.blocking.inheritance.BlockingTestService;
 import io.quarkus.grpc.test.blocking.inheritance.BlockingTestServiceGrpc;
 import io.quarkus.grpc.test.blocking.inheritance.InheritenceTest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
 
@@ -23,7 +23,7 @@ public class BlockingFromTransactionalTest {
     private static final String BLOCKING = "blocking";
     private static final String NON_BLOCKING = "nonblocking";
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addPackage(BlockingTestServiceGrpc.class.getPackage())

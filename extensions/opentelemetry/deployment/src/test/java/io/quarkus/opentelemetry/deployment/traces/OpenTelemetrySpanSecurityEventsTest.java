@@ -27,13 +27,13 @@ import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class OpenTelemetrySpanSecurityEventsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, EventsResource.class,
                             CustomSecurityEvent.class)
@@ -41,6 +41,7 @@ public class OpenTelemetrySpanSecurityEventsTest {
                             quarkus.otel.security-events.enabled=true
                             quarkus.otel.metrics.exporter=none
                             quarkus.otel.security-events.event-types=AUTHENTICATION_SUCCESS,AUTHORIZATION_SUCCESS,OTHER
+                            quarkus.otel.traces.sampler.arg=1.0d
                             """), "application.properties"));
 
     @Inject

@@ -61,7 +61,7 @@
                                 <externalRules>
                                     <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                 </externalRules>
-                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                                <requiresMinimalDeploymentDependency/>
                             </rules>
                         </configuration>
                     </execution>
@@ -161,6 +161,7 @@
             </activation>
             <modules>
                 <module>core</module>
+                <module>agroal</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
@@ -178,7 +179,6 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
-                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>
@@ -204,10 +204,13 @@
                 <module>jpa-mssql</module>
                 <module>jpa-mysql</module>
                 <module>jpa-oracle</module>
+                <module>hibernate-orm-cache</module>
                 <module>hibernate-orm-compatibility-5.6/mariadb</module>
                 <module>hibernate-orm-compatibility-5.6/postgresql</module>
                 <module>hibernate-orm-panache</module>
+                <module>data-hibernate</module>
                 <module>hibernate-orm-rest-data-panache</module>
+                <module>rest-data-hibernate-json-types</module>
                 <module>hibernate-orm-graphql-panache</module>
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
@@ -232,8 +235,11 @@
                 <module>hibernate-orm-panache-data</module>
                 <module>hibernate-orm-envers</module>
                 <module>hibernate-orm-spatial</module>
+                <module>hibernate-orm-vector</module>
+                <module>hibernate-orm-temporal</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
+                <module>vertx-native-transport</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
@@ -246,7 +252,9 @@
                 <module>spring-boot-properties</module>
                 <module>spring-cloud-config-client</module>
                 <module>spring-data-rest</module>
-                <module>infinispan-cache-jpa</module>
+                <module>spring-tx</module>
+                <module>spring-test</module>
+                <module>infinispan-cache</module>
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
                 <module>elytron-resteasy</module>
@@ -267,6 +275,7 @@
                 <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-dpop</module>
+                <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -285,7 +294,7 @@
                 <module>reactive-mysql-client</module>
                 <module>reactive-mssql-client</module>
                 <module>reactive-oracle-client</module>
-<!--   disabled because of incremental build problems             <module>devservices</module>-->
+                <module>devservices</module>
                 <module>test-extension</module>
                 <module>amazon-lambda</module>
                 <module>amazon-lambda-s3event</module>
@@ -313,7 +322,7 @@
                 <module>virtual-http-resteasy</module>
                 <module>command-mode</module>
                 <module>maven</module>
-                <module>scala</module>
+
                 <module>kotlin</module>
                 <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>
@@ -346,7 +355,7 @@
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-pulsar</module>
-                <module>reactive-messaging-mqtt</module>
+<!--                <module>reactive-messaging-mqtt</module>-->
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
@@ -357,12 +366,21 @@
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
+                <module>http-3-rest</module>
+                <module>http-3-rest-client</module>
+                <module>http-3-rest-auto-tls</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
                 <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
+                <module>signals</module>
+                <module>signals-command-mode</module>
                 <module>simple with space</module>
+                <module>aesh</module>
+                <module>aesh-native</module>
+                <module>aesh-ssh-native</module>
+                <module>aesh-websocket-native</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
                 <module>web-dependency-locator</module>
@@ -371,6 +389,7 @@
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-prometheus</module>
+                <module>micrometer-prometheus-opentelemetry</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
@@ -406,15 +425,16 @@
                 <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
                 <module>grpc-descriptor-sets</module>
-                <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-cli</module>
                 <module>grpc-tls-p12</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>
+                <module>grpc-kotlin-coroutine</module>
                 <module>grpc-mutual-auth</module>
                 <module>grpc-streaming</module>
+                <module>grpc-streaming-native</module>
                 <module>grpc-interceptors</module>
                 <module>grpc-proto-v2</module>
                 <module>grpc-health</module>
@@ -422,6 +442,7 @@
                 <module>grpc-hibernate-reactive</module>
                 <module>grpc-external-proto</module>
                 <module>grpc-external-proto-test</module>
+                <module>grpc-stork-recovery</module>
                 <module>grpc-stork-response-time</module>
                 <module>grpc-stork-simple</module>
                 <module>grpc-exceptions</module>
@@ -429,13 +450,13 @@
                 <module>grpc-proto3</module>
                 <module>grpc-proto4</module>
                 <module>grpc-encoding</module>
+                <module>grpc-domain-socket</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
                 <module>mtls-certificates</module>
-                <!-- Virtual threads test -->
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
             </modules>

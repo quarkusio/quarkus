@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests the caching annotations on methods returning {@link CompletableFuture}.
@@ -29,7 +29,8 @@ public class CompletionStageReturnTypeTest {
     private static final String KEY_2 = "key-2";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(CachedService.class));
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

@@ -87,4 +87,15 @@ public interface CORSConfig {
      */
     @WithDefault("true")
     boolean returnExactOrigins();
+
+    /**
+     * Whether to add the {@code Vary: Origin} response header to CORS responses when the origin is not a wildcard.
+     * <p>
+     * The {@code Vary: Origin} header tells HTTP caches that the response depends on the request's {@code Origin} header,
+     * preventing a cached response for one origin from being served to a different origin.
+     * <p>
+     * This should remain enabled (the default) in most setups, especially when a reverse proxy or CDN may cache responses.
+     */
+    @WithDefault("true")
+    boolean varyOrigin();
 }

@@ -24,7 +24,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.jwt.test.GreetingResource;
 import io.quarkus.smallrye.jwt.deployment.GeneratePersistentDevModeJwtKeysBuildItem;
 import io.quarkus.smallrye.jwt.deployment.SmallryeJwtDevModeProcessor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.smallrye.jwt.build.Jwt;
@@ -32,7 +32,7 @@ import io.smallrye.jwt.build.Jwt;
 public class SmallryeJwtPersistentDevModeSignedTest {
 
     @RegisterExtension
-    static QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(GreetingResource.class))
             .addBuildChainCustomizer(new PersistentJwtChainBuilder());

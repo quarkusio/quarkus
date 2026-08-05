@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
 import io.quarkus.panacheql.internal.HqlLexer;
@@ -13,12 +15,13 @@ import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 
 public class PanacheQlQueryBinder {
 
-    public static String bindQuery(Class<?> clazz, String query, Object[] params) {
+    public static Bson bindQuery(Class<?> clazz, String query, Object[] params) {
         Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(clazz);
 
         //shorthand query
         if (params.length == 1 && query.indexOf('?') == -1) {
-            return "{'" + replaceField(query, replacementMap) + "':" + CommonQueryBinder.escape(params[0]) + "}";
+            String field = replaceField(query, replacementMap);
+            return new Document(field, CommonQueryBinder.paramValue(params[0]));
         }
 
         //classic query
@@ -31,7 +34,7 @@ public class PanacheQlQueryBinder {
         return prepareQuery(query, replacementMap, parameterMaps);
     }
 
-    public static String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
+    public static Bson bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
         Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(clazz);
 
         Map<String, Object> parameterMaps = new HashMap<>();
@@ -47,12 +50,12 @@ public class PanacheQlQueryBinder {
         return replacementMap.getOrDefault(field, field);
     }
 
-    private static String prepareQuery(String query, Map<String, String> replacementMap, Map<String, Object> parameterMaps) {
+    private static Bson prepareQuery(String query, Map<String, String> replacementMap, Map<String, Object> parameterMaps) {
         HqlLexer lexer = new HqlLexer(CharStreams.fromString(query));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         HqlParser parser = new HqlParser(tokens);
         HqlParser.PredicateContext predicate = parser.predicate();
-        HqlParserBaseVisitor<String> visitor = new MongoParserVisitor(replacementMap, parameterMaps);
-        return "{" + predicate.accept(visitor) + "}";
+        HqlParserBaseVisitor<Object> visitor = new MongoParserVisitor(replacementMap, parameterMaps);
+        return (Bson) predicate.accept(visitor);
     }
 }

@@ -19,8 +19,9 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -28,7 +29,7 @@ import io.vertx.core.Vertx;
 public class ContextLocalPropagationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
                     "http://localhost:${quarkus.http.test-port:8081}");
@@ -126,7 +127,7 @@ public class ContextLocalPropagationTest {
         }
 
         public static void putLocal(Object key, Object value) {
-            determineRestClientContext().putLocal(key, value);
+            determineRestClientContext().getLocal(VertxContext.DATA_MAP_LOCAL).put(key.toString(), value);
         }
 
         private static Context determineRestClientContext() {

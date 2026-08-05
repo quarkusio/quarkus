@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.kotlin
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.websockets.next.OnTextMessage
 import io.quarkus.websockets.next.WebSocket
@@ -20,7 +20,7 @@ import java.util.UUID
 class KotlinWebSocketSessionContextTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
+        val test = QuarkusExtensionTest()
             .withApplicationRoot { jar ->
                 jar.addClasses(MyData::class.java, Endpoint::class.java, WSClient::class.java)
             }

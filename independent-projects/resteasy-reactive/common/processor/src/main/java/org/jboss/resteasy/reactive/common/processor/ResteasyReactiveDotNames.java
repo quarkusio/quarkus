@@ -213,6 +213,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
     public static final DotName REST_MULTI = DotName.createSimple(RestMulti.class.getName());
+    public static final DotName REST_MULTI_RESPONSE = DotName
+            .createSimple("org.jboss.resteasy.reactive.client.RestMultiResponse");
     public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     public static final DotName COMPLETABLE_FUTURE = DotName.createSimple(CompletableFuture.class.getName());
     public static final DotName PUBLISHER = DotName.createSimple(Publisher.class.getName());
@@ -293,6 +295,7 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName MULTI_PART_DATA_INPUT = DotName
             .createSimple("org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput");
+    public static final DotName ENTITY_PART = DotName.createSimple("jakarta.ws.rs.core.EntityPart");
     public static final DotName OBJECT_NAME = DotName.createSimple(Object.class.getName());
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
@@ -303,6 +306,7 @@ public final class ResteasyReactiveDotNames {
 
             // Jackson
             DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),
+            DotName.createSimple("tools.jackson.databind.JsonNode"),
 
             // JAX-RS
             DotName.createSimple("jakarta.ws.rs.core.Response"),

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpServerMetricsTest {

@@ -1,18 +1,17 @@
 package io.quarkus.kubernetes.client.runtime.internal;
 
-import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
-
 import java.io.Closeable;
 
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.http.HttpClient;
-import io.fabric8.kubernetes.client.vertx.VertxHttpClientBuilder;
+import io.fabric8.kubernetes.client.vertx5.Vertx5HttpClientBuilder;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.impl.SysProps;
 
 public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
 
@@ -37,7 +36,7 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
         // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
         // So, we just need to disable the async resolver around the Vert.x instance creation.
         try (var resettableSystemProperties = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+                SysProps.DISABLE_DNS_RESOLVER.name, "true")) {
             return Vertx.vertx(new VertxOptions().setFileSystemOptions(
                     new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false)));
 
@@ -50,8 +49,8 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
     }
 
     @Override
-    public VertxHttpClientBuilder<QuarkusHttpClientFactory> newBuilder() {
-        return new VertxHttpClientBuilder<>(this, vertx);
+    public Vertx5HttpClientBuilder<QuarkusHttpClientFactory> newBuilder() {
+        return new Vertx5HttpClientBuilder<>(this, vertx);
     }
 
     @Override

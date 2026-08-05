@@ -1,6 +1,9 @@
 package io.quarkus.grpc.server.blocking;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,16 +24,15 @@ import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Blocking;
-import io.vertx.core.impl.ConcurrentHashSet;
 
 public class MultiThreadedBlockingImplTest {
 
     private static final Logger logger = Logger.getLogger(GrpcServices.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
@@ -51,7 +53,7 @@ public class MultiThreadedBlockingImplTest {
     @Test
     void testTheBlockingCallsCanBeDispatchedOnMultipleThreads() throws InterruptedException {
         int count = 100;
-        ConcurrentHashSet<String> threads = new ConcurrentHashSet<>();
+        Set<String> threads = Collections.newSetFromMap(new ConcurrentHashMap<>());
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             int id = i;

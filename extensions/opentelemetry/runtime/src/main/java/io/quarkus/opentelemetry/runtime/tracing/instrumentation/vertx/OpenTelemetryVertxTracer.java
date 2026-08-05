@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 import io.opentelemetry.context.Scope;
@@ -97,6 +98,9 @@ public class OpenTelemetryVertxTracer
         private final MultiMap headers;
         private final io.opentelemetry.context.Context spanContext;
         private final Scope scope;
+        private volatile int spanEnded;
+        private static final AtomicIntegerFieldUpdater<SpanOperation> spanEndedUpdater = AtomicIntegerFieldUpdater
+                .newUpdater(SpanOperation.class, "spanEnded");
 
         public SpanOperation(final Context context, final Object request, final MultiMap headers,
                 final io.opentelemetry.context.Context spanContext, final Scope scope) {
@@ -105,6 +109,10 @@ public class OpenTelemetryVertxTracer
             this.headers = headers;
             this.spanContext = spanContext;
             this.scope = scope;
+        }
+
+        boolean tryEndSpan() {
+            return spanEndedUpdater.compareAndSet(this, 0, 1);
         }
 
         public Context getContext() {

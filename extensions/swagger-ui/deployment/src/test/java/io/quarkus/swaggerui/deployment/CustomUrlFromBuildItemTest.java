@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class CustomUrlFromBuildItemTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.swagger-ui.urls.\"user-custom-1\"", "/user/custom/1")
             .overrideConfigKey("quarkus.swagger-ui.urls.\"user-custom-2\"", "/user/custom/2")
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {

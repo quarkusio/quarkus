@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.flyway.FlywayDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FlywayExtensionBaselineOnMigrateNamedDataSourcesInactiveTest {
 
@@ -34,7 +34,7 @@ public class FlywayExtensionBaselineOnMigrateNamedDataSourcesInactiveTest {
             .withInitSqlFile("src/test/resources/h2-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setBeforeAllCustomizer(new Runnable() {
                 @Override
                 public void run() {

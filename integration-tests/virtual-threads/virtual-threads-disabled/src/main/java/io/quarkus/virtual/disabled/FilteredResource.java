@@ -9,7 +9,7 @@ import org.jboss.logmanager.MDC;
 
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Vertx;
+import io.smallrye.common.vertx.ContextLocals;
 
 @Path("/filter")
 public class FilteredResource {
@@ -26,8 +26,8 @@ public class FilteredResource {
         assert counter.increment() == 2;
 
         // DC
-        assert Vertx.currentContext().getLocal("filter").equals("test");
-        Vertx.currentContext().putLocal("test", "test test");
+        assert "test".equals(ContextLocals.get("filter", null));
+        ContextLocals.put("test", "test test");
 
         // MDC
         assert MDC.get("mdc").equals("test");

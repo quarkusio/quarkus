@@ -175,5 +175,13 @@
                 <redis.base.image>redis/redis-stack:7.0.6-RC9</redis.base.image>
             </properties>
         </profile>
+
+        <!-- note that a small number of tests fail with Redis 8, so we don't use it by default yet -->
+        <profile>
+            <id>redis-8.4</id>
+            <properties>
+                <redis.base.image>redis:8</redis.base.image>
+            </properties>
+        </profile>
     </profiles>
 </project>

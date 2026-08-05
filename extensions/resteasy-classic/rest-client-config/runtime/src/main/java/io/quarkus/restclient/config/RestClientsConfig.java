@@ -141,7 +141,6 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    @Deprecated
     @WithDefault("15000")
     Long connectTimeout();
 
@@ -313,6 +312,15 @@ public interface RestClientsConfig {
      */
     @WithDefault("false")
     boolean http2();
+
+    /**
+     * If this is true then HTTP/3 will be enabled.
+     * The target server must support HTTP/3 and the connection must use TLS.
+     * <p>
+     * This property is not applicable to the RESTEasy Classic Client.
+     */
+    @WithDefault("false")
+    boolean http3();
 
     /**
      * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
@@ -720,6 +728,14 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
+         * If this is true then HTTP/3 will be enabled.
+         * The target server must support HTTP/3 and the connection must use TLS.
+         * <p>
+         * This property is not applicable to the RESTEasy Classic Client.
+         */
+        Optional<Boolean> http3();
+
+        /**
          * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
          * <p>
          * This property is not applicable to the RESTEasy Client.
@@ -773,6 +789,17 @@ public interface RestClientsConfig {
          */
         @WithDefault("false")
         Boolean disableDefaultMapper();
+
+        /**
+         * The path to a Unix domain socket. When set, the client connects to the server
+         * using a Unix domain socket instead of a network connection. The {@code url} or {@code uri}
+         * property is still required for the request path and HTTP {@code Host} header.
+         * <p>
+         * Unix domain sockets are not available on Windows.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> domainSocket();
 
         /**
          * Logging configuration.

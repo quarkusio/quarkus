@@ -40,7 +40,7 @@ It also supports reloading the certificates.
 When configuring a _client_ establishing a connection to a server using TLS, the TLS registry should be used to configure the TLS settings.
 The TLS settings must be defined in the `quarkus.tls.<name>.` configuration.
 
-WARNING: Using the default configuration is going to create conflict with the server configuration, and it's is generally not a good idea to use the same configuration for the client and the server.
+WARNING: Using the default configuration is going to create conflict with the server configuration, and it is generally not a good idea to use the same configuration for the client and the server.
 
 The client extension should use the TLS registry to retrieve the _TlsConfiguration_ and use it to configure the connection.
 

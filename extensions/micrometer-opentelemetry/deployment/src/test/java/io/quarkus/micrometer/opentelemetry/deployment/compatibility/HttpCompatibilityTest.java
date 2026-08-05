@@ -27,7 +27,7 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.PingPongResource;
 import io.quarkus.micrometer.opentelemetry.deployment.common.ServletEndpoint;
 import io.quarkus.micrometer.opentelemetry.deployment.common.Util;
 import io.quarkus.micrometer.opentelemetry.deployment.common.VertxWebEndpoint;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -35,7 +35,7 @@ import io.restassured.RestAssured;
  */
 public class HttpCompatibilityTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Util.class,
@@ -144,7 +144,7 @@ public class HttpCompatibilityTest {
                     assertThat(clientMetricData)
                             .hasName("http.client.requests") // in OTel it should be "http.server.request.duration"
                             .hasDescription("") // in OTel it should be "Duration of HTTP client requests."
-                            .hasUnit("ms") // OTel has seconds
+                            .hasUnit("s") // OTel has seconds
                             .hasHistogramSatisfying(histogram -> histogram.isCumulative()
                                     .hasPointsSatisfying(
                                             // valid entries
@@ -174,7 +174,7 @@ public class HttpCompatibilityTest {
         assertThat(metricData)
                 .hasName("http.server.requests") // in OTel it should be "http.server.request.duration"
                 .hasDescription("HTTP server request processing time") // in OTel it should be "Duration of HTTP server requests."
-                .hasUnit("ms") // OTel has seconds
+                .hasUnit("s") // OTel has seconds
                 .hasHistogramSatisfying(histogram -> histogram.isCumulative()
                         .hasPointsSatisfying(
                                 // valid entries

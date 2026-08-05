@@ -9,6 +9,7 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
+import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -24,7 +25,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResou
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceImpl;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorPlatformServiceResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.SubResourceLocatorUserResource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
@@ -37,7 +38,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class SubResourceLocatorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -62,6 +63,8 @@ public class SubResourceLocatorTest {
     @DisplayName("Test 657")
     public void test657() {
         Client client = ClientBuilder.newClient();
+        Assertions.assertNotNull(((WebTargetImpl) client.target(uri)).proxy(SubResourceLocatorPlatformServiceResource.class));
+        Assertions.assertNotNull(((WebTargetImpl) client.target(uri)).proxy(SubResourceLocatorBaseService.class));
         WebTarget base = client.target(UriBuilder.fromUri(uri).path("/platform/users/89080/data/ada/jsanchez110"));
         Response response = base.request().get();
         String s = response.readEntity(String.class);

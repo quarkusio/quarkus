@@ -2,40 +2,39 @@ package io.quarkus.mailer.deployment;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
-
-public class MailTemplateMailerNameTransformer implements AnnotationsTransformer {
+public class MailTemplateMailerNameTransformer implements AnnotationTransformation {
 
     @Override
-    public boolean appliesTo(Kind kind) {
+    public boolean supports(Kind kind) {
         return Kind.FIELD == kind || Kind.METHOD_PARAMETER == kind;
     }
 
     @Override
-    public void transform(TransformationContext transformationContext) {
+    public void apply(TransformationContext context) {
         DotName type;
 
-        if (transformationContext.getTarget().kind() == Kind.FIELD) {
-            type = transformationContext.getTarget().asField().type().name();
+        if (context.declaration().kind() == Kind.FIELD) {
+            type = context.declaration().asField().type().name();
         } else {
-            type = transformationContext.getTarget().asMethodParameter().type().name();
+            type = context.declaration().asMethodParameter().type().name();
         }
 
         if (!MailerProcessor.MAIL_TEMPLATE.equals(type)) {
             return;
         }
 
-        AnnotationInstance mailerName = transformationContext.getTarget().annotation(MailerProcessor.MAILER_NAME);
+        AnnotationInstance mailerName = context.declaration().annotation(MailerProcessor.MAILER_NAME);
         if (mailerName == null) {
             return;
         }
 
-        transformationContext.transform()
-                .remove(ai -> MailerProcessor.MAILER_NAME.equals(ai.name()))
-                .add(MailerProcessor.MAIL_TEMPLATE_MAILER_NAME, mailerName.value())
-                .done();
+        context.remove(ai -> MailerProcessor.MAILER_NAME.equals(ai.name()));
+        context.add(AnnotationInstance.builder(MailerProcessor.MAIL_TEMPLATE_MAILER_NAME)
+                .add(mailerName.value())
+                .build());
     }
 
 }

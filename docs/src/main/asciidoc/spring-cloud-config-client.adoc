@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reading properties from Spring Cloud Config Server
 include::_attributes.adoc[]
-:categories: compatibility
 :summary: Quarkus provides a compatibility layer for Spring Cloud Config in the form of the spring-cloud-config-client extension.
 :topics: spring,cloud,configuration,compatibility
 :extensions: io.quarkus:quarkus-spring-cloud-config-client
@@ -156,6 +155,8 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
 * xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
 * xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-tx.adoc[Quarkus - Extension for Spring Transaction]
+* xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]
 
 [[spring-cloud-config-client-configuration-reference]]
 == Spring Cloud Config Client Reference

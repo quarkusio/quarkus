@@ -51,6 +51,7 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.internal.buffer.BufferInternal;
 
 /**
  * This decoder will decode response body.
@@ -344,7 +345,7 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     public QuarkusMultipartResponseDecoder offer(Buffer content) {
-        return offer(new DefaultHttpContent(content.getByteBuf()));
+        return offer(new DefaultHttpContent(((BufferInternal) content).getByteBuf()));
     }
 
     /**
@@ -1187,7 +1188,7 @@ public class QuarkusMultipartResponseDecoder {
             if (posDelimiter < 0 &&
                     httpData.definedLength() == httpData.length() + readableBytes - 1 &&
                     undecodedChunk.getByte(readableBytes + startReaderIndex - 1) == HttpConstants.CR) {
-                // Last CR shall preceed a future LF
+                // Last CR shall precede a future LF
                 lastPosition = 0;
                 posDelimiter = readableBytes - 1;
             }

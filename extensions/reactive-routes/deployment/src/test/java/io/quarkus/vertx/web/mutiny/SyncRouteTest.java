@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
@@ -27,7 +27,7 @@ import io.vertx.ext.web.RoutingContext;
 public class SyncRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @TestHTTPResource
@@ -40,9 +40,6 @@ public class SyncRouteTest {
                 .header("content-type", is(nullValue()));
 
         when().get("hello-buffer-sync").then().statusCode(200).body(is("Sync Buffer"))
-                .header("content-type", is(nullValue()));
-
-        when().get("hello-buffer-mutiny-sync").then().statusCode(200).body(is("Sync Mutiny Buffer"))
                 .header("content-type", is(nullValue()));
 
         when().get("/person-sync").then().statusCode(200)
@@ -85,11 +82,6 @@ public class SyncRouteTest {
         @Route(path = "hello-buffer-sync")
         Buffer helloBufferSync(RoutingContext context) {
             return Buffer.buffer("Sync Buffer");
-        }
-
-        @Route(path = "hello-buffer-mutiny-sync")
-        io.vertx.mutiny.core.buffer.Buffer helloMutinyBufferSync(RoutingContext context) {
-            return io.vertx.mutiny.core.buffer.Buffer.buffer("Sync Mutiny Buffer");
         }
 
         @Route(path = "fail-sync")

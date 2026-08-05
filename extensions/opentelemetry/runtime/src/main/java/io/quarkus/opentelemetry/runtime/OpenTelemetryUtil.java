@@ -48,6 +48,9 @@ public final class OpenTelemetryUtil {
                 continue;
             }
             String[] parts = header.split("=", 2);
+            if (parts.length < 2) {
+                continue;
+            }
             String key = parts[0].trim();
             String value = parts[1].trim();
             result.put(key, value);

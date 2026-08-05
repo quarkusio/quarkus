@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MongoTracingNotEnabledTest extends MongoTestBase {
 
@@ -20,7 +20,7 @@ public class MongoTracingNotEnabledTest extends MongoTestBase {
     MongoClient client;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class,
                             MockReactiveContextProvider.class))

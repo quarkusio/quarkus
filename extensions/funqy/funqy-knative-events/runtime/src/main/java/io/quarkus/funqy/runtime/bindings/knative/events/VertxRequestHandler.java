@@ -9,7 +9,6 @@ import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBind
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.RESPONSE_SOURCE;
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.RESPONSE_TYPE;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -27,12 +26,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
@@ -54,7 +47,13 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger("io.quarkus.funqy");
@@ -144,7 +143,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         structuredPayload = mapper.readTree(bodyBuff.getBytes());
                         ceType = structuredPayload.get("type").asText();
                         ceSpecVersion = structuredPayload.get("specversion").asText();
-                    } catch (IOException e) {
+                    } catch (JacksonException e) {
                         routingContext.fail(e);
                         return;
                     }
@@ -485,12 +484,17 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             Buffer buff = routingContext.body().buffer();
             try {
                 Object input = null;
-                if (buff.length() > 0) {
-                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                if (!invoker.hasInput()) {
+                    if (buff != null && buff.length() > 0) {
+                        log.warn("Request body ignored: function '" + invoker.getName()
+                                + "' does not accept input");
+                    }
+                } else if (buff != null && buff.length() > 0) {
+                    ByteBufInputStream in = new ByteBufInputStream(((BufferInternal) buff).getByteBuf());
                     ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
                     try {
                         input = reader.readValue((InputStream) in);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         log.error("Failed to unmarshal input", e);
                         routingContext.fail(400);
                         return;
@@ -524,7 +528,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                             .get(DATA_OBJECT_WRITER);
                                     httpResponse.putHeader("Content-Type", "application/json");
                                     httpResponse.end(writer.writeValueAsString(obj));
-                                } catch (JsonProcessingException jpe) {
+                                } catch (JacksonException jpe) {
                                     log.error("Failed to unmarshal input", jpe);
                                     routingContext.fail(400);
                                 } catch (Throwable e) {

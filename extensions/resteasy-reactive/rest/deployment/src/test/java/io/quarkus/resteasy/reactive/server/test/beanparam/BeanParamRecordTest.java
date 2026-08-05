@@ -14,12 +14,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class BeanParamRecordTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(() -> {
                 return ShrinkWrap.create(JavaArchive.class)
                         .addClasses(BeanParamRecord.class, OtherBeanParam.class, OtherBeanParamClass.class,
@@ -43,7 +43,7 @@ public class BeanParamRecordTest {
                 .get("/record")
                 .then()
                 .statusCode(200)
-                .body(equalTo("got it/2/3/4/5/6.0/7.0/true/a/query/query/query/query"));
+                .body(equalTo("got it/2/3/4/5/6.0/7.0/true/a/query/query/query/query//record"));
 
     }
 
@@ -102,7 +102,8 @@ public class BeanParamRecordTest {
                     + p.obp().q + "/"
                     + p.obp().obpr.q() + "/"
                     + p.obp().obpc.q + "/"
-                    + p.obpr().q;
+                    + p.obpr().q + "/"
+                    + p.uriInfo().getPath();
         }
     }
 }

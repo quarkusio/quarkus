@@ -8,11 +8,11 @@ import java.util.logging.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class NameConflictTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(NameConflict.class))
             .setLogRecordPredicate(logRecord -> logRecord.getLevel().intValue() >= Level.WARNING.intValue() &&
                     logRecord.getLoggerName().startsWith("io.quarkus.funqy"))

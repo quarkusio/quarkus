@@ -72,6 +72,18 @@ public class CodeFlowUserInfoResource {
     }
 
     @GET
+    @Path("/code-flow-jwt-bearer-auth")
+    public String accessJwtBearerAuth() {
+        return identity.getPrincipal().getName() + ":" + userInfo.getPreferredUserName();
+    }
+
+    @GET
+    @Path("/code-flow-spiffe-auth")
+    public String accessSpiffeAuth() {
+        return identity.getPrincipal().getName() + ":" + userInfo.getPreferredUserName();
+    }
+
+    @GET
     @PermitAll
     @Path("/clear-token-cache")
     public void clearTokenCache() {

@@ -16,6 +16,7 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 public class BasicGrpcSecurityMechanism implements GrpcSecurityMechanism {
     @Override
     public boolean handles(Metadata metadata) {
+        System.out.println("HERE: " + metadata);
         String authString = metadata.get(AUTHORIZATION);
         return authString != null && authString.startsWith("Basic ");
     }

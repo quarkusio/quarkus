@@ -26,7 +26,7 @@ import io.quarkus.micrometer.test.MockServiceSelectorProvider;
 import io.quarkus.micrometer.test.MockServiceSelectorProviderLoader;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.stork.api.observability.StorkObservation;
 
@@ -34,7 +34,7 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkMetricsLoadBalancerFailTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")

@@ -27,12 +27,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TransactionScopedInterceptorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addClass(TransactionScopedInterceptor.class))

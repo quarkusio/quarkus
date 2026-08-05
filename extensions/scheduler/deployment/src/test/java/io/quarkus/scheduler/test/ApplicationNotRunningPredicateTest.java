@@ -15,12 +15,13 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.SuccessfulExecution;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ApplicationNotRunningPredicateTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
 
     static final CountDownLatch SUCCESS_LATCH = new CountDownLatch(1);
     static volatile FailedExecution failedExecution;

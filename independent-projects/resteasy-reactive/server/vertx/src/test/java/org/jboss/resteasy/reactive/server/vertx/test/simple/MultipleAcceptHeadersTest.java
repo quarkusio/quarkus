@@ -33,7 +33,7 @@ public class MultipleAcceptHeadersTest {
         WebClient client = WebClient.create(Vertx.vertx());
 
         var response = client.get(ResteasyReactiveUnitTest.SERVER_PORT, "localhost", "/hello")
-                .putHeader("Accept", List.of("application/xml", "application/json")).send().toCompletionStage()
+                .putHeader("Accept", List.<String> of("application/xml", "application/json")).send().toCompletionStage()
                 .toCompletableFuture().get(10, TimeUnit.SECONDS);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.bodyAsString()).isEqualTo(BODY);
@@ -44,7 +44,7 @@ public class MultipleAcceptHeadersTest {
         WebClient client = WebClient.create(Vertx.vertx());
 
         var response = client.get(ResteasyReactiveUnitTest.SERVER_PORT, "localhost", "/hello")
-                .putHeader("Accept", List.of("application/json", "application/xml")).send().toCompletionStage()
+                .putHeader("Accept", List.<String> of("application/json", "application/xml")).send().toCompletionStage()
                 .toCompletableFuture().get(10, TimeUnit.SECONDS);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.bodyAsString()).isEqualTo(BODY);

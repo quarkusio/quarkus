@@ -7,7 +7,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.KubernetesSerialization;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
-import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientConfig;
 
 /**
  * Meant to be implemented by a CDI bean that provided arbitrary customization for the default {@link Config} created by
@@ -16,7 +16,7 @@ import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig
  * The {@link Config} is in turn used to produce the default {@link KubernetesClient}
  * <p>
  *
- * @see KubernetesConfigProducer#config(KubernetesClientBuildConfig, List)
+ * @see KubernetesConfigProducer#config(KubernetesClientConfig, List)
  * @see KubernetesClientProducer#kubernetesClient(KubernetesSerialization, Config)
  */
 public interface KubernetesConfigCustomizer {

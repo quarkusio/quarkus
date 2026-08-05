@@ -14,12 +14,12 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.datasource.users.active", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...

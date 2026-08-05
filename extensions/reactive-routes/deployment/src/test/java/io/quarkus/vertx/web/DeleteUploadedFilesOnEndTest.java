@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.web.Route.HttpMethod;
 import io.restassured.RestAssured;
 import io.vertx.core.http.HttpServerResponse;
@@ -41,7 +41,7 @@ public class DeleteUploadedFilesOnEndTest {
     private static final String UPLOADS_DIR = "target/delete-uploaded-files-on-end-" + UUID.randomUUID().toString();
     private static final byte[] CAFEBABE_BYTES = new byte[] { 0xc, 0xa, 0xf, 0xe, 0xb, 0xa, 0xb, 0xe };
     @RegisterExtension
-    static final QuarkusUnitTest CONFIG = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static final QuarkusExtensionTest CONFIG = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class).addClasses(Routes.class)
             .addAsResource(new StringAsset("quarkus.http.body.delete-uploaded-files-on-end = true\n" //
                     + "quarkus.http.body.handle-file-uploads = true\n" //

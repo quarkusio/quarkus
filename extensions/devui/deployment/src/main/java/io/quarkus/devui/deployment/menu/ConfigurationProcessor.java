@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -35,11 +36,15 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devmcp.spi.deployment.DevMcpBuildTimeTool;
+import io.quarkus.devmcp.spi.deployment.DevMcpParam;
+import io.quarkus.devui.deployment.ExtensionsBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.runtime.config.ConfigDescriptionBean;
 import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
 import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
@@ -49,6 +54,12 @@ import io.smallrye.config.PropertiesConfigSource;
 /**
  * This creates Extensions Page
  */
+@DevMcpBuildTimeTool(name = "updateProperty", description = "Update a configuration in the Quarkus application", params = {
+        @DevMcpParam(name = "name", description = "The name of the configuration to update"),
+        @DevMcpParam(name = "value", description = "The new value for the configuration to update"),
+        @DevMcpParam(name = "profile", description = "The profile of the configuration to update", required = false),
+        @DevMcpParam(name = "target", description = "The target configuration file to update", required = false)
+})
 public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -79,6 +90,7 @@ public class ConfigurationProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerConfigs(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            ExtensionsBuildItem extensionsBuildItem,
             ConfigDevUIRecorder recorder) {
 
         List<ConfigDescription> configDescriptions = new ArrayList<>();
@@ -99,6 +111,26 @@ public class ConfigurationProcessor {
         }
 
         recorder.registerConfigs(configDescriptions, devServicesConfig);
+        recorder.registerExtensionConfigFilters(buildExtensionConfigFilterMap(extensionsBuildItem));
+    }
+
+    private Map<String, List<String>> buildExtensionConfigFilterMap(ExtensionsBuildItem extensionsBuildItem) {
+        Map<String, List<String>> configFilterMap = new HashMap<>();
+        for (Extension extension : extensionsBuildItem.getActiveExtensions()) {
+            List<String> configFilter = extension.getConfigFilter();
+            if (configFilter != null && !configFilter.isEmpty()) {
+                String name = extension.getName();
+                if (name != null && !name.isBlank()) {
+                    configFilterMap.put(name.toLowerCase(Locale.ROOT), configFilter);
+                }
+                String shortName = extension.getShortName();
+                if (shortName != null && !shortName.isBlank()
+                        && !shortName.equalsIgnoreCase(name)) {
+                    configFilterMap.put(shortName.toLowerCase(Locale.ROOT), configFilter);
+                }
+            }
+        }
+        return configFilterMap;
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -126,7 +158,7 @@ public class ConfigurationProcessor {
                     updateConfig(name, value, profile, target);
                     return true;
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
 
         configActions.actionBuilder()
@@ -226,7 +258,7 @@ public class ConfigurationProcessor {
             final String profileName = profile != null && !profile.isEmpty() ? "%" + profile + "." + name : name;
             final int lineNumber = findLineNumber(configPath, profileName);
             List<String> lines = Files.readAllLines(configPath, UTF_8);
-            if (lineNumber > 0 && lineNumber < lines.size()) {
+            if (lineNumber > 0 && lineNumber <= lines.size()) {
                 lines.set(lineNumber - 1, profileName + "=" + value);
             } else {
                 if (!lines.isEmpty() && !lines.get(lines.size() - 1).isEmpty()) {

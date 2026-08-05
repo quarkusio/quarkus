@@ -22,19 +22,19 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 public abstract class AbstractDbTokenStateManagerTest {
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String reactiveSqlClientExtension) {
-        return createQuarkusUnitTest(reactiveSqlClientExtension, null);
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String reactiveSqlClientExtension) {
+        return createQuarkusExtensionTest(reactiveSqlClientExtension, null);
     }
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String reactiveSqlClientExtension,
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String reactiveSqlClientExtension,
             Consumer<JavaArchive> customizer) {
-        return new QuarkusUnitTest()
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> {
                     jar
                             .addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)

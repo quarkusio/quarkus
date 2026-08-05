@@ -168,7 +168,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      *         the positions of their ids in the given list of identifiers.
      */
     @GenerateBridge
-    default <T extends PanacheEntityBase> List<T> findByIds(List<?> ids) {
+    default List<Entity> findByIds(List<?> ids) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

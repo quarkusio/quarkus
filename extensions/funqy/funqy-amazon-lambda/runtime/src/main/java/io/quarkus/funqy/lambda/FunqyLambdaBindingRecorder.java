@@ -5,10 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.amazon.lambda.runtime.AbstractLambdaPollLoop;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
@@ -34,6 +30,12 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.value.registry.ValueRegistry;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funq
@@ -49,14 +51,17 @@ public class FunqyLambdaBindingRecorder {
     private final RuntimeValue<FunqyConfig> runtimeConfig;
     private final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
     private final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig;
+    private final RuntimeValue<ValueRegistry> valueRegistry;
 
     public FunqyLambdaBindingRecorder(
             final RuntimeValue<FunqyConfig> runtimeConfig,
             final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig,
-            final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig) {
+            final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig,
+            final RuntimeValue<ValueRegistry> valueRegistry) {
         this.runtimeConfig = runtimeConfig;
         this.amazonBuildTimeConfig = amazonBuildTimeConfig;
         this.amazonRuntimeConfig = amazonRuntimeConfig;
+        this.valueRegistry = valueRegistry;
     }
 
     public void init(BeanContainer bc) {
@@ -102,8 +107,9 @@ public class FunqyLambdaBindingRecorder {
             if (amazonBuildTimeConfig.advancedEventHandling().enabled()) {
                 // We create a copy, because the mapper will be reconfigured for the advanced event handling,
                 // and we do not want to adjust the ObjectMapper, which is available in arc context.
-                ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
-                reader = new AwsEventInputReader(objectMapper, objectReader, amazonBuildTimeConfig);
+                JsonMapper jsonMapper = AmazonLambdaMapperRecorder.objectMapper;
+                JsonMapper.Builder builder = jsonMapper.rebuild();
+                reader = new AwsEventInputReader(builder, objectReader, amazonBuildTimeConfig);
             } else {
                 reader = new JacksonInputReader(objectReader);
             }
@@ -117,7 +123,7 @@ public class FunqyLambdaBindingRecorder {
             }
         }
         if (amazonBuildTimeConfig.advancedEventHandling().enabled()) {
-            ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
+            ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.rebuild().build();
             writer = new AwsEventOutputWriter(objectMapper);
 
             eventProcessor = new EventProcessor(objectReader, amazonBuildTimeConfig, amazonRuntimeConfig.getValue());
@@ -181,8 +187,7 @@ public class FunqyLambdaBindingRecorder {
                 throw new RuntimeException("Unreachable!");
             }
         };
-        loop.startPollLoop(context);
-
+        loop.startPollLoop(valueRegistry.getValue(), context);
     }
 
     private static FunqyServerResponse dispatch(Object input, Context context) throws IOException {

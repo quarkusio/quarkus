@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.filters;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -103,7 +104,10 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
             return;
         }
 
-        connection.shutdown();
+        // Be explicit about the timeout we use so we don't rely on the underlying default
+        // This value is not configurable on purpose:
+        // see https://github.com/quarkusio/quarkus/issues/53320#issuecomment-4182826448 for details
+        connection.shutdown(30, TimeUnit.SECONDS);
     }
 
     /**

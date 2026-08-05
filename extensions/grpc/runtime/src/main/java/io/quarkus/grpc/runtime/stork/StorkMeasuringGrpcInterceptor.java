@@ -15,6 +15,7 @@ import io.grpc.MethodDescriptor;
 import io.smallrye.stork.api.ServiceInstance;
 
 @ApplicationScoped
+@Deprecated
 public class StorkMeasuringGrpcInterceptor implements ClientInterceptor, Prioritized {
 
     @Override

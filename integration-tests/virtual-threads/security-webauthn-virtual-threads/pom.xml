@@ -22,10 +22,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-webauthn</artifactId>
         </dependency>
-        <!-- Use the "compile" scope because we need to include the VirtualThreadsAssertions in the app -->
+        <!-- Use the "compile" scope but exclude all transitive dependencies because we only need to include the VirtualThreadsAssertions in the app -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-vertx</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

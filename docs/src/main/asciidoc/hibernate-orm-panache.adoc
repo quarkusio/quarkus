@@ -5,8 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate ORM with Panache
 include::_attributes.adoc[]
-:categories: data
-:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:summary: Panache focuses on making your Hibernate ORM entities trivial and fun to write.
 :config-file: application.properties
 :topics: data,hibernate-orm,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm
@@ -121,14 +120,14 @@ Then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 ----
 # configure your datasource
-quarkus.datasource.db-kind = postgresql
-quarkus.datasource.username = sarah
-quarkus.datasource.password = connor
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.schema-management.strategy = drop-and-create
+quarkus.datasource.db-kind = postgresql <1>
+%prod.quarkus.datasource.username = sarah
+%prod.quarkus.datasource.password = connor
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
+%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 == Solution 1: using the active record pattern
 
@@ -593,7 +592,7 @@ INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Bro
 ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
-NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your demo ("production") environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
 
 After that, you can see the people list and add new person as followings:
 
@@ -715,6 +714,14 @@ List<Person> persons = Person.list(Sort.by("birth", Sort.NullPrecedence.NULLS_FI
 ----
 
 The `Sort` class has plenty of methods for adding columns and specifying sort direction or the null precedence.
+
+NOTE: Panache escapes column names in `Sort` to prevent HQL injection.
+If you need to use HQL functions such as `lower()` or `upper()` in your sort clause, you must disable escaping:
+
+[source,java]
+----
+List<Person> persons = Person.list(Sort.by("lower(name)").disableEscaping());
+----
 
 === Simplified queries
 
@@ -897,6 +904,21 @@ public class DogDto {
 PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
+
+The `@ProjectedFieldName` annotation also supports HQL expressions, including aggregate functions.
+This is particularly useful for GROUP BY queries:
+
+[source,java]
+----
+public record DogWeightTotal(
+    @ProjectedFieldName("owner.name") String ownerName,
+    @ProjectedFieldName("SUM(weight)") Double totalWeight
+) {}
+
+PanacheQuery<DogWeightTotal> query = Dog.find(
+    "FROM Dog d JOIN d.owner o GROUP BY o.name"
+).project(DogWeightTotal.class);
+----
 
 In case you want to project an entity in a class with nested classes, you can use the `@NestedProjectedClass` annotation on those nested classes.
 

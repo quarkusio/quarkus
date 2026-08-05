@@ -13,7 +13,6 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * build time conditions also known as {@code IfBuildProfile}, {@code UnlessBuildProfile}, {@code IfBuildProperty} and
  * {@code UnlessBuildProperty}
  *
- * @see io.quarkus.arc.deployment.PreAdditionalBeanBuildTimeConditionBuildItem
  * @see io.quarkus.arc.profile.IfBuildProfile
  * @see io.quarkus.arc.profile.UnlessBuildProfile
  * @see io.quarkus.arc.properties.IfBuildProperty
@@ -37,10 +36,12 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
         return excludedDeclaringClasses;
     }
 
+    @SuppressWarnings("unused")
     public Set<String> getExcludedMethods() {
         return excludedMethods;
     }
 
+    @SuppressWarnings("unused")
     public Set<String> getExcludedFields() {
         return excludedFields;
     }
@@ -61,6 +62,7 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
      * @param target the target to check.
      * @return {@code true} if the target is excluded, {@code false} otherwise.
      */
+    @SuppressWarnings("unused")
     public boolean isExcluded(AnnotationTarget target) {
         switch (target.kind()) {
             case CLASS:

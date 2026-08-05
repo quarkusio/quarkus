@@ -8,7 +8,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.runtime.OidcUtils;
-import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped

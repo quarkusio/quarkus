@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.kotlin
 
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.websockets.next.OnClose
 import io.quarkus.websockets.next.OnOpen
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 class KotlinWebSocketSuspendingClientTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
+        val test = QuarkusExtensionTest()
             .withApplicationRoot { jar ->
                 jar.addClasses(ServerEndpoint::class.java, ClientEndpoint::class.java)
             }

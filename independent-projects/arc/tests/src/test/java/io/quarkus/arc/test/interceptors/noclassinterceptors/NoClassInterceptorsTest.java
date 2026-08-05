@@ -89,12 +89,12 @@ public class NoClassInterceptorsTest {
 
         assertEquals(4, ClassLevelInterceptor.AROUND_INVOKE_COUNTER);
         assertEquals(4, InheritedClassLevelInterceptor.AROUND_INVOKE_COUNTER);
-        assertEquals(4, MethodLevelInterceptor.AROUND_INVOKE_COUNTER);
+        assertEquals(5, MethodLevelInterceptor.AROUND_INVOKE_COUNTER);
 
         bean.inheritedDefaultMethod();
 
         assertEquals(5, ClassLevelInterceptor.AROUND_INVOKE_COUNTER);
         assertEquals(5, InheritedClassLevelInterceptor.AROUND_INVOKE_COUNTER);
-        assertEquals(4, MethodLevelInterceptor.AROUND_INVOKE_COUNTER);
+        assertEquals(5, MethodLevelInterceptor.AROUND_INVOKE_COUNTER);
     }
 }

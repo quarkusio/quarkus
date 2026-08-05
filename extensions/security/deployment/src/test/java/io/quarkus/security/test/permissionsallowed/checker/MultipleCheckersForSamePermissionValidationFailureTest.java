@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MultipleCheckersForSamePermissionValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .assertException(t -> {
                 Assertions.assertEquals(IllegalArgumentException.class, t.getClass(), t.getMessage());
                 Assertions.assertTrue(

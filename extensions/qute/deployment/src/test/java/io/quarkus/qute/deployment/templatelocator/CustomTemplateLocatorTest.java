@@ -21,7 +21,7 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.Variant;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CustomTemplateLocatorTest {
 
@@ -33,7 +33,7 @@ public class CustomTemplateLocatorTest {
     private static final String CHECKED_TEMPLATE_LOCATION = "my_checked_template_base/myCheckedTemplate";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(CustomLocator1.class, CustomLocator2.class, CustomLocator3.class,
                             TemplateValueProvider.class));

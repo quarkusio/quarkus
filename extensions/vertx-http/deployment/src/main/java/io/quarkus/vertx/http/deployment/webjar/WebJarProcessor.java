@@ -7,13 +7,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.ReproducibilityCheckBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -29,11 +32,12 @@ public class WebJarProcessor {
     WebJarResultsBuildItem processWebJarDevMode(WebJarRecorder recorder, List<WebJarBuildItem> webJars,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             ShutdownContextBuildItem shutdownContext,
+            Optional<ReproducibilityCheckBuildItem> reproducibilityCheckBuildItem,
             ApplicationConfig applicationConfig) throws IOException {
 
         Map<GACT, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
 
-        Path deploymentBasePath = Files.createTempDirectory("quarkus-webjar");
+        Path deploymentBasePath = getDeploymentBasePath(applicationConfig, reproducibilityCheckBuildItem.isPresent());
         recorder.shutdownTask(shutdownContext, deploymentBasePath.toString());
 
         for (WebJarBuildItem webJar : webJars) {
@@ -60,6 +64,22 @@ public class WebJarProcessor {
         }
 
         return new WebJarResultsBuildItem(results);
+    }
+
+    private static Path getDeploymentBasePath(ApplicationConfig applicationConfig, boolean isReproducibilityCheck)
+            throws IOException {
+        if (!isReproducibilityCheck) {
+            return Files.createTempDirectory("quarkus-webjar");
+        }
+        Path deploymentBasePath = Path.of(
+                System.getProperty("java.io.tmpdir"),
+                "quarkus-webjar-" + applicationConfig.name().orElse("app"));
+
+        if (Files.exists(deploymentBasePath)) {
+            IoUtils.recursiveDelete(deploymentBasePath);
+        }
+        Files.createDirectories(deploymentBasePath);
+        return deploymentBasePath;
     }
 
     @BuildStep(onlyIf = IsProduction.class)

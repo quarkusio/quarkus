@@ -4,12 +4,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ProactiveAuthPermissionsAllowedTestCase extends AbstractPermissionsAllowedTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             NonBlockingPermissionsAllowedResource.class, CustomPermission.class,

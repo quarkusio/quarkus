@@ -9,7 +9,7 @@ import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.KeyStoreOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 public class AuthMechanismConfig {
@@ -45,8 +45,8 @@ public class AuthMechanismConfig {
             }
 
             @Override
-            public SSLOptions getSSLOptions() {
-                SSLOptions options = new SSLOptions();
+            public ServerSSLOptions getServerSSLOptions() {
+                ServerSSLOptions options = new ServerSSLOptions();
                 options.setKeyCertOptions(getKeyStoreOptions());
                 options.setTrustOptions(getTrustStoreOptions());
                 options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);

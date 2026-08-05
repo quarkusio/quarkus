@@ -5,21 +5,20 @@ import com.google.cloud.functions.invoker.runner.Invoker;
 class CloudFunctionsInvoker {
 
     private final Invoker invoker;
-
-    CloudFunctionsInvoker(FunctionType functionType) {
-        this(functionType, 8081);
-    }
+    private final int port;
 
     CloudFunctionsInvoker(FunctionType functionType, int port) {
         int realPort = port == 0 ? SocketUtil.findAvailablePort() : port;
-        if (realPort != port) {
-            System.setProperty("quarkus.http.test-port", String.valueOf(realPort));
-        }
         this.invoker = new Invoker(
                 realPort,
                 functionType.getTarget(),
                 functionType.getSignatureType(),
                 Thread.currentThread().getContextClassLoader());
+        this.port = realPort;
+    }
+
+    public int actualPort() {
+        return port;
     }
 
     void start() throws Exception {

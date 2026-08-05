@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -41,9 +42,12 @@ public interface TransactionManagerConfiguration {
 
     /**
      * Start the recovery service on startup.
+     * <p>
+     * If not set, the recovery service will be started automatically if XA datasources are configured.
+     * Set to {@code true} to always enable recovery, or {@code false} to explicitly disable it.
      */
-    @WithDefault("false")
-    boolean enableRecovery();
+    @ConfigDocDefault("`true` if XA datasources are configured, `false` otherwise")
+    Optional<Boolean> enableRecovery();
 
     /**
      * The list of recovery modules.
@@ -67,9 +71,58 @@ public interface TransactionManagerConfiguration {
     List<String> xaResourceOrphanFilters();
 
     /**
+     * The transaction reaper configuration.
+     * <p>
+     * The transaction reaper is a background thread that monitors running transactions and cancels
+     * those that exceed their timeout. These settings control how aggressively it acts.
+     */
+    ReaperConfig reaper();
+
+    /**
      * The object store configuration.
      */
     ObjectStoreConfig objectStore();
+
+    @ConfigGroup
+    interface ReaperConfig {
+        /**
+         * The interval at which the reaper checks for timed-out transactions.
+         */
+        @WithDefault("120s")
+        Duration checkPeriod();
+
+        /**
+         * The time the reaper waits before interrupting a cancel worker that is rolling back
+         * a timed-out transaction.
+         * <p>
+         * When a transaction exceeds its timeout, the reaper schedules a cancel and waits this period before
+         * interrupting the cancel worker. In CPU-constrained environments (e.g., containers with strict CPU limits),
+         * the default of 500ms may be too aggressive, causing premature zombie transaction declarations.
+         */
+        @WithDefault("500ms")
+        Duration cancelWaitPeriod();
+
+        /**
+         * The time the reaper waits after interrupting a cancel worker before declaring the
+         * transaction a zombie.
+         * <p>
+         * After interrupting a cancel worker, the reaper waits this period. If the worker has not completed
+         * by then, the transaction is marked as a zombie. In CPU-constrained environments, increasing this
+         * value gives the application thread more time to respond to the cancellation.
+         */
+        @WithDefault("500ms")
+        Duration cancelFailWaitPeriod();
+
+        /**
+         * The maximum number of zombie transactions before the reaper escalates to ERROR-level logging.
+         * <p>
+         * A zombie transaction is one where the cancel worker was unable to roll it back within the
+         * configured wait periods. Once this threshold is reached, subsequent zombies are logged at
+         * ERROR level instead of WARN.
+         */
+        @WithDefault("8")
+        int zombieMax();
+    }
 
     @ConfigGroup
     public interface ObjectStoreConfig {

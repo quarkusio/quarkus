@@ -13,7 +13,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Basic test to verify that bean validation constraints on input fields are transformed into GraphQL directives when
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BeanValidationGraphQLDirectivesTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Person.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true"),

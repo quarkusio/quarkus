@@ -11,6 +11,15 @@
     <name>Quarkus - Dev UI - Resources</name>
     <description>Quarkus Dev UI Resources (Javascript, CSS and HTML)</description>
     
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+    </build>
+
     <dependencies>
         <!-- Vaadin Router -->
         <dependency>

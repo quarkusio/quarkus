@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -28,6 +29,15 @@ public class TestSpanExporter implements SpanExporter {
             SpanKind kind,
             Object parentSpanId) {
         List<SpanData> filteredSpans = getSpansByKindAndParentId(spans, kind, parentSpanId);
+        assertEquals(1, filteredSpans.size(), "Received: " + spans);
+        return filteredSpans.get(0);
+    }
+
+    public static SpanData getSpanByKindAndParentId(List<SpanData> spans,
+            SpanKind kind,
+            Object parentSpanId, Predicate<SpanData> additionalFilter) {
+        List<SpanData> filteredSpans = getSpansByKindAndParentId(spans, kind, parentSpanId).stream()
+                .filter(additionalFilter).toList();
         assertEquals(1, filteredSpans.size(), "Received: " + spans);
         return filteredSpans.get(0);
     }

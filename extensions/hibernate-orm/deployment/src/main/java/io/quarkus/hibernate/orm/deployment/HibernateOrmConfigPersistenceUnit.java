@@ -91,7 +91,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * `-1` means batch loading is disabled.
      *
-     * @deprecated {@link #fetch} should be used to configure fetching properties.
+     * @deprecated Use {@code quarkus.hibernate-orm.fetch.batch-size} to configure the batch fetch size.
      * @asciidoclet
      */
     @ConfigDocDefault("16")
@@ -103,7 +103,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * A `0` disables default outer join fetching.
      *
-     * @deprecated {@link #fetch} should be used to configure fetching properties.
+     * @deprecated Use {@code quarkus.hibernate-orm.fetch.max-depth} to configure the maximum fetch depth.
      * @asciidoclet
      */
     @Deprecated
@@ -136,7 +136,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * This setting is exposed mainly to allow registration of types, converters and SQL functions.
      * ====
-     * * @deprecated Use TypeContributor, FunctionContributor or AdditionalMappingContributor instead.
+     *
+     * @deprecated Use {@code TypeContributor}, {@code FunctionContributor}, or {@code AdditionalMappingContributor} instead.
      *
      * @asciidoclet
      */
@@ -175,6 +176,12 @@ public interface HibernateOrmConfigPersistenceUnit {
      */
     @ConfigDocSection
     HibernateOrmConfigPersistenceUnitJdbc jdbc();
+
+    /**
+     * Reactive related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitReactive reactive();
 
     /**
      * Fetching logic configuration.
@@ -229,7 +236,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
      * if not set.
      *
-     * @deprecated Use {@link #datasource()} instead.
+     * @deprecated Use {@code quarkus.hibernate-orm.datasource} to configure the datasource for the persistence unit.
      */
     @Deprecated
     Optional<@WithConverter(TrimmedStringConverter.class) String> multitenantSchemaDatasource();
@@ -260,6 +267,7 @@ public interface HibernateOrmConfigPersistenceUnit {
                 query().isAnyPropertySet() ||
                 database().isAnyPropertySet() ||
                 jdbc().isAnyPropertySet() ||
+                reactive().isAnyPropertySet() ||
                 !cache().isEmpty() ||
                 !secondLevelCachingEnabled() ||
                 multitenant().isPresent() ||
@@ -307,8 +315,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
-         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
-         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         * @deprecated Use {@code quarkus.hibernate-orm.dialect.mysql.storage-engine}
+         *             or {@code quarkus.hibernate-orm.dialect.mariadb.storage-engine} instead.
          *
          * @asciidoclet
          */
@@ -368,8 +376,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=TIMESTAMP`
-         * or `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=INSTANT`.
+         * for example, `quarkus.hibernate-orm.mapping.instant.preferred-jdbc-type=TIMESTAMP`
+         * or `quarkus.hibernate-orm.mapping.instant.preferred-jdbc-type=INSTANT`.
          *
          * @asciidoclet
          */
@@ -383,7 +391,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.boolean_jdbc_type=BIT`.
+         * for example, `quarkus.hibernate-orm.mapping.boolean.preferred-jdbc-type=BIT`.
          *
          * @asciidoclet
          */
@@ -397,7 +405,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
          * <p>
          * Can also specify the name of the SqlTypes constant field,
-         * for example, `quarkus.hibernate-orm.mapping.type.uuid_jdbc_type=CHAR`.
+         * for example, `quarkus.hibernate-orm.mapping.uuid.preferred-jdbc-type=CHAR`.
          *
          * @asciidoclet
          */
@@ -661,7 +669,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Whether Hibernate should quote all identifiers.
          *
-         * @deprecated {@link #quoteIdentifiers} should be used to configure quoting strategy.
+         * @deprecated Use {@code quarkus.hibernate-orm.quote-identifiers.strategy} to configure the quoting strategy.
          */
         @Deprecated
         @WithDefault("false")
@@ -675,6 +683,20 @@ public interface HibernateOrmConfigPersistenceUnit {
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitJdbc {
+
+        /**
+         * Whether to bootstrap a blocking (JDBC) Hibernate ORM instance for this persistence unit.
+         * <p>
+         * Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence units.
+         * This does not deprecate or replace {@code quarkus.hibernate-orm.blocking}.
+         * <p>
+         * If not set, this is inferred from whether a JDBC datasource is available for this persistence unit,
+         * as well as the global `quarkus.hibernate-orm.blocking` setting.
+         *
+         * @asciidoclet
+         */
+        Optional<Boolean> enabled();
 
         /**
          * The time zone pushed to the JDBC driver.
@@ -694,7 +716,28 @@ public interface HibernateOrmConfigPersistenceUnit {
         OptionalInt statementBatchSize();
 
         default boolean isAnyPropertySet() {
-            return timezone().isPresent() || statementFetchSize().isPresent() || statementBatchSize().isPresent();
+            return enabled().isPresent() || timezone().isPresent() || statementFetchSize().isPresent()
+                    || statementBatchSize().isPresent();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitReactive {
+
+        /**
+         * Whether to bootstrap a reactive Hibernate Reactive instance for this persistence unit.
+         * <p>
+         * Use {@code quarkus.hibernate-orm.reactive.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".reactive.enabled} for named persistence units.
+         * <p>
+         * If not set, this is inferred from whether a reactive datasource is available for this persistence unit.
+         *
+         * @asciidoclet
+         */
+        Optional<Boolean> enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled().isPresent();
         }
     }
 
@@ -716,6 +759,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * The maximum time before an object of the cache is considered expired.
          */
+        @ConfigDocDefault("100s")
         Optional<Duration> maxIdle();
     }
 
@@ -723,8 +767,30 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitCacheMemory {
         /**
          * The maximum number of objects kept in memory in the cache.
+         * <p>
+         * Mutually exclusive with {@code maximum-weight}.
          */
+        @ConfigDocDefault("10000")
         OptionalLong objectCount();
+
+        /**
+         * The maximum total weight of objects kept in memory in the cache.
+         * <p>
+         * When set, eviction is based on the total weight of cached entries rather than their count.
+         * This is useful for entities with highly variable sizes (e.g., JSON blobs).
+         * <p>
+         * Mutually exclusive with {@code object-count}. Requires a {@code weigher-class} to assign
+         * weights to entries; without one, each entry has a default weight of 1.
+         */
+        OptionalLong maximumWeight();
+
+        /**
+         * The fully qualified class name of a {@code com.github.benmanes.caffeine.cache.Weigher}
+         * implementation used to assign weights to cache entries.
+         * <p>
+         * Only used when {@code maximum-weight} is set. The class must have a public no-arg constructor.
+         */
+        Optional<String> weigherClass();
     }
 
     @ConfigGroup
@@ -828,7 +894,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Enables the Bean Validation integration.
          *
-         * @deprecated Use {@link #mode()} instead.
+         * @deprecated Use {@code quarkus.hibernate-orm.validation.mode} instead.
          */
         @Deprecated(since = "3.19", forRemoval = true)
         @WithDefault("true")

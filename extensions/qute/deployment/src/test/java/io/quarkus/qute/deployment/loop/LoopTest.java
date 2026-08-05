@@ -11,14 +11,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoopTest {
 
     static StringAsset template = new StringAsset("{#for i in total}{i}:{/for}");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(template, "templates/loop1.html")
                     .addAsResource(template, "templates/LoopTest/loopInt.html"));

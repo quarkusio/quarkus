@@ -2,25 +2,43 @@ package io.quarkus.it.kafka;
 
 import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.kafka.InjectKafkaCompanion;
+import io.quarkus.test.kafka.InjectKafkaProxy;
+import io.quarkus.test.kafka.ProxiedKafkaCompanionResource;
 import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
 import io.restassured.mapper.ObjectMapperType;
+import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
+import io.smallrye.reactive.messaging.kafka.companion.test.KafkaProxy;
 
-@QuarkusTestResource(KafkaCompanionResource.class)
+@QuarkusTestResource(ProxiedKafkaCompanionResource.class)
 @QuarkusTest
 public class KafkaCodecTest {
+
+    @InjectKafkaCompanion
+    KafkaCompanion companion;
+
+    @InjectKafkaProxy
+    KafkaProxy proxy;
 
     @BeforeAll
     public static void configureMapper() {
         // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
         RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
                 .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
+
+    @BeforeEach
+    void setUp() {
+        Assertions.assertTrue(proxy.toxi.isEnabled());
+        Assertions.assertNotNull(companion.cluster().clusterId());
     }
 
     @Test

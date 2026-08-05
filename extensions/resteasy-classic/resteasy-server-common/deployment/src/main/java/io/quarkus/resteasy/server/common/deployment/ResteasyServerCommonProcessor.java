@@ -85,6 +85,7 @@ import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnno
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
@@ -416,7 +417,7 @@ public class ResteasyServerCommonProcessor {
 
         if (commonConfig.gzip().enabled()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
-                    Long.toString(commonConfig.gzip().maxInput().asLongValue()));
+                    commonConfig.gzip().maxInput().toString(MemorySize.Scale.B));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());
@@ -736,7 +737,7 @@ public class ResteasyServerCommonProcessor {
             if (classInfo != null) {
                 includeFields = classInfo.annotationsMap().containsKey(CONTEXT);
             }
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).fields(includeFields).build());
         }
 
         // special case: our config providers

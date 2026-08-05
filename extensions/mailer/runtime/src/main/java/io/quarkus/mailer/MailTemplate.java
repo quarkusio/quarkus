@@ -114,6 +114,10 @@ public interface MailTemplate {
         /**
          * Sends all e-mail definitions based on available template variants, i.e. {@code text/html} and {@code text/plain}
          * template variants.
+         * <p>
+         * <strong>Important:</strong> The returned {@link Uni} must be subscribed to, otherwise no e-mail will be sent. In
+         * a reactive context, this typically means chaining it in a reactive pipeline. In frameworks like RESTEasy Reactive,
+         * returning the {@link Uni} from a resource method is sufficient because the framework subscribes automatically.
          *
          * @return a {@link Uni} indicating when the mails have been sent
          * @see ReactiveMailer#send(Mail...)

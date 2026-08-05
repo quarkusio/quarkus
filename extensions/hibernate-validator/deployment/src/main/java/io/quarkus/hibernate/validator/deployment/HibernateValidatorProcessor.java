@@ -11,10 +11,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -83,10 +86,12 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem.ConfigClassImplementation;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -247,29 +252,26 @@ class HibernateValidatorProcessor {
     @BuildStep
     void configValidator(
             CombinedIndexBuildItem combinedIndex,
-            List<ConfigClassBuildItem> configClasses,
+            List<GeneratedConfigClassBuildItem> configClasses,
             BeanValidationAnnotationsBuildItem beanValidationAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         Set<DotName> configMappings = new HashSet<>();
         Set<DotName> configClassesToValidate = new HashSet<>();
-        Map<DotName, Map<DotName, ConfigClassBuildItem>> embeddingMap = new HashMap<>();
-        for (ConfigClassBuildItem configClass : configClasses) {
-            for (String generatedConfigClass : configClass.getGeneratedClasses()) {
-                DotName simple = DotName.createSimple(generatedConfigClass);
-                configClassesToValidate.add(simple);
-            }
-
-            configClass.getConfigComponentInterfaces().stream().map(DotName::createSimple)
+        Map<DotName, Map<DotName, GeneratedConfigClassBuildItem>> embeddingMap = new HashMap<>();
+        for (GeneratedConfigClassBuildItem configClass : configClasses) {
+            configClassesToValidate.addAll(configClass.getImplementations());
+            configClass.getInterfaces()
                     .forEach(cm -> {
                         configMappings.add(cm);
                         embeddingMap.computeIfAbsent(cm, c -> new HashMap<>())
-                                .putIfAbsent(configClass.getName(), configClass);
+                                .putIfAbsent(DotName.createSimple(configClass.getConfigClass()), configClass);
                     });
         }
 
@@ -328,12 +330,9 @@ class HibernateValidatorProcessor {
                 continue;
             }
 
-            for (ConfigClassBuildItem configClass : embeddingMap.get(constrainedConfigMapping).values()) {
+            for (GeneratedConfigClassBuildItem configClass : embeddingMap.get(constrainedConfigMapping).values()) {
                 unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(configClass.getConfigClass()));
-                configClass.getConfigComponentInterfaces()
-                        .stream()
-                        .map(DotName::createSimple)
-                        .forEach(configComponentsInterfacesToRegisterForReflection::add);
+                configComponentsInterfacesToRegisterForReflection.addAll(configClass.getInterfaces());
             }
         }
         reflectiveClass.produce(ReflectiveClassBuildItem
@@ -343,7 +342,8 @@ class HibernateValidatorProcessor {
                 .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true))
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProviders,
+                true))
                 .withDebugInfo(false)
                 .withParameters(false);
         gizmo.class_(builderClassName, cc -> {
@@ -355,15 +355,13 @@ class HibernateValidatorProcessor {
                 fc.final_();
                 fc.setType(BeanValidationConfigValidator.class);
                 fc.setInitializer(bc -> {
-                    LocalVar constraints = bc.localVar("constraints", bc.new_(HashSet.class));
-                    for (String configMappingsConstraint : configMappingsConstraints) {
-                        bc.withSet(constraints).add(Const.of(configMappingsConstraint));
-                    }
+                    LocalVar constraints = bc.localVar("constraints", bc.setOf(
+                            configMappingsConstraints.stream().sorted().toList(),
+                            Const::of));
 
-                    LocalVar classes = bc.localVar("classes", bc.new_(HashSet.class));
-                    for (DotName configClassToValidate : configClassesToValidate) {
-                        bc.withSet(classes).add(Const.of(classDescOf(configClassToValidate)));
-                    }
+                    LocalVar classes = bc.localVar("classes", bc.setOf(
+                            configClassesToValidate.stream().sorted().toList(),
+                            c -> Const.of(classDescOf(c))));
 
                     bc.yield(bc.new_(ConstructorDesc.of(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
                             constraints, classes));
@@ -486,11 +484,11 @@ class HibernateValidatorProcessor {
             indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
         }
 
-        Set<DotName> classNamesToBeValidated = new HashSet<>();
+        Set<DotName> classNamesToBeValidated = new TreeSet<>();
+        Set<String> detectedBuiltinConstraints = new LinkedHashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
-        Set<String> detectedBuiltinConstraints = new HashSet<>();
 
-        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
+        for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations().stream().sorted().toList()) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             if (annotationInstances.isEmpty()) {
@@ -576,19 +574,19 @@ class HibernateValidatorProcessor {
                                 jaxRsMethods,
                                 methodsWithInheritedValidation)));
 
-        Set<Class<?>> classesToBeValidated = new HashSet<>();
+        Set<Class<?>> classesToBeValidated = new LinkedHashSet<>();
         for (DotName className : classNamesToBeValidated) {
             classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
 
         // Prevent the removal of ValueExtractor beans
         // and collect all classes implementing ValueExtractor (for use in HibernateValidatorRecorder)
-        Set<DotName> valueExtractorClassNames = new HashSet<>();
+        Set<DotName> valueExtractorClassNames = new TreeSet<>();
         for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(VALUE_EXTRACTOR)) {
             valueExtractorClassNames.add(valueExtractorType.name());
         }
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(valueExtractorClassNames));
-        Set<Class<?>> valueExtractorClassProxies = new HashSet<>();
+        Set<Class<?>> valueExtractorClassProxies = new LinkedHashSet<>();
         for (DotName className : valueExtractorClassNames) {
             valueExtractorClassProxies.add(recorderContext.classProxy(className.toString()));
         }
@@ -650,6 +648,21 @@ class HibernateValidatorProcessor {
     public RuntimeInitializedClassBuildItem reinitClockProviderSystemTimezone() {
         return new RuntimeInitializedClassBuildItem(
                 "io.quarkus.hibernate.validator.runtime.clockprovider.HibernateValidatorClockProviderSystemZoneIdHolder");
+    }
+
+    @BuildStep
+    void additionalConstrainedClasses(
+            List<GeneratedConfigClassBuildItem> generatedConfigClasses,
+            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
+        for (GeneratedConfigClassBuildItem generatedConfigClass : generatedConfigClasses) {
+            generatedConfigClass.getElements().forEach(new BiConsumer<Class<?>, ConfigClassImplementation>() {
+                @Override
+                public void accept(Class<?> configClass, ConfigClassImplementation configClassImplementation) {
+                    additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(
+                            configClassImplementation.getName(), configClassImplementation.getBytes()));
+                }
+            });
+        }
     }
 
     @BuildStep

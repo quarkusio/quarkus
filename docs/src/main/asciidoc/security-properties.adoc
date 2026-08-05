@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Security with .properties File
 
 include::_attributes.adoc[]
-:categories: security
 :summary: This guide demonstrates how your Quarkus application can use a .properties file to store your user identities.
 :topics: security,identity-providers
 :extensions: io.quarkus:quarkus-elytron-security-properties-file

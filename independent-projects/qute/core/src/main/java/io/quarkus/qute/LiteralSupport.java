@@ -94,7 +94,16 @@ class LiteralSupport {
             return false;
         }
         char firstChar = value.charAt(0);
-        return isStringLiteralSeparator(firstChar) && value.charAt(value.length() - 1) == firstChar;
+        if (!isStringLiteralSeparator(firstChar) || value.charAt(value.length() - 1) != firstChar) {
+            return false;
+        }
+        // Make sure there are no unescaped separator chars between the outer delimiters
+        for (int i = 1; i < value.length() - 1; i++) {
+            if (value.charAt(i) == firstChar) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

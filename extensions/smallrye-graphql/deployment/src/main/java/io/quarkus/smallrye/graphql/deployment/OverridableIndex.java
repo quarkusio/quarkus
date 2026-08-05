@@ -101,6 +101,15 @@ public class OverridableIndex implements IndexView {
     }
 
     @Override
+    public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName annotationName,
+            DotName containerAnnotationName) {
+        return overrideCollection(
+                original.getAnnotationsWithRepeatable(annotationName, containerAnnotationName),
+                override.getAnnotationsWithRepeatable(annotationName, containerAnnotationName),
+                annotationInstanceComparator);
+    }
+
+    @Override
     public Collection<ModuleInfo> getKnownModules() {
         return overrideCollection(original.getKnownModules(), override.getKnownModules(), moduleInfoComparator);
     }

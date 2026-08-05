@@ -29,8 +29,10 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.util.GradleVersion;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkQueue;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -45,6 +47,7 @@ import io.smallrye.common.expression.Expression;
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
  */
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
     private static final String QUARKUS_BUILD_DIR = "quarkus-build";
     private static final String QUARKUS_BUILD_GEN_DIR = QUARKUS_BUILD_DIR + "/gen";
@@ -58,9 +61,15 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     private final Provider<Boolean> preservesJarTimestamps;
 
+    // Captured at configuration time so that abort() does not have to call Task.getProject() at execution time,
+    // which is deprecated and scheduled for removal in Gradle 10. Transient: never serialized into the configuration
+    // cache (abort() is only reachable from the non-cacheable Deploy task).
+    private final transient TaskContainer taskContainer;
+
     QuarkusBuildTask(String description, boolean compatible) {
         super(description, compatible);
 
+        this.taskContainer = getProject().getTasks();
         this.preservesJarTimestamps = getProject().getTasks()
                 .named(JavaPlugin.JAR_TASK_NAME, Jar.class)
                 .map(Jar::isPreserveFileTimestamps)
@@ -297,6 +306,8 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties().putAll(buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
+            params.getForkedSystemProperties().putAll(quarkusProperties);
+            params.getProcessIsolated().set(isWorkerProcessIsolated());
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);
@@ -344,7 +355,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     void abort(String message, Object... args) {
         getLogger().warn(message, args);
-        getProject().getTasks().stream()
+        taskContainer.stream()
                 .filter(t -> t != this)
                 .filter(t -> !t.getState().getExecuted()).forEach(t -> {
                     t.setEnabled(false);

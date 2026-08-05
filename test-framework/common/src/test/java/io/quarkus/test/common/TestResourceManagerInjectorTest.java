@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.runtime.ValueRegistryImpl;
+
 public class TestResourceManagerInjectorTest {
 
     @ParameterizedTest
@@ -21,7 +23,7 @@ public class TestResourceManagerInjectorTest {
         manager.start();
 
         Foo foo = new Foo();
-        manager.inject(foo);
+        manager.inject(ValueRegistryImpl.builder().build(), foo);
 
         Assertions.assertNotNull(foo.bar);
         Assertions.assertEquals("bar", foo.bar.value);

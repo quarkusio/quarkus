@@ -15,9 +15,11 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -31,6 +33,7 @@ import io.quarkus.deployment.cmd.DeployCommandHandler;
 import io.quarkus.deployment.util.DeploymentUtil;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class Deploy extends QuarkusBuildTask {
 
     public enum Deployer {
@@ -92,16 +95,19 @@ public abstract class Deploy extends QuarkusBuildTask {
         super("Deploy", false);
     }
 
+    @Inject
+    protected abstract ProviderFactory getProviderFactory();
+
     @TaskAction
     public void checkRequiredExtensions() {
         ApplicationModel appModel = resolveAppModelForBuild();
         Properties sysProps = new Properties();
-        sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
+        sysProps.putAll(effectiveProvider().buildEffectiveConfiguration(appModel, Map.of()).getQuarkusValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getLayout().getBuildDirectory().getAsFile().get().toPath())
-                .setBaseName(extension().finalName())
+                .setTargetDirectory(buildDir.toPath())
+                .setBaseName(getExtensionView().getFinalName().get())
                 .setBuildSystemProperties(sysProps)
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
@@ -122,7 +128,7 @@ public abstract class Deploy extends QuarkusBuildTask {
                 // So, let's give users a meaningful warning message.
                 Deployer deployer = getDeployerFromDependencies(appModel);
                 extension().forcedPropertiesProperty().convention(
-                        getProject().provider(() -> {
+                        getProviderFactory().provider(() -> {
                             Map<String, String> props = new HashMap<>();
                             props.put("quarkus." + deployer.name() + ".deploy", "true");
                             props.put("quarkus.container-image.build", String.valueOf(imageBuilder.isPresent() || imageBuild));
@@ -167,7 +173,7 @@ public abstract class Deploy extends QuarkusBuildTask {
                                 + targets.stream().collect(Collectors.joining(" ")));
             } else {
                 extension().forcedPropertiesProperty().convention(
-                        getProject().provider(() -> {
+                        getProviderFactory().provider(() -> {
                             Map<String, String> props = new HashMap<>();
                             props.put(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD, "true");
                             return props;

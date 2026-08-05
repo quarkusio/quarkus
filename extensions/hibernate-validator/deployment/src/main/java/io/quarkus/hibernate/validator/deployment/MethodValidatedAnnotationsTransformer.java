@@ -12,7 +12,6 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidated;
 import io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidated;
 
@@ -100,7 +99,7 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
 
         // check superclass, but only the direct one since we do not (yet) have the entire ClassInfo hierarchy here
         DotName superClass = clazz.superName();
-        if (!superClass.equals(IndexingUtil.OBJECT)) {
+        if (!superClass.equals(DotName.OBJECT_NAME)) {
             if (isJaxrsMethod(signatureKey, superClass)) {
                 return true;
             }

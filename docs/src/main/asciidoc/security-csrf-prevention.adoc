@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Cross-Site Request Forgery Prevention
 include::_attributes.adoc[]
-:categories: security
 :topics: security,csrf,http
 :extensions: io.quarkus:quarkus-rest-csrf
 

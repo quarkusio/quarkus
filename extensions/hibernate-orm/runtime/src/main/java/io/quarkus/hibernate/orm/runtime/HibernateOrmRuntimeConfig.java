@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -47,5 +48,23 @@ public interface HibernateOrmRuntimeConfig {
                 ? "quarkus.hibernate-orm."
                 : "quarkus.hibernate-orm.\"" + puName + "\".";
         return prefix + radical;
+    }
+
+    /**
+     * Returns both the quoted and unquoted property key variants for a persistence unit property.
+     * <p>
+     * SmallRye Config treats {@code quarkus.hibernate-orm."pu-name".x} and
+     * {@code quarkus.hibernate-orm.pu-name.x} as two completely independent properties
+     * with no cross-resolution: setting one does not make the other visible.
+     * Both forms must therefore be set when producing config defaults programmatically,
+     * and both must be checked when looking up user-supplied config.
+     */
+    static List<String> puPropertyKeys(String puName, String radical) {
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(puName)) {
+            return List.of("quarkus.hibernate-orm." + radical);
+        }
+        return List.of(
+                "quarkus.hibernate-orm.\"" + puName + "\"." + radical,
+                "quarkus.hibernate-orm." + puName + "." + radical);
     }
 }

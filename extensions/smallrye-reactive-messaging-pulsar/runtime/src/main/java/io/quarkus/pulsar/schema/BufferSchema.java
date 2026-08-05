@@ -7,6 +7,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.internal.buffer.BufferInternal;
 
 public class BufferSchema extends AbstractSchema<Buffer> {
 
@@ -22,7 +23,7 @@ public class BufferSchema extends AbstractSchema<Buffer> {
         if (byteBuf == null)
             return null;
 
-        return Buffer.buffer(byteBuf);
+        return BufferInternal.buffer(byteBuf);
     }
 
     @Override

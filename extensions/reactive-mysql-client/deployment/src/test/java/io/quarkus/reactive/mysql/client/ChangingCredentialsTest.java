@@ -3,12 +3,12 @@ package io.quarkus.reactive.mysql.client;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ChangingCredentialsTestBase;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ChangingCredentialsTest extends ChangingCredentialsTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(ChangingCredentialsProvider.class)
                     .addClass(ChangingCredentialsTestResource.class)

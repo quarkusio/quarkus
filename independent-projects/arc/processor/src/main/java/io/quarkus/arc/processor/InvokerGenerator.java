@@ -11,7 +11,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +32,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
@@ -629,7 +630,7 @@ public class InvokerGenerator extends AbstractGenerator {
         }
 
         boolean originalClass = true;
-        Set<Methods.MethodKey> seenMethods = new HashSet<>();
+        Map<MethodSignatureKey, MethodInfo> seenMethods = new HashMap<>();
         while (!worklist.isEmpty()) {
             ClassInfo current = worklist.removeFirst();
 
@@ -638,13 +639,13 @@ public class InvokerGenerator extends AbstractGenerator {
                     continue;
                 }
 
-                Methods.MethodKey key = new Methods.MethodKey(method);
+                MethodSignatureKey key = method.signatureKey();
 
                 if (Modifier.isStatic(method.flags()) && originalClass) {
-                    seenMethods.add(key);
+                    seenMethods.put(key, method);
                 } else {
-                    if (!Methods.isOverriden(key, seenMethods)) {
-                        seenMethods.add(key);
+                    if (!Methods.isOverridden(key, seenMethods.keySet())) {
+                        seenMethods.put(key, method);
                     }
                 }
             }
@@ -658,8 +659,8 @@ public class InvokerGenerator extends AbstractGenerator {
 
         List<TransformerMethod> matching = new ArrayList<>();
         List<TransformerMethod> notMatching = new ArrayList<>();
-        for (Methods.MethodKey seenMethod : seenMethods) {
-            TransformerMethod candidate = new TransformerMethod(seenMethod.method, assignability);
+        for (MethodInfo seenMethod : seenMethods.values()) {
+            TransformerMethod candidate = new TransformerMethod(seenMethod, assignability);
             if (candidate.matches(transformer, expectedType)) {
                 matching.add(candidate);
             } else {

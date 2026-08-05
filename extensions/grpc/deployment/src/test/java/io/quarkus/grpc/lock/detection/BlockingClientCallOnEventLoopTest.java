@@ -13,12 +13,12 @@ import io.quarkus.grpc.blocking.call.test.CallBlocking;
 import io.quarkus.grpc.blocking.call.test.CallBlockingGrpc;
 import io.quarkus.grpc.blocking.call.test.CallHello;
 import io.quarkus.grpc.server.services.HelloService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 public class BlockingClientCallOnEventLoopTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloService.class, CallBlockingService.class, CallBlocking.class)

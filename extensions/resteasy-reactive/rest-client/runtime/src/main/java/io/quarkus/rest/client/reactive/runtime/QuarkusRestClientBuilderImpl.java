@@ -306,6 +306,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     }
 
     @Override
+    public QuarkusRestClientBuilder domainSocket(String path) {
+        delegate.domainSocket(path);
+        return this;
+    }
+
+    @Override
     public <T> T build(Class<T> clazz) throws IllegalStateException, RestClientDefinitionException {
         return delegate.build(clazz);
     }

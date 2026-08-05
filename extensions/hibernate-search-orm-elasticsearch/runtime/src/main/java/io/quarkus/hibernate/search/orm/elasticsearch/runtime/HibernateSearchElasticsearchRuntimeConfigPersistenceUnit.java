@@ -63,7 +63,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     /**
      * Configuration for automatic indexing.
      *
-     * @deprecated Use {@link #indexing()} instead.
+     * @deprecated Use {@code quarkus.hibernate-search-orm.indexing} instead.
      */
     @Deprecated
     AutomaticIndexingConfig automaticIndexing();
@@ -192,7 +192,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         /**
          * Configuration for synchronization with the index when indexing automatically.
          *
-         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
+         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization} instead.
          */
         AutomaticIndexingSynchronizationConfig synchronization();
 

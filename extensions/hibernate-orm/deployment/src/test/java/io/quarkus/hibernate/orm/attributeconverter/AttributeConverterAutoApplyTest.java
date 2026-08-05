@@ -16,7 +16,7 @@ import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Checks that {@code @Converter(autoApply = true)} works correctly.
@@ -26,7 +26,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AttributeConverterAutoApplyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addClass(MyData.class)

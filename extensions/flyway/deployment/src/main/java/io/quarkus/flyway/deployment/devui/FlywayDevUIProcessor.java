@@ -13,7 +13,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
@@ -41,7 +41,7 @@ public class FlywayDevUIProcessor {
 
         String artifactId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId();
 
-        recorder.setSqlSuppliers(initialSqlSuppliers, updateSqlSuppliers, artifactId);
+        recorder.initializeJsonRpcService(initialSqlSuppliers, updateSqlSuppliers, artifactId);
 
         CardPageBuildItem card = new CardPageBuildItem();
 

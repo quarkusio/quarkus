@@ -10,30 +10,31 @@ import java.util.Map;
 import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.test.container.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaCluster;
 
 public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager {
 
     Map<String, String> conf = new HashMap<>();
 
-    private final StrimziKafkaContainer kafka = new StrimziKafkaContainer()
+    private final StrimziKafkaCluster kafka = new StrimziKafkaCluster.StrimziKafkaClusterBuilder()
             .withBootstrapServers(c -> String.format("SSL://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
-            .withBrokerId(0)
-            .withKafkaConfigurationMap(Map.ofEntries(
-                    entry("ssl.keystore.location", "/opt/kafka/config/kafka-keystore.p12"),
-                    entry("ssl.keystore.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
-                    entry("ssl.keystore.type", "PKCS12"),
-                    entry("ssl.key.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
-                    entry("ssl.truststore.location", "/opt/kafka/config/kafka-truststore.p12"),
-                    entry("ssl.truststore.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
-                    entry("ssl.truststore.type", "PKCS12"),
-                    entry("ssl.endpoint.identification.algorithm", ""),
-                    entry("listener.security.protocol.map",
-                            "BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,CONTROLLER:PLAINTEXT")))
-            .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-keystore.p12"),
-                    "/opt/kafka/config/kafka-keystore.p12")
-            .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-truststore.p12"),
-                    "/opt/kafka/config/kafka-truststore.p12");
+            .withContainerCustomizer(c -> c
+                    .withKafkaConfigurationMap(Map.ofEntries(
+                            entry("ssl.keystore.location", "/opt/kafka/config/kafka-keystore.p12"),
+                            entry("ssl.keystore.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
+                            entry("ssl.keystore.type", "PKCS12"),
+                            entry("ssl.key.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
+                            entry("ssl.truststore.location", "/opt/kafka/config/kafka-truststore.p12"),
+                            entry("ssl.truststore.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
+                            entry("ssl.truststore.type", "PKCS12"),
+                            entry("ssl.endpoint.identification.algorithm", ""),
+                            entry("listener.security.protocol.map",
+                                    "BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,CONTROLLER:PLAINTEXT")))
+                    .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-keystore.p12"),
+                            "/opt/kafka/config/kafka-keystore.p12")
+                    .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-truststore.p12"),
+                            "/opt/kafka/config/kafka-truststore.p12"))
+            .build();
 
     private Map<String, String> initProps;
 

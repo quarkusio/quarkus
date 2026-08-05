@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
-            <artifactId>vertx-grpc-client</artifactId>
+            <artifactId>vertx-grpcio-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.mojo</groupId>

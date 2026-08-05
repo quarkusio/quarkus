@@ -21,8 +21,8 @@ class JavaVersionTest {
     }
 
     @Test
-    public void givenJavaVersion17ShouldReturn17() {
-        assertEquals("17", computeJavaVersion(JAVA, "17"));
+    public void givenJavaVersion17ShouldReturn21() {
+        assertEquals("21", computeJavaVersion(JAVA, "17"));
     }
 
     @Test
@@ -47,7 +47,7 @@ class JavaVersionTest {
 
     @Test
     void shouldProperlyUseMinJavaVersion() {
-        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).containsExactly(17, 21, 25);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).containsExactly(21, 25);
         assertThat(getCompatibleLTSVersions(new JavaVersion("21"))).containsExactly(21, 25);
         assertThat(getCompatibleLTSVersions(new JavaVersion("25"))).containsExactly(25);
         assertThat(getCompatibleLTSVersions(new JavaVersion("100"))).isEmpty();
@@ -62,8 +62,6 @@ class JavaVersionTest {
 
     @Test
     public void testDetermineBestLtsVersion() {
-        assertEquals(17, determineBestJavaLtsVersion(17));
-        assertEquals(17, determineBestJavaLtsVersion(18));
         assertEquals(21, determineBestJavaLtsVersion(21));
         assertEquals(21, determineBestJavaLtsVersion(22));
         assertEquals(25, determineBestJavaLtsVersion(25));
@@ -71,7 +69,7 @@ class JavaVersionTest {
     }
 
     @Test
-    public void givenKotlinProjectWithVersion18ShouldReturn17() {
-        assertEquals("17", computeJavaVersion(KOTLIN, "18"));
+    public void givenKotlinProjectWithVersion22ShouldReturn21() {
+        assertEquals("21", computeJavaVersion(KOTLIN, "22"));
     }
 }

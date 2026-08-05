@@ -14,7 +14,7 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests a use case where multiple datasources are defined at build time,
@@ -28,7 +28,7 @@ public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
 
     public static class Ds1ActiveTest extends MultipleDataSourcesAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("ds-1");
+        static QuarkusExtensionTest runner = runner("ds-1");
 
         public Ds1ActiveTest() {
             super("ds-1", "ds-2");
@@ -37,15 +37,15 @@ public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
 
     public static class Ds2ActiveTest extends MultipleDataSourcesAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("ds-2");
+        static QuarkusExtensionTest runner = runner("ds-2");
 
         public Ds2ActiveTest() {
             super("ds-2", "ds-1");
         }
     }
 
-    static QuarkusUnitTest runner(String activeDsName) {
-        return new QuarkusUnitTest()
+    static QuarkusExtensionTest runner(String activeDsName) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addClass(MyProducer.class))
                 .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")

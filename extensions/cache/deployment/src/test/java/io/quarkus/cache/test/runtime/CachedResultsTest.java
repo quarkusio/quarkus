@@ -34,12 +34,12 @@ import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CachedResults;
 import io.quarkus.cache.CaffeineCache;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CachedResultsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(
                     root -> root.addClasses(EmbeddingModel.class, EmbeddingModelImpl.class, AnotherModel.class, Nora.class,
                             MyQualifier.class));

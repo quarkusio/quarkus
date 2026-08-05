@@ -13,12 +13,12 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ForwardedPrefixHeaderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(Resource.class))
             .overrideRuntimeConfigKey("quarkus.http.proxy.proxy-address-forwarding", "true")
             .overrideRuntimeConfigKey("quarkus.http.proxy.enable-forwarded-host", "true")

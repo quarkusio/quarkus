@@ -12,11 +12,11 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingWithPanacheTest {
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(LoggingBean.class, LoggingInterface.class, LoggingEntity.class,
                     NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")

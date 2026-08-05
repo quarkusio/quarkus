@@ -22,12 +22,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.OpenApiFilter.RunStage;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class OpenApiRunStageMultiStageFilterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(BuildAndPerRequestFilter.class)
                     .addClass(StartupAndPerRequestFilter.class));
@@ -89,7 +89,7 @@ class OpenApiRunStageMultiStageFilterTest {
                 matchesRegex(patternFormat.formatted(BuildAndPerRequestFilter.EXTENSION_NAME, 1)));
         assertThat(buildTimeDocument, not(containsString(StartupAndPerRequestFilter.EXTENSION_NAME)));
 
-        // Verify which filters have run during runtime startup
+        // verify which filters where explicitly only run during RUNTIME_STARTUP stage
         assertThat(buildAndPerRequestFilter.currentCLInvocationCount, is(0));
         assertThat(startupAndPerRequestFilter.currentCLInvocationCount, is(1));
 

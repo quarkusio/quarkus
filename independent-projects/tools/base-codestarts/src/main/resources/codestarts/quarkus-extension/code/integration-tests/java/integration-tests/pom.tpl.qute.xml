@@ -64,6 +64,9 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
+                {#if !in-quarkus-core}
+                <extensions>true</extensions>
+                {/if}
                 <executions>
                     <execution>
                         <goals>

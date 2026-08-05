@@ -325,7 +325,6 @@ public class MutinyMailerImpl implements ReactiveMailer {
                     new OpenOptions().setRead(true).setCreate(false));
             return open
                     .flatMap(af -> af.toMulti()
-                            .map(io.vertx.mutiny.core.buffer.Buffer::getDelegate)
                             .onTermination().call((r, f) -> af.close())
                             .collect().in(Buffer::buffer, Buffer::appendBuffer));
         } else if (attachment.getData() != null) {

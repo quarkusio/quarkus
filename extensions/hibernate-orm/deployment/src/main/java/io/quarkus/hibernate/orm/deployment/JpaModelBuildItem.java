@@ -80,8 +80,17 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the list of all XML mappings for the given persistence unit.
+     * @return the list of all XML mappings by persistence unit.
      */
+    public Map<String, List<RecordableXmlMapping>> getXmlMappingsByPU() {
+        return xmlMappingsByPU;
+    }
+
+    /**
+     * @return the list of all XML mappings for the given persistence unit.
+     * @deprecated Use {@link #getXmlMappingsByPU()} instead.
+     */
+    @Deprecated(since = "3.38")
     public List<RecordableXmlMapping> getXmlMappings(String puName) {
         return xmlMappingsByPU.getOrDefault(puName, Collections.emptyList());
     }

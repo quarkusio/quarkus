@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.extest.runtime.config.DoNotRecordEnvConfigSource;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
 import io.quarkus.extest.runtime.config.TestShadowBuildTimeToRunTimeConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
@@ -34,7 +34,7 @@ import io.smallrye.config.SmallRyeConfig;
  */
 public class ConfiguredBeanTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(ConfigSource.class, DoNotRecordEnvConfigSource.class)
                     .addAsResource("application.properties"));

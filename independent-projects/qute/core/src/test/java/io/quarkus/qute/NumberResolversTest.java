@@ -31,6 +31,12 @@ public class NumberResolversTest {
     }
 
     @Test
+    public void testPlusNotFoundParam() {
+        Engine engine = Engine.builder().addDefaults().strictRendering(false).build();
+        assertEquals("NOT_FOUND", engine.parse("{name + nonExistent}").data("name", "foo").render());
+    }
+
+    @Test
     public void testMinus() {
         Engine engine = Engine.builder().addDefaults().build();
         int one = 1;

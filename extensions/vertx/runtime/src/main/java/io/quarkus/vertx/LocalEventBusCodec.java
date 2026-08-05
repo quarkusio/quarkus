@@ -6,8 +6,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 
 /**
- * An implementation of {@link MessageCodec} for local delivery only.
- * It does not support the clustered event bus.
+ * An implementation of {@link MessageCodec} for local delivery.
  * <p>
  * The {@link #transform(Object)} method returns the passed instance. So make sure it's immutable.
  *
@@ -30,12 +29,12 @@ public class LocalEventBusCodec<T> implements MessageCodec<T, T> {
 
     @Override
     public void encodeToWire(Buffer buffer, T t) {
-        throw new UnsupportedOperationException("LocalEventBusCodec cannot only be used for local delivery");
+        throw new UnsupportedOperationException("LocalEventBusCodec can only be used for local delivery");
     }
 
     @Override
     public T decodeFromWire(int pos, Buffer buffer) {
-        throw new UnsupportedOperationException("LocalEventBusCodec cannot only be used for local delivery");
+        throw new UnsupportedOperationException("LocalEventBusCodec can only be used for local delivery");
     }
 
     @Override

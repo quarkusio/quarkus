@@ -8,9 +8,9 @@ import static java.util.Collections.emptyMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +59,7 @@ import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.LogBuildTimeConfig.CategoryBuildTimeConfig;
@@ -127,7 +128,7 @@ public class LoggingSetupRecorder {
                 new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
                         DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
                         emptyList(),
-                        emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+                        emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(
@@ -141,6 +142,7 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
+            final List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedHandlerFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             final LaunchMode launchMode,
             final boolean includeFilters) {
@@ -248,8 +250,12 @@ public class LoggingSetupRecorder {
             handlers.add(handler);
         }
 
+        Map<NamedHandlerType, Map<String, Optional<Formatter>>> mergedNamedHandlerFormatters = mergeNamedHandlerFormatters(
+                namedHandlerFormatters);
+
         Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
+                        mergedNamedHandlerFormatters,
                         possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters, possibleSocketFormatters,
                         errorManager, cleanupFiler, namedFilters, launchMode,
                         shutdownNotifier, includeFilters)
@@ -350,7 +356,7 @@ public class LoggingSetupRecorder {
         }
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, emptyList(),
-                emptyList(), emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
+                emptyMap(), emptyList(), emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
                 emptyMap(), launchMode, dummy, false);
 
         setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers, false);
@@ -404,9 +410,42 @@ public class LoggingSetupRecorder {
         return inheritableLevel;
     }
 
+    private static Map<NamedHandlerType, Map<String, Optional<Formatter>>> mergeNamedHandlerFormatters(
+            List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedHandlerFormatters) {
+        if (namedHandlerFormatters.isEmpty()) {
+            return emptyMap();
+        }
+        Map<NamedHandlerType, Map<String, Optional<Formatter>>> merged = new EnumMap<>(NamedHandlerType.class);
+        for (RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>> rv : namedHandlerFormatters) {
+            rv.getValue().forEach((type, formatters) -> {
+                Map<String, Optional<Formatter>> typeMap = merged.computeIfAbsent(type, k -> new HashMap<>());
+                formatters.forEach((name, formatter) -> {
+                    if (typeMap.putIfAbsent(name, formatter) != null) {
+                        log.warnf("Multiple formatters configured for named %s handler '%s', the last one will be used", type,
+                                name);
+                        typeMap.put(name, formatter);
+                    }
+                });
+            });
+        }
+        return merged;
+    }
+
+    private static List<RuntimeValue<Optional<Formatter>>> resolveFormatters(
+            String handlerName,
+            Map<String, Optional<Formatter>> namedFormatters,
+            List<RuntimeValue<Optional<Formatter>>> globalFormatters) {
+        if (namedFormatters.containsKey(handlerName)) {
+            return List.of(new RuntimeValue<>(namedFormatters.get(handlerName)));
+        }
+        // Fall back to the global formatter (e.g. JSON enabled globally applies to named handlers too).
+        return globalFormatters;
+    }
+
     private static Map<String, Handler> createNamedHandlers(
             LogRuntimeConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
             List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
+            Map<NamedHandlerType, Map<String, Optional<Formatter>>> namedHandlerFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
@@ -414,6 +453,15 @@ public class LoggingSetupRecorder {
             ErrorManager errorManager, LogCleanupFilter cleanupFilter,
             Map<String, Filter> namedFilters, LaunchMode launchMode,
             ShutdownNotifier shutdownHandler, boolean includeFilters) {
+        Map<String, Optional<Formatter>> namedConsoleFormatters = namedHandlerFormatters.getOrDefault(NamedHandlerType.CONSOLE,
+                emptyMap());
+        Map<String, Optional<Formatter>> namedFileFormatters = namedHandlerFormatters.getOrDefault(NamedHandlerType.FILE,
+                emptyMap());
+        Map<String, Optional<Formatter>> namedSyslogFormatters = namedHandlerFormatters.getOrDefault(NamedHandlerType.SYSLOG,
+                emptyMap());
+        Map<String, Optional<Formatter>> namedSocketFormatters = namedHandlerFormatters.getOrDefault(NamedHandlerType.SOCKET,
+                emptyMap());
+
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers().entrySet()) {
             ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
@@ -421,8 +469,9 @@ public class LoggingSetupRecorder {
                 continue;
             }
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig,
-                    errorManager, cleanupFilter, namedFilters, possibleConsoleFormatters, null, launchMode,
-                    includeFilters);
+                    errorManager, cleanupFilter, namedFilters,
+                    resolveFormatters(consoleConfigEntry.getKey(), namedConsoleFormatters, possibleConsoleFormatters),
+                    null, launchMode, includeFilters);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers().entrySet()) {
@@ -431,7 +480,7 @@ public class LoggingSetupRecorder {
                 continue;
             }
             final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter, namedFilters,
-                    possibleFileFormatters, includeFilters);
+                    resolveFormatters(fileConfigEntry.getKey(), namedFileFormatters, possibleFileFormatters), includeFilters);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, LogRuntimeConfig.SyslogConfig> sysLogConfigEntry : config.syslogHandlers().entrySet()) {
@@ -440,7 +489,9 @@ public class LoggingSetupRecorder {
                 continue;
             }
             final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter,
-                    namedFilters, possibleSyslogFormatters, includeFilters);
+                    namedFilters,
+                    resolveFormatters(sysLogConfigEntry.getKey(), namedSyslogFormatters, possibleSyslogFormatters),
+                    includeFilters);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }
@@ -451,7 +502,9 @@ public class LoggingSetupRecorder {
                 continue;
             }
             final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter,
-                    namedFilters, possibleSocketFormatters, includeFilters);
+                    namedFilters,
+                    resolveFormatters(socketConfigEntry.getKey(), namedSocketFormatters, possibleSocketFormatters),
+                    includeFilters);
             if (socketHandler != null) {
                 addToNamedHandlers(namedHandlers, socketHandler, socketConfigEntry.getKey());
             }
@@ -763,22 +816,22 @@ public class LoggingSetupRecorder {
             });
             handler.setLevel(config.level());
             if (config.maxLength().isPresent()) {
-                BigInteger maxLen = config.maxLength().get().asBigInteger();
-                if (maxLen.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                MemorySize maxLen = config.maxLength().get();
+                int maxLenInt;
+                if (maxLen.compareTo(Integer.MAX_VALUE) > 0) {
                     errorManager.error(
                             "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value", null,
                             ErrorManager.GENERIC_FAILURE);
-                    maxLen = BigInteger.valueOf(Integer.MAX_VALUE);
+                    maxLenInt = Integer.MAX_VALUE;
+                } else if (maxLen.compareTo(128) < 0) {
+                    errorManager.error(
+                            "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
+                            null, ErrorManager.GENERIC_FAILURE);
+                    maxLenInt = 128;
                 } else {
-                    BigInteger minimumAllowedMaxLength = BigInteger.valueOf(128);
-                    if (maxLen.compareTo(minimumAllowedMaxLength) < 0) {
-                        errorManager.error(
-                                "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
-                                null, ErrorManager.GENERIC_FAILURE);
-                        maxLen = minimumAllowedMaxLength;
-                    }
+                    maxLenInt = maxLen.asIntValue();
                 }
-                handler.setMaxLength(maxLen.intValue());
+                handler.setMaxLength(maxLenInt);
             }
 
             Formatter formatter = null;

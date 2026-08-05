@@ -10,7 +10,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -21,6 +21,7 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -29,7 +30,7 @@ import io.vertx.core.net.TrustOptions;
 public class TlsBasicConnectorRuntimeTlsConfigurationTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(ServerEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")
@@ -52,6 +53,12 @@ public class TlsBasicConnectorRuntimeTlsConfigurationTest {
             @Override
             public TrustOptions getTrustStoreOptions() {
                 return new JksOptions().setPath("truststore.jks").setPassword("secret");
+            }
+
+            @Override
+            public ClientSSLOptions getClientSSLOptions() {
+                return new ClientSSLOptions()
+                        .setTrustOptions(getTrustStoreOptions());
             }
         });
         WebSocketClientConnection connection = connector

@@ -8,13 +8,15 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.reactive.datasource.PoolCreator;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.oracleclient.OracleConnectOptions;
 import io.vertx.sqlclient.Pool;
 
 public class MultipleOraclePoolCreatorsForSameDatasourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(CustomCredentialsProvider.class)
                     .addClass(CredentialsTestResource.class)
@@ -29,11 +31,12 @@ public class MultipleOraclePoolCreatorsForSameDatasourceTest {
     }
 
     @Singleton
-    public static class AnotherOraclePoolCreator implements OraclePoolCreator {
+    public static class AnotherOraclePoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            return Pool.pool(input.vertx(), input.oracleConnectOptions(), input.poolOptions());
+            OracleConnectOptions oracleConnectOptions = (OracleConnectOptions) input.connectOptionsList().get(0);
+            return Pool.pool(input.vertx(), oracleConnectOptions, input.poolOptions());
         }
     }
 

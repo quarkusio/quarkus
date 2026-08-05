@@ -33,7 +33,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
@@ -53,7 +53,7 @@ class HttpUpgradeAuthorizationPolicyAnnotationTest {
     private static final String CUSTOM_AUTHORIZATION = "CustomAuthorization";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().withApplicationRoot(root -> root.addClasses(
             TrustMeEndpoint.class, TestIdentityProvider.class, TestIdentityController.class, WSClient.class,
             HeaderHttpSecurityPolicy.class, PolicyProducer.class, BlockMeEndpoint.class, AugmentMeEndpoint.class,
             PublicEndpoint.class, TwiceSecuredEndpoint.class));

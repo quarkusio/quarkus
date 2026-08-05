@@ -15,17 +15,19 @@ import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devmcp.spi.deployment.DevMcpBuildTimeTool;
 import io.quarkus.devui.runtime.logstream.LogStreamBroadcaster;
 import io.quarkus.devui.runtime.logstream.LogStreamJsonRPCService;
 import io.quarkus.devui.runtime.logstream.LogStreamRecorder;
 import io.quarkus.devui.runtime.logstream.MutinyLogHandler;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Processor for Log stream in Dev UI
  */
+@DevMcpBuildTimeTool(name = "forceRestart", description = "Force a Quarkus application restart")
 public class LogStreamProcessor {
 
     private final String namespace = "devui-logstream";
@@ -62,7 +64,7 @@ public class LogStreamProcessor {
                     RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
                     return Map.of();
                 })
-                .enableMcpFuctionByDefault()
+                .enableMcpFunctionByDefault()
                 .build();
 
         keyStrokeActions.actionBuilder()

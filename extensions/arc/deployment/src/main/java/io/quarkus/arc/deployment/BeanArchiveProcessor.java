@@ -18,14 +18,13 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
@@ -39,7 +38,7 @@ import io.quarkus.deployment.builditem.ExcludeDependencyBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
-import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.index.PersistentClassIndex;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -66,7 +65,6 @@ public class BeanArchiveProcessor {
                 new KnownCompatibleBeanArchives(knownCompatibleBeanArchives));
 
         // Then build additional index for beans added by extensions
-        Indexer additionalBeanIndexer = new Indexer();
         List<String> additionalBeanClasses = new ArrayList<>();
         for (AdditionalBeanBuildItem i : additionalBeans) {
             additionalBeanClasses.addAll(i.getBeanClasses());
@@ -75,37 +73,24 @@ public class BeanArchiveProcessor {
         Set<String> additionalBeansFromExtensions = new HashSet<>();
         buildCompatibleExtensions.entrypoint.runDiscovery(applicationIndex, additionalBeansFromExtensions);
         additionalBeanClasses.addAll(additionalBeansFromExtensions);
-        annotationsTransformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext ctx) {
-                if (additionalBeansFromExtensions.contains(ctx.getTarget().asClass().name().toString())) {
-                    // make all the `@Discovery`-registered classes beans
-                    ctx.transform().add(AdditionalBean.class).done();
-                }
-            }
-        }));
+        annotationsTransformations.produce(new AnnotationsTransformerBuildItem(
+                // make all the `@Discovery`-registered classes beans
+                AnnotationTransformation.forClasses()
+                        .whenClass(cl -> additionalBeansFromExtensions.contains(cl.name().toString()))
+                        .transform(ctx -> ctx.add(AdditionalBean.class))));
 
         // Build the index for additional beans and generated bean classes
-        Set<DotName> additionalIndex = new HashSet<>();
-        Set<DotName> knownMissingClasses = new HashSet<>();
-        for (String beanClass : additionalBeanClasses) {
-            IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
-                    knownMissingClasses, Thread.currentThread().getContextClassLoader());
-        }
+        LazyIndexer indexer = new LazyIndexer(Thread.currentThread().getContextClassLoader(), applicationIndex);
+        indexer.addAll(additionalBeanClasses);
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem generatedBean : generatedBeans) {
-            IndexingUtil.indexClass(generatedBean.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
-                    knownMissingClasses, Thread.currentThread().getContextClassLoader(), generatedBean.getData());
+            indexer.add(generatedBean.getName(), generatedBean.getData());
             generatedClassNames.add(DotName.createSimple(generatedBean.getName().replace('/', '.')));
             generatedClass.produce(new GeneratedClassBuildItem(generatedBean.isApplicationClass(), generatedBean.getName(),
                     generatedBean.getData(),
                     generatedBean.getSource()));
         }
+        LazyIndexer.Result result = indexer.complete();
 
         PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
         if (index == null) {
@@ -114,12 +99,12 @@ public class BeanArchiveProcessor {
         }
 
         Map<DotName, Optional<ClassInfo>> additionalClasses = index.getAdditionalClasses();
-        for (DotName knownMissingClass : knownMissingClasses) {
+        for (DotName knownMissingClass : result.missingAnnotations()) {
             additionalClasses.put(knownMissingClass, Optional.empty());
         }
 
         IndexView immutableBeanArchiveIndex = BeanArchives.buildImmutableBeanArchiveIndex(applicationIndex,
-                additionalBeanIndexer.complete());
+                result.index());
         IndexView computingBeanArchiveIndex = BeanArchives.buildComputingBeanArchiveIndex(
                 Thread.currentThread().getContextClassLoader(),
                 additionalClasses, immutableBeanArchiveIndex);
@@ -132,7 +117,7 @@ public class BeanArchiveProcessor {
             List<BeanArchivePredicateBuildItem> beanArchivePredicates,
             KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
 
-        Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
+        List<ApplicationArchive> archives = applicationArchivesBuildItem.getAllArchives();
 
         // We need to collect all stereotype annotations first
         Set<DotName> stereotypes = new HashSet<>();
@@ -162,11 +147,9 @@ public class BeanArchiveProcessor {
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR);
 
         boolean rootIsAlwaysBeanArchive = !config.strictCompatibility();
-        Collection<ApplicationArchive> candidateArchives = applicationArchivesBuildItem.getApplicationArchives();
-        if (!rootIsAlwaysBeanArchive) {
-            candidateArchives = new ArrayList<>(candidateArchives);
-            candidateArchives.add(applicationArchivesBuildItem.getRootArchive());
-        }
+        List<ApplicationArchive> candidateArchives = rootIsAlwaysBeanArchive
+                ? applicationArchivesBuildItem.getArchives()
+                : applicationArchivesBuildItem.getAllArchives();
 
         List<IndexView> indexes = new ArrayList<>();
 
@@ -198,7 +181,7 @@ public class BeanArchiveProcessor {
             KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
         // check for occurrences of incompatible annotations - currently only @Specializes
         Collection<AnnotationInstance> annotations = index.getAnnotations(DotNames.SPECIALIZES);
-        if (!annotations.isEmpty() && !knownCompatibleBeanArchives.isKnownCompatible(archive,
+        if (!annotations.isEmpty() && !knownCompatibleBeanArchives.isKnownCompatible(archive.getKey(),
                 KnownCompatibleBeanArchiveBuildItem.Reason.SPECIALIZES_ANNOTATION)) {
             Set<String> definitionErrors = new HashSet<>();
             for (AnnotationInstance annInstance : annotations) {
@@ -258,7 +241,7 @@ public class BeanArchiveProcessor {
                         if (text.contains("bean-discovery-mode='all'")
                                 || text.contains("bean-discovery-mode=\"all\"")) {
 
-                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive,
+                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive.getKey(),
                                     KnownCompatibleBeanArchiveBuildItem.Reason.BEANS_XML_ALL)) {
                                 LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
                                         + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "

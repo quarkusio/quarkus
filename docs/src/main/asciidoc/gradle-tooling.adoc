@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="gradle-tooling"]
 = Quarkus and Gradle
 include::_attributes.adoc[]
-:categories: tooling, native
 :summary: Develop and build your Quarkus application with Gradle
 :devtools-no-maven:
 :topics: gradle,tooling
@@ -518,13 +517,13 @@ Configuring the `quarkusBuild` task can be done as following:
 quarkusBuild {
     nativeArgs {
         containerBuild = true <1>
-        builderImage = "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
+        builderImage = "quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
     }
 }
 ----
 
 <1> Set `quarkus.native.container-build` property to `true`
-<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}`
+<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
 
 [role="secondary asciidoc-tabs-sync-kotlin"]
@@ -535,13 +534,13 @@ quarkusBuild {
 tasks.quarkusBuild {
     nativeArgs {
         "container-build" to true <1>
-        "builder-image" to "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
+        "builder-image" to "quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}" <2>
     }
 }
 ----
 
 <1> Set `quarkus.native.container-build` property to `true`
-<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}`
+<2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
 
 [WARNING]
@@ -564,15 +563,15 @@ Note that in this case the build itself runs in a Docker container too, so you d
 
 [TIP]
 ====
-By default, the native executable will be generated using the `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
+By default, the native executable will be generated using the `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
 
 If you want to build a native executable with a different Docker image (for instance to use a different GraalVM version),
 use the `-Dquarkus.native.builder-image=<image name>` build argument.
 
-The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io].
+The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi10-quarkus-mandrel-builder-image?tab=tags[quay.io].
 Be aware that a given Quarkus version might not be compatible with all the images available.
 
-Note also that starting Quarkus 3.19, the default _builder_ images are based on UBI 9. To use the previous UBI 8 based images, you can use the pick an image from the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
+The default _builder_ images are based on UBI 10. To use older UBI based images, you can pick an image from the https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 9)] or the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository (UBI 8)].
 ====
 
 == Running native tests
@@ -643,6 +642,8 @@ TIP: The `fast-jar` packaging results in creating an artifact that starts a litt
 because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
 on the classpath that the legacy jar necessitates, when loading a class or resource.
 
+TIP: You can reduce the size of the produced JAR by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.jar.type` argument as follows:
@@ -659,6 +660,8 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
+
+TIP: You can reduce the size of the produced Uber-Jar by enabling experimental tree-shaking, which removes unreachable classes from runtime dependencies. See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
 
 [[multi-module-gradle]]
 === Working with multi-module projects
@@ -714,20 +717,26 @@ The Quarkus build uses the `prod` configuration profile:
    as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
 
 [WARNING]
+====
 The above priorities have changed in Quarkus plugin starting with 3.0. Older versions of the Quarkus Gradle plugin
 preferred `application.properties` over settings in the Gradle build.
+====
 
 [NOTE]
+====
 The Quarkus Gradle plugin uses the "standard" Quarkus mechanisms to load and parse configurations. Support for
 `application.(yaml|yml)` has been added in Quarkus 3.0 in addition to `application.properties`. Also new in 3.0
 is that all mechanisms available via SmallRye Config, are implicitly also now available for the Quarkus Gradle
 plugin.
+====
 
 
 [TIP]
+====
 Use the `quarkusShowEffectiveConfig` task to show the effective configuration options used for a Quarkus build. If you
 specify the `--save-config-properties` command line option, the configuration properties are also store in the file
 `build/<final-name>.quarkus-build.properties`.
+====
 
 
 === Gradle caching / task inputs
@@ -864,12 +873,14 @@ The `quarkusAppPartsBuild` and `quarkusDependenciesBuild` tasks do nothing for `
 |===
 
 [NOTE]
+====
 In a local development environment, the cost (think: time) of storing (and retrieving) even bigger cache artifacts is
 lower than the cost of re-building a Quarkus application. This means, that The Quarkus Gradle plugin allows caching
 even potentially big artifacts like uber-jars or native binaries in non-CI environments. In CI environments, which run
 builds against varying states of a code base (think: running CI against every commit on a main branch), adding each
 built (and big) artifact to the build cache would let the build cache become unnecessarily big, which becomes a
 problem for example in GitHub, where the total amount of cached artifacts is limited to 10 GB.
+====
 
 
 [NOTE]

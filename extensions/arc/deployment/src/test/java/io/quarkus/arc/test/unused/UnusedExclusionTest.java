@@ -25,12 +25,12 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnusedExclusionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(UnusedExclusionTest.class, Alpha.class, Beta.class, Charlie.class, Delta.class,
                             ProducerBean.class, TestRecorder.class, Gama.class, GamaProducer.class)
@@ -51,7 +51,7 @@ public class UnusedExclusionTest {
                         BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                                "test", "" + TestRecorder.class.hashCode(), true);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

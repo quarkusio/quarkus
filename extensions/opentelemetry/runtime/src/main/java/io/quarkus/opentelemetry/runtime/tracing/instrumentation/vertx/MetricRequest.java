@@ -3,7 +3,7 @@ package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 import java.util.Optional;
 
 import io.vertx.core.Context;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.spi.observability.HttpRequest;
 
 public final class MetricRequest {

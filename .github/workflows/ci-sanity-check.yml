@@ -20,6 +20,7 @@ on:
       - '.github/*.conf'
       - '.sdkmanrc'
       - '.devcontainer/**'
+      - '.agents/**'
   pull_request:
     paths:
       - '.gitignore'
@@ -35,6 +36,7 @@ on:
       - '.github/*.conf'
       - '.sdkmanrc'
       - '.devcontainer/**'
+      - '.agents/**'
 
 jobs:
   ci-sanity-check:

@@ -8,6 +8,7 @@ import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.CERT_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.KEY_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.LETS_ENCRYPT_DIR;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.AUDIT;
 
 import java.nio.file.Files;
 import java.time.Duration;
@@ -40,6 +41,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         // Step 1 - Create .letsencrypt directory
         if (!LETS_ENCRYPT_DIR.exists()) {
             if (LETS_ENCRYPT_DIR.mkdir()) {
+                AUDIT.debug("Created Let's Encrypt directory: " + LETS_ENCRYPT_DIR.getAbsolutePath());
                 LOGGER.infof("✅ Created .letsencrypt directory: %s",
                         LETS_ENCRYPT_DIR.getAbsolutePath());
             }
@@ -61,6 +63,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
 
         if (!certExistingAndStillValid) {
             // Generate a self-signed certificate (for the challenge
+            AUDIT.debug("Generating self-signed certificate for Let's Encrypt challenge - domain: " + domain);
             CertificateGenerator generator = new CertificateGenerator(LETS_ENCRYPT_DIR.toPath(), true);
             CertificateRequest request = new CertificateRequest()
                     .withCN(domain)
@@ -69,6 +72,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
                     .withFormat(Format.PEM)
                     .withName("lets-encrypt");
             generator.generate(request);
+            AUDIT.debug("Self-signed certificate generated successfully: " + CERT_FILE.getAbsolutePath());
         } else {
             LOGGER.infof("✅ Certificate already exists and is still valid: %s",
                     CERT_FILE.getAbsolutePath());
@@ -89,6 +93,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         addOrReplaceProperty(dotEnvContent, prefix + ".key-store.pem.acme.cert", CERT_FILE.getAbsolutePath());
         addOrReplaceProperty(dotEnvContent, prefix + ".key-store.pem.acme.key", KEY_FILE.getAbsolutePath());
 
+        AUDIT.debug("Writing TLS configuration to .env file: " + DOT_ENV_FILE.getAbsolutePath());
         Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
         LOGGER.infof("✅ .env file configured for Let's Encrypt: %s", DOT_ENV_FILE.getAbsolutePath());
         LOGGER.infof(

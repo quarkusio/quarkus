@@ -12,7 +12,7 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -29,11 +29,7 @@ class MtlsWithJKSTrustStoreWithHttpServerTest {
             quarkus.grpc.clients.hello.tls.key-certificate-jks.path=target/certs/grpc-client-keystore.jks
             quarkus.grpc.clients.hello.tls.key-certificate-jks.password=password
             quarkus.grpc.clients.hello.tls.enabled=true
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
 
-            quarkus.grpc.server.use-separate-server=false
-            # Force the client to use TLS for the tests
-            quarkus.grpc.server.plain-text=false
 
             quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-keystore.jks
             quarkus.http.ssl.certificate.key-store-password=password
@@ -44,7 +40,7 @@ class MtlsWithJKSTrustStoreWithHttpServerTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(HelloWorldTlsEndpoint.class.getPackage())
                     .addPackage(GreeterGrpc.class.getPackage())

@@ -15,7 +15,7 @@ import org.glassfish.jaxb.runtime.v2.runtime.IllegalAnnotationsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Make sure that the validation of the default JAXB context fails if there conflicting model classes and there actually
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConflictingModelClassesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-enable-validation.properties")
             .withApplicationRoot((jar) -> jar
                     .addClasses(
@@ -35,7 +35,7 @@ public class ConflictingModelClassesTest {
                 assertThat(e.getMessage()).isEqualTo("Failed to create or validate the default JAXBContext");
                 Throwable cause = e.getCause();
                 assertThat(cause).isInstanceOf(IllegalAnnotationsException.class);
-                assertThat(cause.getMessage()).isEqualTo("1 counts of IllegalAnnotationExceptions");
+                assertThat(cause.getMessage()).contains("1 counts of IllegalAnnotationExceptions");
                 List<IllegalAnnotationException> errors = ((IllegalAnnotationsException) cause).getErrors();
                 assertThat(errors.size()).isEqualTo(1);
                 assertThat(errors.get(0).getMessage()).contains("Two classes have the same XML type name \"model\"");

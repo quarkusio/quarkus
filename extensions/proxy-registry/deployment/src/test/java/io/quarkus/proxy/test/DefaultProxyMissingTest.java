@@ -11,11 +11,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DefaultProxyMissingTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
 
     @Inject
     ProxyConfigurationRegistry registry;

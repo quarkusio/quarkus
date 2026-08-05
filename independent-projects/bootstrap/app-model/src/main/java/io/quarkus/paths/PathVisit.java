@@ -45,13 +45,23 @@ public interface PathVisit {
     }
 
     /**
+     * Visited class path resource name.
+     *
+     * @return visited resource name
+     */
+    default String getResourceName() {
+        return getRelativePath("/");
+    }
+
+    /**
      * Path relative to the root of the tree as a string with {@code /} as a path element separator.
      * This method calls {@link #getRelativePath(String)} passing {@code /} as an argument.
      *
      * @return path relative to the root of the tree as a string with {@code /} as a path element separator
      */
+    @Deprecated(forRemoval = true, since = "3.34.0")
     default String getRelativePath() {
-        return getRelativePath("/");
+        return getResourceName();
     }
 
     /**

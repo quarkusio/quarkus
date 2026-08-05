@@ -1,7 +1,7 @@
 package io.quarkus.arc.deployment;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -59,7 +59,11 @@ public class ArcTestSteps {
     void initTestApplicationClassPredicateBean(ArcRecorder recorder, BeanContainerBuildItem beanContainer,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
             CompletedApplicationClassPredicateBuildItem predicate) {
-        Set<String> applicationBeanClasses = new HashSet<>();
+        // TODO: We use TreeSet below since beanStream() does not return elements in a stable order.
+        //  As of May 2026, there are ongoing efforts to stabilize ArC / Jandex components that emit
+        //  elements in such unstable fashion.
+        //  Once that is done, we could switch to a less performance hungry LinkedHashSet.
+        Set<String> applicationBeanClasses = new TreeSet<>();
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             if (predicate.test(bean.getBeanClass())) {
                 applicationBeanClasses.add(bean.getBeanClass().toString());

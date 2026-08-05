@@ -14,4 +14,9 @@ public class PostgresOpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJ
         testQueryTraced("postgresql", "PgHit");
     }
 
+    @Test
+    void testPostgreSqlConnectionNotTraced() {
+        testConnectionNotTraced("postgresql");
+    }
+
 }

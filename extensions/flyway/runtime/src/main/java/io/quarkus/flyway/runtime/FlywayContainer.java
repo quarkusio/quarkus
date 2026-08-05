@@ -1,5 +1,7 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Set;
+
 import org.flywaydb.core.Flyway;
 
 public class FlywayContainer {
@@ -16,11 +18,13 @@ public class FlywayContainer {
     private final String dataSourceName;
     private final boolean hasMigrations;
     private final boolean createPossible;
+    private final Set<String> resourceLocations;
     private final String id;
 
     public FlywayContainer(Flyway flyway, boolean baselineAtStart, boolean cleanAtStart, boolean cleanOnValidationError,
             boolean migrateAtStart, boolean repairAtStart, boolean validateAtStart,
-            String dataSourceName, boolean hasMigrations, boolean createPossible) {
+            String dataSourceName, boolean hasMigrations, boolean createPossible,
+            Set<String> resourceLocations) {
         this.flyway = flyway;
         this.baselineAtStart = baselineAtStart;
         this.cleanAtStart = cleanAtStart;
@@ -31,6 +35,7 @@ public class FlywayContainer {
         this.dataSourceName = dataSourceName;
         this.hasMigrations = hasMigrations;
         this.createPossible = createPossible;
+        this.resourceLocations = resourceLocations;
         this.id = dataSourceName.replace("<", "").replace(">", "");
     }
 
@@ -72,6 +77,10 @@ public class FlywayContainer {
 
     public boolean isCreatePossible() {
         return createPossible;
+    }
+
+    public Set<String> getResourceLocations() {
+        return resourceLocations;
     }
 
     public String getId() {

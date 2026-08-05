@@ -23,14 +23,14 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.RunAsUser;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
 
 @ActivateRequestContext
 class RunAsUserSecurityBeansTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(WhoAmIBean.class, FakeScheduled.class))
             .addBuildChainCustomizer(b -> b
                     .addBuildStep(context -> context.produce(RunAsUserPredicateBuildItem.ofAnnotation(FakeScheduled.class)))

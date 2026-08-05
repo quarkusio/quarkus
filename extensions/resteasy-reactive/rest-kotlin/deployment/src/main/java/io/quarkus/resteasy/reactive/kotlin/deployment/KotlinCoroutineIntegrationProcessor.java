@@ -64,10 +64,14 @@ public class KotlinCoroutineIntegrationProcessor {
 
                     EndpointInvokerFactory recorder = (EndpointInvokerFactory) methodContext
                             .get(EndpointInvokerFactory.class.getName());
-                    CoroutineMethodProcessor processor = new CoroutineMethodProcessor(createCoroutineInvoker(
-                            method.declaringClass(), method,
-                            (BuildProducer<GeneratedClassBuildItem>) methodContext.get(GeneratedClassBuildItem.class.getName()),
-                            recorder));
+                    CoroutineMethodProcessor processor = new CoroutineMethodProcessor(
+                            createCoroutineInvoker(
+                                    actualEndpointClass,
+                                    method.declaringClass(),
+                                    method,
+                                    (BuildProducer<GeneratedClassBuildItem>) methodContext
+                                            .get(GeneratedClassBuildItem.class.getName()),
+                                    recorder));
                     if (methodContext.containsKey(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)) {
                         Type methodReturnType = (Type) methodContext.get(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY);
                         if (methodReturnType != null) {
@@ -122,11 +126,13 @@ public class KotlinCoroutineIntegrationProcessor {
 
     /**
      * This method generates the same invocation code as for the standard invoker but also passes along the implicit
-     * {@code Continuation} argument provided by kotlinc and the coroutines library.
-     *
+     * {@code Continuation} argument provided by kotlinc and the coroutine library.
+     * <p>
      * See: io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
      */
-    private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo,
+    private Supplier<EndpointInvoker> createCoroutineInvoker(
+            ClassInfo actualClassInfo,
+            ClassInfo currentClassInfo,
             MethodInfo info, BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             EndpointInvokerFactory factory) {
         StringBuilder sigBuilder = new StringBuilder();
@@ -135,7 +141,7 @@ public class KotlinCoroutineIntegrationProcessor {
         for (Type t : info.parameterTypes()) {
             sigBuilder.append(t);
         }
-        String baseName = currentClassInfo.name() + "$quarkuscoroutineinvoker$" + info.name() + "_"
+        String baseName = actualClassInfo.name() + "$quarkuscoroutineinvoker$" + info.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
         //this is very similar to the existing impl, except it passes through a continuation as an additional argument
         try (ClassCreator classCreator = new ClassCreator(

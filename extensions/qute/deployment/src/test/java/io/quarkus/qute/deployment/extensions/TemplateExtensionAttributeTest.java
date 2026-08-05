@@ -13,12 +13,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateExtension.TemplateAttribute;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TemplateExtensionAttributeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(
                             new StringAsset("{ping:transform('Foo')}"),

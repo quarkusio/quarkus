@@ -6,17 +6,17 @@ import java.util.function.Function;
 import io.grpc.stub.AbstractStub;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.grpc.client.GrpcClient;
-import io.vertx.grpc.client.GrpcClientChannel;
+import io.vertx.grpcio.client.GrpcIoClient;
+import io.vertx.grpcio.client.GrpcIoClientChannel;
 
 public class GrpcIntegrationTestHelper {
 
     private static Vertx vertx;
-    private static GrpcClient grpcClient;
+    private static GrpcIoClient grpcClient;
 
     static void init() {
         vertx = Vertx.vertx();
-        grpcClient = GrpcClient.client(vertx);
+        grpcClient = GrpcIoClient.client(vertx);
     }
 
     static void cleanup() {
@@ -24,9 +24,10 @@ public class GrpcIntegrationTestHelper {
         vertx.close().toCompletionStage().toCompletableFuture().join();
     }
 
-    static <T> T createClient(int port, Class<T> clazz, Function<GrpcClientChannel, AbstractStub<?>> function) {
+    static <T> T createClient(int port, Class<T> clazz, Function<GrpcIoClientChannel, AbstractStub<?>> function) {
         try {
-            GrpcClientChannel channel = new GrpcClientChannel(grpcClient, SocketAddress.inetSocketAddress(port, "localhost"));
+            GrpcIoClientChannel channel = new GrpcIoClientChannel(grpcClient,
+                    SocketAddress.inetSocketAddress(port, "localhost"));
             var stub = function.apply(channel);
             Constructor<T> constructor = clazz.getDeclaredConstructor(stub.getClass());
             constructor.setAccessible(true);

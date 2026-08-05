@@ -200,7 +200,10 @@ Thus, automated tooling can easily use this information to help generate a `modu
 Build items in this module should be documented with their intended use (produced or consumed).
 
 ==== `runtime-api` module
-* `io.<quarkus|quarkiverse>.<extension-name>.api`: Public runtime API. Can be used independently of the full extension. Consumers should not expect the full extension to be available at runtime. To make sure the extension is available, the consumer should use the `runtime` module (which would pull in the `runtime-api` module transitively).
+* `io.<quarkus|quarkiverse>.<extension-name>`: Public runtime API. Can be used independently of the full extension. Consumers should not expect the full extension to be available at runtime. To make sure the extension is available, the consumer should use the `runtime` module (which would pull in the `runtime-api` module transitively). This is the preferred package when there is no conflict with the `runtime` module's root package.
+* `io.<quarkus|quarkiverse>.<extension-name>.api`: Alternative package for public runtime API. Should be used when the extension also uses the root package in the `runtime` module, to avoid split packages.
+
+NOTE: Once an extension has a `runtime-api` module, it should not expose public APIs in the `runtime` module.
 
 ==== `runtime-dev` module
 * `io.<quarkus|quarkiverse>.<extension-name>.dev`: Dev-mode-only runtime classes, e.g., for Dev UI contribution. Not included in production builds.
@@ -288,3 +291,7 @@ Note that this ADR is orthogonal to the existing platform BOMs and version align
 == Notes
 
 This ADR is forward-looking and prescriptive for new extensions or extensions undergoing significant refactoring. It does not require retrofitting all existing extensions immediately. Tooling, documentation, and examples will progressively support the adoption of this structure. The goal is consistency, clarity, and better long-term modularity within the Quarkus ecosystem.
+
+== Updates
+
+* 2026-04-23: The `runtime-api` module package rule was updated to allow either `io.<quarkus|quarkiverse>.<extension-name>` (matching the `runtime` module root package) or `io.<quarkus|quarkiverse>.<extension-name>.api`. The `.api` variant should be used when the root package is already used by the `runtime` module, to avoid split packages.

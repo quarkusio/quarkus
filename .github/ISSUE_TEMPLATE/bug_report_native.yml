@@ -10,6 +10,10 @@ body:
         **To report a Quarkus security vulnerability, please [send an email to `security@quarkus.io`](mailto:security@quarkus.io) with all the details.**
 
         :warning: Do **NOT** create a public issue on GitHub for security vulnerabilities. See our [security policy](https://github.com/quarkusio/quarkus/security/policy) for more details. :warning:
+  - type: markdown
+    attributes:
+      value: |
+        When using AI tools (LLMs, agents, etc.) to help prepare this issue, please make sure you follow our [AI and LLM Usage Policy](https://github.com/quarkusio/quarkus/blob/main/AI_POLICY.md).
   - type: textarea
     id: description
     validations:

@@ -3,7 +3,6 @@ package io.quarkus.deployment;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -71,17 +70,6 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                             .loadClass("org.testcontainers.DockerClientFactory");
                     Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);
 
-                    Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
-                            .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
-                    Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
-                    String oldReusePropertyValue = (String) configurationClass
-                            .getMethod("getEnvVarOrUserProperty", String.class, String.class)
-                            .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
-                    Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class,
-                            String.class);
-                    // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
-                    updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
-
                     // ensure that Testcontainers doesn't take previous failures into account
                     Class<?> dockerClientProviderStrategyClass = Thread.currentThread().getContextClassLoader()
                             .loadClass("org.testcontainers.dockerclient.DockerClientProviderStrategy");
@@ -90,15 +78,24 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                     AtomicBoolean failFastAlways = (AtomicBoolean) failFastAlwaysField.get(null);
                     failFastAlways.set(false);
 
-                    boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
-                            .invoke(dockerClientFactoryInstance);
-                    if (!isAvailable && !silent) {
-                        compressor.closeAndDumpCaptured();
+                    // Use getTransportConfig() to check Docker availability without
+                    // fully initializing the client. Unlike isDockerAvailable() (which
+                    // calls client()), this does not start the ResourceReaper/Ryuk,
+                    // so there is no need to temporarily enable testcontainers.reuse.enable
+                    // — see https://github.com/quarkusio/quarkus/issues/25852
+                    try {
+                        dockerClientFactoryClass.getMethod("getTransportConfig")
+                                .invoke(dockerClientFactoryInstance);
+                        return Result.AVAILABLE;
+                    } catch (InvocationTargetException e) {
+                        if (e.getCause() instanceof IllegalStateException) {
+                            if (!silent) {
+                                compressor.closeAndDumpCaptured();
+                            }
+                            return Result.UNAVAILABLE;
+                        }
+                        throw e;
                     }
-
-                    // restore the previous value
-                    updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
-                    return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
                 } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException
                         | NoSuchFieldException e) {
                     if (!silent) {

@@ -1,13 +1,15 @@
-name: Quarkus CI - Populate cache for forks
+name: Quarkus CI - Populate cache
 
 permissions:
   contents: read
   packages: read
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 3 * * 1'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  workflow_dispatch:
+#  schedule:
+#    - cron: '0 3 * * 1'
+on: [workflow_dispatch]
 
 env:
   # Workaround testsuite locale issue
@@ -23,19 +25,11 @@ jobs:
   configure:
     name: "Configure jobs"
     runs-on: ubuntu-latest
-    if: ${{ github.repository != 'quarkusio/quarkus' }}
     outputs:
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
       m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
-      quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
-      quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
     steps:
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
       - name: Generate cache key
         id: cache-key
         run: |
@@ -53,17 +47,22 @@ jobs:
     needs: [ configure ]
     runs-on: ubuntu-latest
     steps:
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
       - name: Cache Maven Repository
-        id: cache-maven
-        uses: quarkusio/cache-action@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: ~/.m2/repository
           # A new cache will be stored weekly. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
@@ -73,7 +72,6 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
-          runs-on: false
       - name: Populate the cache
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS -q dependency:go-offline -Dgo-offline

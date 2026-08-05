@@ -49,20 +49,25 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class GraphQLOpenTelemetryTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
                             TestSpanExporter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
-                    .addAsResource(new StringAsset("quarkus.otel.metrics.exporter=none"), "application.properties")
+                    .addAsResource(new StringAsset("""
+                            smallrye.graphql.allowGet=true
+                            smallrye.graphql.printDataFetcherException=true
+                            smallrye.graphql.events.enabled=true
+                            quarkus.otel.metrics.exporter=none
+                            quarkus.otel.traces.exporter=test-span-exporter
+                            quarkus.otel.traces.sampler.arg=1.0d
+                            """),
+                            "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -120,7 +125,8 @@ public class GraphQLOpenTelemetryTest {
     }
 
     @Test
-    @Disabled // TODO: flaky test, find out how to fix it
+    @Disabled
+    // TODO: flaky test, find out how to fix it
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
                 "  helloAfterSecond\n" +

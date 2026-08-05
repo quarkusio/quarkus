@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
@@ -28,7 +28,7 @@ import io.vertx.core.http.ClientAuth;
 class FluentApiMechanismPrioritizationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot(jar -> jar
             .addClasses(AuthMechanismConfig.class, PathHandler.class)
             .addAsResource(new StringAsset("""
                     quarkus.tls.cert-1.key-store.p12.path=server-keystore.p12

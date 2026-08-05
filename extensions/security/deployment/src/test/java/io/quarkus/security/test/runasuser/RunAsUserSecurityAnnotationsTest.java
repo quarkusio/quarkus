@@ -15,13 +15,14 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.RunAsUser;
 import io.quarkus.security.spi.RunAsUserPredicateBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @ActivateRequestContext
 class RunAsUserSecurityAnnotationsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(SecuredBean.class))
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar.addClass(SecuredBean.class))
             .addBuildChainCustomizer(b -> b
                     .addBuildStep(context -> context.produce(RunAsUserPredicateBuildItem.ofAnnotation(Test.class)))
                     .produces(RunAsUserPredicateBuildItem.class).build());

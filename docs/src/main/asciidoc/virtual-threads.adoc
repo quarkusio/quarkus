@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Virtual Thread support reference
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: core
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html
 :blockingannotation: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/Blocking.html
@@ -366,7 +365,7 @@ To containerize your Quarkus application that use `@RunOnVirtualThread`, add the
 quarkus.container-image.build=true
 quarkus.container-image.group=<your-group-name>
 quarkus.container-image.name=<you-container-name>
-quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi9/openjdk-21-runtime <1>
+quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi10/openjdk-21-runtime <1>
 quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
 ----
 <1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21. Quarkus picks an image providing Java 21+ automatically if you do not set one.

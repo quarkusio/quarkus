@@ -121,6 +121,8 @@ public abstract class QuarkusGenerateCode extends QuarkusTaskWithExtensionView {
 
         workQueue.submit(CodeGenWorker.class, params -> {
             params.getBuildSystemProperties().putAll(configMap);
+            params.getForkedSystemProperties().putAll(configMap);
+            params.getProcessIsolated().set(isWorkerProcessIsolated());
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir);
             params.getAppModel().set(appModel);

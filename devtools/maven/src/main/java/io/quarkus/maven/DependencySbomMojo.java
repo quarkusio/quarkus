@@ -24,8 +24,8 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.sbom.ApplicationManifest;
-import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.CoreSbomContributionConfig;
+import io.quarkus.sbom.SbomContribution;
 
 /**
  * Quarkus application SBOM generator
@@ -83,10 +83,23 @@ public class DependencySbomMojo extends AbstractMojo {
     String schemaVersion;
 
     /**
+     * Whether to pretty-print the generated SBOM output. The default is {@code false}
+     */
+    @Parameter(property = "quarkus.dependency.sbom.pretty-print", defaultValue = "false")
+    boolean prettyPrint;
+
+    /**
      * Whether to limit application dependencies to only those that are included in the runtime
      */
-    @Parameter(property = "quarkus.dependency.sbom.runtime-only")
+    @Parameter(property = "quarkus.dependency.sbom.runtime-only", defaultValue = "false")
     boolean runtimeOnly;
+
+    /**
+     * Whether to include the {@code quarkus:component:scope} custom property on each component.
+     * The default is {@code false}.
+     */
+    @Parameter(property = "quarkus.dependency.sbom.include-quarkus-component-scope", defaultValue = "false")
+    boolean includeQuarkusComponentScope;
 
     protected MavenArtifactResolver resolver;
 
@@ -97,16 +110,19 @@ public class DependencySbomMojo extends AbstractMojo {
             return;
         }
         final Path outputFilePath = getSbomFile().toPath();
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(resolveApplicationModel())
+                .toSbomContribution();
         CycloneDxSbomGenerator.newInstance()
-                .setManifest(ApplicationManifest.fromConfig(
-                        ApplicationManifestConfig.builder()
-                                .setApplicationModel(resolveApplicationModel())
-                                .build()))
+                .setContributions(List.of(contribution))
                 .setOutputFile(outputFilePath)
                 .setFormat(format)
                 .setEffectiveModelResolver(EffectiveModelResolver.of(getResolver()))
                 .setSchemaVersion(schemaVersion)
                 .setIncludeLicenseText(includeLicenseText)
+                .setPrettyPrint(prettyPrint)
+                .setRuntimeOnly(runtimeOnly)
+                .setIncludeQuarkusComponentScope(includeQuarkusComponentScope)
                 .generate();
         getLog().info("The SBOM has been saved in " + outputFilePath);
     }

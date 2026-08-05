@@ -18,11 +18,11 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExpor
 import io.quarkus.micrometer.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.micrometer.opentelemetry.deployment.common.PingPongResource;
 import io.quarkus.micrometer.opentelemetry.deployment.common.Util;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class JvmCompatibilityTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Util.class,

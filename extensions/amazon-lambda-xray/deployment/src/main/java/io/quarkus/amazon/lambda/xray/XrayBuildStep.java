@@ -6,10 +6,9 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class XrayBuildStep {
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep
     public void process(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
@@ -39,7 +38,7 @@ public class XrayBuildStep {
                 "com.amazonaws.xray.entities.TraceID",
                 "com.amazonaws.xray.entities.Cause",
                 "com.amazonaws.xray.entities.SegmentImpl",
-                "com.fasterxml.jackson.databind.ser.std.ToStringSerializer").methods().fields()
+                "tools.jackson.databind.ser.std.ToStringSerializer").methods().fields()
                 .build());
 
         resource.produce(new NativeImageResourceBuildItem(

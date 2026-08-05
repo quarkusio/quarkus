@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Databases
-:categories: data, tooling
 include::_attributes.adoc[]
 :topics: dev-services,data,database,datasource,dev-mode,testing
 :extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
@@ -49,16 +48,19 @@ If your environment does not support Docker, you will need to start the server m
 === Proprietary Databases - License Acceptance
 
 If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement.
-To do this create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image name and tag of the database.
-By default, Quarkus uses the default image for the current version of Testcontainers, if you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the file.
+To do this, add the `quarkus.devservices.license-acceptance` property to your `application.properties` with the image name and tag of the database.
+If you attempt to start Quarkus without accepting the license, the error message will tell you the exact image name to use.
 
-An example file is shown below:
-
-.src/main/resources/container-license-acceptance.txt
-[source,subs=attributes+]
+[source,properties,subs=attributes+]
 ----
-{db2-image}
-{mssql-image}
+# For mssql
+quarkus.devservices.license-acceptance={mssql-image}
+
+# For db2
+quarkus.devservices.license-acceptance={db2-image}
+
+# For both
+quarkus.devservices.license-acceptance={mssql-image},{db2-image}
 ----
 
 Alternatively, add these entries to your `application.properties`:
@@ -72,6 +74,7 @@ quarkus.datasource.devservices.container-env.ACCEPT_EULA=Y
 quarkus.datasource.devservices.container-env.LICENSE=accept
 ----
 
+
 === Capturing Logs
 
 By default, logs of the underlying database are not exposed.
@@ -80,6 +83,28 @@ By capturing the logs, they become visible amongst other log statements:
 [source,properties]
 ----
 quarkus.datasource.devservices.show-logs=true
+----
+
+== Automatic Image Selection
+
+The container image used by Dev Services is determined by the database kind of your xref:datasource.adoc[datasource],
+which is implicit if you include only one kind of JDBC or Reactive SQL client extension in your project.
+
+For certain databases, Quarkus can further refine the image selection based on specific database features required by your application.
+For example, with PostgreSQL:
+
+* If you use Hibernate Spatial, Quarkus will automatically use a PostGIS-enabled image instead of the standard PostgreSQL image
+* If you use Hibernate ORM vector types, Quarkus will automatically use a pgvector-enabled image
+
+This automatic feature-based selection is transparent and requires no configuration.
+Extensions that require specific database capabilities will declare their requirements,
+and Dev Services will select the most appropriate image automatically.
+
+Explicitly setting the image name always takes precedence over automatic selection:
+
+[source,properties]
+----
+quarkus.datasource.devservices.image-name=<custom-image>
 ----
 
 [[reuse]]

@@ -15,14 +15,13 @@ import jakarta.xml.bind.Marshaller;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Test various Panache operations running in Quarkus
@@ -51,6 +50,7 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/projection-constructor-annotation").then().body(is("OK"));
         RestAssured.when().get("/test/projection-projected-field-name").then().body(is("OK"));
         RestAssured.when().get("/test/projection-no-arguments-constructor").then().body(is("OK"));
+        RestAssured.when().get("/test/projection-aggregate-function").then().body(is("OK"));
         RestAssured.when().get("/test/model3").then().body(is("OK"));
     }
 
@@ -98,6 +98,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testCaseInsensitiveSorting() {
+        RestAssured.when().get("/test/testCaseInsensitiveSorting").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")
@@ -114,20 +119,19 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
+    public void jacksonDeserializationIgnoresPersistentAttribute() {
         // set Up
         Person person = new Person();
         person.name = "max";
         // do
         ObjectMapper objectMapper = new ObjectMapper();
-        // make sure the Jaxb module is loaded
-        objectMapper.findAndRegisterModules();
         String personAsString = objectMapper.writeValueAsString(person);
         // check
         // hence no 'persistence'-attribute
         assertEquals(
-                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-                personAsString);
+                new JsonObject(
+                        "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}"),
+                new JsonObject(personAsString));
     }
 
     /**
@@ -135,7 +139,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
+    public void jaxbDeserializationHasAllFields() throws JAXBException {
         // set Up
         Person person = new Person();
         person.name = "max";
@@ -155,7 +159,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jsonbDeserializationHasAllFields() throws JsonProcessingException {
+    public void jsonbDeserializationHasAllFields() {
         // set Up
         Person person = new Person();
         person.name = "max";

@@ -53,10 +53,10 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
             // generated on STDOUT/STDERR by the process (see https://github.com/gradle/gradle/issues/13522).
             // We overcome this by letting build steps know that the STDOUT/STDERR should be explicitly
             // streamed, if they need to make available that generated data.
-            // The io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory
+            // The io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem$Factory
             // does the necessary work to generate such a build item which the build step(s) can rely on
             AugmentAction augmentor = appCreationContext
-                    .createAugmentor("io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory",
+                    .createAugmentor("io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem$Factory",
                             Collections.emptyMap());
 
             AugmentResult result = augmentor.createProductionApplication();

@@ -33,7 +33,7 @@
                                 </goals>
                                 <configuration>
                                     <rules>
-                                        <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
+                                        <bansRuntimeDependency/>
                                     </rules>
                                 </configuration>
                             </execution>

@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.BinaryDecodeException;
 import io.quarkus.websockets.next.BinaryEncodeException;
@@ -31,7 +31,7 @@ import io.vertx.core.buffer.Buffer;
 public class RuntimeErrorTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+    public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, RequestBean.class, WSClient.class);
             });

@@ -18,13 +18,13 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpVersion;
@@ -51,7 +51,7 @@ public class Http2RSTFloodProtectionTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new StringAsset(configuration), "application.properties")
@@ -59,6 +59,7 @@ public class Http2RSTFloodProtectionTest {
 
     @Test
     void testRstFloodProtectionWithTlsEnabled() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
         HttpClientOptions options = new HttpClientOptions()
                 .setUseAlpn(true)
                 .setProtocolVersion(HttpVersion.HTTP_2)
@@ -66,26 +67,34 @@ public class Http2RSTFloodProtectionTest {
                 .setTrustOptions(new JksOptions().setPath(new File("target/certs/ssl-test-truststore.jks").getAbsolutePath())
                         .setPassword("secret"));
 
-        var client = VertxCoreRecorder.getVertx().get().createHttpClient(options);
+        var client = VertxCoreRecorder.getVertx().get().httpClientBuilder()
+                .with(options)
+                .withConnectHandler(conn -> conn.goAwayHandler(ga -> {
+                    Assertions.assertEquals(11, ga.getErrorCode());
+                    latch.countDown();
+                }))
+                .build();
         int port = sslUrl.getPort();
-        run(client, port, false);
+        run(client, latch, port, false);
     }
 
     @Test
     public void testRstFloodProtection() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
         HttpClientOptions options = new HttpClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
-        var client = VertxCoreRecorder.getVertx().get().createHttpClient(options);
-        run(client, url.getPort(), true);
+        var client = VertxCoreRecorder.getVertx().get().httpClientBuilder()
+                .with(options)
+                .withConnectHandler(conn -> conn.goAwayHandler(ga -> {
+                    Assertions.assertEquals(11, ga.getErrorCode());
+                    latch.countDown();
+                }))
+                .build();
+        run(client, latch, url.getPort(), true);
     }
 
-    void run(HttpClient client, int port, boolean plain) throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        client.connectionHandler(conn -> conn.goAwayHandler(ga -> {
-            Assertions.assertEquals(11, ga.getErrorCode());
-            latch.countDown();
-        }));
+    void run(HttpClientAgent client, CountDownLatch latch, int port, boolean plain) throws InterruptedException {
 
         if (plain) {
             // Emit a first request to establish a connection.

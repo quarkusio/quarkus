@@ -14,14 +14,14 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 
 public class ClassHierarchyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> {
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> {
         JavaArchive javaArchive = ShrinkWrap.create(JavaArchive.class)
                 .addClass(Dto.class);
         // Create an inner class with an incomplete hierarchy

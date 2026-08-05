@@ -62,7 +62,7 @@ class DevServicesConfigBuildStep {
         }
 
         for (Map.Entry<String, String> entry : newPropertiesWithAdditionalConfig.entrySet()) {
-            runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue()));
+            runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue(), false));
         }
         return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newPropertiesWithAdditionalConfig));
     }

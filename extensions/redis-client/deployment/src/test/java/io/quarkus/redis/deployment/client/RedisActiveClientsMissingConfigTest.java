@@ -12,7 +12,7 @@ import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
@@ -20,7 +20,7 @@ import io.vertx.redis.client.RedisAPI;
 @QuarkusTestResource(RedisTestResource.class)
 public class RedisActiveClientsMissingConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .assertException(e -> assertThat(e)// Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(

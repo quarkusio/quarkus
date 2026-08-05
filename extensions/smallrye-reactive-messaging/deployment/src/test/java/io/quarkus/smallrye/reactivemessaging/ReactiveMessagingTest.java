@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.reactivemessaging.channels.ChannelConsumer;
 import io.quarkus.smallrye.reactivemessaging.channels.EmitterExample;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ReactiveMessagingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleBean.class, ChannelConsumer.class, EmitterExample.class));
 

@@ -14,6 +14,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.multipart.FileItem;
@@ -72,8 +75,12 @@ public final class FormData implements Iterable<String> {
         }
         values.add(new FormValueImpl(value, fileName, headers));
         if (++valueCount > maxValues) {
-            throw new RuntimeException("Param limit of " + maxValues + " was exceeded");
+            throw paramLimitException(maxValues);
         }
+    }
+
+    private RuntimeException paramLimitException(int maxValues) {
+        return new WebApplicationException("Param limit of " + maxValues + " was exceeded", Response.Status.BAD_REQUEST);
     }
 
     public void add(String name, String value) {
@@ -91,7 +98,7 @@ public final class FormData implements Iterable<String> {
         }
         values.add(new FormValueImpl(value, charset, headers));
         if (++valueCount > maxValues) {
-            throw new RuntimeException("Param limit of " + maxValues + " was exceeded");
+            throw paramLimitException(maxValues);
         }
     }
 
@@ -102,10 +109,10 @@ public final class FormData implements Iterable<String> {
         }
         values.add(new FormValueImpl(value, fileName, headers));
         if (values.size() > maxValues) {
-            throw new RuntimeException("Param limit of " + maxValues + " was exceeded");
+            throw paramLimitException(maxValues);
         }
         if (++valueCount > maxValues) {
-            throw new RuntimeException("Param limit of " + maxValues + " was exceeded");
+            throw paramLimitException(maxValues);
         }
     }
 
@@ -118,7 +125,7 @@ public final class FormData implements Iterable<String> {
         values.add(new FormValueImpl(value, headers));
 
         if (++valueCount > maxValues) {
-            throw new RuntimeException("Param limit of " + maxValues + " was exceeded");
+            throw paramLimitException(maxValues);
         }
     }
 

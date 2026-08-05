@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.dd.plist.Base64;
 
 import io.quarkus.security.Authenticated;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
@@ -36,7 +37,7 @@ import io.vertx.ext.web.RoutingContext;
 class OidcProxyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BearerResource.class)
                     .addAsResource(
@@ -64,7 +65,7 @@ class OidcProxyTest {
         var headers = new ConcurrentHashMap<String, String>();
         try {
             httpServer.requestHandler(request -> {
-                request.headers().forEach(headers::put);
+                request.headers().forEach((k, v) -> headers.put(k.toLowerCase(Locale.ROOT), v));
                 request.response().end(" ");
             });
             httpServer.listen(8765, "localhost").onSuccess(ignored -> latch.countDown());
@@ -72,11 +73,11 @@ class OidcProxyTest {
             String authServerUrl = ConfigProvider.getConfig().getValue("quarkus.oidc.auth-server-url", String.class);
             callSecuredEndpoint(authServerUrl);
             Awaitility.await().atMost(10, TimeUnit.SECONDS)
-                    .until(() -> headers.containsKey("host") && headers.containsKey("Proxy-Authorization"));
+                    .until(() -> headers.containsKey("host") && headers.containsKey("proxy-authorization"));
             assertTrue(authServerUrl.contains(headers.get("host")),
                     () -> "Expected Keycloak URL '%s' to contain host header '%s'".formatted(authServerUrl,
                             headers.get("host")));
-            String proxyAuthorization = headers.get("Proxy-Authorization");
+            String proxyAuthorization = headers.get("proxy-authorization");
             assertTrue(proxyAuthorization.contains("Basic "),
                     () -> "Proxy authorization does not contain basic authentication credentials: " + proxyAuthorization);
             String basicCredentials = new String(Base64.decode(proxyAuthorization.substring("Basic ".length()).trim()),

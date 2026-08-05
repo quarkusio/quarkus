@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class HttpPolicyAuthFailureExceptionMapperTest {
@@ -32,7 +32,7 @@ public class HttpPolicyAuthFailureExceptionMapperTest {
     private static final AtomicInteger EXCEPTION_MAPPER_INVOCATION_COUNT = new AtomicInteger(0);
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class)
                     .addAsResource(

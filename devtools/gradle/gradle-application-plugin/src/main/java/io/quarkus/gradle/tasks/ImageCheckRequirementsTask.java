@@ -19,11 +19,13 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
+@DisableCachingByDefault(because = "Not cacheable")
 public abstract class ImageCheckRequirementsTask extends DefaultTask {
 
     @OutputFile

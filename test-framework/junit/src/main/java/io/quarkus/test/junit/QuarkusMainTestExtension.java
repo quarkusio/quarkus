@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.createTempApplicationProperties;
 import static io.quarkus.runtime.LaunchMode.TEST;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -41,12 +42,14 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.ValueRegistryImpl;
+import io.quarkus.runtime.configuration.ConfigSourceOrdinal;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.junit.TestProfileAndProperties.TestProfileConfigSource;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
+import io.quarkus.value.registry.ValueRegistry;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
@@ -104,8 +107,10 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         List<Path> additionalPaths = new ArrayList<>();
         if (testProfile.isPresent()) {
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.of(testProfile.get(), TEST);
-            TestProfileConfigSource testProfileConfigSource = testProfileAndProperties.toTestProfileConfigSource();
-            additionalPaths.add(testProfileConfigSource.getPropertiesLocation());
+            additionalPaths.add(createTempApplicationProperties(
+                    ConfigSourceOrdinal.TEST_PROFILE.getName(),
+                    testProfileAndProperties.properties(),
+                    ConfigSourceOrdinal.TEST_PROFILE));
         }
 
         CuratedApplication curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, additionalPaths,
@@ -241,8 +246,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             startupAction.overrideConfig(properties);
 
             testResourceManager.getClass()
-                    .getMethod("inject", Object.class)
-                    .invoke(testResourceManager, context.getRequiredTestInstance());
+                    .getMethod("inject", ValueRegistry.class, Object.class)
+                    .invoke(testResourceManager, ValueRegistryImpl.builder().build(), context.getRequiredTestInstance());
 
             var result = startupAction.runMainClassBlocking(arguments);
             flushAllLoggers();
@@ -269,6 +274,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
+    private static final String AESH_LAUNCHER_CLASS = "io.quarkus.test.aesh.AeshLauncher";
+
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
@@ -277,7 +284,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
         Class<?> type = parameterContext.getParameter()
                 .getType();
-        return type == LaunchResult.class || type == QuarkusMainLauncher.class;
+        return type == LaunchResult.class || type == QuarkusMainLauncher.class
+                || AESH_LAUNCHER_CLASS.equals(type.getName());
     }
 
     @Override
@@ -296,18 +304,44 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
             return result;
         } else if (type == QuarkusMainLauncher.class) {
-            return new QuarkusMainLauncher() {
-                @Override
-                public LaunchResult launch(String... args) {
-                    try {
-                        return doLaunch(extensionContext, args);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
+            return createMainLauncher(extensionContext);
+        } else if (AESH_LAUNCHER_CLASS.equals(type.getName())) {
+            return createAeshLauncher(extensionContext);
         } else {
             throw new RuntimeException("Parameter type not supported");
+        }
+    }
+
+    private QuarkusMainLauncher createMainLauncher(ExtensionContext extensionContext) {
+        return new QuarkusMainLauncher() {
+            @Override
+            public LaunchResult launch(String... args) {
+                try {
+                    return doLaunch(extensionContext, args);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+    }
+
+    /**
+     * Creates an AeshLauncher instance via reflection to avoid a compile-time
+     * dependency on quarkus-test-aesh.
+     */
+    private Object createAeshLauncher(ExtensionContext extensionContext) {
+        try {
+            QuarkusMainLauncher mainLauncher = createMainLauncher(extensionContext);
+            Class<?> implClass = Thread.currentThread().getContextClassLoader()
+                    .loadClass("io.quarkus.test.aesh.AeshLauncherImpl");
+            return implClass.getDeclaredConstructor(QuarkusMainLauncher.class).newInstance(mainLauncher);
+        } catch (ClassNotFoundException e) {
+            throw new ParameterResolutionException(
+                    "AeshLauncher requested but quarkus-test-aesh is not on the classpath. "
+                            + "Add io.quarkus:quarkus-test-aesh as a test dependency.",
+                    e);
+        } catch (ReflectiveOperationException e) {
+            throw new ParameterResolutionException("Failed to create AeshLauncher", e);
         }
     }
 

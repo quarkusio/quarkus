@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.singlepersistenceunit.entityassignment.excludedpackage.ExcludedEntity;
 import io.quarkus.hibernate.reactive.singlepersistenceunit.entityassignment.packageincludedthroughannotation.EntityIncludedThroughPackageAnnotation;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
@@ -24,7 +24,7 @@ public class SinglePersistenceUnitPackageAnnotationTest {
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(EntityIncludedThroughPackageAnnotation.class.getPackage().getName())
                     .addPackage(ExcludedEntity.class.getPackage().getName()))

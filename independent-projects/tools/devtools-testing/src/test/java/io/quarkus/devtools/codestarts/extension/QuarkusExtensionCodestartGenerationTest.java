@@ -1,8 +1,10 @@
 package io.quarkus.devtools.codestarts.extension;
 
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -43,6 +45,28 @@ class QuarkusExtensionCodestartGenerationTest {
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
         assertThatDirectoryTreeMatchSnapshots(testInfo, projectDir);
+
+        // External extensions (default layout) must declare <extensions>true</extensions>
+        // on the quarkus-maven-plugin to avoid the Maven warning about missing extensions.
+        // See https://github.com/quarkusio/quarkus/issues/53533
+        final String itPom = Files.readString(projectDir.resolve("integration-tests/pom.xml"));
+        assertThat(itPom).contains("<extensions>true</extensions>");
+    }
+
+    @Test
+    void generateInQuarkusCoreProject(TestInfo testInfo) throws Throwable {
+        final QuarkusExtensionCodestartProjectInput input = prepareInput()
+                .putData(QuarkusExtensionData.IN_QUARKUS_CORE, true)
+                .build();
+        final Path projectDir = testDirPath.resolve("in-quarkus-core");
+        getCatalog().createProject(input).generate(projectDir);
+
+        // Extensions inside the Quarkus core repo must NOT declare <extensions>true</extensions>:
+        // the quarkus-maven-plugin is built in the same reactor and is not yet available
+        // as a Maven extension during the first build.
+        // See https://github.com/quarkusio/quarkus/issues/53533
+        final String itPom = Files.readString(projectDir.resolve("integration-tests/pom.xml"));
+        assertThat(itPom).doesNotContain("<extensions>true</extensions>");
     }
 
     @Test

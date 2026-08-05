@@ -43,6 +43,9 @@ public class MixingOfferingAndNonOfferingExtensionsInTheSameBomTest extends Mult
                         Map.of("offering-a-support", List.of("supported")))
                 .addExtension("io.acme", "ext-b", "1.1.1.downstream")
                 .release()
+                .newMember("acme-b-bom")
+                .addExtension("io.acme", "ext-c", "1.1.1.downstream")
+                .release()
                 .stream().platform().registry()
                 .clientBuilder()
                 .newRegistry("upstream.registry.test")
@@ -60,6 +63,9 @@ public class MixingOfferingAndNonOfferingExtensionsInTheSameBomTest extends Mult
                 .newMember("acme-a-bom")
                 .addExtension("io.acme", "ext-a", "1.1.1")
                 .addExtension("io.acme", "ext-b", "1.1.1")
+                .release()
+                .newMember("acme-b-bom")
+                .addExtension("io.acme", "ext-c", "1.1.1")
                 .release()
                 .registry()
                 .clientBuilder()
@@ -118,6 +124,21 @@ public class MixingOfferingAndNonOfferingExtensionsInTheSameBomTest extends Mult
                         platformMemberBomCoords("acme-a-bom")),
                 List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
                         ArtifactCoords.jar("io.acme", "ext-b", null)),
+                "1.1.1.downstream");
+    }
+
+    @Test
+    public void redundantUpstreamBomRemovedByNormalization() throws Exception {
+        final Path projectDir = newProjectDir("redundant-upstream-bom-removed");
+        createProject(projectDir, List.of("ext-a", "ext-b", "ext-c"));
+
+        assertModel(projectDir,
+                List.of(mainPlatformBom(),
+                        platformMemberBomCoords("acme-a-bom"),
+                        ArtifactCoords.pom("io.upstream.platform", "acme-b-bom", "1.1.1")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null),
+                        ArtifactCoords.jar("io.acme", "ext-c", null)),
                 "1.1.1.downstream");
     }
 

@@ -16,7 +16,7 @@ import io.quarkus.funqy.test.model.BatchItemFailures;
 import io.quarkus.funqy.test.model.ItemFailure;
 import io.quarkus.funqy.test.util.BodyDeserializer;
 import io.quarkus.funqy.test.util.EventDataProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -24,7 +24,7 @@ import io.restassured.RestAssured;
  */
 public class SqsFunctionTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("item-function.properties", "application.properties")
                     .addAsResource("events/sqs", "events")

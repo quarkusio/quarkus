@@ -44,7 +44,7 @@ import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -64,8 +64,8 @@ public abstract class GrpcAuthTestBase {
             "quarkus.security.users.embedded.plain-text=true\n" +
             "quarkus.http.auth.basic=true\n";
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String extraProperty, boolean useGrpcAuthMechanism) {
-        return new QuarkusUnitTest().setArchiveProducer(
+    protected static QuarkusExtensionTest createQuarkusExtensionTest(String extraProperty, boolean useGrpcAuthMechanism) {
+        return new QuarkusExtensionTest().setArchiveProducer(
                 () -> {
                     var props = PROPS;
                     if (extraProperty != null) {

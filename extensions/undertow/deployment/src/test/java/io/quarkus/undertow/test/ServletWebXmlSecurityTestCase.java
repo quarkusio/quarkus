@@ -7,7 +7,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
@@ -40,7 +40,7 @@ public class ServletWebXmlSecurityTestCase {
             "</web-app>";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SecuredServlet.class, TestIdentityProvider.class, TestIdentityController.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
@@ -56,6 +56,18 @@ public class ServletWebXmlSecurityTestCase {
                 .statusCode(401);
         RestAssured.given().auth().basic("admin", "admin").when().get("/secure/servlet").then()
                 .statusCode(200);
+    }
+
+    @Test
+    public void testWebXmlSecurityConstraintsWithEncodedSemicolon() {
+        RestAssured.when().get("/secure/servlet%3B").then()
+                .statusCode(401);
+        RestAssured.when().get("/secure/servlet%3Ba").then()
+                .statusCode(401);
+        RestAssured.when().get("/secure%3B/servlet").then()
+                .statusCode(401);
+        RestAssured.given().auth().basic("admin", "admin").when().get("/secure/servlet%3B").then()
+                .statusCode(404);
     }
 
 }

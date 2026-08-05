@@ -3,6 +3,7 @@ package io.quarkus.deployment.steps;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,9 +54,11 @@ public class NativeImageReflectConfigStep {
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             for (String provider : i.providers()) {
-                // Register the nullary constructor
-                addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem("Class registered as provider", provider, "<init>", new String[0]));
+                // Register all constructors as security providers may use
+                // java.security.Provider.Service.newInstance(Object constructorParameter) to instantiate the service
+                // through a different, than the nullary, constructor.
+                addReflectiveClass(reflectiveClasses, Collections.emptySet(),
+                        ReflectiveClassBuildItem.builder(provider).reason("Class registered as provider").build());
                 // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
                 // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
                 addReflectiveMethod(reflectiveClasses,
@@ -109,6 +112,9 @@ public class NativeImageReflectConfigStep {
                 if (!info.queriedMethodSet.isEmpty()) {
                     extractToJsonArray(info.queriedMethodSet, queriedMethodsArray);
                 }
+            }
+            if (info.publicMethods) {
+                json.put("allPublicMethods", true);
             }
             if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
@@ -200,11 +206,17 @@ public class NativeImageReflectConfigStep {
                 if (classBuildItem.isConstructors()) {
                     existing.constructors = true;
                 }
+                if (classBuildItem.isPublicConstructors()) {
+                    existing.publicConstructors = true;
+                }
                 if (classBuildItem.isQueryConstructors()) {
                     existing.queryConstructors = true;
                 }
                 if (classBuildItem.isMethods()) {
                     existing.methods = true;
+                }
+                if (classBuildItem.isPublicMethods()) {
+                    existing.publicMethods = true;
                 }
                 if (classBuildItem.isQueryMethods()) {
                     existing.queryMethods = true;
@@ -252,6 +264,7 @@ public class NativeImageReflectConfigStep {
         boolean publicConstructors;
         boolean queryConstructors;
         boolean methods;
+        boolean publicMethods;
         boolean queryMethods;
         boolean fields;
         boolean classes;
@@ -269,6 +282,7 @@ public class NativeImageReflectConfigStep {
 
         private ReflectionInfo(ReflectiveClassBuildItem classBuildItem, String typeReachable) {
             this.methods = classBuildItem.isMethods();
+            this.publicMethods = classBuildItem.isPublicMethods();
             this.queryMethods = classBuildItem.isQueryMethods();
             this.fields = classBuildItem.isFields();
             this.classes = classBuildItem.isClasses();

@@ -20,7 +20,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
@@ -31,7 +31,7 @@ import io.vertx.core.eventbus.Message;
 public class MessageConsumerMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(SimpleBean.class, Transformer.class))
             .overrideConfigKey("foo", "foo-config");
 
@@ -44,7 +44,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testSend() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foo", "hello", ar -> {
+        eventBus.request("foo", "hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -61,7 +61,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testSendGenericType() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foos", List.of(1, 2), ar -> {
+        eventBus.request("foos", List.of(1, 2)).onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -78,7 +78,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testSendAsync() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foo-async", "hello", ar -> {
+        eventBus.request("foo-async", "hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -95,7 +95,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testSendAsyncUni() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foo-async-uni", "hello-uni", ar -> {
+        eventBus.request("foo-async-uni", "hello-uni").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -112,7 +112,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testSendDefaultAddress() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("io.quarkus.vertx.deployment.MessageConsumerMethodTest$SimpleBean", "Hello", ar -> {
+        eventBus.request("io.quarkus.vertx.deployment.MessageConsumerMethodTest$SimpleBean", "Hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -129,7 +129,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testRequestContext() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("request", "Martin", ar -> {
+        eventBus.request("request", "Martin").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -146,7 +146,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testBlockingRequestContext() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("blocking-request", "Lu", ar -> {
+        eventBus.request("blocking-request", "Lu").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -204,7 +204,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testConfiguredAddress() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foo-config", "hello", ar -> {
+        eventBus.request("foo-config", "hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -221,7 +221,7 @@ public class MessageConsumerMethodTest {
     @Test
     public void testConfiguredAddressDefault() throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.request("foo-config-default", "hello", ar -> {
+        eventBus.request("foo-config-default", "hello").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());

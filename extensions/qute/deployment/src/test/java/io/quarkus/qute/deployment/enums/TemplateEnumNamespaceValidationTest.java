@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.TemplateException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TemplateEnumNamespaceValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TransactionType.class, Transactions.class))
             .assertException(t -> {

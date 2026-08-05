@@ -10,23 +10,20 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
 
 public class JacksonWriteDatesAsTimestampsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("application-write-dates-as-timestamps.properties");
 
     @Inject
     ObjectMapper objectMapper;
 
     @Test
-    public void testDateWrittenAsNumericValue() throws JsonMappingException, JsonProcessingException {
+    public void testDateWrittenAsNumericValue() {
         Pojo pojo = new Pojo();
         pojo.zonedDateTime = ZonedDateTime.of(1988, 11, 17, 0, 0, 0, 0, ZoneId.of("GMT"));
 

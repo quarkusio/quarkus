@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.config.HttpClientConfig;
@@ -57,7 +57,7 @@ import io.restassured.specification.RequestSpecification;
 public class AccessLogFileTestCase {
 
     @RegisterExtension
-    public static QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    public static QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

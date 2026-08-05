@@ -60,6 +60,15 @@ public class KubernetesWithSecurityContextTest {
                             assertThat(securityContext.getSupplementalGroups()).containsExactly(125l, 126l);
                             assertThat(securityContext.getFsGroup()).isEqualTo(127);
                             assertThat(securityContext.getFsGroupChangePolicy()).isEqualTo("OnRootMismatch");
+
+                            final var containers = podSpec.getContainers();
+                            assertThat(containers).hasSize(1);
+                            final var container = containers.get(0);
+                            assertThat(container.getName()).isEqualTo("kubernetes-with-security-context");
+                            final var containerSecContext = container.getSecurityContext();
+                            assertThat(containerSecContext).isNotNull();
+                            assertThat(containerSecContext.getAllowPrivilegeEscalation()).isTrue();
+                            assertThat(containerSecContext.getReadOnlyRootFilesystem()).isFalse();
                         });
                     });
                 });

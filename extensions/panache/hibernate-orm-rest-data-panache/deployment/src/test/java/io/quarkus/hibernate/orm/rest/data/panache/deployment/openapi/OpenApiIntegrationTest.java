@@ -32,6 +32,9 @@ class OpenApiIntegrationTest {
                     Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-resteasy-jsonb-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-security-deployment", Version.getVersion())))
+            // QuarkusProdModeTest => we lose dev services
+            .overrideConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:mem:test")
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create")
             .setRun(true);
 
     @Test

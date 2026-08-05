@@ -16,7 +16,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests a use case where multiple PU/datasources are defined at build time,
@@ -29,7 +29,7 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     public static class Pu1ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-1", "ds-1");
+        static QuarkusExtensionTest runner = runner("pu-1", "ds-1");
 
         public Pu1ActiveTest() {
             super("pu-1", "pu-2", "ds-2");
@@ -38,34 +38,31 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     public static class Pu2ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-2", "ds-2");
+        static QuarkusExtensionTest runner = runner("pu-2", "ds-2");
 
         public Pu2ActiveTest() {
             super("pu-2", "pu-1", "ds-1");
         }
     }
 
-    static QuarkusUnitTest runner(String activePuName, String activeDsName) {
-        return new QuarkusUnitTest()
+    static QuarkusExtensionTest runner(String activePuName, String activeDsName) {
+        return new QuarkusExtensionTest()
                 .withApplicationRoot((jar) -> jar
                         .addPackage(MyEntity.class.getPackage().getName())
                         .addClass(MyProducer.class))
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
-                .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.active", "false")
                 .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.datasource", "ds-2")
-                .overrideConfigKey("quarkus.hibernate-orm.pu-2.schema-management.strategy", "drop-and-create")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.active", "false")
                 .overrideConfigKey("quarkus.datasource.ds-2.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-2.active", "false")
                 // This is where we select the active PU / datasource
                 .overrideRuntimeConfigKey("quarkus.hibernate-orm." + activePuName + ".active", "true")
-                .overrideRuntimeConfigKey("quarkus.datasource." + activeDsName + ".active", "true")
-                .overrideRuntimeConfigKey("quarkus.datasource." + activeDsName + ".jdbc.url", "jdbc:h2:mem:testds1");
+                .overrideRuntimeConfigKey("quarkus.datasource." + activeDsName + ".active", "true");
     }
 
     private final String activePuName;

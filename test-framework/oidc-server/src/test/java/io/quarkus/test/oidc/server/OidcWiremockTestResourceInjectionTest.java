@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 
+import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.TestResourceManager;
 
@@ -20,7 +21,7 @@ class OidcWiremockTestResourceInjectionTest {
         manager.start();
 
         CustomTest test = new CustomTest();
-        manager.inject(test);
+        manager.inject(ValueRegistryImpl.builder().build(), test);
         assertNotNull(test.server);
     }
 

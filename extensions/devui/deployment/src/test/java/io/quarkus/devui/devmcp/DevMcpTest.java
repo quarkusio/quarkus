@@ -206,6 +206,80 @@ public class DevMcpTest {
     }
 
     @Test
+    public void testGetLastExceptionToolAvailable() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 3,
+                      "method": "tools/list"
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("result.tools.name", CoreMatchers.hasItem("devui-exceptions_getLastException"))
+                .body("result.tools.name", CoreMatchers.hasItem("devui-exceptions_clearLastException"));
+    }
+
+    @Test
+    public void testGetLastExceptionNoException() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 10,
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-exceptions_getLastException",
+                        "arguments": {}
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("id", CoreMatchers.equalTo(10))
+                .body("result.content.text", CoreMatchers.hasItem(CoreMatchers.containsString("\"hasException\" : false")));
+    }
+
+    @Test
+    public void testClearLastException() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 11,
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-exceptions_clearLastException",
+                        "arguments": {}
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .body("id", CoreMatchers.equalTo(11))
+                .body("result.content.text", CoreMatchers.hasItem(CoreMatchers.containsString("\"cleared\" : true")));
+    }
+
+    @Test
     public void testResourcesList() {
         String jsonBody = """
                     {
@@ -257,6 +331,32 @@ public class DevMcpTest {
                 .body("jsonrpc", CoreMatchers.equalTo("2.0"))
                 .body("result.contents.uri", CoreMatchers.hasItem("quarkus://resource/build-time/devui_extensions"))
                 .body("result.contents.text", CoreMatchers.notNullValue());
+
+    }
+
+    @Test
+    public void testUnsupportedMethodReturnsMethodNotFound() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 8,
+                      "method": "prompts/list"
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo(8))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("error.code", CoreMatchers.equalTo(-32601))
+                .body("error.message", CoreMatchers.containsString("prompts/list"));
 
     }
 

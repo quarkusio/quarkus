@@ -12,14 +12,14 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.restassured.RestAssured;
 
 public class GeneratedStaticClasspathResourcesTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+    final static QuarkusExtensionTest test = new QuarkusExtensionTest().withApplicationRoot(
             (jar) -> jar.add(new StringAsset("quarkus.http.enable-compression=true\n" +
                     "quarkus.http.static-resources.index-page=default.html"), "application.properties"))
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {

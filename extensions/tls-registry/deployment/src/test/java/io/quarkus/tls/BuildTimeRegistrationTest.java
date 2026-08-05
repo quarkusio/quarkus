@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
@@ -33,7 +33,7 @@ public class BuildTimeRegistrationTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());;

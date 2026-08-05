@@ -6,11 +6,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ImportMultipleSqlLoadScriptsFileAbsentTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(ConfigurationException.class)
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)

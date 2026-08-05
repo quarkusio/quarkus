@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="telemetry-micrometer-tutorial"]
 = Collect metrics using Micrometer
-:categories: observability
 :diataxis-type: tutorial
 include::_attributes.adoc[]
 :topics: observability,micrometer,prometheus
@@ -88,7 +87,7 @@ You should find something like this:
 ----
 # HELP http_server_requests_seconds
 # TYPE http_server_requests_seconds summary
-http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 2.0
+http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 2
 http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 0.017385896
 # HELP http_server_requests_seconds_max
 # TYPE http_server_requests_seconds_max gauge

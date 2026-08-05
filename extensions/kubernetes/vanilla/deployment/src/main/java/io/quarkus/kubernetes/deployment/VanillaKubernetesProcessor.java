@@ -17,8 +17,6 @@ import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyDeploymentStrategyDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -135,6 +133,7 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         return super.computeEffectiveServiceAccounts(applicationInfo, serviceAccountsFromExtensions, decorators);
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, Capabilities capabilities,
@@ -158,7 +157,7 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var context = super.decorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+        final var context = super.decorators(applicationInfo, outputTarget, capabilities, packageConfig, metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels, envs, image, command,
                 ports, portName, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);
@@ -167,17 +166,6 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         }
         final var config = config();
         final var name = context.name();
-
-        deploymentKindDecorators(context, capabilities);
-
-        if (config.replicas() != 1) {
-            // This only affects Deployment
-            context.add(new ApplyReplicasToDeploymentDecorator(name, config.replicas()));
-            // This only affects StatefulSet
-            context.add(new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
-        }
-
-        context.add(new AddSelectorToDeploymentDecorator(name));
 
         config.containerName().ifPresent(containerName -> context.add(new ChangeContainerNameDecorator(containerName)));
 
@@ -233,21 +221,6 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
                             .build()));
                 }
             }
-        }
-    }
-
-    private void deploymentKindDecorators(DecoratorsContext context, Capabilities capabilities) {
-        final var deploymentKind = deploymentResourceKind(capabilities);
-        final var name = context.name();
-        if (deploymentKind != DeploymentResourceKind.Deployment) {
-            context.add(new RemoveDeploymentResourceDecorator(name));
-        }
-        if (deploymentKind == DeploymentResourceKind.StatefulSet) {
-            context.add(new AddStatefulSetResourceDecorator(name, config));
-        } else if (deploymentKind == DeploymentResourceKind.Job) {
-            context.add(new AddJobResourceDecorator(name, config.job()));
-        } else if (deploymentKind == DeploymentResourceKind.CronJob) {
-            context.add(new AddCronJobResourceDecorator(name, config.cronJob()));
         }
     }
 

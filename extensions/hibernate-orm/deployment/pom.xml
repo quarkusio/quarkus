@@ -25,6 +25,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-dev</artifactId>
         </dependency>
+        <!-- ByteBuddy is excluded from the transitive dependencies of Hibernate ORM, but we still need it at build time. -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment-spi</artifactId>
@@ -63,11 +68,17 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-datasource-spi</artifactId>
+            <artifactId>quarkus-reactive-datasource-deployment-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-spi</artifactId>
+        </dependency>
+        <!-- For Hibernate ORM's JSON support; see HibernateOrmProcessor -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -131,6 +142,11 @@
             <artifactId>geolatte-geom</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-vector</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -147,6 +163,9 @@
                             <!-- These tests seem to leak metaspace memory
                                  so we run them in a separate, short-lived JVM -->
                             <excludedGroups>devmode</excludedGroups>
+                            <systemPropertyVariables>
+                                <h2.version>${h2.version}</h2.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                     <execution>

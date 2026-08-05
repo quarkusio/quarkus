@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.entities.Hero;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test that if enable versionCheckEnabled during offline mode,
@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StartOfflineVersionCheckTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(Hero.class)
                     .addAsResource("application-start-offline.properties", "application.properties"))

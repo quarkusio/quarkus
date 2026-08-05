@@ -18,7 +18,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that {@link SyntheticBeanBuildItem#create(DotName)} does not add automatically register the param type as bean type
@@ -26,7 +26,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SyntheticBeanBuildItemCreateTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SyntheticBeanBuildItemCreateTest.class, FooCreator.class, FooInterface.class, Foo.class))
             .addBuildChainCustomizer(buildCustomizer());

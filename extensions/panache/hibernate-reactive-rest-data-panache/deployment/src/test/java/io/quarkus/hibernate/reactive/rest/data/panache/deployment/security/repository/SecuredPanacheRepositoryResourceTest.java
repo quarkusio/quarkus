@@ -21,12 +21,12 @@ import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.Emp
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.Item;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.security.PermissionCheckerBean;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class SecuredPanacheRepositoryResourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class,
                             AbstractEntity.class, AbstractItem.class, Item.class,

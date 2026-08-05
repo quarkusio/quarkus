@@ -1,12 +1,13 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,14 +46,20 @@ public class KnativeWithRevisionAutoscalingTest {
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             Service service = (Service) i;
             assertThat(service.getMetadata().getName()).isEqualTo(NAME);
-            // Issue: https://github.com/quarkusio/quarkus/issues/23832
-            // assertThat(service.getSpec().getTemplate().getSpec().getContainerConcurrency()).isEqualTo(5);
+            final var template = service.getSpec().getTemplate();
+            assertThat(template.getSpec().getContainerConcurrency()).isEqualTo(5);
 
-            Map<String, String> annotations = service.getSpec().getTemplate().getMetadata().getAnnotations();
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/class", "kpa.autoscaling.knative.dev"));
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/metric", "cpu"));
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/target-utilization-percentage", "55"));
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/target", "80"));
+            Map<String, String> annotations = template.getMetadata().getAnnotations();
+            // remove Quarkus-specific annotations to check ordering of knative annotations
+            final var withoutQuarkusAnnotations = annotations.entrySet().stream()
+                    .filter(e -> !e.getKey().startsWith("app.quarkus.io"))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, String> expected = new TreeMap<>(Map.of(
+                    "autoscaling.knative.dev/class", "kpa.autoscaling.knative.dev",
+                    "autoscaling.knative.dev/metric", "cpu",
+                    "autoscaling.knative.dev/target-utilization-percentage", "55",
+                    "autoscaling.knative.dev/target", "80"));
+            assertThat(withoutQuarkusAnnotations).isEqualTo(expected);
         });
     }
 }

@@ -22,7 +22,7 @@ public class BaseAuthTest extends HttpsSetup {
                 .body("Bill")
                 .contentType(ContentType.TEXT)
                 .when()
-                .post("/foo/")
+                .post()
                 .then()
                 .statusCode(200)
                 .body(is("hello Bill"));
@@ -33,7 +33,7 @@ public class BaseAuthTest extends HttpsSetup {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/foo/")
+                .get()
                 .then()
                 .statusCode(200)
                 .body(is("hello"));

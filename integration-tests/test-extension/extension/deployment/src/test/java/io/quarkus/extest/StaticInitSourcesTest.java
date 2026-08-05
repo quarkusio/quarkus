@@ -9,11 +9,11 @@ import io.quarkus.extest.runtime.config.StaticInitNotSafeConfigBuilderCustomizer
 import io.quarkus.extest.runtime.config.StaticInitNotSafeConfigSource;
 import io.quarkus.extest.runtime.config.StaticInitSafeConfigBuilderCustomizer;
 import io.quarkus.extest.runtime.config.StaticInitSafeConfigSource;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class StaticInitSourcesTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     // Don't change this to types, because of classloader class cast exception.
                     .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",

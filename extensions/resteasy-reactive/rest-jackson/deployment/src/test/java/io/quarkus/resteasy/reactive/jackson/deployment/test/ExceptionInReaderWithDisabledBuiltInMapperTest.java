@@ -11,20 +11,19 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import tools.jackson.databind.DatabindException;
 
 public class ExceptionInReaderWithDisabledBuiltInMapperTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FroMage.class, FroMageEndpoint.class, CustomJsonMappingExceptionMapper.class);
+                            .addClasses(FroMage.class, FroMageEndpoint.class, CustomDatabindExceptionMapper.class);
                 }
             }).overrideConfigKey("quarkus.rest.exception-mapping.disable-mapper-for",
                     "io.quarkus.resteasy.reactive.jackson.runtime.mappers.BuiltinMismatchedInputExceptionMapper");
@@ -36,10 +35,10 @@ public class ExceptionInReaderWithDisabledBuiltInMapperTest {
     }
 
     @Provider
-    public static class CustomJsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
+    public static class CustomDatabindExceptionMapper implements ExceptionMapper<DatabindException> {
 
         @Override
-        public Response toResponse(JsonMappingException exception) {
+        public Response toResponse(DatabindException exception) {
             return Response.status(888).entity("Custom mapper handled: " + exception.getMessage()).build();
         }
     }

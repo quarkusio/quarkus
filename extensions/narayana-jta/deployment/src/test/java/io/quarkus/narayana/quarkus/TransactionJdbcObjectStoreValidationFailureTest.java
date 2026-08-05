@@ -13,12 +13,12 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ExceptionUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TransactionJdbcObjectStoreValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("jdbc-object-store-validation.properties", "application.properties"))
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))

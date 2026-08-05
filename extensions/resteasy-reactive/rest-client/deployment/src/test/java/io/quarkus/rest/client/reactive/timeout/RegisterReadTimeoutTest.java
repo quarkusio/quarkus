@@ -18,7 +18,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class RegisterReadTimeoutTest {
 
@@ -26,7 +26,7 @@ public class RegisterReadTimeoutTest {
     Client client;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.client.read-timeout", "1000")
             .overrideRuntimeConfigKey("quarkus.rest-client.client.url",

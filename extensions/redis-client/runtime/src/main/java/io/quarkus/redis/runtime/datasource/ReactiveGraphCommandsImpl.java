@@ -13,7 +13,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.graph.GraphQueryResponseItem;
 import io.quarkus.redis.datasource.graph.ReactiveGraphCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>

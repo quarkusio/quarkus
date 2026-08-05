@@ -159,6 +159,10 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
         return directDeps;
     }
 
+    public String getModuleName() {
+        throw new UnsupportedOperationException("Module name not supported while building");
+    }
+
     @Override
     public ResolvedDependency build() {
         return new ResolvedArtifactDependency(this);

@@ -10,13 +10,13 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.Vertx;
 
 public class VertxCommonProducerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
                     .addClasses(BeanUsingBareVertx.class));
@@ -37,7 +37,7 @@ public class VertxCommonProducerTest {
 
         public void verify() throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.fileSystem().readFile("files/lorem.txt", ar -> {
+            vertx.fileSystem().readFile("files/lorem.txt").onComplete(ar -> {
                 if (ar.failed()) {
                     ar.cause().printStackTrace();
                 } else {

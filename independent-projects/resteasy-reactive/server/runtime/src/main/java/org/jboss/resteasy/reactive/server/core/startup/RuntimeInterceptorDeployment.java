@@ -89,10 +89,11 @@ public class RuntimeInterceptorDeployment {
         preMatchContainerRequestFilters = createInterceptorInstances(
                 interceptors.getContainerRequestFilters().getPreMatchInterceptors(), closeTaskHandler);
 
-        Collection<ContainerResponseFilter> responseFilters = globalResponseInterceptorsMap.values();
-        globalResponseInterceptorHandlers = new ArrayList<>(responseFilters.size());
-        for (ContainerResponseFilter responseFilter : responseFilters) {
-            globalResponseInterceptorHandlers.add(new ResourceResponseFilterHandler(responseFilter));
+        globalResponseInterceptorHandlers = new ArrayList<>(globalResponseInterceptorsMap.size());
+        for (Map.Entry<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> entry : globalResponseInterceptorsMap
+                .entrySet()) {
+            globalResponseInterceptorHandlers
+                    .add(new ResourceResponseFilterHandler(entry.getValue(), entry.getKey().isCancellable()));
         }
         globalRequestInterceptorHandlers = new ArrayList<>(globalRequestInterceptorsMap.size());
         for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : globalRequestInterceptorsMap
@@ -268,7 +269,8 @@ public class RuntimeInterceptorDeployment {
                         true);
                 for (Map.Entry<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> entry : interceptorsToUse
                         .entrySet()) {
-                    responseFilterHandlers.add(new ResourceResponseFilterHandler(entry.getValue()));
+                    responseFilterHandlers
+                            .add(new ResourceResponseFilterHandler(entry.getValue(), entry.getKey().isCancellable()));
                 }
             }
             return responseFilterHandlers;

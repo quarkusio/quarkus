@@ -4,7 +4,6 @@ import java.util.Collections;
 
 import org.jboss.jandex.DotName;
 
-import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.impl.OpenShiftClientImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.IgnoreSplitPackageBuildItem;
@@ -55,7 +54,7 @@ public class OpenShiftClientProcessor {
                 .reason(getClass().getName())
                 .methods().build());
 
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(OpenShiftClientImpl.class, DefaultOpenShiftClient.class)
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(OpenShiftClientImpl.class)
                 .reason(getClass().getName())
                 .methods().fields().build());
     }

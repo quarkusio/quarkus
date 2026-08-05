@@ -35,19 +35,19 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.impl.future.CompositeFutureImpl;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 
 public class VertxClientOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(TestSpanExporter.class.getPackage())
                     .addClasses(SemconvResolver.class)
@@ -204,7 +204,8 @@ public class VertxClientOpenTelemetryTest {
                 WebClient webClient = WebClient.create(vertx);
                 Future<HttpResponse<Buffer>> one = webClient.get(port, host, "/hello/naruto").send();
                 Future<HttpResponse<Buffer>> two = webClient.get(port, host, "/hello/goku").send();
-                CompositeFuture.join(one, two).onComplete(event -> rc.response().end());
+
+                CompositeFutureImpl.join(one, two).onComplete(event -> rc.response().end());
             });
             router.get("/hello?name=foo").handler(rc -> rc.response().end("hello foo"));
         }

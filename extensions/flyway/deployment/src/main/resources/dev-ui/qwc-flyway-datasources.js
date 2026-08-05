@@ -30,7 +30,6 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         _ds: {state: true},
         _selectedDs: {state: true},
         _createDialogOpened: {state: true},
-        _cleanDisabled: {state: true}
     }
     
     constructor() { 
@@ -40,8 +39,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         this._selectedDs = null;
         this._createDialogOpened = false;
         this._updateDialogOpened = false;
-        this._cleanDisabled = true;
-    }    
+    }
     
     connectedCallback() {
         super.connectedCallback();
@@ -51,10 +49,6 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     hotReload(){
         this.jsonRpc.getDatasources().then(jsonRpcResponse => {
             this._ds = jsonRpcResponse.result;
-        });
-        
-        this.jsonRpc.isCleanDisabled().then(jsonRpcResponse => {
-            this._cleanDisabled = jsonRpcResponse.result;
         });
     }
 
@@ -89,15 +83,15 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     _renderMigrationButtons(ds) {
         if(ds.hasMigrations){
-            let colorvar = this._cleanDisabled ? '--lumo-disabled-text-color' : '--lumo-warning-text-color';
+            let colorvar = ds.cleanDisabled ? '--lumo-disabled-text-color' : '--lumo-warning-text-color';
             return html`<div id=${ds.name} style="display: inline-block;">
-                <vaadin-button theme="small" @click=${() => this._clean(ds)} class="button" ?disabled=${this._cleanDisabled}>
+                <vaadin-button theme="small" @click=${() => this._clean(ds)} class="button" ?disabled=${ds.cleanDisabled}>
                     <vaadin-icon style="color: var(${colorvar});" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Clean', { id: 'quarkus-flyway-clean' })}
                 </vaadin-button></div>
                 <vaadin-button theme="small" @click=${() => this._migrate(ds)} class="button">
                     <vaadin-icon icon="font-awesome-solid:arrow-right-arrow-left"></vaadin-icon> ${msg('Migrate', { id: 'quarkus-flyway-migrate' })}
                 </vaadin-button>
-                ${this._cleanDisabled
+                ${ds.cleanDisabled
                     ? html`<vaadin-tooltip for="${ds.name}" text=${msg('Flyway clean has been disabled via quarkus.flyway.clean-disabled=true', { id: 'quarkus-flyway-clean-disabled-tooltip' })}></vaadin-tooltip>`
                     : null}
                 `;

@@ -16,12 +16,12 @@ import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.MessageBundles;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MessageBundleTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
                     .addAsResource(new StringAsset(

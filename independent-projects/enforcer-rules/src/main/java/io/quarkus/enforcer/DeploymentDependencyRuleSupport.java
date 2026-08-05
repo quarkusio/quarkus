@@ -15,49 +15,36 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import javax.inject.Inject;
+
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.enforcer.rule.api.EnforcerLevel;
-import org.apache.maven.enforcer.rule.api.EnforcerRule;
-import org.apache.maven.enforcer.rule.api.EnforcerRule2;
+import org.apache.maven.enforcer.rule.api.AbstractEnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
-import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 
-public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
+public abstract class DeploymentDependencyRuleSupport extends AbstractEnforcerRule {
 
-    protected static final String GROUP_ID_PREFIX = "io.quarkus";
     protected static final String DEPLOYMENT_ARTIFACT_ID_SUFFIX = "-deployment";
 
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
     private static final Map<String, Optional<String>> DEPLOYMENT_GAV_CACHE = new ConcurrentHashMap<>();
 
-    protected Log logger;
+    /**
+     * Only artifacts whose group ID starts with this prefix are checked.
+     * Defaults to {@code io.quarkus}.
+     */
+    private String groupIdPrefix = "io.quarkus";
 
-    private EnforcerLevel level = EnforcerLevel.ERROR;
+    @Inject
+    private MavenProject project;
 
-    @Override
-    public final EnforcerLevel getLevel() {
-        return level;
+    public void setGroupIdPrefix(String groupIdPrefix) {
+        this.groupIdPrefix = groupIdPrefix;
     }
 
-    public final void setLevel(EnforcerLevel level) {
-        this.level = level;
-    }
-
     @Override
-    public final void execute(EnforcerRuleHelper helper) throws EnforcerRuleException {
-        logger = helper.getLog();
-
-        MavenProject project;
-        try {
-            project = (MavenProject) helper.evaluate("${project}");
-        } catch (ExpressionEvaluationException e) {
-            throw new IllegalStateException("Failed to get project from EnforcerRuleHelper", e);
-        }
-
+    public final void execute() throws EnforcerRuleException {
         if (!isCheckRequired(project)) {
             return;
         }
@@ -70,7 +57,7 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
 
         Map<String, Artifact> nonDeploymentArtifactsByGAV = project.getArtifacts().stream()
                 .filter(artifact -> "jar".equals(artifact.getType()))
-                .filter(artifact -> artifact.getGroupId().startsWith(GROUP_ID_PREFIX))
+                .filter(artifact -> artifact.getGroupId().startsWith(groupIdPrefix))
                 .filter(artifact -> !artifact.getArtifactId().endsWith(DEPLOYMENT_ARTIFACT_ID_SUFFIX))
                 .collect(Collectors.toMap(this::buildGAVKey, a -> a));
 
@@ -78,13 +65,13 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
         // To avoid this "soft exit", explicit resolving would be necessary but that is pretty elaborate in an enforcer rule.
         // If the build goal is "late" enough, artifacts for the respective scope *will* be resolved automatically.
         if (nonDeploymentArtifactsByGAV.values().stream().anyMatch(artifact -> !artifact.isResolved())) {
-            logger.warn("Skipping rule " + RequiresMinimalDeploymentDependency.class.getSimpleName()
+            getLog().warn("Skipping rule " + RequiresMinimalDeploymentDependency.class.getSimpleName()
                     + ": Artifacts are not resolved, consider using a later build goal like 'package'.");
             return;
         }
 
         Map<String, Dependency> directDepsByGAV = project.getDependencies().stream()
-                .filter(d -> d.getGroupId().startsWith(GROUP_ID_PREFIX))
+                .filter(d -> d.getGroupId().startsWith(groupIdPrefix))
                 .collect(Collectors.toMap(d -> d.getGroupId() + ":" + d.getArtifactId() + ":" + d.getVersion(), d -> d,
                         (a, b) -> a));
 
@@ -145,20 +132,5 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
 
     protected boolean isCheckRequired(MavenProject project) {
         return true;
-    }
-
-    @Override
-    public final boolean isCacheable() {
-        return false;
-    }
-
-    @Override
-    public final boolean isResultValid(EnforcerRule cachedRule) {
-        return false;
-    }
-
-    @Override
-    public final String getCacheId() {
-        return null;
     }
 }

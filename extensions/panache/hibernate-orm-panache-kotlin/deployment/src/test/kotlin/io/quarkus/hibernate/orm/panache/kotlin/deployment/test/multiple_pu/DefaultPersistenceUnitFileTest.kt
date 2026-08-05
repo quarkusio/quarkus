@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu
 
 import io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu.first.FirstEntity
 import io.quarkus.hibernate.orm.panache.kotlin.deployment.test.multiple_pu.second.SecondEntity
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import io.restassured.RestAssured
 import org.hamcrest.Matchers
 import org.jboss.shrinkwrap.api.ShrinkWrap
@@ -29,7 +29,7 @@ class DefaultPersistenceUnitFileTest {
     companion object {
         @RegisterExtension
         @JvmField
-        var runner = QuarkusUnitTest()
+        var runner = QuarkusExtensionTest()
                 .setArchiveProducer {
                     ShrinkWrap.create(JavaArchive::class.java)
                             .addClasses(FirstEntity::class.java, SecondEntity::class.java, PanacheTestResource::class.java)
@@ -37,7 +37,6 @@ class DefaultPersistenceUnitFileTest {
                             .addAsResource(StringAsset(
                                     """
                     quarkus.datasource.db-kind=h2
-                    quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
                     """.trimIndent()),
                                     "application.properties")
                 }

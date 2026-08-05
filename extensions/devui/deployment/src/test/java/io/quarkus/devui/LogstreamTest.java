@@ -7,10 +7,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class LogstreamTest extends DevUIJsonRPCTest {
 
@@ -27,7 +26,7 @@ public class LogstreamTest extends DevUIJsonRPCTest {
         JsonNode historyResponse = super.executeJsonRPCMethod("history");
         Assertions.assertNotNull(historyResponse);
         Assertions.assertTrue(historyResponse.isArray());
-        Assertions.assertTrue(hasStartedLine(historyResponse.elements()));
+        Assertions.assertTrue(hasStartedLine(historyResponse.values().iterator()));
     }
 
     @Test

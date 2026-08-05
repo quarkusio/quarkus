@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.token.propagation.AccessTokenRequestFilter;
 import io.quarkus.oidc.token.propagation.common.AccessToken;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.oidc.client.OidcTestClient;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
@@ -32,7 +32,7 @@ public class AccessTokenAnnotationTest {
     final static OidcTestClient client = new OidcTestClient();
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DefaultClientDefaultExchange.class, DefaultClientEnabledExchange.class,
                             NamedClientDefaultExchange.class, MultiProviderFrontendResource.class, ProtectedResource.class,

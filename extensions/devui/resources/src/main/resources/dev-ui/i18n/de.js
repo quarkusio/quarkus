@@ -10,7 +10,7 @@ export const templates = {
     'menu-continuous_testing': 'Kontinuierliches Testen',
     'menu-dev_services': 'Entwicklungsdienste',
     'menu-build_metrics': 'Build-Metriken',
-    'menu-readme': 'Lese mich',
+    'menu-readme': 'Lies mich',
     'menu-dependencies': 'Abhängigkeiten',
     'menu-remove-context-item': 'Entfernen',
     'settings-title': 'Einstellungen',

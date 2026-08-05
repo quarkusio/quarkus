@@ -1,17 +1,18 @@
 package io.quarkus.restclient.config.deployment;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.runtime.configuration.ConfigBuilder;
@@ -25,35 +26,30 @@ public final class RestClientConfigUtils {
     public static void generateRestClientConfigBuilder(
             List<RegisteredRestClient> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvider,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         String className = "io.quarkus.runtime.generated.RestClientConfigBuilder";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
-                .className(className)
-                .superClass(AbstractRestClientConfigBuilder.class)
-                .interfaces(ConfigBuilder.class)
-                .setFinal(true)
-                .build()) {
+        Gizmo gizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProvider, true));
+        gizmo.class_(className, cc -> {
+            cc.final_();
+            cc.extends_(AbstractRestClientConfigBuilder.class);
+            cc.implements_(ConfigBuilder.class);
+            cc.defaultConstructor();
 
-            MethodCreator method = classCreator.getMethodCreator(
-                    MethodDescriptor.ofMethod(AbstractRestClientConfigBuilder.class, "getRestClients", List.class));
-
-            ResultHandle list = method.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-            for (RegisteredRestClient restClient : restClients) {
-                ResultHandle restClientElement = method.newInstance(
-                        MethodDescriptor.ofConstructor(RegisteredRestClient.class, String.class, String.class, String.class),
-                        method.load(restClient.getFullName()),
-                        method.load(restClient.getSimpleName()),
-                        restClient.getConfigKey() != null ? method.load(restClient.getConfigKey()) : method.loadNull());
-
-                method.invokeVirtualMethod(MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class), list,
-                        restClientElement);
-            }
-
-            method.returnValue(list);
-        }
+            cc.method(MethodDesc.of(AbstractRestClientConfigBuilder.class, "getRestClients", List.class), mc -> {
+                mc.body(b0 -> {
+                    b0.return_(b0.listOf(restClients, rc -> b0.new_(
+                            ConstructorDesc.of(RegisteredRestClient.class, String.class, String.class, String.class),
+                            Const.of(rc.getFullName()),
+                            Const.of(rc.getSimpleName()),
+                            rc.getConfigKey() != null ? Const.of(rc.getConfigKey()) : Const.ofNull(String.class))));
+                });
+            });
+        });
 
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(className));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(className));

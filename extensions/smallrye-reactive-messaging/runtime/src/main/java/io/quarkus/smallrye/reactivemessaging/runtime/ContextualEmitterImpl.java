@@ -8,6 +8,7 @@ import java.util.function.Function;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.common.annotation.CheckReturnValue;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.operators.uni.UniOnItemTransformToUni;
@@ -21,7 +22,7 @@ import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements ContextualEmitter<T> {
 
@@ -107,7 +108,7 @@ public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements Cont
             // create new context and copy local data from previous context
             ContextInternal internal = (ContextInternal) context;
             ContextInternal newCtx = internal.duplicate();
-            newCtx.localContextData().putAll(internal.localContextData());
+            VertxContext.localContextData(newCtx).putAll(VertxContext.localContextData(internal));
             return msg.addMetadata(new LocalContextMetadata(newCtx));
         }
     }

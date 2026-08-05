@@ -6,21 +6,29 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.security.Principal;
+
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.jwt.Claim;
 import io.quarkus.test.security.jwt.JwtSecurity;
+import io.quarkus.test.vertx.RunOnVertxContext;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
 @TestHTTPEndpoint(ProtectedJwtResource.class)
 public class TestSecurityLazyAuthTest {
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Test
     public void testTestSecurityAnnotationWithAugmentors_anonymousUser() {
@@ -101,6 +109,28 @@ public class TestSecurityLazyAuthTest {
     public void testJwtGetWithDummyUser() {
         RestAssured.when().get("test-security-jwt").then()
                 .body(is("userJwt:userJwt:userJwt:viewer:user@gmail.com"));
+    }
+
+    @RunOnVertxContext
+    @Test
+    @TestSecurity
+    public void testAnonymousSecurityIdentityInjectionIsNonBlocking() {
+        Principal principal = Assertions.assertDoesNotThrow(() -> securityIdentity.getPrincipal());
+        Assertions.assertNotNull(principal);
+        Assertions.assertEquals("", principal.getName());
+        boolean isAnonymous = Assertions.assertDoesNotThrow(() -> securityIdentity.isAnonymous());
+        Assertions.assertTrue(isAnonymous);
+    }
+
+    @RunOnVertxContext
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    public void testAdminSecurityIdentityInjectionIsNonBlocking() {
+        Principal principal = Assertions.assertDoesNotThrow(() -> securityIdentity.getPrincipal());
+        Assertions.assertNotNull(principal);
+        Assertions.assertEquals("admin", principal.getName());
+        boolean isAdmin = Assertions.assertDoesNotThrow(() -> securityIdentity.hasRole("admin"));
+        Assertions.assertTrue(isAdmin);
     }
 
     @Retention(RetentionPolicy.RUNTIME)

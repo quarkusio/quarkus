@@ -10,6 +10,9 @@ import io.quarkus.qute.TemplateNode.Origin;
 /**
  * Represents a value expression. It could be a literal such as {@code 'foo'}. It could have a namespace such as {@code data}
  * for {@code data:name}. It could have several parts such as {@code item} and {@code name} for {@code item.name}.
+ * <p>
+ * A literal expression may also have additional parts that chain on the literal value, such as property accessors and virtual
+ * methods. For example, {@code 'foo'.length} or {@code 1l.intValue}.
  *
  * @see Evaluator
  */
@@ -27,24 +30,35 @@ public interface Expression {
     }
 
     /**
+     * For a non-literal expression, each part represents either a property accessor or a virtual method invocation.
+     * A literal expression always has at least one part with type info. It may also have additional parts that represent
+     * property accessors or virtual methods chained on the literal value.
      *
      * @return the list of parts, is never {@code null}
      */
     List<Part> getParts();
 
     /**
+     * A simple literal expression has exactly one part with type info and no chaining parts.
+     * An expression with a literal base and additional chaining parts (e.g. {@code 'foo'.length}) is not considered a literal.
      *
-     * @return true if it represents a literal
+     * @return true if it represents a simple literal without chaining parts
+     * @see #getParts()
+     * @see #getLiteralValue()
      */
     boolean isLiteral();
 
     /**
+     * The literal value may be non-null even if {@link #isLiteral()} returns false, for expressions with a literal base
+     * and additional chaining parts.
      *
      * @return the literal value, or null
      */
     CompletableFuture<Object> getLiteralValue();
 
     /**
+     * The literal value may be non-null even if {@link #isLiteral()} returns false, for expressions with a literal base
+     * and additional chaining parts.
      *
      * @return the literal value, or null
      */

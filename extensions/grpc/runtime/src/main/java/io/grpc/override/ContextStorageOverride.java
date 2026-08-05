@@ -1,5 +1,7 @@
 package io.grpc.override;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.grpc.Context;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
@@ -10,7 +12,6 @@ import io.vertx.core.Vertx;
 public class ContextStorageOverride extends Context.Storage {
 
     private static final ThreadLocal<Context> fallback = new ThreadLocal<>();
-
     private static final String GRPC_CONTEXT = "GRPC_CONTEXT";
 
     @Override
@@ -18,7 +19,8 @@ public class ContextStorageOverride extends Context.Storage {
         Context current = current();
         io.vertx.core.Context dc = Vertx.currentContext();
         if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-            dc.putLocal(GRPC_CONTEXT, toAttach);
+            var local = dc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+            local.put(GRPC_CONTEXT, toAttach);
         } else {
             fallback.set(toAttach);
         }
@@ -30,7 +32,8 @@ public class ContextStorageOverride extends Context.Storage {
         io.vertx.core.Context dc = Vertx.currentContext();
         if (toRestore != Context.ROOT) {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-                dc.putLocal(GRPC_CONTEXT, toRestore);
+                var local = dc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                local.put(GRPC_CONTEXT, toRestore);
             } else {
                 fallback.set(toRestore);
             }
@@ -46,7 +49,8 @@ public class ContextStorageOverride extends Context.Storage {
     @Override
     public Context current() {
         if (VertxContext.isOnDuplicatedContext()) {
-            Context current = Vertx.currentContext().getLocal(GRPC_CONTEXT);
+            Context current = (Context) Vertx.currentContext().getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new)
+                    .get(GRPC_CONTEXT);
             if (current == null) {
                 return Context.ROOT;
             }

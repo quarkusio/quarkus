@@ -3,8 +3,8 @@ package io.quarkus.tls.runtime.keystores;
 import java.io.UncheckedIOException;
 import java.security.KeyStore;
 
-import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
-import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
+import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.PemKeyCertConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;

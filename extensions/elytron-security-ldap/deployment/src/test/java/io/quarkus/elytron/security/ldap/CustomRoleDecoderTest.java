@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class CustomRoleDecoderTest extends LdapSecurityRealmTest {
 
@@ -14,7 +14,7 @@ public class CustomRoleDecoderTest extends LdapSecurityRealmTest {
             Arrays.stream(new Class[] { CustomRoleDecoder.class })).toArray(Class[]::new);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClassesWithCustomRoleDecoder)
                     .addAsResource("custom-role-decoder/application.properties", "application.properties"));

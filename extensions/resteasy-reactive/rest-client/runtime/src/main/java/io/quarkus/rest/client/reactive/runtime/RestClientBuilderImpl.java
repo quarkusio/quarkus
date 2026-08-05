@@ -104,6 +104,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
     private String userAgent;
     private Boolean disableDefaultMapper;
     private Boolean enableCompression;
+    private String domainSocketPath;
     private Consumer<HttpClientOptions> clientOptionsCustomizer;
 
     @Override
@@ -152,7 +153,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
             @Override
             public SSLOptions getSSLOptions() {
-                return tlsConfiguration.getSSLOptions();
+                return tlsConfiguration.getClientSSLOptions();
             }
 
             @Override
@@ -312,6 +313,11 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
     public RestClientBuilderImpl enableCompression(boolean enableCompression) {
         this.enableCompression = enableCompression;
+        return this;
+    }
+
+    public RestClientBuilderImpl domainSocket(String path) {
+        this.domainSocketPath = path;
         return this;
     }
 
@@ -613,7 +619,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         if (maxChunkSize != null) {
             clientBuilder.maxChunkSize(maxChunkSize);
         } else if (restClients.maxChunkSize().isPresent()) {
-            clientBuilder.maxChunkSize((int) restClients.maxChunkSize().get().asLongValue());
+            clientBuilder.maxChunkSize(restClients.maxChunkSize().get().asIntValue());
         } else if (restClients.multipart().maxChunkSize().isPresent()) {
             clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
@@ -626,11 +632,17 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
             clientBuilder.http2(true);
         }
 
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP3)) {
+            clientBuilder.http3((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP3));
+        } else if (restClients.http3()) {
+            clientBuilder.http3(true);
+        }
+
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH)) {
             clientBuilder.http2UpgradeMaxContentLength(
                     (int) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH));
         } else if (restClients.http2UpgradeMaxContentLength().isPresent()) {
-            clientBuilder.http2UpgradeMaxContentLength((int) restClients.http2UpgradeMaxContentLength().get().asLongValue());
+            clientBuilder.http2UpgradeMaxContentLength(restClients.http2UpgradeMaxContentLength().get().asIntValue());
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.ALPN)) {
@@ -653,6 +665,10 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         }
         if (effectiveEnableCompression != null) {
             clientBuilder.enableCompression(effectiveEnableCompression);
+        }
+
+        if (domainSocketPath != null) {
+            clientBuilder.domainSocket(domainSocketPath);
         }
 
         if (proxyHost != null) {

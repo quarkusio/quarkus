@@ -77,6 +77,11 @@ public interface LgtmConfig extends GrafanaConfig {
     OptionalInt otelHttpPort();
 
     /**
+     * Tempo MCP port, if set it will be a fixed value.
+     */
+    OptionalInt tempoMcpPort();
+
+    /**
      * A way to override `quarkus.otel.metric.export.interval` property's default value.
      */
     @OverrideProperty("quarkus.otel.metric.export.interval")

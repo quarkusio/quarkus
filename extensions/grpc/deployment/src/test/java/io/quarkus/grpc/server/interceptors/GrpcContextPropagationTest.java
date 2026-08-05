@@ -12,7 +12,7 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Test reproducing <a href="https://github.com/quarkusio/quarkus/issues/26830">#26830</a>.
@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GrpcContextPropagationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addClasses(MyFirstInterceptor.class, MyInterceptedGreeting.class));

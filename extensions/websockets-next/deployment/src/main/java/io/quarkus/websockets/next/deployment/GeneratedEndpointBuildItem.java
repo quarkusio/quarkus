@@ -5,7 +5,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * A generated representation of a WebSocket endpoint.
  */
-public final class GeneratedEndpointBuildItem extends MultiBuildItem {
+public final class GeneratedEndpointBuildItem extends MultiBuildItem implements Comparable<GeneratedEndpointBuildItem> {
 
     public final String endpointId;
     public final String endpointClassName;
@@ -46,4 +46,8 @@ public final class GeneratedEndpointBuildItem extends MultiBuildItem {
         return path;
     }
 
+    @Override
+    public int compareTo(GeneratedEndpointBuildItem o) {
+        return this.getEndpointId().compareTo(o.getEndpointId());
+    }
 }

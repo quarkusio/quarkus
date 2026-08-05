@@ -16,7 +16,7 @@ public class MyVerticle extends AbstractVerticle {
         messageConsumer = vertx.eventBus().consumer("address")
                 .handler(m -> m.reply("ok-" + id));
         messageConsumer
-                .completionHandler(ar -> done.handle(ar.mapEmpty()));
+                .completion().onComplete(ar -> done.handle(ar.mapEmpty()));
     }
 
     @Override

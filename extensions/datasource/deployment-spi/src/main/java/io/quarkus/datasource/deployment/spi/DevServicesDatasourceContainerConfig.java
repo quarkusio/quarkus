@@ -1,9 +1,11 @@
 package io.quarkus.datasource.deployment.spi;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 public class DevServicesDatasourceContainerConfig {
 
@@ -21,6 +23,8 @@ public class DevServicesDatasourceContainerConfig {
     private final Map<String, String> volumes;
     private final boolean reuse;
     private final boolean showLogs;
+    private final String datasourceName;
+    private final Set<DatabaseFeature> requiredFeatures;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerEnv,
@@ -35,7 +39,9 @@ public class DevServicesDatasourceContainerConfig {
             Optional<List<String>> initPrivilegedScriptPath,
             Map<String, String> volumes,
             boolean reuse,
-            boolean showLogs) {
+            boolean showLogs,
+            String datasourceName,
+            Set<DatabaseFeature> requiredFeatures) {
         this.imageName = imageName;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
@@ -50,6 +56,8 @@ public class DevServicesDatasourceContainerConfig {
         this.volumes = volumes;
         this.reuse = reuse;
         this.showLogs = showLogs;
+        this.datasourceName = datasourceName;
+        this.requiredFeatures = requiredFeatures != null ? requiredFeatures : Collections.emptySet();
     }
 
     public Optional<String> getImageName() {
@@ -106,5 +114,13 @@ public class DevServicesDatasourceContainerConfig {
 
     public boolean isReuse() {
         return reuse;
+    }
+
+    public String getDatasourceName() {
+        return datasourceName;
+    }
+
+    public Set<DatabaseFeature> getRequiredFeatures() {
+        return requiredFeatures;
     }
 }

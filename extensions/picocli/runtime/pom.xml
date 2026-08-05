@@ -35,6 +35,7 @@
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
+                        <provides>io.quarkus.command-line</provides>
                         <provides>io.quarkus.picocli</provides>
                     </capabilities>
                 </configuration>

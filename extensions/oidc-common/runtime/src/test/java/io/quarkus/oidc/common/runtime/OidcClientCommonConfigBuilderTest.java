@@ -51,6 +51,13 @@ public class OidcClientCommonConfigBuilderTest {
         assertEquals(10, jwt.lifespan());
         assertFalse(jwt.assertion());
         assertFalse(jwt.tokenPath().isPresent());
+        assertFalse(credentials.forAllEndpoints());
+    }
+
+    @Test
+    void testRequiredForAllEndpoints() {
+        Credentials credentials = new CredentialsBuilder<>().forAllEndpoints().build();
+        assertTrue(credentials.forAllEndpoints());
     }
 
 }

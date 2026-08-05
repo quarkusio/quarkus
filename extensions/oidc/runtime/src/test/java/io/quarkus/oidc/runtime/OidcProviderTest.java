@@ -63,7 +63,7 @@ public class OidcProviderTest {
 
         }, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(newToken, false, false, null);
-            assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
+            assertEquals("http://keycloak/realm", result.localVerificationResult().getString("iss"));
         }
     }
 
@@ -78,7 +78,7 @@ public class OidcProviderTest {
 
         try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
-            assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
+            assertEquals("http://keycloak/realm", result.localVerificationResult().getString("iss"));
         }
     }
 
@@ -114,7 +114,7 @@ public class OidcProviderTest {
 
         try (OidcProvider provider = new OidcProvider(null, config, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
-            assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
+            assertEquals("http://keycloak/realm", result.localVerificationResult().getString("iss"));
         }
     }
 
@@ -163,7 +163,7 @@ public class OidcProviderTest {
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(tokenWithSub, false, true, null);
-            assertEquals("subject", result.localVerificationResult.getString(Claims.sub.name()));
+            assertEquals("subject", result.localVerificationResult().getString(Claims.sub.name()));
         }
 
         final String tokenWithoutSub = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
@@ -190,7 +190,7 @@ public class OidcProviderTest {
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(tokenWithNonce, false, false, "123456");
-            assertEquals("123456", result.localVerificationResult.getString(Claims.nonce.name()));
+            assertEquals("123456", result.localVerificationResult().getString(Claims.nonce.name()));
         }
 
         final String tokenWithoutNonce = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
@@ -227,7 +227,7 @@ public class OidcProviderTest {
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
-            assertNull(result.localVerificationResult.getString(Claims.iat.name()));
+            assertNull(result.localVerificationResult().getString(Claims.iat.name()));
         }
 
         OidcTenantConfig oidcConfigRequireAge = new OidcTenantConfig();
@@ -257,8 +257,8 @@ public class OidcProviderTest {
         // no validators
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
-            assertEquals("claimValue1", result.localVerificationResult.getString("claim1"));
-            assertEquals("claimValue2", result.localVerificationResult.getString("claim2"));
+            assertEquals("claimValue1", result.localVerificationResult().getString("claim1"));
+            assertEquals("claimValue2", result.localVerificationResult().getString("claim2"));
         }
 
         // one validator

@@ -25,7 +25,7 @@ import io.quarkus.redis.datasource.timeseries.SampleGroup;
 import io.quarkus.redis.datasource.timeseries.SeriesSample;
 import io.quarkus.redis.datasource.timeseries.TimeSeriesRange;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommands<K>
@@ -186,8 +186,15 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
                 Map<String, String> labels = new HashMap<>();
                 List<Sample> samples = new ArrayList<>();
                 var nested = response.get(group);
-                for (Response label : nested.get(0)) {
-                    labels.put(label.get(0).toString(), label.get(1).toString());
+                var labelsResponse = nested.get(0);
+                if (isMap(labelsResponse)) {
+                    for (String labelKey : labelsResponse.getKeys()) {
+                        labels.put(labelKey, labelsResponse.get(labelKey).toString());
+                    }
+                } else {
+                    for (Response label : labelsResponse) {
+                        labels.put(label.get(0).toString(), label.get(1).toString());
+                    }
                 }
                 for (Response sample : nested.get(nested.size() - 1)) { // samples are last
                     if (sample.type() == ResponseType.MULTI) {

@@ -387,6 +387,22 @@ public class DependencyUtils {
                 artifact.getExtension() == null ? ArtifactCoords.TYPE_JAR : artifact.getExtension());
     }
 
+    public static ArtifactKey getKey(String groupId, String artifactId, String version, File file, String type) {
+        String classifier = resolveClassifier(artifactId, version, file);
+        return ArtifactKey.of(groupId, artifactId, classifier, type);
+    }
+
+    private static String resolveClassifier(String artifactId, String version, File file) {
+        String artifactIdVersion = version == null || version.isEmpty() || "unspecified".equals(version)
+                ? artifactId
+                : artifactId + "-" + version;
+        if ((file.getName().endsWith(".jar") || file.getName().endsWith(".pom") || file.getName().endsWith(".exe"))
+                && file.getName().startsWith(artifactIdVersion + "-")) {
+            return file.getName().substring(artifactIdVersion.length() + 1, file.getName().length() - 4);
+        }
+        return "";
+    }
+
     public static ArtifactCoords getArtifactCoords(ResolvedArtifact artifact) {
         return ArtifactCoords.of(artifact.getModuleVersion().getId().getGroup(), artifact.getName(),
                 artifact.getClassifier() == null ? ArtifactCoords.DEFAULT_CLASSIFIER : artifact.getClassifier(),

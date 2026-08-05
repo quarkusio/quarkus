@@ -12,7 +12,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageFormDataBase;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
@@ -24,7 +24,7 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
     private static final String EXPECTED_CONTENT_TYPE_PART = "Content-Type: %s";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class,
                             MultipartOutputFileResponse.class, MultipartOutputMultipleFileResponse.class,

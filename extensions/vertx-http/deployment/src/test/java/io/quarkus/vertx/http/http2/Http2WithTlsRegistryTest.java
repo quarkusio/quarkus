@@ -12,14 +12,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
@@ -41,7 +39,7 @@ public class Http2WithTlsRegistryTest {
     URL plainUrl;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
@@ -74,7 +72,7 @@ public class Http2WithTlsRegistryTest {
         CompletableFuture<String> result = new CompletableFuture<>();
         client
                 .get(port, "localhost", "/ping")
-                .send(ar -> {
+                .send().onComplete(ar -> {
                     if (ar.succeeded()) {
                         // Obtain response
                         HttpResponse<Buffer> response = ar.result();
@@ -92,11 +90,8 @@ public class Http2WithTlsRegistryTest {
         public void register(@Observes Router router) {
             //ping only works on HTTP/2
             router.get("/ping").handler(rc -> {
-                rc.request().connection().ping(Buffer.buffer(PING_DATA), new Handler<AsyncResult<Buffer>>() {
-                    @Override
-                    public void handle(AsyncResult<Buffer> event) {
-                        rc.response().end(event.result());
-                    }
+                rc.request().connection().ping(Buffer.buffer(PING_DATA)).onComplete(event -> {
+                    rc.response().end(event.result());
                 });
             });
         }

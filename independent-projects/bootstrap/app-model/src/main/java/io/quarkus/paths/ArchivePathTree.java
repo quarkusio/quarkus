@@ -2,8 +2,6 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -16,6 +14,7 @@ import java.util.function.Function;
 import java.util.jar.Manifest;
 
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.fs.util.rozip.ReadOnlyZipFileSystem;
 
 public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
@@ -100,9 +99,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void walk(PathVisitor visitor) {
-        try (FileSystem fs = openFs()) {
-            final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+        try (OpenPathTree open = open()) {
+            open.walk(visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -110,34 +108,28 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void walkRaw(PathVisitor visitor) {
-        try (FileSystem fs = openFs()) {
-            final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, dir, pathFilter, Map.of(), visitor);
+        try (OpenPathTree open = open()) {
+            open.walkRaw(visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
+        ensureResourcePath(resourceDirName);
+        if (!PathFilter.isVisible(pathFilter, resourceDirName)) {
             return;
         }
-        try (FileSystem fs = openFs()) {
-            for (Path root : fs.getRootDirectories()) {
-                final Path walkDir = root.resolve(relativePath);
-                if (Files.exists(walkDir)) {
-                    PathTreeVisit.walk(archive, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
-                }
-            }
+        try (OpenPathTree open = open()) {
+            open.walkIfContains(resourceDirName, visitor);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
     }
 
     private void ensureResourcePath(String path) {
-        OpenContainerPathTree.ensureResourcePath(archive.getFileSystem(), path);
+        PathTreeVisit.ensureResourcePath(archive.getFileSystem(), path);
     }
 
     @Override
@@ -146,77 +138,47 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     @Override
-    protected <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return func.apply(null);
         }
-        if (manifestEnabled) {
-            relativePath = toMultiReleaseRelativePath(relativePath);
-        }
-        try (FileSystem fs = openFs()) {
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (!Files.exists(path)) {
-                    continue;
-                }
-                return PathTreeVisit.process(archive, root, path, pathFilter, func);
-            }
+        try (OpenPathTree open = open()) {
+            return open.apply(resourceName, func);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        return func.apply(null);
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> consumer) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public void accept(String resourceName, Consumer<PathVisit> consumer) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             consumer.accept(null);
             return;
         }
-        if (manifestEnabled) {
-            relativePath = toMultiReleaseRelativePath(relativePath);
-        }
-        try (FileSystem fs = openFs()) {
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (!Files.exists(path)) {
-                    continue;
-                }
-                PathTreeVisit.consume(archive, root, path, pathFilter, consumer);
-                return;
-            }
+        try (OpenPathTree open = open()) {
+            open.accept(resourceName, consumer);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        consumer.accept(null);
     }
 
     @Override
-    public boolean contains(String relativePath) {
-        ensureResourcePath(relativePath);
-        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+    public boolean contains(String resourceName) {
+        ensureResourcePath(resourceName);
+        if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return false;
         }
-        if (manifestEnabled) {
-            relativePath = toMultiReleaseRelativePath(relativePath);
-        }
-        try (FileSystem fs = openFs()) {
-            for (Path root : fs.getRootDirectories()) {
-                final Path path = root.resolve(relativePath);
-                if (Files.exists(path)) {
-                    return true;
-                }
-            }
+        try (OpenPathTree open = open()) {
+            return open.contains(resourceName);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
-        return false;
     }
 
-    protected FileSystem openFs() throws IOException {
-        return ZipUtils.newFileSystem(archive);
+    protected ReadOnlyZipFileSystem openFs() throws IOException {
+        return (ReadOnlyZipFileSystem) ZipUtils.openReadOnly(archive);
     }
 
     @Override
@@ -251,17 +213,27 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         return archive.toString();
     }
 
+    /**
+     * Thread-safe view of an open archive backed by a {@link ReadOnlyZipFileSystem}.
+     * <p>
+     * {@link ReadOnlyZipFileSystem} uses {@code RandomAccessFile} instead of
+     * {@code FileChannel}, making it immune to the JDK issue (JDK-8316882) where an
+     * interrupted thread closes the shared {@code FileChannel} (via
+     * {@code InterruptibleChannel}), breaking the entire filesystem for all other threads.
+     * Because {@code RandomAccessFile} is not interruptible, the thread's interrupt flag is
+     * naturally preserved without explicit clearing or restoring.
+     */
     protected class OpenArchivePathTree extends OpenContainerPathTree {
 
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
         // we don't make these fields final as we want to nullify them on close
-        private FileSystem fs;
+        private ReadOnlyZipFileSystem fs;
         private Path rootPath;
 
         private volatile boolean open = true;
 
-        protected OpenArchivePathTree(FileSystem fs) {
+        protected OpenArchivePathTree(ReadOnlyZipFileSystem fs) {
             super(ArchivePathTree.this.pathFilter, ArchivePathTree.this);
             this.fs = fs;
             this.rootPath = fs.getPath("/");
@@ -325,23 +297,50 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             }
         }
 
+        /**
+         * Validates the resource name and resolves it to an entry name accounting for
+         * multi-release JARs, or returns {@code null} if the resource is filtered out.
+         * Must be called under the read lock.
+         */
+        private String resolveEntryName(String resourceName) {
+            PathTreeVisit.ensureResourcePath(fs, resourceName);
+            if (!PathFilter.isVisible(pathFilter, resourceName)) {
+                return null;
+            }
+            return manifestEnabled ? toMultiReleaseResourceName(resourceName) : resourceName;
+        }
+
+        private Path resolveEntryPath(String resourceName) {
+            String entryName = resolveEntryName(resourceName);
+            return entryName != null && fs.entryExists(entryName) ? rootPath.resolve(entryName) : null;
+        }
+
         @Override
-        protected <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled) {
+        protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
             lock.readLock().lock();
             try {
                 ensureOpen();
-                return super.apply(relativePath, func, manifestEnabled);
+                Path entry = resolveEntryPath(resourceName);
+                if (entry == null) {
+                    return func.apply(null);
+                }
+                return PathTreeVisit.process(getContainerPath(), rootPath, entry, pathFilter, func);
             } finally {
                 lock.readLock().unlock();
             }
         }
 
         @Override
-        public void accept(String relativePath, Consumer<PathVisit> consumer) {
+        public void accept(String resourceName, Consumer<PathVisit> consumer) {
             lock.readLock().lock();
             try {
                 ensureOpen();
-                super.accept(relativePath, consumer);
+                Path entry = resolveEntryPath(resourceName);
+                if (entry == null) {
+                    consumer.accept(null);
+                    return;
+                }
+                PathTreeVisit.consume(getContainerPath(), rootPath, entry, pathFilter, consumer);
             } finally {
                 lock.readLock().unlock();
             }
@@ -370,11 +369,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         }
 
         @Override
-        public void walkIfContains(String relativePath, PathVisitor visitor) {
+        public void walkIfContains(String resourceDirName, PathVisitor visitor) {
             lock.readLock().lock();
             try {
                 ensureOpen();
-                super.walkIfContains(relativePath, visitor);
+                super.walkIfContains(resourceDirName, visitor);
             } finally {
                 lock.readLock().unlock();
             }
@@ -386,22 +385,23 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         }
 
         @Override
-        public boolean contains(String relativePath) {
+        public boolean contains(String resourceName) {
             lock.readLock().lock();
             try {
                 ensureOpen();
-                return super.contains(relativePath);
+                String entryName = resolveEntryName(resourceName);
+                return entryName != null && fs.entryExists(entryName);
             } finally {
                 lock.readLock().unlock();
             }
         }
 
         @Override
-        public Path getPath(String relativePath) {
+        public Path getPath(String resourceName) {
             lock.readLock().lock();
             try {
                 ensureOpen();
-                return super.getPath(relativePath);
+                return resolveEntryPath(resourceName);
             } finally {
                 lock.readLock().unlock();
             }

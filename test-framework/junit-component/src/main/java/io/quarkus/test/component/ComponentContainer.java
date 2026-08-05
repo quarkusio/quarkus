@@ -464,9 +464,10 @@ class ComponentContainer {
                 }
                 beanResolver.set(registrationContext.get(Key.DEPLOYMENT).getBeanResolver());
                 beanProcessor.registerScopes();
-                beanProcessor.registerBeans();
-                beanProcessor.getBeanDeployment().initBeanByTypeMap();
+                var context = beanProcessor.registerBeans();
+                beanProcessor.registerSyntheticInjectionPoints(context);
                 beanProcessor.registerSyntheticObservers();
+                beanProcessor.synthesisFinished();
                 beanProcessor.initialize(bytecodeTransformerConsumer, Collections.emptyList());
                 ValidationContext validationContext = beanProcessor.validate(bytecodeTransformerConsumer);
                 beanProcessor.processValidationErrors(validationContext);

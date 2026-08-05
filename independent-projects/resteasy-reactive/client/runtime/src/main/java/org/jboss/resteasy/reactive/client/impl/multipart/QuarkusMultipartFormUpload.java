@@ -20,11 +20,12 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 
 /**
- * based on {@link io.vertx.ext.web.client.impl.MultipartFormUpload}
+ * based on io.vertx.ext.web.client.impl.MultipartFormUpload
  */
 public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable {
 
@@ -77,7 +78,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                         formDataPart.isText() ? null : "binary",
                         null,
                         formDataPart.content().length());
-                data.setContent(formDataPart.content().getByteBuf());
+                data.setContent(((BufferInternal) formDataPart.content()).getByteBuf());
                 encoder.addBodyHttpData(data);
             } else if (formDataPart.multiByteContent() != null) {
                 String contentTransferEncoding = null;
@@ -123,7 +124,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                             formDataPart.name(),
                             formDataPart.filename(),
                             contentType, transferEncoding, null, formDataPart.content().length());
-                    fileUpload.setContent(formDataPart.content().getByteBuf());
+                    fileUpload.setContent(((BufferInternal) formDataPart.content()).getByteBuf());
                     encoder.addBodyHttpData(fileUpload);
                 }
             }
@@ -176,7 +177,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                         pending.write(InboundBuffer.END_SENTINEL);
                     } else {
                         ByteBuf content = chunk.content();
-                        Buffer buff = Buffer.buffer(content);
+                        Buffer buff = BufferInternal.buffer(content);
                         boolean writable = pending.write(buff);
                         if (!writable) {
                             break;
@@ -188,7 +189,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 }
             } else {
                 ByteBuf content = request.content();
-                Buffer buffer = Buffer.buffer(content);
+                Buffer buffer = BufferInternal.buffer(content);
                 request = null;
                 clearEncoder();
                 pending.write(buffer);

@@ -1,5 +1,5 @@
 export const templates = {
-    'quarkus-arc-meta-description': 'Iniezione delle dipendenze CDI a a compile-time',
+    'quarkus-arc-meta-description': 'Iniezione delle dipendenze CDI a compile-time',
     'quarkus-arc-beans': 'Beans',
     'quarkus-arc-observers': 'Osservatori',
     'quarkus-arc-interceptors': 'Intercettori',

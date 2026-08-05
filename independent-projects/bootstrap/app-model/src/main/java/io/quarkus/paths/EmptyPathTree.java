@@ -40,7 +40,7 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
-    public void walkIfContains(String relativePath, PathVisitor visitor) {
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
     }
 
     @Override
@@ -49,17 +49,17 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
-    public <T> T apply(String relativePath, Function<PathVisit, T> func) {
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
         return func.apply(null);
     }
 
     @Override
-    public void accept(String relativePath, Consumer<PathVisit> func) {
+    public void accept(String resourceName, Consumer<PathVisit> func) {
         func.accept(null);
     }
 
     @Override
-    public boolean contains(String relativePath) {
+    public boolean contains(String resourceName) {
         return false;
     }
 

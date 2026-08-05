@@ -11,10 +11,10 @@ class GreetingResourceTest {
     @Test
     void testHelloEndpoint() {
         given()
-          .when().get("/hello")
-          .then()
-             .statusCode(200)
-             .body(is("hello from LibB and LibA extension enabled: false"));
+                .when().get("/hello")
+                .then()
+                .statusCode(200)
+                .body(is("hello from LibB and LibA extension enabled: false"
+                        + " build message: source extension config loaded"));
     }
-
 }

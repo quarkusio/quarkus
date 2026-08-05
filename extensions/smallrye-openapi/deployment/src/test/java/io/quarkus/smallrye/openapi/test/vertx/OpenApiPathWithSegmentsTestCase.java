@@ -4,14 +4,14 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 public class OpenApiPathWithSegmentsTestCase {
     private static final String OPEN_API_PATH = "path/with/segments";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=" + OPEN_API_PATH),

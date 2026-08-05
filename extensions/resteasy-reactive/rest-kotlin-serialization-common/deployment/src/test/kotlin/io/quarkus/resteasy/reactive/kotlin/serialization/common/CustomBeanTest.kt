@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common
 
-import io.quarkus.arc.Arc
-import io.quarkus.test.QuarkusUnitTest
+import io.quarkus.test.QuarkusExtensionTest
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -12,13 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import jakarta.enterprise.inject.Produces
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import kotlin.reflect.full.createType
 
 class CustomBeanTest {
 
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
+        val config = QuarkusExtensionTest()
             .withApplicationRoot { jar: JavaArchive -> jar.addClasses(Greeting::class.java, CustomJsonProducer::class.java) }
     }
 

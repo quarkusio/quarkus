@@ -21,7 +21,7 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.PermitAllBean;
 import io.quarkus.security.test.cdi.app.denied.unnanotated.PermitAllSubBean;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -45,7 +45,7 @@ public class CDIAccessDenyUnannotatedTest {
     BeanWithNoSecurityAnnotations noAnnoBean;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithNoSecurityAnnotations.class,
                             BeanWithSecurityAnnotations.class,

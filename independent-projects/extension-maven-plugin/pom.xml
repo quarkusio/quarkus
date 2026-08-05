@@ -36,11 +36,12 @@
         <!-- Not sure exactly why but the Maven plugins need to be compiled with Java 11 -->
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
-        <maven-core.version>3.9.12</maven-core.version>
-        <jackson-bom.version>2.21.1</jackson-bom.version>
+        <maven-core.version>3.9.16</maven-core.version>
+        <jackson-bom.version>3.1.4</jackson-bom.version>
         <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
-        <junit.version>6.0.3</junit.version>
+        <junit.version>6.1.1</junit.version>
         <mockito.version>5.21.0</mockito.version>
+        <version.jandex>3.6.0</version.jandex>
     </properties>
     <build>
         <testResources>
@@ -137,7 +138,7 @@
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>0.3.5</version>
+                <version>1.0.1</version>
                 <executions>
                     <execution>
                         <id>index-project</id>
@@ -217,7 +218,7 @@
             </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
+                <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
                 <scope>import</scope>
@@ -258,6 +259,24 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.maven.resolver</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven.wagon</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -334,17 +353,23 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex</artifactId>
+            <version>${version.jandex}</version>
+        </dependency>
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
+
         <dependency>
             <groupId>jakarta.inject</groupId>
             <artifactId>jakarta.inject-api</artifactId>

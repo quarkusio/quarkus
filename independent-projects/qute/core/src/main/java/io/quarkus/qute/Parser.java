@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -44,14 +45,14 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
 
-    static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", Optional.empty());
+    static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", null, null);
 
     private static final char START_DELIMITER = '{';
     private static final char END_DELIMITER = '}';
-    private static final char COMMENT_DELIMITER = '!';
-    private static final char CDATA_START_DELIMITER = '|';
+    static final char COMMENT_DELIMITER = '!';
+    static final char CDATA_START_DELIMITER = '|';
     private static final char CDATA_END_DELIMITER = '|';
-    private static final char UNDERSCORE = '_';
+    static final char UNDERSCORE = '_';
     private static final char ESCAPE_CHAR = '\\';
     private static final char NAMESPACE_SEPARATOR = ':';
 
@@ -65,6 +66,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     static final char END_COMPOSITE_PARAM = ')';
 
     private final EngineImpl engine;
+    private final ParserConfig config;
     private final Reader reader;
     private final TemplateLocation location;
     private final String templateId;
@@ -87,6 +89,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     public Parser(EngineImpl engine, String templateId, String generatedId, Reader reader, TemplateLocation location) {
         this.engine = engine;
+        this.config = engine.parserConfigurator.getConfig(templateId, location.getVariant());
         this.templateId = templateId;
         this.generatedId = generatedId;
         this.location = location;
@@ -396,10 +399,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     private boolean isValidIdentifierStart(char character) {
         // A valid identifier must start with a digit, alphabet, underscore, comment delimiter, cdata start delimiter or a tag command (e.g. # for sections)
-        return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == CDATA_START_DELIMITER
-                || character == UNDERSCORE
-                || Character.isDigit(character)
-                || Character.isAlphabetic(character);
+        return Tag.isCommand(character, config.expressionCommand())
+                || character == COMMENT_DELIMITER
+                || character == CDATA_START_DELIMITER
+                || (config.expressionCommand() == null &&
+                        (character == UNDERSCORE
+                                || Character.isDigit(character)
+                                || Character.isAlphabetic(character)));
     }
 
     private boolean isLineSeparatorStart(char character) {
@@ -427,23 +433,22 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private void flushTag() {
         state = State.TEXT;
         String content = buffer.toString().trim();
-        String tag = START_DELIMITER + content + END_DELIMITER;
+        String tagStr = START_DELIMITER + content + END_DELIMITER;
 
-        if (content.charAt(0) == Tag.SECTION.command) {
-            // It's a section/block start
-            // {#if}, {#else}, etc.
-            sectionStart(content, tag);
-        } else if (content.charAt(0) == Tag.SECTION_END.command) {
-            // It's a section/block end
-            sectionEnd(content, tag);
-        } else if (content.charAt(0) == Tag.PARAM.command) {
-            // Parameter declaration
-            // {@org.acme.Foo foo}
-            parameterDeclaration(content, tag);
-        } else {
-            // Expression
-            sectionStack.peek().currentBlock()
-                    .addNode(new ExpressionNode(createExpression(content), engine));
+        Tag tag = Tag.from(content.charAt(0), config.expressionCommand());
+        switch (tag) {
+            // a section/block start; {#if}, {#else}, etc.
+            case SECTION -> sectionStart(content, tagStr);
+            // a section/block end
+            case SECTION_END -> sectionEnd(content, tagStr);
+            // parameter declaration; {@org.acme.Foo foo}
+            case PARAM -> parameterDeclaration(content, tagStr);
+            case EXPRESSION -> sectionStack.peek()
+                    .currentBlock()
+                    .addNode(new ExpressionNode(
+                            createExpression(config.expressionCommand() != null ? content.substring(1) : content),
+                            engine));
+            default -> throw new IllegalArgumentException("Unexpected tag: " + tag);
         }
         this.buffer = new StringBuilder();
     }
@@ -958,9 +963,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             this.command = command;
         }
 
-        static boolean isCommand(char command) {
+        static Tag from(char command, Character expressionCommand) {
+            if (expressionCommand != null && expressionCommand.charValue() == command) {
+                return EXPRESSION;
+            }
             for (Tag tag : Tag.values()) {
-                if (tag.command != null && tag.command == command) {
+                if (tag.command != null && tag.command.charValue() == command) {
+                    return tag;
+                }
+            }
+            return expressionCommand == null ? EXPRESSION : null;
+        }
+
+        static boolean isCommand(char command, Character expressionCommand) {
+            if (expressionCommand != null && expressionCommand.charValue() == command) {
+                return true;
+            }
+            for (Tag tag : Tag.values()) {
+                if (tag.command != null && tag.command.charValue() == command) {
                     return true;
                 }
             }
@@ -1030,8 +1050,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     .add(last.substring(0, last.length() - 2)).add("or(null)").build();
         }
 
+        // Check if the first part is a literal value with chaining virtual method parts
+        Object literalValue = Results.NotFound.EMPTY;
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
+
+        if (strParts.size() > 1) {
+            Object firstPartLiteral = LiteralSupport.getLiteralValue(strParts.get(0));
+            if (!Results.isNotFound(firstPartLiteral)) {
+                literalValue = firstPartLiteral;
+                String literalTypeInfo = firstPartLiteral != null
+                        ? Expressions.typeInfoFrom(firstPartLiteral.getClass().getName())
+                        : null;
+                first = new ExpressionImpl.PartImpl(strParts.get(0), literalTypeInfo);
+                parts.add(first);
+                strParts = strParts.subList(1, strParts.size());
+            }
+        }
+
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
@@ -1040,7 +1076,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             }
             parts.add(part);
         }
-        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), Results.NotFound.EMPTY, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), literalValue, origin);
     }
 
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
@@ -1119,11 +1155,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Origin origin(int lineCharacterOffset) {
         return new OriginImpl(line, lineCharacter - lineCharacterOffset, lineCharacter, templateId, generatedId,
-                location.getVariant());
+                location.getVariant().orElse(null), location.getSource().orElse(null));
     }
 
     Origin syntheticOrigin() {
-        return new OriginImpl(-1, -1, -1, templateId, generatedId, location.getVariant());
+        return new OriginImpl(-1, -1, -1, templateId, generatedId, location.getVariant().orElse(null),
+                location.getSource().orElse(null));
     }
 
     private List<List<TemplateNode>> readLines(SectionNode rootNode) {
@@ -1245,16 +1282,18 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         private final int lineCharacterEnd;
         private final String templateId;
         private final String templateGeneratedId;
-        private final Optional<Variant> variant;
+        private final Variant variant;
+        private final URI source;
 
         OriginImpl(int line, int lineCharacterStart, int lineCharacterEnd, String templateId, String templateGeneratedId,
-                Optional<Variant> variant) {
+                Variant variant, URI source) {
             this.line = line;
             this.lineCharacterStart = lineCharacterStart;
             this.lineCharacterEnd = lineCharacterEnd;
             this.templateId = templateId;
             this.templateGeneratedId = templateGeneratedId;
             this.variant = variant;
+            this.source = source;
         }
 
         @Override
@@ -1283,12 +1322,17 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
 
         public Optional<Variant> getVariant() {
-            return variant;
+            return Optional.ofNullable(variant);
+        }
+
+        @Override
+        public Optional<URI> getSourceUri() {
+            return Optional.ofNullable(source);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(line, templateGeneratedId, templateId, variant);
+            return Objects.hash(line, templateGeneratedId, templateId, variant, source);
         }
 
         @Override
@@ -1305,7 +1349,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             OriginImpl other = (OriginImpl) obj;
             return line == other.line
                     && Objects.equals(templateGeneratedId, other.templateGeneratedId)
-                    && Objects.equals(templateId, other.templateId) && Objects.equals(variant, other.variant);
+                    && Objects.equals(templateId, other.templateId) && Objects.equals(variant, other.variant)
+                    && Objects.equals(source, other.source);
         }
 
         @Override

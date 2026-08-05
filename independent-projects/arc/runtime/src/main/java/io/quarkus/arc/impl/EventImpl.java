@@ -493,14 +493,14 @@ class EventImpl<T> implements Event<T> {
             } catch (Exception e) {
                 // swallow exception and log errors for every problematic OM
                 LOG.errorf(
-                        "Failure occurred while notifying a transational %s for event of type %s " +
-                                "\n- please enable debug logging to see the full stack trace" +
-                                "\n %s",
-                        observerMethod, eventContext.getMetadata().getType().getTypeName(),
+                        "Failure occurred while notifying a transactional %s for event of type %s"
+                                + "\n- to see the full stack trace, add quarkus.log.category.\"%s\".level=DEBUG " +
+                                "to your application.properties \n %s",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName(), LOG.getName(),
                         e.getCause() != null && e.getMessage() != null
                                 ? "Cause: " + e.getCause() + " Message: " + e.getMessage()
                                 : "Exception caught: " + e);
-                LOG.debugf(e, "Failure occurred while notifying a transational %s for event of type %s",
+                LOG.debugf(e, "Failure occurred while notifying a transactional %s for event of type %s",
                         observerMethod, eventContext.getMetadata().getType().getTypeName());
             }
         }

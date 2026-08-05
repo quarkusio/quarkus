@@ -3,7 +3,7 @@ import { str } from '@lit/localize';
 export const templates = {
     'quarkus-web-dependency-locator-meta-description': 'Simplifier les chemins et le support de l\'importmap pour les dépendances Web',
     'quarkus-web-dependency-locator-web_libraries': 'Bibliothèques Web',
-    'quarkus-web-dependency-locator-import_map': 'Importer la carte',
+    'quarkus-web-dependency-locator-import_map': 'Import Map',
     'quarkus-web-dependency-locator-copy-link': 'Copier le lien',
     'quarkus-web-dependency-locator-open-asset': 'Ouvrir l\'actif',
     'quarkus-web-dependency-locator-usage-instruction': 'Pour utiliser ceci dans votre application, ajoutez ceci dans l\'en-tête de votre fichier HTML principal :',

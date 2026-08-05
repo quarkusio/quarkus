@@ -24,12 +24,12 @@ import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class ListInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class, Service.class,
                             Counter.class, Converter.class, ConverterAlpha.class, ConverterBravo.class, MyQualifier.class,

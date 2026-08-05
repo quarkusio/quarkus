@@ -11,13 +11,13 @@ import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 public class AdvancedRedirectTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RedirectingResourceClient302.class,
                             RedirectingResourceWithRegisterProviderAdvancedRedirectHandlerClient.class,

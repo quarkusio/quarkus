@@ -15,6 +15,7 @@ public class GrpcMetricsDisabledTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.grpc-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.grpc-server.enabled", "true")
 

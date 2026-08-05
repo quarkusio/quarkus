@@ -19,6 +19,7 @@ public class NoDefaultPrometheusTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")

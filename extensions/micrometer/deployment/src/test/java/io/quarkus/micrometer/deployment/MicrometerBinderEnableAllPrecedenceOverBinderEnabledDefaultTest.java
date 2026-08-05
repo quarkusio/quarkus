@@ -16,6 +16,7 @@ public class MicrometerBinderEnableAllPrecedenceOverBinderEnabledDefaultTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.enable-all", "true")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

@@ -19,6 +19,7 @@ public class JsonAndPrometheusRegistryEnabledTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .overrideConfigKey("quarkus.http.non-application-root-path", "relative")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

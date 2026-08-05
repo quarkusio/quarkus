@@ -25,7 +25,8 @@ public class SimpleGrpcWithTLSWithTrustAllWithCompressionTest extends AbstractEx
             return Collections.singletonList(
                     new TestResourceEntry(
                             OtelCollectorLifecycleManager.class,
-                            Map.of("enableTLS", "true", "enableCompression", "true", "preventTrustCert", "true")));
+                            Map.of("enableTLS", "true", "enableCompression", "true", "preventTrustCert", "true", "protocol",
+                                    "grpc")));
         }
     }
 

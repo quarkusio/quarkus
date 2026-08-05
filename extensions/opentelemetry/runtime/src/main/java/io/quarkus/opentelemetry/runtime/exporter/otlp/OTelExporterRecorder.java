@@ -1,9 +1,9 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
 import static io.opentelemetry.sdk.common.internal.StandardComponentId.ExporterType.OTLP_GRPC_METRIC_EXPORTER;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_HTTP_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -424,7 +424,7 @@ public class OTelExporterRecorder {
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(DEFAULT_GRPC_BASE_URI));
+                        .orElse(DEFAULT_HTTP_BASE_URI));
         return endpoint.trim();
     }
 
@@ -433,7 +433,7 @@ public class OTelExporterRecorder {
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(DEFAULT_GRPC_BASE_URI));
+                        .orElse(DEFAULT_HTTP_BASE_URI));
         return endpoint.trim();
     }
 
@@ -442,12 +442,12 @@ public class OTelExporterRecorder {
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(DEFAULT_GRPC_BASE_URI));
+                        .orElse(DEFAULT_HTTP_BASE_URI));
         return endpoint.trim();
     }
 
     private static boolean excludeDefaultEndpoint(String endpoint) {
-        return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
+        return !DEFAULT_HTTP_BASE_URI.equals(endpoint);
     }
 
     static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {

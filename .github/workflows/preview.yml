@@ -67,7 +67,7 @@ jobs:
           rm -rf documentation-temp
           rm -rf quarkus-main
       - name: Set up ruby
-        uses: ruby/setup-ruby@6e5d382445ae5590b7449d8b3bc8cb1c2c27f617 # v1.317.0
+        uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
         with:
           ruby-version: 3.2.3
       - name: Cache Ruby gems

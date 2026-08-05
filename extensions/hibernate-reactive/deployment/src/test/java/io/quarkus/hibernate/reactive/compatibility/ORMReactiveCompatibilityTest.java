@@ -22,7 +22,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.ParameterizedQuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.vertx.sqlclient.Pool;
@@ -189,7 +189,7 @@ public class ORMReactiveCompatibilityTest extends CompatibilityUnitTestBase {
     }
 
     @RegisterExtension
-    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+    static final ParameterizedQuarkusExtensionTest config = new ParameterizedQuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"));

@@ -16,7 +16,6 @@ public class InMemoryLogHandler extends ExtHandler {
 
     public InMemoryLogHandler(Predicate<LogRecord> predicate) {
         this.predicate = Assert.checkNotNullParam("predicate", predicate);
-        setLevel(Level.ALL);
     }
 
     final List<LogRecord> records = new CopyOnWriteArrayList<>();

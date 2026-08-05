@@ -159,7 +159,9 @@ public class BeanGenerator extends AbstractGenerator {
         String declaringClassBase = declaringClass.name().withoutPackagePrefix();
 
         StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(producerMethod.name())
+        sigBuilder.append(declaringClass.name())
+                .append(UNDERSCORE)
+                .append(producerMethod.name())
                 .append(UNDERSCORE)
                 .append(producerMethod.returnType().name());
         for (Type parameterType : producerMethod.parameterTypes()) {
@@ -179,7 +181,8 @@ public class BeanGenerator extends AbstractGenerator {
         ClassInfo declaringClass = producerField.declaringClass();
         String declaringClassBase = declaringClass.name().withoutPackagePrefix();
 
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name()
+                + UNDERSCORE + Hashes.sha1_base64(declaringClass.name() + UNDERSCORE + producerField.name());
         this.beanToGeneratedBaseName.put(bean, baseName);
         String targetPackage = DotNames.packagePrefix(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);

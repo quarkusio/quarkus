@@ -10,6 +10,9 @@ import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -68,6 +71,7 @@ import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.RestAssuredStateManager;
@@ -108,6 +112,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static List<Object> testMethodInvokers;
+    private static boolean schedulerMockManagement;
 
     private static volatile ScheduledExecutorService hangDetectionExecutor;
     private static volatile Duration hangTimeout;
@@ -395,6 +400,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             pushMockContext();
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
+            if (schedulerMockManagement) {
+                resumeScheduler();
+            }
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
             if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
@@ -522,6 +530,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         resetHangTimeout();
         if (!failedBoot) {
+            if (schedulerMockManagement) {
+                pauseScheduler();
+            }
             popMockContext();
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
@@ -688,6 +699,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         resetHangTimeout();
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
+            schedulerMockManagement = testClassUsesMockBeans(requiredTestClass);
+            if (schedulerMockManagement) {
+                pauseScheduler();
+            }
             pushMockContext();
 
             // TODO this is now redundant, we can just get the class from requiredTestClass
@@ -721,6 +736,95 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             popContext.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private boolean testClassUsesMockBeans(Class<?> testClass) {
+        for (Class<?> c = testClass; c != null && c != Object.class; c = c.getSuperclass()) {
+            if (classDeclaresInjectMockOrSpy(c)) {
+                return true;
+            }
+        }
+        Class<?> enclosing = testClass.getEnclosingClass();
+        while (enclosing != null) {
+            if (classDeclaresInjectMockOrSpy(enclosing)) {
+                return true;
+            }
+            enclosing = enclosing.getEnclosingClass();
+        }
+        return false;
+    }
+
+    private boolean classDeclaresInjectMockOrSpy(Class<?> clazz) {
+        for (Field f : clazz.getDeclaredFields()) {
+            if (f.isAnnotationPresent(InjectMock.class)) {
+                return true;
+            }
+            for (Annotation a : f.getAnnotations()) {
+                if ("io.quarkus.test.junit.mockito.InjectSpy".equals(a.annotationType().getName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Reflection is required because quarkus-scheduler is an optional extension; this module cannot depend on it
+    private Object lookupScheduler() throws Exception {
+        ClassLoader cl = runningQuarkusApplication.getClassLoader();
+        Class<?> schedulerClass = cl.loadClass("io.quarkus.scheduler.Scheduler");
+        Class<?> arcClass = cl.loadClass("io.quarkus.arc.Arc");
+        Object container = arcClass.getDeclaredMethod("container").invoke(null);
+        Class<?> annotationArrayClass = Array.newInstance(
+                cl.loadClass("java.lang.annotation.Annotation"), 0).getClass();
+        Method instanceMethod = container.getClass().getMethod("instance", Class.class, annotationArrayClass);
+        instanceMethod.setAccessible(true);
+        Object handle = instanceMethod.invoke(container, schedulerClass,
+                Array.newInstance(cl.loadClass("java.lang.annotation.Annotation"), 0));
+        Method getMethod = handle.getClass().getMethod("get");
+        getMethod.setAccessible(true);
+        return getMethod.invoke(handle);
+    }
+
+    private void pauseScheduler() {
+        try {
+            Object scheduler = lookupScheduler();
+            if (scheduler != null) {
+                Class<?> schedulerClass = scheduler.getClass().getClassLoader()
+                        .loadClass("io.quarkus.scheduler.Scheduler");
+                boolean started = (boolean) schedulerClass.getMethod("isStarted").invoke(scheduler);
+                if (started) {
+                    boolean running = (boolean) schedulerClass.getMethod("isRunning").invoke(scheduler);
+                    if (running) {
+                        schedulerClass.getMethod("pause").invoke(scheduler);
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            // scheduler not present, nothing to do
+        } catch (Exception e) {
+            log.debug("Failed to pause scheduler for mock setup", e);
+        }
+    }
+
+    private void resumeScheduler() {
+        try {
+            Object scheduler = lookupScheduler();
+            if (scheduler != null) {
+                Class<?> schedulerClass = scheduler.getClass().getClassLoader()
+                        .loadClass("io.quarkus.scheduler.Scheduler");
+                boolean started = (boolean) schedulerClass.getMethod("isStarted").invoke(scheduler);
+                if (started) {
+                    boolean running = (boolean) schedulerClass.getMethod("isRunning").invoke(scheduler);
+                    if (!running) {
+                        schedulerClass.getMethod("resume").invoke(scheduler);
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            // scheduler not present, nothing to do
+        } catch (Exception e) {
+            log.debug("Failed to resume scheduler after mock setup", e);
         }
     }
 
@@ -1065,7 +1169,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         runAfterAllCallbacks(context);
         try {
             if (!isNativeOrIntegrationTest(context.getRequiredTestClass()) && (runningQuarkusApplication != null)) {
-                popMockContext();
+                try {
+                    popMockContext();
+                } finally {
+                    if (schedulerMockManagement) {
+                        resumeScheduler();
+                        schedulerMockManagement = false;
+                    }
+                }
             }
 
         } finally {

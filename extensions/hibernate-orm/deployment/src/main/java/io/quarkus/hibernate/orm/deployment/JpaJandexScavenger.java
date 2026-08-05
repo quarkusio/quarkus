@@ -616,21 +616,14 @@ public final class JpaJandexScavenger {
 
     private static boolean isIgnored(DotName classDotName) {
         String className = classDotName.toString();
-        if (className.startsWith("java.util.") || className.startsWith("java.lang.")
+        return className.startsWith("java.util.") || className.startsWith("java.lang.")
                 || className.startsWith("org.hibernate.engine.spi.")
-                || className.startsWith("jakarta.persistence.")
-                || className.startsWith("jakarta.persistence.")) {
-            return true;
-        }
-        return false;
+                || className.startsWith("jakarta.persistence.");
     }
 
     private static boolean isInJavaPackage(DotName classDotName) {
         String className = classDotName.toString();
-        if (className.startsWith("java.")) {
-            return true;
-        }
-        return false;
+        return className.startsWith("java.");
     }
 
     static class Collector {

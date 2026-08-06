@@ -253,11 +253,17 @@ public final class OidcUtils {
 
     public static JsonObject decodeJwtHeaders(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
         return decodeAsJsonObject(tokens.nextToken());
     }
 
     public static String decodeJwtHeadersAsString(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
         return base64UrlDecode(tokens.nextToken());
     }
 

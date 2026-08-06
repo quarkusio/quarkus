@@ -1,6 +1,7 @@
 package io.quarkus.oidc.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -233,6 +234,37 @@ public class OidcCommonUtilsTest {
             return null;
         }
         return encodedContent;
+    }
+
+    @Test
+    public void testDecodeJwtContentWithNoParts() {
+        // An empty or delimiter-only bearer token has zero StringTokenizer tokens.
+        // These used to throw NoSuchElementException out of getJwtContentPart, which
+        // escaped BearerAuthenticationMechanism as a non-AuthenticationFailedException
+        // and surfaced as HTTP 500 instead of a 401 challenge.
+        assertNull(OidcCommonUtils.decodeJwtContent(""));
+        assertNull(OidcCommonUtils.decodeJwtContent("."));
+        assertNull(OidcCommonUtils.decodeJwtContent(".."));
+        assertNull(OidcCommonUtils.decodeJwtContent("..."));
+        assertNull(OidcCommonUtils.decodeJwtContent("...."));
+    }
+
+    @Test
+    public void testGetJwtContentPartWithNoParts() {
+        assertNull(OidcCommonUtils.getJwtContentPart(""));
+        assertNull(OidcCommonUtils.getJwtContentPart("."));
+        assertNull(OidcCommonUtils.getJwtContentPart(".."));
+        assertNull(OidcCommonUtils.getJwtContentPart("..."));
+    }
+
+    @Test
+    public void testGetJwtContentPartStillRejectsWrongPartCounts() {
+        // Regression guard: the new zero-token check must not change how tokens
+        // with the wrong number of parts are treated.
+        assertNull(OidcCommonUtils.getJwtContentPart("onlyonepart"));
+        assertNull(OidcCommonUtils.getJwtContentPart("two.parts"));
+        assertNull(OidcCommonUtils.getJwtContentPart("a.b.c.d"));
+        assertEquals("b", OidcCommonUtils.getJwtContentPart("a.b.c"));
     }
 
     private static JsonObject decodeAsJsonObject(String encodedContent) {

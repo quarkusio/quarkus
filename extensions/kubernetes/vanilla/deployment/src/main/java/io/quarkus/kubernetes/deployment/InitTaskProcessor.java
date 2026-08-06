@@ -80,7 +80,8 @@ public class InitTaskProcessor {
 
         if (generateRoleForJobs) {
             InitTaskConfig.InitTaskRbacConfig rbac = initTaskDefaults.rbac();
-            String roleName = name + "-" + rbac.name();
+            // Dynamic default: {application-name}-view-jobs. When set, use the exact name.
+            String roleName = rbac.name().orElse(name + "-view-jobs");
 
             if (rbac.generate()) {
                 roles.produce(new KubernetesRoleBuildItem(roleName, Collections.singletonList(
@@ -91,8 +92,8 @@ public class InitTaskProcessor {
                         target));
             }
 
-            // Set the binding name explicitly so the Kubernetes extension does not double-prefix
-            // it as {app}-{app}-{role}.
+            // Set the binding name explicitly so it stays in sync with the Role name (and so the
+            // default {app}-view-jobs Role is not double-prefixed as {app}-{app}-view-jobs).
             roleBindings.produce(new KubernetesRoleBindingBuildItem(
                     roleName, null, target, Collections.emptyMap(),
                     new RoleRef(roleName, false),

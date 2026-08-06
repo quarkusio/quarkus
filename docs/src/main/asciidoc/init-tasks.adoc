@@ -154,8 +154,8 @@ You can customize the generated Role:
 
 [source,properties]
 ----
-# Base Role name (default: view-jobs). The application name is always prepended,
-# so the effective Role is `{application-name}-view-jobs`.
+# Exact Role name (optional). When unset, defaults to `{application-name}-view-jobs`.
+# No application-name prefix is applied to the value you set.
 quarkus.kubernetes.init-task-defaults.rbac.name=view-jobs
 
 # Generate the Role. Set to false to keep the Job and wait-for init container,

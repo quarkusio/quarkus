@@ -51,12 +51,11 @@ public interface InitTaskConfig {
 
     interface InitTaskRbacConfig {
         /**
-         * The name of the Role. The application name is always prepended, producing a unique
-         * name per application (e.g. {@code my-app-view-jobs}). This prevents name conflicts when
-         * multiple applications sharing the same namespace each manage their own Role.
+         * The name of the Role. When unset, defaults to {@code {application-name}-view-jobs}
+         * so multiple applications in the same namespace each get a unique Role. Set this to the
+         * exact Role name you want (no application-name prefix is applied).
          */
-        @WithDefault("view-jobs")
-        String name();
+        Optional<String> name();
 
         /**
          * If the Role is meant to be generated. When {@code false}, only the RoleBinding is

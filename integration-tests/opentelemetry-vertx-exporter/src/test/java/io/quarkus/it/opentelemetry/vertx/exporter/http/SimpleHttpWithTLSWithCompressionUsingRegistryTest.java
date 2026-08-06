@@ -12,7 +12,6 @@ import io.quarkus.test.junit.TestProfile;
 @QuarkusTestResource(value = OtelCollectorLifecycleManager.class, initArgs = {
         @ResourceArg(name = "enableTLS", value = "true"),
         @ResourceArg(name = "enableCompression", value = "true"),
-        @ResourceArg(name = "protocol", value = "http/protobuf"),
         @ResourceArg(name = "tlsRegistryName", value = "otel")
 }, restrictToAnnotatedClass = true)
 @TestProfile(SimpleProfile.class)

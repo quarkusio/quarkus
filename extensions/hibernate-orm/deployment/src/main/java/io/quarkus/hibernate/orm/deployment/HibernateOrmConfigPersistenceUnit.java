@@ -689,10 +689,10 @@ public interface HibernateOrmConfigPersistenceUnit {
          * <p>
          * Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit
          * and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence units.
-         * This does not deprecate or replace {@code quarkus.hibernate-orm.blocking}.
+         * This is the per-persistence-unit replacement for the deprecated {@code quarkus.hibernate-orm.blocking}.
          * <p>
          * If not set, this is inferred from whether a JDBC datasource is available for this persistence unit,
-         * as well as the global `quarkus.hibernate-orm.blocking` setting.
+         * as well as the global (deprecated) `quarkus.hibernate-orm.blocking` setting.
          *
          * @asciidoclet
          */

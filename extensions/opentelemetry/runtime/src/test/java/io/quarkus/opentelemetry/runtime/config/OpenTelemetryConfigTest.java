@@ -2,8 +2,7 @@ package io.quarkus.opentelemetry.runtime.config;
 
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType.GZIP;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType.NONE;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_GRPC_BASE_URI;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_HTTP_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,14 +46,14 @@ class OpenTelemetryConfigTest {
 
         OtlpExporterRuntimeConfig mapping = config.getConfigMapping(OtlpExporterRuntimeConfig.class);
         assertTrue(mapping.endpoint().isPresent());
-        assertEquals(DEFAULT_GRPC_BASE_URI, mapping.endpoint().get());
+        assertEquals(DEFAULT_HTTP_BASE_URI, mapping.endpoint().get());
         assertTrue(mapping.headers().isPresent());
         assertIterableEquals(List.of("foo", "bar"), mapping.headers().get());
         assertTrue(mapping.compression().isPresent());
         assertEquals(NONE, mapping.compression().get());
         assertEquals(DurationConverter.parseDuration("10s"), mapping.timeout());
         assertTrue(mapping.protocol().isPresent());
-        assertEquals(GRPC, mapping.protocol().get());
+        assertEquals(HTTP_PROTOBUF, mapping.protocol().get());
         assertTrue(mapping.keyCert().keys().isPresent());
         assertIterableEquals(List.of("keys"), mapping.keyCert().keys().get());
         assertTrue(mapping.keyCert().certs().isPresent());
@@ -75,14 +74,14 @@ class OpenTelemetryConfigTest {
 
         OtlpExporterTracesConfig traces = mapping.traces();
         assertTrue(traces.endpoint().isPresent());
-        assertEquals(DEFAULT_GRPC_BASE_URI, traces.endpoint().get());
+        assertEquals(DEFAULT_HTTP_BASE_URI, traces.endpoint().get());
         assertTrue(traces.headers().isPresent());
         assertIterableEquals(List.of("foo", "bar"), traces.headers().get());
         assertTrue(traces.compression().isPresent());
         assertEquals(NONE, traces.compression().get());
         assertEquals(DurationConverter.parseDuration("10s"), traces.timeout());
         assertTrue(traces.protocol().isPresent());
-        assertEquals(GRPC, traces.protocol().get());
+        assertEquals(HTTP_PROTOBUF, traces.protocol().get());
         assertTrue(traces.keyCert().keys().isPresent());
         assertIterableEquals(List.of("keys"), traces.keyCert().keys().get());
         assertTrue(traces.keyCert().certs().isPresent());
@@ -103,14 +102,14 @@ class OpenTelemetryConfigTest {
 
         OtlpExporterMetricsConfig metrics = mapping.metrics();
         assertTrue(metrics.endpoint().isPresent());
-        assertEquals(DEFAULT_GRPC_BASE_URI, metrics.endpoint().get());
+        assertEquals(DEFAULT_HTTP_BASE_URI, metrics.endpoint().get());
         assertTrue(metrics.headers().isPresent());
         assertIterableEquals(List.of("foo", "bar"), metrics.headers().get());
         assertTrue(metrics.compression().isPresent());
         assertEquals(NONE, metrics.compression().get());
         assertEquals(DurationConverter.parseDuration("10s"), metrics.timeout());
         assertTrue(metrics.protocol().isPresent());
-        assertEquals(GRPC, metrics.protocol().get());
+        assertEquals(HTTP_PROTOBUF, metrics.protocol().get());
         assertTrue(metrics.keyCert().keys().isPresent());
         assertIterableEquals(List.of("keys"), metrics.keyCert().keys().get());
         assertTrue(metrics.keyCert().certs().isPresent());

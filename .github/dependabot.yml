@@ -23,7 +23,6 @@ updates:
       - dependency-name: org.apache.james:apache-mime4j
       - dependency-name: org.quartz-scheduler:quartz
       - dependency-name: com.cronutils:cron-utils
-      - dependency-name: org.eclipse:yasson
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: org.jboss.logging:*
@@ -111,7 +110,7 @@ updates:
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
       # Yasson
-      - dependency-name: org.eclipse:yasson
+      - dependency-name: org.eclipse.yasson:yasson
       # AWS
       - dependency-name: com.amazonaws:*
       # Azure

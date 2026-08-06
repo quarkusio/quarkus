@@ -625,7 +625,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public Annotation[] getMethodAnnotations() {
         if (methodAnnotations == null) {
-            if (target == null) {
+            if (target == null || target.getLazyMethod() == null) {
                 return EMPTY_ANNOTATIONS;
             }
             return target.getLazyMethod().getAnnotations();

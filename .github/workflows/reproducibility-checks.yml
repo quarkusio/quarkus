@@ -1,7 +1,8 @@
-name: Quarkus Reproducibility Check
+name: Reproducibility checks
 
 permissions:
   contents: read
+  issues: write
   packages: read
 
 on:
@@ -22,7 +23,7 @@ env:
   REPRODUCIBILITY_MAVEN_ARGS: "-Dno-build-cache -Dquarkus-internal.test.reproducibility-check=5"
 
 jobs:
-  reproducibility-check:
+  reproducibility-checks:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
@@ -32,13 +33,19 @@ jobs:
       matrix:
         include:
           - id: jvm
-            name: "Deployment JVM Reproducibility Check"
-            artifact-name: jvm-reproducibility
+            name: "Reproducibility checks - Deployment tests"
+            artifact-name: deployment-tests-reproducibility
+            issue-number: 55830
           - id: jakarta-rest-tck
-            name: "Jakarta REST TCK Reproducibility Check"
+            name: "Reproducibility checks - Jakarta REST TCK"
             artifact-name: jakarta-rest-tck-reproducibility
+            issue-number: 55832
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Extract base JDK version from POM
         id: base-jdk
         run: |
@@ -46,7 +53,7 @@ jobs:
           echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
           echo "Base JDK version: ${BASE_JDK}"
       - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
@@ -125,3 +132,13 @@ jobs:
           name: build-logs-${{ matrix.name }}
           path: '**/build.log'
           retention-days: 7
+      - name: Report status
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: ${{ matrix.issue-number }}
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

@@ -332,13 +332,13 @@ When creating manual instrumentation, while naming metrics or attributes you sho
 
 === The Default
 
-The Quarkus OpenTelemetry extension uses its own signal exporters built on top of Vert.x for optimal performance and maintainability. All *Quarkus built in exporters use the OTLP protocol* through a couple of data senders, using `grpc` (the default) and `http/protobuf`.
+The Quarkus OpenTelemetry extension uses its own signal exporters built on top of Vert.x for optimal performance and maintainability. All *Quarkus built in exporters use the OTLP protocol* through a couple of data senders, using `http/protobuf` (the default) and `grpc`.
 
 The active exporter is automatically wired by CDI, that's why the `quarkus.otel.traces.exporter`, `quarkus.otel.metrics.exporter` and `quarkus.otel.logs.exporter` properties default value is `cdi`. This is not because of the protocol being used in the data transfer but because of how the exporters are wired.
 
 CDI (Context Dependency Injection) will manage the exporters to use, according to the selected protocol or when applications implement their own CDI exporter, like in tests.
 
-The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch the senders and defaults to `grpc` but `http/protobuf` can also be used.
+The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch the senders and defaults to `http/protobuf` but `grpc` can also be used.
 
 NOTE: If you change the protocol, you also need to change the port in the endpoint. The default port for `grpc` is `4317` and for `http/protobuf` is `4318`.
 

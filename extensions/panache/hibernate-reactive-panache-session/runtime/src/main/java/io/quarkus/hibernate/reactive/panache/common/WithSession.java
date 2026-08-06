@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.reactive.panache.common;
 
-import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -29,12 +27,13 @@ import jakarta.interceptor.InterceptorBinding;
 public @interface WithSession {
 
     /**
-     * The name of the persistence unit. If not specified, the default persistence unit is used.
+     * The name of the persistence unit. If not specified, the default persistence unit is used
+     * ({@code "<default>"}, matching {@code PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME}).
      *
      * @return the persistence unit name
      */
     @Nonbinding
-    String value() default DEFAULT_PERSISTENCE_UNIT_NAME;
+    String value() default "<default>";
 
     /**
      * Requests a stateless session, as opposed to a managed session.

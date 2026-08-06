@@ -9,4 +9,8 @@ public class PanacheHibernateRecorder {
     public void setNamedQueryMap(Map<String, Map<String, String>> namedQueryMap) {
         NamedQueryUtil.setNamedQueryMap(namedQueryMap);
     }
+
+    public void registerSessionOperations() {
+        SessionOperations.setProvider(new SessionOperationsProviderImpl());
+    }
 }

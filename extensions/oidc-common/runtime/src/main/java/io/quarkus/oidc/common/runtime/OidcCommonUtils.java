@@ -983,6 +983,10 @@ public class OidcCommonUtils {
 
     public static String getJwtContentPart(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            // An empty or delimiter-only token has no parts at all.
+            return null;
+        }
         // part 1: skip the token headers
         tokens.nextToken();
         if (!tokens.hasMoreTokens()) {

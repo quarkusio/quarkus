@@ -1082,8 +1082,23 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.maximum-weight=104857600
 ----
 
 The `maximum-weight` property sets the total weight limit for the cache region.
-By default Quarkus estimates each entry's weight from Hibernate's dehydrated second-level cache state
-(strings, byte arrays, and similar variable-size values contribute most of the weight).
+Weight units come from the active weigher: they are *relative eviction accounting units*,
+not a measurement of JVM heap bytes. Exact object sizes depend on the runtime
+(compressed oops, object headers, alignment, JVM vendor) and are intentionally not modeled.
+
+By default Quarkus uses a built-in weigher that walks Hibernate's dehydrated second-level
+cache state (`CacheEntry` / `CollectionCacheEntry`), not live entity instances:
+
+* each entry starts with a small base weight
+* `String` / `char[]` contribute roughly `length * 2`
+* `byte[]` contribute roughly `length`
+* common scalars (numbers, booleans, enums, temporals, UUID, …) contribute a flat weight
+* unrecognized values contribute a fixed unknown-type weight
+
+Those heuristics are good enough to prefer eviction of large string/blob payloads over tiny
+entries, but they can diverge from true heap usage for custom `Serializable` graphs, nested
+structures beyond shallow arrays, unknown types, and JVM header/reference costs.
+If that matters for your region, provide a custom weigher.
 
 To customize weighing, provide a `com.github.benmanes.caffeine.cache.Weigher` CDI bean annotated with
 `@PersistenceUnitExtension`:
@@ -1097,7 +1112,8 @@ import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 public class MyEntityWeigher implements Weigher<Object, Object> {
     @Override
     public int weigh(Object key, Object value) {
-        // Hibernate 2LC stores dehydrated CacheEntry state, not live entity instances
+        // Hibernate 2LC stores dehydrated CacheEntry state, not live entity instances.
+        // Return relative weight units consistent with your maximum-weight setting.
         return 100;
     }
 }

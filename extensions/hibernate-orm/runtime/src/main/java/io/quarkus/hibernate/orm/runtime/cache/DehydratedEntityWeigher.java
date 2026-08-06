@@ -14,12 +14,33 @@ import org.hibernate.cache.spi.entry.CollectionCacheEntry;
 import com.github.benmanes.caffeine.cache.Weigher;
 
 /**
- * Estimates the relative memory weight of Hibernate second-level cache entries.
+ * Estimates a <em>relative</em> weight for Hibernate second-level cache entries.
+ * <p>
+ * These weights are eviction accounting units for Caffeine's {@code maximumWeight},
+ * not a measurement of JVM heap bytes. Exact instance sizes depend on the runtime
+ * (compressed oops, object headers / Lilliput, alignment, JVM vendor), which this
+ * weigher deliberately does not attempt to model.
  * <p>
  * Hibernate 2LC stores dehydrated entity state (typically {@link CacheEntry} with a
  * disassembled state array), not live entity instances. This weigher walks that state
  * and assigns weight primarily from variable-size values such as {@link String} and
  * {@code byte[]} payloads.
+ * <h2>Heuristics</h2>
+ * <ul>
+ * <li>Each entry starts with a small base weight.</li>
+ * <li>{@link String} / {@code char[]} contribute roughly {@code length * 2}.</li>
+ * <li>{@code byte[]} contribute roughly {@code length}.</li>
+ * <li>Common scalars (numbers, booleans, enums, temporals, UUID, …) contribute a
+ * flat scalar weight.</li>
+ * <li>Unrecognized values contribute a fixed unknown-type weight.</li>
+ * </ul>
+ * <h2>Known gaps</h2>
+ * Estimates can diverge substantially from true heap usage for custom
+ * {@link Serializable} graphs, nested structures beyond shallow arrays, and values
+ * that fall into the unknown-type bucket. Object header and reference costs are
+ * ignored. Applications that need different accounting should provide a custom
+ * {@link Weigher} CDI bean annotated with
+ * {@code io.quarkus.hibernate.orm.PersistenceUnitExtension}.
  */
 public final class DehydratedEntityWeigher implements Weigher<Object, Object> {
 

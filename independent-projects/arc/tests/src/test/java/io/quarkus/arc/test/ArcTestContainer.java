@@ -478,12 +478,17 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             String deploymentName = testClass.getName().replace('.', '_');
             BeanProcessor.Builder builder = configureBeanProcessorBuilder(deploymentName,
                     immutableBeanArchiveIndex, applicationIndex, buildCompatibleExtensions);
+            Set<String> generatedClassNames = new HashSet<>();
             builder.setOutput(new ResourceOutput() {
 
                 @Override
                 public void writeResource(Resource resource) throws IOException {
                     switch (resource.getType()) {
                         case JAVA_CLASS:
+                            if (!generatedClassNames.add(resource.getFullyQualifiedName())) {
+                                throw new IllegalStateException(
+                                        "Duplicate generated class detected: " + resource.getFullyQualifiedName());
+                            }
                             resource.writeTo(testOutputDirectory);
                             break;
                         case SERVICE_PROVIDER:

@@ -54,7 +54,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
 which includes the default OpenTelemetry support,
-and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
+and an OTLP span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
 If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry` extension
 to your project by running the following command in your project base directory:
@@ -135,13 +135,13 @@ The only mandatory configuration for OpenTelemetry Metrics is the one enabling i
 quarkus.otel.metrics.enabled=true
 ----
 
-To change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+To change any of the default property values, here is an example on how to configure the default OTLP Exporter within the application, using the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
 quarkus.application.name=myservice // <1>
 quarkus.otel.metrics.enabled=true // <2>
-quarkus.otel.exporter.otlp.metrics.endpoint=http://localhost:4317 // <3>
+quarkus.otel.exporter.otlp.metrics.endpoint=http://localhost:4318 // <3>
 quarkus.otel.exporter.otlp.metrics.headers=authorization=Bearer my_secret // <4>
 ----
 
@@ -149,9 +149,9 @@ quarkus.otel.exporter.otlp.metrics.headers=authorization=Bearer my_secret // <4>
 If not set, it will default to the artifact id.
 <2> Enable the OpenTelemetry metrics.
 Must be set at build time.
-<3> gRPC endpoint to send the metrics.
-If not set, it will default to `http://localhost:4317`.
-<4> Optional gRPC headers commonly used for authentication.
+<3> OTLP endpoint to send the metrics.
+If not set, it will default to `http://localhost:4318`.
+<4> Optional headers commonly used for authentication.
 
 To configure the connection using the same properties for all signals, please check the base xref:opentelemetry.adoc#create-the-configuration[configuration section of the OpenTelemetry guide].
 
@@ -205,9 +205,9 @@ If using `application.properties` to configure the tracer:
 
 include::{includes}/devtools/dev.adoc[]
 
-or if configuring the OTLP gRPC endpoint via JVM arguments:
+or if configuring the OTLP endpoint via JVM arguments:
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.endpoint=http://localhost:4317"
+:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.endpoint=http://localhost:4318"
 include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 

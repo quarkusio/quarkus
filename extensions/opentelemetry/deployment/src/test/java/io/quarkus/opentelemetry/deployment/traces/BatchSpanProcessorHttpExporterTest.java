@@ -20,7 +20,6 @@ public class BatchSpanProcessorHttpExporterTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
-            .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50ms");

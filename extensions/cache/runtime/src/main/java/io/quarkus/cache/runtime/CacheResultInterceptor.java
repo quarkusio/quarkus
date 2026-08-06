@@ -86,7 +86,12 @@ public class CacheResultInterceptor extends CacheInterceptor {
                         });
                 return createAsyncResult(cacheValue, returnType);
             } else {
-                Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
+                /*
+                 * Prefer the synchronous cache API over Uni.await(). With a ManagedExecutor that clears CDI,
+                 * Mutiny + SmallRye Context Propagation can re-apply that cleared ThreadContext and wipe a
+                 * RequestContext activated on this thread.
+                 */
+                Function<Object, Object> valueLoader = new Function<Object, Object>() {
                     @Override
                     public Object apply(Object k) {
                         try {
@@ -99,24 +104,21 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             throw new CacheException(e);
                         }
                     }
-                });
-                Object value;
+                };
                 if (binding.lockTimeout() <= 0) {
-                    value = cacheValue.await().indefinitely();
-                } else {
-                    try {
-                        /*
-                         * If the current thread started the cache value computation, then the computation is already finished
-                         * since
-                         * it was done synchronously and the following call will never time out.
-                         */
-                        value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
-                    } catch (TimeoutException e) {
-                        // TODO: Add statistics here to monitor the timeout.
-                        return invocationContext.proceed();
-                    }
+                    return cache.getSynchronous(key, valueLoader);
                 }
-                return value;
+                try {
+                    /*
+                     * If the current thread started the cache value computation, then the computation is already finished
+                     * since
+                     * it was done synchronously and the following call will never time out.
+                     */
+                    return cache.getSynchronous(key, valueLoader, binding.lockTimeout());
+                } catch (TimeoutException e) {
+                    // TODO: Add statistics here to monitor the timeout.
+                    return invocationContext.proceed();
+                }
             }
 
         } catch (CacheException e) {

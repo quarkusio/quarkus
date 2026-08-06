@@ -120,18 +120,118 @@ When explicit audiences are provided, they take precedence over the configured d
 return spiffeClient.getWorkloadJsonWebToken("https://other-service.example.com").map(WorkloadJsonWebToken::token);
 ----
 
-== Testing
-
-In dev and test modes, the extension provides a Dev Service that emulates the SPIFFE Workload API with a pre-configured identity and a locally generated key pair.
-While it does not support custom authorization policies or registration entries, it is sufficient for verifying that your application correctly retrieves and uses JWT-SVIDs without requiring external SPIRE infrastructure.
-You can choose the transport protocol with the `quarkus.spiffe-client.devservices.transport` property, which accepts `unix` (default) or `tcp`.
-
 == OIDC SPIFFE Client Authentication
 
 When combined with `quarkus-oidc` or `quarkus-oidc-client`, this extension can supply JWT-SVIDs as client assertions automatically:
 
 * To authenticate the OIDC provider client during the authorization code exchange, see the xref:security-oidc-code-flow-authentication.adoc#oidc-provider-client-authentication[OIDC provider client authentication] section of the OIDC code flow guide.
 * To authenticate an `OidcClient` for `client_credentials` or other grant types, see the xref:security-openid-connect-client-reference.adoc#oidc-client-authentication[OidcClient authentication] section of the OIDC client reference.
+
+== Testing
+
+In dev and test modes, the extension provides a Dev Service that emulates the SPIFFE Workload API with a pre-configured identity and a locally generated key pair.
+While it does not support custom authorization policies or registration entries, it is sufficient for verifying that your application correctly retrieves and uses JWT-SVIDs without requiring external SPIRE infrastructure.
+You can choose the transport protocol with the `quarkus.spiffe-client.devservices.transport` property, which accepts `unix` (default) or `tcp`.
+
+[[keycloak-dev-svc-integration]]
+=== Testing SPIFFE client authentication with Keycloak
+
+To test OIDC SPIFFE client authentication against Keycloak Dev Services, you need to configure a Keycloak realm with a SPIFFE identity provider and a `federated-jwt` client. 
+You can automate this setup by creating a custom test resource using `KeycloakTestClient`. This ensures the realm is ready before your tests execute.
+
+[source,java]
+----
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+
+import io.quarkus.test.common.DevServicesContext;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
+
+public class SpiffeKeycloakTestResource implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
+
+    private final KeycloakTestClient client = new KeycloakTestClient();
+
+    @Override
+    public void setIntegrationTestContext(DevServicesContext context) {
+        client.setIntegrationTestContext(context);
+    }
+
+    @Override
+    public Map<String, String> start() {
+        RealmRepresentation realm = new RealmRepresentation();
+        realm.setRealm("quarkus-spiffe");
+        realm.setEnabled(true);
+        realm.setUsers(new ArrayList<>());
+        realm.setClients(new ArrayList<>());
+
+        IdentityProviderRepresentation idp = new IdentityProviderRepresentation();
+        idp.setProviderId("spiffe");
+        idp.setAlias("spiffe-idp");
+        idp.setEnabled(true);
+        idp.setConfig(Map.of(
+                "trustDomain", "spiffe://test.quarkus.io",
+                "bundleEndpoint", "http://host.testcontainers.internal:18443/bundle"));
+        realm.addIdentityProvider(idp);
+
+        ClientRepresentation spiffeClient = new ClientRepresentation();
+        spiffeClient.setClientId("my-app");
+        spiffeClient.setPublicClient(false);
+        spiffeClient.setServiceAccountsEnabled(true);
+        spiffeClient.setStandardFlowEnabled(true);
+        spiffeClient.setClientAuthenticatorType("federated-jwt");
+        spiffeClient.setRedirectUris(List.of("*"));
+        spiffeClient.setEnabled(true);
+        spiffeClient.setAttributes(Map.of(
+                "jwt.credential.issuer", "spiffe-idp",
+                "jwt.credential.sub", "spiffe://test.quarkus.io/test-workload"));
+        realm.getClients().add(spiffeClient);
+
+        client.createRealm(realm);
+        return Map.of();
+    }
+
+    @Override
+    public void stop() {
+    }
+}
+----
+
+Next, adjust your application configuration to enable the SPIFFE feature in Keycloak Dev Services and align the communication ports:
+
+[source,properties]
+----
+quarkus.spiffe-client.devservices.http-port=18443
+quarkus.keycloak.devservices.host-accessible-ports=18443
+quarkus.keycloak.devservices.features=spiffe
+quarkus.keycloak.devservices.realm-name=quarkus-spiffe
+quarkus.keycloak.devservices.create-realm=false
+quarkus.keycloak.devservices.create-client=false
+----
+
+Finally, apply this setup to your test class using the `@QuarkusTestResource` annotation:
+
+[source,java]
+----
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+@QuarkusTestResource(SpiffeKeycloakTestResource.class)
+class MySpiffeClientTest {
+
+    @Test
+    void testClientAuthentication() {
+        // Test logic that relies on Keycloak SPIFFE client authentication
+    }
+}
+----
 
 == Extension integration
 

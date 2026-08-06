@@ -27,6 +27,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
@@ -94,7 +95,7 @@ public class MSSQLDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override

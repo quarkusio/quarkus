@@ -62,7 +62,7 @@
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>
-        <networknt-schema-validator.version>2.0.1</networknt-schema-validator.version>
+        <networknt-schema-validator.version>3.0.6</networknt-schema-validator.version>
     </properties>
     <modules>
         <module>registry-client</module>

@@ -63,20 +63,6 @@
                     <groupId>org.apache.maven.resolver</groupId>
                     <artifactId>maven-resolver-connector-basic</artifactId>
                 </exclusion>
-                <!-- 
-                Ideally `quarkus-devtools-common` would not have a dependency on Jackson 2, but currently that is not possible
-                 because `json-schema-validator` uses Jackson 2.
-                 Note that although there is a new version of the library that uses Jackson 3, we can't use that because CycloneDX uses
-                 `json-schema-validator` but not the version that leverages to Jackson 3
-                 -->
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                    <artifactId>jackson-dataformat-yaml</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 

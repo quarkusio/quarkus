@@ -1,9 +1,12 @@
 package io.quarkus.micrometer.runtime;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -16,6 +19,7 @@ import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.util.TimeUtils;
 import io.quarkus.arc.ArcInvocationContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Functions;
@@ -116,7 +120,11 @@ public class MicrometerTimedInterceptor {
                     .tags(timerTags)
                     .tag("exception", exceptionClass)
                     .publishPercentileHistogram(timed.histogram())
-                    .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles());
+                    .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles())
+                    .serviceLevelObjectives(
+                            timed.serviceLevelObjectives().length > 0 ? Arrays.stream(timed.serviceLevelObjectives())
+                                    .mapToObj(s -> Duration.ofNanos((long) TimeUtils.secondsToUnit(s, TimeUnit.NANOSECONDS)))
+                                    .toArray(Duration[]::new) : null);
 
             sample.stop(builder.register(meterRegistry));
         } catch (Exception e) {

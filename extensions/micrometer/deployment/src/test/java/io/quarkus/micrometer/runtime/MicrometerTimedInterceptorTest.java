@@ -1,5 +1,6 @@
 package io.quarkus.micrometer.runtime;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.inject.Inject;
@@ -13,6 +14,8 @@ import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.distribution.CountAtBucket;
+import io.micrometer.core.instrument.distribution.HistogramSnapshot;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.micrometer.test.CountedResource;
 import io.quarkus.micrometer.test.GuardedResult;
@@ -234,6 +237,39 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(bravoTimer);
         Assertions.assertEquals(1, bravoTimer.count());
+    }
+
+    @Test
+    void testTimeMethod_emptyServiceLevelObjectives() {
+        timed.emptyServiceLevelObjectives();
+
+        Timer timer = registry.get("emptyServiceLevelObjectives")
+                .tag("method", "emptyServiceLevelObjectives")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none").timer();
+
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+
+        HistogramSnapshot snapshot = timer.takeSnapshot();
+        Assertions.assertEquals(0, snapshot.histogramCounts().length);
+    }
+
+    @Test
+    void testTimeMethod_customServiceLevelObjectives() {
+        timed.customServiceLevelObjectives();
+
+        Timer timer = registry.get("customServiceLevelObjectives")
+                .tag("method", "customServiceLevelObjectives")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none").timer();
+
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+
+        HistogramSnapshot snapshot = timer.takeSnapshot();
+        Assertions.assertArrayEquals(new double[] { 1e7, 2.5e7, 5e7, 1e8, 5e8, 1e9 },
+                Arrays.stream(snapshot.histogramCounts()).mapToDouble(CountAtBucket::bucket).toArray());
     }
 
 }

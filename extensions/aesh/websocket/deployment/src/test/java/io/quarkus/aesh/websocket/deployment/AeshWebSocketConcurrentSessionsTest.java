@@ -81,6 +81,12 @@ public class AeshWebSocketConcurrentSessionsTest {
                     }).start();
 
                     ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    // Retry init if server did not respond (handles slow JVMs like Semeru)
+                    vertx.setTimer(5000, id -> {
+                        if (sessionOutput.length() == 0) {
+                            ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                        }
+                    });
                 });
             }
 

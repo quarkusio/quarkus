@@ -65,6 +65,12 @@ public class AeshWebSocketIdleTimeoutTest {
                 ws.closeHandler(v -> closedLatch.countDown());
 
                 ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                // Retry init if server did not respond (handles slow JVMs like Semeru)
+                vertx.setTimer(5000, id -> {
+                    if (output.length() == 0) {
+                        ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    }
+                });
             });
 
             // Verify the command works

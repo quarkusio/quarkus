@@ -33,7 +33,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Regression test for <a href="https://github.com/quarkusio/quarkus/issues/52239">#52239</a>.
@@ -44,7 +44,7 @@ public class RestClientReadTimeoutOpenTelemetryTest {
     static final CountDownLatch SLOW_HANDLER_DONE = new CountDownLatch(1);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addPackage(TestSpanExporter.class.getPackage())
             .addClasses(SemconvResolver.class)
             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),

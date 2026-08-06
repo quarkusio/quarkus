@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BatchSpanProcessorConfigTest {
 
@@ -23,7 +23,7 @@ public class BatchSpanProcessorConfigTest {
     private static final Duration EXPORT_TIMEOUT = Duration.ofSeconds(10);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")

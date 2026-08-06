@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy;
 
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 
 import java.io.IOException;
 

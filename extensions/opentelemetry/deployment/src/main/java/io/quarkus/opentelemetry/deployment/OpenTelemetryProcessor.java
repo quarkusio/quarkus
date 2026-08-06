@@ -22,10 +22,10 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.ClassVisitor;
@@ -57,7 +57,6 @@ import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.arc.processor.Transformation;
 import io.quarkus.builder.Version;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
@@ -72,6 +71,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -111,6 +111,12 @@ public class OpenTelemetryProcessor {
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
+
+    @BuildStep
+    SystemPropertyBuildItem setSemconvStabilityOptIn() {
+        // See: /io/opentelemetry/instrumentation/api/internal/SemconvStability.java:45
+        return new SystemPropertyBuildItem("otel.semconv-stability.opt-in", "rpc");
+    }
 
     @BuildStep(onlyIfNot = MetricsEnabled.class)
     void registerForReflection(BuildProducer<ReflectiveMethodBuildItem> reflectiveItem) {
@@ -382,25 +388,21 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     void transformWithSpan(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+                .whenClass(c -> c.name().equals(WITH_SPAN_INTERCEPTOR) || c.name().equals(ADD_SPAN_ATTRIBUTES_INTERCEPTOR))
+                .transform(ctx -> {
+                    ClassInfo clazz = ctx.declaration().asClass();
+                    if (clazz.name().equals(WITH_SPAN_INTERCEPTOR)) {
+                        ctx.add(AnnotationInstance.builder(WithSpan.class).build());
+                    } else if (clazz.name().equals(ADD_SPAN_ATTRIBUTES_INTERCEPTOR)) {
+                        ctx.add(AnnotationInstance.builder(AddingSpanAttributes.class).build());
+                    }
+                })));
 
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
-            AnnotationTarget target = transformationContext.getTarget();
-            Transformation transform = transformationContext.transform();
-            if (target.kind().equals(AnnotationTarget.Kind.CLASS)) {
-                if (target.asClass().name().equals(WITH_SPAN_INTERCEPTOR)) {
-                    transform.add(WITH_SPAN);
-                } else if (target.asClass().name().equals(ADD_SPAN_ATTRIBUTES_INTERCEPTOR)) {
-                    transform.add(ADD_SPAN_ATTRIBUTES);
-                }
-            } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
-                MethodInfo methodInfo = target.asMethod();
-                // WITH_SPAN_INTERCEPTOR and ADD_SPAN_ATTRIBUTES must not be applied at the same time and the first has priority.
-                if (methodInfo.hasAnnotation(WITH_SPAN) && methodInfo.hasAnnotation(ADD_SPAN_ATTRIBUTES)) {
-                    transform.remove(isAddSpanAttribute);
-                }
-            }
-            transform.done();
-        }));
+        // WITH_SPAN_INTERCEPTOR and ADD_SPAN_ATTRIBUTES must not be applied at the same time and the first has priority.
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forMethods()
+                .whenAllMatch(WITH_SPAN, ADD_SPAN_ATTRIBUTES)
+                .transform(ctx -> ctx.remove(isAddSpanAttribute))));
     }
 
     @BuildStep

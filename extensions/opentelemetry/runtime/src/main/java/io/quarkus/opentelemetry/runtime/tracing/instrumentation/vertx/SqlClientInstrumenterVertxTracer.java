@@ -209,23 +209,9 @@ public class SqlClientInstrumenterVertxTracer implements
             return queryTrace.system();
         }
 
-        // kept for compatibility reasons
-        @Deprecated
-        @Override
-        public String getUser(final QueryTrace queryTrace) {
-            return queryTrace.user();
-        }
-
         @Override
         public String getDbNamespace(final QueryTrace queryTrace) {
             return null;
-        }
-
-        // kept for compatibility reasons
-        @Deprecated
-        @Override
-        public String getConnectionString(final QueryTrace queryTrace) {
-            return queryTrace.connectionString();
         }
 
         @Override

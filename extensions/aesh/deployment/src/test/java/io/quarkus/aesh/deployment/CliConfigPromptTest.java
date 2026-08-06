@@ -106,7 +106,7 @@ public class CliConfigPromptTest {
 
         @Override
         public org.aesh.terminal.Device device() {
-            return null;
+            return new org.aesh.terminal.BaseDevice("test");
         }
 
         @Override

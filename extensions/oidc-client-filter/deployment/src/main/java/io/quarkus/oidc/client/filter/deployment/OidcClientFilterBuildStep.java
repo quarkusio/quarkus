@@ -50,12 +50,6 @@ public class OidcClientFilterBuildStep {
                 .reason(getClass().getName())
                 .methods().fields().build());
 
-        additionalBeans
-                .produce(AdditionalBeanBuildItem.unremovableOf(io.quarkus.oidc.client.filter.OidcClientRequestFilter.class));
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(io.quarkus.oidc.client.filter.OidcClientRequestFilter.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
-
         // register default request filter provider against the rest of the clients (client != namedFilterClientClasses)
         if (config.registerFilter()) {
             final Set<String> namedFilterClientClasses = namedOidcClientFilterBuildItem.namedFilterClientClasses;

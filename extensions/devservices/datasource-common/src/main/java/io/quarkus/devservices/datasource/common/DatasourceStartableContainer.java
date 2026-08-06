@@ -2,8 +2,6 @@ package io.quarkus.devservices.datasource.common;
 
 import org.testcontainers.containers.GenericContainer;
 
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.devservices.common.StartableContainer;
 
 /**

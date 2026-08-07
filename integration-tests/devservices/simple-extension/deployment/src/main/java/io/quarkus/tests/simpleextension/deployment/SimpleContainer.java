@@ -56,4 +56,9 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
     public String getClassLoaderNameOnStart() {
         return classLoaderNameOnStart;
     }
+
+    @Override
+    public String getContainerId() {
+        return super.getContainerId();
+    }
 }

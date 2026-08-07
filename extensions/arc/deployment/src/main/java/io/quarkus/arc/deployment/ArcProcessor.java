@@ -414,6 +414,40 @@ public class ArcProcessor {
             }
         });
 
+        // async handlers
+        arcConfig.asyncHandler().forEach((asyncType, asyncHandler) -> {
+            DotName asyncTypeName = DotName.createSimple(asyncType);
+            ClassInfo asyncHandlerClass = index.getClassByName(asyncHandler);
+
+            if (asyncHandlerClass == null) {
+                throw new IllegalArgumentException("Async handler class '" + asyncHandler + "' not found in the index");
+            }
+
+            boolean ok = false;
+            for (Type iface : asyncHandlerClass.interfaceTypes()) {
+                if (iface.name().equals(DotNames.ASYNC_HANDLER_RETURN_TYPE)
+                        && iface.kind() == Type.Kind.PARAMETERIZED_TYPE
+                        && iface.asParameterizedType().arguments().get(0).name().equals(asyncTypeName)) {
+                    ok = true;
+                } else if (iface.name().equals(DotNames.ASYNC_HANDLER_PARAMETER_TYPE)
+                        && iface.kind() == Type.Kind.PARAMETERIZED_TYPE
+                        && iface.asParameterizedType().arguments().get(0).name().equals(asyncTypeName)) {
+                    ok = true;
+                }
+            }
+            if (!ok) {
+                throw new IllegalArgumentException("Async handler '" + asyncHandler + "' configured for '" + asyncType
+                        + "' but implements neither AsyncHandler.ReturnType<" + asyncType
+                        + "> nor AsyncHandler.ParameterType<" + asyncType + ">");
+            }
+
+            try {
+                builder.addAsyncHandler(Thread.currentThread().getContextClassLoader().loadClass(asyncHandler));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
         return new ContextRegistrationPhaseBuildItem(context, beanProcessor);

@@ -2,24 +2,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-cache-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-
-    <artifactId>quarkus-cache-parent</artifactId>
-    <name>Quarkus - Cache</name>
+    <artifactId>quarkus-cache-kotlin-parent</artifactId>
+    <name>Quarkus - Cache - Kotlin</name>
     <packaging>pom</packaging>
-
     <modules>
         <module>deployment</module>
-        <module>deployment-spi</module>
-        <module>kotlin</module>
         <module>runtime</module>
-        <module>runtime-dev</module>
     </modules>
+
 </project>

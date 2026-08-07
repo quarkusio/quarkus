@@ -26,7 +26,10 @@ import io.quarkus.test.QuarkusExtensionTest;
 public class OpenTelemetryIdGeneratorTest {
     @RegisterExtension
     static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

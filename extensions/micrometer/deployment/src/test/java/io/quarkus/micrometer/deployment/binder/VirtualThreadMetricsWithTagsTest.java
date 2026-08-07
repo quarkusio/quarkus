@@ -19,6 +19,7 @@ public class VirtualThreadMetricsWithTagsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.virtual-threads.tags", "k1=v1, k2=v2")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();

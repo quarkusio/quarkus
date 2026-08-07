@@ -39,6 +39,7 @@ public class StorkMetricsServiceDiscoveryFailTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "mock")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("greeting/mp-rest/url", "stork://greeting-service/greeting")

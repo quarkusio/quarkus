@@ -5,7 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTelemetry Logging
 include::_attributes.adoc[]
-:extension-status: preview
+:extension-status: stable
+:categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Logging to provide centralised logging for interactive web applications.
 :topics: observability,opentelemetry,logging
 :extensions: io.quarkus:quarkus-opentelemetry
@@ -18,7 +19,6 @@ include::{includes}/observability-include.adoc[]
 
 [NOTE]
 ====
-- OpenTelemetry Logging is considered _tech preview_ and is disabled by default.
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.
 ====
 

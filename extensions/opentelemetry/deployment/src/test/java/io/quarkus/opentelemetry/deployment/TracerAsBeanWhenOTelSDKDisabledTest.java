@@ -20,7 +20,8 @@ public class TracerAsBeanWhenOTelSDKDisabledTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Resource.class))
-            .overrideRuntimeConfigKey("quarkus.otel.sdk.disabled", "true");
+            .overrideRuntimeConfigKey("quarkus.otel.sdk.disabled", "true")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Test
     public void test() {

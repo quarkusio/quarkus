@@ -123,24 +123,32 @@ public final class VertxGrpcSender implements GrpcSender {
 
         if (client == null) {
             logger.log(Level.FINE, "Client is null. Cannot close.");
+            // nothing to shutdown
+            shutdownResult.succeed();
             return shutdownResult;
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                logger.log(Level.INFO, "gRPC client close returned null, possibly already closed.");
+                shutdownResult.fail();
+            } else {
+                closeFuture
+                        .onSuccess(
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(Void event) {
+                                        shutdownResult.succeed();
+                                    }
+                                })
+                        .onFailure(new Handler<>() {
+                            @Override
+                            public void handle(Throwable event) {
+                                shutdownResult.fail();
+                            }
+                        });
+            }
         } catch (RejectedExecutionException e) {
             internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
@@ -154,6 +162,9 @@ public final class VertxGrpcSender implements GrpcSender {
             int numberOfAttempts,
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
+        if (client == null) {
+            return;
+        }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {
             @Override
             public CompletionStage<GrpcClientRequest<Buffer, Buffer>> get() {

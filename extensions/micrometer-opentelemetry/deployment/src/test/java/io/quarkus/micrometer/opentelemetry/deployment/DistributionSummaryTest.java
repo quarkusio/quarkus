@@ -31,7 +31,6 @@ public class DistributionSummaryTest {
                             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                             .add(new StringAsset("""
-                                    quarkus.otel.metrics.enabled=true\n
                                     quarkus.otel.traces.exporter=none\n
                                     quarkus.otel.logs.exporter=none\n
                                     quarkus.otel.metrics.exporter=in-memory\n

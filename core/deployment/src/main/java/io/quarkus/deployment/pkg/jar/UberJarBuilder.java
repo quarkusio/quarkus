@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -260,7 +261,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     // When tree shake level is CLASSES, skip non-reachable classes
                     // Skip filtering for multi-release version entries (META-INF/versions/)
                     if (treeShakeResult.isClassesShaken()
-                            && relativePath.endsWith(".class") && !relativePath.equals("module-info.class")
+                            && ClassLoaderHelper.isClassEntry(relativePath)
                             && !relativePath.startsWith("META-INF/versions/")) {
                         String className = relativePath.substring(0, relativePath.length() - 6).replace('/', '.');
                         if (!treeShakeResult.getReachableClassNames().contains(className)) {

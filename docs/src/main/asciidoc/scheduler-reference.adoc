@@ -62,6 +62,9 @@ Some CDI events are fired synchronously and asynchronously when specific events 
 |===
 |Type |Event description
 
+|`io.quarkus.scheduler.StartedExecution`
+|An execution of a scheduled job was started.
+
 |`io.quarkus.scheduler.SuccessfulExecution`
 |An execution of a scheduled job completed successfully.
 
@@ -70,6 +73,9 @@ Some CDI events are fired synchronously and asynchronously when specific events 
 
 |`io.quarkus.scheduler.SkippedExecution`
 |An execution of a scheduled job was skipped.
+
+|`io.quarkus.scheduler.DelayedExecution`
+|An execution of a scheduled job was delayed.
 
 |`io.quarkus.scheduler.SchedulerPaused`
 |The scheduler was paused.

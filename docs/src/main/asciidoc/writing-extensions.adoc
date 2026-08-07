@@ -484,6 +484,35 @@ You will also need to configure the `maven-compiler-plugin` of the deployment mo
 </build>
 ----
 
+== Config documentation generation
+
+Older extensions generate configuration documentation into the global
+
+`target/asciidoc/generated/config/`
+
+directory located at the root of the project.
+
+=== Using quarkus-config-doc-maven-plugin
+
+Newer extensions can configure the output directory directly using the
+`quarkus-config-doc-maven-plugin`.
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-config-doc-maven-plugin</artifactId>
+    <extensions>true</extensions>
+    <configuration>
+        <targetDirectory>${project.basedir}/modules/ROOT/pages/includes/</targetDirectory>
+    </configuration>
+</plugin>
+----
+
+When `targetDirectory` is configured, the generated configuration documentation
+is written to the specified directory instead of the global
+`target/asciidoc/generated/config/` location.
+
 ===== Create new Quarkus Core extension modules using Maven
 
 Quarkus provides `create-extension` Maven Mojo to initialize your extension project.

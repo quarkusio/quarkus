@@ -23,6 +23,8 @@ You can use Quarkus `quarkus-oidc-client-registration` extension to register one
 
 xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver] can be used to create OIDC tenant configurations using the metadata of the registered clients.
 
+As an alternative to dynamic client registration, you can use the xref:security-oidc-client-id-metadata-document.adoc[OAuth Client ID Metadata Document] support, which allows the authorization server to discover the client configuration by fetching a metadata document from the `client-id` URL without requiring an explicit registration step.
+
 [IMPORTANT]
 ====
 Currently, Quarkus `quarkus-oidc-client-registration` extension has an `experimental` status.

@@ -15,15 +15,18 @@ import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
-import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 
-public class ApplicationWithRunOnVirtualThreadTest {
+@EnabledForJreRange(min = JRE.JAVA_19)
+public class ApplicationWithRunOnVirtualThreadNonBlockingTest {
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -34,7 +37,10 @@ public class ApplicationWithRunOnVirtualThreadTest {
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.SEVERE)
                     && record.getLoggerName()
                             .equals("org.jboss.resteasy.reactive.server.core.startup.RuntimeResourceDeployment"))
-            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isEmpty())
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
+                    .isNotEmpty()
+                    .allMatch(msg -> msg.startsWith(
+                            "a method was both @NonBlocking and @RunOnVirtualThread, it is now considered @RunOnVirtualThread and @Blocking")))
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -45,13 +51,7 @@ public class ApplicationWithRunOnVirtualThreadTest {
 
     @Test
     public void test() {
-        RestAssured.get("/tname/default")
-                .then().body(Matchers.containsString("virtual"), Matchers.not(Matchers.containsString("executor")));
-
-        RestAssured.get("/tname/blocking")
-                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("virtual")));
-
-        RestAssured.get("/tname/virtual")
+        RestAssured.get("/tname/nonblocking")
                 .then().body(Matchers.containsString("virtual"), Matchers.not(Matchers.containsString("executor")));
     }
 
@@ -63,23 +63,10 @@ public class ApplicationWithRunOnVirtualThreadTest {
     @Path("tname")
     public static class ThreadNameResource {
 
-        @Path("default")
+        @Path("nonblocking")
         @GET
+        @NonBlocking
         public String threadName() {
-            return Thread.currentThread().getName();
-        }
-
-        @Blocking
-        @Path("blocking")
-        @GET
-        public String blocking() {
-            return Thread.currentThread().getName();
-        }
-
-        @RunOnVirtualThread
-        @Path("virtual")
-        @GET
-        public String virtual() {
             return Thread.currentThread().getName();
         }
     }

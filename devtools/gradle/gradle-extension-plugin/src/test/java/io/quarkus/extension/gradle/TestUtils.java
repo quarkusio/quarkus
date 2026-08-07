@@ -18,10 +18,10 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 public class TestUtils {
 
@@ -131,9 +131,9 @@ public class TestUtils {
     }
 
     public static ObjectNode readExtensionFile(Path extensionFile) throws IOException {
-        YAMLFactory yf = new YAMLFactory();
-        ObjectMapper mapper = new ObjectMapper(yf)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+        ObjectMapper mapper = YAMLMapper.builder()
+                .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .build();
         try (InputStream is = Files.newInputStream(extensionFile)) {
             return mapper.readValue(is, ObjectNode.class);
         } catch (IOException io) {

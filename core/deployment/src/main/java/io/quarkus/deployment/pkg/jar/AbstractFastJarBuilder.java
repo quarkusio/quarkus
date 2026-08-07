@@ -493,39 +493,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         }
                     }
                 }
-                // When tree shake level is CLASSES, add non-reachable classes to removal set.
-                // Use walkRaw to handle multi-release JARs: we need to add both base and
-                // versioned entry paths to the removal set for unreachable classes.
-                if (treeShakeResult != null
-                        && treeShakeResult.isClassesShaken()) {
-                    try (var pathTree = appDep.getContentTree().open()) {
-                        pathTree.walkRaw(visit -> {
-                            String rel = visit.getRelativePath("/");
-                            String classRel = rel;
-                            // For multi-release entries, extract the actual class path
-                            if (rel.startsWith("META-INF/versions/")) {
-                                String afterVersions = rel.substring("META-INF/versions/".length());
-                                int slash = afterVersions.indexOf('/');
-                                if (slash > 0) {
-                                    classRel = afterVersions.substring(slash + 1);
-                                } else {
-                                    return;
-                                }
-                            }
-                            if (classRel.endsWith(".class") && !classRel.equals("module-info.class")) {
-                                String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
-                                if (!treeShakeResult.getReachableClassNames().contains(className)) {
-                                    int dollarIdx = className.indexOf('$');
-                                    if (dollarIdx < 0
-                                            || !treeShakeResult.getReachableClassNames()
-                                                    .contains(className.substring(0, dollarIdx))) {
-                                        // Add the raw path (base or META-INF/versions/N/...) to removal set
-                                        removedFromThisArchive.add(rel);
-                                    }
-                                }
-                            }
-                        });
-                    }
+                if (treeShakeResult != null) {
+                    treeShakeResult.collectUnreachableEntries(appDep, removedFromThisArchive);
                 }
                 if (removedFromThisArchive.isEmpty()) {
                     // COPY_ATTRIBUTES triggers clonefile(2) on JDK 20+/macOS APFS, enabling

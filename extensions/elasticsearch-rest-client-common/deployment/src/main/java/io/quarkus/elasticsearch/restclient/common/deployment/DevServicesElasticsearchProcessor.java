@@ -32,6 +32,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig;
@@ -123,10 +124,12 @@ public class DevServicesElasticsearchProcessor {
                     container.withEnv(config.containerEnv());
                     container.withReuse(config.reuse());
 
-                    return new StartableContainer<>(container,
-                            c -> createdContainer.hostName() + ":"
-                                    + (useSharedNetwork ? ELASTICSEARCH_PORT
-                                            : c.getMappedPort(ELASTICSEARCH_PORT)));
+                    return new StartableContainer<>(container, c -> {
+                        String host = DevServicesHostUtil.publishedPortHost(c.getContainerId(), useSharedNetwork,
+                                createdContainer.hostName(), c.getHost());
+                        int port = useSharedNetwork ? ELASTICSEARCH_PORT : c.getMappedPort(ELASTICSEARCH_PORT);
+                        return DevServicesHostUtil.formatHostAndPort(host, port);
+                    });
                 })
                 .postStartHook(containerWrapper -> log.infof(
                         "Dev Services for Elasticsearch started. Other Quarkus applications in dev mode will find the "
@@ -152,7 +155,9 @@ public class DevServicesElasticsearchProcessor {
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.ELASTICSEARCH_REST_CLIENT_COMMON)
                         .containerId(containerAddress.getId())
-                        .config(buildPropertiesMap(buildItemsConfig, containerAddress.getUrl()))
+                        .config(buildPropertiesMap(buildItemsConfig,
+                                DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                        containerAddress.getHost(), containerAddress.getPort())))
                         .build())
                 .orElse(null);
     }

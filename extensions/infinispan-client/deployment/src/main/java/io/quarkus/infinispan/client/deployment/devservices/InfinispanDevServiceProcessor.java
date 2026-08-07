@@ -34,6 +34,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
 import io.quarkus.infinispan.client.runtime.InfinispanClientsBuildTimeConfig;
@@ -145,13 +146,15 @@ public class InfinispanDevServiceProcessor {
                         String password = container != null ? container.tryGetEnv("PASS").orElse(DEFAULT_PASSWORD)
                                 : DEFAULT_PASSWORD;
 
-                        log.infof("The infinispan server is ready to accept connections on %s", containerAddress.getUrl());
+                        String hosts = DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                containerAddress.getHost(), containerAddress.getPort());
+                        log.infof("The infinispan server is ready to accept connections on %s", hosts);
 
                         return DevServicesResultBuildItem.discovered()
                                 .feature(Feature.INFINISPAN_CLIENT)
                                 .containerId(containerAddress.getId())
                                 .config(Map.of(
-                                        configPrefix + "hosts", containerAddress.getUrl(),
+                                        configPrefix + "hosts", hosts,
                                         configPrefix + "username", username,
                                         configPrefix + "password", password))
                                 .build();
@@ -288,7 +291,9 @@ public class InfinispanDevServiceProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return getHost() + ":" + getPort();
+            return DevServicesHostUtil.formatHostAndPort(
+                    DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, super.getHost()),
+                    getPort());
         }
 
         @Override

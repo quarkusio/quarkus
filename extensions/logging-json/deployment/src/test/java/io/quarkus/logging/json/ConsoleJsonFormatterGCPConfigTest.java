@@ -49,10 +49,12 @@ public class ConsoleJsonFormatterGCPConfigTest {
         assertThat(jsonFormatter.getDateTimeFormatter().toString())
                 .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault()).toString());
         assertThat(jsonFormatter.getDateTimeFormatter().getZone()).isEqualTo(ZoneId.systemDefault());
-        assertThat(jsonFormatter.getExceptionOutputType()).isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED);
+        assertThat(jsonFormatter.getExceptionOutputType())
+                .isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED);
         assertThat(jsonFormatter.getRecordDelimiter()).isEqualTo("\n");
         assertThat(jsonFormatter.isPrintDetails()).isFalse();
         assertThat(jsonFormatter.getExcludedKeys()).isEmpty();
+        assertThat(jsonFormatter.getKeyOverrides()).contains("LEVEL=severity", "STACK_TRACE=stack_trace");
         assertThat(jsonFormatter.getAdditionalFields().entrySet()).isNotEmpty();
         assertThat(jsonFormatter.getAdditionalFields().get("trace")).isNotNull();
         assertThat(jsonFormatter.getAdditionalFields().get("spanId")).isNotNull();

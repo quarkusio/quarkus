@@ -294,7 +294,7 @@ public class BuildpackProcessor {
                         //configure dockerhost/socket if required
                         DockerConfigNested<BuildConfigBuilder> dc = b.editDockerConfig();
                         dc.withHostAndSocketConfig(new HostAndSocketConfig(buildpackConfig.dockerHost().orElse(null),
-                            buildpackConfig.dockerSocket().orElse(null)));
+                                buildpackConfig.dockerSocket().orElse(null)));
                         dc.endDockerConfig();
 
                         //configure lifecycle override image if present

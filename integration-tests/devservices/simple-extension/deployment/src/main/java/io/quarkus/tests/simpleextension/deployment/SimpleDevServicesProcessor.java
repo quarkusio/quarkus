@@ -4,6 +4,7 @@ import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSIO
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_STATIC_THING;
 import static io.quarkus.tests.simpleextension.Constants.SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START;
+import static io.quarkus.tests.simpleextension.Constants.SIMPLE_EXTENSION_CONTAINER_ID;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +38,8 @@ public class SimpleDevServicesProcessor {
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
                 .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
                         c -> c.getConnectionInfo(), SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START,
-                        c -> c.getClassLoaderNameOnStart()))
+                        c -> c.getClassLoaderNameOnStart(), SIMPLE_EXTENSION_CONTAINER_ID,
+                        c -> c.getContainerId()))
                 .build();
 
     }

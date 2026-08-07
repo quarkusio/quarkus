@@ -261,6 +261,8 @@ When no `quarkus.oidc.credentials.jwt.token-path` is set but the xref:security-s
 
 Tokens are cached and refreshed automatically before they expire.
 
+TIP: For development and testing with Keycloak, see xref:security-spiffe-client.adoc#keycloak-dev-svc-integration[SPIFFE integration with Dev Services for Keycloak].
+
 [source,properties]
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/

@@ -1,6 +1,7 @@
 package io.quarkus.spiffe.client.deployment;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -38,6 +39,13 @@ interface SpiffeClientBuildTimeConfig {
          */
         @ConfigDocDefault("Defaults to `tcp` on Windows and `unix` on all other platforms.")
         Optional<Transport> transport();
+
+        /**
+         * The specific port for the bundle HTTP server to listen on.
+         * <p>
+         * If not specified, a random port is selected.
+         */
+        OptionalInt httpPort();
 
         enum Transport {
             TCP,

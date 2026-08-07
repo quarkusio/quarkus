@@ -17,18 +17,13 @@ public record QuarkusPersistenceUnitCacheConfiguration(Map<String, Cache> caches
      * @param maxSize maximum number of entries (count-based eviction). Ignored if maximumWeight is set.
      * @param maxIdle maximum idle time before expiration.
      * @param maximumWeight maximum total weight (weight-based eviction). {@code -1} means not set.
-     * @param weigherClassName fully qualified class name of a Weigher implementation. {@code null} means not set.
      */
-    public record Cache(long maxSize, Duration maxIdle, long maximumWeight, String weigherClassName) {
+    public record Cache(long maxSize, Duration maxIdle, long maximumWeight) {
 
-        public static Cache DEFAULT = new Cache(10000L, Duration.ofSeconds(100), -1L, null);
+        public static Cache DEFAULT = new Cache(10000L, Duration.ofSeconds(100), -1L);
 
         public boolean hasMaximumWeight() {
             return maximumWeight >= 0;
-        }
-
-        public boolean hasWeigherClass() {
-            return weigherClassName != null;
         }
     }
 }

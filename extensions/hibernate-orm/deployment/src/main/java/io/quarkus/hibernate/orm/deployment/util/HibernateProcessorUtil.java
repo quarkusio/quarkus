@@ -463,17 +463,12 @@ public final class HibernateProcessorUtil {
                         "Cache region '" + cacheName + "': 'object-count' and 'maximum-weight' are mutually exclusive. "
                                 + "Use 'object-count' for count-based eviction or 'maximum-weight' for weight-based eviction.");
             }
-            if (memory.weigherClass().isPresent() && memory.maximumWeight().isEmpty()) {
-                throw new IllegalStateException(
-                        "Cache region '" + cacheName + "': 'weigher-class' requires 'maximum-weight' to be set.");
-            }
 
             caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(
                     memory.objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),
                     cacheConfig.expiration().maxIdle()
                             .orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxIdle()),
-                    memory.maximumWeight().orElse(-1L),
-                    memory.weigherClass().orElse(null)));
+                    memory.maximumWeight().orElse(-1L)));
         }
         return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }

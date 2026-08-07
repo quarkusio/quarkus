@@ -1,0 +1,6 @@
+{
+  "insert": "users",
+  "documents": [
+    { "name": "alice", "email": "alice@example.com" }
+  ]
+}

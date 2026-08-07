@@ -148,6 +148,27 @@ quarkus.kubernetes.init-tasks.flyway.wait-for-container.image-pull-policy=if-not
 For an init container to be able to perform the `wait for job`, it needs to be able to perform `get` operations on the job resource.
 This is done automatically and the generated manifests include the required `Role` and `RoleBinding` resources.
 
+By default, the Role is named `{application-name}-view-jobs` so that multiple Quarkus applications can be deployed in the same namespace without conflicting on a shared `view-jobs` Role name.
+
+You can customize the generated Role:
+
+[source,properties]
+----
+# Exact Role name (optional). When unset, defaults to `{application-name}-view-jobs`.
+# No application-name prefix is applied to the value you set.
+quarkus.kubernetes.init-task-defaults.rbac.name=view-jobs
+
+# Generate the Role. Set to false to keep the Job and wait-for init container,
+# but skip Role generation (for example when a shared Role already exists).
+quarkus.kubernetes.init-task-defaults.rbac.generate=true
+----
+
+[NOTE]
+====
+These properties are only honored on `init-task-defaults`. A single Role is shared by all init tasks of the application.
+Generic `quarkus.kubernetes.rbac.roles` configuration is additive and does not rename or replace this built-in Role.
+====
+
 If, for any reason, additional permissions are required either by the init container or the job, they can be configured with the xref:deploying-to-kubernetes.adoc#generating-rbac-resources[Kubernetes RBAC configuration].
 
 [NOTE]

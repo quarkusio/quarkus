@@ -39,7 +39,7 @@ For more advanced configuration with examples, see <<datasource-reference>>.
 === Zero-config setup in development mode
 
 Quarkus simplifies database configuration by offering the Dev Services feature, enabling zero-config database setup for testing or running in development (dev) mode.
-In dev mode, the suggested approach is to use DevServices and let Quarkus handle the database for you, whereas for production mode, you provide explicit database configuration details pointing to a database managed outside of Quarkus.
+In dev mode, the suggested approach is to use Dev Services and let Quarkus handle the database for you, whereas for production mode, you provide explicit database configuration details pointing to a database managed outside of Quarkus.
 
 To use Dev Services, add the appropriate driver extension, such as `jdbc-postgresql`, for your desired database type to the `pom.xml` file.
 In dev mode, if you do not provide any explicit database connection details, Quarkus automatically handles the database setup and provides the wiring between the application and the database.
@@ -188,7 +188,7 @@ Quarkus currently includes the following built-in database kinds:
 You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Custom databases and drivers>>.
 However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
 
-For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
+For native executable builds, use the available JDBC Quarkus extensions, or contribute a custom extension for your specific driver.
 ====
 
 . Configure the following properties to define credentials:
@@ -220,7 +220,7 @@ JDBC is the most common database connection pattern, typically needed when used 
 ====
 You can configure H2 databases to run in "embedded mode"
 
-For suggestions regarding integration testing, see <<in-memory-databases,Testing with in-memory databases>> .
+For suggestions regarding integration testing, see <<in-memory-databases,Testing with in-memory databases>>.
 ====
 * DB2 - `quarkus-jdbc-db2`
 * MariaDB - `quarkus-jdbc-mariadb`
@@ -229,12 +229,12 @@ For suggestions regarding integration testing, see <<in-memory-databases,Testing
 * Oracle - `quarkus-jdbc-oracle`
 * PostgreSQL - `quarkus-jdbc-postgresql`
 ifndef::no-quarkiverse[]
-* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
+* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the link:https://github.com/quarkiverse[Quarkiverse].
 endif::no-quarkiverse[]
 +
 For example, to add the PostgreSQL driver dependency:
 +
-[source,bash]
+[source,shell]
 ----
 ./mvnw quarkus:add-extension -Dextensions="jdbc-postgresql"
 ----
@@ -248,7 +248,7 @@ When you use a custom JDBC driver, add `quarkus-agroal` explicitly.
 
 .. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
 +
-[source,bash]
+[source,shell]
 ----
 ./mvnw quarkus:add-extension -Dextensions="agroal"
 ----
@@ -474,7 +474,7 @@ If a datasource is not active:
 * The datasource does not contribute a <<datasource-health-check,health check>>.
 * Static CDI injection points involving the datasource, such as `@Inject DataSource ds` or `@Inject Pool pool`, cause application startup to fail.
 * Dynamic retrieval of the datasource, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<DataSource>`, causes an exception to be thrown.
-* Other Quarkus extensions that consume the datasource may cause application startup to fail.
+* Other Quarkus extensions that consume the datasource can cause application startup to fail.
 +
 In this case, you must also deactivate those other extensions.
 To see an example of this scenario, refer to the xref:hibernate-orm.adoc#persistence-unit-active[Activate/deactivate persistence units] section of the Hibernate ORM guide.
@@ -573,7 +573,7 @@ public class MyConsumer {
     }
 }
 ----
-<1> Do not inject a `DataSource` or `AgroalDatasource` directly.
+<1> Do not inject a `DataSource` or `AgroalDataSource` directly.
 Injecting inactive beans causes a startup failure.
 Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`.
 <2> Declare a CDI producer method to define the default datasource.
@@ -586,10 +586,10 @@ It selects either PostgreSQL or Oracle, depending on which one is active.
 === Use multiple datasources in a single transaction
 
 By default, XA support on datasources is disabled.
-Therefore, a transaction may include no more than one datasource.
+Therefore, a transaction can include no more than one datasource.
 Attempting to access multiple non-XA datasources in the same transaction results in an exception similar to the following:
 
-[source]
+[source,text]
 ----
 ...
 Caused by: java.sql.SQLException: Exception in association of connection to existing transaction
@@ -689,18 +689,27 @@ You do not need to declare a different driver to enable tracing.
 If you use a JDBC driver, you need to follow xref:opentelemetry-tracing.adoc#jdbc[the instructions in the OpenTelemetry extension].
 
 Even with all the tracing infrastructure in place, the datasource tracing is not enabled by default, and you need to enable it by setting this property:
+
 [source,properties]
 ----
-# enable tracing
 quarkus.datasource.jdbc.telemetry=true
 ----
 
 By default, only SQL statement executions are traced.
 Connection acquisition from the datasource (`getConnection()` calls) is not traced.
 To also trace connection acquisition, enable it explicitly:
+
 [source,properties]
 ----
 quarkus.datasource.jdbc.telemetry.trace-connection=true
+----
+
+For a named datasource:
+
+[source,properties]
+----
+quarkus.datasource."myds".jdbc.telemetry=true
+quarkus.datasource."myds".jdbc.telemetry.trace-connection=true
 ----
 
 === Narayana transaction manager integration
@@ -737,13 +746,15 @@ For scenarios where neither Dev Services nor a custom database setup is possible
 
 Embedded databases such as H2 work in JVM mode.
 
-In native mode, embedding H2 in the native image is not recommended.
+In native mode, do not embed H2 in the native image.
 Use a remote connection to a separate database, or use Dev Services to run the database outside the native image.
 
 ifndef::no-deprecated-test-resource[]
 ==== Run an integration test
 
-WARNING: `H2DatabaseTestResource` is deprecated. Dev Services for H2 automatically starts an in-process database when `quarkus.datasource.db-kind=h2` is set and no JDBC URL is configured. See xref:databases-dev-services.adoc[Dev Services for databases] for details.
+WARNING: `H2DatabaseTestResource` is deprecated.
+Dev Services for H2 automatically starts an in-process database when `quarkus.datasource.db-kind=h2` is set and no JDBC URL is configured.
+See xref:databases-dev-services.adoc[Dev Services for databases] for details.
 
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
 +
@@ -804,7 +815,7 @@ The following sections describe each JDBC URL and provide a link to the official
 
 Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
 
-For more information on URL syntax and additional supported options, see the link:https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation].
+For more information on URL syntax and additional supported options, see the link:https://www.ibm.com/docs/en/db2/12.1.x?topic=cdsudidsdjs-url-format-data-server-driver-jdbc-sqlj-type-4-connectivity[official documentation].
 
 ==== H2
 
@@ -825,7 +836,7 @@ hostDescription:: `<host>[:<portnumber>] or address=(host=<host>)[(port=<portnum
 
 Example:: `jdbc:mariadb://localhost:3306/test`
 
-For more information, see the link:https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+For more information, see the link:https://mariadb.com/docs/connectors/mariadb-connector-j/[official documentation].
 
 ==== Microsoft SQL server
 
@@ -833,7 +844,7 @@ For more information, see the link:https://mariadb.com/kb/en/library/about-maria
 
 Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
 
-For more information, see the link:https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
+For more information, see the link:https://learn.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-ver16[official documentation].
 
 ==== MySQL
 

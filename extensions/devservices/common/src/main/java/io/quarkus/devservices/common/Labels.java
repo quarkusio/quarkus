@@ -1,5 +1,8 @@
 package io.quarkus.devservices.common;
 
+import java.util.Map;
+import java.util.OptionalInt;
+
 import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -7,6 +10,8 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 public final class Labels {
 
     public static final String QUARKUS_DEV_SERVICE = "io.quarkus.devservice";
+    public static final String QUARKUS_DEV_SERVICE_CONFIG = QUARKUS_DEV_SERVICE + ".config.";
+    public static final String QUARKUS_DEV_SERVICE_CONFIG_PORT = QUARKUS_DEV_SERVICE_CONFIG + "port";
     public static final String DOCKER_COMPOSE_PROJECT = "com.docker.compose.project";
     public static final String DOCKER_COMPOSE_NETWORK = "com.docker.compose.network";
     public static final String DOCKER_COMPOSE_SERVICE = "com.docker.compose.service";
@@ -48,6 +53,19 @@ public final class Labels {
 
     public static void addDataSourceLabel(GenericContainer<?> container, String datasourceName) {
         container.withLabel(DATASOURCE, DataSourceUtil.isDefault(datasourceName) ? "default" : datasourceName);
+    }
+
+    public static void addPortConfigLabel(GenericContainer<?> container, OptionalInt fixedPort) {
+        if (fixedPort.isPresent()) {
+            container.withLabel(QUARKUS_DEV_SERVICE_CONFIG_PORT, String.valueOf(fixedPort.getAsInt()));
+        }
+    }
+
+    public static Map<String, String> expectedPortConfig(OptionalInt fixedPort) {
+        if (fixedPort.isEmpty()) {
+            return Map.of();
+        }
+        return Map.of(QUARKUS_DEV_SERVICE_CONFIG_PORT, String.valueOf(fixedPort.getAsInt()));
     }
 
     private Labels() {

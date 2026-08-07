@@ -4,21 +4,21 @@ import java.util.UUID;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationContextBuildItem;
 
 public class ApplicationInstanceIdBuildStep {
 
-    private static volatile UUID uuid = null;
+    record ApplicationInstanceId(UUID uuid) {
+    }
 
     @BuildStep
-    public ApplicationInstanceIdBuildItem create(CuratedApplicationShutdownBuildItem buildItem) {
-        if (uuid == null) {
-            uuid = UUID.randomUUID();
+    public ApplicationInstanceIdBuildItem create(CuratedApplicationContextBuildItem curatedApplicationContextBuildItem) {
+        ApplicationInstanceId instanceId = curatedApplicationContextBuildItem
+                .getContextObject(ApplicationInstanceId.class);
+        if (instanceId == null) {
+            instanceId = new ApplicationInstanceId(UUID.randomUUID());
+            curatedApplicationContextBuildItem.setContextObject(ApplicationInstanceId.class, instanceId);
         }
-        buildItem.addCloseTask(() -> {
-            uuid = null;
-
-        }, true);
-        return new ApplicationInstanceIdBuildItem(uuid);
+        return new ApplicationInstanceIdBuildItem(instanceId.uuid());
     }
 }

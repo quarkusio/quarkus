@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BooleanSupplier;
 
 import jakarta.annotation.Priority;
 
@@ -105,6 +104,7 @@ import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
@@ -180,6 +180,7 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     void buildTimeRunTimeConfig(
+            ConfigBuildTimeConfig configBuildTimeConfig,
             ConfigurationBuildItem configItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -206,6 +207,15 @@ public class ConfigGenerationBuildStep {
                 if (entry.getValue().getValue() != null) {
                     clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
                             clinit.load(entry.getValue().getValue()));
+                }
+            }
+
+            if (configBuildTimeConfig.fixedAtBuildTime()) {
+                for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+                    if (entry.getValue().getValue() != null) {
+                        clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                                clinit.load(entry.getValue().getValue()));
+                    }
                 }
             }
 
@@ -382,20 +392,26 @@ public class ConfigGenerationBuildStep {
         }
     }
 
-    @BuildStep(onlyIf = SystemOnlySources.class)
-    void systemOnlySources(BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+    @BuildStep
+    void systemOnlySources(ConfigBuildTimeConfig config,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
         // TODO - radcortez - YAML sources are still available because they are registered directly.
-        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
-        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+        if (config.systemOnly() && !config.fixedAtBuildTime()) {
+            staticInitConfigBuilder
+                    .produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+        }
     }
 
-    private static class SystemOnlySources implements BooleanSupplier {
-        ConfigBuildTimeConfig configBuildTimeConfig;
-
-        @Override
-        public boolean getAsBoolean() {
-            return configBuildTimeConfig.systemOnly();
+    @BuildStep
+    void fixedAtBuildTimeSources(ConfigBuildTimeConfig config,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        if (config.fixedAtBuildTime()) {
+            staticInitConfigBuilder
+                    .produce(new StaticInitConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
         }
     }
 

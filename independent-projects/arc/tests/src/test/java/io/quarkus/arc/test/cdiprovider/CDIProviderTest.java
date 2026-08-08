@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.annotation.PostConstruct;
@@ -34,13 +33,14 @@ public class CDIProviderTest {
     @AfterAll
     public static void unset() {
         assertTrue(Moo.DESTROYED.get());
-        try {
-            Field providerField = CDI.class.getDeclaredField("configuredProvider");
-            providerField.setAccessible(true);
-            providerField.set(null, null);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-            throw new IllegalStateException(e);
+
+        abstract class CDIAccess<T> extends CDI<T> {
+            static void reset() {
+                providerState.set(initialState());
+            }
         }
+
+        CDIAccess.reset();
     }
 
     @Dependent

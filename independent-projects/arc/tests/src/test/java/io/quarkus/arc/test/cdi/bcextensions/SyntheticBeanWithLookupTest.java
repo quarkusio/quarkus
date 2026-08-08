@@ -7,13 +7,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.build.compatible.spi.Parameters;
 import jakarta.enterprise.inject.build.compatible.spi.Synthesis;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -64,6 +64,7 @@ public class SyntheticBeanWithLookupTest {
             syn.addBean(MyPojo.class)
                     .type(MyPojo.class)
                     .scope(Dependent.class)
+                    .withInjectionPoint(MyDependentBean.class)
                     .createWith(MyPojoCreator.class)
                     .disposeWith(MyPojoDisposer.class);
         }
@@ -108,10 +109,10 @@ public class SyntheticBeanWithLookupTest {
         static final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public MyPojo create(Instance<Object> lookup, Parameters params) {
+        public MyPojo create(SyntheticInjections injections, Parameters params) {
             counter.incrementAndGet();
 
-            lookup.select(MyDependentBean.class).get();
+            injections.get(MyDependentBean.class);
 
             return new MyPojo();
         }
@@ -121,10 +122,10 @@ public class SyntheticBeanWithLookupTest {
         static final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public void dispose(MyPojo instance, Instance<Object> lookup, Parameters params) {
+        public void dispose(MyPojo instance, SyntheticInjections injections, Parameters params) {
             counter.incrementAndGet();
 
-            lookup.select(MyDependentBean.class).get();
+            injections.get(MyDependentBean.class);
 
             instance.destroy();
         }

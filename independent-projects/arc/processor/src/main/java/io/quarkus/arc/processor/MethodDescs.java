@@ -19,6 +19,7 @@ import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.invoke.AsyncHandler;
 import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.ActiveResult;
@@ -31,6 +32,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.InterceptorCreator;
 import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
@@ -56,6 +58,8 @@ final class MethodDescs {
 
     static final ConstructorDesc MAP_VALUE_SUPPLIER_CONSTRUCTOR = ConstructorDesc.of(MapValueSupplier.class,
             Map.class, String.class);
+
+    static final MethodDesc AUTO_CLOSEABLE_CLOSE = MethodDesc.of(AutoCloseable.class, "close", void.class);
 
     static final MethodDesc SUPPLIER_GET = MethodDesc.of(Supplier.class, "get", Object.class);
 
@@ -124,6 +128,8 @@ final class MethodDescs {
 
     static final MethodDesc EVENT_CONTEXT_GET_METADATA = MethodDesc.of(EventContext.class, "getMetadata", EventMetadata.class);
 
+    static final MethodDesc INSTANCE_HANDLE_GET = MethodDesc.of(InstanceHandle.class, "get", Object.class);
+
     static final MethodDesc INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE = MethodDesc.of(InvocationContexts.class,
             "performAroundInvoke", Object.class, Object.class, Object[].class, InterceptedMethodMetadata.class);
 
@@ -170,6 +176,9 @@ final class MethodDescs {
 
     static final MethodDesc ARC_CONTAINER_GET_CONTEXTS = MethodDesc.of(ArcContainer.class,
             "getContexts", List.class, Class.class);
+
+    static final MethodDesc ARC_CONTAINER_INSTANCE = MethodDesc.of(ArcContainer.class,
+            "instance", InstanceHandle.class, InjectableBean.class);
 
     static final MethodDesc CONTEXT_GET = MethodDesc.of(Context.class,
             "get", Object.class, Contextual.class, CreationalContext.class);
@@ -224,4 +233,13 @@ final class MethodDescs {
     static final MethodDesc ACTIVE_RESULT_REASON = MethodDesc.of(ActiveResult.class, "inactiveReason", String.class);
 
     static final MethodDesc ACTIVE_RESULT_CAUSE = MethodDesc.of(ActiveResult.class, "inactiveCause", ActiveResult.class);
+
+    static final MethodDesc ASYNC_HANDLER_RET_TRANSFORM = MethodDesc.of(AsyncHandler.ReturnType.class,
+            "transform", Object.class, Object.class, Runnable.class);
+
+    static final MethodDesc ASYNC_HANDLER_PARAM_TRANSFORM_ARGUMENT = MethodDesc.of(AsyncHandler.ParameterType.class,
+            "transformArgument", Object.class, Object.class, Runnable.class);
+
+    static final MethodDesc ASYNC_HANDLER_PARAM_TRANSFORM_RETURN_VALUE = MethodDesc.of(AsyncHandler.ParameterType.class,
+            "transformReturnValue", Object.class, Object.class, Runnable.class);
 }

@@ -2,12 +2,12 @@ module io.quarkus.arc {
     exports io.quarkus.arc;
     exports io.quarkus.arc.impl;
     exports io.quarkus.arc.impl.bcextensions;
+    exports io.quarkus.arc.impl.invoke;
 
     requires java.logging;
 
     requires jakarta.annotation;
     requires jakarta.cdi;
-    requires jakarta.el;
     requires jakarta.inject;
     requires jakarta.interceptor;
     requires jakarta.transaction;

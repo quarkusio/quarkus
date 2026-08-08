@@ -7,6 +7,7 @@ import java.util.concurrent.Executor;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -31,6 +32,15 @@ public class ConnectorContextPropagationDecorator implements PublisherDecorator,
                 .propagated(propagation.map(l -> l.toArray(String[]::new)).orElse(ThreadContext.NONE))
                 .cleared(ThreadContext.ALL_REMAINING)
                 .build();
+    }
+
+    @Override
+    public Multi<? extends Message<?>> decorate(Multi<? extends Message<?>> publisher, List<String> channelName,
+            Config config) {
+        if (config != null) {
+            return new ContextPropagationOperator<>(publisher, tc);
+        }
+        return publisher;
     }
 
     @Override

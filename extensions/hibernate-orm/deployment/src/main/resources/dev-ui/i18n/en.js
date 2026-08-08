@@ -6,7 +6,7 @@ export const templates = {
     'quarkus-hibernate-orm-meta-description': 'Define your persistent model with Hibernate ORM and Jakarta Persistence',
 
     // Pages
-    'quarkus-hibernate-orm-persistence_units': 'Persistence Units',
+    'quarkus-hibernate-orm-persistence_units': 'DDL',
     'quarkus-hibernate-orm-entity_types': 'Entity Types',
     'quarkus-hibernate-orm-named_queries': 'Named Queries',
     'quarkus-hibernate-orm-hql_console': 'HQL Console',

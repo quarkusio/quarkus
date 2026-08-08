@@ -65,8 +65,10 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.capabilities.Capabilities;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -208,7 +210,8 @@ public class ResteasyServerCommonProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
-            CustomScopeAnnotationsBuildItem scopes) throws Exception {
+            CustomScopeAnnotationsBuildItem scopes,
+            Capabilities capabilities) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         final AnnotationInstance applicationPath;
@@ -421,6 +424,10 @@ public class ResteasyServerCommonProcessor {
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());
+
+        if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)) {
+            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PATCH_FILTER_LEGACY, "true");
+        }
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(rootPath, path, resteasyInitParameters));
 

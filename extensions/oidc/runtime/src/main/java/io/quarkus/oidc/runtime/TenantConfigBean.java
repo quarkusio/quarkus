@@ -28,9 +28,10 @@ public final class TenantConfigBean {
     private final TenantContextFactory tenantContextFactory;
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
-            boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+            boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry,
+            boolean backChannelLogoutAllowed, boolean resourceMetadataAllowed) {
         this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled,
-                proxyConfigurationRegistry);
+                proxyConfigurationRegistry, backChannelLogoutAllowed, resourceMetadataAllowed);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),

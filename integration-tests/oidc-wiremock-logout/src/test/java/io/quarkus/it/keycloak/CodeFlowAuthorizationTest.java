@@ -37,6 +37,22 @@ public class CodeFlowAuthorizationTest {
     WireMockServer wireMockServer;
 
     @Test
+    public void testDisallowedResourceMetadataRouteFailsDynamicTenantCreation() {
+        RestAssured.given()
+                .when().redirects().follow(false)
+                .get("http://localhost:8081/service/resource-metadata-tenant")
+                .then()
+                .statusCode(401);
+
+        // same path, but resource-metadata disabled — passes validation and starts the code flow
+        RestAssured.given()
+                .when().redirects().follow(false)
+                .get("http://localhost:8081/service/resource-metadata-tenant?disabled")
+                .then()
+                .statusCode(302);
+    }
+
+    @Test
     public void testCodeFlowFormPostAndBackChannelLogout() throws Exception {
         testCodeFlowFormPostAndBackChannelLogout("code-flow-form-post", "back-channel-logout");
     }

@@ -62,7 +62,8 @@ public class OidcRecorder {
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
-            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier) {
+            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier,
+            boolean backChannelLogoutAllowed, boolean resourceMetadataAllowed) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
@@ -70,7 +71,7 @@ public class OidcRecorder {
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
                 return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled(),
-                        proxyConfigurationRegistrySupplier.get());
+                        proxyConfigurationRegistrySupplier.get(), backChannelLogoutAllowed, resourceMetadataAllowed);
             }
         };
     }

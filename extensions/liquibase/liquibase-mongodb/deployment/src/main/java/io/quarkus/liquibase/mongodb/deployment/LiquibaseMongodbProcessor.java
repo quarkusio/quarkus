@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -224,6 +225,11 @@ class LiquibaseMongodbProcessor {
         try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(classLoader)) {
             for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
                 String changeLog = buildConfig.changeLog();
+                if (!QuarkusClassLoader.isResourcePresentAtRuntime(changeLog)) {
+                    // the extension could be present as a dependency but not actually used, in which case
+                    // a change log might not exist
+                    continue;
+                }
                 ChangeLogParser parser = changeLogParserFactory.getParser(changeLog, classLoaderResourceAccessor);
                 DatabaseChangeLog root = parser.parse(changeLog, changeLogParameters, classLoaderResourceAccessor);
                 if (root != null) {
@@ -355,9 +361,16 @@ class LiquibaseMongodbProcessor {
 
             Set<String> resources = new LinkedHashSet<>();
             for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
-                ChangeLogParser parser = changeLogParserFactory.getParser(buildConfig.changeLog(),
+                String changeLog = buildConfig.changeLog();
+                if (!QuarkusClassLoader.isResourcePresentAtRuntime(changeLog)) {
+                    // the extension could be present as a dependency but not actually used, in which case
+                    // a change log might not exist
+                    LOGGER.debugf("Liquibase changeLog '%s' not found, skipping", changeLog);
+                    continue;
+                }
+                ChangeLogParser parser = changeLogParserFactory.getParser(changeLog,
                         classLoaderResourceAccessor);
-                DatabaseChangeLog changelog = parser.parse(buildConfig.changeLog(), changeLogParameters,
+                DatabaseChangeLog changelog = parser.parse(changeLog, changeLogParameters,
                         classLoaderResourceAccessor);
                 if (changelog != null) {
                     resources.addAll(LiquibaseChangeLogResourceDiscovery.scan(changelog).resourcePaths());

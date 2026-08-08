@@ -3,6 +3,7 @@ package io.quarkus.liquibase.deployment;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -274,6 +276,11 @@ class LiquibaseProcessor {
         for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
             Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath();
             String changeLog = liquibaseDataSourceConfig.changeLog();
+
+            if (!changeLogResourceExists(changeLog, oSearchPaths)) {
+                continue;
+            }
+
             String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
 
             try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {
@@ -430,6 +437,14 @@ class LiquibaseProcessor {
 
             Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath();
             String changeLog = liquibaseDataSourceConfig.changeLog();
+
+            if (!changeLogResourceExists(changeLog, oSearchPaths)) {
+                // There are cases when the Liquibase extension is added but not actually used,
+                // so there won't be any change log
+                LOGGER.debugf("Liquibase changeLog '%s' not found, skipping", changeLog);
+                continue;
+            }
+
             String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
 
             try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {
@@ -445,6 +460,37 @@ class LiquibaseProcessor {
 
         LOGGER.debugf("Liquibase changeLogs: %s", resources);
         return new ArrayList<>(resources);
+    }
+
+    /**
+     * Checks whether the configured change log resource can be found.
+     * {@code filesystem:} paths are resolved against the file system (using search paths if configured),
+     * while classpath resources (with or without the {@code classpath:} prefix) are looked up on the
+     * runtime classpath via {@link QuarkusClassLoader#isResourcePresentAtRuntime(String)}.
+     *
+     * @param changeLog the configured change log path, possibly prefixed with {@code filesystem:} or {@code classpath:}
+     * @param oSearchPaths optional search paths for {@code filesystem:} change logs
+     * @return {@code true} if the change log resource exists, {@code false} otherwise
+     */
+    private static boolean changeLogResourceExists(String changeLog, Optional<List<String>> oSearchPaths) {
+        if (changeLog.startsWith("filesystem:")) {
+            String rawPath = changeLog.substring("filesystem:".length());
+            if (oSearchPaths.isEmpty()) {
+                return Files.exists(Paths.get(rawPath));
+            }
+            for (String sp : oSearchPaths.get()) {
+                if (Files.exists(Paths.get(sp).resolve(rawPath))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (changeLog.startsWith("classpath:")) {
+            changeLog = changeLog.substring("classpath:".length());
+        }
+
+        return QuarkusClassLoader.isResourcePresentAtRuntime(changeLog);
     }
 
     private ResourceAccessor resolveResourceAccessor(Optional<List<String>> oSearchPaths, String changeLog)

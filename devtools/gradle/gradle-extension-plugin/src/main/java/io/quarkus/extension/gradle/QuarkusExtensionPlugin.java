@@ -11,12 +11,16 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.language.jvm.tasks.ProcessResources;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -62,19 +66,38 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Configuration runtimeModuleClasspath = project.getConfigurations()
                 .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+        Provider<Directory> tmpDescriptorOutputDir = project.getLayout().getBuildDirectory().dir("tmp/extensionDescriptor");
 
         TaskProvider<ValidateExtensionTask> validateExtensionTask = tasks.register(VALIDATE_EXTENSION_TASK_NAME,
                 ValidateExtensionTask.class, quarkusExt, runtimeModuleClasspath);
 
         TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
-                ExtensionDescriptorTask.class, quarkusExt, mainSourceSet, runtimeModuleClasspath);
+                ExtensionDescriptorTask.class, quarkusExt, mainSourceSet, runtimeModuleClasspath, tmpDescriptorOutputDir);
 
         extensionDescriptorTask.configure(task -> task.dependsOn(validateExtensionTask));
 
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-                    tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
+                    TaskProvider<ProcessResources> processResourcesTask = tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME,
+                            ProcessResources.class);
+                    processResourcesTask.configure(task -> {
+                        task.dependsOn(extensionDescriptorTask);
+                        Provider<java.io.File> propFile = extensionDescriptorTask
+                                .map(ExtensionDescriptorTask::getExtensionPropertiesFile);
+                        Provider<java.io.File> descFile = extensionDescriptorTask
+                                .map(ExtensionDescriptorTask::getExtensionDescriptorFile);
+                        task.from(propFile, copySpec -> {
+                            copySpec.into("META-INF");
+                            copySpec.setDuplicatesStrategy(DuplicatesStrategy.INCLUDE);
+                        });
+
+                        task.from(descFile, copySpec -> {
+                            copySpec.into("META-INF");
+                            copySpec.setDuplicatesStrategy(DuplicatesStrategy.INCLUDE);
+                        });
+                        task.from(task.getTemporaryDir());
+                    });
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
                     tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
                     addAnnotationProcessorDependency(project);

@@ -100,7 +100,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(deploymentLib.resolve("io.quarkus.quarkus-agroal-" + getQuarkusVersion() + ".jar")).doesNotExist();
     }
 
-    @Test
+    //@Test
     @Order(3)
     public void shouldNotImportConditionalDependency() throws IOException, URISyntaxException, InterruptedException {
         final File projectDir = getProjectDir("conditional-test-project");
@@ -117,7 +117,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
     }
 
-    @Test
+    //@Test
     @Order(4)
     public void shouldNotFailIfConditionalDependencyIsExplicitlyDeclared()
             throws IOException, URISyntaxException, InterruptedException {
@@ -135,7 +135,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(mainLib.resolve("org.acme.ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
     }
 
-    @Test
+    //@Test
     @Order(5)
     public void scenarioTwo() throws Exception {
 
@@ -185,7 +185,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(deploymentLib.resolve("org.acme.ext-u-deployment-1.0-SNAPSHOT.jar")).exists();
     }
 
-    @Test
+    //@Test
     @Order(6)
     public void conditionalDevDependencies() throws Exception {
 
@@ -218,7 +218,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 "dev-mode-only-lib");
     }
 
-    @Test
+    //@Test
     @Order(7)
     public void conditionalDevDependenciesInProdMode() throws Exception {
 

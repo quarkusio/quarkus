@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.assertj.core.api.Assertions;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -48,6 +49,8 @@ public class QuarkusExtensionPluginTest {
                 .withArguments("jar", "-S")
                 .build();
         assertThat(jarResult.task(":jar").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(jarResult.task(":" + JavaPlugin.PROCESS_RESOURCES_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.SUCCESS);
         assertThat(jarResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
 

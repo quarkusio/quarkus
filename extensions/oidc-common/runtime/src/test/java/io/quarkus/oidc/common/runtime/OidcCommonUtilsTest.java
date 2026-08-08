@@ -16,6 +16,7 @@ import java.util.StringTokenizer;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
@@ -130,7 +131,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testProxyOptionsWithHostWithoutScheme() throws Exception {
-        OidcCommonConfig.Proxy config = new OidcCommonConfig.Proxy();
+        OidcCommonConfig.Proxy config = createDefaultConfig().proxy;
         config.host = Optional.of("localhost");
         config.port = 8080;
         config.username = Optional.of("user");
@@ -145,7 +146,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testProxyOptionsWithHostWithScheme() throws Exception {
-        OidcCommonConfig.Proxy config = new OidcCommonConfig.Proxy();
+        OidcCommonConfig.Proxy config = createDefaultConfig().proxy;
         config.host = Optional.of("http://localhost");
         config.port = 8080;
         config.username = Optional.of("user");
@@ -162,8 +163,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtTokenWithScope() throws Exception {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.claims.put("scope", "read,write");
         PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
@@ -176,8 +176,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSignWithAudience() throws Exception {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.audience = Optional.of("https://server.example.com");
 
@@ -189,8 +188,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSignWithAudienceRemoveTrailingSlash() throws Exception {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.audience = Optional.of("https://server.example.com/");
 
@@ -202,8 +200,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSignWithAudienceKeepTrailingSlash() throws Exception {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.audience = Optional.of("https://server.example.com/");
         cfg.credentials.jwt.keepAudienceTrailingSlash = true;
@@ -216,8 +213,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSecretAndClientSecretAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.secret = Optional.of("secret1");
         cfg.credentials.clientSecret.value = Optional.of("secret2");
@@ -229,8 +225,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretValueAndJwtSecretAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
@@ -243,8 +238,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSecretAndJwtSecretProviderAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.secret = Optional.of("secret");
         cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
@@ -257,8 +251,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretValueAndJwtSecretProviderAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
@@ -271,8 +264,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretProviderAndJwtSecretAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
@@ -285,8 +277,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretProviderAndJwtSecretProviderAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
         cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
@@ -299,8 +290,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretAndJwtKeyFileAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
@@ -313,8 +303,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretAndJwtKeyAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.secret = Optional.of("secret");
         cfg.credentials.jwt.key = Optional.of("pem-key-content");
@@ -327,8 +316,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretAndJwtKeyStoreAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
@@ -341,8 +329,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretProviderAndJwtKeyFileAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
@@ -355,8 +342,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtKeyAndKeyFileAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.key = Optional.of("pem-key-content");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
@@ -369,8 +355,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtKeyAndKeyStoreAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.key = Optional.of("pem-key-content");
         cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
@@ -383,8 +368,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtKeyFileAndKeyStoreAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
         cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
@@ -397,8 +381,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testAllThreeJwtKeyPropertiesAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.key = Optional.of("pem-key-content");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
@@ -411,8 +394,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtSecretAndJwtKeyAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
         cfg.credentials.jwt.key = Optional.of("pem-key-content");
@@ -425,8 +407,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtSecretAndJwtKeyFileAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
@@ -439,8 +420,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtSecretProviderAndJwtKeyStoreAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
         cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
@@ -453,8 +433,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretAndJwtBearerAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
@@ -467,8 +446,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testClientSecretAndJwtSpiffeAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.secret = Optional.of("secret");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
@@ -481,8 +459,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtKeyFileAndJwtBearerAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
@@ -495,8 +472,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtKeyStoreAndJwtSpiffeAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
@@ -509,8 +485,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtSecretAndJwtBearerAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
@@ -523,8 +498,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtSecretProviderAndJwtSpiffeAreMutuallyExclusive() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
         cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
@@ -537,8 +511,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSingleClientSecretIsValid() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.clientSecret.value = Optional.of("secret");
         OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
@@ -546,8 +519,7 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSingleJwtKeyFileIsValid() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
         OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
@@ -555,11 +527,20 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testSingleJwtSecretIsValid() {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
-        };
+        OidcClientCommonConfig cfg = createDefaultConfig();
         cfg.setClientId("client");
         cfg.credentials.jwt.secret = Optional.of("jwt-secret");
         OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
+    }
+
+    private static OidcClientCommonConfig createDefaultConfig() {
+        var mapping = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.class)
+                .build()
+                .getConfigMapping(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.class);
+        return new OidcClientCommonConfig(mapping) {
+        };
     }
 
     public static JsonObject decodeJwtContent(String jwt) {

@@ -54,8 +54,7 @@ public class OidcUtilsTest {
     @Test
     public void testGetSingleSessionCookie() throws Exception {
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId("test");
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
         Map<String, Object> context = new HashMap<>();
         String sessionCookieValue = OidcUtils.getSessionCookie(context,
                 Map.of("q_session_test", new CookieImpl("q_session_test", "tokens")), oidcConfig);
@@ -69,8 +68,7 @@ public class OidcUtilsTest {
     @Test
     public void testGetMultipleSessionCookies() throws Exception {
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId("test");
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
 
         char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
 
@@ -103,21 +101,19 @@ public class OidcUtilsTest {
 
     @Test
     public void testCorrectTokenType() throws Exception {
-        OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
-        tokenClaims.setTokenType("access_token");
+        OidcTenantConfig config = OidcTenantConfig.builder().token().tokenType("access_token").end().build();
         JsonObject json = new JsonObject();
         json.put("typ", "access_token");
-        OidcUtils.validatePrimaryJwtTokenType(tokenClaims, json);
+        OidcUtils.validatePrimaryJwtTokenType(config.token(), json);
     }
 
     @Test
     public void testWrongTokenType() throws Exception {
-        OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
-        tokenClaims.setTokenType("access_token");
+        OidcTenantConfig config = OidcTenantConfig.builder().token().tokenType("access_token").end().build();
         JsonObject json = new JsonObject();
         json.put("typ", "refresh_token");
         try {
-            OidcUtils.validatePrimaryJwtTokenType(tokenClaims, json);
+            OidcUtils.validatePrimaryJwtTokenType(config.token(), json);
             fail("Exception expected: wrong token type");
         } catch (OIDCException ex) {
             // expected
@@ -126,10 +122,11 @@ public class OidcUtilsTest {
 
     @Test
     public void testKeycloakRefreshTokenType() throws Exception {
+        OidcTenantConfig config = OidcTenantConfig.builder().build();
         JsonObject json = new JsonObject();
         json.put("typ", "Refresh");
         try {
-            OidcUtils.validatePrimaryJwtTokenType(new OidcTenantConfig.Token(), json);
+            OidcUtils.validatePrimaryJwtTokenType(config.token(), json);
             fail("Exception expected: wrong token type");
         } catch (OIDCException ex) {
             // expected
@@ -289,31 +286,29 @@ public class OidcUtilsTest {
 
     @Test
     public void testEncodeScopesOpenidAdded() throws Exception {
-        OidcTenantConfig config = new OidcTenantConfig();
+        OidcTenantConfig config = OidcTenantConfig.builder().build();
         assertEquals("openid", OidcUtils.encodeScopes(config));
     }
 
     @Test
     public void testEncodeScopesOpenidNotAdded() throws Exception {
-        OidcTenantConfig config = new OidcTenantConfig();
-        config.authentication.setAddOpenidScope(false);
+        OidcTenantConfig config = OidcTenantConfig.builder().authentication().addOpenidScope(false).end().build();
         assertEquals("", OidcUtils.encodeScopes(config));
     }
 
     @Test
     public void testEncodeAllScopes() throws Exception {
-        OidcTenantConfig config = new OidcTenantConfig();
-        config.authentication.setScopes(List.of("a:1", "b:2"));
-        config.authentication.setExtraParams(Map.of("scope", "c,d"));
+        OidcTenantConfig config = OidcTenantConfig.builder()
+                .authentication().scopes(List.of("a:1", "b:2")).extraParams(Map.of("scope", "c,d")).end()
+                .build();
         assertEquals("openid+a%3A1+b%3A2+c+d", OidcUtils.encodeScopes(config));
     }
 
     @Test
     public void testEncodeAllScopesWithCustomSeparator() throws Exception {
-        OidcTenantConfig config = new OidcTenantConfig();
-        config.authentication.setScopeSeparator(",");
-        config.authentication.setScopes(List.of("a:1", "b:2"));
-        config.authentication.setExtraParams(Map.of("scope", "c,d"));
+        OidcTenantConfig config = OidcTenantConfig.builder()
+                .authentication().scopeSeparator(",").scopes(List.of("a:1", "b:2")).extraParams(Map.of("scope", "c,d")).end()
+                .build();
         assertEquals("openid%2Ca%3A1%2Cb%3A2%2Cc%2Cd", OidcUtils.encodeScopes(config));
     }
 

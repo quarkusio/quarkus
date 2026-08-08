@@ -8,10 +8,6 @@ import java.util.Optional;
 public abstract class OidcClientCommonConfig extends OidcCommonConfig
         implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig {
 
-    protected OidcClientCommonConfig() {
-
-    }
-
     protected OidcClientCommonConfig(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig mapping) {
         super(mapping);
         this.tokenPath = mapping.tokenPath();
@@ -98,6 +94,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Credentials implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials {
 
+        private Credentials() {
+        }
+
         /**
          * The client secret used by the `client_secret_basic` authentication method.
          * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
@@ -178,6 +177,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
         public static class Secret implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret {
+
+            private Secret() {
+            }
 
             @Override
             public Optional<String> value() {
@@ -280,6 +282,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
         public static class Jwt implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt {
+
+            private Jwt() {
+            }
 
             @Override
             public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source source() {
@@ -612,6 +617,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          */
         public static class Provider
                 implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider {
+
+            private Provider() {
+            }
 
             /**
              * The CredentialsProvider bean name, which should only be set if more than one CredentialsProvider is

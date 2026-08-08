@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
@@ -41,6 +40,7 @@ import java.util.stream.IntStream;
 import javax.crypto.SecretKey;
 
 import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claims;
 import org.hamcrest.Matchers;
 import org.htmlunit.FailingHttpStatusCodeException;
@@ -62,6 +62,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
@@ -69,6 +70,7 @@ import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -531,20 +533,21 @@ public class CodeFlowAuthorizationTest {
         checkSignedUserInfoRecordInLog();
     }
 
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
+    }
+
     private void checkSignedUserInfoRecordInLog() {
-        final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = getLogPath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
-                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                        Assertions.assertTrue(fileExists,
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
                         boolean lineConfirmingVerificationDetected = false;

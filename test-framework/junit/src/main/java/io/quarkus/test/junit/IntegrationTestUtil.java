@@ -26,6 +26,8 @@ import java.util.function.Consumer;
 import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
@@ -48,9 +50,11 @@ import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.ListeningAddresses;
+import io.quarkus.test.common.LogPathProvider;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -124,11 +128,13 @@ public final class IntegrationTestUtil {
         ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
     }
 
-    static ListeningAddresses startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
+    static Pair<ListeningAddresses, Path> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
             throws IOException {
         try {
             launcher.includeAsSysProps(additionalProperties);
-            return launcher.start();
+            ListeningAddresses listeningAddresses = launcher.start();
+            Path logPath = resolveLogFilePath(launcher);
+            return new ImmutablePair<>(listeningAddresses, logPath);
         } catch (IOException e) {
             try {
                 launcher.close();
@@ -461,6 +467,30 @@ public final class IntegrationTestUtil {
                     "The determined Quarkus build output '" + result.toAbsolutePath().toString() + "' is not a directory");
         }
         return result;
+    }
+
+    /**
+     * Resolves the log file path for the given artifact launcher.
+     * <p>
+     * If the launcher provides a log path (implements {@link LogPathProvider}), this method:
+     * <ul>
+     * <li>Returns the launcher's log path</li>
+     * </ul>
+     * <p>
+     * Otherwise, the method falls back to retrieving the log file path from the Quarkus runtime
+     * configuration via {@link LogRuntimeConfig}.
+     *
+     * @param launcher the artifact launcher for which to resolve the log path; must not be null
+     * @return the {@link Path} to the application's log file
+     * @see LogPathProvider
+     * @see LogRuntimeConfig
+     */
+    static Path resolveLogFilePath(ArtifactLauncher<?> launcher) {
+        if (launcher instanceof LogPathProvider lp && lp.getLogPath() != null) {
+            return lp.getLogPath();
+        }
+        LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
     }
 
     private static Path determineBuildOutputDirectory(final URL url) {

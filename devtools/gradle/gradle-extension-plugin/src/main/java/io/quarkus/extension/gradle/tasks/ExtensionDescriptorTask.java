@@ -50,6 +50,7 @@ import tools.jackson.core.util.DefaultPrettyPrinter;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
@@ -118,8 +119,14 @@ public class ExtensionDescriptorTask extends DefaultTask {
     @OutputFile
     public File getExtensionDescriptorFile() {
         return outputResourcesDir.toPath()
-                .resolve(BootstrapConstants.META_INF)
-                .resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME)
+                .resolve(BootstrapConstants.EXTENSION_METADATA_PATH)
+                .toFile();
+    }
+
+    @OutputFile
+    public File getExtensionJsonDescriptorFile() {
+        return outputResourcesDir.toPath()
+                .resolve(BootstrapConstants.EXTENSION_JSON_METADATA_PATH)
                 .toFile();
     }
 
@@ -360,6 +367,17 @@ public class ExtensionDescriptorTask extends DefaultTask {
             throw new GradleException(
                     "Failed to persist " + outputMetaInfDirectory.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
         }
+
+        ObjectMapper jsonMapper = getJsonMapper();
+        try (BufferedWriter bw = Files
+                .newBufferedWriter(outputMetaInfDirectory.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME))) {
+            bw.write(jsonMapper.writer().with(prettyPrinter).writeValueAsString(extObject));
+        } catch (IOException e) {
+            throw new GradleException(
+                    "Failed to persist "
+                            + outputMetaInfDirectory.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME),
+                    e);
+        }
     }
 
     private void computeProjectName(ObjectNode extObject) {
@@ -531,6 +549,12 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     private ObjectMapper getMapper() {
         return YAMLMapper.builder()
+                .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .build();
+    }
+
+    private ObjectMapper getJsonMapper() {
+        return JsonMapper.builder()
                 .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
                 .build();
     }

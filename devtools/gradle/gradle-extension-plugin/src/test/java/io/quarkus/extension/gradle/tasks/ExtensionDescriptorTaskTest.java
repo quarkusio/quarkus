@@ -19,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.quarkus.extension.gradle.QuarkusExtensionPlugin;
 import io.quarkus.extension.gradle.TestUtils;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -70,6 +71,15 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("name").asText()).isEqualTo("test");
         assertThat(extensionDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
         assertThat(extensionDescriptor.has("description")).isFalse();
+
+        // Assert JSON file is also generated
+        File extensionJsonFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.json");
+        assertThat(extensionJsonFile).exists();
+
+        JsonMapper jsonMapper = JsonMapper.builder().build();
+        ObjectNode jsonDescriptor = jsonMapper.readValue(extensionJsonFile, ObjectNode.class);
+        assertThat(jsonDescriptor.get("name").asText()).isEqualTo("test");
+        assertThat(jsonDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
 
         // Assert metadata node
         assertThat(extensionDescriptor.has("metadata")).isTrue();

@@ -34,6 +34,10 @@ public final class JacksonMappers {
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
             .build().reader();
+    private static final ObjectReader JSON_OBJECT_READER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+            .build().reader();
 
     private JacksonMappers() {
     }
@@ -48,5 +52,9 @@ public final class JacksonMappers {
 
     public static ObjectReader yamlObjectReader() {
         return YAML_OBJECT_READER;
+    }
+
+    public static ObjectReader jsonObjectReader() {
+        return JSON_OBJECT_READER;
     }
 }

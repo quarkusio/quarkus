@@ -113,6 +113,29 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     }
 
     @Test
+    public void shouldCreateJsonMetadata()
+            throws Exception {
+
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+        File jsonFile = getGeneratedExtensionMetadataFile(mojo.project.getBasedir(),
+                "target/classes/META-INF/quarkus-extension.json");
+
+        if (jsonFile.exists()) {
+            Files.delete(jsonFile.toPath());
+        }
+        mojo.execute();
+        assertTrue(jsonFile.exists());
+
+        tools.jackson.databind.ObjectMapper mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        tools.jackson.databind.JsonNode jsonNode = mapper.readTree(jsonFile);
+        assertNotNull(jsonNode.get("name"));
+        assertEquals("an arbitrary name", jsonNode.get("name").asText());
+        assertNotNull(jsonNode.get("artifact"));
+        assertEquals("io.quackiverse:test-artifact::jar:1.4.2-SNAPSHOT", jsonNode.get("artifact").asText());
+
+    }
+
+    @Test
     public void shouldFailOnInvalidStatusArray()
             throws Exception {
         ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");

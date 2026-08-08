@@ -35,6 +35,38 @@ This document provides an expanded description of the xref:security-oidc-configu
 
 This build-time property is about controlling if the whole OIDC extension should be enabled. If it is disabled at build-time then the OIDC extension is unavailable at runtime.
 
+[[allowed-routes-properties]]
+=== Allowed Routes
+
+.OIDC allowed routes property
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata`|OIDC routes that tenants can use
+|====
+
+This build-time property defines which OIDC routes tenants can use. Each route requires a dedicated HTTP handler; remove routes no tenant needs to avoid unnecessary overhead.
+
+Supported values:
+
+* `backchannel-logout` - allows tenants to configure <<back-channel-logout,back-channel logout>> properties
+* `resource-metadata` - allows tenants to configure <<resource-metadata-properties,protected resource metadata>> properties
+
+For example, if your tenants only need back-channel logout:
+
+[source,properties]
+----
+quarkus.oidc.allowed-routes=backchannel-logout
+----
+
+If no tenant needs any of these routes, leave the property empty:
+
+[source,properties]
+----
+quarkus.oidc.allowed-routes=
+----
+
 [[tenant-properties]]
 === Tenant
 
@@ -720,6 +752,8 @@ Some OIDC providers may require that logout parameters are encoded as HTML form 
 [[back-channel-logout]]
 === Back-channel Logout
 
+NOTE: The back-channel logout route handler is registered by default. To prevent its registration, remove `backchannel-logout` from the <<allowed-routes-properties,quarkus.oidc.allowed-routes>> build-time property.
+
 Back-channel logout should be used for complex Quarkus applications involving several services, possibly on different hosts or ports, when supporting a global logout is required. The user, by choosing to logout from one of the services, also gets logged out from all other services.
 The OIDC provider detects the logout request (for example, an RP-initiated one) from one of the services and sends back-channel notifications to all other Quarkus OIDC applications. See the xref:security-oidc-code-flow-authentication.adoc#back-channel-logout[OIDC Back-channel logout] section for more details.
 
@@ -1346,6 +1380,8 @@ See the xref:security-oidc-code-flow-authentication#oidc-token-revocation[Token 
 
 [[resource-metadata-properties]]
 === Protected Resource Metadata
+
+NOTE: The protected resource metadata route handler is registered by default. To prevent its registration, remove `resource-metadata` from the <<allowed-routes-properties,quarkus.oidc.allowed-routes>> build-time property.
 
 https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] specification defines a metadata format enabling OAuth 2.0 clients to obtain information needed to interact with an OAuth 2.0 protected resource.
 

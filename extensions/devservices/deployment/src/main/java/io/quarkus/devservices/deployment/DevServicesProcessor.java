@@ -9,7 +9,6 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 import static io.quarkus.devservices.common.ConfigureUtil.configureLabels;
 import static io.quarkus.devservices.common.ConfigureUtil.shouldConfigureSharedServiceLabel;
-import static io.quarkus.devservices.deployment.IsRuntimeModuleAvailable.IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -66,6 +65,8 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
+import io.quarkus.devservice.runtime.config.DevServicesOverrideConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
@@ -198,20 +199,12 @@ public class DevServicesProcessor {
         return registryBuildItem;
     }
 
-    // Because the devservices runtime module is new and the ecosystem needs time to catch up, don't die if the runtime module isn't available
-    @BuildStep(onlyIf = { IsRuntimeModuleAvailable.class })
+    @BuildStep
     public void registerDevResourcesConfigSource(BuildProducer<RunTimeConfigBuilderBuildItem> runtimeConfigBuilders) {
         // Once all the dev services are registered, we can share config
-        try {
-            // Use reflection, since we don't have an explicit dependency on the runtime module (because dependent extensions may not have that dependency)
-            runtimeConfigBuilders
-                    .produce(new RunTimeConfigBuilderBuildItem(Class.forName(IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS)));
-            runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(
-                    Class.forName("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigBuilder")));
-        } catch (ClassNotFoundException e) {
-            // Should never happen, because of the guard, as long as the runtime module is not a direct dependency of this module
-            throw new RuntimeException(e);
-        }
+        runtimeConfigBuilders
+                .produce(new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class));
+        runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(DevServicesOverrideConfigBuilder.class));
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })

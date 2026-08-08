@@ -7,10 +7,6 @@ import java.util.OptionalInt;
 
 public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig {
 
-    public OidcCommonConfig() {
-
-    }
-
     protected OidcCommonConfig(io.quarkus.oidc.common.runtime.config.OidcCommonConfig mapping) {
         this.authServerUrl = mapping.authServerUrl();
         this.discoveryPath = mapping.discoveryPath();
@@ -199,6 +195,9 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Tls implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls {
+
+        private Tls() {
+        }
 
         /**
          * The name of the TLS configuration to use.
@@ -457,6 +456,9 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Proxy implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy {
+
+        private Proxy() {
+        }
 
         /**
          * The host name or IP address of the Proxy.<br/>

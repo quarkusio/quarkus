@@ -426,6 +426,21 @@ public class SecurityProcessor {
             runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.Utils"));
             // re-detect JNI library availability
             runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.NativeLoader"));
+            // embeds a java.lang.ref.Cleaner instance
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.AESWorkingBuffer"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.HashDRBGWorkingBuffer"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.DESedeWorkingBuffer"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.CTRDRBGWorkingBuffer"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.HMacDRBGWorkingBuffer"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.SymmetricSecretKey"));
+            runtimeReInitialized
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.internal.SecretZeroizer"));
         }
 
         // Reinitialize class because it embeds a java.lang.ref.Cleaner instance in the image heap

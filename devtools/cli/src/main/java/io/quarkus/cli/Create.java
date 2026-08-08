@@ -28,6 +28,20 @@ public class Create implements Callable<Integer> {
     List<String> unmatchedArgs;
 
     public Integer call() throws Exception {
+        // If the user passed a non-flag argument that isn't a known subcommand,
+        // they likely mistyped a subcommand name (e.g. "create ext" instead of "create extension").
+        // Give a clear error instead of falling through to CreateApp which would fail with
+        // a cryptic picocli UnmatchedArgumentException.
+        if (unmatchedArgs != null && !unmatchedArgs.isEmpty()) {
+            String first = unmatchedArgs.get(0);
+            if (!first.startsWith("-")) {
+                output.error("Unknown subcommand '%s' for 'quarkus create'.", first);
+                output.info("Available subcommands are: %s", String.join(", ", spec.subcommands().keySet()));
+                output.info("See 'quarkus create --help' for more information.");
+                return CommandLine.ExitCode.USAGE;
+            }
+        }
+
         output.info("Creating an app (default project type, see --help).");
 
         ParseResult result = spec.commandLine().getParseResult();

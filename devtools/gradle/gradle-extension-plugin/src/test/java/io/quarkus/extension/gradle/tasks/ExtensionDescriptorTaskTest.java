@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -57,6 +58,15 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("name").asText()).isEqualTo("test");
         assertThat(extensionDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
         assertThat(extensionDescriptor.has("description")).isFalse();
+
+        // Assert JSON file is also generated
+        File extensionJsonFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.json");
+        assertThat(extensionJsonFile).exists();
+
+        ObjectMapper jsonMapper = new ObjectMapper();
+        ObjectNode jsonDescriptor = jsonMapper.readValue(extensionJsonFile, ObjectNode.class);
+        assertThat(jsonDescriptor.get("name").asText()).isEqualTo("test");
+        assertThat(jsonDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
 
         // Assert metadata node
         assertThat(extensionDescriptor.has("metadata")).isTrue();

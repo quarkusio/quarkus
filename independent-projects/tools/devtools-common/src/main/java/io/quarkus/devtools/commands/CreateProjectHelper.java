@@ -17,9 +17,9 @@ import javax.lang.model.SourceVersion;
 
 import org.eclipse.aether.artifact.DefaultArtifact;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.ExtensionMetadataUtil;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.project.SourceType;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -77,8 +77,8 @@ public class CreateProjectHelper {
                 } catch (BootstrapMavenException e) {
                     throw new RuntimeException("Failed to resolve extension " + coords, e);
                 }
-                final Extension ext = PathTree.ofDirectoryOrArchive(extJar)
-                        .apply(BootstrapConstants.EXTENSION_METADATA_PATH, visit -> {
+                final Extension ext = ExtensionMetadataUtil.applyExtensionMetadata(
+                        PathTree.ofDirectoryOrArchive(extJar), visit -> {
                             if (visit == null) {
                                 return null;
                             }

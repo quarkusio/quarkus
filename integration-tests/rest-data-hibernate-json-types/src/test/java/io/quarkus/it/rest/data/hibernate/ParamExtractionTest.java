@@ -44,13 +44,32 @@ public class ParamExtractionTest {
     @Test
     public void testPageRequestPartialOverride() {
         given()
-                .queryParam("size", 50)
+                .queryParam("size", 40)
                 .when().get("/echo/page-request")
                 .then()
                 .statusCode(200)
                 .body("page", is(1))
-                .body("size", is(50))
+                .body("size", is(40))
                 .body("requestTotal", is(true));
+    }
+
+    @Test
+    public void testPageRequestSizeAtConfiguredMaximum() {
+        given()
+                .queryParam("size", 50)
+                .when().get("/echo/page-request")
+                .then()
+                .statusCode(200)
+                .body("size", is(50));
+    }
+
+    @Test
+    public void testPageRequestSizeAboveConfiguredMaximum() {
+        given()
+                .queryParam("size", 51)
+                .when().get("/echo/page-request")
+                .then()
+                .statusCode(400);
     }
 
     // --- Sort ---

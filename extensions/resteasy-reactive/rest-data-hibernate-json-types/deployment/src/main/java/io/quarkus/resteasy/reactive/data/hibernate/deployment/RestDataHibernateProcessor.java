@@ -21,8 +21,10 @@ import io.quarkus.resteasy.reactive.data.hibernate.runtime.JakartaDataObjectMapp
 import io.quarkus.resteasy.reactive.data.hibernate.runtime.LimitParamExtractor;
 import io.quarkus.resteasy.reactive.data.hibernate.runtime.OrderParamExtractor;
 import io.quarkus.resteasy.reactive.data.hibernate.runtime.PageRequestParamExtractor;
+import io.quarkus.resteasy.reactive.data.hibernate.runtime.RestDataHibernateConfig;
 import io.quarkus.resteasy.reactive.data.hibernate.runtime.SortParamExtractor;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public class RestDataHibernateProcessor {
 
@@ -38,14 +40,18 @@ public class RestDataHibernateProcessor {
     }
 
     @BuildStep
-    MethodScannerBuildItem jakartaDataParamScanner() {
+    MethodScannerBuildItem jakartaDataParamScanner(RestDataHibernateConfig config) {
+        int maxPageSize = config.page().maxSize().orElse(Integer.MAX_VALUE);
+        if (maxPageSize <= 0) {
+            throw new ConfigurationException("quarkus.rest.data.page.max-size must be greater than 0");
+        }
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
                     boolean field, Map<String, Object> methodContext) {
                 DotName name = paramType.name();
                 if (name.equals(PAGE_REQUEST)) {
-                    return new PageRequestParamExtractor();
+                    return new PageRequestParamExtractor(maxPageSize);
                 }
                 if (name.equals(SORT)) {
                     return new SortParamExtractor();

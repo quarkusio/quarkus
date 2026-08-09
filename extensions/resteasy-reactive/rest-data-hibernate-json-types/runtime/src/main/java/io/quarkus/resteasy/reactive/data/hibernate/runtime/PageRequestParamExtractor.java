@@ -5,6 +5,8 @@ import jakarta.data.page.PageRequest;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 
+import io.quarkus.runtime.annotations.RecordableConstructor;
+
 /**
  * Extracts a {@link PageRequest} from HTTP query parameters.
  * <ul>
@@ -17,6 +19,17 @@ public class PageRequestParamExtractor implements ParameterExtractor {
 
     private static final int DEFAULT_PAGE_NUMBER = 1;
     private static final int DEFAULT_PAGE_SIZE = 10;
+
+    private final int maxPageSize;
+
+    @RecordableConstructor
+    public PageRequestParamExtractor(int maxPageSize) {
+        this.maxPageSize = maxPageSize;
+    }
+
+    public int getMaxPageSize() {
+        return maxPageSize;
+    }
 
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
@@ -32,6 +45,10 @@ public class PageRequestParamExtractor implements ParameterExtractor {
         String sizeStr = (String) context.getQueryParameter("size", true, false);
         if (sizeStr != null) {
             size = Integer.parseInt(sizeStr);
+        }
+        if (size > maxPageSize) {
+            throw new IllegalArgumentException(
+                    "Query parameter 'size' must not exceed the configured maximum of " + maxPageSize);
         }
 
         String requestTotalStr = (String) context.getQueryParameter("requestTotal", true, false);

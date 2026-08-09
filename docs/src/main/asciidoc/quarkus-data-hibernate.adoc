@@ -1274,6 +1274,15 @@ may be requested.
 NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
 by this REST integration. Only offset-based pagination is available via query parameters.
 
+By default, the page size is not limited. You can configure the maximum page size accepted from a REST request:
+
+[source,properties]
+----
+quarkus.rest.data.page.max-size=100
+----
+
+Requests with a `size` greater than the configured maximum are rejected with an HTTP `400 Bad Request` response.
+
 === Page serialization
 
 When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination

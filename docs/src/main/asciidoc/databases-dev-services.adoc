@@ -196,6 +196,31 @@ CAUTION: The colon character `:` needs to be escaped in `.properties` files as `
 
 IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission.
 
+Alternatively, volumes can be declared as an indexed list of mounts, modeled after the long syntax of Docker Compose volumes:
+
+[source,properties]
+----
+# Using a filesystem (bind) mount:
+quarkus.datasource.devservices.mounts[0].source=/path/from <1>
+quarkus.datasource.devservices.mounts[0].target=/container/to
+# Using a classpath mount:
+quarkus.datasource.devservices.mounts[1].type=classpath <2>
+quarkus.datasource.devservices.mounts[1].source=./file
+quarkus.datasource.devservices.mounts[1].target=/container/to
+quarkus.datasource.devservices.mounts[1].read-only=true <3>
+----
+
+<1> The mount type defaults to `bind`, mapping the file or folder "/path/from" from the local machine to "/container/to" in the container.
+<2> The `classpath` type resolves the source from the project's classpath instead of the filesystem.
+<3> Mounts are read-write by default; set `read-only` to `true` to prevent the container from modifying the source.
+
+Because this form does not encode the mount source in the configuration key,
+there is nothing to escape,
+and the properties can also be provided as environment variables,
+for example `QUARKUS_DATASOURCE_DEVSERVICES_MOUNTS_0_SOURCE`.
+This is not possible with the map form shown above,
+as characters like `.` or `:` in the map key cannot be represented in an environment variable name.
+
 === Example of mapping volumes to persist the database data
 
 Let's see an example using PostgreSQL where we'll map a file system volume to keep the database data permanently and use it:

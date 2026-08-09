@@ -87,6 +87,7 @@ public class PostgresqlDevServicesProcessor {
                         .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
+                Volumes.addMounts(container, containerConfig.getMounts());
 
                 container.withEnv(containerConfig.getContainerEnv());
 

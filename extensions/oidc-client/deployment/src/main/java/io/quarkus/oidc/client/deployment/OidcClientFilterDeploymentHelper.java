@@ -1,7 +1,7 @@
 package io.quarkus.oidc.client.deployment;
 
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +11,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+import jakarta.inject.Singleton;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -19,15 +21,15 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.oidc.client.filter.OidcClientFilter;
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.MethodDescription;
@@ -41,7 +43,7 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     private final Map<TokensProducerKey, String> clientNameToGeneratedClass = new HashMap<>();
     private final Map<String, Boolean> restClientToIsMethodAnnotated = new HashMap<>();
     private final Class<T> baseClass;
-    private final ClassOutput classOutput;
+    private final Gizmo gizmo;
     private final String targetPackage;
     private final boolean refreshOnUnauthorized;
 
@@ -51,9 +53,9 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     public OidcClientFilterDeploymentHelper(Class<T> baseClass, BuildProducer<GeneratedBeanBuildItem> generatedBean,
             boolean refreshOnUnauthorized) {
         this.baseClass = baseClass;
-        this.classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
+        this.gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean));
         this.targetPackage = DotNames
-                .internalPackageNameWithTrailingSlash(DotName.createSimple(baseClass.getName()));
+                .packagePrefix(DotName.createSimple(baseClass));
         this.refreshOnUnauthorized = refreshOnUnauthorized;
     }
 
@@ -84,33 +86,41 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
                 new Function<TokensProducerKey, String>() {
                     @Override
                     public String apply(TokensProducerKey key) {
-                        final String generatedName = targetPackage + baseClass.getSimpleName() + "_" + sanitize(oidcClientName)
+                        final String generatedName = targetPackage + "." + baseClass.getSimpleName() + "_"
+                                + sanitize(oidcClientName)
                                 + possiblyTargetMethodSuffix(targetMethod);
 
-                        try (ClassCreator creator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                                .superClass(baseClass).build()) {
-                            creator.addAnnotation(DotNames.SINGLETON.toString());
-                            creator.addAnnotation(DotNames.UNREMOVABLE.toString());
+                        gizmo.class_(generatedName, cc -> {
+                            cc.extends_(baseClass);
+                            cc.addAnnotation(Singleton.class);
+                            cc.addAnnotation(Unremovable.class);
+                            cc.defaultConstructor();
 
                             if (!DEFAULT_OIDC_REQUEST_FILTER_NAME.equals(oidcClientName)) {
-                                try (MethodCreator clientIdMethod = creator.getMethodCreator("clientId", Optional.class)) {
-                                    clientIdMethod.setModifiers(Modifier.PROTECTED);
+                                cc.method("clientId", mc -> {
+                                    mc.protected_();
+                                    mc.returning(Optional.class);
 
-                                    clientIdMethod.returnValue(clientIdMethod.invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                                            clientIdMethod.load(oidcClientName)));
-                                }
+                                    mc.body(bc -> {
+                                        bc.return_(bc.invokeStatic(
+                                                MethodDesc.of(Optional.class, "of", Optional.class, Object.class),
+                                                Const.of(oidcClientName)));
+                                    });
+                                });
                             }
 
                             if (refreshOnUnauthorized) {
                                 // protected boolean refreshOnUnauthorized() {
                                 //  return true;
                                 // }
-                                try (MethodCreator methodCreator = creator.getMethodCreator("refreshOnUnauthorized",
-                                        boolean.class)) {
-                                    methodCreator.setModifiers(Modifier.PROTECTED);
-                                    methodCreator.returnBoolean(true);
-                                }
+                                cc.method("refreshOnUnauthorized", mc -> {
+                                    mc.protected_();
+                                    mc.returning(boolean.class);
+
+                                    mc.body(bc -> {
+                                        bc.return_(true);
+                                    });
+                                });
                             }
 
                             /*
@@ -119,34 +129,32 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
                              * }
                              */
                             if (targetMethod != null) {
-                                try (var methodCreator = creator.getMethodCreator("getMethodDescription",
-                                        MethodDescription.class)) {
-                                    methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                                    methodCreator.setModifiers(Modifier.PROTECTED);
+                                cc.method("getMethodDescription", mc -> {
+                                    mc.addAnnotation(ClassDesc.of(Override.class.getName()), RetentionPolicy.CLASS, ac -> {
+                                    });
+                                    mc.protected_();
+                                    mc.returning(MethodDescription.class);
 
-                                    // String methodName
-                                    var methodName = methodCreator.load(targetMethod.name());
-                                    // String declaringClassName
-                                    var declaringClassName = methodCreator
-                                            .load(targetMethod.declaringClass().name().toString());
-                                    // String[] paramTypes
-                                    var paramTypes = methodCreator.marshalAsArray(String[].class,
-                                            targetMethod.parameterTypes().stream()
-                                                    .map(pt -> pt.name().toString()).map(methodCreator::load)
-                                                    .toArray(ResultHandle[]::new));
-                                    // new MethodDescription(declaringClassName, methodName, parameterTypes)
-                                    var methodDescriptionCtor = MethodDescriptor.ofConstructor(MethodDescription.class,
-                                            String.class, String.class, String[].class);
-                                    var newMethodDescription = methodCreator.newInstance(methodDescriptionCtor,
-                                            declaringClassName,
-                                            methodName, paramTypes);
-                                    // return new MethodDescription(declaringClassName, methodName, parameterTypes);
-                                    methodCreator.returnValue(newMethodDescription);
-                                }
+                                    mc.body(bc -> {
+                                        // String[] paramTypes
+                                        var paramTypes = bc.newArray(String.class,
+                                                targetMethod.parameterTypes(),
+                                                pt -> Const.of(pt.name().toString()));
+                                        // new MethodDescription(declaringClassName, methodName, parameterTypes)
+                                        var newMethodDescription = bc.new_(
+                                                ConstructorDesc.of(MethodDescription.class,
+                                                        String.class, String.class, String[].class),
+                                                Const.of(targetMethod.declaringClass().name().toString()),
+                                                Const.of(targetMethod.name()),
+                                                paramTypes);
+                                        // return new MethodDescription(declaringClassName, methodName, parameterTypes);
+                                        bc.return_(newMethodDescription);
+                                    });
+                                });
                             }
-                        }
+                        });
 
-                        return generatedName.replace('/', '.');
+                        return generatedName;
                     }
                 });
 

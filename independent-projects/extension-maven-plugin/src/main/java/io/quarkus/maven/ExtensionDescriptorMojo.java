@@ -891,25 +891,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final DependencyNode deploymentNode = collectDeploymentDeps().getRoot();
         visitDeploymentDeps(rootDeployment, deploymentNode);
 
-        if (!rootDeployment.riskyDeploymentDeps.isEmpty()) {
-            final Log log = getLog();
-            List<ArtifactKey> risks = new ArrayList<>(rootDeployment.riskyDeploymentDeps.size());
-            for (Map.Entry<ArtifactKey, org.eclipse.aether.artifact.Artifact> e : rootDeployment.unexpectedDeploymentDeps
-                    .entrySet()) {
-                // TODO this check doesn't make sense, if the second one isn't right it's worse?
-                if (rootDeployment.allDeploymentDeps.contains(e.getKey())) {
-                    risks.add(e.getKey());
-                } else {
-                    risks.add(toKey(e.getValue()));
-                }
-            }
-
-            log.warn("The deployment artifact " + rootDeploymentGact
-                    + " depends on the following Quarkus extension deployment artifacts whose corresponding runtime artifacts were not found among the dependencies of "
-                    + project.getArtifact() + ":");
-            highlightInTree(deploymentNode, risks);
-        }
-
         if (rootDeployment.hasErrors()) {
             final Log log = getLog();
             log.error("Quarkus Extension Dependency Verification Error");
@@ -1060,9 +1041,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (node != null) {
             if (!node.present) {
                 node.present = true;
-                if (!isExemptGact(node.gact)) {
-                    --rootDeployment.deploymentDepsTotal;
-                }
+                --rootDeployment.deploymentDepsTotal;
                 if (rootDeployment.allRtDeps.contains(key)) {
                     rootDeployment.deploymentsOnRtCp.add(key);
                 }
@@ -1070,12 +1049,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } else if (!rootDeployment.allRtDeps.contains(key)) {
             final ArtifactKey deployment = getDeploymentKey(artifact);
             if (deployment != null) {
-                if (isExemptGact(deployment)) {
-                    rootDeployment.riskyDeploymentDeps.put(deployment, artifact);
-                } else {
-                    rootDeployment.unexpectedDeploymentDeps.put(deployment, artifact);
-
-                }
+                rootDeployment.unexpectedDeploymentDeps.put(deployment, artifact);
             }
         }
         visitDeploymentDeps(rootDeployment, dep);
@@ -1089,9 +1063,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (deployment != null) {
             currentNode = currentNode.newChild(deployment, ++currentId);
             root.expectedDeploymentNodes.put(currentNode.gact, currentNode);
-            if (!isExemptGact(currentNode.gact)) {
-                ++root.deploymentDepsTotal;
-            }
+            ++root.deploymentDepsTotal;
             if (root.allRtDeps.contains(deployment)) {
                 root.deploymentsOnRtCp.add(deployment);
                 if (root.directRuntimeDeps.contains(deployment)) {
@@ -1109,11 +1081,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         }
         visitRuntimeDeps(root, currentNode, currentId, node);
-    }
-
-    private static boolean isExemptGact(ArtifactKey gact) {
-        return (gact.getArtifactId().equals("quarkus-devservices")
-                || gact.getArtifactId().equals("quarkus-devservices-deployment")) && gact.getGroupId().equals("io.quarkus");
     }
 
     private void visitRuntimeDeps(RootNode root, Node currentNode, int currentId, DependencyNode node)
@@ -1337,16 +1304,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final Set<ArtifactKey> allRtDeps = new HashSet<>();
         final Set<ArtifactKey> allDeploymentDeps = new HashSet<>();
         final Map<ArtifactKey, org.eclipse.aether.artifact.Artifact> unexpectedDeploymentDeps = new HashMap<>(0);
-        final Map<ArtifactKey, org.eclipse.aether.artifact.Artifact> riskyDeploymentDeps = new HashMap<>(0);
 
         int deploymentDepsTotal = 1;
         List<ArtifactKey> deploymentsOnRtCp = new ArrayList<>(0);
 
         RootNode(ArtifactKey gact, int id) {
             super(null, gact, id);
-            if (isExemptGact(gact)) {
-                deploymentDepsTotal = 0;
-            }
         }
 
         boolean hasErrors() {

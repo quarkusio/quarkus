@@ -40,8 +40,6 @@ public class CognitoPrincipal implements JsonWebToken {
     public <T> T getClaim(String claimName) {
         if (claimName.equals(Claims.groups)) {
             return (T) getGroups();
-        } else if (claimName.equals(Claims.groups)) {
-            return (T) getAudience();
         } else if (claimName.equals(Claims.exp)) {
             return (T) Long.valueOf(getExpirationTime());
         } else if (claimName.equals(Claims.iat)) {

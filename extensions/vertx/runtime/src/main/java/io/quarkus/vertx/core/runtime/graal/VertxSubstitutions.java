@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -51,6 +52,15 @@ final class Target_DefaultSslContextFactory {
     @Alias
     private ClientAuth clientAuth;
 
+    @Alias
+    private SNIServerName serverName;
+
+    @Alias
+    private String endpointIdentificationAlgorithm;
+
+    @Alias
+    private Set<String> enabledProtocols;
+
     @Substitute
     private SslContext createContext(boolean useAlpn, boolean client, KeyManagerFactory kmf, TrustManagerFactory tmf)
             throws SSLException {
@@ -77,12 +87,23 @@ final class Target_DefaultSslContextFactory {
         if (useAlpn && applicationProtocols != null && applicationProtocols.size() > 0) {
             builder.applicationProtocolConfig(new ApplicationProtocolConfig(
                     ApplicationProtocolConfig.Protocol.ALPN,
-                    ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                    ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                    ApplicationProtocolConfig.SelectorFailureBehavior.FATAL_ALERT,
+                    ApplicationProtocolConfig.SelectedListenerFailureBehavior.FATAL_ALERT,
                     applicationProtocols));
         }
-        if (clientAuth != null) {
-            builder.clientAuth(clientAuth);
+        if (client) {
+            if (serverName != null) {
+                builder.serverName(serverName);
+            }
+            builder.endpointIdentificationAlgorithm(
+                    endpointIdentificationAlgorithm == null ? "" : endpointIdentificationAlgorithm);
+        } else {
+            if (clientAuth != null) {
+                builder.clientAuth(clientAuth);
+            }
+        }
+        if (enabledProtocols != null) {
+            builder.protocols(enabledProtocols);
         }
         return builder.build();
     }

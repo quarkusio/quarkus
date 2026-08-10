@@ -1,9 +1,11 @@
 package io.quarkus.info.deployment;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.Page;
@@ -40,6 +42,12 @@ public class InfoDevUIProcessor {
         cardBuildItem.addPage(infoPage);
         cardBuildItem.addPage(rawPage);
         cardPageProducer.produce(cardBuildItem);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Info", 'i',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.InfoShellPage");
     }
 
 }

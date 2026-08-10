@@ -24,6 +24,7 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
@@ -250,6 +252,12 @@ public class MicrometerProcessor {
         }
 
         return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).reason(getClass().getName()).build();
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Micrometer", 'M',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.MicrometerShellPage");
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

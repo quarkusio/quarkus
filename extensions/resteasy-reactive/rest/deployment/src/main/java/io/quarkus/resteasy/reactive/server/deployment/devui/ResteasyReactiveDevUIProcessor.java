@@ -4,6 +4,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.resteasy.reactive.server.runtime.dev.ui.ResteasyReactiveJsonRPCService;
@@ -45,5 +46,11 @@ public class ResteasyReactiveDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
         jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(ResteasyReactiveJsonRPCService.class));
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("REST Endpoints",
+                "io.quarkus.devshell.deployment.tui.pages.extensions.RestEndpointsShellPage");
     }
 }

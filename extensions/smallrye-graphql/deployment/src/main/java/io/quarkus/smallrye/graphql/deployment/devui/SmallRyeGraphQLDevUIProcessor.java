@@ -1,8 +1,10 @@
 package io.quarkus.smallrye.graphql.deployment.devui;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
@@ -62,5 +64,11 @@ public class SmallRyeGraphQLDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(GraphQLJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("GraphQL", 'g',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.GraphQLShellPage");
     }
 }

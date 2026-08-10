@@ -23,6 +23,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
@@ -177,5 +178,11 @@ public class ArcDevUIProcessor {
     private static final String REMOVED_BEANS = "removedBeans";
     private static final String REMOVED_DECORATORS = "removedDecorators";
     private static final String REMOVED_INTERCEPTORS = "removedInterceptors";
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("CDI (Arc)", 'a',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.ArcShellPage");
+    }
 
 }

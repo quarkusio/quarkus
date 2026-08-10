@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -68,6 +69,12 @@ class AgroalDevUIProcessor {
             """;
 
     final record MoreDataResponse(String script) {
+    }
+
+    @BuildStep
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Agroal",
+                "io.quarkus.devshell.deployment.tui.pages.extensions.AgroalShellPage");
     }
 
 }

@@ -9,6 +9,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
@@ -77,6 +78,12 @@ public class HibernateOrmDevUIProcessor {
             updateSQLGeneratorBuildItemBuildProducer
                     .produce(new JdbcUpdateSQLGeneratorBuildItem(dsName, new HibernateOrmDevInfoUpdateDDLSupplier(puName)));
         }
+    }
+
+    @BuildStep
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Hibernate ORM", 'o',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.HibernateOrmShellPage");
     }
 
 }

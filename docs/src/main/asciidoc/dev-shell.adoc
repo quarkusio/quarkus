@@ -1,0 +1,128 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Shell
+include::_attributes.adoc[]
+:categories: core
+:summary: Dev Shell is a terminal-based user interface (TUI) for Quarkus Dev Mode, bringing the power of Dev UI directly to your terminal.
+:topics: dev-mode,dev-shell,tui,terminal
+
+Dev Shell is a terminal TUI for Quarkus Dev Mode.
+It provides an interactive, keyboard-driven interface for inspecting configuration,
+endpoints, continuous testing, dev services, and more — directly from your terminal.
+
+== Using Dev Shell
+
+=== In-process (pressing `t`)
+
+When running `quarkus dev` (or `mvn quarkus:dev`), press `t` to launch Dev Shell
+in the same terminal. The TUI takes over the screen using the alternate screen buffer,
+and pressing `q` or `ESC` on the main menu returns you to the log output.
+
+[source,shell]
+----
+$ mvn quarkus:dev
+...
+Press [t] for the Dev Shell, [h] for more options>
+----
+
+=== From another terminal
+
+Dev Shell can also connect to a running dev mode instance from a separate terminal.
+This is useful when you want to keep the log output visible while interacting with
+the Dev Shell.
+
+[source,shell]
+----
+$ java -cp <classpath> io.quarkus.devshell.deployment.DevShellCli --port 8080
+----
+
+Dev Shell connects via WebSocket to the same JSON-RPC endpoint that the
+browser-based Dev UI uses (`/q/dev-ui/json-rpc-ws`), so no additional server
+configuration is needed.
+
+== Screens
+
+Dev Shell includes the following built-in screens:
+
+Configuration::
+Browse all Quarkus configuration properties with phase indicators
+(build-time, build+run, runtime). Filter by name or value with `/`.
+
+Endpoints::
+View REST endpoints, static resources, and additional endpoints
+with HTTP method highlighting and tab-based grouping.
+
+Continuous Testing::
+Monitor test execution, start/stop testing, and run all or failed
+tests with keyboard shortcuts.
+
+Dev Services::
+Inspect running dev services including container details, port
+mappings, and injected configuration properties.
+
+== Navigation
+
+|===
+|Key |Action
+
+|`↑`/`↓` or `j`/`k`
+|Navigate lists
+
+|`Enter`
+|Open selected item
+
+|`Tab`
+|Switch tabs (where applicable)
+
+|`/`
+|Filter mode (Configuration screen)
+
+|`R`
+|Refresh data
+
+|`ESC`
+|Go back / exit filter
+
+|`q`
+|Quit Dev Shell
+|===
+
+== Configuration
+
+Dev Shell is enabled by default in dev mode. You can disable it or configure
+host access:
+
+[source,properties]
+----
+# Disable Dev Shell
+quarkus.devshell.enabled=false
+
+# Allow connections from additional hosts (localhost is always allowed)
+quarkus.devshell.allowed-hosts=192.168.1.100,my-dev-host.local
+----
+
+== Security
+
+By default, Dev Shell only accepts connections from localhost.
+This matches the Dev UI security model — both are dev-mode-only features
+that should not be exposed to untrusted networks.
+
+To allow connections from other hosts (e.g., from a container or VM),
+add them to `quarkus.devshell.allowed-hosts`.
+
+== Architecture
+
+Dev Shell connects to the running Quarkus application via the same
+WebSocket JSON-RPC endpoint used by the browser-based Dev UI.
+This means:
+
+* No additional server endpoints or ports are needed
+* Dev Shell sees the same data as Dev UI
+* It works with any Quarkus application that has Dev UI enabled
+* Multiple Dev Shell instances can connect simultaneously
+
+The TUI rendering uses https://tamboui.dev[TamboUI], a Java library
+for building terminal user interfaces.

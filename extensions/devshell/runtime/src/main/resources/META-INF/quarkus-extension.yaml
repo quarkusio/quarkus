@@ -1,0 +1,14 @@
+name: "Dev Shell"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "dev-shell"
+  - "tui"
+  - "terminal"
+  - "dev-mode"
+  categories:
+  - "core"
+  status: "preview"
+  unlisted: true
+  config:
+  - "quarkus.devshell."

@@ -6,9 +6,11 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -93,6 +95,12 @@ public class OpenApiDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(OpenApiJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("OpenAPI", 'o',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.OpenApiShellPage");
     }
 
 }

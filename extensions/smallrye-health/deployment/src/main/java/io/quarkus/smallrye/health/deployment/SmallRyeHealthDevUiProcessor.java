@@ -1,11 +1,13 @@
 package io.quarkus.smallrye.health.deployment;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
@@ -53,5 +55,11 @@ public class SmallRyeHealthDevUiProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(HealthJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Health", 'h',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.HealthShellPage");
     }
 }

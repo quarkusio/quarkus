@@ -5,6 +5,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaJsonRPCService;
@@ -53,5 +54,11 @@ public class KafkaDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(KafkaJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Kafka", 'k',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.KafkaShellPage");
     }
 }

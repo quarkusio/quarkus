@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.welcome.DynamicWelcomeBuildItem;
@@ -57,6 +59,12 @@ public class WebDependencyLocatorDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public DynamicWelcomeBuildItem createDynamicWelcomeData() {
         return new DynamicWelcomeBuildItem(DYNAMIC_WELCOME);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Web Libs", 'w',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.WebDependencyLocatorShellPage");
     }
 
     private static final String DYNAMIC_WELCOME = """

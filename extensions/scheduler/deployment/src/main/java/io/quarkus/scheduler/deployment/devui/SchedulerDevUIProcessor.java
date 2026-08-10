@@ -7,6 +7,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -94,5 +95,11 @@ public class SchedulerDevUIProcessor {
     }
 
     final record CronResponse(String cron, String markdown) {
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("Scheduler",
+                "io.quarkus.devshell.deployment.tui.pages.extensions.SchedulerShellPage");
     }
 }

@@ -41,6 +41,7 @@
         <module>vertx-http</module>
         <module>devjsonrpc</module>
         <module>devmcp</module>
+        <module>devshell</module>
         <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>

@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devshell.deployment.spi.ShellPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.gizmo2.Const;
@@ -230,6 +231,12 @@ public class GrpcDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(GrpcJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    ShellPageBuildItem createShellPage() {
+        return ShellPageBuildItem.withCustomPage("gRPC", 'G',
+                "io.quarkus.devshell.deployment.tui.pages.extensions.GrpcShellPage");
     }
 
     private Collection<Class<?>> getGrpcServices(IndexView index) throws ClassNotFoundException {

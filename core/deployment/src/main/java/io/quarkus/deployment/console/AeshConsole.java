@@ -74,6 +74,7 @@ public class AeshConsole extends QuarkusConsole {
 
     private volatile boolean pauseOutput;
     private volatile boolean firstConsoleRun = true;
+    private volatile boolean passEscapeToDelegate;
     private DelegateConnection delegateConnection;
     private ReadlineConsole aeshConsole;
 
@@ -257,7 +258,7 @@ public class AeshConsole extends QuarkusConsole {
                     if (delegateConnection != null) {
                         //console mode
                         //just sent the input to the delegate
-                        if (keys.length == 1) {
+                        if (keys.length == 1 && !passEscapeToDelegate) {
                             for (var k : keys) {
                                 if (k == 27) { // escape key
                                     exitCliMode();
@@ -652,6 +653,47 @@ public class AeshConsole extends QuarkusConsole {
         connection.write(EXIT_ALTERNATE_SCREEN);
         pauseOutput = false;
         write(false, "");
+        deadlockSafeWrite();
+    }
+
+    /**
+     * Takes over the terminal for a full-screen TUI mode.
+     * Pauses log output, enters alternate screen buffer, and returns a
+     * {@link DelegateConnection} that the TUI can use for I/O.
+     * <p>
+     * Unlike CLI mode, ESC keys are forwarded to the delegate rather than
+     * triggering exit, allowing the TUI to use ESC for navigation.
+     * <p>
+     * Call {@link #releaseTerminal()} to restore normal console operation.
+     */
+    public DelegateConnection takeoverTerminal() {
+        pauseOutput = true;
+        passEscapeToDelegate = true;
+        delegateConnection = new DelegateConnection(connection);
+        connection.write(ALTERNATE_SCREEN_BUFFER);
+        return delegateConnection;
+    }
+
+    /**
+     * Releases the terminal after a TUI session.
+     * Exits alternate screen buffer, resumes log output, and clears the delegate.
+     */
+    public void releaseTerminal() {
+        if (delegateConnection == null) {
+            return;
+        }
+        passEscapeToDelegate = false;
+        delegateConnection.close();
+        delegateConnection = null;
+        connection.write("\033[0m");
+        connection.write("\033[?25h");
+        connection.enterRawMode();
+        connection.write(EXIT_ALTERNATE_SCREEN);
+        pauseOutput = false;
+        StringBuilder sb = new StringBuilder();
+        clearStatusMessages(sb);
+        printStatusAndPrompt(sb);
+        writeQueue.add(sb.toString());
         deadlockSafeWrite();
     }
 }

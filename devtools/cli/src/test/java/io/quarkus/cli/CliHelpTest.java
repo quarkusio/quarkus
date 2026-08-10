@@ -173,6 +173,18 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("Usage");
     }
 
+    @Test
+    @Order(55)
+    public void testGenkeyHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "genkey", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("Generate RSA or EC public/private keys.");
+        assertThat(result.stdout).contains("--force");
+        assertThat(result.stdout).contains("--size");
+        assertThat(result.stdout).contains("--algo");
+    }
+
     @Order(60)
     @Test
     public void testGenerateCompletionHelp() throws Exception {

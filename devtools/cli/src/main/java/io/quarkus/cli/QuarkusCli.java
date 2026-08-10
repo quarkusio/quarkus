@@ -54,6 +54,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
         Run.class,
         Test.class,
         Config.class,
+        Genkey.class,
         ProjectExtensions.class,
         Image.class,
         Deploy.class,

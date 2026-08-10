@@ -8,8 +8,10 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.dev.ui.HealthJsonRPCService;
+import io.quarkus.smallrye.health.runtime.produi.HealthProdUIService;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
@@ -53,5 +55,20 @@ public class SmallRyeHealthDevUiProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(HealthJsonRPCService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(HealthProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Health")
+                .icon("font-awesome-solid:stethoscope")
+                .componentLink("qwc-smallrye-health-ui.js"));
+        return page;
     }
 }

@@ -7,6 +7,8 @@ import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.liquibase.runtime.dev.ui.LiquibaseJsonRpcService;
+import io.quarkus.liquibase.runtime.produi.LiquibaseProdUIService;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 /**
  * Dev UI card for displaying important details such as the library version.
@@ -32,5 +34,20 @@ public class LiquibaseDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(LiquibaseJsonRpcService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(LiquibaseProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Changesets")
+                .icon("font-awesome-solid:database")
+                .componentLink("pwc-liquibase-changesets.js"));
+        return page;
     }
 }

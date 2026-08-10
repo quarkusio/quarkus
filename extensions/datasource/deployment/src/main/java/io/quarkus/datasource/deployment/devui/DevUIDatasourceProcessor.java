@@ -7,11 +7,13 @@ import java.util.stream.Collectors;
 
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.runtime.dev.ui.DatasourceJsonRpcService;
+import io.quarkus.datasource.runtime.produi.DataSourceProdUIService;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 public class DevUIDatasourceProcessor {
 
@@ -33,6 +35,21 @@ public class DevUIDatasourceProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(DatasourceJsonRpcService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(DataSourceProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Datasources")
+                .icon("font-awesome-solid:database")
+                .componentLink("pwc-datasource-list.js"));
+        return page;
     }
 
 }

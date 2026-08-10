@@ -1,0 +1,307 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Prod UI
+include::_attributes.adoc[]
+:summary: Learn more about Prod UI, the read-only production counterpart of Dev UI
+:topics: prod-ui,management,observability
+
+== General overview
+
+Prod UI is a read-only, production-safe counterpart of the xref:dev-ui.adoc[Dev UI].
+Where Dev UI is a rich, interactive workbench that only exists in development mode, Prod UI exposes a curated, strictly read-only view of a running production application: configuration, loggers, endpoints, dependencies and per-extension insight pages.
+
+It is designed around three guarantees:
+
+* **Production-only** - the pages and their backing services are only wired up when the application runs in production mode.
+* **Read-only** - Prod UI never mutates application state. There are no buttons that change configuration, trigger side effects, or perform destructive actions.
+* **Secret-safe** - credential-bearing values (passwords, tokens, keys, URL user-info) are masked before they ever leave the server.
+
+Prod UI is disabled by default. It only appears once you explicitly opt in.
+
+=== What is Prod UI?
+
+When enabled, Prod UI is served on the *management interface* (the same interface used for health checks and metrics), separate from your application traffic.
+With the default settings the application listens on `http://localhost:8080` while Prod UI is reachable at:
+
+[source]
+----
+http://localhost:9000/q/prod-ui/
+----
+
+If the management interface is disabled, Prod UI falls back to the main HTTP interface (for example `http://localhost:8080/q/prod-ui/`).
+
+The path is composed of the non-application root path (`quarkus.http.non-application-root-path`, default `/q`) and the Prod UI path (`quarkus.prod-ui.path`, default `prod-ui`).
+
+Communication between the browser and the server uses a single JSON-RPC websocket. All data flows over that one read-only channel.
+
+=== Enabling Prod UI
+
+Prod UI is turned on with a single build-time property:
+
+[source,properties]
+----
+quarkus.prod-ui.enabled=true
+----
+
+TIP: Because this is a build-time-fixed property, you must rebuild the application after changing it.
+
+=== Layout at a Glance
+
+The Prod UI shell mirrors the Dev UI layout so the two feel familiar, but the surface is deliberately smaller.
+
+==== Menu
+
+A left navigation lists the built-in pages (Configuration, Loggers, Endpoints, Dependencies and others) and any pages contributed by extensions.
+Selecting an item renders it in the main content area.
+
+==== Cards
+
+The landing view shows one card per extension that has opted in to Prod UI, mirroring the Dev UI extension grid.
+Each card carries the extension's logo or icon, its description, optional library-version badges, and a row of links to the extension's read-only pages.
+Cards are enriched from each extension's `quarkus-extension.yaml` (description, status, guide link, categories, keywords and configuration prefixes).
+
+==== Page Area
+
+The central area renders the selected page. Pages are read-only views: schemas, tables, configuration listings, charts and status information.
+Some pages link out to interactive tools that are also served in production (for example Swagger UI or GraphiQL). Those links open in a new browser tab.
+
+==== Footer
+
+Each card footer mirrors Dev UI: a link to the extension's masked configuration on the left, an optional status pill (for example `experimental` or `preview`) in the middle, and a "more details" action on the right.
+
+=== Security
+
+Prod UI is served on the management interface, so it is protected by however that interface is secured (`quarkus.management.auth.*`).
+
+For an additional, Prod UI-specific authorization layer, set the roles that are allowed to access it:
+
+[source,properties]
+----
+quarkus.prod-ui.roles-allowed=admin,ops
+----
+
+When set, *every* Prod UI route - including the JSON-RPC websocket that carries all the data - requires an authenticated user holding at least one of the listed roles.
+Authentication itself is delegated to the management interface; Prod UI only adds the authorization constraint.
+When `roles-allowed` is empty (the default), Prod UI adds no authorization of its own and relies entirely on how the management interface is secured.
+
+=== Configuration reference
+
+All properties live under the `quarkus.prod-ui` prefix.
+
+[cols="2,1,1,3",options="header"]
+|===
+|Property |Type |Default |Description
+
+|`quarkus.prod-ui.enabled`
+|`boolean`
+|`false`
+|Enable Prod UI. When enabled, selected extension pages and JSON-RPC methods are available in production via the management interface.
+
+|`quarkus.prod-ui.management-enabled`
+|`boolean`
+|`true`
+|Serve Prod UI on the management interface when the management interface is enabled.
+
+|`quarkus.prod-ui.path`
+|`String`
+|`prod-ui`
+|URL path for Prod UI under the non-application root path.
+
+|`quarkus.prod-ui.roles-allowed`
+|`list of string`
+|_(none)_
+|Roles allowed to access Prod UI. When set, every Prod UI route requires an authenticated user with at least one of these roles.
+
+|`quarkus.prod-ui.exclude-self`
+|`boolean`
+|`true`
+|Exclude Prod UI's own artifacts (its loggers and dependencies) from its views. Its own configuration stays visible.
+
+|`quarkus.prod-ui.pages."page-id".enabled`
+|`boolean`
+|`true`
+|Enable or disable an individual page by id. See <<disabling-pages>>.
+
+|===
+
+[[disabling-pages]]
+=== Disabling individual pages and extensions
+
+Every page is shown by default. You can hide any of them - built-in or contributed by an extension - with `quarkus.prod-ui.pages.<id>.enabled=false`.
+
+The `<id>` is:
+
+* a built-in page id: `configuration`, `loggers`, `endpoints`, `dependencies`, `advisor` (and `diagnostics` when enabled), or
+* the *extension name* for an extension-contributed page, for example `quarkus-cache` or `quarkus-hibernate-orm`.
+
+[source,properties]
+----
+# Hide the built-in Configuration page
+quarkus.prod-ui.pages.configuration.enabled=false
+
+# Opt an extension out of Prod UI entirely
+quarkus.prod-ui.pages.quarkus-cache.enabled=false
+----
+
+IMPORTANT: Disabling an extension page is not only cosmetic. As well as removing the card and navigation entry, Prod UI drops that extension's entire namespace from the JSON-RPC data plane, so its `<extension>_*` methods become *unreachable* over the websocket - not merely hidden from the menu. This makes it a safe way to remove an extension's read surface from a production deployment.
+
+== Guide for Extension Developers
+
+Extensions contribute to Prod UI in much the same way they contribute to Dev UI, but under a stricter contract.
+If you have written a Dev UI card, the concepts (pages, web components, JSON-RPC services) will be familiar.
+
+=== Guiding principles
+
+Before adding anything to Prod UI, keep these rules in mind. They are not optional - Prod UI runs against real production systems.
+
+* **Read-only.** Never expose a mutating or destructive action. No writes, no restarts, no cache clears, no config edits.
+* **Never expose secrets.** Any value that could carry a credential - passwords, tokens, keys, connection strings with user-info - must be masked before it leaves the server. Use `io.quarkus.produi.api.SecretMasker` (see <<masking-secrets>>).
+* **Production-gated.** Prod UI pages and services are only active when the application runs in production mode and `quarkus.prod-ui.enabled=true`. The Prod UI machinery enforces this, but your build steps should not assume Prod UI is always present.
+
+TIP: The Dev UI card of an extension is often not reusable as-is, because it typically contains interactive or mutating actions. In that case, author a dedicated read-only component for Prod UI rather than reusing the Dev UI one.
+
+=== Module dependency
+
+To contribute pages, the extension's `deployment` module needs the Prod UI deployment SPI:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-produi-deployment-spi</artifactId>
+</dependency>
+----
+
+If your Prod UI service uses the secret masker, the `runtime` module also needs the lightweight API artifact:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-produi-api</artifactId>
+</dependency>
+----
+
+=== Adding pages
+
+A page is contributed with a `ProdUIPageBuildItem` produced from a `@BuildStep`.
+This mirrors Dev UI's `CardPageBuildItem`, but the item is only processed when Prod UI is enabled in production.
+Consume a build item that is only present when your extension is active, so the page is only contributed then.
+
+[source,java]
+----
+@BuildStep
+ProdUIPageBuildItem createProdUI(MyExtensionActiveBuildItem active) {
+    ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+    page.addPage(Page.webComponentPageBuilder()
+            .title("My Extension")
+            .icon("font-awesome-solid:puzzle-piece")
+            .componentLink("pwc-my-extension.js"));
+    return page;
+}
+----
+
+The `componentLink` names a web component that lives in the extension's `deployment/src/main/resources/dev-ui/` directory (the same location as Dev UI components). Prod UI discovers and bundles these components at build time.
+
+Prod UI reads each extension's `quarkus-extension.yaml` to enrich the card: the top-level `description`, and under `metadata` the `status`, `icon-url` (logo), `guide`, `categories`, `keywords`, `config` prefixes and `lib-ga` library badges. Parsing failures degrade gracefully to a card with no metadata; they never fail the build.
+
+=== Read-only JSON-RPC services
+
+Web components fetch data from the server over JSON-RPC. A service is a CDI bean whose methods are annotated to opt in to Prod UI:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyExtensionProdUIService {
+
+    @NonBlocking
+    @JsonRpcUsage(Usage.PROD_UI)
+    @JsonRpcDescription("Return read-only status for my extension (no secrets)")
+    public MyInfo getInfo() {
+        // gather and return read-only data
+    }
+}
+----
+
+* `@JsonRpcUsage(Usage.PROD_UI)` marks the method as callable from Prod UI. A method must be `public` and return a value (a record is ideal). A method returning `io.smallrye.mutiny.Multi` is exposed as a streaming subscription instead of a one-shot call.
+* Use `@NonBlocking` or `@Blocking` (from `io.smallrye.common.annotation`) to control threading, exactly as in Dev UI.
+* On the wire the method name is `<extension>_<method>`, for example `quarkus-myextension_getInfo`.
+
+Register the service class from a *zero-input* build step:
+
+[source,java]
+----
+// Produced from a zero-input build step: the provider registration must not
+// (transitively) depend on Arc/deployment items, or a build-step cycle results.
+@BuildStep
+JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+    return new JsonRPCProvidersBuildItem(MyExtensionProdUIService.class);
+}
+----
+
+IMPORTANT: Keep the registration step free of heavy inputs (Arc or combined-index build items). Producing the provider class from a step that also consumes those items can create a build-step cycle. It is fine to produce the `JsonRPCProvidersBuildItem` from a gated step that only *produces* other items.
+
+[[masking-secrets]]
+=== Masking secrets
+
+Whenever a Prod UI service surfaces configuration values, connection strings or URLs, route them through `io.quarkus.produi.api.SecretMasker` so credentials are never sent to the browser.
+
+[source,java]
+----
+import io.quarkus.produi.api.SecretMasker;
+
+String safeValue = SecretMasker.maskIfSecret(name, value);
+String safeUrl = SecretMasker.maskUrlCredentials(url);
+----
+
+`SecretMasker` recognises secret-like property names (`password`, `secret`, `token`, `api-key`, `private-key`, and similar), inline HTTP auth values (`bearer`, `basic`, `authorization=`), and URL user-info (`user:pass@host`). Secret values are replaced with a fixed-length `**********` mask so the real length is not revealed.
+
+[source,java]
+----
+boolean secret = SecretMasker.isSecret(name, value);
+entry.put("value", SecretMasker.maskIfSecret(name, value));
+----
+
+=== Web components
+
+Prod UI page components follow the `pwc-` prefix convention (Prod UI Web Component), distinguishing them from Dev UI's `qwc-` components. Author read-only `pwc-*` components for your Prod UI pages rather than reusing the Dev UI card, which usually contains interactive actions.
+
+A component imports the JSON-RPC client from the bare `jsonrpc` specifier (Prod UI aliases it to its own read-only client), calls the method matching your Java method name, and reads the `result` field of the response envelope:
+
+[source,javascript]
+----
+import { LitElement, html } from 'lit';
+import { JsonRpc } from 'jsonrpc';
+
+export class PwcMyExtension extends LitElement {
+    jsonRpc = new JsonRpc(this);
+    static properties = { _info: { state: true } };
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.jsonRpc.getInfo().then(response => { this._info = response.result; });
+    }
+
+    // render() ...
+}
+customElements.define('pwc-my-extension', PwcMyExtension);
+----
+
+The client wraps every server reply as `{ result: ... }` for both one-shot calls and streaming subscriptions, mirroring the Dev UI JSON-RPC contract, so a component that reads `response.result` works unchanged.
+
+=== External links
+
+To link out to an interactive tool that is also served in production (for example Swagger UI or GraphiQL), add an external-link page. The link opens in a new browser tab:
+
+[source,java]
+----
+page.addPage(Page.externalPageBuilder("Swagger UI")
+        .url(uiPath)
+        .icon("font-awesome-solid:signs-post")
+        .doNotEmbed(true));
+----
+
+CAUTION: Prod UI runs on the *management* interface, so a relative URL resolves against the management port. If the target is served on the management interface, resolve it with `NonApplicationRootPathBuildItem.resolveManagementPath(...)`. If the target is served on the *main* HTTP interface (as GraphiQL is), build an absolute URL to the main interface so the new tab reaches the correct port.

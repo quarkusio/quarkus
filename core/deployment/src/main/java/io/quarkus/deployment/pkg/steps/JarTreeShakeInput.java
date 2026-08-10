@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
@@ -583,14 +584,8 @@ class JarTreeShakeInput implements AutoCloseable {
         return javaVersion;
     }
 
-    /**
-     * Returns {@code true} if the resource name represents a regular class file,
-     * excluding {@code module-info.class} and {@code package-info.class}.
-     */
     static boolean isClassEntry(String resourceName) {
-        return resourceName.endsWith(".class")
-                && !resourceName.equals("module-info.class")
-                && !resourceName.endsWith("package-info.class");
+        return ClassLoaderHelper.isClassEntry(resourceName);
     }
 
     /**

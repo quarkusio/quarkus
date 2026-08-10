@@ -45,6 +45,7 @@
         <module>lib-c</module>
         <module>lib-d</module>
         <module>lib-loadclass-chain</module>
+        <module>lib-package-info</module>
     </modules>
 
     <build>

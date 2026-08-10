@@ -27,6 +27,7 @@ import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -187,7 +188,15 @@ public final class VertxHttpSender implements HttpSender {
         }
 
         try {
-            client.close()
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                // A client that has already been closed can return null here rather than a
+                // completed future, in which case there is nothing left to wait for.
+                throttlingLogger.log(Level.FINE, "Client was already closed.");
+                shutdownResult.succeed();
+                return shutdownResult;
+            }
+            closeFuture
                     .onSuccess(
                             new Handler<>() {
                                 @Override

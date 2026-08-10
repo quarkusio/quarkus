@@ -34,10 +34,7 @@ public class ConfigEntityPUAssigmentUsingInterfaceTest {
             // In a real-world scenario, this would be used only if there are multiple PUs,
             // but this is simpler and enough to reproduce the issue.
             .overrideConfigKey("quarkus.hibernate-orm.packages", EntityImplementingInterface.class.getPackageName())
-            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
-                    // TODO remove when upgrading past ORM 8.0.0.Beta1:
-                    // https://github.com/hibernate/hibernate-orm/commit/c6c885cdfb
-                    && !record.getMessage().contains("already-stopped"))
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             // We don't expect any warning, in particular not:
             // "Could not find a suitable persistence unit for model classes:"
             .assertLogRecords(records -> assertThat(records).extracting(LOG_FORMATTER::format).isEmpty());

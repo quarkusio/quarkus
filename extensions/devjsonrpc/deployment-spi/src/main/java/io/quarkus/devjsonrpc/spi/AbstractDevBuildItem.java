@@ -38,6 +38,8 @@ public abstract class AbstractDevBuildItem extends MultiBuildItem {
                             && !frame.getDeclaringClass().getPackageName().startsWith("io.quarkus.devmcp.spi")
                             && !frame.getDeclaringClass().getPackageName().startsWith("io.quarkus.devui.spi")
                             && !frame.getDeclaringClass().getPackageName().startsWith("io.quarkus.devui.deployment")
+                            && !frame.getDeclaringClass().getPackageName().startsWith("io.quarkus.produi.spi")
+                            && !frame.getDeclaringClass().getPackageName().startsWith("io.quarkus.produi.deployment")
                             && !frame.getDeclaringClass().equals(MethodHandle.class)))
                     .findFirst());
 

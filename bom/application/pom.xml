@@ -221,8 +221,9 @@
         <async-http-client.version>2.16.0</async-http-client.version>
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
-        <!-- Dev UI -->
+        <!-- Dev UI / Prod UI -->
         <importmap.version>2.0.0</importmap.version>
+        <esbuild-java.version>2.1.5</esbuild-java.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
         <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
@@ -777,6 +778,31 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devui-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-produi-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-produi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-produi-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-produi-resources</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-produi-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4064,6 +4090,12 @@
                 <groupId>io.mvnpm</groupId>
                 <artifactId>importmap</artifactId>
                 <version>${importmap.version}</version>
+            </dependency>
+            <!-- To bundle web assets at build time -->
+            <dependency>
+                <groupId>io.mvnpm</groupId>
+                <artifactId>esbuild-java</artifactId>
+                <version>${esbuild-java.version}</version>
             </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order -->

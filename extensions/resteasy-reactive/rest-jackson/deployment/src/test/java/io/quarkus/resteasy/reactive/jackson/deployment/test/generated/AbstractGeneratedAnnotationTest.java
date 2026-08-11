@@ -721,6 +721,30 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("[0].directDate", Matchers.is("2026-07-20T11:11:11Z"));
     }
 
+    // --- @JsonFormat(shape = STRING) without pattern on java.util.Date ---
+
+    @Test
+    public void testFormatDateStringShapeWithoutPatternSerialization() {
+        RestAssured.get("/generated/date-string-shape-no-pattern")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-string-shape"))
+                .body("utcDate", Matchers.is("2026-07-20T11:11:11.000Z"))
+                .body("pragueDate", Matchers.is("2026-07-20T13:11:11.000+02:00"));
+    }
+
+    @Test
+    public void testFormatDateStringShapeWithoutPatternListSerialization() {
+        RestAssured.get("/generated/date-string-shape-no-pattern-list")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].name", Matchers.is("date-string-shape"))
+                .body("[0].utcDate", Matchers.is("2026-07-20T11:11:11.000Z"))
+                .body("[0].pragueDate", Matchers.is("2026-07-20T13:11:11.000+02:00"));
+    }
+
     // --- @JsonFormat ---
 
     @Test

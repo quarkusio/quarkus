@@ -32,7 +32,8 @@ public class AeshWebSocketIdleTimeoutTest {
                     AeshWebSocketTestHelper.class, HelloCommand.class))
             .overrideConfigKey("quarkus.aesh.websocket.idle-timeout", "2s")
             .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
-            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG");
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;

@@ -106,12 +106,14 @@ public class AeshWebSocketEndpoint implements TransportSessionInfo {
 
             conn = new AeshWebSocketConnection(ws);
             connections.put(ws.id(), conn);
+            LOG.debugf("New WebSocket aesh connection %s, processing init message", ws.id());
             conn.writeToDecoder(message);
 
             ensureIdleSchedulerStarted();
 
             AeshWebSocketConnection finalConn = conn;
             try {
+                LOG.debugf("Submitting aesh console setup to executor for connection %s", ws.id());
                 executor.submit(() -> connectionHandler.handle(finalConn, "websocket"));
             } catch (RejectedExecutionException e) {
                 LOG.warn("WebSocket executor has been shut down, rejecting new connection");
@@ -127,10 +129,13 @@ public class AeshWebSocketEndpoint implements TransportSessionInfo {
 
     @OnClose
     void onClose(WebSocketConnection ws) {
+        LOG.debugf("WebSocket connection %s closed", ws.id());
         AeshWebSocketConnection conn = connections.remove(ws.id());
         if (conn != null) {
             activeConnections.decrementAndGet();
             conn.close();
+        } else {
+            LOG.debugf("WebSocket connection %s closed but no aesh connection found (was never initialized)", ws.id());
         }
     }
 

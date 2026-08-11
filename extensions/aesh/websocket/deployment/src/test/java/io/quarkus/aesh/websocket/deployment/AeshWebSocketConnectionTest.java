@@ -33,7 +33,8 @@ public class AeshWebSocketConnectionTest {
                     HelloCommand.class,
                     GoodbyeCommand.class))
             .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
-            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG");
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;

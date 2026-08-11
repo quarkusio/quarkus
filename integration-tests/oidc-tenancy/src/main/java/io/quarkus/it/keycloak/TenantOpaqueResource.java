@@ -8,6 +8,7 @@ import jakarta.ws.rs.Path;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -41,6 +42,30 @@ public class TenantOpaqueResource {
         return "tenant-oidc-opaque:" + identity.getPrincipal().getName()
                 + ":" + tokenIntrospection.getString("scope")
                 + ":" + tokenIntrospection.getString("email");
+    }
+
+    @GET
+    @RolesAllowed("user")
+    @Path("tenant-introspection-cache-one")
+    public String introspectionCacheOne() {
+        if (!identity.getCredential(AccessTokenCredential.class).isOpaque()) {
+            throw new OIDCException("Opaque token is expected");
+        }
+        return "tenant-introspection-cache-one:" + identity.getPrincipal().getName()
+                + ":" + tokenIntrospection.getString("email")
+                + ":userinfo-client-id:" + ((UserInfo) identity.getAttribute("userinfo")).getString("client_id");
+    }
+
+    @GET
+    @RolesAllowed("user")
+    @Path("tenant-introspection-cache-two")
+    public String introspectionCacheTwo() {
+        if (!identity.getCredential(AccessTokenCredential.class).isOpaque()) {
+            throw new OIDCException("Opaque token is expected");
+        }
+        return "tenant-introspection-cache-two:" + identity.getPrincipal().getName()
+                + ":" + tokenIntrospection.getString("email")
+                + ":userinfo-client-id:" + ((UserInfo) identity.getAttribute("userinfo")).getString("client_id");
     }
 
     @GET

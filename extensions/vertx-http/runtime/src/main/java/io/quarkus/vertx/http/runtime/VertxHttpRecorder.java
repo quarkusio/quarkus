@@ -374,7 +374,7 @@ public class VertxHttpRecorder {
             throws IOException {
 
         // disable websockets if we have determined at build time that we should and the user has not overridden the relevant Vert.x property
-        if (disableWebSockets && !System.getProperties().containsKey(DISABLE_WEBSOCKETS_PROP_NAME)) {
+        if (disableWebSockets && System.getProperty(DISABLE_WEBSOCKETS_PROP_NAME) == null) {
             System.setProperty(DISABLE_WEBSOCKETS_PROP_NAME, "true");
         }
 

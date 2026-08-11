@@ -81,6 +81,7 @@ import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.common.ClearCache;
+import io.quarkus.test.junit.common.ReactiveTestMethodTransformer;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -1029,7 +1030,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     parameterTypesFromTccl.add(type);
                 }
             }
-            return declaringClass.getDeclaredMethod(originalMethod.getName(),
+            String methodName = ReactiveTestMethodTransformer.stripReactiveTestSuffix(originalMethod.getName());
+            return declaringClass.getDeclaredMethod(methodName,
                     parameterTypesFromTccl.toArray(new Class[0]));
         } catch (NoSuchMethodException ignored) {
 

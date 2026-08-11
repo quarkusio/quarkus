@@ -29,7 +29,12 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
                                     PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
-                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class,
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class,
+                                    ItemJsonValueInheritedFromInterface.class,
+                                    ItemJsonValueInheritedFromInterface.HasValue.class,
+                                    ItemJsonValueInheritedFromInterface.AbstractHasValue.class,
+                                    ItemJsonValueInheritedFromInterface.Wrapper.class,
+                                    ItemJsonValueInheritedFromInterface.TwoLevelWrapper.class, StringWrapper.class,
                                     JsonAliasRecord.class, JsonAliasSameAsFieldNameBean.class,
                                     AnnotationNamingRequest.class, Pair.class, Score.class,
                                     ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class,
@@ -37,7 +42,8 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     PolymorphicItemResponse.class, PolymorphicItem.class,
                                     SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
                                     FinalCollectionHolder.class, RequiredCreatorProperty.class, NoArgConstructorPojo.class,
-                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class)
+                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class,
+                                    PolymorphicCreatorProperty.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

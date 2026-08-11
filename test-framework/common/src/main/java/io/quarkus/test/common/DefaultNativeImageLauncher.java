@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -87,7 +86,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         start(new String[0], true);
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
@@ -95,7 +94,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         if (startedFunction != null) {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logRuntimeConfig.file().path().toPath());
-            return Optional.empty();
+            return ListeningAddresses.EMPTY;
         } else {
             return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
         }

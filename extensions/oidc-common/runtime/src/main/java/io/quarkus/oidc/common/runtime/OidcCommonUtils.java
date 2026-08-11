@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -180,12 +178,69 @@ public class OidcCommonUtils {
                             "'%1$scredentials.secret' and '%1$scredentials.client-secret' properties are mutually exclusive",
                             configPrefix));
         }
-        if ((creds.secret().isPresent() || creds.clientSecret().value().isPresent()) && creds.jwt().secret().isPresent()) {
+        boolean clientSecretConfigured = creds.secret().isPresent()
+                || creds.clientSecret().value().isPresent()
+                || creds.clientSecret().provider().key().isPresent();
+        boolean jwtSecretConfigured = creds.jwt().secret().isPresent()
+                || creds.jwt().secretProvider().key().isPresent();
+
+        if (clientSecretConfigured && jwtSecretConfigured) {
             throw new ConfigurationException(
                     String.format(
-                            "Use only '%1$scredentials.secret' or '%1$scredentials.client-secret' or '%1$scredentials.jwt.secret' property",
+                            "Only one of client secret or JWT secret authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and a JWT secret property set",
                             configPrefix));
         }
+        int jwtKeyPropsCount = (creds.jwt().key().isPresent() ? 1 : 0)
+                + (creds.jwt().keyFile().isPresent() ? 1 : 0)
+                + (creds.jwt().keyStoreFile().isPresent() ? 1 : 0);
+        if (jwtKeyPropsCount > 1) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of '%1$scredentials.jwt.key', '%1$scredentials.jwt.key-file'"
+                                    + " or '%1$scredentials.jwt.key-store-file' can be configured",
+                            configPrefix));
+        }
+        boolean jwtKeyConfigured = jwtKeyPropsCount == 1;
+        boolean jwtBearerOrSpiffe = creds.jwt().source() == Source.BEARER
+                || creds.jwt().source() == Source.SPIFFE_JWT;
+
+        if (jwtSecretConfigured && jwtKeyConfigured) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT secret or JWT private key authentication methods can be configured,"
+                                    + " but '%1$scredentials.jwt' has both a JWT secret and a JWT key property set",
+                            configPrefix));
+        }
+        if (clientSecretConfigured && jwtKeyConfigured) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of client secret or JWT private key authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and a JWT key property set",
+                            configPrefix));
+        }
+        if (clientSecretConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of client secret or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+        if (jwtKeyConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT private key or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a JWT key property and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+        if (jwtSecretConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT secret or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a JWT secret and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+
         Credentials.Jwt jwt = creds.jwt();
         if (jwt.source() != Credentials.Jwt.Source.CLIENT) {
             if (isServerConfig && jwt.tokenPath().isEmpty()) {
@@ -423,30 +478,12 @@ public class OidcCommonUtils {
                         && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
-    public static boolean isClientJwtAuthRequired(Credentials creds, boolean server) {
-        Set<String> props = new HashSet<>();
-        if (creds.jwt().secret().isPresent()) {
-            props.add(".credentials.jwt.secret");
-        }
-        if (creds.jwt().secretProvider().key().isPresent()) {
-            props.add(".credentials.jwt.secret-provider.key");
-        }
-        if (creds.jwt().key().isPresent()) {
-            props.add(".credentials.jwt.key");
-        }
-        if (creds.jwt().keyFile().isPresent()) {
-            props.add(".credentials.jwt.key-file");
-        }
-        if (creds.jwt().keyStoreFile().isPresent()) {
-            props.add(".credentials.jwt.key-store-file");
-        }
-        if (props.size() > 1) {
-            final String prefix = server ? "quarkus.oidc" : "quarkus.oidc-client";
-            throw new ConfigurationException("""
-                    Only a single OIDC JWT credential key property can be configured, but you have configured: %s"""
-                    .formatted(props.stream().map(p -> (prefix + p)).collect(Collectors.joining(","))));
-        }
-        return props.size() == 1;
+    public static boolean isClientJwtAuthRequired(Credentials creds) {
+        return creds.jwt().secret().isPresent()
+                || creds.jwt().secretProvider().key().isPresent()
+                || creds.jwt().key().isPresent()
+                || creds.jwt().keyFile().isPresent()
+                || creds.jwt().keyStoreFile().isPresent();
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -621,8 +658,8 @@ public class OidcCommonUtils {
 
     }
 
-    public static Uni<Key> initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
-        if (isClientJwtAuthRequired(oidcConfig.credentials(), server)) {
+    public static Uni<Key> initClientJwtKey(OidcClientCommonConfig oidcConfig) {
+        if (isClientJwtAuthRequired(oidcConfig.credentials())) {
             return clientJwtKey(oidcConfig.credentials());
         }
         return Uni.createFrom().nullItem();
@@ -946,6 +983,10 @@ public class OidcCommonUtils {
 
     public static String getJwtContentPart(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            // An empty or delimiter-only token has no parts at all.
+            return null;
+        }
         // part 1: skip the token headers
         tokens.nextToken();
         if (!tokens.hasMoreTokens()) {

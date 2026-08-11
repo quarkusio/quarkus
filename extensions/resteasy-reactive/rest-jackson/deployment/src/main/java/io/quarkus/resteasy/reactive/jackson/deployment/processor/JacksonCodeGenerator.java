@@ -61,6 +61,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -75,6 +77,15 @@ public abstract class JacksonCodeGenerator {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
+
+    private static final Set<String> UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS = Set.of(
+            "jakarta.persistence.Transient",
+            "jakarta.persistence.Basic",
+            "jakarta.persistence.OneToMany",
+            "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne",
+            "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.ElementCollection");
 
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
@@ -147,7 +158,7 @@ public abstract class JacksonCodeGenerator {
         }
         Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
         if (unknownAnnotation.isPresent()) {
-            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+            log.debugf("Skipping generation of reflection-free Jackson serializer for class %s" +
                     " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
             return Optional.empty();
         }
@@ -233,11 +244,16 @@ public abstract class JacksonCodeGenerator {
                 || className.startsWith("com.fasterxml.jackson.databind.");
     }
 
-    private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
-        return classInfo.annotations().stream()
+    private Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+        Optional<String> unknown = classInfo.annotations().stream()
                 .map(a -> a.name().toString())
                 .filter(FieldSpecs::isUnknownAnnotation)
                 .findFirst();
+        if (unknown.isPresent()) {
+            return unknown;
+        }
+        Optional<String> fromSuperClass = onSuperClass(classInfo, this::findUnknownAnnotation);
+        return fromSuperClass != null ? fromSuperClass : Optional.empty();
     }
 
     protected enum FieldKind {
@@ -317,6 +333,13 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void registerTypeToBeGenerated(Type type) {
+        // a type argument can be parameterized itself, like the List<Foo> in a Map<String, List<Foo>>,
+        // so recurse to reach the Foo nested in it
+        if (type instanceof ParameterizedType pType) {
+            for (Type argument : pType.arguments()) {
+                registerTypeToBeGenerated(argument);
+            }
+        }
         registerTypeToBeGenerated(type.name().toString());
     }
 
@@ -458,8 +481,18 @@ public abstract class JacksonCodeGenerator {
         for (MethodInfo method : classMethods(classInfo)) {
             if (method.hasAnnotation(JsonAnyGetter.class)
                     && method.parametersCount() == 0
-                    && !java.lang.reflect.Modifier.isStatic(method.flags())) {
+                    && !Modifier.isStatic(method.flags())) {
                 return method;
+            }
+        }
+        return null;
+    }
+
+    protected FieldInfo findAnyGetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnyGetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
             }
         }
         return null;
@@ -656,7 +689,8 @@ public abstract class JacksonCodeGenerator {
         }
 
         boolean isIgnoredField() {
-            return annotations.get(JsonIgnore.class.getName()) != null;
+            return annotations.get(JsonIgnore.class.getName()) != null
+                    || annotations.get(java.beans.Transient.class.getName()) != null;
         }
 
         boolean isUnwrapped() {
@@ -743,7 +777,8 @@ public abstract class JacksonCodeGenerator {
             if (ann.startsWith("com.fasterxml.jackson.")) {
                 return !SUPPORTED_JACKSON_ANNOTATIONS.contains(ann);
             }
-            return ann.startsWith("jakarta.persistence.");
+            return ann.startsWith("jakarta.persistence.") &&
+                    UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS.contains(ann);
         }
 
         String[] viewClasses() {
@@ -761,7 +796,7 @@ public abstract class JacksonCodeGenerator {
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeVirtualMethod(
+                case "char" -> bytecode.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(String.class, "charAt", char.class, int.class), valueHandle,
                         bytecode.load(0));
                 default -> valueHandle;
@@ -772,8 +807,16 @@ public abstract class JacksonCodeGenerator {
             ResultHandle handle = accessorHandle(bytecode, valueHandle);
 
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeStaticMethod(
+                case "char" -> bytecode.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle);
+                case "java.lang.Character" -> {
+                    AssignableResultHandle result = bytecode.createVariable(String.class);
+                    BranchResult nullCheck = bytecode.ifNull(handle);
+                    nullCheck.trueBranch().assign(result, nullCheck.trueBranch().loadNull());
+                    nullCheck.falseBranch().assign(result, nullCheck.falseBranch().invokeStaticMethod(
+                            MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle));
+                    yield result;
+                }
                 default -> handle;
             };
         }

@@ -38,6 +38,8 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     IgnorePropertiesCreatorRecord.class,
                                     IgnoreAnySetterBean.class,
                                     AnyGetterBean.class,
+                                    FieldAnyGetterBean.class,
+                                    FieldAnySetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
                                     DateFormatBean.class,
@@ -64,7 +66,8 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     UnwrappedIgnorePropertiesBean.class,
                                     UnwrappedIgnorePropertiesBean.User.class,
                                     UnwrappedWithPrefixBean.class,
-                                    UnwrappedWithPrefixBean.Address.class)
+                                    UnwrappedWithPrefixBean.Address.class,
+                                    JavaBeansTransientBean.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),

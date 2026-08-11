@@ -49,7 +49,7 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.test.common.ListeningAddresses;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -123,7 +123,7 @@ public final class IntegrationTestUtil {
         ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
     }
 
-    static Optional<ListeningAddress> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
+    static ListeningAddresses startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
             throws IOException {
         try {
             launcher.includeAsSysProps(additionalProperties);

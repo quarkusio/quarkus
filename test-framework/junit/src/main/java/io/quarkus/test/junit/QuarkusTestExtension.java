@@ -427,6 +427,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
         }
+        if (testHTTPEndpoint == null) {
+            Class<?> enclosing = context.getRequiredTestClass().getEnclosingClass();
+            while (enclosing != null) {
+                testHTTPEndpoint = enclosing.getAnnotation(TestHTTPEndpoint.class);
+                if (testHTTPEndpoint != null) {
+                    break;
+                }
+                enclosing = enclosing.getEnclosingClass();
+            }
+        }
         if (testHTTPEndpoint != null) {
             Object value = "[no value]";
             for (Function<Class<?>, String> i : testHttpEndpointProviders) {

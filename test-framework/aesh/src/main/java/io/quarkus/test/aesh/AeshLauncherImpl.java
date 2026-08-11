@@ -57,12 +57,22 @@ public class AeshLauncherImpl implements AeshLauncher {
         replThread.start();
 
         // Wait for the console to initialize and display the prompt.
-        // On slower CI environments (e.g. Windows runners with Hibernate),
-        // startup can take several seconds.
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        // Polls the output buffer instead of using a fixed sleep,
+        // following the same pattern as LauncherUtil's CaptureListeningDataReader.
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (System.currentTimeMillis() < deadline) {
+            if (stdoutCapture.size() > 0) {
+                String output = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+                if (output.contains("$ ")) {
+                    break;
+                }
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
     }
 
@@ -128,9 +138,11 @@ public class AeshLauncherImpl implements AeshLauncher {
     }
 
     /**
-     * Strip ANSI escape sequences from the output for clean assertions.
+     * Strip ANSI escape sequences and carriage returns from the output
+     * for clean assertions. The {@code \r} stripping handles Windows-style
+     * line endings ({@code \r\n}).
      */
     private static String stripAnsi(String text) {
-        return text.replaceAll("\\u001B\\[(.*?)[a-zA-Z]", "");
+        return text.replaceAll("\\u001B\\[(.*?)[a-zA-Z]|\\r", "");
     }
 }

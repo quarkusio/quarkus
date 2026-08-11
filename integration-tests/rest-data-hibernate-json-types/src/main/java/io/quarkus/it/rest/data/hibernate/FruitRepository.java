@@ -6,10 +6,10 @@ import jakarta.data.page.PageRequest;
 import jakarta.data.repository.Find;
 import jakarta.data.repository.Repository;
 
-import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.data.hibernate.RecordRepository;
 
 @Repository
-public interface FruitRepository extends PanacheRepository.Stateless<Fruit, Long> {
+public interface FruitRepository extends RecordRepository<Fruit> {
 
     @Find
     Page<Fruit> findAll(PageRequest pageRequest, Order<Fruit> order);

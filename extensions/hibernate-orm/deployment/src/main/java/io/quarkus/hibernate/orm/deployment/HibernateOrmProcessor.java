@@ -536,7 +536,7 @@ public final class HibernateOrmProcessor {
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
                 persistenceUnitName,
                 dbKind,
-                Optional.empty(),
+                additionalPersistenceUnit.getExplicitDialect(),
                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                 null,
                 dbKindMetadataBuildItems,
@@ -558,7 +558,7 @@ public final class HibernateOrmProcessor {
                                 dbKind,
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
-                                Optional.empty(),
+                                additionalPersistenceUnit.getExplicitDialect(),
                                 entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
@@ -1158,8 +1158,10 @@ public final class HibernateOrmProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         if (!hibernateOrmConfig.blocking()) {
-            LOG.infof(
-                    "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false");
+            LOG.warnf(
+                    "Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false."
+                            + " This property is deprecated: use 'quarkus.hibernate-orm.jdbc.enabled=false' instead"
+                            + " (or the per-persistence-unit equivalent).");
             return;
         }
 
@@ -1248,6 +1250,14 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
+
+        // Explicit override: 'jdbc.enabled=false' always disables blocking bootstrap for this PU,
+        // regardless of which datasources are available.
+        if (!persistenceUnitConfig.jdbc().enabled().orElse(true)) {
+            LOG.debugf("Persistence unit '%s' has blocking (JDBC) bootstrap explicitly disabled"
+                    + " through 'jdbc.enabled=false', skipping", persistenceUnitName);
+            return;
+        }
 
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
                 persistenceUnitName,
@@ -1419,6 +1429,15 @@ public final class HibernateOrmProcessor {
         for (String className : additionalClassNames) {
             try {
                 byte[] bytes = IoUtil.readClassAsBytes(HibernateOrmProcessor.class.getClassLoader(), className);
+                if (bytes == null) {
+                    bytes = IoUtil.readClassAsBytes(Thread.currentThread().getContextClassLoader(), className);
+                }
+                if (bytes == null) {
+                    throw new RuntimeException("Failed to read class bytes for '" + className
+                            + "', class not present in class loaders: "
+                            + HibernateOrmProcessor.class.getClassLoader()
+                            + ", " + Thread.currentThread().getContextClassLoader());
+                }
                 byte[] enhanced = hibernateEntityEnhancer.enhance(className, bytes);
                 additionalClasses.produce(new GeneratedClassBuildItem(false, className, enhanced != null ? enhanced : bytes));
             } catch (IOException e) {

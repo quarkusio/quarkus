@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: observability
-:summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide observability for interactive web applications.
+:summary: An overview of the observability capabilities of Quarkus.
 :topics: observability,opentelemetry, micrometer, jfr, logging, metrics, tracing, monitoring, devservice
 :extensions: io.quarkus:quarkus-opentelemetry,io.quarkus:quarkus-micrometer,io.quarkus:quarkus-jfr
 

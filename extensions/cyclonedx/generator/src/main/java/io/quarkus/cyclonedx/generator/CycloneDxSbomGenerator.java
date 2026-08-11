@@ -84,6 +84,9 @@ public class CycloneDxSbomGenerator {
     private EffectiveModelResolver modelResolver;
     private boolean includeLicenseText;
     private boolean prettyPrint;
+    private boolean librariesOnly;
+    private boolean runtimeOnly;
+    private boolean includeQuarkusComponentScope;
     private Instant outputTimestamp;
     private List<SbomContribution> contributions = List.of();
 
@@ -135,6 +138,24 @@ public class CycloneDxSbomGenerator {
     public CycloneDxSbomGenerator setPrettyPrint(boolean prettyPrint) {
         ensureNotGenerated();
         this.prettyPrint = prettyPrint;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setLibrariesOnly(boolean librariesOnly) {
+        ensureNotGenerated();
+        this.librariesOnly = librariesOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setRuntimeOnly(boolean runtimeOnly) {
+        ensureNotGenerated();
+        this.runtimeOnly = runtimeOnly;
+        return this;
+    }
+
+    public CycloneDxSbomGenerator setIncludeQuarkusComponentScope(boolean includeQuarkusComponentScope) {
+        ensureNotGenerated();
+        this.includeQuarkusComponentScope = includeQuarkusComponentScope;
         return this;
     }
 
@@ -228,6 +249,29 @@ public class CycloneDxSbomGenerator {
             allDependencies.addAll(contribution.dependencies());
         }
 
+        // Filter out components based on librariesOnly and runtimeOnly settings
+        final Set<String> excludedBomRefs;
+        if (librariesOnly || runtimeOnly) {
+            excludedBomRefs = new HashSet<>();
+            allDescriptors.removeIf(d -> {
+                if (d.getBomRef().equals(mainComponentBomRef)) {
+                    return false;
+                }
+                if (librariesOnly && isFileComponent(d)) {
+                    excludedBomRefs.add(d.getBomRef());
+                    return true;
+                }
+                if (runtimeOnly && ComponentDescriptor.SCOPE_DEVELOPMENT.equals(d.getScope())) {
+                    excludedBomRefs.add(d.getBomRef());
+                    return true;
+                }
+                return false;
+            });
+            allDependencies.removeIf(d -> excludedBomRefs.contains(d.getBomRef()));
+        } else {
+            excludedBomRefs = Set.of();
+        }
+
         // Sort for consistent ordering across builds
         allDescriptors.sort(Comparator.comparing(ComponentDescriptor::getBomRef));
         allDependencies.sort(Comparator.comparing(ComponentDependencies::getBomRef));
@@ -248,7 +292,9 @@ public class CycloneDxSbomGenerator {
             List<String> sortedDeps = new ArrayList<>(dep.getDependsOn());
             Collections.sort(sortedDeps);
             for (String depRef : sortedDeps) {
-                d.addDependency(new Dependency(depRef));
+                if (!excludedBomRefs.contains(depRef)) {
+                    d.addDependency(new Dependency(depRef));
+                }
             }
             dependencyMap.put(dep.getBomRef(), d);
         }
@@ -338,6 +384,12 @@ public class CycloneDxSbomGenerator {
         return refs;
     }
 
+    private static boolean isFileComponent(ComponentDescriptor descriptor) {
+        Purl purl = descriptor.getPurl();
+        return Purl.TYPE_GENERIC.equals(purl.getType())
+                && (descriptor.getPath() != null || descriptor.getDistributionPath() != null);
+    }
+
     private static PackageURL toCycloneDxPurl(Purl purl) {
         try {
             TreeMap<String, String> qualifiers = purl.getQualifiers().isEmpty()
@@ -408,18 +460,22 @@ public class CycloneDxSbomGenerator {
         }
 
         // Component type
-        if (Purl.TYPE_GENERIC.equals(purl.getType())
-                && (descriptor.getPath() != null || descriptor.getDistributionPath() != null)) {
+        if (isFileComponent(descriptor)) {
             c.setType(Component.Type.FILE);
         } else {
             c.setType(Component.Type.LIBRARY);
         }
 
-        // Scope property
+        // Scope
         List<Property> props = new ArrayList<>(2);
         String scope = descriptor.getScope() != null ? descriptor.getScope()
                 : ComponentDescriptor.SCOPE_RUNTIME;
-        addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        if (includeQuarkusComponentScope) {
+            addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
+        }
+        if (ComponentDescriptor.SCOPE_DEVELOPMENT.equals(scope)) {
+            c.setScope(Component.Scope.EXCLUDED);
+        }
 
         // POM metadata for Maven components
         if (Purl.TYPE_MAVEN.equals(purl.getType())) {

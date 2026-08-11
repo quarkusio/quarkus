@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-liquibase-mongodb
 
 https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management,
-it allows managing MongoDB databases via it's https://github.com/liquibase/liquibase-mongodb[MongoDB Extension].
+it allows managing MongoDB databases via its https://github.com/liquibase/liquibase-mongodb[MongoDB Extension].
 
 Quarkus provides first class support for using Liquibase MongoDB Extension as will be explained in this guide.
 

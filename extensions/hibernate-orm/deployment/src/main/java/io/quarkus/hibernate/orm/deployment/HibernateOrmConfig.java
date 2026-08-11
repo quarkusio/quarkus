@@ -43,9 +43,13 @@ public interface HibernateOrmConfig {
      * You can set this property to `false` if you want to disable them
      * despite having a JDBC datasource.
      *
+     * @deprecated Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit,
+     *             and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence
+     *             units, to configure this on a per-persistence-unit basis instead.
      * @asciidoclet
      */
     @WithDefault("true")
+    @Deprecated(forRemoval = true, since = "3.39")
     boolean blocking();
 
     /**

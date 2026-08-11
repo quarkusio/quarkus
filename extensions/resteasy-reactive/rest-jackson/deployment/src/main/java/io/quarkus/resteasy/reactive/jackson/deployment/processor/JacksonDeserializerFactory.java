@@ -24,7 +24,6 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.VoidType;
@@ -335,8 +334,14 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 missingBranch.throwException(exception);
             }
 
-            params[i++] = readValueFromJson(deserData.classCreator, deserData.methodCreator,
+            ResultHandle paramValue = readValueFromJson(deserData.classCreator, deserData.methodCreator,
                     deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
+            if (paramValue == null) {
+                // the value of this parameter cannot be deserialized in a reflection-free way (e.g. its
+                // type is polymorphic), so give up generating the deserializer for the whole class
+                return null;
+            }
+            params[i++] = paramValue;
         }
         return deserData.methodCreator.newInstance(deserData.constructor, params);
     }
@@ -414,6 +419,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodInfo anyGetterMethod = findAnyGetterMethod(deserData.classInfo);
         if (anyGetterMethod != null) {
             ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        } else {
+            FieldInfo anyGetterField = findAnyGetterField(deserData.classInfo);
+            if (anyGetterField != null) {
+                ignoredProperties.add(anyGetterField.name());
+            }
         }
         deserData.constructorFields.addAll(ignoredProperties);
 
@@ -428,8 +438,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         MethodInfo anySetterMethod = findAnySetterMethod(deserData.classInfo);
+        FieldInfo anySetterField = anySetterMethod == null ? findAnySetterField(deserData.classInfo) : null;
         handleUnknownFields(deserData, ignoredProperties, ctorFields, strSwitch, deserializationContext, fieldName,
-                fieldValue, objHandle, anySetterMethod);
+                fieldValue, objHandle, anySetterMethod, anySetterField);
         return result;
     }
 
@@ -516,9 +527,10 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
     }
 
-    private static void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,
+    private void handleUnknownFields(DeserializationData deserData, Set<String> ignoredProperties,
             Set<String> ctorFields, Switch.StringSwitch strSwitch, ResultHandle deserializationContext,
-            ResultHandle fieldName, ResultHandle fieldValue, ResultHandle objHandle, MethodInfo anySetterMethod) {
+            ResultHandle fieldName, ResultHandle fieldValue, ResultHandle objHandle, MethodInfo anySetterMethod,
+            FieldInfo anySetterField) {
         // add no-op cases for explicitly ignored properties
         for (String ignoredProp : ignoredProperties) {
             if (!ctorFields.contains(ignoredProp)) {
@@ -539,6 +551,25 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 } else {
                     bytecode.invokeVirtualMethod(anySetterMethod, objHandle, castedFieldName, deserializedValue);
                 }
+            });
+        } else if (anySetterField != null) {
+            ClassInfo classInfo = deserData.classInfo;
+            strSwitch.defaultCase(bytecode -> {
+                ResultHandle deserializedValue = bytecode.invokeVirtualMethod(
+                        ofMethod(DeserializationContext.class, "readTreeAsValue", Object.class, JsonNode.class, Class.class),
+                        deserializationContext, fieldValue,
+                        bytecode.loadClass(Object.class));
+                ResultHandle castedFieldName = bytecode.checkCast(fieldName, String.class);
+                MethodInfo getter = findMethod(classInfo, "get" + ucFirst(anySetterField.name()));
+                ResultHandle map;
+                if (getter != null) {
+                    map = bytecode.invokeVirtualMethod(MethodDescriptor.of(getter), objHandle);
+                } else {
+                    map = bytecode.readInstanceField(FieldDescriptor.of(anySetterField), objHandle);
+                }
+                bytecode.invokeInterfaceMethod(
+                        ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
+                        map, castedFieldName, deserializedValue);
             });
         } else if (shouldIgnoreUnknownProperties(deserData.classInfo)) {
             strSwitch.defaultCase(bytecode -> {
@@ -795,6 +826,16 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return null;
     }
 
+    private FieldInfo findAnySetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnySetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
+            }
+        }
+        return null;
+    }
+
     private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo, PropertyNamingStrategy namingStrategy) {
         return isSetterMethod(methodInfo) ? new FieldSpecs(null, null, methodInfo, namingStrategy) : null;
     }
@@ -820,41 +861,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
-            case TYPE_VARIABLE -> {
-                Integer parameterIndex = typeParametersIndex.get(fieldType.asTypeVariable().identifier());
-                if (parameterIndex == null) {
-                    yield null;
-                }
-                FieldDescriptor valueTypesField = FieldDescriptor.of(classCreator.getClassName(), "valueTypes",
-                        JavaType[].class);
-                ResultHandle valueTypes = bytecode.readInstanceField(valueTypesField, bytecode.getThis());
-                yield bytecode.readArrayValue(valueTypes, parameterIndex);
-            }
-            case LIST, SET, WRAPPER -> {
-                Type contentType = ((ParameterizedType) fieldType).arguments().get(0);
+            case TYPE_VARIABLE -> readTypeVariable(classCreator, bytecode, fieldType.asTypeVariable(), typeParametersIndex);
+            case LIST, SET, WRAPPER, MAP -> {
                 MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
                         TypeFactory.class);
                 ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
-                MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
-                        "constructParametricType", JavaType.class, Class.class, Class[].class);
-                ResultHandle paramTypes = bytecode.newArray(Class.class, 1);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(contentType.name().toString()));
-                yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
-                        bytecode.loadClass(fieldTypeName), paramTypes);
-            }
-            case MAP -> {
-                Type keyType = ((ParameterizedType) fieldType).arguments().get(0);
-                Type valueType = ((ParameterizedType) fieldType).arguments().get(1);
-                MethodDescriptor getTypeFactory = ofMethod(DeserializationContext.class, "getTypeFactory",
-                        TypeFactory.class);
-                ResultHandle typeFactory = bytecode.invokeVirtualMethod(getTypeFactory, deserializationContext);
-                MethodDescriptor constructParametricType = ofMethod(TypeFactory.class,
-                        "constructParametricType", JavaType.class, Class.class, Class[].class);
-                ResultHandle paramTypes = bytecode.newArray(Class.class, 2);
-                bytecode.writeArrayValue(paramTypes, 0, bytecode.loadClass(keyType.name().toString()));
-                bytecode.writeArrayValue(paramTypes, 1, bytecode.loadClass(valueType.name().toString()));
-                yield bytecode.invokeVirtualMethod(constructParametricType, typeFactory,
-                        bytecode.loadClass(fieldTypeName), paramTypes);
+                yield buildJavaType(classCreator, bytecode, typeFactory, fieldType, typeParametersIndex);
             }
             default -> bytecode.loadClass(fieldTypeName);
         };
@@ -866,6 +878,64 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodDescriptor readTreeAsValue = ofMethod(DeserializationContext.class, "readTreeAsValue",
                 Object.class, JsonNode.class, fieldKind.isGeneric() ? JavaType.class : Class.class);
         return bytecode.invokeVirtualMethod(readTreeAsValue, deserializationContext, valueNode, typeHandle);
+    }
+
+    /**
+     * Reads the {@code JavaType} bound to a type variable from the {@code valueTypes} field that
+     * {@code createContextual} populates at runtime. Returns {@code null} when the variable is not
+     * a type parameter of the deserialized class.
+     */
+    private static ResultHandle readTypeVariable(ClassCreator classCreator, BytecodeCreator bytecode,
+            TypeVariable typeVariable, Map<String, Integer> typeParametersIndex) {
+        Integer parameterIndex = typeParametersIndex.get(typeVariable.identifier());
+        if (parameterIndex == null) {
+            return null;
+        }
+        FieldDescriptor valueTypesField = FieldDescriptor.of(classCreator.getClassName(), "valueTypes", JavaType[].class);
+        ResultHandle valueTypes = bytecode.readInstanceField(valueTypesField, bytecode.getThis());
+        return bytecode.readArrayValue(valueTypes, parameterIndex);
+    }
+
+    /**
+     * Emits bytecode that constructs the Jackson {@code JavaType} for the given type, recursing into
+     * type arguments so a nested type, like the {@code List<Foo>} in a {@code Map<String, List<Foo>>},
+     * keeps its generics instead of collapsing to its raw class (which would deserialize its elements
+     * as {@code LinkedHashMap}s).
+     *
+     * Returns {@code null} when the type or one of its arguments cannot be resolved at build time; the
+     * caller then abandons the generated deserializer and Jackson falls back to reflection.
+     */
+    private static ResultHandle buildJavaType(ClassCreator classCreator, BytecodeCreator bytecode,
+            ResultHandle typeFactory, Type type, Map<String, Integer> typeParametersIndex) {
+        switch (type.kind()) {
+            case CLASS:
+                return bytecode.invokeVirtualMethod(
+                        ofMethod(TypeFactory.class, "constructType", JavaType.class, java.lang.reflect.Type.class),
+                        typeFactory, bytecode.loadClass(type.name().toString()));
+            case TYPE_VARIABLE:
+                return readTypeVariable(classCreator, bytecode, type.asTypeVariable(), typeParametersIndex);
+            case WILDCARD_TYPE:
+                // resolve a wildcard to its upper bound, which Jandex defaults to Object
+                return buildJavaType(classCreator, bytecode, typeFactory, type.asWildcardType().extendsBound(),
+                        typeParametersIndex);
+            case PARAMETERIZED_TYPE:
+                List<Type> arguments = type.asParameterizedType().arguments();
+                ResultHandle argumentTypes = bytecode.newArray(JavaType.class, arguments.size());
+                for (int i = 0; i < arguments.size(); i++) {
+                    ResultHandle argumentType = buildJavaType(classCreator, bytecode, typeFactory, arguments.get(i),
+                            typeParametersIndex);
+                    if (argumentType == null) {
+                        return null;
+                    }
+                    bytecode.writeArrayValue(argumentTypes, i, argumentType);
+                }
+                return bytecode.invokeVirtualMethod(
+                        ofMethod(TypeFactory.class, "constructParametricType", JavaType.class, Class.class, JavaType[].class),
+                        typeFactory, bytecode.loadClass(type.name().toString()), argumentTypes);
+            default:
+                // arrays and primitives nested in a generic type are not supported yet
+                return null;
+        }
     }
 
     private void writeValueToObject(ClassInfo classInfo, ResultHandle objHandle, FieldSpecs fieldSpecs,

@@ -1065,6 +1065,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 .setBaseName(extensionContext.getDisplayName() + " (AbstractQuarkusExtensionTest)")
                 .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                 .setMode(QuarkusBootstrap.Mode.TEST)
+                .setTest(true)
                 .addExcludedPath(testLocation)
                 .setProjectRoot(projectDir)
                 .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))

@@ -47,6 +47,7 @@ import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.ConfigBuildTimeConfig;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -98,6 +99,7 @@ import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
@@ -132,6 +134,7 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     void buildTimeRunTimeConfig(
+            ConfigBuildTimeConfig configBuildTimeConfig,
             ConfigurationBuildItem configItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -158,6 +161,15 @@ public class ConfigGenerationBuildStep {
                 if (entry.getValue().getValue() != null) {
                     clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
                             clinit.load(entry.getValue().getValue()));
+                }
+            }
+
+            if (configBuildTimeConfig.fixedAtBuildTime()) {
+                for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+                    if (entry.getValue().getValue() != null) {
+                        clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                                clinit.load(entry.getValue().getValue()));
+                    }
                 }
             }
 
@@ -221,6 +233,17 @@ public class ConfigGenerationBuildStep {
 
         for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {
             generatedClasses.produce(generatedConfigClass);
+        }
+    }
+
+    @BuildStep
+    void fixedAtBuildTimeSources(ConfigBuildTimeConfig config,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        if (config.fixedAtBuildTime()) {
+            staticInitConfigBuilder
+                    .produce(new StaticInitConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
         }
     }
 

@@ -677,15 +677,16 @@ package com.acme.aesh;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.function.Consumer;
+
 import org.aesh.command.CommandNotFoundHandler;
-import org.aesh.command.shell.Shell;
 
 @ApplicationScoped
 public class MyNotFoundHandler implements CommandNotFoundHandler {
 
     @Override
-    public void handleCommandNotFound(String line, Shell shell) {
-        shell.writeln("Unknown command: " + line + ". Type 'help' for available commands.");
+    public void handleCommandNotFound(String line, Consumer<String> output) {
+        output.accept("Unknown command: " + line + ". Type 'help' for available commands.");
     }
 }
 ----

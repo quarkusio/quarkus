@@ -419,6 +419,9 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setMode(Mode mode) {
             this.mode = mode;
+            if (mode == Mode.TEST) {
+                this.test = true;
+            }
             return this;
         }
 

@@ -54,6 +54,36 @@ public interface CycloneDxConfig {
     boolean prettyPrint();
 
     /**
+     * Whether to include only library components in generated SBOMs, excluding
+     * generic file components such as non-Maven JARs and other files.
+     *
+     * @return whether to include only library components
+     */
+    @WithDefault("false")
+    boolean librariesOnly();
+
+    /**
+     * Whether to include only runtime dependencies in generated SBOMs, excluding
+     * development/build-time dependencies entirely.
+     *
+     * @return whether to include only runtime dependencies
+     */
+    @WithDefault("false")
+    boolean runtimeOnly();
+
+    /**
+     * Whether to include the {@code quarkus:component:scope} custom property on each component
+     * in generated SBOMs. This property indicates whether a component is a {@code runtime} or
+     * {@code development} dependency. Since development dependencies are now also marked with the
+     * standard CycloneDX {@code scope} set to {@code excluded}, the custom property is redundant
+     * for most consumers and is disabled by default.
+     *
+     * @return whether to include the quarkus:component:scope property
+     */
+    @WithDefault("false")
+    boolean includeQuarkusComponentScope();
+
+    /**
      * Embedded dependency SBOM configuration
      */
     @ConfigDocSection

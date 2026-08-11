@@ -150,7 +150,7 @@ class OpenApiRunStageFilterTest {
         assertThat(buildTimeDocument, matchesRegex(patternFormat.formatted(bothFilter.getExtensionName(), 1)));
 
         // Verify which filters run during SmallRyeOpenApiProcessor.applyRuntimeFilters
-        // should just be the build stage + runtime startup stage
+        // should just be the (already run) build stage + runtime startup stage
         String storedDocument = Files.readString(Paths.get(STORE_SCHEMA_DIRECTORY, "openapi.json"));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(buildFilter.getExtensionName(), 1)));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(runtimeStartupFilter.getExtensionName(), 1)));
@@ -158,14 +158,14 @@ class OpenApiRunStageFilterTest {
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(runFilter.getExtensionName(), 1)));
         assertThat(storedDocument, matchesRegex(patternFormat.formatted(bothFilter.getExtensionName(), 2)));
 
-        // verify which filters where run during RUNTIME_STARTUP stage
+        // verify which filters where explicitly only run during RUNTIME_STARTUP stage
         assertThat(buildFilter.currentCLInvocationCount, is(0));
         assertThat(runtimeStartupFilter.currentCLInvocationCount, is(1));
         assertThat(runtimePerRequestFilter.currentCLInvocationCount, is(0));
         assertThat(runFilter.currentCLInvocationCount, is(1));
         assertThat(bothFilter.currentCLInvocationCount, is(1));
 
-        // now we verify which filters are run at runtime request
+        // now verify which filters are run at runtime request
         // results should be build stage + run stage + runtime request stage
         given()
                 .when().get("/q/openapi.json")

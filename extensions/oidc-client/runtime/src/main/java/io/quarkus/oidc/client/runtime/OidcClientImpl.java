@@ -502,7 +502,7 @@ public class OidcClientImpl implements OidcClient {
                         OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig, clientSecret),
                         jwtAssertionProvided, assertionProvider))
                 .onItem().ifNull()
-                .switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcClientConfig, false)
+                .switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcClientConfig)
                         .map(key -> new ClientCredentials(key, null, null, jwtAssertionProvided, assertionProvider)))
                 .<OidcClient> flatMap(clientCredentials -> metadataResolver.apply(clientCredentials)
                         .map(metadata -> {

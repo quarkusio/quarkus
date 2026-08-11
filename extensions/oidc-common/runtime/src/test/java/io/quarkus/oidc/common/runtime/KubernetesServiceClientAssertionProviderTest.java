@@ -18,7 +18,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 
-public class KubernetesServiceClientAssertionProviderTest {
+class KubernetesServiceClientAssertionProviderTest {
 
     @Test
     public void testJwtBearerTokenRefresh() {
@@ -30,16 +30,18 @@ public class KubernetesServiceClientAssertionProviderTest {
         try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtBearerTokenPath,
                 Source.BEARER)) {
             // assert first token is loaded
-            assertEquals(jwtBearerToken, clientAssertionProvider.getAvailableClientAssertion());
+            assertEquals(jwtBearerToken, clientAssertionProvider.clientAssertion.bearerToken());
             assertEquals(OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
 
             // create a new token
             String secondJwtBearerToken = createJwtBearerToken();
             storeNewJwtBearerToken(jwtBearerTokenPath, secondJwtBearerToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
+            Awaitility.await()
+                    .atLeast(Duration.ofSeconds(2))
+                    .atMost(Duration.ofSeconds(7))
                     .untilAsserted(
-                            () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getAvailableClientAssertion()));
+                            () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.clientAssertion.bearerToken()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }
@@ -72,14 +74,16 @@ public class KubernetesServiceClientAssertionProviderTest {
         storeNewJwtBearerToken(svidTokenPath, svidToken);
         try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, svidTokenPath,
                 Source.SPIFFE_JWT)) {
-            assertEquals(svidToken, clientAssertionProvider.getAvailableClientAssertion());
+            assertEquals(svidToken, clientAssertionProvider.clientAssertion.bearerToken());
             assertEquals(OidcConstants.SPIFFE_SVID_CLIENT_ASSERTION_TYPE, clientAssertionProvider.getClientAssertionType());
 
             String secondSvidToken = createSpiffeSvidToken();
             storeNewJwtBearerToken(svidTokenPath, secondSvidToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
-                    .untilAsserted(() -> assertEquals(secondSvidToken, clientAssertionProvider.getAvailableClientAssertion()));
+            Awaitility.await()
+                    .atLeast(Duration.ofSeconds(2))
+                    .atMost(Duration.ofSeconds(7))
+                    .untilAsserted(() -> assertEquals(secondSvidToken, clientAssertionProvider.clientAssertion.bearerToken()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }

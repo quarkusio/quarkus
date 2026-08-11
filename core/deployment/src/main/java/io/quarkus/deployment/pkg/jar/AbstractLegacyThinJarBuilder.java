@@ -112,35 +112,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
                     if (transformedFromThisArchive != null && !transformedFromThisArchive.isEmpty()) {
                         removedEntries.addAll(transformedFromThisArchive);
                     }
-                    // When tree shake level is CLASSES, add non-reachable classes to removal set
-                    if (treeShakeResult != null
-                            && treeShakeResult.isClassesShaken()) {
-                        try (var pathTree = appDep.getContentTree().open()) {
-                            pathTree.walkRaw(visit -> {
-                                String rel = visit.getRelativePath("/");
-                                String classRel = rel;
-                                if (rel.startsWith("META-INF/versions/")) {
-                                    String afterVersions = rel.substring("META-INF/versions/".length());
-                                    int slash = afterVersions.indexOf('/');
-                                    if (slash > 0) {
-                                        classRel = afterVersions.substring(slash + 1);
-                                    } else {
-                                        return;
-                                    }
-                                }
-                                if (classRel.endsWith(".class") && !classRel.equals("module-info.class")) {
-                                    String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
-                                    if (!treeShakeResult.getReachableClassNames().contains(className)) {
-                                        int dollarIdx = className.indexOf('$');
-                                        if (dollarIdx < 0
-                                                || !treeShakeResult.getReachableClassNames()
-                                                        .contains(className.substring(0, dollarIdx))) {
-                                            removedEntries.add(rel);
-                                        }
-                                    }
-                                }
-                            });
-                        }
+                    if (treeShakeResult != null) {
+                        treeShakeResult.collectUnreachableEntries(appDep, removedEntries);
                     }
                     final String fileName;
                     if (removedEntries.isEmpty()) {

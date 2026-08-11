@@ -1,6 +1,9 @@
 package io.quarkus.oidc.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +15,7 @@ import java.util.StringTokenizer;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
@@ -210,6 +214,354 @@ public class OidcCommonUtilsTest {
         assertEquals("https://server.example.com/", json.getString("aud"));
     }
 
+    @Test
+    public void testSecretAndClientSecretAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.secret = Optional.of("secret1");
+        cfg.credentials.clientSecret.value = Optional.of("secret2");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("mutually exclusive"));
+    }
+
+    @Test
+    public void testClientSecretValueAndJwtSecretAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+    }
+
+    @Test
+    public void testSecretAndJwtSecretProviderAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.secret = Optional.of("secret");
+        cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+    }
+
+    @Test
+    public void testClientSecretValueAndJwtSecretProviderAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+    }
+
+    @Test
+    public void testClientSecretProviderAndJwtSecretAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+    }
+
+    @Test
+    public void testClientSecretProviderAndJwtSecretProviderAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
+        cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+    }
+
+    @Test
+    public void testClientSecretAndJwtKeyFileAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT key"));
+    }
+
+    @Test
+    public void testClientSecretAndJwtKeyAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.secret = Optional.of("secret");
+        cfg.credentials.jwt.key = Optional.of("pem-key-content");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT key"));
+    }
+
+    @Test
+    public void testClientSecretAndJwtKeyStoreAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT key"));
+    }
+
+    @Test
+    public void testClientSecretProviderAndJwtKeyFileAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.provider.key = Optional.of("vault-key");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("JWT key"));
+    }
+
+    @Test
+    public void testJwtKeyAndKeyFileAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.key = Optional.of("pem-key-content");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key"));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key-file"));
+    }
+
+    @Test
+    public void testJwtKeyAndKeyStoreAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.key = Optional.of("pem-key-content");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key"));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key-store-file"));
+    }
+
+    @Test
+    public void testJwtKeyFileAndKeyStoreAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key-file"));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key-store-file"));
+    }
+
+    @Test
+    public void testAllThreeJwtKeyPropertiesAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.key = Optional.of("pem-key-content");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("credentials.jwt.key"));
+    }
+
+    @Test
+    public void testJwtSecretAndJwtKeyAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+        cfg.credentials.jwt.key = Optional.of("pem-key-content");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+        assertTrue(ex.getMessage().contains("JWT private key"));
+    }
+
+    @Test
+    public void testJwtSecretAndJwtKeyFileAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+        assertTrue(ex.getMessage().contains("JWT private key"));
+    }
+
+    @Test
+    public void testJwtSecretProviderAndJwtKeyStoreAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+        assertTrue(ex.getMessage().contains("JWT private key"));
+    }
+
+    @Test
+    public void testClientSecretAndJwtBearerAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("jwt.source=bearer"));
+    }
+
+    @Test
+    public void testClientSecretAndJwtSpiffeAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.secret = Optional.of("secret");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("client secret"));
+        assertTrue(ex.getMessage().contains("jwt.source=spiffe_jwt"));
+    }
+
+    @Test
+    public void testJwtKeyFileAndJwtBearerAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT private key"));
+        assertTrue(ex.getMessage().contains("jwt.source=bearer"));
+    }
+
+    @Test
+    public void testJwtKeyStoreAndJwtSpiffeAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.keyStoreFile = Optional.of("keystore.jks");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT private key"));
+        assertTrue(ex.getMessage().contains("jwt.source=spiffe_jwt"));
+    }
+
+    @Test
+    public void testJwtSecretAndJwtBearerAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+        assertTrue(ex.getMessage().contains("jwt.source=bearer"));
+    }
+
+    @Test
+    public void testJwtSecretProviderAndJwtSpiffeAreMutuallyExclusive() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secretProvider.key = Optional.of("vault-jwt-secret");
+        cfg.credentials.jwt.source = OidcClientCommonConfig.Credentials.Jwt.Source.SPIFFE_JWT;
+
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcCommonUtils.verifyCommonConfiguration(cfg, false, false));
+        assertTrue(ex.getMessage().contains("JWT secret"));
+        assertTrue(ex.getMessage().contains("jwt.source=spiffe_jwt"));
+    }
+
+    @Test
+    public void testSingleClientSecretIsValid() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.clientSecret.value = Optional.of("secret");
+        OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
+    }
+
+    @Test
+    public void testSingleJwtKeyFileIsValid() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.keyFile = Optional.of("privateKey.pem");
+        OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
+    }
+
+    @Test
+    public void testSingleJwtSecretIsValid() {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.secret = Optional.of("jwt-secret");
+        OidcCommonUtils.verifyCommonConfiguration(cfg, false, false);
+    }
+
     public static JsonObject decodeJwtContent(String jwt) {
         String encodedContent = getJwtContentPart(jwt);
         if (encodedContent == null) {
@@ -233,6 +585,37 @@ public class OidcCommonUtilsTest {
             return null;
         }
         return encodedContent;
+    }
+
+    @Test
+    public void testDecodeJwtContentWithNoParts() {
+        // An empty or delimiter-only bearer token has zero StringTokenizer tokens.
+        // These used to throw NoSuchElementException out of getJwtContentPart, which
+        // escaped BearerAuthenticationMechanism as a non-AuthenticationFailedException
+        // and surfaced as HTTP 500 instead of a 401 challenge.
+        assertNull(OidcCommonUtils.decodeJwtContent(""));
+        assertNull(OidcCommonUtils.decodeJwtContent("."));
+        assertNull(OidcCommonUtils.decodeJwtContent(".."));
+        assertNull(OidcCommonUtils.decodeJwtContent("..."));
+        assertNull(OidcCommonUtils.decodeJwtContent("...."));
+    }
+
+    @Test
+    public void testGetJwtContentPartWithNoParts() {
+        assertNull(OidcCommonUtils.getJwtContentPart(""));
+        assertNull(OidcCommonUtils.getJwtContentPart("."));
+        assertNull(OidcCommonUtils.getJwtContentPart(".."));
+        assertNull(OidcCommonUtils.getJwtContentPart("..."));
+    }
+
+    @Test
+    public void testGetJwtContentPartStillRejectsWrongPartCounts() {
+        // Regression guard: the new zero-token check must not change how tokens
+        // with the wrong number of parts are treated.
+        assertNull(OidcCommonUtils.getJwtContentPart("onlyonepart"));
+        assertNull(OidcCommonUtils.getJwtContentPart("two.parts"));
+        assertNull(OidcCommonUtils.getJwtContentPart("a.b.c.d"));
+        assertEquals("b", OidcCommonUtils.getJwtContentPart("a.b.c"));
     }
 
     private static JsonObject decodeAsJsonObject(String encodedContent) {

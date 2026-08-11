@@ -18,10 +18,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class CliGenkeyTest {
+public class CliJwtGenerateKeyTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath().resolve("target/test-project");
-    static Path privateKey = workspaceRoot.resolve("src/main/resources/private-key.pem");
-    static Path publicKey = workspaceRoot.resolve("src/main/resources/public-key.pem");
+    static Path privateKey = workspaceRoot.resolve("src/main/resources/privateKey.pem");
+    static Path publicKey = workspaceRoot.resolve("src/main/resources/publicKey.pem");
+    static Path appProps = workspaceRoot.resolve("src/main/resources/application.properties");
 
     @BeforeEach
     public void clean() throws IOException {
@@ -31,11 +32,14 @@ public class CliGenkeyTest {
         if (Files.exists(publicKey)) {
             Files.delete(publicKey);
         }
+        if (Files.exists(appProps)) {
+            Files.delete(appProps);
+        }
     }
 
     @Test
     public void testCommandRsa() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "genkey");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key");
         Assertions.assertTrue(Files.exists(privateKey));
         Assertions.assertTrue(Files.exists(publicKey));
         List<String> privateKeyContents = Files.readAllLines(privateKey);
@@ -47,8 +51,17 @@ public class CliGenkeyTest {
         Assertions.assertEquals("-----BEGIN PUBLIC KEY-----", publicKeyContents.get(0));
         Assertions.assertTrue(result.stdout.contains("Public and private keys created in"));
 
+        // verify application.properties was created with JWT config
+        Assertions.assertTrue(Files.exists(appProps));
+        String config = Files.readString(appProps);
+        Assertions.assertTrue(config.contains("mp.jwt.verify.publickey.location=publicKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.sign.key.location=privateKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.encrypt.key.location=publicKey.pem"));
+        Assertions.assertTrue(config.contains("mp.jwt.decrypt.key.location=privateKey.pem"));
+        Assertions.assertTrue(config.contains("quarkus.native.resources.includes=publicKey.pem,privateKey.pem"));
+
         // now run it again, it should complain but leave the files alone
-        result = CliDriver.execute(workspaceRoot, "genkey");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key");
         Assertions.assertTrue(Files.exists(privateKey));
         Assertions.assertTrue(Files.exists(publicKey));
         List<String> privateKeyContents2 = Files.readAllLines(privateKey);
@@ -58,7 +71,7 @@ public class CliGenkeyTest {
         Assertions.assertTrue(result.stdout.contains("Public and private keys already exist in"));
 
         // now run it again in force, to override the files
-        result = CliDriver.execute(workspaceRoot, "genkey", "--force");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force");
         Assertions.assertTrue(Files.exists(privateKey));
         Assertions.assertTrue(Files.exists(publicKey));
         privateKeyContents2 = Files.readAllLines(privateKey);
@@ -68,19 +81,41 @@ public class CliGenkeyTest {
         Assertions.assertTrue(result.stdout.contains("Public and private keys created in"));
 
         // run it for 4096
-        result = CliDriver.execute(workspaceRoot, "genkey", "--force", "--size", "4096");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force", "--size", "4096");
         Assertions.assertTrue(Files.exists(privateKey));
         verifyKeyParameters(Files.readAllLines(privateKey), "RSA", 4096);
 
         // run it for EC
-        result = CliDriver.execute(workspaceRoot, "genkey", "--force", "--algo", "EC");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force", "--algo", "EC");
         Assertions.assertTrue(Files.exists(privateKey));
         verifyKeyParameters(Files.readAllLines(privateKey), "EC", 256);
 
         // run it for EC/521
-        result = CliDriver.execute(workspaceRoot, "genkey", "--force", "--algo", "EC", "--size", "521");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force", "--algo", "EC", "--size", "521");
         Assertions.assertTrue(Files.exists(privateKey));
         verifyKeyParameters(Files.readAllLines(privateKey), "EC", 521);
+
+        // verify that quarkus.native.resources.includes appends to existing values
+        Files.delete(privateKey);
+        Files.delete(publicKey);
+        Files.writeString(appProps, "quarkus.native.resources.includes=myResource.txt\n");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force");
+        config = Files.readString(appProps);
+        Assertions.assertTrue(config.contains("quarkus.native.resources.includes=myResource.txt,publicKey.pem,privateKey.pem"),
+                "Should append to existing includes, got: " + config);
+
+        // verify that existing config pointing to different keys prevents generation
+        Files.delete(privateKey);
+        Files.delete(publicKey);
+        Files.writeString(appProps, "smallrye.jwt.sign.key.location=other-key.pem\n");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key");
+        Assertions.assertFalse(Files.exists(privateKey), "Should not generate keys when config points to different files");
+        Assertions.assertTrue(result.stdout.contains("already points to"),
+                "Should warn about conflicting config, got: " + result.stdout);
+
+        // verify that --force overrides the config check
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force");
+        Assertions.assertTrue(Files.exists(privateKey), "Should generate keys with --force despite conflicting config");
     }
 
     private void verifyKeyParameters(List<String> privateKeyContents, String algo, int keySize) {

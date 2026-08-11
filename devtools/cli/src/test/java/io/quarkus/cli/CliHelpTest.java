@@ -175,11 +175,21 @@ public class CliHelpTest {
 
     @Test
     @Order(55)
-    public void testGenkeyHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "genkey", "--help");
+    public void testJwtHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
-        assertThat(result.stdout).contains("Generate RSA or EC public/private keys.");
+        assertThat(result.stdout).contains("JWT key management.");
+        assertThat(result.stdout).contains("generate-key");
+    }
+
+    @Test
+    @Order(56)
+    public void testJwtGenerateKeyHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("Generate RSA or EC public/private key pair for JWT.");
         assertThat(result.stdout).contains("--force");
         assertThat(result.stdout).contains("--size");
         assertThat(result.stdout).contains("--algo");

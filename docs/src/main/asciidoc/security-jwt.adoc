@@ -426,6 +426,29 @@ f3cg+fr8aou7pr9SHhJlZCU=
 
 Later, you configure the `smallrye.jwt.sign.key.location` property to specify the location of the private signing key.
 
+[[generating-keys-with-the-quarkus-cli]]
+[TIP]
+.Generating keys with the Quarkus CLI
+====
+You can generate a public and private key pair by using the Quarkus CLI:
+
+[source, bash]
+----
+quarkus jwt generate-key
+----
+
+This generates RSA 2048-bit keys by default.
+You can also generate EC keys or specify a different key size:
+
+[source, bash]
+----
+quarkus jwt generate-key --algo EC
+quarkus jwt generate-key --algo RSA --size 4096
+----
+
+The keys are written to `src/main/resources/privateKey.pem` and `src/main/resources/publicKey.pem` in PKCS#8 format, and the required JWT configuration properties are automatically added to `application.properties`.
+====
+
 [NOTE]
 .Generating keys with OpenSSL
 ====
@@ -870,6 +893,8 @@ public String token() {
 ----
 
 See xref:security-jwt-build.adoc#sign-claims[signing claims guide] for mode details.
+
+For production, you can generate your own key pair with `quarkus jwt generate-key`, which also adds the required configuration to `application.properties`.
 
 You can disable automatic key generation by setting at least one of the following properties:
 

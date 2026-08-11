@@ -127,6 +127,7 @@ import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
@@ -1482,7 +1483,9 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, JpaModelBuildItem jpaModel,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<QuarkusDataModelBuildItem> quarkusDataModelBuildItems,
+            JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem,
             List<JdbcDataSourceBuildItem> jdbcDataSources) {
         IndexView index = indexBuildItem.getIndex();
@@ -1609,6 +1612,21 @@ public final class HibernateOrmProcessor {
             }
         }
 
+        for (QuarkusDataModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
+            var className = quarkusDataModel.getClassName();
+            Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
+                    quarkusDataModel.getEnclosingEntityClassName(), modelPerPersistenceUnit);
+            if (persistenceUnits.isEmpty()) {
+                persistenceUnits = Set.of(DEFAULT_PERSISTENCE_UNIT_NAME);
+            }
+            assignedModelClassAndPackageNames.add(className);
+            for (String persistenceUnitName : persistenceUnits) {
+                modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                        ignored -> new JpaPersistenceUnitModel())
+                        .allModelClassNames().add(className);
+            }
+        }
+
         if (!modelClassesWithPersistenceUnitAnnotations.isEmpty()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "@PersistenceUnit annotations are not supported at the class level on model classes:\n\t- %s\nUse the `.packages` configuration property or package-level annotations instead.",
@@ -1671,6 +1689,17 @@ public final class HibernateOrmProcessor {
         }
 
         return new JpaModelPerPersistenceUnitBuildItem(modelPerPersistenceUnit);
+    }
+
+    private static Set<String> findEnclosingEntityPersistenceUnits(String enclosingClassName,
+            Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit) {
+        Set<String> result = new HashSet<>();
+        for (var entry : modelPerPersistenceUnit.entrySet()) {
+            if (entry.getValue().entityClassNames().contains(enclosingClassName)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,

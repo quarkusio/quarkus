@@ -127,7 +127,14 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         try {
-            client.close()
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                // close() returns null when the underlying client was already reclaimed,
+                // e.g. when Vert.x shut down before this exporter, see https://github.com/eclipse-vertx/vert.x/issues/6302
+                shutdownResult.succeed();
+                return shutdownResult;
+            }
+            closeFuture
                     .onSuccess(
                             new Handler<>() {
                                 @Override

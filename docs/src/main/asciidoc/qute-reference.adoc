@@ -1608,6 +1608,39 @@ engineBuilder.addParserHook(new ParserHook() {
 ----
 <1> Escape all occurrences of `${`.
 
+==== Raw Content Sections
+
+By default, the content of a section is parsed just like any other part of a template - expressions, nested sections, comments, etc. are all processed.
+However, a custom `SectionHelperFactory` can override the `rawContent()` method to return `true`.
+In that case, the parser treats the section body as raw, unparsed text.
+The raw text is added as a single text node in the main block of the section.
+
+This can be useful for sections that need to process the content as-is, e.g. to escape or transform template syntax.
+
+.Raw Content Section Factory Example
+[source,java]
+----
+public class MySectionFactory implements SectionHelperFactory<MySectionHelper> {
+
+    @Override
+    public boolean rawContent() {
+        return true; <1>
+    }
+
+    @Override
+    public MySectionHelper initialize(SectionInitContext context) {
+        return new MySectionHelper();
+    }
+
+    // ...
+}
+----
+<1> The parser will not attempt to parse the section content. Expressions, sections, and other tags inside the section are treated as plain text.
+
+For example, a template `{#mySection}Hello {name}!{/mySection}` will pass the literal string `Hello {name}!` to the section helper, rather than evaluating `{name}` as an expression.
+
+NOTE: The section start tag parameters are still parsed and available via `SectionInitContext.getParameter(String)` during `SectionHelperFactory.initialize(SectionInitContext)`.
+
 [[strict_rendering]]
 ==== Strict Rendering
 
@@ -1750,6 +1783,8 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionF
 <4> Use the injected `Service` during rendering.
 
 TIP: The `@EngineConfiguration` annotation can be also used to register `ValueResolver`, `NamespaceResolver` and `ParserHook` components.
+
+TIP: A `SectionHelperFactory` can also override the `rawContent()` method to indicate that the section content should not be parsed. See <<Raw Content Sections>> for more details.
 
 [[template-locator-registration]]
 ==== Template Locator Registration

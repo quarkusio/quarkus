@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 import org.junit.jupiter.api.Test;
 
@@ -294,6 +295,111 @@ public class ParserTest {
                 engine.parse("Hello {name} {||||safe|}end||||}").data("name", "world").render());
         // Multi-pipe CDATA: content with Qute expressions is not parsed
         assertEquals("{name}", engine.parse("{|||{name}|||}").render());
+    }
+
+    @Test
+    public void testRawContent() {
+        SectionHelperFactory<?> rawFactory = new SectionHelperFactory<SectionHelper>() {
+            @Override
+            public SectionHelper initialize(SectionInitContext context) {
+                return new SectionHelper() {
+                    @Override
+                    public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+                        return context.execute();
+                    }
+                };
+            }
+
+            @Override
+            public boolean rawContent() {
+                return true;
+            }
+        };
+        Engine engine = Engine.builder().addDefaults().addSectionHelper("raw", rawFactory).build();
+        // Expressions inside {#raw} are not parsed
+        assertEquals("{name}", engine.parse("{#raw}{name}{/raw}").render());
+        // Section tags inside {#raw} are not parsed
+        assertEquals("{#if true}hello{/if}", engine.parse("{#raw}{#if true}hello{/if}{/raw}").render());
+        // Content before and after the section is parsed normally
+        assertEquals("world {name} world",
+                engine.parse("{name} {#raw}{name}{/raw} {name}").data("name", "world").render());
+        // JS-like content with braces
+        assertEquals("function(){alert('bar');}",
+                engine.parse("{#raw}function(){alert('bar');}{/raw}").render());
+        // Nested raw section tags are handled correctly
+        assertEquals("{#raw}inner{/raw}",
+                engine.parse("{#raw}{#raw}inner{/raw}{/raw}").render());
+        // Multiline content preserves line breaks
+        assertEquals("line1\nline2\nline3",
+                engine.parse("{#raw}line1\nline2\nline3{/raw}").render());
+        // CDATA delimiters are not parsed inside raw content
+        assertEquals("{|foo|}",
+                engine.parse("{#raw}{|foo|}{/raw}").render());
+        // Combined: multiline, nested raw, cdata, section tag, incomplete expression
+        assertEquals("""
+                {#raw}
+                {|cdata|}
+                {#if true}yes{/if}
+                {foo
+                {/raw}""",
+                engine.parse("""
+                        {#raw}{#raw}
+                        {|cdata|}
+                        {#if true}yes{/if}
+                        {foo
+                        {/raw}{/raw}""").render());
+        // Whitespace in end tag is tolerated
+        assertEquals("hello",
+                engine.parse("{#raw}hello{/raw }").render());
+        // Nested raw section with parameters
+        assertEquals("{#raw param}inner{/raw}",
+                engine.parse("{#raw}{#raw param}inner{/raw}{/raw}").render());
+        // CRLF line endings are counted as single line breaks
+        assertEquals("a\r\nb",
+                engine.parse("{#raw}a\r\nb{/raw}").render());
+        // Unterminated raw section
+        try {
+            engine.parse("{#raw}hello");
+            fail("No parser error found");
+        } catch (TemplateException expected) {
+            assertEquals(ParserError.UNTERMINATED_SECTION, expected.getCode());
+        }
+    }
+
+    @Test
+    public void testRawContentTransform() {
+        SectionHelperFactory<?> transformFactory = new SectionHelperFactory<SectionHelper>() {
+
+            @Override
+            public ParametersInfo getParameters() {
+                return ParametersInfo.builder().addParameter("action").build();
+            }
+
+            @Override
+            public SectionHelper initialize(SectionInitContext context) {
+                String action = context.getParameter("action");
+                return new SectionHelper() {
+
+                    @Override
+                    public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+                        return context.execute().thenApply(resultNode -> {
+                            String text = ((TextNode) resultNode).getValue();
+                            if ("upper".equals(action)) {
+                                text = text.toUpperCase();
+                            }
+                            return new SingleResultNode(text);
+                        });
+                    }
+                };
+            }
+
+            @Override
+            public boolean rawContent() {
+                return true;
+            }
+        };
+        Engine engine = Engine.builder().addDefaults().addSectionHelper("transform", transformFactory).build();
+        assertEquals("HELLO {NAME}!", engine.parse("{#transform action=upper}Hello {name}!{/transform}").render());
     }
 
     @Test

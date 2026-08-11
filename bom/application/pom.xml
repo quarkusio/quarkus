@@ -174,7 +174,7 @@
         <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.35.0</proton-j.version>
         <javaparser.version>3.28.2</javaparser.version>
-        <flapdoodle.mongo.version>4.33.0</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>5.0.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>7.0.SP1</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>4.1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>7.1.SP1</quarkus-spring-security-api.version>

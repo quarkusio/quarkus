@@ -103,6 +103,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
     private static final String REPRODUCIBILITY_CROSS_JVM_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.cross-jvm";
     private static final String REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.dump-dir";
+    private static final String CACHED_APPLICATION_MODEL_KEY = "cachedApplicationModel";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -722,7 +723,15 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 }
 
                 // Normal path: single augmentation, start app, run tests
-                curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, null);
+                // Reuse the cached ApplicationModel to skip dependency resolution
+                ApplicationModel cachedModel = null;
+                if (forcedDependencies.isEmpty() && excludedDependencies.isEmpty()) {
+                    cachedModel = (ApplicationModel) store.get(CACHED_APPLICATION_MODEL_KEY);
+                }
+                curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, cachedModel);
+                if (cachedModel == null && forcedDependencies.isEmpty() && excludedDependencies.isEmpty()) {
+                    store.put(CACHED_APPLICATION_MODEL_KEY, curatedApplication.getApplicationModel());
+                }
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication();

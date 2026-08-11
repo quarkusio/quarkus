@@ -40,7 +40,9 @@ public class AeshWebSocketRolesAllowedTest {
                     GoodbyeCommand.class,
                     TestIdentityProvider.class,
                     TestIdentityController.class))
-            .overrideConfigKey("quarkus.aesh.websocket.roles-allowed", "admin");
+            .overrideConfigKey("quarkus.aesh.websocket.roles-allowed", "admin")
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;

@@ -40,7 +40,9 @@ public class AeshWebSocketAuthenticatedTest {
                     GoodbyeCommand.class,
                     TestIdentityProvider.class,
                     TestIdentityController.class))
-            .overrideConfigKey("quarkus.aesh.websocket.authenticated", "true");
+            .overrideConfigKey("quarkus.aesh.websocket.authenticated", "true")
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;

@@ -17,7 +17,8 @@ import io.vertx.core.Vertx;
 
 /**
  * Default TokenIntrospection and UserInfo Cache implementation.
- * A single cache entry can keep TokenIntrospection and/or UserInfo.
+ * A single cache entry can keep TokenIntrospection and/or UserInfo
+ * and is keyed by a composite key combining the tenant id and the access token.
  * <p>
  * In most cases it is the opaque bearer access tokens which are introspected
  * but the code flow access tokens can also be introspected if they have the roles claims.
@@ -29,6 +30,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     private static final Logger LOG = Logger.getLogger(DefaultTokenIntrospectionUserInfoCache.class);
     private static final Uni<TokenIntrospection> NULL_INTROSPECTION_UNI = Uni.createFrom().nullItem();
     private static final Uni<UserInfo> NULL_USERINFO_UNI = Uni.createFrom().nullItem();
+    private static final String CACHE_KEY_DELIM = "|";
 
     final MemoryCache<CacheEntry> cache;
 
@@ -40,11 +42,12 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     @Override
     public Uni<Void> addIntrospection(String token, TokenIntrospection introspection, OidcTenantConfig oidcTenantConfig,
             OidcRequestContext<Void> requestContext) {
-        CacheEntry entry = cache.get(token);
+        final String key = getCacheKey(oidcTenantConfig, token);
+        CacheEntry entry = cache.get(key);
         if (entry != null) {
             entry.introspection = introspection;
         } else {
-            cache.add(token, new CacheEntry(introspection));
+            cache.add(key, new CacheEntry(introspection));
         }
 
         return CodeAuthenticationMechanism.VOID_UNI;
@@ -53,13 +56,14 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     @Override
     public Uni<TokenIntrospection> getIntrospection(String token, OidcTenantConfig oidcConfig,
             OidcRequestContext<TokenIntrospection> requestContext) {
-        CacheEntry entry = cache.get(token);
+        final String key = getCacheKey(oidcConfig, token);
+        CacheEntry entry = cache.get(key);
         if (entry == null || entry.introspection == null) {
             return NULL_INTROSPECTION_UNI;
         }
         if (isTokenExpired(entry.introspection.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP), oidcConfig)) {
             LOG.debug("Introspected token has expired, removing it from the token introspection cache");
-            cache.remove(token);
+            cache.remove(key);
             return NULL_INTROSPECTION_UNI;
         }
 
@@ -75,11 +79,12 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     @Override
     public Uni<Void> addUserInfo(String token, UserInfo userInfo, OidcTenantConfig oidcTenantConfig,
             OidcRequestContext<Void> requestContext) {
-        CacheEntry entry = cache.get(token);
+        final String key = getCacheKey(oidcTenantConfig, token);
+        CacheEntry entry = cache.get(key);
         if (entry != null) {
             entry.userInfo = userInfo;
         } else {
-            cache.add(token, new CacheEntry(userInfo));
+            cache.add(key, new CacheEntry(userInfo));
         }
 
         return CodeAuthenticationMechanism.VOID_UNI;
@@ -88,7 +93,8 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     @Override
     public Uni<UserInfo> getUserInfo(String token, OidcTenantConfig oidcConfig,
             OidcRequestContext<UserInfo> requestContext) {
-        CacheEntry entry = cache.get(token);
+        final String key = getCacheKey(oidcConfig, token);
+        CacheEntry entry = cache.get(key);
         return entry == null ? NULL_USERINFO_UNI : Uni.createFrom().item(entry.userInfo);
     }
 
@@ -113,8 +119,15 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
         return cache.getCacheSize();
     }
 
+    public boolean containsCacheKey(String tenantId, String token) {
+        return cache.containsKey(tenantId + CACHE_KEY_DELIM + token);
+    }
+
     void shutdown(@Observes ShutdownEvent event, Vertx vertx) {
         cache.stopTimer(vertx);
     }
 
+    private static String getCacheKey(OidcTenantConfig oidcConfig, String token) {
+        return oidcConfig.tenantId().get() + CACHE_KEY_DELIM + token;
+    }
 }

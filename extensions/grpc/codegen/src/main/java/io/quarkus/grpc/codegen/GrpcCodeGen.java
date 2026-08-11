@@ -108,7 +108,7 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
-        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false"))
+        if (TRUE.toString().equalsIgnoreCase(System.getProperty("grpc.codegen.skip", "false"))
                 || context.config().getOptionalValue("quarkus.grpc.codegen.skip", Boolean.class).orElse(false)) {
             log.info("Skipping gRPC code generation on user's request");
             return false;
@@ -284,7 +284,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private void postprocessing(CodeGenContext context, Path outDir) {
-        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty(POST_PROCESS_SKIP, "false"))
+        if (TRUE.toString().equalsIgnoreCase(System.getProperty(POST_PROCESS_SKIP, "false"))
                 || context.config().getOptionalValue(POST_PROCESS_SKIP, Boolean.class).orElse(false)) {
             log.info("Skipping gRPC Post-Processing on user's request");
             return;

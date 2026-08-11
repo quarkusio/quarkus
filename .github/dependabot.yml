@@ -115,6 +115,7 @@ updates:
       - dependency-name: com.amazonaws:*
       # Azure
       - dependency-name: com.microsoft.azure.functions:*
+      - dependency-name: com.microsoft.azure:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
       - dependency-name: org.apache.commons:*
@@ -162,6 +163,7 @@ updates:
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.cloud.functions.invoker:*
       - dependency-name: com.google.code.gson:gson
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*

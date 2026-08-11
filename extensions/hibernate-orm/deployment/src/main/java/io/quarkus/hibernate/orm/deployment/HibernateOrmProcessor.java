@@ -1313,7 +1313,9 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, JpaModelBuildItem jpaModel,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<QuarkusDataModelBuildItem> quarkusDataModelBuildItems,
+            JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
         Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit = new HashMap<>();
@@ -1430,6 +1432,21 @@ public final class HibernateOrmProcessor {
             }
         }
 
+        for (QuarkusDataModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
+            var className = quarkusDataModel.getClassName();
+            Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
+                    quarkusDataModel.getEnclosingEntityClassName(), modelPerPersistenceUnit);
+            if (persistenceUnits.isEmpty()) {
+                persistenceUnits = Set.of(DEFAULT_PERSISTENCE_UNIT_NAME);
+            }
+            assignedModelClassAndPackageNames.add(className);
+            for (String persistenceUnitName : persistenceUnits) {
+                modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                        ignored -> new JpaPersistenceUnitModel())
+                        .allModelClassNames().add(className);
+            }
+        }
+
         if (!modelClassesWithPersistenceUnitAnnotations.isEmpty()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "@PersistenceUnit annotations are not supported at the class level on model classes:\n\t- %s\nUse the `.packages` configuration property or package-level annotations instead.",
@@ -1538,6 +1555,17 @@ public final class HibernateOrmProcessor {
                             """,
                     missingPackagePropertyKeys)));
         }
+    }
+
+    private static Set<String> findEnclosingEntityPersistenceUnits(String enclosingClassName,
+            Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit) {
+        Set<String> result = new HashSet<>();
+        for (var entry : modelPerPersistenceUnit.entrySet()) {
+            if (entry.getValue().entityClassNames().contains(enclosingClassName)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,

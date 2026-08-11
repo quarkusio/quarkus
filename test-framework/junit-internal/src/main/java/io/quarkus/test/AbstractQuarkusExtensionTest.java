@@ -103,6 +103,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     private static final String REPRODUCIBILITY_CHECK_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check";
     private static final String REPRODUCIBILITY_CROSS_JVM_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.cross-jvm";
     private static final String REPRODUCIBILITY_DUMP_DIR_PROPERTY_NAME = "quarkus-internal.test.reproducibility-check.dump-dir";
+    private static final String CACHED_APPLICATION_MODEL_KEY = "cachedApplicationModel";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -722,7 +723,15 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
                 }
 
                 // Normal path: single augmentation, start app, run tests
-                curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, null);
+                // Reuse the cached ApplicationModel to skip dependency resolution
+                ApplicationModel cachedModel = null;
+                if (isApplicationModelCacheable()) {
+                    cachedModel = (ApplicationModel) store.get(CACHED_APPLICATION_MODEL_KEY);
+                }
+                curatedApplication = createCuratedApplication(extensionContext, testLocation, projectDir, cachedModel);
+                if (cachedModel == null && isApplicationModelCacheable()) {
+                    store.put(CACHED_APPLICATION_MODEL_KEY, curatedApplication.getApplicationModel());
+                }
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication();
@@ -1076,7 +1085,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             builder.addAdditionalApplicationArchive(
                     new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
         }
-        if (!forcedDependencies.isEmpty() || !excludedDependencies.isEmpty()) {
+        if (hasDependencyCustomizations()) {
             //if we have forced/excluded dependencies we can't use the cache
             //as it can screw everything up
             builder.setDisableClasspathCache(true);
@@ -1092,6 +1101,20 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             builder.setExistingModel(existingModel);
         }
         return builder.build().bootstrap();
+    }
+
+    /**
+     * The resolved {@link ApplicationModel} can only be cached and reused if there are no forced or excluded dependencies.
+     */
+    protected boolean isApplicationModelCacheable() {
+        return !hasDependencyCustomizations();
+    }
+
+    /**
+     * @return {@code true} if there are forced or excluded dependencies, {@code false} otherwise
+     */
+    protected boolean hasDependencyCustomizations() {
+        return !forcedDependencies.isEmpty() || !excludedDependencies.isEmpty();
     }
 
     @Override

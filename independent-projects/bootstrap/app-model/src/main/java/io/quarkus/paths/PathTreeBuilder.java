@@ -56,7 +56,7 @@ public class PathTreeBuilder {
     }
 
     List<String> getExcludes() {
-        return includes;
+        return excludes;
     }
 
     PathFilter getPathFilter() {

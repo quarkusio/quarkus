@@ -78,6 +78,15 @@ public abstract class JacksonCodeGenerator {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
 
+    private static final Set<String> UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS = Set.of(
+            "jakarta.persistence.Transient",
+            "jakarta.persistence.Basic",
+            "jakarta.persistence.OneToMany",
+            "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne",
+            "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.ElementCollection");
+
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
             JacksonAnnotationsInside.class.getName(),
@@ -149,7 +158,7 @@ public abstract class JacksonCodeGenerator {
         }
         Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
         if (unknownAnnotation.isPresent()) {
-            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+            log.debugf("Skipping generation of reflection-free Jackson serializer for class %s" +
                     " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
             return Optional.empty();
         }
@@ -235,11 +244,16 @@ public abstract class JacksonCodeGenerator {
                 || className.startsWith("com.fasterxml.jackson.databind.");
     }
 
-    private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
-        return classInfo.annotations().stream()
+    private Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+        Optional<String> unknown = classInfo.annotations().stream()
                 .map(a -> a.name().toString())
                 .filter(FieldSpecs::isUnknownAnnotation)
                 .findFirst();
+        if (unknown.isPresent()) {
+            return unknown;
+        }
+        Optional<String> fromSuperClass = onSuperClass(classInfo, this::findUnknownAnnotation);
+        return fromSuperClass != null ? fromSuperClass : Optional.empty();
     }
 
     protected enum FieldKind {
@@ -389,7 +403,7 @@ public abstract class JacksonCodeGenerator {
         return methodName;
     }
 
-    private MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
+    protected MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
@@ -763,7 +777,8 @@ public abstract class JacksonCodeGenerator {
             if (ann.startsWith("com.fasterxml.jackson.")) {
                 return !SUPPORTED_JACKSON_ANNOTATIONS.contains(ann);
             }
-            return ann.startsWith("jakarta.persistence.");
+            return ann.startsWith("jakarta.persistence.") &&
+                    UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS.contains(ann);
         }
 
         String[] viewClasses() {

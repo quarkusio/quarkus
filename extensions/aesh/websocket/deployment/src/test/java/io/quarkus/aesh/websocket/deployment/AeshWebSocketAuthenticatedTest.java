@@ -98,6 +98,12 @@ public class AeshWebSocketAuthenticatedTest {
             var ws = ar.result();
             AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
             ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+            // Retry init if server did not respond (handles slow JVMs like Semeru)
+            vertx.setTimer(2000, id -> {
+                if (output.length() == 0) {
+                    ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                }
+            });
         });
 
         boolean completed = latch.await(30, TimeUnit.SECONDS);

@@ -13,6 +13,8 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -35,13 +37,23 @@ public class OpenTelemetryLogHandler extends ExtHandler {
     // See: https://github.com/open-telemetry/semantic-conventions/issues/1550
     public static final AttributeKey<String> BRIDGE_NAME = AttributeKey.stringKey("bridge.name");
 
-    private final OpenTelemetry openTelemetry;
+    // Keep in line with the queue limit of io.quarkus.bootstrap.logging.QuarkusDelayedHandler
+    private static final int PENDING_RECORDS_LIMIT = 4000;
+
+    private volatile OpenTelemetry openTelemetry;
     private final boolean logFileEnabled;
     private final String logFilePath;
 
-    public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {
-        this.openTelemetry = openTelemetry;
+    // Records published before the OpenTelemetry SDK is available; drained on activation.
+    private final Deque<ExtLogRecord> pendingRecords = new ArrayDeque<>();
 
+    /**
+     * Creates a handler that buffers records (up to a limit) until
+     * {@link #activate(OpenTelemetry)} provides the SDK instance. This allows the handler
+     * to be installed during early logging setup, before the OpenTelemetry SDK — which
+     * requires the CDI container — has been initialized.
+     */
+    public OpenTelemetryLogHandler() {
         final Config config = ConfigProvider.getConfig();
         this.logFileEnabled = config.getOptionalValue("quarkus.log.file.enable", Boolean.class)
                 .orElse(config.getOptionalValue("quarkus.log.file.enabled", Boolean.class)
@@ -50,11 +62,46 @@ public class OpenTelemetryLogHandler extends ExtHandler {
                 : null;
     }
 
+    public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {
+        this();
+        this.openTelemetry = openTelemetry;
+    }
+
+    /**
+     * Provides the SDK instance and emits any records that were published before it was available.
+     */
+    public void activate(OpenTelemetry openTelemetry) {
+        synchronized (pendingRecords) {
+            this.openTelemetry = openTelemetry;
+            ExtLogRecord pending;
+            while ((pending = pendingRecords.pollFirst()) != null) {
+                emit(openTelemetry, pending);
+            }
+        }
+    }
+
     @Override
     protected void doPublish(ExtLogRecord record) {
+        OpenTelemetry openTelemetry = this.openTelemetry;
         if (openTelemetry == null) {
-            return; // might happen at shutdown
+            synchronized (pendingRecords) {
+                openTelemetry = this.openTelemetry;
+                if (openTelemetry == null) {
+                    // The SDK is not available yet: hold on to the record until it is.
+                    // Drop new records when full: the window only lasts until runtime init completes.
+                    if (pendingRecords.size() < PENDING_RECORDS_LIMIT) {
+                        // prepare the record to be formatted on another thread, later
+                        record.copyAll();
+                        pendingRecords.addLast(record);
+                    }
+                    return;
+                }
+            }
         }
+        emit(openTelemetry, record);
+    }
+
+    private void emit(OpenTelemetry openTelemetry, ExtLogRecord record) {
         final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge()
                 .loggerBuilder(INSTRUMENTATION_NAME)
                 .build().logRecordBuilder()

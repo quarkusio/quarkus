@@ -3,6 +3,7 @@ package io.quarkus.spring.web.resteasy.reactive.deployment;
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
@@ -282,7 +283,7 @@ public class SpringWebResteasyReactiveProcessor {
                             if (annotationName.equals(REQUEST_PARAM)) {
                                 jaxRsAnnotation = REST_QUERY_PARAM;
                             } else if (annotationName.equals(REQUEST_HEADER)) {
-                                jaxRsAnnotation = REST_QUERY_PARAM;
+                                jaxRsAnnotation = REST_HEADER_PARAM;
                             } else if (annotationName.equals(COOKIE_VALUE)) {
                                 jaxRsAnnotation = REST_COOKIE_PARAM;
                             } else {

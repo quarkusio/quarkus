@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 
@@ -93,15 +94,35 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
         // Destroy the producers first
         for (Iterator<ContextInstanceHandle<?>> it = values.iterator(); it.hasNext();) {
             ContextInstanceHandle<?> instanceHandle = it.next();
+            InjectableBean<?> bean = instanceHandle.getBean();
             if (instanceHandle.getBean().getDeclaringBean() != null) {
-                instanceHandle.destroy();
+                String beanInfo = bean.getDeclaringBean().getBeanClass().getName();
+                actionType(bean).run(beanInfo, new Runnable() {
+                    @Override
+                    public void run() {
+                        instanceHandle.destroy();
+                    }
+                });
                 it.remove();
             }
         }
         for (ContextInstanceHandle<?> instanceHandle : values) {
-            instanceHandle.destroy();
+            InjectableBean<?> bean = instanceHandle.getBean();
+            String beanInfo = bean.getBeanClass().getName();
+            actionType(bean).run(beanInfo, new Runnable() {
+                @Override
+                public void run() {
+                    instanceHandle.destroy();
+                }
+            });
         }
         instances.removeEach(null);
+    }
+
+    private ArcShutdownAction actionType(InjectableBean<?> bean) {
+        return bean.getScope().equals(ApplicationScoped.class)
+                ? ArcShutdownAction.CDI_DESTROY_APPLICATION_BEAN
+                : ArcShutdownAction.CDI_DESTROY_SINGLETON_BEAN;
     }
 
     @Override

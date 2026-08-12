@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.shutdown.ShutdownAction;
+
 public class StartupContext implements Closeable {
 
     public static final String RAW_COMMAND_LINE_ARGS = StartupContext.class.getName() + ".raw-command-line-args";
@@ -67,16 +69,22 @@ public class StartupContext implements Closeable {
 
     @Override
     public void close() {
-        runAllAndClear(shutdownTasks);
-        runAllAndClear(lastShutdownTasks);
+        runAllAndClear(shutdownTasks, ShutdownAction.SHUTDOWN_TASK);
+        runAllAndClear(lastShutdownTasks, ShutdownAction.LAST_SHUTDOWN_TASK);
         values.clear();
     }
 
-    private void runAllAndClear(Deque<Runnable> tasks) {
+    private void runAllAndClear(Deque<Runnable> tasks, ShutdownAction action) {
         while (!tasks.isEmpty()) {
             try {
                 var runnable = tasks.remove();
-                runnable.run();
+                Object info;
+                if (runnable instanceof ShutdownContext.CloseRunnable cr) {
+                    info = cr.getShutdownInfo();
+                } else {
+                    info = runnable.getClass().getName();
+                }
+                action.run(info, runnable);
             } catch (Throwable ex) {
                 LOG.error("Running a shutdown task failed", ex);
             }

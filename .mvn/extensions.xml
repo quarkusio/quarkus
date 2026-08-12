@@ -32,6 +32,6 @@
     <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.9</version>
+        <version>0.9.10</version>
     </extension>
 </extensions>

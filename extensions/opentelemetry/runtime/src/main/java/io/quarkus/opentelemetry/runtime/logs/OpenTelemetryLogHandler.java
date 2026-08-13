@@ -44,8 +44,11 @@ public class OpenTelemetryLogHandler extends ExtHandler {
     private final boolean logFileEnabled;
     private final String logFilePath;
 
+    private final Object lock = new Object();
+
     // Records published before the OpenTelemetry SDK is available; drained on activation.
-    private final Deque<ExtLogRecord> pendingRecords = new ArrayDeque<>();
+    // Set to null after activation or close to release the backing array.
+    private Deque<ExtLogRecord> pendingRecords = new ArrayDeque<>();
 
     /**
      * Creates a handler that buffers records (up to a limit) until
@@ -66,11 +69,16 @@ public class OpenTelemetryLogHandler extends ExtHandler {
      * Provides the SDK instance and emits any records that were published before it was available.
      */
     public void activate(OpenTelemetry openTelemetry) {
-        synchronized (pendingRecords) {
+        Deque<ExtLogRecord> pendingRecords;
+        synchronized (lock) {
             this.openTelemetry = openTelemetry;
-            ExtLogRecord pending;
-            while ((pending = pendingRecords.pollFirst()) != null) {
-                emit(openTelemetry, pending);
+            pendingRecords = this.pendingRecords;
+            this.pendingRecords = null;
+        }
+        if (pendingRecords != null) {
+            ExtLogRecord record;
+            while ((record = pendingRecords.pollFirst()) != null) {
+                emit(openTelemetry, record);
             }
         }
     }
@@ -79,9 +87,14 @@ public class OpenTelemetryLogHandler extends ExtHandler {
     protected void doPublish(ExtLogRecord record) {
         OpenTelemetry openTelemetry = this.openTelemetry;
         if (openTelemetry == null) {
-            synchronized (pendingRecords) {
+            synchronized (lock) {
                 openTelemetry = this.openTelemetry;
                 if (openTelemetry == null) {
+                    Deque<ExtLogRecord> pendingRecords = this.pendingRecords;
+                    if (pendingRecords == null) {
+                        // closed before activation
+                        return;
+                    }
                     // The SDK is not available yet: hold on to the record until it is.
                     // Drop new records when full: the window only lasts until runtime init completes.
                     if (pendingRecords.size() < PENDING_RECORDS_LIMIT) {
@@ -190,8 +203,8 @@ public class OpenTelemetryLogHandler extends ExtHandler {
 
     @Override
     public void close() throws SecurityException {
-        synchronized (pendingRecords) {
-            pendingRecords.clear();
+        synchronized (lock) {
+            pendingRecords = null;
         }
     }
 }

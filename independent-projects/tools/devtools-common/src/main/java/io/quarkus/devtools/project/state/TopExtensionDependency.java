@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 
-import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.util.ExtensionMetadataUtil;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
@@ -47,11 +47,8 @@ public class TopExtensionDependency {
 
         public TopExtensionDependency build() {
             if (catalogMetadata == null) {
-                catalogMetadata = resolvedDep.getContentTree()
-                        .apply(BootstrapConstants.EXTENSION_METADATA_PATH, visit -> {
-                            if (visit == null) {
-                                return null;
-                            }
+                catalogMetadata = ExtensionMetadataUtil.applyExtensionMetadata(
+                        resolvedDep.getContentTree(), visit -> {
                             try {
                                 return Extension.fromFile(visit.getPath());
                             } catch (IOException e) {

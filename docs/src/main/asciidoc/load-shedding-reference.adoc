@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Load Shedding reference guide
+= Load shedding reference guide
 include::_attributes.adoc[]
 :numbered:
 :sectnums:

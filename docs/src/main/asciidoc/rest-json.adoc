@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Writing JSON REST Services
+= Writing JSON REST services
 include::_attributes.adoc[]
 :summary: JSON is now the lingua franca between microservices. In this guide, we see how you can get your REST services to consume and produce JSON payloads.
 :topics: rest,json,resteasy-reactive

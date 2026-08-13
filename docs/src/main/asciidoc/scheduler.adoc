@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Scheduling Periodic Tasks
+= Scheduling periodic tasks
 include::_attributes.adoc[]
 :summary: Modern applications often need to run specific tasks periodically. In this guide, you learn how to schedule periodic tasks.
 :topics: scheduling,cronjob

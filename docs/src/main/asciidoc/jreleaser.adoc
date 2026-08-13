@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Packaging And Releasing With JReleaser
+= Packaging and releasing with JReleaser
 include::_attributes.adoc[]
 :jreleaser-version: 1.6.0
 :numbered:

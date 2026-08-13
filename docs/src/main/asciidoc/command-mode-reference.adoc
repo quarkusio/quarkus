@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Command Mode Applications
+= Command mode applications
 include::_attributes.adoc[]
 :summary: This reference guide explains how to develop command line applications with Quarkus.
 :topics: command-line,cli

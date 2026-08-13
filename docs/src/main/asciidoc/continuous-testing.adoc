@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Continuous Testing
+= Continuous testing
 include::_attributes.adoc[]
 :summary: Get early test feedback with Continuous Testing.
 :numbered:

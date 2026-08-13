@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Ahead-of-Time (AOT) Caching
+= Ahead-of-time (AOT) caching
 include::_attributes.adoc[]
 :summary: This guide explains how to use Leyden AOT caching with Quarkus for dramatically faster startup times on JDK 24+.
 :topics: aot,leyden,startup,performance

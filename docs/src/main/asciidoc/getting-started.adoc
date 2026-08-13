@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Creating Your First Application
+= Creating your first application
 include::_attributes.adoc[]
 :summary: Build a REST API with live reload, dependency injection, and tests, in under 15 minutes.
 :numbered:

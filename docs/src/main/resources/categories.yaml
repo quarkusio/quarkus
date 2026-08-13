@@ -7,7 +7,7 @@
 
 categories:
   - id: getting-started
-    title: Getting Started
+    title: Getting started
     description: Introduction to Quarkus and your first applications
     guides:
       - getting-started.adoc
@@ -42,7 +42,7 @@ categories:
           - container-image.adoc
           - quarkus-runtime-base-image.adoc
       - id: packaging-release
-        title: Release and Distribution
+        title: Release and distribution
         guides:
           - cyclonedx.adoc
           - jreleaser.adoc
@@ -182,7 +182,7 @@ categories:
           - infinispan-client-reference.adoc
           - infinispan-dev-services.adoc
       - id: data-migration
-        title: Database Migration
+        title: Database migration
         guides:
           - flyway.adoc
           - liquibase.adoc
@@ -193,7 +193,7 @@ categories:
     description: Asynchronous messaging and event streaming
     subcategories:
       - id: messaging-core
-        title: Messaging Core
+        title: Messaging core
         guides:
           - messaging.adoc
           - messaging-virtual-threads.adoc
@@ -241,7 +241,7 @@ categories:
     description: Security, authentication, and authorization
     subcategories:
       - id: security-core
-        title: Security Core
+        title: Security core
         guides:
           - security-overview.adoc
           - security-architecture.adoc
@@ -286,7 +286,7 @@ categories:
           - security-openid-connect-dev-services.adoc
           - security-vertx-oidc-to-quarkus-oidc-migration.adoc
       - id: security-identity
-        title: Identity Providers
+        title: Identity providers
         guides:
           - security-identity-providers.adoc
           - security-jpa.adoc
@@ -296,11 +296,11 @@ categories:
           - security-keycloak-admin-client.adoc
 
   - id: execution-model
-    title: Execution Model
+    title: Execution model
     description: Virtual threads, reactive programming, and context propagation
     subcategories:
       - id: execution-model-virtual-threads
-        title: Virtual Threads
+        title: Virtual threads
         guides:
           - virtual-threads.adoc
           - rest-virtual-threads.adoc
@@ -318,7 +318,7 @@ categories:
           - hibernate-reactive-panache.adoc
           - reactive-event-bus.adoc
       - id: execution-model-context
-        title: Context Propagation
+        title: Context propagation
         guides:
           - context-propagation.adoc
           - duplicated-context.adoc
@@ -341,7 +341,7 @@ categories:
           - deploying-to-heroku.adoc
           - ansible.adoc
       - id: cloud-functions
-        title: Serverless Functions
+        title: Serverless functions
         guides:
           - aws-lambda.adoc
           - aws-lambda-http.adoc
@@ -366,7 +366,7 @@ categories:
           - kubernetes-dev-services.adoc
           - init-tasks.adoc
       - id: cloud-service-discovery
-        title: Service Discovery
+        title: Service discovery
         guides:
           - stork.adoc
           - stork-kubernetes.adoc
@@ -396,7 +396,7 @@ categories:
           - centralized-log-management.adoc
           - opentelemetry-logging.adoc
       - id: operations-metrics
-        title: Metrics and Telemetry
+        title: Metrics and telemetry
         guides:
           - telemetry-micrometer.adoc
           - telemetry-micrometer-tutorial.adoc
@@ -437,7 +437,7 @@ categories:
           - grpc-virtual-threads.adoc
 
   - id: command-line
-    title: Command Line
+    title: Command line
     description: Command-line applications and tools
     guides:
       - command-mode-reference.adoc
@@ -449,22 +449,22 @@ categories:
     title: Miscellaneous
     description: Other topics, such as mail, scheduling, and templating
     subcategories:
-      - id: miscellaneous-templating
-        title: Templating
+      - id: miscellaneous-mail
+        title: Mail
         guides:
-          - qute.adoc
-          - qute-reference.adoc
+          - mailer.adoc
+          - mailer-reference.adoc
       - id: miscellaneous-scheduling
         title: Scheduling
         guides:
           - scheduler.adoc
           - scheduler-reference.adoc
           - quartz.adoc
-      - id: miscellaneous-mail
-        title: Mail
+      - id: miscellaneous-templating
+        title: Templating
         guides:
-          - mailer.adoc
-          - mailer-reference.adoc
+          - qute.adoc
+          - qute-reference.adoc
 
   - id: tooling
     title: Tooling
@@ -478,8 +478,8 @@ categories:
       - update-quarkus.adoc
 
   - id: compatibility
-    title: Spring Compatibility
-    description: Spring framework compatibility layer
+    title: Spring compatibility
+    description: Spring Framework compatibility layer
     guides:
       - spring-di.adoc
       - spring-web.adoc
@@ -500,7 +500,7 @@ categories:
       - camel.adoc
 
   - id: alt-languages
-    title: Alternative Languages
+    title: Alternative languages
     description: Support for alternative JVM languages such as Kotlin
     guides:
       - kotlin.adoc
@@ -519,7 +519,7 @@ categories:
       - performance-measure.adoc
 
   - id: writing-extensions
-    title: Writing Extensions
+    title: Writing extensions
     description: Extension development for Quarkus
     guides:
       - writing-extensions.adoc
@@ -548,7 +548,7 @@ categories:
       - doc-create-tutorial.adoc
 
   - id: rule-engine
-    title: Rule Engine
+    title: Rule engine
     description: Business rules with Drools
     guides:
       - drools.adoc

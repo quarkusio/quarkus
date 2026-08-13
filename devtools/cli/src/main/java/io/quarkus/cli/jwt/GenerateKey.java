@@ -24,7 +24,7 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
     boolean force;
 
     @Option(names = { "-s",
-            "--size" }, description = "Key size (Defaults to 2048 for RSA, 256 for EC. EC supports 256, 384, or 521)")
+            "--size" }, description = "Key size (Defaults to 2048 for RSA, 256 for Elliptic Curve (EC). EC supports 256, 384, or 512)")
     int size;
 
     @Option(names = { "-a", "--algo" }, description = "Key algorithm: RSA or EC (Defaults to RSA)")

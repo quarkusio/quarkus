@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Conditional Extension Dependencies
+= Conditional extension dependencies
 include::_attributes.adoc[]
 :summary: Trigger the inclusion of additional extensions based on certain conditions.
 :topics: extensions

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Measuring Performance
+= Measuring performance
 include::_attributes.adoc[]
 :summary: This guide explains how to best measure the footprint of a Quarkus application.
 :topics: internals,performance

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Messaging Extensions
+= Quarkus Messaging extensions
 include::_attributes.adoc[]
 :topics: messaging,reactive-messaging
 :extensions: io.quarkus:quarkus-messaging

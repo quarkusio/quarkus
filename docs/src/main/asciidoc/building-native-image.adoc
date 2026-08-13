@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Building a Native Executable
+= Building a native executable
 include::_attributes.adoc[]
 :summary: Build native executables with GraalVM or Mandrel.
 :topics: native,graalvm,mandrel

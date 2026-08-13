@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.zip.Checksum;
@@ -25,6 +26,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -138,13 +140,20 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             }
 
             if (dumpDependencies) {
-                final List<Path> deps = new ArrayList<>();
+                // Sort by artifact coordinates rather than by resolved path: the same dependency may resolve
+                // to a workspace module output in one build and to the local Maven repository in another,
+                // and sorting by path would then reorder the file without its content having changed.
+                final List<ResolvedDependency> sortedDeps = new ArrayList<>();
                 for (var d : curatedApplication.getApplicationModel().getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
+                    sortedDeps.add(d);
+                }
+                sortedDeps.sort(Comparator.comparing(ResolvedDependency::toGACTVString));
+                final List<Path> deps = new ArrayList<>();
+                for (var d : sortedDeps) {
                     for (Path resolvedPath : d.getResolvedPaths()) {
                         deps.add(resolvedPath.toAbsolutePath());
                     }
                 }
-                Collections.sort(deps);
                 final Path targetFile = getOutputFile(dependenciesFile, launchMode.getDefaultProfile(),
                         "-dependencies.txt");
                 Files.createDirectories(targetFile.getParent());

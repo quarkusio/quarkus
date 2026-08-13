@@ -62,11 +62,6 @@ public class OpenTelemetryLogHandler extends ExtHandler {
                 : null;
     }
 
-    public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {
-        this();
-        this.openTelemetry = openTelemetry;
-    }
-
     /**
      * Provides the SDK instance and emits any records that were published before it was available.
      */
@@ -195,5 +190,8 @@ public class OpenTelemetryLogHandler extends ExtHandler {
 
     @Override
     public void close() throws SecurityException {
+        synchronized (pendingRecords) {
+            pendingRecords.clear();
+        }
     }
 }

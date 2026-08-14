@@ -83,13 +83,11 @@ public class ConsoleJsonFormatterECSConfigTest {
         Assertions.assertThat(node.has("log.logger")).isTrue();
         Assertions.assertThat(node.has("ecs.version")).isTrue();
 
-        // mdc and ndc are not ECS fields and must be absent
+        // mdc and ndc are not part of the ECS schema, but the data is application-provided and must
+        // not be dropped. See https://github.com/quarkusio/quarkus/issues/56021
         Assertions.assertThat(node.has("mdc"))
-                .as("mdc is not an ECS field and must be excluded")
-                .isFalse();
-        Assertions.assertThat(node.has("ndc"))
-                .as("ndc is not an ECS field and must be excluded")
-                .isFalse();
+                .as("mdc must be retained in ECS output")
+                .isTrue();
 
         // process.name must be the short executable name, not the full JVM path
         if (node.has("process.name")) {
@@ -111,8 +109,5 @@ public class ConsoleJsonFormatterECSConfigTest {
         Assertions.assertThat(node.has("error.stack_trace")).isFalse();
         Assertions.assertThat(node.has("exception")).isFalse();
         Assertions.assertThat(node.get("message").asText()).isEqualTo("Hello ECS");
-        // mdc and ndc must also be absent for non-exception records
-        Assertions.assertThat(node.has("mdc")).isFalse();
-        Assertions.assertThat(node.has("ndc")).isFalse();
     }
 }

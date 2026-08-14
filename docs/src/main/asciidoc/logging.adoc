@@ -503,6 +503,8 @@ The option is available for all handler types: `quarkus.log.console.json.mdc.fla
 This format modifies some default field names and adds other fields to align with ECS.
 +
 Fields include `@timestamp`, `log.logger`, `log.level`, `process.pid`, `process.name`, `process.thread.name`, `process.thread.id`, `host.hostname`, `event.sequence`, `error.message`, `error.stack_trace`, `ecs.version`, `data_stream.type`, `service.name`, `service.version`, and `service.environment`.
++
+MDC data is kept in the `mdc` field, which is not part of the ECS schema. Set `mdc.flat-fields` to write those entries as root-level fields instead, or add `mdc` to `excluded-keys` to leave them out entirely.
 * *gcp*: Uses the link:https://cloud.google.com/logging/docs/structured-logging#structured_logging_special_fields[Google Cloud] format.
 This format follows the *default* format.
 +

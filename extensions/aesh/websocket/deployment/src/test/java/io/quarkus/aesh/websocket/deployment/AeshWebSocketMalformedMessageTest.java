@@ -45,44 +45,48 @@ public class AeshWebSocketMalformedMessageTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
-        WebSocketConnectOptions options = new WebSocketConnectOptions()
-                .setHost(wsUri.getHost())
-                .setPort(wsUri.getPort())
-                .setURI(wsUri.getPath());
+        try {
+            WebSocketConnectOptions options = new WebSocketConnectOptions()
+                    .setHost(wsUri.getHost())
+                    .setPort(wsUri.getPort())
+                    .setURI(wsUri.getPath());
 
-        client.connect(options).onComplete(ar -> {
-            if (ar.failed()) {
-                latch.countDown();
-                return;
-            }
-            var ws = ar.result();
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello!")) {
+            client.connect(options).onComplete(ar -> {
+                if (ar.failed()) {
                     latch.countDown();
+                    return;
                 }
-            });
+                var ws = ar.result();
+                ws.textMessageHandler(msg -> {
+                    messages.add(msg);
+                    if (msg.contains("Hello!")) {
+                        latch.countDown();
+                    }
+                });
 
-            // Send invalid JSON -- should be handled gracefully
-            ws.writeTextMessage("this is not json at all");
+                // Send invalid JSON -- should be handled gracefully
+                ws.writeTextMessage("this is not json at all");
 
-            // After a short delay, send valid init + command
-            vertx.setTimer(500, id -> {
-                ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-                vertx.setTimer(500, id2 -> {
-                    ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                // After a short delay, send valid init + command
+                vertx.setTimer(500, id -> {
+                    ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    vertx.setTimer(500, id2 -> {
+                        ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                    });
                 });
             });
-        });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+            boolean completed = latch.await(10, TimeUnit.SECONDS);
+            String allOutput = String.join("", messages);
 
-        Assertions.assertThat(completed)
-                .as("Connection should survive invalid JSON and process subsequent valid messages. Output: %s",
-                        allOutput)
-                .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello!");
+            Assertions.assertThat(completed)
+                    .as("Connection should survive invalid JSON and process subsequent valid messages. Output: %s",
+                            allOutput)
+                    .isTrue();
+            Assertions.assertThat(allOutput).contains("Hello!");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -92,46 +96,50 @@ public class AeshWebSocketMalformedMessageTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
-        WebSocketConnectOptions options = new WebSocketConnectOptions()
-                .setHost(wsUri.getHost())
-                .setPort(wsUri.getPort())
-                .setURI(wsUri.getPath());
+        try {
+            WebSocketConnectOptions options = new WebSocketConnectOptions()
+                    .setHost(wsUri.getHost())
+                    .setPort(wsUri.getPort())
+                    .setURI(wsUri.getPath());
 
-        client.connect(options).onComplete(ar -> {
-            if (ar.failed()) {
-                latch.countDown();
-                return;
-            }
-            var ws = ar.result();
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello!")) {
+            client.connect(options).onComplete(ar -> {
+                if (ar.failed()) {
                     latch.countDown();
+                    return;
                 }
-            });
+                var ws = ar.result();
+                ws.textMessageHandler(msg -> {
+                    messages.add(msg);
+                    if (msg.contains("Hello!")) {
+                        latch.countDown();
+                    }
+                });
 
-            // Valid JSON init first (so connection is established)
-            ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                // Valid JSON init first (so connection is established)
+                ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
 
-            vertx.setTimer(500, id -> {
-                // Unknown action -- should be silently ignored
-                ws.writeTextMessage("{\"action\":\"unknown_action\",\"data\":\"something\"}");
+                vertx.setTimer(500, id -> {
+                    // Unknown action -- should be silently ignored
+                    ws.writeTextMessage("{\"action\":\"unknown_action\",\"data\":\"something\"}");
 
-                vertx.setTimer(300, id2 -> {
-                    // Valid command should still work
-                    ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                    vertx.setTimer(300, id2 -> {
+                        // Valid command should still work
+                        ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                    });
                 });
             });
-        });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+            boolean completed = latch.await(10, TimeUnit.SECONDS);
+            String allOutput = String.join("", messages);
 
-        Assertions.assertThat(completed)
-                .as("Connection should survive unknown actions and process subsequent valid messages. Output: %s",
-                        allOutput)
-                .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello!");
+            Assertions.assertThat(completed)
+                    .as("Connection should survive unknown actions and process subsequent valid messages. Output: %s",
+                            allOutput)
+                    .isTrue();
+            Assertions.assertThat(allOutput).contains("Hello!");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -140,42 +148,46 @@ public class AeshWebSocketMalformedMessageTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
-        WebSocketConnectOptions options = new WebSocketConnectOptions()
-                .setHost(wsUri.getHost())
-                .setPort(wsUri.getPort())
-                .setURI(wsUri.getPath());
+        try {
+            WebSocketConnectOptions options = new WebSocketConnectOptions()
+                    .setHost(wsUri.getHost())
+                    .setPort(wsUri.getPort())
+                    .setURI(wsUri.getPath());
 
-        client.connect(options).onComplete(ar -> {
-            if (ar.failed()) {
-                latch.countDown();
-                return;
-            }
-            var ws = ar.result();
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello!")) {
+            client.connect(options).onComplete(ar -> {
+                if (ar.failed()) {
                     latch.countDown();
+                    return;
                 }
-            });
+                var ws = ar.result();
+                ws.textMessageHandler(msg -> {
+                    messages.add(msg);
+                    if (msg.contains("Hello!")) {
+                        latch.countDown();
+                    }
+                });
 
-            // Empty string -- should be handled gracefully
-            ws.writeTextMessage("");
+                // Empty string -- should be handled gracefully
+                ws.writeTextMessage("");
 
-            vertx.setTimer(500, id -> {
-                ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-                vertx.setTimer(500, id2 -> {
-                    ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                vertx.setTimer(500, id -> {
+                    ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    vertx.setTimer(500, id2 -> {
+                        ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                    });
                 });
             });
-        });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+            boolean completed = latch.await(10, TimeUnit.SECONDS);
+            String allOutput = String.join("", messages);
 
-        Assertions.assertThat(completed)
-                .as("Connection should survive empty messages. Output: %s", allOutput)
-                .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello!");
+            Assertions.assertThat(completed)
+                    .as("Connection should survive empty messages. Output: %s", allOutput)
+                    .isTrue();
+            Assertions.assertThat(allOutput).contains("Hello!");
+        } finally {
+            client.close();
+        }
     }
 
     @CommandDefinition(name = "hello", description = "Say hello")

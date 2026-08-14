@@ -64,23 +64,27 @@ public class AeshWebSocketRolesAllowedTest {
         CopyOnWriteArrayList<Throwable> errors = new CopyOnWriteArrayList<>();
 
         WebSocketClient client = vertx.createWebSocketClient();
-        WebSocketConnectOptions options = new WebSocketConnectOptions()
-                .setHost(wsUri.getHost())
-                .setPort(wsUri.getPort())
-                .setURI(wsUri.getPath())
-                .addHeader("Authorization", basicAuth("user", "user"));
+        try {
+            WebSocketConnectOptions options = new WebSocketConnectOptions()
+                    .setHost(wsUri.getHost())
+                    .setPort(wsUri.getPort())
+                    .setURI(wsUri.getPath())
+                    .addHeader("Authorization", basicAuth("user", "user"));
 
-        client.connect(options).onComplete(ar -> {
-            if (ar.failed()) {
-                errors.add(ar.cause());
-            }
-            latch.countDown();
-        });
+            client.connect(options).onComplete(ar -> {
+                if (ar.failed()) {
+                    errors.add(ar.cause());
+                }
+                latch.countDown();
+            });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        Assertions.assertThat(completed).isTrue();
-        Assertions.assertThat(errors).hasSize(1);
-        Assertions.assertThat(errors.get(0).getMessage()).contains("403");
+            boolean completed = latch.await(10, TimeUnit.SECONDS);
+            Assertions.assertThat(completed).isTrue();
+            Assertions.assertThat(errors).hasSize(1);
+            Assertions.assertThat(errors.get(0).getMessage()).contains("403");
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -89,34 +93,38 @@ public class AeshWebSocketRolesAllowedTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
-        WebSocketConnectOptions options = new WebSocketConnectOptions()
-                .setHost(wsUri.getHost())
-                .setPort(wsUri.getPort())
-                .setURI(wsUri.getPath())
-                .addHeader("Authorization", basicAuth("admin", "admin"));
+        try {
+            WebSocketConnectOptions options = new WebSocketConnectOptions()
+                    .setHost(wsUri.getHost())
+                    .setPort(wsUri.getPort())
+                    .setURI(wsUri.getPath())
+                    .addHeader("Authorization", basicAuth("admin", "admin"));
 
-        client.connect(options).onComplete(ar -> {
-            if (ar.failed()) {
-                latch.countDown();
-                return;
-            }
-            var ws = ar.result();
-            AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
-            ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-            // Retry init if server did not respond (handles slow JVMs like Semeru)
-            vertx.setTimer(2000, id -> {
-                if (output.length() == 0) {
-                    ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+            client.connect(options).onComplete(ar -> {
+                if (ar.failed()) {
+                    latch.countDown();
+                    return;
                 }
+                var ws = ar.result();
+                AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
+                ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                // Retry init if server did not respond (handles slow JVMs like Semeru)
+                vertx.setTimer(2000, id -> {
+                    if (output.length() == 0) {
+                        ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    }
+                });
             });
-        });
 
-        boolean completed = latch.await(30, TimeUnit.SECONDS);
+            boolean completed = latch.await(30, TimeUnit.SECONDS);
 
-        Assertions.assertThat(completed)
-                .as("Expected to receive 'Hello World!' in WebSocket output within 30s. Received: %s", output)
-                .isTrue();
-        Assertions.assertThat(output.toString()).contains("Hello World!");
+            Assertions.assertThat(completed)
+                    .as("Expected to receive 'Hello World!' in WebSocket output within 30s. Received: %s", output)
+                    .isTrue();
+            Assertions.assertThat(output.toString()).contains("Hello World!");
+        } finally {
+            client.close();
+        }
     }
 
     private static String basicAuth(String username, String password) {

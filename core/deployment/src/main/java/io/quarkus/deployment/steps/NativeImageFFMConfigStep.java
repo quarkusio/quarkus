@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -58,20 +56,15 @@ public class NativeImageFFMConfigStep {
         }
         final JsonObjectBuilder root = Json.object();
         root.put("foreign", foreignJson);
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            // The nested location seems important to the native-image metadata lookup.
-            reachabilityMetadata.produce(new GeneratedResourceBuildItem(
-                    /*
-                     * Despite the doc [1] stating:
-                     * "located in any of the classpath entries at META-INF/native-image/<group.Id>\/<artifactId>\/."
-                     * it is fine both leaving it in `META-INF/native-image` and nesting it in an arbitrary dir.
-                     * [1] https://www.graalvm.org/latest/reference-manual/native-image/metadata/#specifying-metadata-with-json
-                     */
-                    "META-INF/native-image/foreign/reachability-metadata.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // The nested location seems important to the native-image metadata lookup.
+        reachabilityMetadata.produce(new GeneratedResourceBuildItem(
+                /*
+                 * Despite the doc [1] stating:
+                 * "located in any of the classpath entries at META-INF/native-image/<group.Id>\/<artifactId>\/."
+                 * it is fine both leaving it in `META-INF/native-image` and nesting it in an arbitrary dir.
+                 * [1] https://www.graalvm.org/latest/reference-manual/native-image/metadata/#specifying-metadata-with-json
+                 */
+                "META-INF/native-image/foreign/reachability-metadata.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 }

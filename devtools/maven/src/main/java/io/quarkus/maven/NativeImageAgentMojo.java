@@ -131,7 +131,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
     private boolean discardResource(String attribute, JsonValue value) {
         if (value instanceof JsonMember) {
             final JsonMember member = (JsonMember) value;
-            if (attribute.equals(member.attribute().value())) {
+            if (attribute.equals(member.attributeName())) {
                 final JsonString memberValue = (JsonString) member.value();
                 final boolean discarded = resourceSkipPattern.matcher(memberValue.value()).find();
                 if (discarded) {

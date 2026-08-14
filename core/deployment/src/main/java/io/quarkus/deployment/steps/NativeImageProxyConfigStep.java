@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -31,12 +29,7 @@ public class NativeImageProxyConfigStep {
             root.add(proxyJson);
         }
 
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            proxyConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/proxy-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        proxyConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/proxy-config.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 }

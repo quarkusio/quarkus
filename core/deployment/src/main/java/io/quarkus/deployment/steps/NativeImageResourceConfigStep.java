@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -66,13 +64,8 @@ public class NativeImageResourceConfigStep {
         }
         root.put("bundles", bundles);
 
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            resourceConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/resource-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        resourceConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/resource-config.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 
     private void addListToJsonArray(JsonArrayBuilder array, List<String> patterns) {

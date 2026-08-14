@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
@@ -48,13 +46,8 @@ public class NativeImageSerializationConfigStep {
         }
         root.put("lambdaCapturingTypes", lambdaCapturingTypes);
 
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            serializationConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/serialization-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        serializationConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/serialization-config.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 
 }

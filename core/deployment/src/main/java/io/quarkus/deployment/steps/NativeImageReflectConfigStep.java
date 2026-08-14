@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
@@ -149,13 +147,8 @@ public class NativeImageReflectConfigStep {
             root.add(json);
         }
 
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            reflectConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/reflect-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        reflectConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/reflect-config.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 
     private static void extractToJsonArray(Set<ReflectiveMethodBuildItem> methodSet, JsonArrayBuilder methodsArray) {

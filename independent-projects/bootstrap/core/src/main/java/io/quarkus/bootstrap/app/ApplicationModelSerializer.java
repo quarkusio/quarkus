@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public class ApplicationModelSerializer {
         if (JOS) {
             serializeWithJos(model, serializedModel);
         } else {
-            writeJson(toJsonObjectBuilder(model.asMap()), serializedModel);
+            ((Json.JsonObjectBuilder) model.asMap(JSON_CONTAINER_FACTORY)).writeTo(serializedModel);
         }
         return serializedModel;
     }
@@ -174,20 +173,7 @@ public class ApplicationModelSerializer {
      * @throws IOException in case of a failure
      */
     private static void toJson(ApplicationModel appModel, Path file) throws IOException {
-        writeJson((Json.JsonObjectBuilder) appModel.asMap(JSON_CONTAINER_FACTORY), file);
-    }
-
-    /**
-     * Serializes a {@link io.quarkus.bootstrap.json.Json.JsonObjectBuilder} to a JSON file.
-     *
-     * @param jsonObject JSON object builder
-     * @param file target file
-     * @throws IOException in case of a failure
-     */
-    private static void writeJson(Json.JsonObjectBuilder jsonObject, Path file) throws IOException {
-        try (Writer writer = Files.newBufferedWriter(file)) {
-            jsonObject.appendTo(writer);
-        }
+        ((Json.JsonObjectBuilder) appModel.asMap(JSON_CONTAINER_FACTORY)).writeTo(file);
     }
 
     /**
@@ -198,7 +184,7 @@ public class ApplicationModelSerializer {
      * @throws IOException in case of a failure
      */
     private static ApplicationModel fromJson(Path file) throws IOException {
-        final Map<String, Object> modelMap = asMap(JsonReader.of(Files.readString(file)).read());
+        final Map<String, Object> modelMap = asMap(JsonReader.read(file));
         return ApplicationModelBuilder.fromMap(modelMap);
     }
 
@@ -212,7 +198,7 @@ public class ApplicationModelSerializer {
         var members = jsonObject.members();
         final Map<String, Object> map = new HashMap<>(members.size());
         for (var member : members) {
-            map.put(member.attribute().value(), asObject(member.value()));
+            map.put(member.attributeName(), asObject(member.value()));
         }
         return map;
     }
@@ -244,50 +230,6 @@ public class ApplicationModelSerializer {
             return asCollection(jsonArray);
         }
         return jsonValue.toString();
-    }
-
-    /**
-     * Converts a {@link Map} instance to a {@link io.quarkus.bootstrap.json.Json.JsonObjectBuilder}.
-     *
-     * @param map map to convert
-     * @return JSON object builder
-     */
-    private static Json.JsonObjectBuilder toJsonObjectBuilder(Map<String, Object> map) {
-        final Json.JsonObjectBuilder result = Json.object(map.size());
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            result.put(entry.getKey(), toJsonTypeBuilder(entry.getValue()));
-        }
-        return result;
-    }
-
-    /**
-     * Converts a {@link Collection} instance to a {@link io.quarkus.bootstrap.json.Json.JsonArrayBuilder}.
-     *
-     * @param col collection to convert
-     * @return JSON array builder
-     */
-    private static Json.JsonArrayBuilder toJsonArrayBuilder(Collection<Object> col) {
-        final Json.JsonArrayBuilder result = Json.array(col.size());
-        for (Object o : col) {
-            result.add(toJsonTypeBuilder(o));
-        }
-        return result;
-    }
-
-    /**
-     * Converts an {@link Object} to a JSON type builder.
-     *
-     * @param o object to convert
-     * @return JSON type builder
-     */
-    private static Object toJsonTypeBuilder(Object o) {
-        if (o instanceof Map map) {
-            return toJsonObjectBuilder(map);
-        }
-        if (o instanceof Collection col) {
-            return toJsonArrayBuilder(col);
-        }
-        return o;
     }
 
     private static void logMap(Map<String, Object> map, int offset) {

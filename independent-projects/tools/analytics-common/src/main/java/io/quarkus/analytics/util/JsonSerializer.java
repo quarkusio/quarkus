@@ -1,10 +1,8 @@
 package io.quarkus.analytics.util;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,12 +53,12 @@ public final class JsonSerializer {
 
         JsonArray denyAnonymousIds = obj.get("deny_anonymous_ids");
         if (denyAnonymousIds != null) {
-            config.setDenyAnonymousIds(toStringList(denyAnonymousIds));
+            config.setDenyAnonymousIds(denyAnonymousIds.toStringList());
         }
 
         JsonArray denyQuarkusVersions = obj.get("deny_quarkus_versions");
         if (denyQuarkusVersions != null) {
-            config.setDenyQuarkusVersions(toStringList(denyQuarkusVersions));
+            config.setDenyQuarkusVersions(denyQuarkusVersions.toStringList());
         }
 
         JsonValue refreshInterval = obj.get("refresh_interval");
@@ -150,7 +148,7 @@ public final class JsonSerializer {
 
         JsonObject context = obj.get("context");
         if (context != null) {
-            track.setContext(toMap(context));
+            track.setContext(context.toMap());
         }
 
         JsonString timestamp = obj.get("timestamp");
@@ -278,53 +276,8 @@ public final class JsonSerializer {
         return builder;
     }
 
-    private static List<String> toStringList(JsonArray array) {
-        List<String> result = new ArrayList<>();
-        for (JsonValue value : array.value()) {
-            if (value instanceof JsonString str) {
-                result.add(str.value());
-            }
-        }
-        return result;
-    }
-
-    private static Map<String, Object> toMap(JsonObject obj) {
-        Map<String, Object> result = new HashMap<>();
-        for (var member : obj.members()) {
-            String key = member.attribute().value();
-            JsonValue value = member.value();
-            result.put(key, toJavaValue(value));
-        }
-        return result;
-    }
-
-    private static Object toJavaValue(JsonValue value) {
-        if (value instanceof JsonString str) {
-            return str.value();
-        } else if (value instanceof JsonBoolean bool) {
-            return bool.value();
-        } else if (value instanceof JsonInteger intVal) {
-            return intVal.longValue();
-        } else if (value instanceof JsonObject obj) {
-            return toMap(obj);
-        } else if (value instanceof JsonArray arr) {
-            List<Object> list = new ArrayList<>();
-            for (JsonValue item : arr.value()) {
-                list.add(toJavaValue(item));
-            }
-            return list;
-        }
-        return null;
-    }
-
     private static String toJsonString(Json.JsonObjectBuilder builder) {
-        StringBuilder sb = new StringBuilder();
-        try {
-            builder.appendTo(sb);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize JSON", e);
-        }
-        return sb.toString();
+        return builder.toJsonString();
     }
 
     public static Identity parseIdentity(String json) {
@@ -338,7 +291,7 @@ public final class JsonSerializer {
 
         JsonObject ctx = obj.get("context");
         if (ctx != null) {
-            builder.context(toMap(ctx));
+            builder.context(ctx.toMap());
         }
 
         JsonString timestamp = obj.get("timestamp");

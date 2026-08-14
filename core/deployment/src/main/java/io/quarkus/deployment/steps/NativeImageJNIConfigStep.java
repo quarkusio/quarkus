@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -86,13 +84,8 @@ public class NativeImageJNIConfigStep {
             root.add(json);
         }
 
-        try (StringWriter writer = new StringWriter()) {
-            root.appendTo(writer);
-            jniConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/jni-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        jniConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/jni-config.json",
+                root.toJsonString().getBytes(StandardCharsets.UTF_8)));
     }
 
     private void addJniClass(Map<String, JniInfo> jniClasses, JniRuntimeAccessBuildItem jniRuntimeAccessBuildItem) {

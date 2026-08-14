@@ -397,6 +397,12 @@ public class SecurityProcessor {
             reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.crypto.general.AES")
                     .methods().fields().build());
             runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
+            // Poly1305's static initializer eagerly builds AES/Camellia/SEED/Serpent/Twofish engine instances
+            // (e.g. MACwithAES -> AESEngine -> AESWorkingBuffer). Those engine buffer classes embed a Cleaner and are
+            // run-time initialized (see below), so the holder class must be run-time initialized too, otherwise its
+            // baked-in engine constants reach the build-time image heap and the analysis aborts (this only manifests on
+            // some architectures, depending on points-to reachability). See https://github.com/quarkusio/quarkus/issues/56005
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.general.Poly1305"));
             runtimeReInitialized
                     .produce(new RuntimeInitializedClassBuildItem(
                             "org.bouncycastle.crypto.asymmetric.NamedECDomainParameters"));

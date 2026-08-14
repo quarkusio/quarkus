@@ -25,10 +25,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-datasource-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-common</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

@@ -6,6 +6,8 @@ import java.util.Map;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 
+import io.quarkus.datasource.common.devservices.VolumeMount;
+
 public final class Volumes {
 
     private static final String CLASSPATH = "classpath:";

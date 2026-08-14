@@ -14,6 +14,8 @@ import org.testcontainers.utility.MountableFile;
 import com.github.dockerjava.api.model.AccessMode;
 import com.github.dockerjava.api.model.Bind;
 
+import io.quarkus.datasource.common.devservices.VolumeMount;
+
 public class VolumesTest {
 
     private static final DockerImageName IMAGE = DockerImageName.parse("alpine:3");

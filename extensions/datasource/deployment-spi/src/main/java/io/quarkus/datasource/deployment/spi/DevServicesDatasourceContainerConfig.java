@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
-import io.quarkus.devservices.common.VolumeMount;
+import io.quarkus.datasource.common.devservices.VolumeMount;
 
 public class DevServicesDatasourceContainerConfig {
 

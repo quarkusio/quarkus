@@ -1,4 +1,4 @@
-package io.quarkus.devservices.common;
+package io.quarkus.datasource.common.devservices;
 
 import java.util.Objects;
 

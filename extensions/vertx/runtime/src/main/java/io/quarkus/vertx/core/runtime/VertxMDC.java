@@ -9,9 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.jboss.logmanager.MDCProvider;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.spi.context.storage.ContextLocal;
@@ -365,6 +367,36 @@ public enum VertxMDC implements MDCProvider {
             return inheritableThreadLocalMap.get();
         }
 
-        return ctx.getLocal(MDC_LOCAL, ConcurrentHashMap::new);
+        return ctx.getLocal(MDC_LOCAL, new Supplier<ConcurrentHashMap<String, Object>>() {
+            @Override
+            public ConcurrentHashMap<String, Object> get() {
+                return initialContextualDataMap(ctx);
+            }
+        });
+    }
+
+    /**
+     * A context created for a nested operation may be duplicated from the root context rather than from the
+     * context the operation originates from, in which case it only keeps a reference to that originating
+     * context and none of its Vert.x context locals. This is how the REST Client creates the context of each
+     * invocation. Without inheriting the originating context's MDC, log statements emitted while the nested
+     * operation runs — such as the REST Client request/response logs — lose the contextual data of the
+     * originating request, including the OpenTelemetry trace identifiers.
+     * See <a href="https://github.com/quarkusio/quarkus/issues/55828">GitHub issue #55828</a>.
+     */
+    private static ConcurrentHashMap<String, Object> initialContextualDataMap(Context ctx) {
+        // the immediate parent may not have logged anything yet and so have no materialized MDC map,
+        // in which case we keep walking up the parent chain. The chain is acyclic by construction, as the
+        // parent reference is always set at creation time to an already existing context, and it is
+        // walked at most once per context since the result is stored as the context's own MDC map.
+        Context parent = ctx.getLocal(VertxContext.PARENT_CONTEXT_LOCAL);
+        while (parent != null) {
+            ConcurrentHashMap<String, Object> parentMap = parent.getLocal(MDC_LOCAL);
+            if (parentMap != null) {
+                return new ConcurrentHashMap<>(parentMap);
+            }
+            parent = parent.getLocal(VertxContext.PARENT_CONTEXT_LOCAL);
+        }
+        return new ConcurrentHashMap<>();
     }
 }

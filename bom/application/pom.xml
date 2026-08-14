@@ -6679,6 +6679,11 @@
             </dependency>
             <dependency>
                 <groupId>org.jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
                 <artifactId>jansi</artifactId>
                 <version>${jline.version}</version>
             </dependency>

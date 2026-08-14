@@ -1,7 +1,10 @@
 package io.quarkus.bootstrap.json;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +25,10 @@ public class JsonReader {
 
     public static JsonReader of(String source) {
         return new JsonReader(source);
+    }
+
+    public static <T extends JsonValue> T read(Path path) throws IOException {
+        return of(Files.readString(path)).read();
     }
 
     @SuppressWarnings("unchecked")
@@ -89,7 +96,7 @@ public class JsonReader {
     private JsonValue readObject() {
         position++;
 
-        Map<JsonString, JsonValue> members = new HashMap<>();
+        Map<String, JsonValue> members = new LinkedHashMap<>();
 
         while (position < length) {
             ignoreWhitespace();
@@ -113,7 +120,7 @@ public class JsonReader {
      * member
      * |----- ws string ws ':' element
      */
-    private void readMember(Map<JsonString, JsonValue> members) {
+    private void readMember(Map<String, JsonValue> members) {
         final JsonString attribute = readString();
         ignoreWhitespace();
         final int colon = nextChar();
@@ -121,7 +128,7 @@ public class JsonReader {
             throw new IllegalArgumentException("Expected : after attribute");
         }
         final JsonValue element = readElement();
-        members.put(attribute, element);
+        members.put(attribute.value(), element);
     }
 
     /**
@@ -278,6 +285,7 @@ public class JsonReader {
         switch (ch) {
             case 'e':
             case 'E':
+                isFraction = true;
                 position++;
                 ch = nextChar();
                 switch (ch) {

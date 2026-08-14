@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.json.Json;
@@ -206,15 +205,18 @@ class JsonSerializerTest {
         assertEquals("{\"emoji\":\"Hello 🌍\"}", json);
     }
 
-    @Disabled("https://github.com/quarkusio/quarkus/issues/52196")
     @Test
-    void testFluentApiIncompatibility() throws IOException {
+    void testBoxedTypeOverloads() throws IOException {
         JsonObjectBuilder obj = Json.object();
-        // calls JsonObjectBuilder#put(String, Object) and results in {"bar":null} instead of {"bar":{"val":30}}
         obj.put("bar", Json.object().put("val", Long.valueOf(30)));
         JsonArrayBuilder arr = Json.array();
-        // calls JsonArrayBuilder#add(Object) and results in {"foo":true} instead of {"foo":[30]}
         obj.put("foo", arr.add(Long.valueOf(30)));
         assertEquals("{\"bar\":{\"val\":30},\"foo\":[30]}", toJson(obj));
+
+        obj = Json.object();
+        obj.put("i", Json.object().put("v", Integer.valueOf(42)));
+        obj.put("d", Json.object().put("v", Double.valueOf(3.14)));
+        obj.put("b", Json.object().put("v", Boolean.valueOf(true)));
+        assertEquals("{\"i\":{\"v\":42},\"d\":{\"v\":3.14},\"b\":{\"v\":true}}", toJson(obj));
     }
 }

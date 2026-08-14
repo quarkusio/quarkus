@@ -10,4 +10,9 @@ public final class JsonDouble implements JsonNumber {
     public double value() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return Double.toString(value);
+    }
 }

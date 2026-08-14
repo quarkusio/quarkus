@@ -195,6 +195,17 @@ class JsonDeserializerTest {
     }
 
     @Test
+    void testExponentWithoutFraction() {
+        JsonObject obj = JsonReader.of("{\"a\":1e10,\"b\":2E3,\"c\":1e+2,\"d\":1e-2,\"e\":-3E4}").read();
+        assertInstanceOf(JsonDouble.class, obj.get("a"));
+        assertEquals(1e10, ((JsonDouble) obj.get("a")).value(), 0.001);
+        assertEquals(2E3, ((JsonDouble) obj.get("b")).value(), 0.001);
+        assertEquals(1e+2, ((JsonDouble) obj.get("c")).value(), 0.001);
+        assertEquals(1e-2, ((JsonDouble) obj.get("d")).value(), 0.0001);
+        assertEquals(-3E4, ((JsonDouble) obj.get("e")).value(), 0.001);
+    }
+
+    @Test
     void testLargeNumbers() {
         JsonObject obj = JsonReader
                 .of("{\"maxInt\":2147483647,\"minInt\":-2147483648,\"maxLong\":9223372036854775807,\"minLong\":-9223372036854775808}")

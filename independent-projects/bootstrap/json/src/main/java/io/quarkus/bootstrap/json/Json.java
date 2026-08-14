@@ -1,10 +1,15 @@
 package io.quarkus.bootstrap.json;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -132,6 +137,22 @@ public final class Json {
         public abstract void appendTo(Appendable appendable) throws IOException;
 
         /**
+         * Writes the JSON content to the specified file, creating parent directories if needed.
+         *
+         * @param p target file path
+         * @throws IOException if the file cannot be written
+         */
+        public void writeTo(Path p) throws IOException {
+            final Path parent = p.getParent();
+            if (parent != null && !Files.exists(parent)) {
+                Files.createDirectories(parent);
+            }
+            try (BufferedWriter writer = Files.newBufferedWriter(p)) {
+                appendTo(writer);
+            }
+        }
+
+        /**
          * @param value value to check
          * @return <code>true</code> if the value is null or an empty builder and {@link #ignoreEmptyBuilders} is set to
          *         <code>true</code>, <code>false</code>
@@ -166,6 +187,16 @@ public final class Json {
         public void transform(JsonMultiValue value, JsonTransform transform) {
             final ResolvedTransform resolved = new ResolvedTransform(this, transform);
             value.forEach(resolved);
+        }
+
+        public String toJsonString() {
+            try {
+                StringBuilder sb = new StringBuilder();
+                appendTo(sb);
+                return sb.toString();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
@@ -206,12 +237,37 @@ public final class Json {
             return this;
         }
 
+        public JsonArrayBuilder add(Boolean value) {
+            addInternal(value);
+            return this;
+        }
+
         public JsonArrayBuilder add(int value) {
             addInternal(value);
             return this;
         }
 
+        public JsonArrayBuilder add(Integer value) {
+            addInternal(value);
+            return this;
+        }
+
         public JsonArrayBuilder add(long value) {
+            addInternal(value);
+            return this;
+        }
+
+        public JsonArrayBuilder add(Long value) {
+            addInternal(value);
+            return this;
+        }
+
+        public JsonArrayBuilder add(double value) {
+            addInternal(value);
+            return this;
+        }
+
+        public JsonArrayBuilder add(Double value) {
             addInternal(value);
             return this;
         }
@@ -357,12 +413,12 @@ public final class Json {
 
         private JsonObjectBuilder(boolean ignoreEmptyBuilders) {
             super(ignoreEmptyBuilders);
-            this.properties = new HashMap<>();
+            this.properties = new LinkedHashMap<>();
         }
 
         private JsonObjectBuilder(boolean ignoreEmptyBuilders, int initialCapacity) {
             super(ignoreEmptyBuilders);
-            this.properties = new HashMap<>(initialCapacity);
+            this.properties = new LinkedHashMap<>(initialCapacity);
         }
 
         public JsonObjectBuilder put(String name, String value) {
@@ -385,13 +441,68 @@ public final class Json {
             return this;
         }
 
+        public JsonObjectBuilder put(String name, Boolean value) {
+            putInternal(name, value);
+            return this;
+        }
+
         public JsonObjectBuilder put(String name, int value) {
+            putInternal(name, value);
+            return this;
+        }
+
+        public JsonObjectBuilder put(String name, Integer value) {
             putInternal(name, value);
             return this;
         }
 
         public JsonObjectBuilder put(String name, long value) {
             putInternal(name, value);
+            return this;
+        }
+
+        public JsonObjectBuilder put(String name, Long value) {
+            putInternal(name, value);
+            return this;
+        }
+
+        public JsonObjectBuilder put(String name, double value) {
+            putInternal(name, value);
+            return this;
+        }
+
+        public JsonObjectBuilder put(String name, Double value) {
+            putInternal(name, value);
+            return this;
+        }
+
+        /**
+         * Recursively converts the map to nested {@link JsonObjectBuilder} and {@link JsonArrayBuilder}
+         * instances and adds the result under the given name.
+         *
+         * @param name property name
+         * @param map map to convert (may be {@code null})
+         * @return this builder
+         */
+        public JsonObjectBuilder put(String name, Map<String, ?> map) {
+            if (map != null && !map.isEmpty()) {
+                putInternal(name, fromMap(map));
+            }
+            return this;
+        }
+
+        /**
+         * Recursively converts the collection to a {@link JsonArrayBuilder}
+         * and adds the result under the given name.
+         *
+         * @param name property name
+         * @param collection collection to convert (may be {@code null})
+         * @return this builder
+         */
+        public JsonObjectBuilder put(String name, Collection<?> collection) {
+            if (collection != null && !collection.isEmpty()) {
+                putInternal(name, fromCollection(collection));
+            }
             return this;
         }
 
@@ -497,7 +608,7 @@ public final class Json {
         @Override
         void add(JsonValue element) {
             if (element instanceof JsonMember member) {
-                final String attribute = member.attribute().value();
+                final String attribute = member.attributeName();
                 final JsonValue value = member.value();
                 if (value instanceof JsonString jsonStr) {
                     put(attribute, jsonStr.value());
@@ -535,7 +646,7 @@ public final class Json {
             jsonArr.appendTo(appendable);
         } else if (value instanceof String str) {
             appendStringValue(appendable, str);
-        } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {
+        } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long || value instanceof Double) {
             appendable.append(value.toString());
         } else {
             throw new IllegalStateException("Unsupported value type: " + value);
@@ -564,6 +675,75 @@ public final class Json {
                 appendable.append(c);
             }
         }
+    }
+
+    /**
+     * Recursively converts a {@link Map} to a {@link JsonObjectBuilder}.
+     * Values may be strings, numbers, booleans, nested maps, or collections.
+     *
+     * @param map the map to convert
+     * @return a JSON object builder representing the map
+     */
+    @SuppressWarnings("unchecked")
+    public static JsonObjectBuilder fromMap(Map<String, ?> map) {
+        JsonObjectBuilder builder = object(map.size());
+        for (Map.Entry<String, ?> entry : map.entrySet()) {
+            Object v = entry.getValue();
+            if (v instanceof String s) {
+                builder.put(entry.getKey(), s);
+            } else if (v instanceof Integer i) {
+                builder.put(entry.getKey(), i);
+            } else if (v instanceof Long l) {
+                builder.put(entry.getKey(), l);
+            } else if (v instanceof Double d) {
+                builder.put(entry.getKey(), d);
+            } else if (v instanceof Float f) {
+                builder.put(entry.getKey(), (double) f);
+            } else if (v instanceof Boolean b) {
+                builder.put(entry.getKey(), b);
+            } else if (v instanceof Map<?, ?> m) {
+                builder.put(entry.getKey(), fromMap((Map<String, ?>) m));
+            } else if (v instanceof Collection<?> c) {
+                builder.put(entry.getKey(), fromCollection(c));
+            } else if (v != null) {
+                builder.put(entry.getKey(), v.toString());
+            }
+        }
+        return builder;
+    }
+
+    /**
+     * Recursively converts a {@link Collection} to a {@link JsonArrayBuilder}.
+     * Elements may be strings, numbers, booleans, maps, or nested collections.
+     *
+     * @param collection the collection to convert
+     * @return a JSON array builder representing the collection
+     */
+    @SuppressWarnings("unchecked")
+    public static JsonArrayBuilder fromCollection(Collection<?> collection) {
+        JsonArrayBuilder builder = array(collection.size());
+        for (Object v : collection) {
+            if (v instanceof String s) {
+                builder.add(s);
+            } else if (v instanceof Integer i) {
+                builder.add(i);
+            } else if (v instanceof Long l) {
+                builder.add(l);
+            } else if (v instanceof Double d) {
+                builder.add(d);
+            } else if (v instanceof Float f) {
+                builder.add((double) f);
+            } else if (v instanceof Boolean b) {
+                builder.add(b);
+            } else if (v instanceof Map<?, ?> m) {
+                builder.add(fromMap((Map<String, ?>) m));
+            } else if (v instanceof Collection<?> c) {
+                builder.add(fromCollection(c));
+            } else if (v != null) {
+                builder.add(v.toString());
+            }
+        }
+        return builder;
     }
 
     private static final class ResolvedTransform implements JsonTransform {

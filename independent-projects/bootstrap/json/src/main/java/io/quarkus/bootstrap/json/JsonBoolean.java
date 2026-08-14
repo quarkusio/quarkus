@@ -13,4 +13,12 @@ public enum JsonBoolean implements JsonValue {
     public boolean value() {
         return value;
     }
+
+    /**
+     * Returns {@code "true"} or {@code "false"} (lowercase) matching JSON literal syntax.
+     */
+    @Override
+    public String toString() {
+        return Boolean.toString(value);
+    }
 }

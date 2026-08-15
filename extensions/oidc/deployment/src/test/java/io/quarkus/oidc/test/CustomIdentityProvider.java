@@ -6,9 +6,6 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 
 import io.quarkus.oidc.runtime.OidcJwtCallerPrincipal;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -19,6 +16,9 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.jws.JsonWebSignature;
+import io.smallrye.jws.JwsException;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -36,10 +36,8 @@ public class CustomIdentityProvider implements IdentityProvider<TokenAuthenticat
 
         TokenCredential credential = request.getToken();
         try {
-            JwtClaims jwtClaims = new JwtConsumerBuilder()
-                    .setSkipSignatureVerification()
-                    .setSkipAllValidators()
-                    .build().processToClaims(credential.getToken());
+            JsonWebSignature jws = JsonWebSignature.parse(credential.getToken());
+            JwtClaims jwtClaims = JwtClaims.parse(jws.unverifiedPayload());
             jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
 
             Principal principal = new OidcJwtCallerPrincipal(jwtClaims, credential);
@@ -47,7 +45,7 @@ public class CustomIdentityProvider implements IdentityProvider<TokenAuthenticat
                 throw new AuthenticationCompletionException();
             }
             builder.setPrincipal(principal);
-        } catch (InvalidJwtException e) {
+        } catch (JwsException e) {
             throw new AuthenticationFailedException(e);
         }
 

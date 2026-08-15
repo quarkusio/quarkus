@@ -7,13 +7,13 @@
     <packaging>quarkus</packaging>
 
     <properties>
-        <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>
-        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.artifact-id>quarkus-mock-bom</quarkus.platform.artifact-id>
+        <maven.compiler.release>17</maven.compiler.release>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>quarkus-mock-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>999-MOCK</quarkus.platform.version>
+        <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.0.0-MOCK</surefire-plugin.version>
     </properties>
@@ -100,9 +100,9 @@
                 </property>
             </activation>
             <properties>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
                 <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
                 <skipITs>false</skipITs>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

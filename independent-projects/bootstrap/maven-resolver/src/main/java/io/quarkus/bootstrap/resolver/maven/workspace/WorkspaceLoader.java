@@ -11,16 +11,20 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 
+import org.apache.maven.api.xml.XmlService;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelCache;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
+import org.apache.maven.model.v4.MavenStaxReader;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.repository.WorkspaceRepository;
@@ -44,10 +48,29 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     static final Model MISSING_MODEL = new Model();
 
+    /**
+     * Preloads a few classes related to POM parsing. This is to avoid classloading deadlocks when called
+     * in the context of the FacadeClassLoader, which isn't parallel capable atm.
+     */
+    private static void preloadMavenXmlReaders() {
+        new MavenStaxReader().getXMLInputFactory();
+        try {
+            // maven-xml was added as parent-first in quarkus-core, which helps with initializing the resolver in a test process,
+            // here we use TCCL to make sure quarkus:dev boots
+            //final Class<?> cls = Thread.currentThread().getContextClassLoader().loadClass(XmlService.class.getName());
+            final Class<?> cls = RepositorySystem.class.getClassLoader().loadClass(XmlService.class.getName());
+            ServiceLoader.load(cls).findFirst();
+        } catch (ClassNotFoundException e) {
+            // it's expected to load the class. If it doesn't, there is no reason to fail at this point though, since
+            // this preload is a kind of hacky workaround anyway
+        }
+    }
+
     private static ModelResolutionTaskRunner getTaskRunner() {
         if (ModelResolutionTaskRunnerFactory.isDefaultRunnerBlocking()) {
             return ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
         }
+        preloadMavenXmlReaders();
         return ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner();
     }
 

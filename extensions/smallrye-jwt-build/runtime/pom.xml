@@ -31,6 +31,11 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
+            <!-- Transitive dependency of smallrye-jwt-build, declared for the native image substitutions -->
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>nativeimage</artifactId>
             <scope>provided</scope>

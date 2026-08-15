@@ -856,7 +856,7 @@ Enforcing that a token is intended for a specific audience is RECOMMENDED. ID to
 
 `quarkus.oidc.token.required-claims` map property can be used to provide an additional simple check that the token contains specific string claim values.
 
-See also the <<custom-jose4j-validator>> section for details about customizing the JWT token verification.
+See also the <<custom-claims-validator>> section for details about customizing the JWT token verification.
 
 By default, Quarkus uses available verification keys to verify JWT token signatures with whatever assymetric algorithm is supported by the OIDC provider and the available key set. For example, a token signed with either `RS256` or `PS256` algorithm can be accepted if the JWK set constains a public key that can verify the RSA signature created with either of these two algorithms. However, you may have a policy that requires that only a specific algorithm such as `RS512` must be used - use `quarkus.oidc.token.signature-algorithm=RS512` to enforce it.
 
@@ -1278,10 +1278,10 @@ In this section we will look at how your real world OIDC requirements can be sup
 
 === Token validation
 
-[[custom-jose4j-validator]]
-==== Jose4 Validator
+[[custom-claims-validator]]
+==== Claims validator
 
-You can register a custom xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator-bearer[Jose4j Validator] to verify the JWT token content, in addition to the checks described in the <<token-verification>> section above.
+You can register a custom xref:security-oidc-bearer-token-authentication.adoc#claims-validator-bearer[claims validator] to verify the JWT token content, in addition to the checks described in the <<token-verification>> section above.
 
 [[custom-certificate-validator]]
 ==== Certificate chain validation

@@ -7,14 +7,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenCertificateValidator;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.smallrye.jws.JsonWebSignature;
+import io.smallrye.jws.JwsException;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.vertx.ext.auth.impl.CertificateHelper;
 
 public class CertChainPublicKeyResolver implements RefreshableVerificationKeyResolver {
@@ -40,11 +40,10 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
-            throws UnresolvableKeyException {
+    public Key resolveKey(JsonWebSignature jws) throws UnresolvableKeyException {
 
         try {
-            List<X509Certificate> chain = jws.getCertificateChainHeaderValue();
+            List<X509Certificate> chain = jws.headers().x509CertificateChain();
             if (chain == null) {
                 LOG.debug("Token does not have an 'x5c' certificate chain header");
                 return null;
@@ -76,7 +75,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
             if (!certificateValidators.isEmpty()) {
                 LOG.debug("Running custom TokenCertificateValidators");
                 for (TokenCertificateValidator validator : certificateValidators) {
-                    validator.validate(oidcConfig, chain, jws.getUnverifiedPayload());
+                    validator.validate(oidcConfig, chain, jws.unverifiedPayload());
                 }
             }
 
@@ -102,6 +101,9 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
             return chain.get(0).getPublicKey();
         } catch (UnresolvableKeyException ex) {
             throw ex;
+        } catch (JwsException ex) {
+            LOG.error("Token 'x5c' certificate chain can not be parsed");
+            throw new UnresolvableKeyException("Token 'x5c' certificate chain can not be parsed", ex);
         } catch (Exception ex) {
             throw new UnresolvableKeyException("Invalid certificate chain", ex);
         }

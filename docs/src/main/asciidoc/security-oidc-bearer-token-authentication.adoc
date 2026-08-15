@@ -358,44 +358,43 @@ public class IssuerValidator implements ContainerRequestFilter {
 Consider using the `quarkus.oidc.token.audience` property to verify the token `aud` (`audience`) claim value.
 ====
 
-[[jose4j-validator-bearer]]
-=== Jose4j Validator
+[[claims-validator-bearer]]
+=== Claims validator
 
-You can register a custom https://www.javadoc.io/doc/org.bitbucket.b_c/jose4j/latest/org/jose4j/jwt/consumer/class-use/Validator.html[Jose4j Validator] to customize the JWT claim verification process, before `org.eclipse.microprofile.jwt.JsonWebToken` is initialized.
+You can register a custom `io.smallrye.jwt.auth.ClaimsValidator` to customize the JWT claim verification process, before `org.eclipse.microprofile.jwt.JsonWebToken` is initialized.
 For example:
 
 [source, java]
 ----
 package org.acme.security.openid.connect;
 
-import static org.eclipse.microprofile.jwt.Claims.iss;
-
 import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.JwtContext;
-import org.jose4j.jwt.consumer.Validator;
+import io.smallrye.jwt.auth.ClaimsValidator;
+import io.smallrye.jwt.common.JwtClaims;
 
 @Unremovable
 @ApplicationScoped
-public class IssuerValidator implements Validator { <1>
+public class IssuerValidator implements ClaimsValidator { <1>
 
     @Override
-    public String validate(JwtContext jwtContext) throws MalformedClaimException {
-        if (jwtContext.getJwtClaims().hasClaim(iss.name())
-                && "my-issuer".equals(jwtContext.getJwtClaims().getClaimValueAsString(iss.name()))) {
+    public String validate(VerificationContext context) {
+        JwtClaims claims = context.claims();
+        if ("my-issuer".equals(claims.getIssuer())) {
             return "wrong issuer"; <2>
         }
         return null; <3>
     }
 }
 ----
-<1> Register Jose4j Validator to verify JWT tokens for all OIDC tenants.
+<1> Register the claims validator to verify JWT tokens for all OIDC tenants.
 <2> Return the claim verification error description.
-<3> Return `null` to confirm that this Validator has successfully verified the token.
+<3> Return `null` to confirm that this validator has successfully verified the token.
 
-TIP: Use a `@quarkus.oidc.TenantFeature` annotation to bind a custom Validator to a specific OIDC tenant only.
+`VerificationContext` is a record declared by `ClaimsValidator`, and its `claims()` accessor returns an `io.smallrye.jwt.common.JwtClaims` instance, which offers both the generic `getClaim(String)` and `hasClaim(String)` methods and the standard claim accessors such as `getIssuer()` and `getAudience()`.
+
+TIP: Use a `@quarkus.oidc.TenantFeature` annotation to bind a custom claims validator to a specific OIDC tenant only.
 
 [[single-page-applications]]
 === Single-page applications
@@ -1714,47 +1713,47 @@ It is also possible to enforce the required authentication level for an OIDC ten
 quarkus.oidc.hr.token.required-claims.acr=myACR
 ----
 
-Or, if you need more flexibility, write a <<jose4j-validator-bearer>>:
+Or, if you need more flexibility, write a <<claims-validator-bearer>>:
 
 [source,java]
 ----
 package io.quarkus.it.oidc;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.JwtContext;
-import org.jose4j.jwt.consumer.Validator;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
+import io.smallrye.jwt.auth.ClaimsValidator;
+import io.smallrye.jwt.common.JwtClaims;
 
 @Unremovable
 @ApplicationScoped
 @TenantFeature("hr")
-public class AcrValueValidator implements Validator {
+public class AcrValueValidator implements ClaimsValidator {
 
+    @SuppressWarnings("unchecked")
     @Override
-    public String validate(JwtContext jwtContext) throws MalformedClaimException {
-        var jwtClaims = jwtContext.getJwtClaims();
-        var acrClaimName = Claims.acr.name();
+    public String validate(VerificationContext context) {
+        JwtClaims jwtClaims = context.claims();
+        String acrClaimName = Claims.acr.name();
 
         if (jwtClaims.hasClaim(acrClaimName)) {
             // The claim 'acr' could be a String or a list
+            Object acrClaimValue = jwtClaims.getClaim(acrClaimName);
             List<String> acrClaimValues;
-            if (jwtClaims.isClaimValueStringList(acrClaimName)) {
-               acrClaimValues = jwtClaims.getStringListClaimValue(acrClaimName);
-            } else if (jwtClaims.isClaimValueString(acrClaimName)) {
-               acrClaimValues = List.of(jwtClaims.getStringClaimValue(acrClaimName));
+            if (acrClaimValue instanceof List) {
+               acrClaimValues = (List<String>) acrClaimValue;
+            } else if (acrClaimValue instanceof String) {
+               acrClaimValues = List.of((String) acrClaimValue);
             } else {
-                throw new MalformedClaimException("Claim '" + acrClaimName + "' is not a String or List of Strings.");
+                return "Claim '" + acrClaimName + "' is not a String or List of Strings.";
             }
             if (acrClaimValues.contains("myACR") && acrClaimValues.contains("yourACR")) {
                 return null;

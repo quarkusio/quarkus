@@ -92,7 +92,6 @@ import io.quarkus.oidc.runtime.ClientIdMetadataHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
-import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
@@ -234,12 +233,6 @@ public class OidcBuildStep {
         if (isRouteAllowed(buildTimeConfig, OidcRoute.CLIENT_ID_METADATA)) {
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ClientIdMetadataHandler.class));
         }
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void initJose4J(Jose4jRecorder recorder) {
-        recorder.initialize();
     }
 
     @BuildStep(onlyIf = IsCacheEnabled.class)

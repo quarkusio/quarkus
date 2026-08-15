@@ -2,7 +2,6 @@ package io.quarkus.oidc.runtime;
 
 import java.security.Key;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -10,26 +9,23 @@ import java.util.function.Function;
 import jakarta.enterprise.event.Observes;
 
 import org.jboss.logging.Logger;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwx.HeaderParameterNames;
-import org.jose4j.jwx.JsonWebStructure;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
+import io.smallrye.jwt.auth.SingleKeyVerificationKeyResolver;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
+import io.smallrye.jwt.auth.VerificationKeyResolver;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 public class DynamicVerificationKeyResolver {
     private static final Logger LOG = Logger.getLogger(DynamicVerificationKeyResolver.class);
-    private static final Set<String> KEY_HEADERS = Set.of(HeaderParameterNames.KEY_ID,
-            HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT,
-            HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+    private static final Set<String> KEY_HEADERS = Set.of(JoseConstants.KEY_ID,
+            JoseConstants.X_509_CERT_SHA_256_THUMBPRINT, JoseConstants.X_509_CERT_SHA_1_THUMBPRINT);
 
     private final OidcProviderClientImpl client;
     private final MemoryCache<Key> cache;
@@ -56,7 +52,7 @@ public class DynamicVerificationKeyResolver {
         if (key != null) {
             return Uni.createFrom().item(new SingleKeyVerificationKeyResolver(key));
         }
-        if (chainResolverFallback != null && headers.containsKey(HeaderParameterNames.X509_CERTIFICATE_CHAIN)
+        if (chainResolverFallback != null && headers.containsKey(JoseConstants.X_509_CERT_CHAIN)
                 && Collections.disjoint(KEY_HEADERS, headers.fieldNames())) {
             // If none of the key headers is available which can be used to resolve JWK then do
             // not try to get another JWK set but delegate to the chain resolver fallback if it is available
@@ -72,13 +68,14 @@ public class DynamicVerificationKeyResolver {
                     public Uni<? extends VerificationKeyResolver> apply(JsonWebKeySet jwks) {
                         Key newKey = null;
                         // Try 'kid' first
-                        String kid = headers.getString(HeaderParameterNames.KEY_ID);
+                        String kid = headers.getString(JoseConstants.KEY_ID);
                         if (kid != null) {
                             newKey = getKeyWithId(jwks, kid);
                             if (newKey == null) {
                                 // if `kid` was set then the key must exist
                                 return Uni.createFrom().failure(
-                                        new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid)));
+                                        new UnresolvableKeyException(
+                                                String.format("JWK with kid '%s' is not available", kid)));
                             } else {
                                 cache.add(kid, newKey);
                             }
@@ -86,7 +83,7 @@ public class DynamicVerificationKeyResolver {
 
                         String thumbprint = null;
                         if (newKey == null) {
-                            thumbprint = headers.getString(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT);
+                            thumbprint = headers.getString(JoseConstants.X_509_CERT_SHA_256_THUMBPRINT);
                             if (thumbprint != null) {
                                 newKey = getKeyWithS256Thumbprint(jwks, thumbprint);
                                 if (newKey == null) {
@@ -102,7 +99,7 @@ public class DynamicVerificationKeyResolver {
                         }
 
                         if (newKey == null) {
-                            thumbprint = headers.getString(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+                            thumbprint = headers.getString(JoseConstants.X_509_CERT_SHA_1_THUMBPRINT);
                             if (thumbprint != null) {
                                 newKey = getKeyWithThumbprint(jwks, thumbprint);
                                 if (newKey == null) {
@@ -119,12 +116,6 @@ public class DynamicVerificationKeyResolver {
                         if (newKey == null && kid == null && thumbprint == null) {
                             newKey = jwks.getKeyWithoutKeyIdAndThumbprint("RSA");
                         }
-
-                        //                        if (newKey == null && tryAll && kid == null && thumbprint == null) {
-                        //                            LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
-                        //                                    + " falling back to trying all available keys");
-                        //                            newKey = jwks.findKeyInAllKeys(jws); // there is nothing to check the signature for in this method
-                        //                        }
 
                         if (newKey == null && chainResolverFallback != null) {
                             return getChainResolver();
@@ -175,36 +166,21 @@ public class DynamicVerificationKeyResolver {
     }
 
     private Key findKeyInTheCache(JsonObject headers) {
-        String kid = headers.getString(HeaderParameterNames.KEY_ID);
+        String kid = headers.getString(JoseConstants.KEY_ID);
         if (kid != null && cache.containsKey(kid)) {
             return cache.get(kid);
         }
-        String thumbprint = headers.getString(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT);
+        String thumbprint = headers.getString(JoseConstants.X_509_CERT_SHA_256_THUMBPRINT);
         if (thumbprint != null && cache.containsKey(thumbprint)) {
             return cache.get(thumbprint);
         }
 
-        thumbprint = headers.getString(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+        thumbprint = headers.getString(JoseConstants.X_509_CERT_SHA_1_THUMBPRINT);
         if (thumbprint != null && cache.containsKey(thumbprint)) {
             return cache.get(thumbprint);
         }
 
         return null;
-    }
-
-    static class SingleKeyVerificationKeyResolver implements VerificationKeyResolver {
-
-        private Key key;
-
-        SingleKeyVerificationKeyResolver(Key key) {
-            this.key = key;
-        }
-
-        @Override
-        public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
-                throws UnresolvableKeyException {
-            return key;
-        }
     }
 
     void shutdown(@Observes ShutdownEvent event, Vertx vertx) {

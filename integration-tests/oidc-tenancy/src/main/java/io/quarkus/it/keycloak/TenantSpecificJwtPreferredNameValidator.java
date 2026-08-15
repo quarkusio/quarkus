@@ -2,18 +2,16 @@ package io.quarkus.it.keycloak;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.JwtContext;
-import org.jose4j.jwt.consumer.Validator;
-
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.smallrye.jwt.auth.ClaimsValidator;
+import io.smallrye.jwt.common.JwtClaims;
 
 @Unremovable
 @TenantFeature("tenant-requiredclaim")
 @ApplicationScoped
-public class TenantSpecificJwtPreferredNameValidator implements Validator {
+public class TenantSpecificJwtPreferredNameValidator implements ClaimsValidator {
 
     private final String requiredClaim;
 
@@ -23,15 +21,16 @@ public class TenantSpecificJwtPreferredNameValidator implements Validator {
     }
 
     @Override
-    public String validate(JwtContext jwtContext) throws MalformedClaimException {
+    public String validate(VerificationContext context) {
+        JwtClaims claims = context.claims();
         // verify that normal scoped validator is created when the runtime config is ready
         if (!"quarkus-app-b".equals(requiredClaim)) {
             throw new IllegalStateException("The 'tenant-requiredclaim' tenant required claim 'azp' is not 'quarkus-app-b'");
         }
 
-        if (jwtContext.getJwtClaims().hasClaim("preferred_username")
-                && jwtContext.getJwtClaims().isClaimValueString("preferred_username")
-                && jwtContext.getJwtClaims().getClaimValueAsString("preferred_username").contains("admin")) {
+        if (claims.hasClaim("preferred_username")
+                && claims.getClaim("preferred_username") instanceof String
+                && ((String) claims.getClaim("preferred_username")).contains("admin")) {
             return "scope validation failed, the 'fail-validation' scope is not allowed";
         }
         return null;

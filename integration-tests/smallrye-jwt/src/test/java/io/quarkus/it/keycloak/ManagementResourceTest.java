@@ -30,6 +30,15 @@ public class ManagementResourceTest {
     }
 
     @Test
+    void testSignAndVerifyWithEdDsa() {
+        given()
+                .when().get("/management/eddsa")
+                .then()
+                .statusCode(200)
+                .body(is("EdDSA:alice@quarkus.io"));
+    }
+
+    @Test
     void testTokenWithWrongGroup() {
         var token = Jwt.upn("jdoe@quarkus.io")
                 .groups("INVALID_GROUP")

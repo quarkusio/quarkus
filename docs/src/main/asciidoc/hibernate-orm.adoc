@@ -99,12 +99,12 @@ Also, Quarkus will set many Hibernate ORM configuration settings automatically, 
 
 For a list of the items that you can set in `{config-file}`, see <<configuration-reference>>.
 
-An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
+A `SessionFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
 
 The dialect will be selected and configured automatically based on your datasource;
 you may want to <<hibernate-dialect,configure it to more precisely match your database>>.
 
-You can then happily inject your `EntityManager`:
+You can then happily inject your `Session`:
 
 [source,java]
 .Example application bean using Hibernate
@@ -112,19 +112,21 @@ You can then happily inject your `EntityManager`:
 @ApplicationScoped
 public class SantaClausService {
     @Inject
-    EntityManager em; <1>
+    Session session; <1>
 
     @Transactional <2>
     public void createGift(String giftDescription) {
         Gift gift = new Gift();
         gift.setName(giftDescription);
-        em.persist(gift);
+        session.persist(gift);
     }
 }
 ----
 
-<1> Inject your entity manager and have fun
-<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
+<1> Inject your Hibernate ORM session and have fun
+<2> Mark your CDI bean method as `@Transactional` and the `Session` will enlist and flush at commit.
+
+TIP: If you prefer to stick to the Jakarta Persistence API, you can <<injecting-entry-points,inject an `EntityManager` instead of a `Session`>>.
 
 [source,java]
 .Example Entity
@@ -160,7 +162,7 @@ Make sure to terminate each statement with a semicolon.
 
 This is useful to have a data set ready for your tests or demos.
 
-WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a
+WARNING: Make sure to wrap methods modifying your database (e.g. `session.persist(entity)`) within a transaction. Marking a
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
@@ -291,7 +293,7 @@ as explained in <<hibernate-dialect-other-databases,this section>>.
 [[hibernate-configuration-properties]]
 === Hibernate ORM configuration properties
 
-There are various optional properties useful to refine your `EntityManagerFactory` or guide guesses of Quarkus.
+There are various optional properties useful to refine your `SessionFactory` or guide guesses of Quarkus.
 
 There are no required properties, as long as a default datasource is configured.
 
@@ -451,43 +453,55 @@ Note that, similarly to what we do with the configuration property, we take into
 [[injecting-entry-points]]
 ==== Injecting entry points
 
-If you are familiar with using Hibernate ORM in Quarkus, you probably already have injected the `EntityManager` using CDI:
+If you are familiar with using Hibernate ORM in Quarkus, you probably already have injected the `Session` using CDI:
 
 [source,java]
 ----
 @Inject
-EntityManager entityManager;
+Session session;
 ----
 
-This will inject the `EntityManager` of the default persistence unit.
+This will inject the `Session` of the default persistence unit.
 
-Injecting the `EntityManager` of a named persistence unit (`users` in our example) is as simple as:
+Injecting the `Session` of a named persistence unit (`users` in our example) is as simple as:
 
 [source,java]
 ----
 @Inject
 @PersistenceUnit("users") <1>
-EntityManager entityManager;
+Session session;
 ----
 <1> Here again, we use the same `@io.quarkus.hibernate.orm.PersistenceUnit` annotation.
 
+If you prefer to stick to the Jakarta Persistence API, you can inject an `EntityManager` instead, using the exact same mechanism:
+
+[source,java]
+----
+@Inject
+EntityManager entityManager;
+
+@Inject
+@PersistenceUnit("users")
+EntityManager entityManagerForUsers;
+----
+
 [NOTE]
 ====
-The injected `EntityManager` or `Session` instance is a proxy that requires an active transaction for interaction.
+The injected `Session` or `EntityManager` instance is a proxy that requires an active transaction for interaction.
 
 By default it is also possible to use it for read-only operations without a transaction when in a request scope, but this can be disabled by setting `quarkus.hibernate-orm.request-scoped.enabled` to `false`.
 ====
 
-You can inject the `EntityManagerFactory` of a named persistence unit using the exact same mechanism:
+You can inject the `SessionFactory` (or its Jakarta Persistence equivalent, `EntityManagerFactory`) of a named persistence unit using the exact same mechanism:
 
 [source,java]
 ----
 @Inject
 @PersistenceUnit("users")
-EntityManagerFactory entityManagerFactory;
+SessionFactory sessionFactory;
 ----
 
-In addition to `EntityManager` and `EntityManagerFactory`, Quarkus also supports injecting the following JPA/Hibernate components:
+In addition to `Session` and `SessionFactory` (and their Jakarta Persistence equivalents `EntityManager` and `EntityManagerFactory`), Quarkus also supports injecting the following JPA/Hibernate components:
 
 [source,java]
 ----
@@ -1324,21 +1338,22 @@ Let's start by implementing the `/{tenant}` endpoint. As you can see from the so
 ----
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+
+import org.hibernate.Session;
 
 @ApplicationScoped
 @Path("/{tenant}")
 public class FruitResource {
 
     @Inject
-    EntityManager entityManager;
+    Session session;
 
     @GET
     @Path("fruits")
     public Fruit[] getFruits() {
-        return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
+        return session.createNamedQuery("Fruits.findAll", Fruit.class)
                 .getResultList().toArray(new Fruit[0]);
     }
 
@@ -1841,10 +1856,10 @@ For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUni
 ====
 By default, interceptor beans annotated with `@PersistenceUnitExtension` are application-scoped,
 which means only one interceptor instance will be created per application
-and reused across all entity managers.
+and reused across all sessions.
 For this reason, the interceptor implementation must be thread-safe.
 
-In order to create one interceptor instance per entity manager instead,
+In order to create one interceptor instance per session instead,
 annotate your bean with `@Dependent`.
 In that case, the interceptor implementation doesn't need to be thread-safe.
 ====

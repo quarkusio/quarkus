@@ -7,18 +7,18 @@ import jakarta.persistence.Id
 /**
  * Example JPA entity.
  *
- * To use it, get access to a JPA EntityManager via injection.
+ * To use it, get access to a Hibernate ORM Session via injection.
  *
  * {@code
  *    @Inject
- *    lateinit var em:EntityManager;
+ *    lateinit var session: Session;
  *
  *     fun doSomething() {
  *         val entity1 = MyKotlinEntity();
  *         entity1.field = "field-1"
- *         em.persist(entity1);
+ *         session.persist(entity1);
  *
- *         val entities:List<MyKotlinEntity>  = em.createQuery("from MyEntity", MyKotlinEntity::class.java).getResultList()
+ *         val entities:List<MyKotlinEntity>  = session.createQuery("from MyEntity", MyKotlinEntity::class.java).getResultList()
  *     }
  * }
  */
